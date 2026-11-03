@@ -16,8 +16,8 @@ namespace mal {
 Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     : registry_(ContentRegistry::embedded()), bits_(kStartBits), store_(store) {
     // Set the ambient copies' wanders apart before anything can return early. They are
-    // otherwise identical objects, and identical wanders walk identical paths: the
-    // seed is the only thing that makes three copies read as three creatures.
+    // otherwise identical objects, and identical wanders walk identical paths, so the
+    // seed is what tells three copies apart.
     for (int i = 0; i < kWormReplicaSlots; ++i) {
         companionWander_[i].seed(0x2545f491u + 0x9e3779b9u * static_cast<uint32_t>(i + 1));
     }
@@ -26,10 +26,9 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     loadout_ = Loadout::starting();
     moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
 
-    // The palette index lives outside this object (core/render/palette.h) (it is the
-    // one piece of interface state a drawing call reads without being handed it), so a
-    // Game states its theme rather than assuming the process is already in it. A save
-    // read below re-states it with whatever the operator chose.
+    // The palette index lives outside this object (core/render/palette.h) (a drawing
+    // call reads it without being handed it), so a Game sets its theme explicitly. A
+    // save read below re-states it with whatever the operator chose.
     setThemePick(themePick_);
 
     // Boot from a persisted save when one exists. A valid blob
@@ -93,10 +92,10 @@ bool Game::tick(uint32_t nowMs) {
     nowMs_ = nowMs;
     bool changed = dirty_;
     dirty_ = false;
-    // All six run, in this order, every tick. None is skipped on an early answer:
-    // what one does is routinely what the next reads (the model clock feeds the
-    // heartbeat, the heartbeat feeds the lifecycle gates), so the order IS the
-    // contract. Each reports separately whether the screen has to be repainted.
+    // All six run, in this order, every tick. None is skipped on an early answer,
+    // because each step feeds the next (the model clock feeds the heartbeat, the
+    // heartbeat feeds the lifecycle gates). Keep this order. Each reports
+    // separately whether the screen has to be repainted.
     if (tickModelClocks(nowMs))  changed = true;
     if (tickHeartbeat(nowMs))    changed = true;
     if (tickAnimClocks(nowMs))   changed = true;
@@ -129,17 +128,17 @@ bool Game::tickModelClocks(uint32_t nowMs) {
 
     // Decay the pet clock by the real elapsed time (event-driven, fractional
     // accumulation is carried in the model). The raising loop now owns Hunger.
-    // Vitals are FROZEN while the pet is still an egg (Boot-Sector incubation, 04
-    // redesign: an egg doesn't get hungry) and during the decrypt modal; but
-    // lastModelMs_ still advances so post-hatch decay starts clean, and Bandwidth
-    // still regenerates (so the egg can be walked to accelerate its hatch).
+    // Vitals are frozen while the pet is an egg (an egg doesn't get hungry) and
+    // during the decrypt modal, but lastModelMs_ still advances so post-hatch
+    // decay starts clean, and Bandwidth still regenerates (so the egg can be
+    // walked to accelerate its hatch).
     if (nowMs_ > lastModelMs_) {
         const uint32_t elapsed = nowMs_ - lastModelMs_;
         if (pet_ && !inEggPhase())
             tickHungerAndAwardXp(elapsed);      // no pet (empty save / line-select): nothing decays
-        // Bandwidth regenerates over real active time: a slow trickle
-        // back to the cap so a walk can't be farmed in one sitting but recovers
-        // on its own between sessions, independent of whether EXPL is open.
+        // Bandwidth regenerates slowly over real active time, whether or not
+        // EXPL is open, so a walk cannot be farmed in one sitting but recovers
+        // between sessions.
         if (bandwidth_ < bandwidthMax()) {
             bandwidthAccumMs_ += elapsed;
             // Per-PET interval: the shared one, less any permanent shave this pet has
@@ -154,15 +153,15 @@ bool Game::tickModelClocks(uint32_t nowMs) {
                 if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
             }
         }
-        // Boot-Sector incubation clock (egg-at-idle): counts down in real time while
-        // the egg sits at idle. Frozen inside every screen that is itself about the
-        // hatch: the decrypt runs its own countdown; the crack cinematic must be
-        // allowed to finish its frames (it can legitimately be opened with seconds
-        // left, and the clock running out underneath would hatch the pet
-        // mid-animation); and the Isolation Protocol priced its goal off the clock as
-        // it stood when the run began, so draining it underneath would quietly discount
-        // the run. Reaching 0 out here auto-hatches straight to Process (no soft-lock if
-        // the player never opens any of them).
+        // Boot-Sector incubation clock (egg-at-idle): counts down in real time while the
+        // egg sits at idle. Frozen on every screen that is part of the hatch: the
+        // decrypt runs its own countdown; the crack cinematic must be allowed to finish
+        // its frames (it can legitimately be opened with seconds left, and the clock
+        // running out underneath would hatch the pet mid-animation); and the Isolation
+        // Protocol priced its goal off the clock as it stood when the run began, so
+        // draining it underneath would quietly discount the run. Reaching 0 out here
+        // auto-hatches straight to Process (no soft-lock if the player never opens any
+        // of them).
         //
         // Note what inEggPhase() means for anything that shaves the clock from OUTSIDE
         // this block: it requires a remainder above zero, so an egg shaved straight to 0
@@ -195,15 +194,15 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         changed = true;
         // Resting motion: the pet drifts a little way around the habitat's shelf
         // anchor, the way its species moves (core/model/idle_wander.h). An EGG moves
-        // the way its row says too, which for almost every egg is Locomotion::Static
-        // and therefore not at all: it sits where it was laid, with its incubation
-        // readout drawn directly above it. The exception is an egg genuinely adrift in
-        // water, which says Swim and drifts, and the rule is the row rather than the
-        // stage so a hypothetical egg that flies needs no code here either. An empty
-        // save parks, having no pet at all.
-        // A worm's ambient copies walk the same shelf on the same beat, each off its
-        // own stream; the ones past the live count are parked so a shrinking family
-        // (an evolution, a fresh egg) leaves nothing mid-stride to walk back in.
+        // the way its row says too, which for almost every egg is Locomotion::Static,
+        // so it does not move: it sits where it was laid, with its incubation readout
+        // drawn directly above it. The exception is an egg genuinely adrift in water,
+        // which says Swim and drifts, and the rule is the row rather than the stage so
+        // a hypothetical egg that flies needs no code here either. An empty save
+        // parks, having no pet at all. A worm's ambient copies walk the same shelf on
+        // the same beat, each off its own stream; the ones past the live count are
+        // parked so a shrinking family (an evolution, a fresh egg) leaves nothing
+        // mid-stride to walk back in.
         if (pet_) petWander_.step(pet_->locomotion);
         else petWander_.park();
         const int companions = idleCompanionCount();
@@ -212,10 +211,9 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             else companionWander_[i].park();
         }
         // Resting colour: a line that wears borrowed colours drifts into another
-        // family's palette now and then and comes back (core/model/idle_camo.h). An EGG
-        // is left out: the Metamorphic hatch board is a whole minigame about exactly
-        // this (game_chroma.cpp), and a shell rehearsing it in the background while the
-        // board is what the player is about to be scored on says the trick twice.
+        // family's palette now and then and comes back (core/model/idle_camo.h). An egg
+        // is left out, because the Metamorphic hatch board (game_chroma.cpp) is a
+        // minigame about this effect and the player should first see it there.
         const CreatureLine* petLine =
             pet_ ? registry_.creatureLine(pet_->line) : nullptr;
         petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
@@ -264,7 +262,7 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
                 // with no human to press B, so hold it ~3s then auto-dismiss back to
                 // the habitat (finishCombat advances the streak / cancels on a loss)
                 // or straight into the gauntlet's next round (finishBossRound). Sim
-                // fights stay player-driven: there's no auto-anything to keep moving.
+                // fights stay player-driven, with nothing automatic.
                 if (exploreActive_ &&
                     (combatCaller_ == CombatCaller::Wild ||
                      combatCaller_ == CombatCaller::Boss) &&
@@ -290,11 +288,10 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             // consequence is already paid; this hold only decides how long it is read for.
             if (++exploreEventBeat_ >= kShiboleetVerdictHoldBeats) finishShiboleet();
         } else if (nav_ == Nav::Shiboleet && exploreActive_) {
-            // Hands-off DECISION, and the one place on the walk where running out of
-            // time is not the same as being left alone: a guardian asked a question, and
-            // silence past kShiboleetReplyHoldBeats is taken for an answer. The wrong
-            // one. Pressing A restarts the hold (onShiboleet resets it), so a player
-            // who is genuinely reading is never timed out mid-sentence.
+            // Hands-off decision: a guardian asked a question, and silence past
+            // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
+            // restarts the hold (onShiboleet resets it), so a player who is genuinely
+            // reading is never timed out mid-sentence.
             if (++exploreEventBeat_ >= kShiboleetReplyHoldBeats)
                 answerShiboleet(/*answered=*/false);
         } else if ((nav_ == Nav::Shop || nav_ == Nav::ModShop) && exploreActive_) {
@@ -362,8 +359,8 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
             //
             // Both seats are passed, because the question is about the PAIR: which source
             // a cast names depends on what the fighter opposite is carrying (camoTarget).
-            // Only the TARGET is resolved here: turning it into tones means ranking a
-            // sprite's colours, which the draw already does once per repaint.
+            // Only the target is resolved here. Turning it into tones ranks a sprite's
+            // colours, which the draw does once per repaint.
             const bool flip = combatLocalIsEnemySide();
             const Combatant& self = flip ? combat_.enemy() : combat_.player();
             const Combatant& rival = flip ? combat_.player() : combat_.enemy();
@@ -372,11 +369,10 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
                                     self.stage);
             // Trading one borrowed palette for ANOTHER restarts the scatter with the old
             // one held behind it (drawCombatScreen passes it as camo.h's `from`), so the
-            // change reads as one disguise dissolving into the next. Gated on the ART and
-            // not on the cast: a run of casts that keep naming the same creature (the
-            // fighter opposite, or the line it belongs to) is one unbroken disguise, and
-            // re-running the dissolve into the colour already being worn would flicker the
-            // pet for no change at all. Only while it is actually wearing something, too:
+            // change reads as one disguise dissolving into the next. Gated on the art:
+            // consecutive casts that name the same creature (the fighter opposite, or its
+            // line) keep one disguise, and re-running the dissolve into the same colour
+            // would flicker the pet. Only while it is actually wearing something, too:
             // from bare there is nothing to dissolve out of and the level simply rises.
             if (wear && wear != combatCamoWorn_ && combatCamoLevel_ > 0) {
                 combatCamoLeaving_ = combatCamoWorn_;
@@ -407,10 +403,9 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
     // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
     // 4fps a boid moving a pixel a step reads as a blink rather than as flight. It runs
-    // on the two screens that DRAW the body (game_render.cpp) and not on the riddle board
-    // between them: that board is a reading screen whose patience bar is the only thing
-    // on it that moves, and paying a 16fps repaint for fifteen seconds of somebody
-    // reading would buy nothing.
+    // on the two screens that DRAW the body (game_render.cpp) and skips the riddle board
+    // between them, where only the patience bar moves and a 16fps repaint would be
+    // wasted.
     const bool swarmLive =
         nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
     const bool fxSweeping =
@@ -430,9 +425,9 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
 
     // THE DECRYPTOGRAM's cursor repeats while A or C is held, on its own cadence for the
     // same reason the two below have one: a board opens with thirty-odd closed cells, and
-    // stepping those on the shared 4fps heartbeat would take ten seconds to lap. EXACTLY
-    // one of the two held: both is the drop chord, which has already fired and must not
-    // also scrub the cursor out from under it.
+    // stepping those on the shared 4fps heartbeat would take ten seconds to lap. Exactly
+    // one of the two held. Both held is the drop chord, which has already fired and must
+    // not move the cursor.
     if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_) &&
         !gameBriefOpen_) {
         fast = true;
@@ -464,9 +459,9 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         lastStackerStepMs_ = nowMs;   // primed, so entering the game doesn't burst-catch-up
     }
 
-    // FRAGGER's fall, likewise, and the one cadence that is not fixed: the model sets
-    // it from the run's own score, so the game speeds up as it is played. The dial is
-    // not read here: FRAGGER's difficulty is its lane count (beginFraggerRun).
+    // FRAGGER's fall, likewise. The model sets its cadence from the run's score, so
+    // the game speeds up as it is played. The dial is not read here: FRAGGER's
+    // difficulty is its lane count (beginFraggerRun).
     if (nav_ == Nav::Fragger && !gameBriefOpen_) {
         fast = true;
         if (nowMs - lastFraggerStepMs_ >= static_cast<uint32_t>(fragger_.stepMs())) {
@@ -502,12 +497,12 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
         lastIsolationStepMs_ = nowMs;
     }
 
-    // The CHROMATOPHORE's sweep runs on real time rather than on a step, because what
-    // it is measuring IS time: how much of the window a repaint had left to finish in.
-    // It ticks at the dissolve cadence (kFxAnimMs) for the reason a dissolve does: the
-    // scatter crossing the creature is the readout, and at the 4fps heartbeat a
-    // kChromaSettleMs change would land on four frames total. Deltas, not a fixed step,
-    // so the model always sees the time that actually passed.
+    // The CHROMATOPHORE's sweep runs on real time because it measures time: how much of
+    // the window a repaint had left to finish in. It ticks at the dissolve cadence
+    // (kFxAnimMs) for the reason a dissolve does: the scatter crossing the creature is
+    // the readout, and at the 4fps heartbeat a kChromaSettleMs change would land on
+    // four frames total. Deltas, not a fixed step, so the model always sees the time
+    // that actually passed.
     if (nav_ == Nav::Chroma && !gameBriefOpen_ && chroma_.running()) {
         fast = true;
         if (nowMs - lastChromaMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
@@ -532,9 +527,9 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
 // gate is written so the one above it wins outright.
 bool Game::tickLifecycle(uint32_t nowMs) {
     bool changed = false;
-    // Post-encounter status readout: a real-ms auto-dismiss window
-    // (the kSdIconRevealMs pattern, not a beat count). Informational only, so it
-    // times out on its own rather than parking forever like a modal.
+    // Post-encounter status readout: a real-ms auto-dismiss window, like
+    // kSdIconRevealMs. Informational only, so it times out on its own rather
+    // than parking forever like a modal.
     if (nav_ == Nav::PostEncounter && nowMs_ >= postEncounterDeadlineMs_) {
         dismissPostEncounter();
         changed = true;
@@ -552,19 +547,17 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
-    // Critical System Failure: the ONLY death path, and the HIGHEST modal
-    // priority (CSF > Lockout > Evolution). The 5/5 dying state is
-    // recoverable by dropping below 5 within the recovery window, which a Yubi-Cookie
-    // does (RemoveCareMistakeOnce), and so does a Daemon sold for a HOTFIX
-    // (game_arch_sale.cpp); the Backup Drive is a combat shield and touches no error,
-    // and once the window expires the pet is permanently
-    // lost. The habitat counts the window down (game_render.cpp's FAILING banner). Never during the Hatch (no pet) or once already in the modal.
-    // The window ACCUMULATES rather than anchoring, and the total persists (save v42),
-    // so a power cycle cannot refund seconds already spent at 5/5: this is the one
-    // window that survives a reboot, because it is the last step before permanent loss
-    // and the rest are penalties. What it counts is time AWAKE at 5/5: with no RTC
-    // (config.h HAS_HARDWARE_RTC) the device cannot see how long it was off, so being
-    // switched off neither kills the pet nor buys it a reprieve.
+    // Critical System Failure: the only death path, and the highest modal priority (CSF > Lockout >
+    // Evolution). The 5/5 dying state is recoverable by dropping below 5 within the recovery
+    // window, which a Yubi-Cookie does (RemoveCareMistakeOnce), and so does a Daemon sold for a
+    // HOTFIX (game_arch_sale.cpp); the Backup Drive is a combat shield and touches no error, and
+    // once the window expires the pet is permanently lost. The habitat counts the window down
+    // (game_render.cpp's FAILING banner). Never during the Hatch (no pet) or once already in the
+    // modal. The window accumulates and the total persists (save v42), so a power cycle cannot
+    // refund seconds spent at 5/5. It is the only window that survives a reboot, because it ends in
+    // permanent loss and the others end in penalties. What it counts is time AWAKE at 5/5: with no
+    // RTC (config.h HAS_HARDWARE_RTC) the device cannot see how long it was off, so being switched
+    // off neither kills the pet nor buys it a reprieve.
     if (pet_ && nav_ != Nav::ModalCSF) {
         if (model_.careBranch() == CareBranch::Dying) {
             if (!dyingArmed_) {
@@ -589,8 +582,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
             }
         } else if (dyingArmed_ || dyingElapsedMs_) {
             // Recovered below 5/5: disarm, and forget what was burned. A pet pulled
-            // back from the edge gets the whole window again next time, not a
-            // shortening one: the grace is per-brush-with-death, not per-lifetime.
+            // back from the edge gets the full window again next time.
             dyingArmed_ = false;
             dyingElapsedMs_ = 0;
             markSaveDirty();       // ...and so is the rescue, which zeroes the window
@@ -613,20 +605,19 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
-    // Lockout crisis fires when Hunger bottoms out. Never during the Hatch
-    // (there's no pet), an Evolution, or a Critical System Failure (priority), nor
-    // over a DECRYPTOGRAM board, which is the one preemption that would DESTROY
-    // something: the board cannot be walked out of and the ticket into it is already
-    // spent, so firing across it would take a found item and give nothing back. The
-    // crisis loses nothing by waiting: its deadline starts when it fires, and this
-    // check runs again the moment the board is left.
+    // Lockout crisis fires when Hunger bottoms out. Never during the Hatch (there's
+    // no pet), an Evolution, or a Critical System Failure (priority), nor over a
+    // DECRYPTOGRAM board: the board cannot be left and its ticket is already spent,
+    // so firing across it would destroy a found item. The crisis loses nothing by
+    // waiting: its deadline starts when it fires, and this check runs again the
+    // moment the board is left.
     if (pet_ && !lockoutActive_ && nav_ != Nav::Decryption && nav_ != Nav::Cryptogram &&
         nav_ != Nav::ModalEvolve && nav_ != Nav::ModalCSF && model_.isStarving()) {
         fireLockout();
         changed = true;
     }
-    // Expiry is global while the crisis is live, even if the player drifted into
-    // the ITEMS-in-Lockout list, the deadline still resolves the modal.
+    // Expiry is global while the crisis is live: even if the player is in the
+    // ITEMS-in-Lockout list, the deadline resolves the modal.
     if (lockoutActive_ && nowMs_ >= lockoutDeadlineMs_) {
         expireLockout();
         changed = true;
@@ -650,12 +641,12 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     return changed;
 }
 
-// Every held-button gesture, resolved on the DWELL rather than on an edge: A's list
-// repeat and C's step-back (tickListNav, game_listnav.cpp), and the hold-B second
-// actions. The CFG factory reset, the ITEMS type filter, STAT's index, the MOVES
-// show-all, ROCK THE DOCK's scout sheet and the VAULT bulk open. They share bHeld_/bDownMs_, so each is
-// scoped tightly enough that no two can be in flight at once, and each clears bHeld_ as
-// it fires so the release resolves as nothing rather than as the tap underneath it.
+// Every held-button gesture, resolved on the dwell time: A's list repeat and C's step-back
+// (tickListNav, game_listnav.cpp), and the hold-B second actions. The CFG factory reset, the ITEMS
+// type filter, STAT's index, the MOVES show-all, ROCK THE DOCK's scout sheet and the VAULT bulk
+// open. They share bHeld_/bDownMs_, so each is scoped tightly enough that no two can be in flight
+// at once, and each clears bHeld_ as it fires so the release resolves as nothing rather than as the
+// tap underneath it.
 bool Game::tickHeldGestures(uint32_t nowMs) {
     bool changed = false;
     // CFG hidden Factory Reset: a held B reveals the reset screen from
@@ -702,8 +693,8 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     // kStatIndexHoldMs on any of the reader's six pages opens the INDEX over them, with
     // the cursor already on the page being read (openStatIndex). A release before it
     // fires resolves as the ordinary tap instead. Advance this page's window
-    // (statIndexReleaseB), which is what keeps the hold related to the tap under it:
-    // both are "show me a different part of this", at two ranges.
+    // (statIndexReleaseB). The tap and the hold both show a different part of the page,
+    // at two ranges.
     if (bHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
         enteredId() == SubmenuId::Stat && statScreen_ == StatScreen::Page &&
         nowMs_ - bDownMs_ >= kStatIndexHoldMs) {
@@ -761,8 +752,8 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     }
 
     // The SHOP > SERVICES hold-B gesture: crossing kServiceInfoHoldMs opens the focused
-    // service's info page (what it does, and what a run of it costs), instead of
-    // switching it. Clearing bHeld_ here is what makes the release resolve as the
+    // service's info page (what it does, and what a run of it costs), and leaves it
+    // switched as it was. Clearing bHeld_ here is what makes the release resolve as the
     // ordinary tap (rigServiceReleaseB, the flip) only when the hold never landed.
     if (bHeld_ && face_ == Face::Hacker && nav_ == Nav::Submenu &&
         enteredHackerId() == HackerSlotId::Shop && rigShop_.view() == ShopView::Services &&
@@ -787,8 +778,8 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
         const int n = vaultOwnedRows(rows, 16);
         if (n > 0) {
             if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-            // Caches only: the row can have moved under a held B, and "open every one
-            // of these" is not a thing a Decryptogram can do.
+            // Caches only: the row can move under a held B, and a Decryptogram cannot
+            // be bulk-opened.
             if (rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer)
                 openAllCachesOfRarity(*rows[hackerVaultRow_]);
         }
@@ -848,9 +839,9 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
                            // repeat, which is not in the same position: every step it
                            // fires re-stamps lastInputMs_ (Game::tickListNav), so a
                            // genuinely held A keeps the tree open by USING it. Listing
-                           // it here as well would mean a release edge lost anywhere
-                           // (a bounce, a screen change under the thumb) pins the whole
-                           // menu tree open until the next press.
+                           // it here too would let one lost release edge (a bounce, a
+                           // screen change under the thumb) hold the menu tree open
+                           // until the next press.
                            bHeld_ ||
                            qrScreenActive() ||  // scanning a QR takes longer than 5s
                            tagEditorActive() || // ...so does composing a tag
@@ -862,12 +853,12 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
 
     // A radio screen (CREW's picker, PEERS) keeps the menu tree open far longer
     // (kRadioScreenDefocusMs): both are hands-off screens you walk around with, and
-    // since holding one open is what arms the radio (radioScanWanted / linkWanted),
-    // the standard 5s would power it down before a sweep or a peer's beacon could
-    // land. The screen would starve itself. UPDATES takes the same budget for the
-    // matching reason: it is a screen you wait in front of, and five seconds is
-    // shorter than an association plus a fetch, let alone reading the verdict one
-    // leaves behind and deciding whether to install it.
+    // an open one arms the radio (radioScanWanted / linkWanted), so the standard 5s
+    // would power it down before a sweep or a peer's beacon lands. The screen would
+    // starve itself. UPDATES takes the same budget for the matching reason: it is a
+    // screen you wait in front of, and five seconds is shorter than an association
+    // plus a fetch, let alone reading the verdict one leaves behind and deciding
+    // whether to install it.
     const uint32_t defocusMs =
         (radioScreenOpen() || updateScreenOpen()) ? kRadioScreenDefocusMs : kAutoDefocusMs;
     if (!suspended && nav_ != Nav::Idle && nowMs - lastInputMs_ >= defocusMs) {

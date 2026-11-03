@@ -42,8 +42,8 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (inEggPhase() && d.type != ItemDef::Type::Quest) {
         gateMsg = "USABLE AFTER HATCH"; return false;
     }
-    // Warp keys are spent only ON the walk (the B warp picker), never from
-    // the ITEMS use path, otherwise a stray Use would burn a key for nothing.
+    // Warp keys are spent only on the walk (the B warp picker), so a stray Use
+    // from ITEMS cannot burn one.
     if (d.walkWarp != ItemDef::WalkWarp::None) {
         gateMsg = "USE ON THE WALK"; return false;
     }
@@ -52,12 +52,12 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (d.use == ItemDef::Use::Rollback && combatLevel_ <= 0) {
         gateMsg = "NO LEVELS TO ROLL"; return false;
     }
-    // Repartition wants a point to MOVE, which is the same demand: level == the count
-    // of earned points, so a level-0 pet has nothing on the table to pick up.
+    // Repartition needs a point to move, and level equals the count of earned points,
+    // so a level-0 pet has none.
     if (d.use == ItemDef::Use::Repartition && combatLevel_ <= 0) {
         gateMsg = "NO POINTS TO MOVE"; return false;
     }
-    // The Boot Accelerator only shortens an egg's incubation: nothing to do once hatched.
+    // The Boot Accelerator only shortens an egg's incubation, so it does nothing once hatched.
     if (d.use == ItemDef::Use::DecryptEgg && !inEggPhase()) {
         gateMsg = "USABLE ON EGG ONLY"; return false;
     }
@@ -66,8 +66,8 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     // chosen on the CFG row this points at. So Use is inert here and says where to go,
     // the way a sealed cache points at the VAULT.
     if (themeForChip(d.id)) { gateMsg = "SET IN CFG > THEME"; return false; }
-    // the Defrag Tool is spent only by a TOOL DEFRAG in MAINT (a guaranteed
-    // clean), never from the ITEMS use path: a stray Use would burn it for nothing.
+    // the Defrag Tool is spent only by a TOOL DEFRAG in MAINT (a guaranteed clean),
+    // so a stray Use from ITEMS cannot burn it.
     if (d.use == ItemDef::Use::GuaranteeDefrag) {
         gateMsg = "USE IN MAINT DEFRAG"; return false;
     }
@@ -82,11 +82,11 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
         gateMsg = "CASH IN AT VAULT (A+C)"; return false;
     }
     // A LOCKING device (a soak, a hold) owns the boundary while it is in, so nothing else
-    // in the family goes in beside it, not a divert, not a branch override, not a second
-    // soak. The Eject-USB is the one exception, because pulling that device is its job: a
-    // port that could only be emptied by the boundary it was refusing to reach would be a
-    // trap rather than a decision. Checked ahead of the inert test below so the refusal
-    // names the port rather than the state of whatever was being plugged in.
+    // in the family goes in beside it: no divert, branch override or second soak. The
+    // Eject-USB is the one exception, because pulling that device is its job: a port that
+    // could only be emptied by the boundary it was refusing to reach would be a trap
+    // rather than a decision. Checked ahead of the inert test below so the refusal names
+    // the port rather than the state of whatever was being plugged in.
     if (usbPortLocked() && itemIsUsb(d) && !itemEjectsUsbPort(d)) {
         gateMsg = "USB PORT IN USE"; return false;
     }
@@ -103,8 +103,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
             return false;
         }
     }
-    // Nothing left for this one to do: say so and keep the item, rather than
-    // spending it on a state it already holds.
+    // If the state already holds, say so and keep the item.
     if (itemUseIsInert(d, gateMsg)) return false;
     if (lockoutItemsContext_) {
         if (itemResolvesLockout(d)) return true;
@@ -141,9 +140,9 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
         switch (e.kind) {
             case ItemEffect::Kind::None:
                 continue;
-            // A vitals lever always lands. Feeding an already-full pet wastes
-            // some of the fill, but that's the player's call to make, only a
-            // use that can achieve LITERALLY nothing is worth refusing.
+            // A vitals lever always lands. Feeding a full pet wastes some of
+            // the fill, but that is the player's choice. Only a use that does
+            // nothing at all is refused.
             case ItemEffect::Kind::Hunger:
             case ItemEffect::Kind::HungerStacking:
             case ItemEffect::Kind::Happy:
@@ -166,10 +165,10 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "DIVERT ALREADY ARMED";
                 break;
             // The branch-override pair shares ONE slot, so a second device pointing the
-            // way the slot already points would buy nothing. Pointing it the OTHER way
-            // always does something (that is what "most recently plugged in wins" means),
-            // and so does arming it over a care record that happens to agree today,
-            // since the record can still change and the override cannot.
+            // way the slot already points would buy nothing. Pointing it the other way
+            // always does something (the most recently plugged-in device wins), and so
+            // does arming it over a care record that agrees today, because the record can
+            // change and the override cannot.
             case ItemEffect::Kind::ForceEvolveBranchGood:
                 ++armingEffects;
                 if (evolveBranchOverride_ != BranchOverride::Good) return false;
@@ -181,9 +180,9 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "BAD BRANCH ARMED";
                 break;
             // The two locking devices. Both are unreachable while the port gate above
-            // stands (it refuses every USB but the Eject whenever either is armed): kept
-            // as the effect-side statement of the same fact, so the vocabulary answers for
-            // itself rather than depending on the order of two gates.
+            // stands (it refuses every USB but the Eject whenever either is armed): they
+            // state the same fact on the effect side, so the vocabulary does not depend on
+            // the order of two gates.
             case ItemEffect::Kind::ArmEvolveSoak:
             case ItemEffect::Kind::ArmEvolveSoakLate:
                 ++armingEffects;
@@ -196,10 +195,9 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "USB PORT IN USE";
                 break;
             case ItemEffect::Kind::ClearUsbPort:
-                // The undo is the one device whose inert case a player will actually meet:
-                // it goes in over a locked port on purpose, so the only time it achieves
-                // nothing is on an EMPTY one, and then it is refused and kept rather
-                // than spent on a port that is already the way it would leave it.
+                // The Eject is the device a player will actually try with nothing to do.
+                // It is meant for a locked port, so on an empty port it is refused and
+                // kept.
                 ++armingEffects;
                 if (usbPortOccupied()) return false;
                 if (!reason) reason = "USB PORT EMPTY";
@@ -220,7 +218,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "STRONGER ONE ARMED";
                 break;
             // Both bells are measured against the depth a dive would actually start at
-            // (armedDeepWebStartDepth), never the raw pending field: a live Checkpoint
+            // (armedDeepWebStartDepth), and not the raw pending field: a live Checkpoint
             // arming is a negative SENTINEL there, so comparing against it would let any
             // bell (including a second Checkpoint, which can only re-arm what is already
             // armed) spend itself over a deeper start.
@@ -241,8 +239,8 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
             case ItemEffect::Kind::DiveStepBonusPct:
                 break;
             case ItemEffect::Kind::CutIncubationMin:
-                // The clock is already inside the reveal window, which the cut is
-                // floored at: spending one there would take the item and move nothing.
+                // The clock is already inside the reveal window, where the cut is
+                // floored, so using one would move nothing.
                 ++armingEffects;
                 if (inEggPhase() && bootHatchRemainMs_ > kHatchRevealMs) return false;
                 if (!reason) reason = "SHELL ALREADY CRACKING";
@@ -256,13 +254,11 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (model_.hasGhost()) return false;
                 if (!reason) reason = "NO REPLICATION GHOST";
                 break;
-            // None of these can achieve nothing. A permanent grant already spent is the
-            // ordinary case for the Epic dish that carries it: a pet that is already
-            // rooted, pointed or profiled eats the plate for the food, which is exactly
-            // what a second helping is meant to be, so refusing the use would be
-            // refusing a meal. What a spent grant DOES change is the readout: the 'Pedia
-            // and the detail screen say so through itemIsOncePerPetLifetime /
-            // lifetimeItemSpent, which is where that fact belongs.
+            // None of these can achieve nothing. An Epic dish whose permanent grant is
+            // already spent is still food: a second helping feeds the pet, so the use is
+            // allowed. What a spent grant DOES change is the readout: the 'Pedia and the
+            // detail screen say so through itemIsOncePerPetLifetime / lifetimeItemSpent,
+            // which is where that fact belongs.
             case ItemEffect::Kind::BandwidthRegenBonusMin:
             case ItemEffect::Kind::StatPointPower:
             case ItemEffect::Kind::StatPointDefense:
@@ -291,9 +287,9 @@ void Game::useItem() {
     if (!itemUsable(*detailItem_, gate)) return;   // inert when gated
     const ItemDef& d = *detailItem_;
 
-    // Openable containers (sealed caches) are now decrypted from the Hacker VAULT
-    // not here: itemUsable gates them ("OPEN IN VAULT (A+C)"), so useItem never
-    // reaches this point for one. openSealedCache lives on and is called from onHackerVault.
+    // Openable containers (sealed caches) are decrypted from the Hacker VAULT: itemUsable
+    // gates them ("OPEN IN VAULT (A+C)"), so useItem never reaches this point for one.
+    // openSealedCache lives on and is called from onHackerVault.
 
     // Rollback: Use opens the stat picker instead of feeding/buffing. The
     // item is only consumed when a shed is confirmed (onRollbackPicker B): cancelling
@@ -343,8 +339,8 @@ void Game::noteLifetimeGrant(const char* what, const char* valueFmt, int magnitu
 }
 
 void Game::applyItemEffects(const ItemDef& d) {
-    // Apply the item's on-Use pet levers (its ItemEffect list: the single source of
-    // truth for what an item does to the pet). Hunger/Happy accumulate into ONE
+    // Apply the item's on-Use pet levers (its ItemEffect list, which defines
+    // everything an item does to the pet). Hunger/Happy accumulate into ONE
     // PetModel::feed so a food's fill lands as a single beat; the rest apply in place.
     // Every magnitude comes off the item row (defs.h): none live in tunables.
     int hunger = 0, happy = 0;
@@ -359,8 +355,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Polltatoes: the run counts THIS bite too, so eating one alone still
                 // fills magnitude. The counter is reset by the next passive Hunger
                 // decay (Game::tickHungerAndAwardXp): a fresh boot starts a fresh
-                // run, which is the forgiving reading and keeps a transient combo
-                // counter out of the save blob.
+                // run, which keeps a transient combo counter out of the save blob.
                 ++stackingFoodRun_;
                 hunger += e.magnitude * stackingFoodRun_;
                 break;
@@ -410,10 +405,10 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::ForceEvolveBranchGood:
             case ItemEffect::Kind::ForceEvolveBranchBad:
                 // Signed-USB / Bad-USB (save v60): point the next branching evolution at
-                // the Good or the Bad successor whatever the care budget says. ONE slot,
-                // so this overwrites rather than stacks: plugging the opposite device in
-                // is how a player changes their mind, and the last one in is the one that
-                // fires. Consumed at the evolution it steers (Game::completeEvolution).
+                // the Good or the Bad successor whatever the care budget says. One slot,
+                // so this overwrites. Plugging in the opposite device changes the choice,
+                // and the last one in fires. Consumed at the evolution it steers
+                // (Game::completeEvolution).
                 evolveBranchOverride_ = e.kind == ItemEffect::Kind::ForceEvolveBranchBad
                                             ? BranchOverride::Bad
                                             : BranchOverride::Good;
@@ -424,9 +419,9 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // by the factor and pay the same factor on every XP award while it runs
                 // (Game::evolveDwellMs, Game::addCombatXp). Which of the two Kinds it is
                 // decides only WHERE it may go in (itemUsable): the arming is identical,
-                // and the doubled Script clock is read off the pet's stage, not off here.
-                // It cannot overwrite another soak: itemUsable refuses every USB but the
-                // Eject while one is armed, so this only ever writes into an empty port.
+                // and the doubled Script clock comes from the pet's stage. It cannot
+                // overwrite another soak: itemUsable refuses every USB but the Eject
+                // while one is armed, so this only ever writes into an empty port.
                 // Floored at 1 the way the codec floors it: the factor multiplies a clock
                 // AND an XP award, so a row authored at 0 would stall a pet.
                 evolveSoakFactor_ = e.magnitude > 1 ? e.magnitude : 1;
@@ -434,8 +429,8 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::ArmEvolveHold:
                 // Halt-USB (save v60): stop the pet reaching a boundary at all
                 // (Game::evolveEligible). Never consumed by an evolution, because none
-                // arrives while it is in: an Eject-USB, a rack swap or a new egg are the
-                // only ways out, which is what makes parking a pet a real commitment.
+                // arrives while it is in: only an Eject-USB, a rack swap or a new egg
+                // takes it out.
                 evolveHold_ = true;
                 break;
             case ItemEffect::Kind::ClearUsbPort:
@@ -465,10 +460,9 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
                 // this pet's Bandwidth regen for good; later ones latch out here and
-                // leave only the row's ordinary food levers, including its +Bandwidth,
-                // which is what a second helping is actually for. Granting once is the
-                // whole design: the upgrade is per-pet, so the way to have it twice is
-                // to raise a second pet, not to eat a second plate.
+                // leave only the row's ordinary food levers, including its +Bandwidth.
+                // Granting once is the whole design: the upgrade is per-pet, so the way
+                // to have it twice is to raise a second pet, not to eat a second plate.
                 if (upgrades_.bandwidthRegenMin == 0) {
                     upgrades_.bandwidthRegenMin = e.magnitude;
                     noteLifetimeGrant("BW REGEN", "-%dMIN", e.magnitude);
@@ -501,8 +495,8 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::Bandwidth:
                 // A top-up of the live pool, capped at the ceiling the rig has bought:
-                // the same clamp grantRigLevel applies, since overfilling would hand
-                // back shielded fights the cap says the operator hasn't paid for.
+                // the same clamp grantRigLevel applies, because overfilling would give
+                // shielded fights the operator has not paid for.
                 bandwidth_ += e.magnitude;
                 if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
                 break;
@@ -521,9 +515,8 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Unlinkguine: cut the phantom process off from the pet it copied.
-                // Guarded on actually HAVING a ghost, so the achievement marks curing one
-                // rather than owning the snack: eating it as ordinary food is the common
-                // case and must not unlock anything.
+                // Guarded on having a ghost, so the achievement marks curing one. Eating
+                // it as ordinary food unlocks nothing.
                 if (model_.hasGhost()) {
                     model_.setGhost(false);
                     log_.push(LogEventType::ItemUsed, "GHOST CLEARED");
@@ -539,9 +532,9 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::CutIncubationMin: {
                 // Boot Accelerator: a flat bite out of the incubation clock, floored at
-                // kHatchRevealMs rather than at zero. The last stretch is where the
-                // player cracks the shell by hand (hatchRevealReady), so a cut that
-                // skipped past it would take that away rather than hand it over.
+                // kHatchRevealMs. The last stretch is where the player cracks the shell
+                // by hand (hatchRevealReady), so a cut that skipped past it would take
+                // that away rather than hand it over.
                 const uint32_t cutMs = static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
                 const uint32_t left = bootHatchRemainMs_ > cutMs ? bootHatchRemainMs_ - cutMs : 0;
                 if (bootHatchRemainMs_ > kHatchRevealMs)
@@ -748,11 +741,11 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         // points). The bill is ONE level and nothing more, so the XP banked toward the
         // next one is carried down rather than binned: a pet 90% of the way up its rung
         // lands 90% of the way up the rung below, and re-grinds exactly the level it
-        // shed. Carried as the FRACTION, not the raw number, because the rung below is
-        // shorter: banking the raw count would leave a pet over the lower rung's need
-        // and hand the level straight back on the next award. The floor division also
-        // keeps it strictly under that need (it was strictly under the taller one), so
-        // the shed can never undo itself. Consume the Rollback item + log.
+        // shed. Carried as a fraction because the rung below is shorter. The raw count
+        // would leave the pet over the lower rung's need and return the level on the
+        // next award. The floor division also keeps it strictly under that need (it was
+        // strictly under the taller one), so the shed can never undo itself. Consume
+        // the Rollback item + log.
         if (rollbackEligible(rollbackRow_) && detailItem_) {
             --statPoints_[rollbackRow_];
             const int wasNeed = xpToNextLevel();
@@ -778,10 +771,9 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
 }
 
 int Game::nextRepartitionTarget(int cur) const {
-    // The next stat (wrapping) that is not the source. Every stat but that one is a
-    // legal destination: a stat sitting at zero earned points is exactly the stat an
-    // operator reaches for this item to fill, so unlike the shed picker there is no
-    // eligibility to test beyond "not where the point already is".
+    // The next stat (wrapping) that is not the source. Every other stat is a legal
+    // destination, including one at zero earned points, so the only test is that the
+    // point moves somewhere new.
     for (int step = 1; step <= kLevelStatCount; ++step) {
         const int i = (cur + step) % kLevelStatCount;
         if (i != repartitionFrom_) return i;
@@ -818,11 +810,10 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
             }
         } else if (rollbackEligible(repartitionFrom_) &&
                    repartitionRow_ != repartitionFrom_ && detailItem_) {
-            // The move: one point off the source, one onto the target. The LEVEL and the
-            // XP bucket are untouched on purpose: nothing was un-earned, so there is no
-            // grind to re-pay; what the item sells is the SHAPE of the table, and the
-            // invariant (level == the sum of the earned points) holds because the sum
-            // did not change. Consume the item + log.
+            // The move: one point off the source, one onto the target. The level and the
+            // XP bucket are untouched, because nothing was un-earned. The item changes
+            // only the table's shape, and level == the sum of earned points still holds.
+            // Consume the item + log.
             --statPoints_[repartitionFrom_];
             ++statPoints_[repartitionRow_];
             inventory_.remove(detailItem_->id, 1);
@@ -852,9 +843,8 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
 
 void Game::rollPantrySpoilage() {
     // One roll per held perishable STACK, converting a single unit, so a larder of
-    // twenty rots no faster than a larder of one, and a player who hoards isn't punished
-    // for it beyond the flavour. Collected first because converting mutates the vector
-    // the roll is walking.
+    // twenty rots no faster than a larder of one. Collected first because converting
+    // mutates the vector the roll is walking.
     struct Turned { const ItemDef* from; const char* into; };
     Turned turned[4] = {};
     int n = 0;

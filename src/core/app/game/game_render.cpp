@@ -162,9 +162,9 @@ void Game::drawLineSelect(Framebuffer& fb) const {
 }
 
 SceneId Game::habitatScene() const {
-    // The operator's own choice first: this is their pet's home and they are allowed an
-    // opinion about it. AUTO (SceneId::None) hands the question back to the creature:
-    // which place a pet belongs in follows from its line and how it gets around
+    // The operator's own choice comes first, because this is their pet's home. AUTO
+    // (SceneId::None) hands the question back to the creature: which place a pet
+    // belongs in follows from its line and how it gets around
     // (content/content_homes.h), so an evolution walks into a new one with nothing
     // written down.
     if (backgroundPick_ != SceneId::None) return backgroundPick_;
@@ -172,9 +172,8 @@ SceneId Game::habitatScene() const {
 }
 
 SceneId Game::stageScene() const {
-    // A fight inside an area happens THERE: the walk is the reason the operator is
-    // looking at that place at all, and the stage agreeing with the EXPL row above it
-    // is most of what makes an area feel like somewhere rather than a difficulty.
+    // A fight inside an area is staged in that area, so the stage matches the EXPL
+    // row the walk started from.
     if (exploreActive_ && exploreSector_ >= 0 && exploreSector_ < kAreaCount) {
         const SceneId s = area(exploreSector_).scene;
         if (s != SceneId::None) return s;
@@ -196,9 +195,8 @@ namespace {
 
 // The explore status stack's text column: the left inset every line in it shares, and
 // the width the flavor line wraps inside. One pair of numbers, because the height the
-// stack reports (exploreStatusLines) and the width it is drawn to have to be the same
-// answer: a line measured against one width and drawn to another is a block whose
-// reported height is wrong.
+// stack reports (exploreStatusLines) and the width it is drawn to must match. A line
+// measured at one width and drawn at another reports the wrong height.
 constexpr int kExploreStatusX = 8;
 constexpr int kExploreStatusW = kActiveW - 2 * kExploreStatusX;
 
@@ -241,12 +239,11 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int row = clip ? clip->row : 0;
         const int frame = clip ? clip->frameAt(beat_) : idleFrame(*pet, beat_);
         // Two motions, and the creature is the only thing on this screen that takes
-        // either. The BOB is the pose's own 2px lift on alternate beats: what
-        // animates a single-frame creature; a swimmer skips it, since a bob on top of
-        // a continuous drift reads as jitter rather than breathing. The WANDER moves
-        // the whole anchor around the living box, in logical px
-        // (core/model/idle_wander.h): sideways for every mover, and off the shelf for
-        // the ones that don't need the floor.
+        // either. The bob is the pose's own 2px lift on alternate beats, which
+        // animates a single-frame creature. A swimmer skips it, because a bob on top
+        // of a continuous drift reads as jitter. The WANDER moves the whole anchor
+        // around the living box, in logical px (core/model/idle_wander.h): sideways
+        // for every mover, and off the shelf for the ones that don't need the floor.
         const int bob = (IdleWander::bobs(pet_->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
         const int petW = pet->frameW * kScaleNum / kScaleDen;
         const int petH = pet->h * kScaleNum / kScaleDen;
@@ -254,11 +251,11 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         const int petY =
             kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
         // Turned to the way it is actually going. A sheet with no declared facing is
-        // never mirrored, so this only moves the creatures the wander was already
-        // walking backwards: the ones drawn in profile rather than in §2's
-        // turned-to-the-viewer pose (assets/CREATURE_VISUAL_RULES.md). The habitat has
-        // no seat and no opponent, so unlike the combat stage the direction comes off
-        // the trip itself.
+        // never mirrored, so this only turns the creatures the wander was walking
+        // backwards: the ones drawn in profile instead of §2's turned-to-the-viewer
+        // pose (assets/CREATURE_VISUAL_RULES.md). The habitat has no seat and no
+        // opponent, so unlike the combat stage the direction comes off the trip
+        // itself.
         const bool mirror = spriteMirrorToFace(*pet, petWander_.headingRight());
         // Resting colour: a line that wears borrowed colours spends a few seconds now
         // and then in another family's palette (core/model/idle_camo.h). The level and
@@ -282,12 +279,11 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // family currently has (idleCompanionCount) and simply lets them mill about.
     //
     // Each takes a seat one slot-width out from the parent, alternating sides so the
-    // family stays balanced around it, and then wanders off its OWN stream from there:
-    // the seat is where a copy belongs, not where it stands. The seat plus a full
-    // drift can reach past the bezel, so the centre is clamped to whatever keeps the
-    // whole glyph on canvas: a copy pressed against the edge still reads as a copy,
-    // and half a copy does not. The glyphs alternate attack/defend for the same
-    // reason the line's slots do: a board of nothing but teeth is not what a worm is.
+    // family stays balanced around it, and then wanders on its own stream from there.
+    // The seat is only its anchor. The seat plus a full drift can reach past the
+    // bezel, so the centre is clamped to whatever keeps the whole glyph on canvas: a
+    // copy pressed against the edge still reads as a copy, and half a copy does not.
+    // The glyphs alternate attack/defend, as the line's slots do.
     for (int i = 0; i < idleCompanionCount(); ++i) {
         const SpriteData& glyph = (i & 1) ? ASSET_SPR_WORM_REPLICA_DEFEND
                                           : ASSET_SPR_WORM_REPLICA_ATTACK;
@@ -385,9 +381,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
 
     // Where the top-LEFT status column starts. Three unrelated things want this
     // corner. The SD flash, the buff row, and (while the mode runs) the explore
-    // status stack drawn further down, so the origin is computed ONCE here and
-    // every one of them hangs off it. Explore wins the corner outright because
-    // its lines are the live readout; the rest slide below the block it occupies.
+    // status stack drawn further down, so the origin is computed once here and
+    // all of them hang off it. Explore wins the corner outright because its lines
+    // are the live readout; the rest slide below the block it occupies.
     int statusY = kLivingTop + 4;
     if (exploreActive_) statusY += exploreStatusLines() * (kFontH + 2) + 2;
 
@@ -440,9 +436,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // Audit capture-phase badge: top-RIGHT, just below the hunger alert. Surfaces
     // the AuditCapture SM phase (ARM / HOT <s>s / COOL <m>m), so the ~2-min hot
     // window AND the ~30-min re-arm cooldown (radio off; a handshake can't be
-    // captured then) are visible instead of inferred. The Hot phase is the one
-    // worth catching from across the room, so it takes a glyph as well; the word
-    // stays either way, which is what keeps the badge grayscale-safe.
+    // captured then) are visible on screen. The Hot phase is the one worth
+    // catching from across the room, so it takes a glyph as well; the word stays
+    // either way, which is what keeps the badge grayscale-safe.
     {
         char badge[16];
         if (captureBadge(badge, sizeof badge)) {
@@ -475,7 +471,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         else mode = ExploreBadgeMode::Wins;
         char label[20];
         exploreBadgeLabel(label, sizeof(label));
-        // the FARMING badge shows Bandwidth (the farming pool), not the streak:
+        // the FARMING badge shows Bandwidth (the farming pool) in place of the streak:
         // "FARM n/max" while it lasts (full loot), "FARM LOW" once depleted (decayed).
         // AUTO-NEXT takes the same slot when the walk is stepping itself, and takes the
         // streak instead: the pool is spelled out on the status line right below, and
@@ -486,10 +482,10 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             badgeCount = bandwidth_; badgeMax = bandwidthMax();
         }
         drawExploreBadge(fb, label, badgeCount, badgeMax, mode);
-        // Bandwidth is the per-fight fragmentation shield, so it drains on EVERY
-        // explore fight: surface it persistently (not just in the
-        // Farming badge) so the player can watch their safety budget and decide when to
-        // defrag / come home. CALM while it lasts, WARN + "LOW" once dry (dual-coded).
+        // Bandwidth is the per-fight fragmentation shield, so it drains on every
+        // explore fight. It shows all the time, beyond the Farming badge, so the player
+        // can watch it and decide when to defrag or come home. CALM while it lasts,
+        // WARN + "LOW" once dry (dual-coded).
         {
             char bw[20];
             // Line 2 of the block exploreStatusLines() counts; anything else that
@@ -503,9 +499,8 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
                 drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::WARN));
             }
             // Wrapped, not clipped: a flavor line names the item it found, and the
-            // longest of those is wider than the column. Drawn with plain text it lost
-            // its tail with no ellipsis, including the half that says where the thing
-            // it just gave you has gone.
+            // longest of those is wider than the column. Plain text would cut the tail
+            // with no ellipsis, and the tail says where the reward went.
             if (exploreFlavor_[0])
                 drawTextWrapped(fb, kExploreStatusX, bwLineY + kFontH + 2,
                                 kExploreStatusW, exploreFlavor_, palColor(Pal::INK_DIM),
@@ -518,8 +513,8 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     drawAchievementBanner(fb);
 
     // Grey out the care/combat slots while the pet is still an egg. EXPL's globe turns
-    // while AUTO-PROGRESS is armed: the walk is running itself in the background, and
-    // the shelf is the only screen that's always up to say so.
+    // while AUTO-PROGRESS is armed: the walk runs in the background, and the shelf is
+    // the screen that is always up.
     CarouselMarks marks;
     for (int i = 0; i < kCarouselSlots; ++i) {
         const SubmenuId id = carouselSlots()[i].id;
@@ -558,9 +553,8 @@ Game::AchBannerCopy Game::achBannerCopy() const {
     else
         std::snprintf(c.name, sizeof(c.name), "%s", d->displayName);
 
-    // The third line is the reward, because that is the part with a consequence: a
-    // Commendation Cache is sitting in the VAULT now and the player needs to know to
-    // go and open it.
+    // The third line is the reward, so the player knows a Commendation Cache is
+    // waiting in the VAULT.
     int rewardBits = 0;
     const char* rewardItem = nullptr;
     for (const AchievementReward& r : d->rewards) {
@@ -569,13 +563,13 @@ Game::AchBannerCopy Game::achBannerCopy() const {
             if (const ItemDef* it = registry_.item(r.id)) rewardItem = it->displayName;
     }
     if (c.held)
-        // Where to go, and how to make this go away: the two things a held plate has to
-        // say. The rewards are still paid; they are simply not what this banner is for.
+        // A held plate says where to go and how to dismiss it. The rewards are still
+        // paid; they are simply not what this banner is for.
         std::snprintf(c.reward, sizeof(c.reward), "ARCH > NEW EGG - ANY KEY");
     else if (achBannerCount_ > 1)
         std::snprintf(c.reward, sizeof(c.reward), "%s +MORE", d->displayName);
     else if (rewardItem && rewardBits > 0) {
-        // Two rewards on one line is the only combination that outgrows the plate:
+        // Two rewards on one line is the only combination too wide for the plate:
         // "+400 BITS + COMMENDATION CACHE" is 30 characters against a 28-character
         // canvas. The currency abbreviates to the B the shop prices already use, which
         // buys back the three characters the pair needs.
@@ -591,17 +585,17 @@ Game::AchBannerCopy Game::achBannerCopy() const {
 
 uint32_t Game::achBannerDwellMs() const {
     const AchBannerCopy c = achBannerCopy();
-    // The window the plate actually scrolls in: what plateLine hands the marquee.
+    // The window the plate scrolls in, which plateLine hands the marquee.
     const int room = kActiveW - 2 * kMargin;
     int beats = marqueeCycleBeats(c.name, room);
     const int rewardBeats = marqueeCycleBeats(c.reward, room);
     if (rewardBeats > beats) beats = rewardBeats;
     // ONE FULL MARQUEE CYCLE of the longest line, floored at kAchBannerMs. A line that
-    // fits is two holds (read the head, read the tail, the rate the marquee itself is
-    // calibrated at), so the ordinary banner sits 3.0s rather than the 2.6s floor, and
-    // one that travels is those two holds plus the travel between them. That is the
-    // whole point: the time comes from the COPY, so a long name cannot leave mid-word,
-    // and nobody has to guess a constant that suits every name in the table.
+    // fits is two holds (read the head, read the tail, at the marquee's own rate), so
+    // the ordinary banner sits 3.0s, above the 2.6s floor, and one that travels is
+    // those two holds plus the travel between them. That is the whole point: the time
+    // comes from the COPY, so a long name cannot leave mid-word, and nobody has to
+    // guess a constant that suits every name in the table.
     const uint32_t travelled = static_cast<uint32_t>(beats) * kHeartbeatMs;
     return travelled > kAchBannerMs ? travelled : kAchBannerMs;
 }
@@ -609,8 +603,7 @@ uint32_t Game::achBannerDwellMs() const {
 void Game::drawAchievementBanner(Framebuffer& fb) const {
     // The whole feedback channel for an unlock: three centred lines on a filled band,
     // shown on the home screen for achBannerDwellMs(). Modelled on the combat verdict
-    // banner: a solid TRACK plate under INK text carries in grayscale on shape alone,
-    // no colour doing any of the work.
+    // banner: a solid TRACK plate under INK text reads in grayscale on shape alone.
     const AchievementDef* d = achBanner();
     if (!d) return;
     const AchBannerCopy copy = achBannerCopy();
@@ -625,9 +618,9 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     const int bandY = kLivingTop + 42;
     const int bandH = 38;
     // The held plate inverts: a light NOTICE_HOLD ground with PAPER text on it, against
-    // the ordinary banner's dark TRACK with INK text. That is the part that survives
-    // desaturation: the two plates differ in VALUE, not only in hue, so a held one is
-    // recognisable as a different kind of thing before a word of it is read.
+    // the ordinary banner's dark TRACK with INK text. The two plates differ in value as
+    // well as hue, so a held one is recognisable in grayscale before a word of it is
+    // read.
     const bool held = copy.held;
     const Rgb565 plate = held ? palColor(Pal::NOTICE_HOLD) : palColor(Pal::TRACK);
     const Rgb565 body = held ? palColor(Pal::PAPER) : palColor(Pal::INK);
@@ -652,15 +645,14 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     if (drawH < bandH) return;                        // still opening: the plate alone
 
     // Every line on this plate is content (an achievement name, an egg line, an item),
-    // so none of them can be centred and left to run: a name that outgrows the canvas
-    // would be cut at BOTH ends, which is the one failure that reads as a rendering
-    // fault rather than as long copy. Centred while it fits, scrolled in the margins
-    // once it doesn't.
-    // The plate is full-bleed, so a centred line may use the whole canvas: the held
-    // plate's own instruction already spans it. Only what does not fit gets pulled in
-    // to the margins to scroll. The marquee is driven from the banner's OWN age rather
-    // than the free-running beat, so every announcement starts its travel at the same
-    // place: on the shared clock a long name could arrive already halfway past.
+    // so none can be centred and left to run: a name wider than the canvas would be
+    // cut at both ends and look like a rendering fault. Centred while it fits,
+    // scrolled in the margins once it doesn't. The plate is full-bleed, so a centred
+    // line may use the whole canvas: the held plate's own instruction already spans
+    // it. Only what does not fit gets pulled in to the margins to scroll. The marquee
+    // is driven from the banner's OWN age rather than the free-running beat, so every
+    // announcement starts its travel at the same place: on the shared clock a long
+    // name could arrive already halfway past.
     const int age0 = age - kOpenBeats;
     auto plateLine = [&](int ly, const char* s, Rgb565 col) {
         const int w = textWidth(s);
@@ -668,9 +660,8 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
         drawTextMarquee(fb, kMargin, ly, kActiveW - 2 * kMargin, s, col, age0, Overflow::Scroll);
     };
 
-    // The kicker pulses between its two inks for the first beats it is up: the one
-    // moving thing on a plate whose whole job is to be noticed, and a VALUE step rather
-    // than a hue one, so it survives the grayscale gate like everything else here.
+    // The kicker pulses between its two inks for its first beats to draw the eye. The
+    // step is in value, so it survives the grayscale gate.
     const bool flash = age0 < 4 && ((age0 / 2) % 2 == 0);
     plateLine(bandY + 5, copy.kicker, flash ? body : quiet);
     plateLine(bandY + 15, copy.name, body);
@@ -689,8 +680,8 @@ bool Game::captureBadge(char* out, unsigned n) const {
                           static_cast<unsigned>(auditCapture_.hotRemainingMs(nowMs_) / 1000u));
             return true;
         case AuditPhase::Cooldown:
-            // Minutes remaining until re-arm: the number is the "why nothing's
-            // capturing" answer (the radio is off for the whole window).
+            // Minutes remaining until re-arm, which explains why nothing is
+            // capturing (the radio is off for the whole window).
             std::snprintf(out, n, "COOL %um",
                           static_cast<unsigned>(auditCapture_.cooldownRemainingMs(nowMs_) / 60000u));
             return true;
@@ -761,7 +752,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             bool boss[kExplSectors * kExplSubAreas];
             flattenSubFlags(cleared, boss);
             // The shared half: everything the NAV also reads, so the cursor and the
-            // drawing can never disagree about what is open (Game::explView).
+            // drawing always agree about what is open (Game::explView).
             ExplListView v = explView();
             v.cursor = listRow_;
             v.subCleared = cleared;
@@ -770,12 +761,12 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             v.navArea = explNavArea_;
             v.streakWins = exploreStreak_;
             v.winsToBoss = kExploreStreakToBoss;
-            // THE LEVEL IS THE LIST (explRowInLevel): only the rows this level actually
-            // draws are counted, so STORY's zone list pays for the area pools, an opened
-            // area pays for its own five rungs, and ENDLESS pays for its two, never for
-            // the whole ladder on every repaint, and the ACTIVITY PICKER (which draws no
-            // zone rows at all) for none of it. Everything else stays 0, which is what a
-            // row nobody is looking at is worth.
+            // Only the rows this level draws are counted (explRowInLevel), so STORY's
+            // zone list pays for the area pools, an opened area pays for its own five
+            // rungs, and ENDLESS pays for its two, never for the whole ladder on every
+            // repaint, and the ACTIVITY PICKER (which draws no zone rows at all) for
+            // none of it. Everything else stays 0, which is what a row nobody is looking
+            // at is worth.
             int areaLearn[kExplSectors] = {};
             int gauntletLearn[kExplSectors] = {};
             int subLearn[kExplSectors * kExplSubAreas] = {};
@@ -991,10 +982,10 @@ const SpriteData* Game::idleCamoSprite(int slot) const {
 }
 
 namespace {
-// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is the layering
-// rule rather than an oversight: core/render never reaches into core/model, so a renderer
-// is handed a value that owns its marks. The same call CamoRamp makes. It is a couple of
-// hundred bytes on a repaint that is already composing a whole panel.
+// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is deliberate:
+// core/render never reaches into core/model, so a renderer is handed a value that owns its
+// marks. The same call CamoRamp makes. It is a couple of hundred bytes on a repaint that
+// is already composing a whole panel.
 SwarmView swarmViewOf(const Flock& f) {
     SwarmView v;
     v.n = f.count() < kSwarmMarksMax ? f.count() : kSwarmMarksMax;
@@ -1013,17 +1004,17 @@ SwarmView swarmViewOf(const Flock& f) {
 
 void Game::drawCombatScreen(Framebuffer& fb) const {
     // In a duel BOTH combatants are remote-describable pets, so the player-side sprite
-    // comes from the fight rather than from the local pet: on a guest's screen the
-    // player_ slot holds the HOST's creature (core/model/pvp_battle.h).
+    // comes from the fight: on a guest's screen the player_ slot holds the HOST's
+    // creature (core/model/pvp_battle.h).
     const bool duel = pvpFighting();
     const SpriteData* ps = duel ? registry_.sprite(combat_.player().spriteName)
                                 : (pet_ ? registry_.creatureSprite(*pet_) : nullptr);
     const SpriteData* es = registry_.sprite(combat_.enemy().spriteName);
 
-    // Both duellists read their own pet in the left seat on the zoned gauge, exactly like
-    // every other fight: `localIsEnemySide` tells the screen to swap the roles for the
-    // guest, whose pet occupies Combat's enemy_ slot. Display only: mirroring the fight
-    // itself would desync the two devices.
+    // Both duellists read their own pet in the left seat on the zoned gauge, like every
+    // other fight: `localIsEnemySide` tells the screen to swap the roles for the guest,
+    // whose pet occupies Combat's enemy_ slot. Display only: mirroring the fight itself
+    // would desync the two devices.
     CombatSides sides;
     if (duel) {
         sides.rivalLabel = "RIVAL";
@@ -1045,8 +1036,8 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
                                               : CombatOutro::Kind::Shred;
         outro.beat = fxBeat_;
     }
-    // What the KIT page marks as worth winning: the same mask the outro's dissolve is
-    // the yes/no of, so the panel and the last beat of the fight cannot disagree.
+    // What the KIT page marks as worth winning: the same mask the outro's dissolve
+    // decides from, so the panel and the fight's last beat agree.
     RivalPrizes prizes;
     prizes.mask = rivalTeachableMoveMask();
     // What the pet is currently wearing (FX_CAMO). The level and both sprites are standing
@@ -1056,8 +1047,8 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     camo.ramp = combatCamoWorn_ ? camoRampFrom(*combatCamoWorn_) : CamoRamp{};
     camo.leaving = combatCamoLeaving_ ? camoRampFrom(*combatCamoLeaving_) : CamoRamp{};
     // A rival with no sheet that is nonetheless a creature: the area guardian, drawn as
-    // its flock into the seat the stage reserved (FX_SWARM). The same body the pet was
-    // talking to on the hail: re-homed into the fighter's cell when the fight opened.
+    // its flock into the seat the stage reserved (FX_SWARM). The same body the pet
+    // spoke to on the hail, moved into the fighter's cell when the fight opened.
     SwarmView rivalSwarm;
     const bool swarmRival = combat_.enemy().isSwarm && !sides.localIsEnemySide;
     if (swarmRival) rivalSwarm = swarmViewOf(guardianFlock_);
@@ -1091,13 +1082,12 @@ void Game::drawEncounterScreen(Framebuffer& fb) const {
 
 void Game::drawWifiScreen(Framebuffer& fb) const {
     // The discovery beat's reward, as the thing the pet does to the network glyph.
-    // Untouched is not "nothing happened": it is the pet declining its own home turf,
-    // which is what the TIRED OF line says.
+    // Untouched means the pet declined its own home turf, which the TIRED OF line
+    // says.
     //
-    // The BANNER is the same fact stated in words, which is why it is derived here from
-    // netDiscovery_ rather than being a constant in the screen: a fixed "NEW WI-FI
-    // NETWORK" over a repeat sighting (or over a dry queue with nothing found at all)
-    // is the screen contradicting its own two flavor lines.
+    // The banner states the same fact in words, so it is derived here from
+    // netDiscovery_. A fixed "NEW WI-FI NETWORK" over a repeat sighting or an empty
+    // queue would contradict the two flavor lines.
     WifiEventView v;
     v.banner = "QUIET AIR";
     switch (netDiscovery_) {
@@ -1155,9 +1145,9 @@ void Game::drawShiboleetHailScreen(Framebuffer& fb) const {
 }
 
 void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
-    // The content layer's outcome mapped onto the screen's own four. The two enums are
-    // kept apart on purpose: an area row is authored against GuardianOutcome, and the
-    // renderer only ever needs the banner word and whether it is bad news.
+    // The content layer's outcome mapped onto the screen's own four. The two enums
+    // stay separate: an area row is authored against GuardianOutcome, and the renderer
+    // needs only the banner word and whether it is bad news.
     ShiboleetVerdictKind kind = ShiboleetVerdictKind::Pleased;
     switch (shiboleetOutcome()) {
         case GuardianOutcome::Pleased:    kind = ShiboleetVerdictKind::Pleased; break;

@@ -49,8 +49,8 @@ void Game::noteMirrorMatch(const char* opponentCreatureId) {
 void Game::onTrainList(const ButtonEvent& ev) {
     // The MOVES slot list. A steps the unlocked slots (skipping the locked ones), B
     // opens the focused slot's move picker, C backs to the LOADOUT hub. An egg has no
-    // unlocked slot at all, so `sel` can legitimately be 0: a state MOVES is
-    // unreachable in (slotLocked), but the wrap has to survive it regardless.
+    // unlocked slot at all, so `sel` can be 0. MOVES cannot be reached in that state
+    // (slotLocked), but the wrap still has to handle it.
     const Stage st = pet_ ? pet_->stage : Stage::BootSector;
     const int sel = loadoutSelectableCount(st);
     if (ev.button == Button::A) {
@@ -101,9 +101,9 @@ const MoveDef* Game::focusedPickerMove() const {
 }
 
 void Game::onMoveDetail(const ButtonEvent& ev) {
-    // Standard A/B/C, no exceptions to spell out: A pages the prose when there is more
-    // of it than fits (A cycles. Reading on is the natural "next" here), B equips, C
-    // returns to the picker with the cursor where it was.
+    // Standard A/B/C: A pages the prose when there is more of it than fits (A cycles.
+    // Reading on is the natural "next" here), B equips, C returns to the picker with
+    // the cursor where it was.
     const MoveDef* m = focusedPickerMove();
     if (moveDetailEquipped_ && (ev.button == Button::C || !m)) {
         moveDetailEquipped_ = false;
@@ -149,14 +149,14 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
 }
 
 void Game::onMovePicker(const ButtonEvent& ev) {
-    // Mirrors the MODS picker: owned moves + an unequip option; a move lives
-    // in one slot (equipping it elsewhere moves it); overwriting a DIFFERENT move
-    // opens the inline confirm. The innate default can't be slotted. The
-    // slot is type-locked, so the candidate list is already kind-filtered: there's
-    // nothing left to reject on kind by the time B is pressed. The default (non-
-    // showAll) list also drops anything else the pet can't equip here right now
-    // (locked by stage, wrong line, already equipped elsewhere): declutters the
-    // menu to just the live options, per ownedMoveList.
+    // Mirrors the MODS picker: owned moves + an unequip option; a move lives in
+    // one slot (equipping it elsewhere moves it); overwriting a DIFFERENT move
+    // opens the inline confirm. The innate default can't be slotted. The slot is
+    // type-locked, so the candidate list is already filtered by kind and B never
+    // has to reject one. The default (non- showAll) list also drops anything else
+    // the pet can't equip here right now (locked by stage, wrong line, already
+    // equipped elsewhere): leaving only the options that can be equipped now
+    // (ownedMoveList).
     const auto owned = ownedMoveList(registry_, moveLoadout_, slotRequiredKind(moveSlot_),
                                      pet_ ? pet_->stage : Stage::BootSector,
                                      pet_ ? pet_->line : nullptr, moveSlot_, moveShowAll_);
@@ -204,10 +204,10 @@ void Game::moveFilterReleaseB() {
         markSaveDirty();
         nav_ = Nav::Submenu;
     } else {
-        // A real move row DRILLS DOWN to its own entry rather than equipping from
-        // the list: the same list -> B -> detail -> B -> act shape ITEMS uses. It's
-        // what lets the picker stay a comparison view (the aligned readout) and the
-        // detail page be the reader, instead of one screen failing at both.
+        // A real move row opens its own entry, and equipping happens there: the
+        // list -> B -> detail -> B -> act shape ITEMS uses. It's what lets the
+        // picker stay a comparison view (the aligned readout) and the detail page
+        // be the reader, instead of one screen failing at both.
         trainScreen_ = TrainScreen::MoveDetail;
         moveProseScroll_ = 0;
     }
@@ -216,8 +216,8 @@ void Game::moveFilterReleaseB() {
 }
 
 void Game::onSimTier(const ButtonEvent& ev) {
-    // PRACTISE's only screen, so C leaves the whole page rather than stepping back a
-    // level: there is no list underneath it, only the hub row that opened it.
+    // PRACTISE's only screen, so C leaves the page and returns to the hub row that
+    // opened it.
     if (ev.button == Button::A) simTier_ = (simTier_ + 1) % kSimDummyTiers;
     else if (ev.button == Button::B) startSimBattle();
     else if (ev.button == Button::C) leaveLoadoutTab();
@@ -237,8 +237,7 @@ const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome ou
 void Game::settleBackupDrive() {
     // Every path out of a fight lands here (applyCombatResult for wild/Sim, and every
     // boss round), so a spent drive is settled in exactly one place. It is spent for the
-    // rest of its 1h window regardless of time remaining: win or lose, the buff doesn't
-    // outlive the death it answered.
+    // rest of its 1h window, win or lose.
     if (combat_.player().backupUse == Combatant::BackupUse::None) return;
     backupShieldUntilMs_ = 0;
     if (const char* id = backupDriveAchievement(combat_.player().backupUse,
@@ -268,9 +267,9 @@ Combatant Game::buildPlayerCombatant() {
         p.scrambleTurns = kScrambleWholeFight;
     // Per-pet stat points: additive into the combat maths, stacking with the branch
     // multipliers and mods. Shared with the duel path's remote-fighter rebuild
-    // (applyLevelStatPoints, core/model/combat.h) so the two can't drift apart. EARNED
-    // and GRANTED points go in as one total: an Epic dish's off-level point is a real
-    // point in a fight, and only the level and the Rollback picker know the difference.
+    // (applyLevelStatPoints, core/model/combat.h) so the two can't drift apart. Earned
+    // and granted points go in as one total. An Epic dish's off-level point counts
+    // fully in a fight; only the level and the Rollback picker tell them apart.
     int points[kLevelStatCount];
     for (int i = 0; i < kLevelStatCount; ++i) points[i] = totalStatPoint(i);
     applyLevelStatPoints(p, points);
@@ -323,9 +322,9 @@ void Game::onCombat(const ButtonEvent& ev) {
     // pet's moves, any combat-usable items from the live inventory, and (while the
     // player belongs to one) their crew's signature Exploit (game_crew.cpp).
     if (ev.chordAC) {
-        // The pet's Cant goes in with the picker: it is what decides how much of a
-        // SCRAMBLED one it can still read (MoveDef::scrambleTurns), and Combat has no
-        // other way to know. The sigils are the device's, not the fight's.
+        // The pet's Cant goes in with the picker, because it decides how much of a
+        // scrambled move the pet can read (MoveDef::scrambleTurns) and Combat has no
+        // other source for it. The sigils are the device's, not the fight's.
         if (!duel)
             combat_.openOverride(combatItemOptions(), crewExploitOption(), cantSigils_);
         return;
@@ -333,9 +332,9 @@ void Game::onCombat(const ButtonEvent& ev) {
     if (combat_.overrideOpen()) {                 // standard A/B/C inside the picker
         if (ev.button == Button::A) combat_.cycleOverride();
         else if (ev.button == Button::B) {
-            // B descends at the band level and commits inside a band: one meaning per
-            // level rather than two meanings on one screen. A picker holding a single
-            // band never has a level to descend, so B commits there as it always did.
+            // B descends at the band level and commits inside a band, so each level
+            // gives B one meaning. A picker holding a single band never has a level
+            // to descend, so B commits there as it always did.
             if (combat_.enterOverrideBand()) return;
             combat_.commitOverride();
             playSound(Sound::ExploitFire);
@@ -358,10 +357,10 @@ void Game::onCombat(const ButtonEvent& ev) {
     }
     // Auto-play: A fast-forwards the current beat, C flees / quits. A fast-forward is
     // safe in a duel (it only advances THIS screen's playback of an already-decided
-    // fight), but the flee isn't (see `duel` above).
-    // ...and an arena bout is the second fight with no exit: forfeiting a bracket
-    // mid-match would let a losing draw be replayed, which is the whole stake gone.
-    // The way out of the arena is the bracket screen, before a match starts.
+    // fight), but fleeing is not (see `duel` above). ...and an arena bout is the
+    // second fight with no exit: forfeiting a bracket mid-match would let a losing
+    // draw be replayed, which is the whole stake gone. The way out of the arena is
+    // the bracket screen, before a match starts.
     const bool noExit = duel || combatCaller_ == CombatCaller::Tourney;
     if (ev.button == Button::A) {
         advanceCombatTurn();
@@ -373,10 +372,10 @@ void Game::onCombat(const ButtonEvent& ev) {
 
 int Game::combatBeatsForTurn() const {
     // combat_ already tracks the same-actor streak for its own combo-damage bonus
-    // (Combat::streakCount_): reuse it here rather than a second copy. streakCount()/
-    // streakIsPlayer() describe the LAST resolved hit; playerTurnNext() names who's
-    // about to act, so if that matches, the upcoming hit extends the run by one.
-    // Ramps the wait down from kCombatBeatsPerTurn, floored at kCombatMinBeatsPerTurn.
+    // (Combat::streakCount_): this reuses it. streakCount()/ streakIsPlayer() describe
+    // the LAST resolved hit; playerTurnNext() names who's about to act, so if that
+    // matches, the upcoming hit extends the run by one. Ramps the wait down from
+    // kCombatBeatsPerTurn, floored at kCombatMinBeatsPerTurn.
     const bool nextIsPlayer = combat_.playerTurnNext();
     const int upcoming = (combat_.streakCount() > 0 && nextIsPlayer == combat_.streakIsPlayer())
                               ? combat_.streakCount() + 1
@@ -392,8 +391,8 @@ void Game::advanceCombatTurn() {
     playCombatTurnSound();
     // FX_CAMO deliberately takes nothing from here. The colours the pet is wearing are a
     // reading of its LIVE cast, eased every anim tick (tick(), camoAdvance), so this
-    // step changes them only by changing what the pet is holding, and the rival's turn
-    // does not touch them at all.
+    // step changes them only by changing what the pet holds. The rival's turn never
+    // touches them.
 }
 
 bool Game::exploreFightLive() const {
@@ -442,7 +441,7 @@ void Game::addCombatXp(int xp) {
     // Profilerole's permanent rate (PetUpgrades::xpRatePct) is applied HERE, at the one
     // door every XP source comes through, so a dish that raises what the pet learns
     // raises it from combat, from a solved board and from passive farming alike. Rounded
-    // down, and never below the award itself: a rate can only ever add.
+    // down, and never below the award itself, so a rate only adds.
     xp += xp * upgrades_.xpRatePct / 100;
     combatXp_ += xp;
     // Spend the XP bucket into as many levels as it covers (a big lump can cross more
@@ -496,11 +495,11 @@ int Game::refarmDropScalePct(int refarmCount) {
 }
 
 void Game::applyBattleFatigue() {
-    // the per-fight fragmentation tax. A kBattleFatigueChancePct roll; on a
-    // hit, add random(min..max) Fragmentation. This is the whole "fatigue" mechanic:
-    // there's no separate meter, the pet just degrades from fighting and must be
-    // defragged (MAINT). Deterministic off the shared LCG. (A future purchasable
-    // upgrade could scale the chance/magnitude down before this rolls.)
+    // the per-fight fragmentation tax. A kBattleFatigueChancePct roll; on a hit, add
+    // random(min..max) Fragmentation. This is the fatigue mechanic. There is no
+    // separate meter: fighting fragments the pet, and MAINT's defrag repairs it.
+    // Deterministic off the shared LCG. (A future purchasable upgrade could scale
+    // the chance/magnitude down before this rolls.)
     rng_ = rng_ * 1664525u + 1013904223u;
     // c: the Reduce-Frag-TRIGGER rig upgrade lowers the trigger CHANCE by the
     // purchased tier (tier 0 = the unchanged baseline; tiers 1..6 use the reduced table).
@@ -517,8 +516,8 @@ void Game::applyBattleFatigue() {
     const int span = effMax - kBattleFatigueFragMin + 1;
     int add = kBattleFatigueFragMin +
               static_cast<int>((rng_ >> 16) % static_cast<uint32_t>(span));
-    // Heat Sink (mod): dampen the fatigue-Frag tax by its cut %. A big cut can
-    // zero out a small tick: the point of the mod is exactly to make farming gentler.
+    // Heat Sink (mod): dampen the fatigue-Frag tax by its cut %. A big cut can zero a
+    // small tick, which is the mod's purpose: gentler farming.
     int cut = sumEquippedModMagnitude(registry_, loadout_, ModEffect::FatigueFragCut,
                                       pet_ ? pet_->line : nullptr);
     if (cut > 100) cut = 100;
@@ -551,16 +550,16 @@ void Game::applyCombatResult() {
         exploreSector_ >= 0 && exploreSector_ < kExplSectors &&
         exploreSub_ >= 0 && exploreSub_ < kExplSubAreas &&
         subCleared_[exploreSector_][exploreSub_];
-    // a resolved WILD (live, non-boss) fight fatigues the pet: a per-fight
-    // frag (corruption) tax, win or lose (boss rounds never reach here; safe Sim is
-    // exempt). A flee (Fled) isn't a fought battle, so it's excluded.
-    // Bandwidth is a per-fight FRAGMENTATION SHIELD for
-    // exploration. ANY resolved wild fight (win OR loss) spends 1 charge to skip the
-    // battle-fatigue frag tax entirely, so a stocked pool lets the pet farm longer with
-    // less risk, and Bits sunk into the Hacker SHOP's Bandwidth upgrade buy real safety.
-    // Once the pool hits 0 the tax bites again (the "defrag or come home" signal). This
-    // covers first-clear grinding and DeepWeb dives too, not just cleared-sub re-farming.
-    // Bosses resolve in finishBossRound() and never reach here.
+    // a resolved WILD (live, non-boss) fight fatigues the pet: a per-fight frag
+    // (corruption) tax, win or lose (boss rounds never reach here; safe Sim is exempt). A
+    // flee (Fled) isn't a fought battle, so it's excluded. Bandwidth is a per-fight
+    // FRAGMENTATION SHIELD for exploration. Any resolved wild fight (win or loss) spends
+    // 1 charge to skip the battle-fatigue frag tax entirely, so a stocked pool lets the
+    // pet farm longer with less risk, and Bits sunk into the Hacker SHOP's Bandwidth
+    // upgrade buy real safety. Once the pool hits 0 the tax bites again (the "defrag or
+    // come home" signal). This covers first-clear grinding and DeepWeb dives too, not
+    // just cleared-sub re-farming. Bosses resolve in finishBossRound() and never reach
+    // here.
     const bool bandwidthShielded = !safe && fought && bandwidth_ > 0;
     if (bandwidthShielded) --bandwidth_;               // spend one charge for the shield
     postEncShielded_ = bandwidthShielded;
@@ -587,10 +586,9 @@ void Game::applyCombatResult() {
                 // stage tier, so R = diffPips+1 → Process 2..4, Script 3..9,
                 // Daemon 4..16.
                 int bits = normalBitsReward(encounterEnemy_.diffPips + 1, rng_);
-                // depth ramp, Bits half: mirrors the XP bonus below onto
-                // Bits, since diffPips (and so the base roll) doesn't move with depth
-                // on its own, otherwise a deep dive would pay the same Bits as a
-                // fresh one despite the tougher fight.
+                // depth ramp, Bits half: mirrors the XP bonus below onto Bits,
+                // because diffPips (and so the base roll) does not move with depth,
+                // and a deep dive would otherwise pay the same Bits as a fresh one.
                 if (inDeepWebDive())
                     bits = bits * deepWebDepthBitsPct(exploreStreak_) / 100
                                 * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
@@ -611,17 +609,16 @@ void Game::applyCombatResult() {
                                             encounterEnemy_.level, combatLevel_) *
                                   (100 + diveRewardBonusPct()) / 100;
                 addCombatXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
-                // re-farm loot decay: farming an already-CLEARED sub-area pays
-                // FULL non-Bits loot while the Bandwidth shield covered this fight (the
-                // decay count stays frozen). Once the pool is dry (this fight was NOT
-                // shielded), the diminishing-returns curve kicks in: drop chances decay per
-                // re-farm win toward a floor and the per-sub count advances (saturating;
-                // persists at save v15) until Bandwidth regenerates over real time (tick()).
-                // Bits + XP (above) stay full throughout, so a done area is always a viable
-                // training ground. First-clear grinding / bosses / Sim / the DeepWeb Dive
-                // never take this branch (only cleared-sub farming does). The Bandwidth
-                // charge itself was already spent at the shield site above: it now drains
-                // on every fight, not just re-farms.
+                // re-farm loot decay: farming an already-CLEARED sub-area pays FULL non-Bits
+                // loot while the Bandwidth shield covered this fight (the decay count stays
+                // frozen). Once the pool is dry (this fight was NOT shielded), the
+                // diminishing-returns curve kicks in: drop chances decay per re-farm win
+                // toward a floor and the per-sub count advances (saturating; persists at
+                // save v15) until Bandwidth regenerates over real time (tick()). Bits + XP
+                // (above) stay full throughout, so a done area is always a viable training
+                // ground. First-clear grinding / bosses / Sim / the DeepWeb Dive never take
+                // this branch (only cleared-sub farming does). The Bandwidth charge was
+                // already spent at the shield site above, on every fight.
                 int dropScalePct = 100;
                 if (refarm && !bandwidthShielded) {
                     uint16_t& c = subRefarmCount_[exploreSector_][exploreSub_];
@@ -683,12 +680,12 @@ void Game::finishCombat() {
     combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
     if (combat_.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
     else if (combat_.lostOrDrawn()) playSound(Sound::BattleLose);
-    // A duel has its own result path (a banner on the LINK screen and a log line, and
-    // deliberately nothing else: no stakes means no reward and no penalty), so it
-    // hands off before applyCombatResult() the same way a boss round does.
+    // A duel has its own result path (a banner on the LINK screen and a log line; a
+    // duel has no stakes, so no reward and no penalty), so it hands off before
+    // applyCombatResult() the same way a boss round does.
     if (pvpFighting()) { finishPvpBattle(); return; }
     // A boss/gauntlet round has its own result path (advance/clear/fail + the
-    // lump), NOT the wild loot rolls: hand off before applyCombatResult().
+    // lump) with no wild loot rolls: hand off before applyCombatResult().
     if (combatCaller_ == CombatCaller::Boss) { finishBossRound(); return; }
     // An arena bout advances a bracket instead of paying a fight (game_tourney.cpp):
     // Safe stakes, no loot rolls, and nothing but the title pays. Same hand-off shape.
@@ -726,10 +723,10 @@ void Game::finishCombat() {
                     !subCleared_[exploreSector_][exploreSub_])
                     subBossUnlocked_[exploreSector_][exploreSub_] = true;
                 // In the endless DeepWeb Dive the streak IS the DEPTH. Two records get
-                // it: this PET's own (read back by the Checkpoint Bell) and its SPECIES'
-                // (which outlives the pet, and is what the depth achievements (device
-                // best, best per line, and how many species have been taken deep) are
-                // all counted off).
+                // it: the pet's own (read back by the Checkpoint Bell) and its species'
+                // record, which outlives the pet and feeds the depth achievements
+                // (device best, best per line, and how many species have been taken
+                // deep).
                 if (inDeepWebDive()) {
                     if (exploreStreak_ > bestDeepWebDepth_) bestDeepWebDepth_ = exploreStreak_;
                     recordSpeciesDive(pet_, exploreStreak_);
@@ -768,8 +765,8 @@ void Game::finishCombat() {
             returnToExplore();
         }
     } else {
-        // Sim-Battle came from PRACTISE, so it goes back to the LOADOUT hub with that
-        // row still focused: the fight is over, not the menu.
+        // Sim-Battle came from PRACTISE, so it returns to the LOADOUT hub with that
+        // row still focused.
         trainScreen_ = TrainScreen::MovePicker;
         leaveLoadoutTab();
     }
@@ -778,9 +775,9 @@ void Game::finishCombat() {
 }
 
 bool Game::combatCanTeach() const {
-    // Only a fight against something the world owns. A duel or an arena bout is another
-    // operator's pet and a Sim dummy is a prop: neither is the game's to take apart, and
-    // neither rolls a drop, so neither may be shown as having anything to give.
+    // Only a fight against something the world owns. A duel or arena bout fights another
+    // operator's pet and a Sim fights a dummy. Neither rolls a drop, so neither shows
+    // anything to win.
     return !pvpFighting() &&
            (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
 }
@@ -796,11 +793,10 @@ bool Game::combatDissolveRunning() const {
 }
 
 uint32_t Game::rivalTeachableMoveMask() const {
-    // Exactly the roll's own filter (moveIsTeachable), never a lookalike: a mark here is
-    // a promise that beating this thing COULD teach that move, so anything the filter
-    // rejects (an already-owned move, the innate jab, another line's exclusive) must
-    // not light up. A rival whose whole kit is rejected returns 0, and shreds, which is
-    // the truth.
+    // This is the roll's own filter (moveIsTeachable), because a mark here promises that
+    // winning could teach the move. Anything the filter rejects (an owned move, the
+    // innate jab, another line's exclusive) stays unmarked. A rival whose whole kit is
+    // rejected returns 0, and shreds, which is the truth.
     if (!combatCanTeach()) return 0;
     // The rival BY ROLE is Combat's enemy_ in every fight that reaches here: the one
     // seating that differs (a duel guest, core/ui/combat_screen.h's CombatSides) is a
@@ -808,8 +804,7 @@ uint32_t Game::rivalTeachableMoveMask() const {
     uint32_t mask = 0;
     const std::vector<const MoveDef*>& kit = combat_.enemy().moves;
     // 32 is far above any kit the game builds (a boss carries the depth spine, its
-    // area's rider and at most kMaxBossTeaches), so the bound is a guard on the shift,
-    // not a limit anything is authored against.
+    // area's rider and at most kMaxBossTeaches), so the bound only guards the shift.
     for (size_t i = 0; i < kit.size() && i < 32; ++i)
         if (moveIsTeachable(kit[i])) mask |= 1u << i;
     return mask;
@@ -865,8 +860,8 @@ void Game::debugUseItem(const char* id) {
 }
 
 void Game::debugOpenCache(const char* id) {
-    // Sealed caches decrypt from the Hacker VAULT, not pet-side ITEMS: this
-    // seam drives the same real reward path (openSealedCache) onHackerVault uses.
+    // Sealed caches decrypt from the Hacker VAULT: this seam drives the same real
+    // reward path (openSealedCache) onHackerVault uses.
     const ItemDef* d = registry_.item(id);
     if (d) openSealedCache(*d);
 }
@@ -932,12 +927,12 @@ void Game::rollWild() {
 
 void Game::startEncounter() {
     // THE FIRST ENCOUNTER IN A ZONE IS WHERE ITS CHAPTER FIRES (game_story.cpp). Before
-    // the roll, not after, because the chapter is about ARRIVING somewhere: it has to
-    // land in front of the first malbeast rather than behind it. fireStory answers false
-    // for a zone with nothing authored or a chapter already read, in which case this is
-    // an ordinary encounter and nothing here knows a story exists; when it answers true
-    // the reader has the screen and calls back into this function once it is done, by
-    // which time the chapter is marked read and the gate falls straight through.
+    // the roll, because the chapter is about arriving and has to come before the first
+    // malbeast. fireStory answers false for a zone with nothing authored or a chapter
+    // already read, in which case this is an ordinary encounter and nothing here knows a
+    // story exists; when it answers true the reader has the screen and calls back into
+    // this function once it is done, by which time the chapter is marked read and the
+    // gate falls straight through.
     if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
     rollWild();
     encounterChoice_ = 0;
@@ -983,8 +978,8 @@ void Game::resolveFlee() {
 }
 
 void Game::resolveSinkhole() {
-    // The bypass XP lump is the Sinkhole Trap's own preEncounterXp (defs.h row), not a
-    // global tunable: one item's magnitude lives on the item.
+    // The bypass XP lump is the Sinkhole Trap's own preEncounterXp (defs.h row),
+    // because one item's magnitude lives on that item.
     const ItemDef* d = registry_.item("sinkhole_trap");
     const int xp = d ? d->preEncounterXp : 0;
     inventory_.remove("sinkhole_trap", 1);
