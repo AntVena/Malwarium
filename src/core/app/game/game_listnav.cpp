@@ -149,8 +149,8 @@ void Game::stepFocusedList(int dir) {
         }
 
         case ListFocus::ItemsPicker: {
-            const int n = static_cast<int>(buildItemPickerRows(registry_, inventory_).size());
-            if (n > 0) itemPickRow_ = ((itemPickRow_ + dir) % n + n) % n;
+            constexpr int n = kItemPickerTileCount;
+            itemPickRow_ = ((itemPickRow_ + dir) % n + n) % n;
             break;
         }
         case ListFocus::ItemsList: {

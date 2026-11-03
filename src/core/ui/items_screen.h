@@ -99,12 +99,19 @@ struct ItemPickRow {
     int units;
 };
 
-// The picker's fixed tile order: ALL, FOOD, INGREDIENTS, BUFFS, KEYS, TOOLS. There
-// is no CACHES tile: buildInventoryRows lists a Sealed Cache only under ALL (in its
-// own CACHES group, since they open in the Hacker VAULT), so ALL counts them and no
-// narrower tile does. Counts come
-// from buildInventoryRows itself, so a tile can never disagree with the list
-// behind it.
+// The picker's fixed tile order. There is no CACHES tile: buildInventoryRows lists a
+// Sealed Cache only under ALL (in its own CACHES group, since they open in the Hacker
+// VAULT), so ALL counts them and no narrower tile does. Input handlers step and commit
+// against this table directly, so a cursor move never pays for the counts.
+inline constexpr ItemFilter kItemPickerTiles[] = {
+    ItemFilter::All,  ItemFilter::Food, ItemFilter::Ingredients,
+    ItemFilter::Buffs, ItemFilter::Keys, ItemFilter::Tools};
+inline constexpr int kItemPickerTileCount =
+    static_cast<int>(sizeof(kItemPickerTiles) / sizeof(kItemPickerTiles[0]));
+
+// The tiles with their unit counts, for drawing. One pass over the bag fills every
+// tile, using the same inclusion rule buildInventoryRows filters by, so a tile can
+// never disagree with the list behind it.
 std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
                                              const Inventory& inv);
 

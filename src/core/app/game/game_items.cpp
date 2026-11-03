@@ -18,9 +18,7 @@ namespace mal {
 // --- ITEMS -----------------------------------------------------------------
 
 void Game::onItemsPicker(const ButtonEvent& ev) {
-    const auto tiles = buildItemPickerRows(registry_, inventory_);
-    const int n = static_cast<int>(tiles.size());
-    if (n <= 0) { if (ev.button == Button::C) nav_ = Nav::Cursor; return; }
+    const int n = kItemPickerTileCount;
     if (itemPickRow_ < 0 || itemPickRow_ >= n) itemPickRow_ = 0;
 
     if (ev.button == Button::A) {
@@ -29,7 +27,7 @@ void Game::onItemsPicker(const ButtonEvent& ev) {
         // Commit the tile and drill in. An EMPTY category still opens — the list
         // says "- NO MATCHING ITEMS -" and C walks back, which reads better than a
         // dead button on a row the screen just drew.
-        itemFilter_ = tiles[itemPickRow_].filter;
+        itemFilter_ = kItemPickerTiles[itemPickRow_];
         itemsScreen_ = ItemsScreen::List;
         auto rows = buildInventoryRows(registry_, inventory_, false, itemFilter_);
         listRow_ = firstSelectableRow(rows);

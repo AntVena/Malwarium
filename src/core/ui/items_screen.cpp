@@ -72,6 +72,16 @@ bool filterMatches(ItemFilter f, const ItemDef& d) {
     return true;
 }
 
+// Does the list under `f` show `d`? Sealed caches open in the Hacker VAULT only
+// (itemUsable's "OPEN IN VAULT (A+C)" gate), but the ALL list still shows them, in a
+// group of their own that says where they go: a reward the bag hides is a reward the
+// player never learns they have. Every narrower filter leaves them out, so no tile
+// holds them. Shared by buildInventoryRows and the picker's tile counts.
+bool listShows(ItemFilter f, const ItemDef& d) {
+    if (d.use == ItemDef::Use::OpenContainer && f != ItemFilter::All) return false;
+    return filterMatches(f, d);
+}
+
 // Rarity ladder: four cells, one lit per tier up to the item's own (Common 1 .. Epic
 // 4). Lit cells are full-height blocks in the rarity's colour, unlit ones a baseline
 // tick — so the tier is COUNTABLE before it is coloured, which is what lets the row
@@ -225,12 +235,7 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
     struct Owned { const ItemDef* def; int qty; int key; };
     std::vector<Owned> owned;
     for (const ItemDef* d : reg.allItems()) {
-        // Sealed caches open in the Hacker VAULT only (itemUsable's "OPEN IN VAULT
-        // (A+C)" gate), but the ALL list still shows them, in a group of their own that
-        // says where they go: a reward the bag hides is a reward the player never learns
-        // they have. Every narrower filter leaves them out, so no tile holds them.
-        if (d->use == ItemDef::Use::OpenContainer && filter != ItemFilter::All) continue;
-        if (!filterMatches(filter, *d)) continue;
+        if (!listShows(filter, *d)) continue;
         int q = inv.count(d->id);
         if (q > 0) owned.push_back({d, q, groupKey(*d, lockoutSort)});
     }
@@ -289,15 +294,13 @@ int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir) {
 
 std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
                                              const Inventory& inv) {
-    static const ItemFilter kTiles[] = {ItemFilter::All, ItemFilter::Food,
-                                        ItemFilter::Ingredients, ItemFilter::Buffs,
-                                        ItemFilter::Keys, ItemFilter::Tools};
     std::vector<ItemPickRow> tiles;
-    for (ItemFilter f : kTiles) {
-        int units = 0;
-        for (const InvRow& r : buildInventoryRows(reg, inv, false, f))
-            if (!r.header) units += r.qty;
-        tiles.push_back({f, itemFilterLabel(f), units});
+    for (ItemFilter f : kItemPickerTiles) tiles.push_back({f, itemFilterLabel(f), 0});
+    for (const ItemDef* d : reg.allItems()) {
+        const int q = inv.count(d->id);
+        if (q <= 0) continue;
+        for (ItemPickRow& t : tiles)
+            if (listShows(t.filter, *d)) t.units += q;
     }
     return tiles;
 }
