@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen_assets.py  —  Malwarium build-time asset + palette codegen.
+gen_assets.py:  Malwarium build-time asset + palette codegen.
 
 Converts the shippable PNGs in assets/ into C++ sprite arrays, and PAL_CORE.json
 into a role-token palette table, written to src/generated/. A sheet is stored in
@@ -10,7 +10,7 @@ full RGB565 + alpha.
 
 Design notes
 ------------
-* Pure standard library (zlib only) — no Pillow / external deps, so any team
+* Pure standard library (zlib only): no Pillow / external deps, so any team
   member can regenerate assets with a stock Python 3. All shippable PNGs are
   8-bit RGBA, non-interlaced, filter-method 0 (verified), which keeps the
   decoder lean.
@@ -18,7 +18,7 @@ Design notes
 * Pet sprite sheets (SPR_PET_*) are horizontal strips of 56x48 logical frames;
   everything else is treated as a single frame. A pet sheet whose height is a
   clean multiple of 48 is a vertical stack of that many ROWS (each its own
-  56xN-frame strip) rather than one tall frame — see PET_ROW_H below.
+  56xN-frame strip) rather than one tall frame: see PET_ROW_H below.
 
 Run from the repo root:  python3 tools/gen_assets.py
 `--palettes` prints what each sheet's derived palette holds instead of generating, which
@@ -40,7 +40,7 @@ OUT_DIR = os.path.join(REPO, "src", "generated")
 def asset_paths(repo=None):
     """The atlas: every compiled asset's name -> its repo-relative PNG path.
 
-    assets/ IS the atlas — every PNG under it is RGB565 data linked into the
+    assets/ IS the atlas: every PNG under it is RGB565 data linked into the
     firmware whether or not a line of code names it, so the tree listing and the
     shipped set are the same thing. Art with no consumer belongs in assets/_attic/
     instead; any path part starting with `_` is skipped, which covers both the attic
@@ -52,7 +52,7 @@ def asset_paths(repo=None):
     id, which raises here rather than silently resolving to whichever sorted last.
 
     This is the one place that knows where an asset lives. tools/gen_pedia_data.py
-    and tools/check_orphan_assets.py both read it instead of globbing themselves —
+    and tools/check_orphan_assets.py both read it instead of globbing themselves,
     the latter against its own `--repo`, hence the override.
     """
     repo = REPO if repo is None else os.path.abspath(repo)
@@ -103,7 +103,7 @@ FACING = {
     "SPR_PET_PWNTHER": "Right",
     "SPR_PET_SPAMWHALE": "Right",
     "SPR_PET_GENERIC_DAEMON": "Right",
-    # The whole Worm line, drawn head-to-upper-right by tools/gen_worm_art.py — the one
+    # The whole Worm line, drawn head-to-upper-right by tools/gen_worm_art.py: the one
     # family that is mechanically consistent, because a tool draws it.
     "SPR_PET_NODEATODE": "Right",
     "SPR_PET_ROOTGRUB": "Right",
@@ -210,7 +210,7 @@ FRAME_W_OVERRIDES = {
 # It exists because the two halves of the grid are not symmetric by default. A sheet whose
 # width is not a multiple of PET_FRAME_W falls back to ONE WIDE FRAME, which is the right
 # guess for an oversized Daemon cell; a sheet whose height is not a multiple of PET_ROW_H
-# falls back to ONE ROW, which is the right guess for exactly the same reason — and that is
+# falls back to ONE ROW, which is the right guess for exactly the same reason, and that is
 # the problem, because a Daemon cell taller than 48 can then never hold a second row
 # however many are drawn. So a Daemon is capped at one clip until it names its row height
 # here, and `attack` or `hurt` on any of them starts with a row in this table.
@@ -222,7 +222,7 @@ ROW_H_OVERRIDES = {
     # 576x256 = four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch.
     "SPR_PET_TENTACLONE": 64,
     # The wild malbeasts: two rows of one frame each, the idle then the attack (tools/
-    # gen_malbeast_art.py) — 56x96 for the 56x48 cell, 64x112 for the apex's 64x56. Not
+    # gen_malbeast_art.py); 56x96 for the 56x48 cell, 64x112 for the apex's 64x56. Not
     # SPR_PET_ sheets, so the stack has to be declared here.
     "SPR_MALBEAST_GLITCHHOG": 48,
     "SPR_MALBEAST_SEGFAULT_PUP": 48,
@@ -261,7 +261,7 @@ def png_size(path):
 
     Consumed by tools/gen_pedia_data.py, which needs each sheet's pixel size to
     describe the same frame grid to the web 'Pedia that frame_width()/frame_rows()
-    cut for the firmware — but has no use for the pixels themselves.
+    cut for the firmware, but has no use for the pixels themselves.
     """
     with open(path, "rb") as f:
         head = f.read(24)
@@ -361,9 +361,9 @@ def frame_width(name, img_w):
     if name in FRAME_W_OVERRIDES:
         return FRAME_W_OVERRIDES[name]
     # Pet sprite SHEETS are horizontal strips of 56px frames. A pet sprite whose
-    # width is NOT a clean multiple of 56 is a single oversized frame — a larger
+    # width is NOT a clean multiple of 56 is a single oversized frame: a larger
     # Daemon cell (up to the 128x64 max sprite box; e.g. Cryptoad 80x52, the
-    # generic Daemon placeholder 96x64) — so treat the whole width as one frame.
+    # generic Daemon placeholder 96x64), so treat the whole width as one frame.
     if name.startswith(PET_PREFIX) and img_w % PET_FRAME_W == 0:
         return PET_FRAME_W
     return img_w
@@ -377,7 +377,7 @@ def frame_rows(name, img_h):
     if name in ROW_H_OVERRIDES:
         row_h = ROW_H_OVERRIDES[name]
         # Checked rather than floor-divided in silence: a stack that does not divide
-        # evenly drops its last row, and a dropped row is invisible — every other row
+        # evenly drops its last row, and a dropped row is invisible. Every other row
         # still renders, and only the clip that named the missing one draws nothing.
         if img_h % row_h:
             raise SystemExit(
@@ -414,7 +414,7 @@ def gen_sprites():
     decls, defs, table = [], [], []
     paths = asset_paths()
     # A FACING key that names nothing is a typo that would silently leave a creature
-    # turned away from its opponent — the one failure this table exists to stop — and it
+    # turned away from its opponent (the one failure this table exists to stop), and it
     # would never show up as an error anywhere else, so it is caught here.
     unknown = sorted(set(FACING) - set(paths))
     if unknown:
@@ -432,7 +432,7 @@ def gen_sprites():
         sym = "ASSET_" + ident(name)
         rgb_vals, a_vals = [], []
         # The drawn band inside a frame cell, folded across every frame and row
-        # (SpriteData::contentX0/contentX1) — measured here, in the pass that is already
+        # (SpriteData::contentX0/contentX1): measured here, in the pass that is already
         # touching every pixel, because it is a fact about the art and nothing at
         # runtime should be re-deriving it. A fully transparent sheet keeps the whole
         # frame, which is what the reader's fallback answers anyway.
@@ -474,9 +474,9 @@ def mask_ink(rgb_vals, a_vals):
 
     An image qualifies as a 1-bit mask when it carries no information a bitmap would
     lose: every pixel is fully transparent or fully opaque, and every opaque pixel is
-    the same colour. Most of the ICON_*/UI_* family is exactly that — a flat fill on
+    the same colour. Most of the ICON_*/UI_* family is exactly that: a flat fill on
     transparent, because dim/bright is engine brightness and the colour is applied at
-    draw time — so it spends RGB565 + alpha, 24 bits per pixel, to carry one.
+    draw time, so it spends RGB565 + alpha, 24 bits per pixel, to carry one.
 
     Detected rather than keyed off the name, so the emitted pixels are identical either
     way and an icon that ever gains a gradient silently falls back to full storage
@@ -500,13 +500,13 @@ def sheet_palette(rgb_vals, a_vals):
 
     The palette is DERIVED, never declared: whatever pairs the pixels actually hold are
     the palette, so a repainted or extended sheet needs no table kept in step with it and
-    a new colour costs one more entry — and, only when the count crosses a power of two,
+    a new colour costs one more entry, and, only when the count crosses a power of two,
     one more bit per pixel. Ordering by frequency is what makes that cheap to look at: the
     tail of a creature's palette is where stray anti-aliasing and off-model pixels collect,
     and `--palettes` prints it.
 
     Every fully transparent pixel collapses to one entry regardless of the RGB under it, so
-    a sheet's own background never widens the palette. None means more than 256 entries —
+    a sheet's own background never widens the palette. None means more than 256 entries:
     an image an 8-bit index cannot address, which keeps full storage.
     """
     counts = {}
@@ -527,7 +527,7 @@ def index_bpp(n):
 
 
 def pixel_indices(rgb_vals, a_vals, pal):
-    """The sheet as palette indices, row-major — what both palette forms actually store."""
+    """The sheet as palette indices, row-major: what both palette forms actually store."""
     lut = {key: i for i, key in enumerate(pal)}
     return [lut[(0, 0) if a == 0 else (rgb, a)]
             for rgb, a in zip(rgb_vals, a_vals)]
@@ -548,7 +548,7 @@ def build_tiling(w, h, idx, edge):
     """-> (blob, tmap) for a grid of `edge`-square tiles, identical tiles stored once.
 
     A tile's first byte is the width IT needs, which is what lets the empty margin around
-    a drawing — one palette entry all through — cost a byte however large it is. `tmap`
+    a drawing (one palette entry all through) cost a byte however large it is. `tmap`
     holds byte offsets rather than tile ids, so two positions sharing pixels share an
     offset and there is no second table to walk.
     """
@@ -604,7 +604,7 @@ def _emit_mask(sym, w, h, cell_h, fw, rows, cx0, cx1, face, a_vals, ink):
     """Pack the alpha plane as 1bpp: row-major, MSB first, each row padded to a byte.
 
     Rows are byte-aligned so a row starts on a byte boundary and the reader's index
-    math needs no carry across rows — see spriteAlphaAt in core/render/sprite.h, which
+    math needs no carry across rows: see spriteAlphaAt in core/render/sprite.h, which
     is the only thing that unpacks this.
     """
     stride = (w + 7) // 8
@@ -631,7 +631,7 @@ def _palette_arrays(sym, pal):
 def _emit_indexed(sym, w, h, cell_h, fw, rows, cx0, cx1, face, pal, idx):
     """Pack the sheet as `bpp`-bit palette indices, row-major, MSB first.
 
-    Rows are padded to a whole byte like the mask form, for the same reason — a row starts
+    Rows are padded to a whole byte like the mask form, for the same reason: a row starts
     on a byte boundary, so the reader's index math needs no carry between rows. Within a
     row an index may straddle a byte, which is why one pad byte follows the array: it is
     what makes the two-byte window spriteIndexAt reads in-bounds on the last pixel.
@@ -675,7 +675,7 @@ def gen_palette():
     """-> (tokens, themes)
 
     tokens: [(token_name, base_hex)] in Pal-enum order, from the role groups.
-    themes: [(theme_name, [hex per token])] — index 0 is always the base set, so
+    themes: [(theme_name, [hex per token])]. Index 0 is always the base set, so
     a build with no "themes" block still emits a valid one-theme table.
 
     A theme names only the tokens it CHANGES; everything else falls through to
@@ -799,7 +799,7 @@ def emit_assets_source(defs):
 
 
 def report_palettes():
-    """Print every sheet's derived palette, biggest first — the survey behind a fold.
+    """Print every sheet's derived palette, biggest first: the survey behind a fold.
 
     A sheet's cost is `ceil(log2(entries))` bits per pixel, so what matters is not the
     palette's size but which side of a power of two it sits on, and that is decided by a

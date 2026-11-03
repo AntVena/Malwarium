@@ -1,8 +1,8 @@
-// pedia_state.js — SAMPLE state fixture, standing in for the device's live
+// pedia_state.js: SAMPLE state fixture, standing in for the device's live
 // GET /pedia_state.json. Browser preview only; never served on-device.
 // The ESP32 replaces this by serving /pedia_state.json live; app.js prefers the live
 // fetch and falls back to this embedded fixture so index.html runs from disk (file://).
-// Every reveal state appears at least once on purpose — this is the design QA payload.
+// Every reveal state appears at least once on purpose: this is the design QA payload.
 window.PEDIA_STATE_FIXTURE = {
   "hacker_tag": "NETRUNNER_99",
   "update_url": "https://example.invalid/malwarium/manifest.json",
@@ -12,7 +12,7 @@ window.PEDIA_STATE_FIXTURE = {
 
   // extension: the landing page's live pet card
   // `learnable` is the SCOPE (every move this pet's line may hold, published by the
-  // device) and moves{} below is the STATE — the pet page joins the two. `lifetime_items`
+  // device) and moves{} below is the STATE. The pet page joins the two. `lifetime_items`
   // is the one thing neither map can answer: whether THIS life has spent its one-shots.
   "active_pet": {
     "species": "paypup", "uptime": "02:14:36", "frag_pct": 12, "mistakes": 1,
@@ -34,7 +34,7 @@ window.PEDIA_STATE_FIXTURE = {
     "pingcub": "seen"
   },
 
-  // extension: wild roster — seen on encounter, defeated = full reveal (D-P3)
+  // extension: wild roster. Seen on encounter, defeated = full reveal (D-P3)
   "malbeasts": {
     "glitchhog": "defeated",
     "segfault_pup": "seen",
@@ -68,7 +68,7 @@ window.PEDIA_STATE_FIXTURE = {
 
     // The pantry sample. "unlocked" here is EVER HELD, not held right now
     // (pedia_state.cpp items{}), which is why food can be eaten without un-revealing
-    // itself. Cooked dishes are listed alongside the staples on purpose — a dish is an
+    // itself. Cooked dishes are listed alongside the staples on purpose: a dish is an
     // item like any other, and `recipes` below is the separate question of whether the
     // method for it has been won.
     "pwnzu_sauce": "unlocked",
@@ -88,12 +88,12 @@ window.PEDIA_STATE_FIXTURE = {
   // emits one entry per recipe row (pedia_state.cpp); a sample of the SHAPES is enough
   // here, and a row absent from this map correctly renders as an unwon method. Every
   // combination the FOOD tab draws appears once on purpose:
-  //   known + met      pwnzu_patched_noodles  — the full row, ingredients and all
-  //   known + unmet    ramen                  — you can cook it, you've never eaten it
-  //   unwon + met      hashed_browns          — bought off a shelf, method still out there
-  //   unwon + gated    salted_hashed_browns   — held back until its dish is met
-  // Cracquettes carries the WIDEST method the row has to draw — four ingredients, the
-  // kMaxRecipeInputs ceiling — so the ingredient line's wrapping is exercised offline.
+  //   known + met      pwnzu_patched_noodles:  the full row, ingredients and all
+  //   known + unmet    ramen:                  you can cook it, you've never eaten it
+  //   unwon + met      hashed_browns:          bought off a shelf, method still out there
+  //   unwon + gated    salted_hashed_browns:   held back until its dish is met
+  // Cracquettes carries the WIDEST method the row has to draw (four ingredients, the
+  // kMaxRecipeInputs ceiling), so the ingredient line's wrapping is exercised offline.
   "recipes": {
     "pwnzu_patched_noodles": "known",
     "fully_stacked_nachos": "known",
@@ -160,8 +160,8 @@ window.PEDIA_STATE_FIXTURE = {
   },
 
   // How far along each unfinished COUNTABLE ladder is. The device emits one entry
-  // per non-Event row (pedia_state.cpp); a sample of the shapes is enough here —
-  // a barely-started ladder, a nearly-done one, and a 0/N — so the cards' bars are
+  // per non-Event row (pedia_state.cpp); a sample of the shapes is enough here
+  // (a barely-started ladder, a nearly-done one, and a 0/N), so the cards' bars are
   // exercised offline. A row absent from this map correctly renders no bar.
   "achievement_progress": {
     "FULL_PEDIA_L1":  { "value": 2,    "goal": 9 },
@@ -176,7 +176,7 @@ window.PEDIA_STATE_FIXTURE = {
     "BITS_50K":       { "value": 42048, "goal": 50000 }
   },
 
-  // extension: the Archive tab — past pets, dignified vs crashed
+  // extension: the Archive tab. Past pets, dignified vs crashed
   "archive": [
     { "name": "BITSY", "species": "bruinforce", "stage": "DAEMON", "cause": "retired",
       "record": "0 care mistakes \u00b7 14 days uptime \u00b7 graduated with honors" },

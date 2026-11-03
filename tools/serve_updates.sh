@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 #
-# serve_updates.sh — publish a firmware + web-'Pedia update from this laptop and
+# serve_updates.sh: publish a firmware + web-'Pedia update from this laptop and
 # serve it, so a board can update ITSELF over the air. The over-the-air sibling of
 # tools/build_and_flash.sh: same "one command, pure orchestration, every real step
 # delegated" shape, aimed at the path a real user's device takes rather than the
 # USB one only a developer has. Read it top to bottom to see where your edit lands.
 #
 # WHY TEST THIS WAY. USB flashing is the developer's path; OTA is everyone else's,
-# and it exercises code USB never touches — the manifest parser, the SHA-256 gate,
+# and it exercises code USB never touches: the manifest parser, the SHA-256 gate,
 # the OTA slot write, the tar unpack onto SD. A change that flashes perfectly can
 # still be unpublishable. Running an update the way a user would, periodically, is
 # how that stays true.
 #
 # The pipeline, and why it's in this order:
 #
-#   1. gen_assets.py — assets/**.png (+ PAL_CORE.json) -> src/generated/. Same
+#   1. gen_assets.py: assets/**.png (+ PAL_CORE.json) -> src/generated/. Same
 #      reason build_and_flash.sh runs it first: `pio run` deliberately does NOT,
 #      so skipping it silently publishes an image built from stale art.
 #
@@ -29,7 +29,7 @@
 #      player can do something new or the save format changed; `major` by a
 #      deliberate call.
 #
-#   3. `make pages BASE=<this laptop>` — builds the firmware image
+#   3. `make pages BASE=<this laptop>`: builds the firmware image
 #      (include/version.h names it), the web bundle tar (web/VERSION names it),
 #      and the manifest listing both with their real sizes and digests, into
 #      dist/. It validates the result with the DEVICE's own parser before
@@ -38,11 +38,11 @@
 #      pages (pages/) and the boot images the USB flasher writes, so this serves
 #      the whole publish rather than only the half a device reads.
 #
-#      The flasher at /flash/ needs a SECURE CONTEXT — Web Serial is unavailable
+#      The flasher at /flash/ needs a SECURE CONTEXT: Web Serial is unavailable
 #      over plain http to a LAN address, so reach it at http://localhost:<port>
 #      from this machine. The device half is unaffected; it only wants bytes.
 #
-#   4. Optional damage injection (--corrupt / --truncate) — AFTER the manifest has
+#   4. Optional damage injection (--corrupt / --truncate). AFTER the manifest has
 #      recorded the good size and digest, which is what makes the failure real:
 #      the device downloads what it was promised and finds it isn't. These are the
 #      failure paths the happy path can't prove.
@@ -86,7 +86,7 @@
 # device, then Ctrl-C this server mid-transfer.
 #
 # What this does NOT do: run the native gates, or touch the device. Publishing
-# answers "could a device install this," not "is it correct" — run the gates
+# answers "could a device install this," not "is it correct": run the gates
 # yourself first, same as always.
 
 set -euo pipefail
@@ -147,11 +147,11 @@ fi
 # --- 2. version bump (opt-in) ----------------------------------------------
 # The firmware's numbers live in include/version.h and the bundle's in
 # web/VERSION; both are edited in place, because a published artifact must claim
-# the version its own build reports — a bump passed only to the publisher would
+# the version its own build reports: a bump passed only to the publisher would
 # describe an image that disagrees with itself.
 #
-# Both artifacts pack their version with include/version.h's packVersion —
-# MAJOR * 1000000 + MINOR * 1000 + PATCH — so MINOR and PATCH each have three digits.
+# Both artifacts pack their version with include/version.h's packVersion
+# (MAJOR * 1000000 + MINOR * 1000 + PATCH), so MINOR and PATCH each have three digits.
 # Roll either over and the code would carry into the one above it, which is why this
 # refuses instead.
 pack_code() { echo $(( $1 * 1000000 + $2 * 1000 + $3 )); }
@@ -261,7 +261,7 @@ make --no-print-directory pages BASE="$BASE" FW_ENV="$FW_ENV" V="$BUILD_V"
 # Deliberately AFTER the manifest recorded the honest size + digest: the device
 # must be promised a good artifact and then handed a bad one. Re-running
 # `make manifest-check` here would now FAIL for --truncate (it re-derives size on
-# disk) — that failure is the point, so it is not re-run.
+# disk): that failure is the point, so it is not re-run.
 if [ -n "$DAMAGE" ]; then
     dist_dir="${DIST:-dist}"
     if [ "$DAMAGE_TARGET" = firmware ]; then
@@ -272,7 +272,7 @@ if [ -n "$DAMAGE" ]; then
     [ -n "$victim" ] || die "no $DAMAGE_TARGET artifact in $dist_dir/ to damage"
     case "$DAMAGE" in
         corrupt)
-            # One byte, deep enough in that a header check can't catch it — the
+            # One byte, deep enough in that a header check can't catch it: the
             # SHA-256 over the whole artifact is what has to notice.
             size=$(wc -c < "$victim" | tr -d ' ')
             printf '\xFF' | dd of="$victim" bs=1 seek=$((size / 2)) count=1 conv=notrunc 2>/dev/null
@@ -296,13 +296,13 @@ else
 fi
 
 # --- 5. serve ----------------------------------------------------------------
-# The two rows THIS manifest points at, not everything dist/ has accumulated —
+# The two rows THIS manifest points at, not everything dist/ has accumulated:
 # older builds are left in place on purpose (a device can be moved back to one),
 # so listing the directory would misreport what is being published right now.
 dist_dir="${DIST:-dist}"
 
 # One line per artifact, read back OUT OF THE MANIFEST rather than from the files
-# or the version headers — this is what the device will actually be told, which is
+# or the version headers: this is what the device will actually be told, which is
 # the only version of the story worth printing. Damage injection deliberately does
 # not update these, so a --corrupt run still prints the honest size it promised.
 echo

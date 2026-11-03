@@ -1,5 +1,5 @@
 /* ============================================================
-   MALWARIUM://PEDIA — app.js
+   MALWARIUM://PEDIA: app.js
    Vanilla JS, no framework. Hydrates from:
      1. live  GET /pedia_state.json   (served by the ESP32)
      2. else  window.PEDIA_STATE_FIXTURE (fixtures/pedia_state.js)
@@ -128,19 +128,19 @@
 
   /* The pet's own two grids: what it has LEARNED, and what it has SPENT.
      Both are per-pet facts the catalogue cannot answer on its own, so both are read
-     off active_pet (pedia_state.cpp) rather than derived here — `learnable` is the
+     off active_pet (pedia_state.cpp) rather than derived here: `learnable` is the
      scope this creature's line allows, and the learned/locked state comes from the
      same moves{} map the MOVES section reads, so the two pages can never disagree.
      A cell opens its detail in place; nothing routes, so the page does not jump. */
   /* `lit` is the cell's state; `hide` is whether an unlit one is also a SECRET. A move
      the pet has not learned is masked, because the 'Pedia only ever reveals what the
-     device has met. A one-shot it has already spent is not — the player knows exactly
+     device has met. A one-shot it has already spent is not: the player knows exactly
      what they used, and masking it would turn a record into a riddle. */
   function kitCell(kind, id, icon, name, lit, sub, hide) {
     var masked = !lit && hide;
     /* The visible label is a truncated, sometimes masked word and the icon is alt="",
        so the button would otherwise announce as nothing at all. The aria-label carries
-       what the cell means — name (or that it is encrypted) plus its state. */
+       what the cell means: name (or that it is encrypted) plus its state. */
     var label = (masked ? 'encrypted ' + kind : name) + ', ' + (sub || (lit ? 'known' : 'locked'));
     return '<button class="kitcell' + (lit ? '' : ' locked') + '" type="button"' +
       ' aria-label="' + esc(label) + '"' +
@@ -441,7 +441,7 @@
     return h;
   }
 
-  // The row's derived stat line (generated from the firmware's own magnitudes — see
+  // The row's derived stat line (generated from the firmware's own magnitudes: see
   // core/content/effect_text.h). Rendered as its own line under the prose so a
   // magnitude is visible even when the description doesn't mention it. Withheld on a
   // locked row for the same reason the effect text is: it IS the spec.
@@ -462,7 +462,7 @@
       '</div>';
   }
 
-  /* FOOD is not here — it has its own tab (vFood). A dish is the one item type with a
+  /* FOOD is not here: it has its own tab (vFood). A dish is the one item type with a
      second gate on it (the method that cooks it), and at 192 of 216 rows the pantry
      was also most of this page: leaving it in buried the two dozen items that AREN'T
      food under nine screens of groceries. */
@@ -537,9 +537,9 @@
   /* One MERGE HUB method. The kitchen gates on two INDEPENDENT axes and this row shows
      both, because which one a player is waiting on is the whole question:
 
-       MET    — the dish has been held at least once (items{}), which decrypts what it
+       MET:    the dish has been held at least once (items{}), which decrypts what it
                 DOES. A dish can be met without its method: several are sold on shelves.
-       KNOWN  — the method itself was won off a Decryptogram's prize ladder (recipes{}),
+       KNOWN:  the method itself was won off a Decryptogram's prize ladder (recipes{}),
                 which decrypts what it TAKES. Methods are never bought at any price.
 
      The dish NAME survives both, matching the device's own hub (game_merge.cpp draws
@@ -582,7 +582,7 @@
   }
 
   /* PANTRY + RECIPES. Split by whether a recipe MAKES the food: a staple is a row you
-     find, buy or forage, a dish is a row you cook — and the dish's own entry is its
+     find, buy or forage, a dish is a row you cook, and the dish's own entry is its
      recipe, so listing it twice would say the same thing in the weaker place. */
   function vFood() {
     var cooked = {};
@@ -789,7 +789,7 @@
 
   // Form-encoded, matching /api/wifi: this is arbitrary pasted text, and the
   // device's own form parsing decodes percent-escapes where its hand-rolled JSON
-  // reader does not. An empty value is a legitimate submit — it clears the
+  // reader does not. An empty value is a legitimate submit: it clears the
   // override and falls back to the built-in address, so a bad paste is
   // recoverable from the same field that caused it.
   function armUrlForm() {
@@ -815,7 +815,7 @@
         if (!r.ok) throw new Error();
         return r.text();
       }).then(function (resolved) {
-        // Show what the device RESOLVED to, not what was typed — clearing the
+        // Show what the device RESOLVED to, not what was typed: clearing the
         // override falls back to the built-in address, and that is what it
         // will actually use.
         S.update_url = resolved;
@@ -833,13 +833,13 @@
   }
 
   // The network picker. Endpoints are the firmware's existing setup-portal pair
-  // (GET /api/networks, POST /api/wifi) — nothing new device-side, so this ships as a
+  // (GET /api/networks, POST /api/wifi): nothing new device-side, so this ships as a
   // web-bundle update alone. The scan is ASYNC on the device: the first GET kicks a
   // sweep and answers {scanning:true}, so poll until it settles.
   //
   // Form-encoded like /setup's own submit, and for the same reason: a WPA2 passphrase
   // may contain quotes and backslashes, and the device's hand-rolled JSON reader has
-  // no escape handling. The password is posted and then dropped — never stored in S,
+  // no escape handling. The password is posted and then dropped, never stored in S,
   // never rendered back, never logged.
   function armNetForm() {
     var sel = document.getElementById('netssid');
@@ -870,7 +870,7 @@
           sel.appendChild(o);
         });
       }).catch(function () {
-        // No device (desk preview against the fixture) — say so rather than
+        // No device (desk preview against the fixture): say so rather than
         // spinning on a scan that will never land.
         polling = false;
         sel.innerHTML = '<option value="">no habitat attached</option>';
@@ -953,7 +953,7 @@
   /* ---------- boot: paint immediately, then upgrade to live state. ----------
      The fixture (fixtures/pedia_state.js) is a DESK-PREVIEW convenience and is
      deliberately not staged onto the card, so on-device that script 404s and
-     PEDIA_STATE_FIXTURE is undefined — hence the {} floor. Without it every view
+     PEDIA_STATE_FIXTURE is undefined, hence the {} floor. Without it every view
      that reads S directly throws, and the throw aborts the rest of this function
      before the live fetch below is ever wired up. */
   S = window.PEDIA_STATE_FIXTURE || {};
@@ -978,7 +978,7 @@
           S = JSON.parse(xhr.responseText);
           renderIdentity();
           render();
-        } catch (e) { /* malformed payload — fixture stays */ }
+        } catch (e) { /* malformed payload: fixture stays */ }
       };
       xhr.send();
     });

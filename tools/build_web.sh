@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build_web.sh — build the public web demo into pages/play/.
+# build_web.sh: build the public web demo into pages/play/.
 #
 # Two stages, because the demo's starting save has to be produced by the engine
 # before the engine can be compiled with it:

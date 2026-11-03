@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fail if any engine source invents a colour instead of asking the palette for one.
 
-This is the check behind a promise: that adding a whole new theme — a
-colourblind-friendly set, a high-contrast set — is a block in assets/PAL_CORE.json
+This is the check behind a promise: that adding a whole new theme. A
+colourblind-friendly set, a high-contrast set: is a block in assets/PAL_CORE.json
 and a choice of index, never a sweep through the screens. That promise only holds
 while EVERY colour reaches the framebuffer through palColor() (core/render/palette.h),
 because that one indirection is where a theme is substituted. A single literal
@@ -10,13 +10,13 @@ sneaks past it, and from then on the interface has a colour that no theme can mo
 
 What counts as inventing one:
 
-  * rgb565(...) built purely from number literals — a new colour out of thin air.
+  * rgb565(...) built purely from number literals: a new colour out of thin air.
   * a 16-bit hex literal assigned to something typed Rgb565.
 
 What is fine, and common:
 
   * palColor(Pal::X) and anything in core/ui/theme.h built on it.
-  * rgb565(...) DERIVED from an existing colour — dimming, lerping, ramping. Those
+  * rgb565(...) DERIVED from an existing colour: dimming, lerping, ramping. Those
     move with their source, so they follow a theme swap for free.
 
 Run: python3 tools/check_palette_bindings.py
@@ -28,7 +28,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Where UI colour decisions get made. The generated palette is the one place a
-# literal is not only allowed but required — it IS the table.
+# literal is not only allowed but required: it IS the table.
 ROOTS = ["src/core/ui", "src/core/app", "src/core/render", "src/platform"]
 SKIP = {"src/generated"}
 

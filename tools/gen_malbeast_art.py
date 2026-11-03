@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen_malbeast_art.py — the malbeast drawing vocabulary, and the sheets built from it: the wild
+gen_malbeast_art.py. The malbeast drawing vocabulary, and the sheets built from it: the wild
 roster and the bosses.
 
 Sibling to tools/gen_worm_art.py. Same contract: an AUTHORING step that OWNS the PNGs it
@@ -24,7 +24,7 @@ do.
 The malbeast style, as the only things a recipe can say
 -------------------------------------------------------
 1.  THE 4px NIBBLE GRID. Every recipe draws on a COARSE grid of 4×4-pixel cells
-    ("nibbles") — a 56×48 sprite is a 14×12 nibble field — and bake() expands each set
+    ("nibbles") (a 56×48 sprite is a 14×12 nibble field), and bake() expands each set
     nibble to a solid 4×4 block. So a malbeast is low-def BY CONSTRUCTION: there is no way
     to say a 1px detail. This is the whole
     "thicker limbs, squares of 4 pixels, blocky like an original Digimon sprite" read, and
@@ -40,21 +40,21 @@ The malbeast style, as the only things a recipe can say
     And every line is EDGE-CONNECTED: two inked cells may not touch at a corner alone. On
     paper a diagonal of single cells reads as a line; on the panel each nibble is a 7px
     block, the corner they share is one pixel, and the line reads as a row of separate
-    blocks — a gap. A diagonal is drawn as a staircase whose steps share an edge (an extra
+    blocks: a gap. A diagonal is drawn as a staircase whose steps share an edge (an extra
     cell on the inside of a curve, or on whichever side keeps a detail clear of the
     outline). grid() refuses a corner-only joint and names the cell.
 
 3.  TWO TONES, on transparent: INK for every line and FILL for the body the outline
-    encloses, which bake() works out — a recipe only ever draws lines. Nothing emits a
+    encloses, which bake() works out: a recipe only ever draws lines. Nothing emits a
     third value, because a stray colour costs real flash silently: two tones and
     transparency store as a small indexed sheet, and every extra colour widens it. Light
     lines on a dark body: the line carries the silhouette against the dark scenes, and
     the body is filled so the creature reads as a solid thing, not as a wireframe the
     backdrop shows through. The fill is everything the outline closes off from the edge
     of the grid, so a gap in the outline lets it drain away: an OPEN MOUTH has to say
-    where the air stops, with ':' cells — empty on the panel, a wall to the fill. Seal
-    the gap, or the whole cavity, and the head behind it stays solid. The CORRUPTION —
-    the glitch tear, the lit blocks — is NOT in the pixels: it is a render-time pass
+    where the air stops, with ':' cells: empty on the panel, a wall to the fill. Seal
+    the gap, or the whole cavity, and the head behind it stays solid. The CORRUPTION
+    (the glitch tear, the lit blocks) is NOT in the pixels: it is a render-time pass
     (core/render/glitch.h, drawSpriteGlitch) over this drawing, so the sheet stays a
     cheap still and the glitch animates for free.
 
@@ -69,13 +69,13 @@ gen_assets.py reads as two rows by family, and its area's row names it (SubBossD
 AreaDef::areaBossSprite).
 
 The sheet: two ROWS of one frame each, row 0 the idle and row 1 the attack. That is the
-whole animation budget — a wild never breathes or walks, it stands, and it lunges when it
+whole animation budget: a wild never breathes or walks, it stands, and it lunges when it
 swings (fightPose picks the row). Everything else a fight has to say (stunned, poisoned,
 what kind of blow) belongs to the combat FX, not to more frames here.
 
 Facing: declared on the SHEET in gen_assets.py's FACING table (a wild has no creature row to
-carry it), and the drawing is authored to match. GlitchHog is Facing::Left — snout to the
-left — so the combat screen seats it looking at the pet it faces.
+carry it), and the drawing is authored to match. GlitchHog is Facing::Left: snout to the
+left, so the combat screen seats it looking at the pet it faces.
 
 Pure standard library, like both sibling generators, so a fresh clone with a stock Python 3
 runs `--check` in the gates. The committed PNG is decoded with gen_assets.py's OWN decoder,
@@ -94,7 +94,7 @@ import zlib
 # lit LCD segment does.
 INK = (232, 237, 242, 255)
 
-# The body's fill: every cell the outline encloses (Nib.bake). A dark SLATE — still a solid
+# The body's fill: every cell the outline encloses (Nib.bake). A dark SLATE: still a solid
 # body that hides the backdrop behind it (no wireframe), but a tone darker than the line so
 # the outline and the marks inside it are what the eye reads first.
 FILL = (58, 64, 80, 255)
@@ -102,17 +102,17 @@ FILL = (58, 64, 80, 255)
 # Baked pixel values: outside the drawing, a line, the enclosed body.
 EMPTY, LINE, BODY = 0, 1, 2
 
-# One nibble is 4×4 device pixels — the low-def quantum. Every logical size below is in
+# One nibble is 4×4 device pixels: the low-def quantum. Every logical size below is in
 # nibbles; bake() multiplies by this to reach pixels.
 NIB = 4
 
 
 # --------------------------------------------------------------------------------------
-#  The nibble canvas — a coarse boolean field a recipe paints, expanded ×NIB at bake().
+#  The nibble canvas: a coarse boolean field a recipe paints, expanded ×NIB at bake().
 # --------------------------------------------------------------------------------------
 class Nib:
     """A w×h field of 4×4-pixel cells. A recipe draws in THIS space, so it cannot express
-    anything finer than a nibble — the grid is the style."""
+    anything finer than a nibble: the grid is the style."""
 
     def __init__(self, w, h):
         self.w, self.h = w, h
@@ -132,7 +132,7 @@ class Nib:
     def bake(self):
         """Nibbles -> pixels: each inked nibble a NIB×NIB block of LINE, each enclosed empty
         nibble a block of BODY. Enclosed means it cannot reach the grid's edge through empty
-        nibbles that share an edge — so the fill follows the outline exactly, holes included:
+        nibbles that share an edge, so the fill follows the outline exactly, holes included:
         a loop's inside is body too, the way it is white on paper."""
         outside = set()
         open_ = lambda x, y: not self.on[y][x] and (x, y) not in self.sealed
@@ -172,7 +172,7 @@ class Nib:
 
 
 # --------------------------------------------------------------------------------------
-#  PNG out — line and body on transparent, 8-bit RGBA (gen_assets.py decodes exactly this,
+#  PNG out: line and body on transparent, 8-bit RGBA (gen_assets.py decodes exactly this,
 #  and stores the sheet in whichever of its indexed forms is smallest).
 # --------------------------------------------------------------------------------------
 def to_png(px, w, h):
@@ -194,18 +194,18 @@ def to_png(px, w, h):
 
 
 # ======================================================================================
-#  RECIPES — one function per sheet, returning a baked (px, w, h). Everything above is the
+#  RECIPES: one function per sheet, returning a baked (px, w, h). Everything above is the
 #  vocabulary; from here down is which cells each creature is.
 #
 #  A recipe is graph paper: one ASCII grid per frame, '#' an inked nibble and '.' an empty
 #  one, exactly how a V-pet sprite is drawn on squared paper. Frames stack as ROWS of the
-#  sheet — row 0 the idle, row 1 the attack — because an AnimClip selects a row, and a
+#  sheet (row 0 the idle, row 1 the attack), because an AnimClip selects a row, and a
 #  wild malbeast's two poses are picked by row (fightPose, ui/combat_screen.cpp).
 # ======================================================================================
 
 def grid(*rows):
-    """One frame from graph-paper rows: '#' a line, '.' empty, ':' SEALED air — empty, but
-    the body fill stops at it (rule 3). Every row must be the same width — a ragged grid
+    """One frame from graph-paper rows: '#' a line, '.' empty, ':' SEALED air. Empty, but
+    the body fill stops at it (rule 3). Every row must be the same width: a ragged grid
     is a typo, and a typo here is a pixel nobody meant."""
     w = len(rows[0])
     for r in rows:
@@ -238,8 +238,8 @@ def stack(*frames, swells=False):
     """Bake frames into one sheet, one frame per ROW (idle on top, attack below).
 
     The poses are one body, so their FILLS should be about the same size. A frame whose
-    body is less than half the biggest pose's has had its fill drain out through a gap —
-    nearly always an open mouth with no ':' seal (rule 3) — and is refused, naming the
+    body is less than half the biggest pose's has had its fill drain out through a gap,
+    nearly always an open mouth with no ':' seal (rule 3), and is refused, naming the
     row, rather than shipping as a wireframe on the one beat it matters most.
 
     `swells=True` is the one way past that, for a creature whose pose change IS a change
@@ -263,7 +263,7 @@ def stack(*frames, swells=False):
 
 
 def glitchhog():
-    """GlitchHog — the tier-1 'net boar, facing LEFT. A closed one-cell outline with the
+    """GlitchHog: the tier-1 'net boar, facing LEFT. A closed one-cell outline with the
     detail drawn inside it: hackles along the back, a solid eye, a jowl line splitting head
     from body, one hide curl, a belly line, stubby legs. The attack lunges the whole body
     forward a cell with the head dropped and the jaw open."""
@@ -299,9 +299,9 @@ def glitchhog():
 
 
 def segfault_pup():
-    """Segfault Pup — the tier-1 runt, front-on (no facing: nothing to mirror). Floppy ears,
+    """Segfault Pup. The tier-1 runt, front-on (no facing: nothing to mirror). Floppy ears,
     two eyes, a nose, a collar line, four stubby paws. The attack bares a wide mouth with
-    the brows dropped — a pup that bites."""
+    the brows dropped: a pup that bites."""
     idle = grid(
         ".##........##.",
         ".###......###.",
@@ -334,7 +334,7 @@ def segfault_pup():
 
 
 def packet_wraith():
-    """Packet Wraith — tier 2, front-on, and HOVERING: the bottom row is empty, so it is
+    """Packet Wraith. Tier 2, front-on, and HOVERING: the bottom row is empty, so it is
     the one wild that does not stand on the floor. A hood, two slot eyes, an envelope
     flap folded down its chest, tattered wisps. The attack flings its arms wide and opens
     the mouth."""
@@ -370,7 +370,7 @@ def packet_wraith():
 
 
 def cache_ghoul():
-    """Cache Ghoul — tier 2, facing LEFT. A big skull of a head (the V-pet rule: the head
+    """Cache Ghoul: tier 2, facing LEFT. A big skull of a head (the V-pet rule: the head
     is where the read is) with a sunken eye and teeth, a small hunched body and one long
     dangling claw arm. The attack thrusts the skull forward, jaw open, arm reaching."""
     idle = grid(
@@ -405,8 +405,8 @@ def cache_ghoul():
 
 
 def buffer_wyrm():
-    """Buffer Wyrm — tier 3, facing LEFT. A wedge head on a three-cell neck with segment
-    bars down it, rising out of a looped coil that spills to the edges of its cell — the
+    """Buffer Wyrm: tier 3, facing LEFT. A wedge head on a three-cell neck with segment
+    bars down it, rising out of a looped coil that spills to the edges of its cell: the
     overflow. The attack drives the head forward and down with the jaw split open."""
     idle = grid(
         "..............",
@@ -440,7 +440,7 @@ def buffer_wyrm():
 
 
 def kernel_leviathan():
-    """Kernel Leviathan — the tier-3 apex, facing LEFT, on the bigger 64x56 cell (16x14
+    """Kernel Leviathan: the tier-3 apex, facing LEFT, on the bigger 64x56 cell (16x14
     nibbles). A heavy sea-beast: back spines, a solid eye, a long jaw line and a ringed
     core in its flank (the kernel), thick stumps of legs. The attack drops and opens the jaw."""
     idle = grid(
@@ -479,9 +479,9 @@ def kernel_leviathan():
 
 
 def bloatfish():
-    """Bloatfish — Net-Sea Crossing, facing LEFT. A pufferfish named for bloatware: at rest a
+    """Bloatfish: Net-Sea Crossing, facing LEFT. A pufferfish named for bloatware: at rest a
     small fish, eye forward, gill line, forked tail, a few spines; when it swings it
-    INFLATES into a round ball spined all the way round, which is the whole pose — the
+    INFLATES into a round ball spined all the way round, which is the whole pose: the
     attack is the swell, not a lunge."""
     idle = grid(
         "..............",
@@ -516,7 +516,7 @@ def bloatfish():
 
 
 def trialobite():
-    """Trialobite — Net-Sea Crossing, front-on (no facing: it is drawn from above, the way
+    """Trialobite. Net-Sea Crossing, front-on (no facing: it is drawn from above, the way
     a fossil is read). A trilobite named for trialware: a horned head shield with two eyes,
     swept-back spines, a body split into the three lobes the animal is named for, ribs
     either side. The attack rears it up, spines flared and legs out."""
@@ -552,7 +552,7 @@ def trialobite():
 
 
 def hoaxolotl():
-    """Hoaxolotl — Napstorrent Moors, facing LEFT. An axolotl named for the hoax: the broad
+    """Hoaxolotl: Napstorrent Moors, facing LEFT. An axolotl named for the hoax: the broad
     smiling head, the gill stalks fanning up behind it, a long low body, stubby legs and a
     finned tail. The attack flares the gills and opens the mouth (sealed air, rule 3)."""
     idle = grid(
@@ -587,7 +587,7 @@ def hoaxolotl():
 
 
 def fuzzard():
-    """Fuzzard — Napstorrent Moors, facing LEFT. A buzzard named for fuzzing, the moorland's
+    """Fuzzard: Napstorrent Moors, facing LEFT. A buzzard named for fuzzing, the moorland's
     own raptor: perched, hook beak forward, folded wing marked on the body, tail feathers
     and talons on the floor. The attack throws both wings up into a V."""
     idle = grid(
@@ -622,7 +622,7 @@ def fuzzard():
 
 
 def garbagoyle():
-    """Garbagoyle — Castle Rapidscare, front-on (no facing: carved to be seen straight on). A
+    """Garbagoyle. Castle Rapidscare, front-on (no facing: carved to be seen straight on). A
     gargoyle named for garbage collection: horns, folded stone wings narrow enough to be all
     line, glaring eyes, a fanged mouth, crouched on the ledge. The attack spreads the wings
     high and opens the mouth (sealed air, rule 3)."""
@@ -658,7 +658,7 @@ def garbagoyle():
 
 
 def gatorway():
-    """Gatorway — Castle Rapidscare, facing LEFT. A gator named for the gateway it keeps,
+    """Gatorway: Castle Rapidscare, facing LEFT. A gator named for the gateway it keeps,
     out of the castle moat: low and long, eye bump, ridged back, a toothed jaw line, stubby
     legs, a tapering tail. The attack gapes the jaws (sealed air between them)."""
     idle = grid(
@@ -693,9 +693,9 @@ def gatorway():
 
 
 def black_window():
-    """Black Window — the Silk Lode, front-on (drawn from above, the way a spider is read; no
+    """Black Window: the Silk Lode, front-on (drawn from above, the way a spider is read; no
     facing). A black widow named for the pop-up window: legs radiating off a small head,
-    and on the abdomen not the hourglass but a WINDOW — a cross of mullions splitting it
+    and on the abdomen not the hourglass but a WINDOW: a cross of mullions splitting it
     into four panes. The attack lifts and spreads the legs and bares the fangs."""
     idle = grid(
         "..............",
@@ -729,7 +729,7 @@ def black_window():
 
 
 def terminite():
-    """Terminite — the Silk Lode, facing LEFT. A soldier termite named for the terminal: the
+    """Terminite: the Silk Lode, facing LEFT. A soldier termite named for the terminal: the
     big armoured head with its mandibles forward, a narrow waist, a plump striped abdomen,
     three straight legs. The attack opens the mandibles (sealed air between them)."""
     idle = grid(
@@ -764,10 +764,10 @@ def terminite():
 
 
 def anonymouse():
-    """Anonymouse — the Darkweb Crawl, front-on (no facing: it looks straight at you,
+    """Anonymouse. The Darkweb Crawl, front-on (no facing: it looks straight at you,
     and you still can't say who it is). A mouse named for anonymity: two big round ears, a
     narrow head with a nose, a small body, the tail run out along the floor. The attack bares
-    the teeth — two incisors over sealed air."""
+    the teeth: two incisors over sealed air."""
     idle = grid(
         ".####....####.",
         "##..##..##..##",
@@ -800,7 +800,7 @@ def anonymouse():
 
 
 def vulnture():
-    """Vulnture — the Darkweb Crawl, front-on. A vulture named for the vulnerability
+    """Vulnture: the Darkweb Crawl, front-on. A vulture named for the vulnerability
     it waits on: a small bald head on its collar, wings held open the way a vulture suns
     itself, feathered tips stepping down, talons under. The attack lifts both wings into a V."""
     idle = grid(
@@ -835,7 +835,7 @@ def vulnture():
 
 
 def boss_benjamin():
-    """Benjamin the False — Citrus Circuit's Fake File Flats, front-on. A mimic: a file icon
+    """Benjamin the False: Citrus Circuit's Fake File Flats, front-on. A mimic: a file icon
     with a folded corner and lines of text, its seam a row of teeth. The attack splits it
     open along the seam into a mouth (sealed air between the jaws)."""
     idle = grid(
@@ -874,7 +874,7 @@ def boss_benjamin():
 
 
 def boss_morpheus():
-    """Morpheus the Mirage — the Buffering Bluffs, front-on. A moth, for the god of
+    """Morpheus the Mirage: the Buffering Bluffs, front-on. A moth, for the god of
     dreams: feelers, a narrow body, and an eye-spot ringed on each wing. The attack fills the
     eye-spots in, so the wings stare, and spreads the feelers."""
     idle = grid(
@@ -913,7 +913,7 @@ def boss_morpheus():
 
 
 def boss_turing():
-    """Turing the Unhalted — the 99% Cache, facing LEFT. A snail whose shell is a
+    """Turing the Unhalted: the 99% Cache, facing LEFT. A snail whose shell is a
     square spiral, the loading spinner that never finishes, on a long foot with its head
     raised and two eye stalks. The attack stretches the stalks and opens the mouth."""
     idle = grid(
@@ -952,7 +952,7 @@ def boss_turing():
 
 
 def boss_sharman():
-    """Sharman of the Fold — the Shared Folder, facing LEFT. A hermit crab living in a
+    """Sharman of the Fold: the Shared Folder, facing LEFT. A hermit crab living in a
     manila folder: the tab on top, the front flap's fold line, a big claw out of the open
     edge and legs underneath. The attack lifts the claw and opens the flap."""
     idle = grid(
@@ -991,9 +991,9 @@ def boss_sharman():
 
 
 def boss_toneloc():
-    """Toneloc the Tolltaker — Dial-Up Draw, facing LEFT. A toad, for the war dialer:
+    """Toneloc the Tolltaker: Dial-Up Draw, facing LEFT. A toad, for the war dialer:
     squat and wide, one bulging eye on top, a grin across the front, a folded back leg with
-    long toes. The attack opens the mouth and balloons the throat sac — the call."""
+    long toes. The attack opens the mouth and balloons the throat sac: the call."""
     idle = grid(
         "................",
         "................",
@@ -1030,7 +1030,7 @@ def boss_toneloc():
 
 
 def boss_baron():
-    """Baron Bonzi — Citrus Circuit's area boss, facing LEFT, on the Daemon-wide 96x64
+    """Baron Bonzi: Citrus Circuit's area boss, facing LEFT, on the Daemon-wide 96x64
     cell (24x16 nibbles). A knuckle-walking gorilla in a top hat: brow ridge and jutting
     muzzle, a hump of shoulder, a front arm planted on its knuckles. The attack drops the jaw
     in a roar and swings the arm forward."""
@@ -1074,7 +1074,7 @@ def boss_baron():
 
 
 def boss_netbus_nipper():
-    """Netbus Nipper — the Pirate Bayou's Leech Landing, front-on. A bayou crab, for the trojan
+    """Netbus Nipper: the Pirate Bayou's Leech Landing, front-on. A bayou crab, for the trojan
     that reached in and took the handle: a ridged shell, eyes on stalks, both claws up and
     shut. The attack springs the pincers open."""
     idle = grid(
@@ -1113,7 +1113,7 @@ def boss_netbus_nipper():
 
 
 def boss_suprnova_serpent():
-    """Suprnova Serpent — Torrent Swamp, facing LEFT. A sea serpent with a star-burst crest:
+    """Suprnova Serpent: Torrent Swamp, facing LEFT. A sea serpent with a star-burst crest:
     the head reared on its neck, coils breaking the water behind. The attack drops the head
     and opens the jaw on two fangs."""
     idle = grid(
@@ -1152,7 +1152,7 @@ def boss_suprnova_serpent():
 
 
 def boss_razor_kraken():
-    """Razor Kraken — the Cracked Keys, front-on. A kraken: a domed mantle with two eyes, its
+    """Razor Kraken: the Cracked Keys, front-on. A kraken: a domed mantle with two eyes, its
     arms hanging below. The attack rears the outer arms up and opens the beak."""
     idle = grid(
         "......####......",
@@ -1190,7 +1190,7 @@ def boss_razor_kraken():
 
 
 def boss_wight_of_drinkordie():
-    """Wight of Drinkordie — Warez Marsh, front-on. A hooded wight: two lights in a dark face
+    """Wight of Drinkordie: Warez Marsh, front-on. A hooded wight: two lights in a dark face
     (sealed air), a robe falling to a ragged hem, a bottle held up in one hand. The attack
     flings both arms up and opens a howl."""
     idle = grid(
@@ -1229,7 +1229,7 @@ def boss_wight_of_drinkordie():
 
 
 def boss_sunken_seventh():
-    """The Sunken Seventh — the Booty Cache, facing LEFT. An anglerfish, for the Sub7
+    """The Sunken Seventh: the Booty Cache, facing LEFT. An anglerfish, for the Sub7
     backdoor: a lure on a stalk over a round body, an underbite with teeth along the seam.
     The attack drops the jaw open."""
     idle = grid(
@@ -1268,7 +1268,7 @@ def boss_sunken_seventh():
 
 
 def boss_capn_cracker():
-    """Cap'n Cracker — the Pirate Bayou's area boss, facing LEFT, on the 96x64 cell. A pirate
+    """Cap'n Cracker: the Pirate Bayou's area boss, facing LEFT, on the 96x64 cell. A pirate
     parrot (Polly wants a cracker): a tricorn, an eyepatch on its strap, a hooked beak, a
     long tail, on a perch. The attack throws a wing up and opens the beak in a squawk."""
     idle = grid(
@@ -1311,7 +1311,7 @@ def boss_capn_cracker():
 
 
 def boss_candy_siren():
-    """The Candy Siren — Net-Sea Crossing's Uninstall Undertow, front-on. The sweet that comes
+    """The Candy Siren: Net-Sea Crossing's Uninstall Undertow, front-on. The sweet that comes
     bundled with the installer: a wrapped candy with its wrapper twisted off both ends and a
     smiling face. The attack drops the smile open on teeth."""
     idle = grid(
@@ -1350,7 +1350,7 @@ def boss_candy_siren():
 
 
 def boss_vundo():
-    """Vundo the Unending — the Popup Whirlpool, front-on. A jellyfish whose bell is a pop-up
+    """Vundo the Unending: the Popup Whirlpool, front-on. A jellyfish whose bell is a pop-up
     window: a title bar with its close box, a line of ad copy, tentacles trailing. The attack
     fans the tentacles out."""
     idle = grid(
@@ -1389,7 +1389,7 @@ def boss_vundo():
 
 
 def boss_superfish():
-    """The Superfish — Tracker Trench, facing LEFT. A fish in a cape with an S on its chest
+    """The Superfish: Tracker Trench, facing LEFT. A fish in a cape with an S on its chest
     and a forked tail. The attack opens the mouth and flares a fin."""
     idle = grid(
         "................",
@@ -1427,7 +1427,7 @@ def boss_superfish():
 
 
 def boss_zlob_conger():
-    """Zlob Conger — Codec Reef, facing LEFT. A conger eel coming out of a hole in a cracked
+    """Zlob Conger: Codec Reef, facing LEFT. A conger eel coming out of a hole in a cracked
     lump of reef (sealed air in the hole). The attack rears the head and opens the jaw."""
     idle = grid(
         "................",
@@ -1465,7 +1465,7 @@ def boss_zlob_conger():
 
 
 def boss_green_button():
-    """The Green Button — Sandbox Beach, facing LEFT. A turtle whose shell is a download
+    """The Green Button: Sandbox Beach, facing LEFT. A turtle whose shell is a download
     button, a play arrow on its face. The attack darts the head out with the mouth open."""
     idle = grid(
         "................",
@@ -1503,9 +1503,9 @@ def boss_green_button():
 
 
 def boss_admiral_conduit():
-    """Admiral Conduit — Net-Sea Crossing's area boss, front-on, on the 96x64 cell. An admiral
+    """Admiral Conduit: Net-Sea Crossing's area boss, front-on, on the 96x64 cell. An admiral
     grown fat on years of traffic: a bicorne worn athwart, a moustache, epaulettes, and a
-    coat strained over his belly with two rows of buttons down it — the toolbar. He holds a
+    coat strained over his belly with two rows of buttons down it: the toolbar. He holds a
     spyglass to his eye; the attack raises a cutlass and bellows an order."""
     idle = grid(
         ".........######.........",
@@ -1547,9 +1547,9 @@ def boss_admiral_conduit():
 
 
 def boss_nimda():
-    """Nimda of the Shallows — Napstorrent Moors' Seeder Shallows, facing LEFT. A heron, for
+    """Nimda of the Shallows: Napstorrent Moors' Seeder Shallows, facing LEFT. A heron, for
     the worm whose name is admin backwards: wading, neck curved up, its legs reflected under
-    a line of ripples — the reversal. The attack thrusts the neck out with the beak open."""
+    a line of ripples: the reversal. The attack thrusts the neck out with the beak open."""
     idle = grid(
         "....####........",
         ".########.......",
@@ -1586,9 +1586,9 @@ def boss_nimda():
 
 
 def boss_mydoom_lich():
-    """Mydoom Lich — Leecher Fen, front-on. A crowned skull with sockets and teeth, a robe with
+    """Mydoom Lich: Leecher Fen, front-on. A crowned skull with sockets and teeth, a robe with
     the ribs showing, arms down from the shoulders and a letter in one hand. The attack
-    flings the arms wide and sends envelopes flying — the mail storm."""
+    flings the arms wide and sends envelopes flying: the mail storm."""
     idle = grid(
         "......#.##......",
         ".....######.....",
@@ -1625,7 +1625,7 @@ def boss_mydoom_lich():
 
 
 def boss_bog_neumann():
-    """Bog Neumann — the Shared Bog, front-on. A self-replicating slime on the bog, for von
+    """Bog Neumann: the Shared Bog, front-on. A self-replicating slime on the bog, for von
     Neumann's machine: one blob with a face and a pinch down its middle. The attack has it
     split into two copies of itself."""
     idle = grid(
@@ -1664,7 +1664,7 @@ def boss_bog_neumann():
 
 
 def boss_castellan_creeper():
-    """Castellan Creeper — Spectre Swamp, front-on. A castle turret with eyes in its window
+    """Castellan Creeper: Spectre Swamp, front-on. A castle turret with eyes in its window
     (sealed air) and creeper climbing both walls. The attack lashes the vines out."""
     idle = grid(
         "................",
@@ -1702,8 +1702,8 @@ def boss_castellan_creeper():
 
 
 def boss_herald_anna_kova():
-    """Herald Anna Kova — Castle Causeway, front-on. A herald in a quartered coat and a
-    feathered cap, a trumpet at the lips with a banner hanging from it — the attachment bait.
+    """Herald Anna Kova: Castle Causeway, front-on. A herald in a quartered coat and a
+    feathered cap, a trumpet at the lips with a banner hanging from it: the attachment bait.
     The attack raises the trumpet and streams the banner."""
     idle = grid(
         ".......########.",
@@ -1741,7 +1741,7 @@ def boss_herald_anna_kova():
 
 
 def boss_morris_the_wyrm():
-    """Morris the Wyrm — Napstorrent Moors' area boss, facing LEFT, on the 96x64 cell. The
+    """Morris the Wyrm: Napstorrent Moors' area boss, facing LEFT, on the 96x64 cell. The
     oldest worm: a horned head on a long segmented body that arches across the whole cell,
     stubby legs under it. The attack rears the head and opens the jaws."""
     idle = grid(
@@ -1784,9 +1784,9 @@ def boss_morris_the_wyrm():
 
 
 def boss_eight_pwns():
-    """The Eight Pwns — Castle Rapidscare's 404 Drawbridge, front-on. A rank of chess pawns:
+    """The Eight Pwns: Castle Rapidscare's 404 Drawbridge, front-on. A rank of chess pawns:
     one with a face stepping out in front, two of the rank behind it. The attack advances
-    the front pawn a step — the rank advance."""
+    the front pawn a step: the rank advance."""
     idle = grid(
         "................",
         "................",
@@ -1823,7 +1823,7 @@ def boss_eight_pwns():
 
 
 def boss_red_queen_melissa():
-    """Red Queen Melissa — the Mirror Maze, front-on. A card queen: a crown, a ruff under a
+    """Red Queen Melissa: the Mirror Maze, front-on. A card queen: a crown, a ruff under a
     narrow neck, a heart on a spreading gown, a sceptre held at her side. The attack raises
     both arms and opens the mouth."""
     idle = grid(
@@ -1862,7 +1862,7 @@ def boss_red_queen_melissa():
 
 
 def boss_knave_winfixer():
-    """Knave Winfixer — Opt-Out Obscura, front-on. A helmeted knave behind a kite shield with
+    """Knave Winfixer: Opt-Out Obscura, front-on. A helmeted knave behind a kite shield with
     a cross on it, for the fake fixer: the shield that fixes nothing. The attack raises the
     sword."""
     idle = grid(
@@ -1901,7 +1901,7 @@ def boss_knave_winfixer():
 
 
 def boss_joker_virus():
-    """Joker Virus — the Decoy Dungeon, front-on. A jester: a three-pointed cap with bells, a
+    """Joker Virus: the Decoy Dungeon, front-on. A jester: a three-pointed cap with bells, a
     wide grin, motley. The attack cracks the grin open and flings the arms out."""
     idle = grid(
         ".###..####..###.",
@@ -1939,7 +1939,7 @@ def boss_joker_virus():
 
 
 def boss_king_kimble():
-    """King Kimble — the Comment Catacombs, front-on. A stout king seated on his throne, crown
+    """King Kimble: the Comment Catacombs, front-on. A stout king seated on his throne, crown
     above its finials, holding an hourglass for the premium wait. The attack thrusts the
     hourglass up."""
     idle = grid(
@@ -1978,7 +1978,7 @@ def boss_king_kimble():
 
 
 def boss_count_conficker():
-    """Count Conficker — Castle Rapidscare's area boss, front-on, on the 96x64 cell. A vampire
+    """Count Conficker: Castle Rapidscare's area boss, front-on, on the 96x64 cell. A vampire
     count: slicked hair to a widow's peak, a high collar flaring, wrapped in his cape, bats
     about him. The attack throws the cape open into bat wings the width of the cell."""
     idle = grid(
@@ -2021,7 +2021,7 @@ def boss_count_conficker():
 
 
 def boss_cult_of_the_dead_code():
-    """Cult of the Dead Code — the Silk Lode's Deadlink Stair, front-on. A robed cultist in
+    """Cult of the Dead Code: the Silk Lode's Deadlink Stair, front-on. A robed cultist in
     a horned cow-skull mask, the cult's own emblem. The attack raises the arms and holds up a
     broken link. Its escort round, the First Rite, wears this sheet too."""
     idle = grid(
@@ -2060,7 +2060,7 @@ def boss_cult_of_the_dead_code():
 
 
 def boss_mariposa():
-    """Mariposa of the Weave — the Botnet Funnel, front-on. A butterfly (mariposa), for the
+    """Mariposa of the Weave: the Botnet Funnel, front-on. A butterfly (mariposa), for the
     botnet: clubbed antennae, upper and lower wings, a web strung across each upper wing. The
     attack flares the wings up and out."""
     idle = grid(
@@ -2099,7 +2099,7 @@ def boss_mariposa():
 
 
 def boss_cih_the_unwriter():
-    """CIH the Unwriter — the Bitrot Fissure, front-on. A BIOS chip walking on its pins, for
+    """CIH the Unwriter: the Bitrot Fissure, front-on. A BIOS chip walking on its pins, for
     the virus that wiped them: a crack across its face. The attack splits the crack open."""
     idle = grid(
         "....#.#..#.#....",
@@ -2137,7 +2137,7 @@ def boss_cih_the_unwriter():
 
 
 def boss_necurs_the_raiser():
-    """Necurs the Raiser — the Zombie Gullet, front-on. A zombie clawing up out of heaped
+    """Necurs the Raiser: the Zombie Gullet, front-on. A zombie clawing up out of heaped
     earth, arms reaching. The attack heaves it higher, mouth open. Its escort round, the
     First Host, wears this sheet too."""
     idle = grid(
@@ -2176,7 +2176,7 @@ def boss_necurs_the_raiser():
 
 
 def boss_29a_hierophant():
-    """The 29A Hierophant — the Zero Day Shrine, front-on. A priest in a stacked triple tiara,
+    """The 29A Hierophant: the Zero Day Shrine, front-on. A priest in a stacked triple tiara,
     a staff with the triple cross, a hand raised in blessing. The attack raises the staff
     and the other hand."""
     idle = grid(
@@ -2215,7 +2215,7 @@ def boss_29a_hierophant():
 
 
 def boss_mirai():
-    """Mirai the Many-Legged — the Silk Lode's area boss, facing LEFT, on the 96x64 cell. A
+    """Mirai the Many-Legged: the Silk Lode's area boss, facing LEFT, on the 96x64 cell. A
     centipede of cheap devices, a lens on every segment, arching across the cell on many
     legs. The attack rears the head with the mandibles open."""
     idle = grid(

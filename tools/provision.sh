@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# provision.sh — take a GENUINELY FRESH ESP32-S3 board and a FRESH microSD card
+# provision.sh: take a GENUINELY FRESH ESP32-S3 board and a FRESH microSD card
 # and leave BOTH in the verified state this project actually runs on. Not "flash
 # the firmware": a blank board is missing the custom partition table the save
-# depends on, and a blank/exFAT card won't mount at all — so provisioning has
+# depends on, and a blank/exFAT card won't mount at all, so provisioning has
 # real prerequisites on both media, and this script checks its own work rather
 # than trusting that a command "ran without erroring."
 #
@@ -11,7 +11,7 @@
 # DELEGATES to it for the build+upload+report step rather than reinventing
 # --wait-wake and the partition/save-usage report. What provision.sh adds:
 #   • a full chip erase + a forced clean rebuild (both mandatory the first time
-#     a custom partition table lands — see the erase/clean notes below),
+#     a custom partition table lands. See the erase/clean notes below),
 #   • ASSERTIONS on top of flash.sh's human-readable report: the `malsave` NVS
 #     partition must actually be present at the right size, and the device's
 #     boot lines must report a healthy save blob (well under capacity) and a
@@ -20,9 +20,9 @@
 #     with hard guards, staging the /web 'Pedia bundle, and verifying it landed.
 #
 # Two media, two phases, done in this order because the card physically moves:
-#   1) `sd`    — card in a READER on THIS computer. Format (optional) + stage +
+#   1) `sd`:    card in a READER on THIS computer. Format (optional) + stage +
 #                verify the bundle on the card.
-#   2) `board` — card can now be seated in the DEVICE. Erase + clean build +
+#   2) `board`: card can now be seated in the DEVICE. Erase + clean build +
 #                flash + verify partition table + verify boot (incl. that the
 #                just-provisioned card mounts on-device).
 # `all` runs 1, prompts you to move the card into the device, then runs 2.
@@ -39,7 +39,7 @@
 #   --dest <mount>   Mounted card path for staging (e.g. /Volumes/MALWARIUM).
 #                    Required for `sd` WITHOUT --format; ignored with --format
 #                    (a format renames the volume MALWARIUM and re-derives it).
-#   --format         Reformat the card FAT32 before staging. DESTRUCTIVE — needs
+#   --format         Reformat the card FAT32 before staging. DESTRUCTIVE: needs
 #                    --device and interactive confirmation; refuses internal disks.
 #   --device <diskN> Whole-disk id to format (macOS `diskutil list`, e.g. disk4).
 #   --port <path>    Serial port for the board upload/verify (default: autodetect).
@@ -50,9 +50,9 @@
 #                    chip has nothing running to sleep, so the first flash won't
 #                    need it.
 #   --keep-build     Skip the `rm -rf .pio/build/<env>` clean. Don't use this for
-#                    a partition-table change — a stale cache silently re-emits
+#                    a partition-table change: a stale cache silently re-emits
 #                    the OLD firmware.bin offset and the board boot-loops.
-#   --env <name>     PlatformIO env (default: waveshare_s3_154 — the only target).
+#   --env <name>     PlatformIO env (default: waveshare_s3_154. The only target).
 #   -h, --help       Show this help.
 
 set -euo pipefail
@@ -70,7 +70,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 flash_sh="$repo_root/tools/flash.sh"
 
 # The custom table's dedicated save partition (partitions_malwarium.csv). These
-# are what the post-flash partition assertion checks the built binary against —
+# are what the post-flash partition assertion checks the built binary against,
 # if a future table edit changes them, update here too.
 EXPECT_PART_NAME="malsave"
 EXPECT_PART_SIZE="256K"
@@ -114,10 +114,10 @@ gen_part_py() {
 # ---------------------------------------------------------------------------
 
 # diskutil-guarded FAT32 reformat. The firmware mounts read-only-ish via
-# esp_vfs_fat_sdmmc_mount() with format_if_mount_failed=false (sd_esp32.h) — it
+# esp_vfs_fat_sdmmc_mount() with format_if_mount_failed=false (sd_esp32.h): it
 # NEVER formats the card itself and it CANNOT mount exFAT, so a fresh card that
 # ships exFAT (common >32GB) has to be brought to FAT32 here first. Whole-disk,
-# external-only, with an explicit typed confirmation — wiping the wrong disk is
+# external-only, with an explicit typed confirmation: wiping the wrong disk is
 # unrecoverable.
 sd_format() {
     [ -n "$DEVICE" ] || die "--format needs --device <diskN> (see: diskutil list)"
@@ -130,7 +130,7 @@ sd_format() {
     # Field names vary by macOS version: modern builds report 'Device Location'
     # (Internal/External) + 'Removable Media' (Fixed/Removable) rather than a
     # single 'Internal:' line. Read both and require the disk to look external by
-    # EITHER signal; 'Virtual' must be No. Anything ambiguous fails closed —
+    # EITHER signal; 'Virtual' must be No. Anything ambiguous fails closed:
     # wiping the wrong disk is unrecoverable and there is deliberately no override.
     location="$(printf  '%s\n' "$info" | awk -F': *' '/Device Location:/{print $2; exit}')"
     removable="$(printf '%s\n' "$info" | awk -F': *' '/Removable Media:/{print $2; exit}')"
@@ -149,14 +149,14 @@ sd_format() {
     [ "$reply" = "$dev" ] || die "confirmation did not match ('$reply' != '$dev') — aborting, nothing was erased"
 
     say "formatting /dev/$dev as FAT32 (volume MALWARIUM)…"
-    # FAT32 personality + MBR — the layout SD_MMC expects. Volume name is the
+    # FAT32 personality + MBR: the layout SD_MMC expects. Volume name is the
     # FAT 11-char uppercase label; it becomes the /Volumes mount point.
     diskutil eraseDisk FAT32 MALWARIUM MBRFormat "/dev/$dev"
     DEST="/Volumes/MALWARIUM"
     say "formatted; mounted at $DEST"
 }
 
-# Confirm the destination really is a FAT filesystem before staging — the one
+# Confirm the destination really is a FAT filesystem before staging: the one
 # on-card property the firmware can't work around. An exFAT card copies fine
 # here but silently fails to mount on the device (sd_esp32.h lastError()).
 sd_verify_fs() {
@@ -181,13 +181,13 @@ do_sd() {
     sd_verify_fs
 
     # Stage the served bundle via the existing Make target (regenerates
-    # pedia_data.js first, so the staged copy is never stale) — the same path
+    # pedia_data.js first, so the staged copy is never stale): the same path
     # flash.sh --pedia uses. Files land at $DEST/web/… where ap_server.h serves
     # them from /sdcard/web/<path>.
     say "staging /web 'Pedia bundle -> $DEST/web/"
     make -C "$repo_root" pedia-sd DEST="$DEST"
 
-    # Verify the bundle actually landed — not just that make exited 0.
+    # Verify the bundle actually landed, not just that make exited 0.
     local missing=0 f
     for f in web/index.html web/style.css web/app.js web/data/pedia_data.js; do
         if [ ! -f "$DEST/$f" ]; then echo "   MISSING: $DEST/$f" >&2; missing=1; fi
@@ -223,7 +223,7 @@ run_flashcmd() {   # args: pio subcommand words
 }
 
 # Assert the just-built partition binary carries the dedicated save partition.
-# Decodes the REAL .bin (not the CSV) — a stale build cache can emit an old table
+# Decodes the REAL .bin (not the CSV): a stale build cache can emit an old table
 # even after the CSV changed, and that mismatch is exactly what boot-loops the board.
 board_verify_partition() {
     local bin="$repo_root/.pio/build/$ENV/partitions.bin"
@@ -245,7 +245,7 @@ board_verify_partition() {
 # DTR must be asserted or the firmware sits in its host-wait boot path and never
 # proceeds (native USB-JTAG; plain cat won't trigger it). A reset re-enumerates
 # USB briefly, so we open the port, THEN pulse a reset, THEN read. If the board is
-# asleep/unreachable this degrades to a warning — flash.sh already surfaced the
+# asleep/unreachable this degrades to a warning: flash.sh already surfaced the
 # [save] line for the human, and the partition assertion above is the hard gate.
 board_verify_boot() {
     local port="${PORT:-$(awk -v e="[env:$ENV]" '
@@ -268,7 +268,7 @@ try:
     ser = serial.Serial(port, 115200, timeout=0.3)
     ser.dtr = True                       # firmware waits for a host-connected Serial
     # Pulse a reset so we capture a fresh boot. On the S3 USB-Serial/JTAG CDC,
-    # RTS is wired to EN — assert briefly to reset into the running app (keep DTR
+    # RTS is wired to EN: assert briefly to reset into the running app (keep DTR
     # asserted so it does NOT drop into download mode).
     try:
         ser.rts = True; time.sleep(0.15); ser.rts = False

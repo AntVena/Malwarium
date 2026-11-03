@@ -22,7 +22,7 @@ pixels become cell pixels:
             at project scale but has the wrong canvas around it.
 
 --report prints what each mode actually cost, per strip: colours lost, opaque
-pixels lost, and — for decimate — how many single-pixel features fell on a deleted
+pixels lost, and (for decimate) how many single-pixel features fell on a deleted
 lattice line, which is the number that decides whether hand-repair is a touch-up or
 a redraw.
 """

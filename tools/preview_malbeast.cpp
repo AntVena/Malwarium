@@ -1,22 +1,22 @@
-// preview_malbeast.cpp — headless style check for the wild-malbeast art spike.
+// preview_malbeast.cpp: headless style check for the wild-malbeast art spike.
 //
 // Renders one malbeast at the device's ×1.75 creature scale as four cells: its two stored
-// frames clean (idle, attack — exactly what the atlas holds), then the same two through the
+// frames clean (idle, attack. Exactly what the atlas holds), then the same two through the
 // FX_GLITCH shader (core/render/glitch.h), so the drawing and the corruption can be judged
 // side by side without a device. Writes a PPM (P6); tools/preview_malbeast.py wraps it into
 // a PNG.
 //
-// `play <dir> <beats> [roster]` instead runs a real fight against one wild — row `roster` of
-// the wild roster (combat_factory.cpp's kWildRoster; default 0, GlitchHog) — through the
-// actual combat screen and writes one active-canvas frame per combat beat (~8fps) as <dir>/frame_NNN.ppm — the
+// `play <dir> <beats> [roster]` instead runs a real fight against one wild. Row `roster` of
+// the wild roster (combat_factory.cpp's kWildRoster; default 0, GlitchHog). Through the
+// actual combat screen and writes one active-canvas frame per combat beat (~8fps) as <dir>/frame_NNN.ppm. The
 // sequence tools/preview_malbeast.py assembles into a GIF, so a wild can be watched in motion.
 // <dir>/log.txt records each frame's strike count, striker, last move and the pet's
 // Health, for picking poses out and for checking a signature actually lands.
 //
 // `boss <dir> <beats> <area> <round>` runs the same recording against round `round` of
-// area `area`'s gauntlet (areaBoss, combat_factory.cpp) — round 4 is the area boss itself.
+// area `area`'s gauntlet (areaBoss, combat_factory.cpp): round 4 is the area boss itself.
 //
-// Not a shipping path and not a gate — a look-at-it tool, the sibling of dump_frame for a
+// Not a shipping path and not a gate: a look-at-it tool, the sibling of dump_frame for a
 // sprite that has no screen to sit in yet. Build: the CMake `preview_malbeast` target.
 
 #include <cstdio>
@@ -51,7 +51,7 @@ static bool writePpm(const Framebuffer& fb, const char* path) {
 }
 
 // A fight against roster row `rosterIdx`, one frame per combat animation beat
-// (kCombatAnimMs — the stage repaints at ~8fps, twice the idle heartbeat). The pet is the
+// (kCombatAnimMs: the stage repaints at ~8fps, twice the idle heartbeat). The pet is the
 // default Paypup the frame dumper also boots; the stakes are Safe, so nothing persists.
 static int record(Game& game, const char* dir, int beats);
 
@@ -74,7 +74,7 @@ static int play(const char* dir, int beats, int rosterIdx) {
     Game game{StartMode::Hatched, "paypup"};
     skipHatchTips(game);
     // Built the way a real encounter is: in the wild's HOME area (the first that fields
-    // it) at that area's first stretch, through the same depth ramp — which is also what
+    // it) at that area's first stretch, through the same depth ramp, which is also what
     // adds the area's pair and the creature's own signature to its kit.
     CombatEnemy wild = wildMalbeastAt(rosterIdx);
     int home = kAreaCount - 1;
@@ -89,8 +89,8 @@ static int play(const char* dir, int beats, int rosterIdx) {
 static int record(Game& game, const char* dir, int beats) {
     uint32_t t = 0;
     char path[512];
-    // Beside the frames, one line per frame of what the fight had just done — the strike
-    // count and whether the pet threw the last one — so a caller can pick the frames where
+    // Beside the frames, one line per frame of what the fight had just done (the strike
+    // count and whether the pet threw the last one), so a caller can pick the frames where
     // the wild is mid-swing (its attack row) or standing (its idle row) without guessing.
     std::snprintf(path, sizeof(path), "%s/log.txt", dir);
     FILE* log = std::fopen(path, "w");
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     fb.clear(bg);
 
     // Row 0 is the idle, row 1 the attack (tools/gen_malbeast_art.py). The clean cells are
-    // the plain upscaled draw in the sheet's own ink — what a wild looks like with no FX.
+    // the plain upscaled draw in the sheet's own ink: what a wild looks like with no FX.
     const int rows = s.rows < 2 ? 1 : 2;
     int x = pad;
     for (int r = 0; r < 2; ++r, x += cw + pad)

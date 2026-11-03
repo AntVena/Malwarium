@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""check_hint_bands.py — no footer hint is wider than the canvas it is centred in.
+"""check_hint_bands.py: no footer hint is wider than the canvas it is centred in.
 
 drawHintBand (src/core/ui/widgets.cpp) centres its text across the full 224px active
 canvas. A hint one character too long is therefore cut at BOTH ends, and the leading
-character is a button letter — the one part of the line a player cannot infer from the
+character is a button letter: the one part of the line a player cannot infer from the
 rest. The widget clamps so an overrun loses its tail instead, but a clipped hint is
 still a hint that does not say what it means.
 
@@ -11,7 +11,7 @@ Nothing else notices: the string is a literal, the frame still renders, and the 
 is four pixels at each end of a band nobody re-reads once the screen is familiar.
 
 The font is FONT_UI at its 8px cut, monospaced, one cell per character (core/render/
-font.h) — so a hint's width is exactly 8 * len, and this needs no renderer to measure
+font.h), so a hint's width is exactly 8 * len, and this needs no renderer to measure
 it. It reads the literals where they are written, so there is no second list to keep
 in step.
 
@@ -24,13 +24,13 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent / "src"
 
-# core/render/font.h — every glyph is one 8x8 cell and advances 8px.
+# core/render/font.h: every glyph is one 8x8 cell and advances 8px.
 ADVANCE = 8
-# core/render/canvas.h — the active canvas the band spans.
+# core/render/canvas.h: the active canvas the band spans.
 ACTIVE_W = 224
 
 # Both ways a hint reaches the band: passed straight to it, or built as a `hint`
-# variable first (the screens with a state-dependent band — combat, expl, train).
+# variable first (the screens with a state-dependent band. Combat, expl, train).
 CALL = re.compile(r"drawHintBand\(\s*fb\s*,\s*(.+?)\);", re.S)
 HINT_VAR = re.compile(r"\b\w*[hH]int\w*\s*=\s*((?:[^;]|\n)*?);")
 LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')

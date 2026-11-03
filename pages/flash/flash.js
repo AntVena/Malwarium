@@ -1,27 +1,27 @@
-// flash.js — drive a full USB flash of a Malwarium from the browser.
+// flash.js: drive a full USB flash of a Malwarium from the browser.
 //
 // Four images at four fixed addresses, which together are a whole working
 // device: bootloader, partition table, OTA slot selector, app. That is the same
 // set `pio run -t upload` writes, and it is deliberately the WHOLE set rather
-// than just the app — the two changes an over-the-air update structurally cannot
+// than just the app: the two changes an over-the-air update structurally cannot
 // make are a new bootloader and a new partition table, so the page that exists
 // for "OTA can't do this one" has to be able to make both.
 //
 // The addresses are the ESP32-S3's, not a choice this file gets to make: the
 // bootloader lives at 0 (0x1000 is the original ESP32 and the S2), the table at
 // 0x8000, and the Arduino build hardcodes boot_app0 to 0xE000 and the app to
-// 0x10000 — see partitions_malwarium.csv, which explains why the first three
+// 0x10000. See partitions_malwarium.csv, which explains why the first three
 // partitions are pinned to their stock offsets for exactly this reason.
 //
 // It can also format the device's microSD card, which nothing in the ROM
-// protocol can reach — the bootloader only ever sees the SPI flash. So the page
+// protocol can reach: the bootloader only ever sees the SPI flash. So the page
 // asks the FIRMWARE to do it: once the new image is running, it reopens the same
 // USB serial port and sends one line (formatSd below; the device half and the
 // full exchange are in src/platform/esp32/main.cpp, beside pollSerialFormatAsk).
 //
 // WHAT THIS FILE DOES NOT DO: talk to the ROM. `../vendor/esptool-js/bundle.js`
 // is Espressif's own loader and owns every byte of the ROM protocol. This is the
-// operator's half — pick a port, fetch the images, prove they arrived intact,
+// operator's half: pick a port, fetch the images, prove they arrived intact,
 // report what is happening, and say something useful when it doesn't work.
 
 import { ESPLoader, Transport } from "../vendor/esptool-js/bundle.js";
@@ -36,7 +36,7 @@ const kStaticParts = [
 ];
 const kAppAddr = 0x10000;
 
-// Espressif's USB vendor ID — every board this firmware targets enumerates under
+// Espressif's USB vendor ID: every board this firmware targets enumerates under
 // it, so filtering on it turns Chrome's port picker from "every serial device on
 // this machine" into "the thing you just plugged in". The unfiltered request is
 // still one button away, because a filter that hides the device is worse than a
@@ -45,7 +45,7 @@ const kVendorEspressif = 0x303a;
 
 // The chip the images are built for. Writing an S3 bootloader onto a different
 // ESP32 does not damage it, but it does produce a board that no longer boots and
-// an operator with no idea why — so the mismatch is caught before the first write.
+// an operator with no idea why, so the mismatch is caught before the first write.
 const kChipName = "ESP32-S3";
 
 // The ROM speaks at 115200 and this board's serial port is the S3's native USB,
@@ -125,7 +125,7 @@ async function fetchImage(url, onChunk) {
 //
 // Only the artifact's FILENAME is taken from it, never its URL. The manifest
 // embeds absolute addresses built for one publish host, and this page is served
-// from whatever host is actually holding it — a fork's Pages site, a laptop, a
+// from whatever host is actually holding it: a fork's Pages site, a laptop, a
 // local copy. Resolving the name against this page's own origin means the
 // flasher always fetches the artifacts sitting next to it.
 async function loadManifest() {
@@ -157,7 +157,7 @@ function renderParts() {
 
 // --- the flash --------------------------------------------------------------
 
-// A port the operator picked, or null when they dismissed the picker — which is
+// A port the operator picked, or null when they dismissed the picker, which is
 // a decision, not a failure, and must not be dressed up as one.
 async function pickPort(filtered) {
   try {
@@ -170,7 +170,7 @@ async function pickPort(filtered) {
 }
 
 async function downloadAll() {
-  // Weighted by size so the bar tracks bytes rather than files — the app is two
+  // Weighted by size so the bar tracks bytes rather than files: the app is two
   // orders of magnitude bigger than the three images in front of it, and a bar
   // that jumps to 75% and then sits there is a bar that looks stuck.
   const jobs = [
@@ -195,7 +195,7 @@ async function downloadAll() {
 
   // Integrity, before anything is written. The manifest publishes a SHA-256 over
   // the firmware image and this is the same check the device makes on itself
-  // during an over-the-air install — a corrupted download should cost a retry,
+  // during an over-the-air install: a corrupted download should cost a retry,
   // never a half-written app slot.
   status("Checking the firmware…", "busy");
   const got = await sha256Hex(fileArray[fileArray.length - 1].data);
@@ -219,7 +219,7 @@ async function flash(filtered) {
 
 // The flash proper. Returns the port it wrote through on success (formatSd looks
 // for the same device again once it reboots), null on any failure or a dismissed
-// picker — each of which has already said everything it needs to.
+// picker: each of which has already said everything it needs to.
 async function flashImages(filtered) {
   let port = null, transport = null, loader = null, ok = false;
   const eraseAll = $("erase").checked;
@@ -337,7 +337,7 @@ function hideResults() {
 // so this outlasts one boot plus the replug the page may have to ask for.
 const kSdDeadlineMs = 180000;
 // How long one open port gets to answer before it is closed and the search goes
-// round again — long enough for a full boot, short enough that a port that will
+// round again: long enough for a full boot, short enough that a port that will
 // never answer (a board still in download mode) doesn't stall the replug.
 const kSdPerPortMs = 25000;
 const kSdCommand = "MALSD FORMAT\n";
@@ -345,7 +345,7 @@ const kSdCommand = "MALSD FORMAT\n";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // The device this page has permission for. A board that reboots re-enumerates,
-// and Chrome hands back a NEW port object for it — so match on what it is, not on
+// and Chrome hands back a NEW port object for it, so match on what it is, not on
 // the handle that was picked. `like` is the picked port's own USB ids, which also
 // covers a device chosen through MY DEVICE ISN'T LISTED.
 async function findPorts(like) {
@@ -360,7 +360,7 @@ async function findPorts(like) {
 // One open port, given kSdPerPortMs to say MALSD something. Echoes everything the
 // device prints into the log, resends the command until the device acknowledges
 // it (the firmware may still be booting when the port comes up), and resolves
-// with the device's verdict — or with null when it never answered.
+// with the device's verdict, or with null when it never answered.
 async function askPort(port) {
   try { await port.open({ baudRate: kBaud }); } catch { return null; }
   // DTR and RTS both low is "run" on the S3's USB serial: no reset, no download
@@ -392,7 +392,7 @@ async function askPort(port) {
           else verdict = { kind: m[1], detail: m[2] };
         }
       }
-    } catch { /* the port went away — a reboot or an unplug */ }
+    } catch { /* the port went away: a reboot or an unplug */ }
     gone = true;
   })();
 
@@ -520,7 +520,7 @@ function friendlyError(msg) {
 // --- boot -------------------------------------------------------------------
 
 // Two ways to have no Web Serial and only one of them is the browser's fault, so
-// they are told apart before either message is shown — "use Chrome" is no help to
+// they are told apart before either message is shown: "use Chrome" is no help to
 // someone already in Chrome on an http:// address.
 if (!window.isSecureContext) {
   $("gate-insecure").hidden = false;

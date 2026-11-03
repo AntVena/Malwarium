@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-snap_palette.py — fold a sprite sheet's stray colours into the ones it is drawn in.
+snap_palette.py: fold a sprite sheet's stray colours into the ones it is drawn in.
 
 Art hygiene, not a flash saving. Sheets exported from a paint tool routinely carry a tail
-of (colour, coverage) pairs that are one or two pixels each — a half-transparent edge
-pixel, an off-by-one shade left by a resample — and none of them is a tone anybody chose.
+of (colour, coverage) pairs that are one or two pixels each: a half-transparent edge
+pixel, an off-by-one shade left by a resample, and none of them is a tone anybody chose.
 `tools/gen_assets.py` stores each tile at the width that tile alone needs, so such a pixel
 is charged only where it lands: folding 24 of them out of Cuttlefork is worth 208 B. What
 it is worth is a palette a reader can name, and a sheet whose shading is the shading law's
@@ -13,7 +13,7 @@ it is worth is a palette a reader can name, and a sheet whose shading is the sha
 This rewrites the PNG so the tail is gone:
 
   * every pixel below `--alpha` coverage becomes fully transparent, and every pixel at or
-    above it becomes fully opaque — a soft edge is information at photographic scale and
+    above it becomes fully opaque: a soft edge is information at photographic scale and
     noise at 56x48;
   * every colour worn by fewer than `--floor` pixels is repainted with the nearest
     surviving colour, by squared distance in the 8-bit RGB the art carries.
@@ -42,7 +42,7 @@ import gen_assets as gen
 
 
 def write_png_rgba(path, w, h, rgba):
-    """Write 8-bit RGBA, non-interlaced, filter 0 — the one form gen_assets.py reads."""
+    """Write 8-bit RGBA, non-interlaced, filter 0: the one form gen_assets.py reads."""
     raw = bytearray()
     stride = w * 4
     for y in range(h):
@@ -67,7 +67,7 @@ def rgb_dist(a, b):
 def snap(rgba, alpha_cut, floor):
     """-> (new rgba, pixels changed).
 
-    Colours are bucketed by RGB565 — what actually reaches flash — so two 8-bit shades
+    Colours are bucketed by RGB565 (what actually reaches flash), so two 8-bit shades
     that quantise together are one entry here and neither counts as drift nor gets
     rewritten. A surviving pixel keeps its own 8-bit value untouched: the PNG stays the
     art, and the quantisation stays the generator's business.
@@ -108,7 +108,7 @@ def snap(rgba, alpha_cut, floor):
 
 
 def entries(rgba):
-    """Distinct (colour, coverage) pairs — the palette gen_assets.py would derive."""
+    """Distinct (colour, coverage) pairs: the palette gen_assets.py would derive."""
     seen = set()
     for i in range(0, len(rgba), 4):
         a = rgba[i + 3]

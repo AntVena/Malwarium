@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-gen_item_icons.py — the pantry's 1-bit icon vocabulary, and the glyphs built from it.
+gen_item_icons.py: the pantry's 1-bit icon vocabulary, and the glyphs built from it.
 
 It owns one non-food family too: the USB devices (§ "the USB port" below). They earn a
-place here for exactly the reason the pantry did — five drawings that have to read as one
+place here for exactly the reason the pantry did: five drawings that have to read as one
 set and differ only in the mark cut into a shared body, which is what a recipe table is
 for and what hand work drifts away from. Nothing else outside the pantry belongs here
 unless it has the same shape of problem.
@@ -21,20 +21,20 @@ Why a tool at all
 An ITEMS glyph is 20x20, one ink, no anti-aliasing: pure white on transparent, tinted
 at draw time (items_screen.h's itemIcon). At that size a food is legible only as a
 SILHOUETTE with one or two cuts in it, and there are enough of them that hand work
-drifts — one gets a 1px stem, the next a 3px one, and the shelf stops reading as a
+drifts: one gets a 1px stem, the next a 3px one, and the shelf stops reading as a
 set. So the vocabulary below is the style, expressed as the only shapes a pantry glyph
 is allowed to be made of, and an item is a RECIPE over it.
 
 The rules the vocabulary enforces, because they cannot be expressed otherwise:
-  * one ink, full alpha or none — no greys to lose on a tint;
+  * one ink, full alpha or none: no greys to lose on a tint;
   * strokes are 2px, because a 1px line disappears under the x1.75 upscale;
   * the drawing sits in rows 1..17 with a 1px margin, so nothing clips against a
     neighbouring cell;
   * every form is a closed mass with its detail CUT OUT of it rather than drawn on
     top, which is what keeps a 20px shape readable when it is tinted a single colour.
 
-A FORM is the food's outline. A recipe picks one and varies it — how many segments,
-where the cut goes, what sits on top — so two dishes sharing a form still read apart.
+A FORM is the food's outline. A recipe picks one and varies it: how many segments,
+where the cut goes, what sits on top, so two dishes sharing a form still read apart.
 The forms are deliberately food-agnostic: `dome` is a loaf, a bun, a scoop or a hill
 of rice depending on what a recipe cuts into it.
 """
@@ -72,7 +72,7 @@ class G:
                 self.px(x, y, on)
 
     def sellipse(self, cx, cy, rx, ry, n=3.0, on=1):
-        """A superellipse — blockier than a circle, which is the house look at 20px."""
+        """A superellipse: blockier than a circle, which is the house look at 20px."""
         for y in range(H):
             for x in range(W):
                 dx = abs((x - cx) / max(rx, 0.5))
@@ -100,7 +100,7 @@ class G:
                     self.px(x, y, on)
 
     def stroke(self, pts, w=2, on=1):
-        """A thick polyline — the 2px minimum is the point of it."""
+        """A thick polyline: the 2px minimum is the point of it."""
         r = max(w // 2, 0)
         for i in range(len(pts) - 1):
             x0, y0 = pts[i]
@@ -148,7 +148,7 @@ def bowl(g, rim=8, deep=16, contents=1):
 
 
 def plate(g, mound=3):
-    """A wide plate with a heap on it — the generic 'a dish' form."""
+    """A wide plate with a heap on it: the generic 'a dish' form."""
     g.sellipse(9.5, 8 - mound // 2, 6.5, 2.0 + mound * 0.7, 3.0)
     g.hline(1, 18, 13, 2)
     g.poly([(1, 13), (18, 13), (15, 16), (4, 16)])
@@ -157,7 +157,7 @@ def plate(g, mound=3):
 def dome(g, top=3, wide=7, scores=0):
     """A rounded mass on a flat base: loaf, bun, scoop, hill of rice.
 
-    `scores` is what keeps eight of these apart — the diagonal slashes a baker cuts
+    `scores` is what keeps eight of these apart: the diagonal slashes a baker cuts
     into a crust. Zero of them is a smooth scoop, three is unmistakably a loaf.
     """
     g.sellipse(9.5, 11, wide, 11 - top, 3.0)
@@ -258,7 +258,7 @@ def bird(g, legs=1):
 
 
 def nut(g, halves=1):
-    """A kernel — narrow at the top, broad at the bottom, with a seam. Deliberately
+    """A kernel: narrow at the top, broad at the bottom, with a seam. Deliberately
     NOT a circle: `fruit` already owns the round silhouette."""
     g.poly([(9, 2), (15, 9), (14, 16), (5, 16), (4, 9)])
     g.sellipse(9.5, 13, 5.5, 4, 3.0)
@@ -278,7 +278,7 @@ def tubes(g, n=3, diag=1, cut=0):
         else:
             g.vline(x, 4, 16, 3)
             g.rect(x, 4, x + 2, 5, 0)
-    # `cut` severs every strand on one line — the difference between a pasta that
+    # `cut` severs every strand on one line: the difference between a pasta that
     # is joined end to end and one that has been unlinked. Erased rather than
     # drawn, per the vocabulary's rule that detail is cut OUT of a closed mass.
     if cut:
@@ -405,7 +405,7 @@ def dumpling(g, pleats=3):
 
 def nugget(g, legs=2, plates=3):
     """A dino-shaped nugget. The SILHOUETTE is the whole joke, so this is one closed
-    mass with no interior detail — a breaded nugget has no eye to draw, and a 1px one
+    mass with no interior detail: a breaded nugget has no eye to draw, and a 1px one
     would vanish under the x1.75 upscale even if it did.
 
     A STEGOSAURUS, and the choice is the whole reason it reads. At 20px a dinosaur has
@@ -414,7 +414,7 @@ def nugget(g, legs=2, plates=3):
     plates say "dinosaur" with nothing else having to.
 
     Two rules the shape has to keep, both learned by breaking them:
-      * plates are TRAPEZOIDS, never triangles — a 1px apex reads as dirt, not a plate;
+      * plates are TRAPEZOIDS, never triangles: a 1px apex reads as dirt, not a plate;
       * their tops must clear the back with a gap between them, or they merge into one
         wall and the ridge becomes a single spike.
     """
@@ -499,7 +499,7 @@ def mushroom(g, spots=2):
 
 
 def sprig(g, ears=5):
-    """An ear of grain: one stalk, grains in pairs up it. Blobs, not hairs — a 1px
+    """An ear of grain: one stalk, grains in pairs up it. Blobs, not hairs: a 1px
     whisker vanishes at this size, which is what made the first version noise."""
     g.vline(9, 10, 18, 2)
     for i in range(ears):
@@ -549,7 +549,7 @@ def spiral(g, turns=3):
 # rather than four drawings that resemble it.
 
 def _cut(g, pts, w=2):
-    """Cut a stroke out of the USB BODY only — never the connector or the outline.
+    """Cut a stroke out of the USB BODY only, never the connector or the outline.
 
     Drawn on a scratch grid and applied through the body window, so a mark can be
     authored at its natural length without eating the 2px wall that holds the shape
@@ -573,10 +573,10 @@ def usb(g, mark="slot", pips=0):
     if mark == "slot":
         g.rect(5, 12, 14, 12, 0)         # the plain seam: an ordinary stick
     elif mark == "cross":
-        _cut(g, [(6, 11), (13, 15)])     # struck through — the branch is forced BAD
+        _cut(g, [(6, 11), (13, 15)])     # struck through: the branch is forced BAD
         _cut(g, [(13, 11), (6, 15)])
     elif mark == "tick":
-        _cut(g, [(7, 12), (9, 14), (13, 10)])   # signed off — the branch is forced GOOD
+        _cut(g, [(7, 12), (9, 14), (13, 10)])   # signed off: the branch is forced GOOD
     elif mark == "pips":
         # The soak pair, and the pip COUNT is the factor: two holes for x2, four for x4.
         spots = [(6, 11), (11, 11), (6, 14), (11, 14)] if pips == 4 else [(6, 12), (11, 12)]
@@ -600,13 +600,13 @@ def usb(g, mark="slot", pips=0):
 # One body, six marks, on exactly the USB port's argument: every one of these does the
 # same thing (carries a colour set, content_themes.h) and what the shelf has to say is
 # "another one of those, and not the one you already have". So the silhouette is shared
-# — a DIP package seen face-on, legs down both sides — and the whole recipe is what has
+# (a DIP package seen face-on, legs down both sides), and the whole recipe is what has
 # been cut into its lid.
 #
 # The marks are deliberately not six pictures of six themes: a 12x6 window cannot draw
 # a sunset and a phosphor tube apart, and trying would give six glyphs that all read as
-# "some smudge". They are countable or geometric instead — one bar, two bars, a disc, a
-# ring, a split field, a chevron — so the shelf separates them at a glance and in
+# "some smudge". They are countable or geometric instead (one bar, two bars, a disc, a
+# ring, a split field, a chevron), so the shelf separates them at a glance and in
 # grayscale, which is the only place the difference has to survive.
 
 def chip(g, mark="bars", bars=1):
@@ -620,7 +620,7 @@ def chip(g, mark="bars", bars=1):
     if mark == "bars":               # a phosphor tube: one bar. Its amber cousin: two.
         for i in range(bars):
             g.rect(7, 6 + i * 4, 12, 8 + i * 4)
-    elif mark == "disc":             # a sun over the horizon — the arcade cabinet's ROM
+    elif mark == "disc":             # a sun over the horizon. The arcade cabinet's ROM
         g.disc(9.5, 9, 3)
         g.rect(6, 11, 13, 15, 0)
         g.rect(7, 12, 12, 13)
@@ -628,10 +628,10 @@ def chip(g, mark="bars", bars=1):
         g.rect(7, 6, 12, 13)
         g.rect(9, 8, 10, 11, 0)
     elif mark == "split":            # a filter: half the field lit, half of it not.
-        # Edge to edge of the window, unlike the centred bars above — a FIELD that has
+        # Edge to edge of the window, unlike the centred bars above: a FIELD that has
         # been divided, which is a different read from a stripe drawn on one.
         g.rect(6, 4, 13, 9)
-    elif mark == "chevron":          # a shift downward — the lens that drops the spectrum
+    elif mark == "chevron":          # a shift downward. The lens that drops the spectrum
         for i, y in enumerate(range(6, 10)):
             g.rect(7 + i, y, 12 - i, y + 2)
 
@@ -647,10 +647,10 @@ RECIPES = {
     "self_signed_flour":       (bottle, dict(neck=3, cap=1)),
     "shellots":                (root,   dict(tops=3, fat=3)),
     "linkguine":               (tubes,  dict(n=4, diag=1)),
-    # The severed twin of linkguine above — same strands, cut across.
+    # The severed twin of linkguine above: same strands, cut across.
     "unlinkguine":             (tubes,  dict(n=4, diag=1, cut=1)),
     "jailapeno":               (pepper, dict(stalk=1, slit=1)),
-    # The everyday ration, and the most-seen food glyph in the game — it gets its own
+    # The everyday ration, and the most-seen food glyph in the game: it gets its own
     # form rather than a shared one, because the dino shape IS the name.
     "dyno_nuggets":            (nugget, dict(legs=2, plates=3)),
     "churned_butter":          (block,  dict(faces=1)),

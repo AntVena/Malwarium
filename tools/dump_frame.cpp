@@ -1,33 +1,33 @@
-// dump_frame.cpp — headless single-frame renderer for visual verification and
+// dump_frame.cpp: headless single-frame renderer for visual verification and
 // (later) screenshot baselines. Links only malcore (no SDL). Writes a binary
 // PPM of the full 240 panel:
 //   ./dump_frame [beats] [out.ppm] [flags...]
 // flags: hungry · crit · stat · log · carousel · bottom · iconsonly · textonly
-//        scene:<name> [floor:<row>] (a BACKDROP on its own, with no screen over it —
-//             the names are core/render/scenes.h's, e.g. scene:pirate_bayou. `floor`
+//        scene:<name> [floor:<row>] (a BACKDROP on its own, with no screen over it.
+//             The names are core/render/scenes.h's, e.g. scene:pirate_bayou. `floor`
 //             is the row the ground puts under it, which is the whole reason to look:
 //             140 is where fighters stand and 184 where a resting pet does, and a
 //             scene has to compose at both. Defaults to 184.)
 //        items [picker [ingredients|keys|tools]] [row:<n>] [detail|feed] (row:<n> walks the list
 //             cursor first, so a detail other than the first row is renderable)
 //        feed:<item_id> (eat one named food through the real Use path and hold the
-//             feeding modal — how to eyeball that its gauges follow that item's own
+//             feeding modal: how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
 //        stat [tiers|loadout|buffs|species|log] [scroll:<n>] (the 6 STAT pages;
 //             "scroll:<n>" takes B n times, which walks the row window of the three pages
-//             that flow prose — pair it with "fullkit" and a Daemon for the longest lists.
+//             that flow prose: pair it with "fullkit" and a Daemon for the longest lists.
 //             TIERS is the investment ladder, and the pet the preset levels has real
 //             points in it, so the page shows held rungs and not just locked ones)
 //        fullkit (every unlocked move slot and every mod slot equipped)
-//        pantry (one of EVERY item in the bag — the whole icon set in a list, and the
+//        pantry (one of EVERY item in the bag. The whole icon set in a list, and the
 //             deepest the combat picker's ITEMS band gets)
-//        shop | modshop [full] (an area's two storefronts — the ITEM shop and the MOD
+//        shop | modshop [full] (an area's two storefronts. The ITEM shop and the MOD
 //             shop, one screen either way. "full" tops the mod pool up to
 //             modStorageCap() first, which is the state the row's HAVE n/cap column and
 //             the STORAGE FULL buy reason exist for)
 //        story [area:<n>] [beat:<n>] [scroll:<n>] | story archive (a STORY chapter in the
 //             reader, and the CHAPTERS list it lands in afterwards. "beat" is StoryBeat
-//             order — 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
+//             order; 0 arrival, 1 gauntlet, 2 cleared, 3 departure; "scroll" takes B n
 //             times, which is how to see a later window clear the countdown rule)
 //        dying (5/5 errors: the habitat's FAILING countdown and its rescue line)
 //        tipcard (the one-time CARE card the first menu summon opens; pairs with crit)
@@ -36,7 +36,7 @@
 //             [fragger [fall:<n>|left|right|fire|crash ...]] [medium|hard] · lockout ·
 //             evolve ("stacker"/"fragger" open whichever process plays that game, on
 //             the dial setting named; each word after one acts on its board in order)
-//             ("run" starts the focused process — QUICK defrag, or AV with row:1 — and
+//             ("run" starts the focused process (QUICK defrag, or AV with row:1), and
 //             "step:<n>" holds it n heartbeats in, to land on a frame of its disk map)
 //        cryptogram [open:<n>] [take] [win|lose] (THE DECRYPTOGRAM's quote board, cashed
 //             at the VAULT; "open:<n>" places n letters correctly so the frame shows a
@@ -55,7 +55,7 @@
 //             which "quote" then focuses)
 //        clutch [aim] [round ...] | clutch win | clutch lose (the Phishing egg's Clutch
 //        Pick; "aim" flips to the second half and "round" commits, interleaved to walk
-//        any path — the run now resolves the instant the live egg leaves the surviving
+//        any path: the run now resolves the instant the live egg leaves the surviving
 //        span, so a "round" past that point CONTINUES the reveal instead of playing
 //        another one; "win" plays it perfectly, "lose" aims wrong on purpose so it
 //        resolves deterministically on round one)
@@ -77,30 +77,30 @@
 //             flashqr] (the UPDATES screen; without "ready" it shows which setup step
 //             is missing, and "flashqr" walks onto the last row and opens the USB
 //             flasher's code)
-//        theme:<name> (draw WHATEVER this frame is in another PAL_CORE set —
+//        theme:<name> (draw WHATEVER this frame is in another PAL_CORE set:
 //             assets/PAL_CORE.json's `themes` block, e.g. theme:terminal. Not a screen
 //             of its own: it composes with every flag here, which is the point, since
 //             a theme is judged on the screens it has to carry and not on a swatch)
 //        cfg [sysinfo|tag|titles|device|uimode|brightness|theme|background [earned [all]]|travel [sleeping]|
 //             formatsd [yes|busy|done|failed|blocked]|radio [idle|all]|audit|
 //             link|pediaap|qr|factory] (the settings tree; device/radio are the two
-//             group screens — "device row:<n>" walks its cursor down — and radio is seeded with a live arbiter owner —
+//             group screens ("device row:<n>" walks its cursor down), and radio is seeded with a live arbiter owner:
 //             "idle" seeds nothing on air, "all" seeds every toggle on under a
 //             running update job)
 //        arch [stored] [rackfull] [daemons] [group:<n>] [row:<n>] [detail] [offer:<n>]
-//             [confirm] (ARCH opens on its GROUP PICKER — NEW EGG · ACTIVE · one row per
-//             creature family · SELL · RECORDS — so "group:<n>" is what opens a shelf
+//             [confirm] (ARCH opens on its GROUP PICKER (NEW EGG · ACTIVE · one row per
+//             creature family · SELL · RECORDS), so "group:<n>" is what opens a shelf
 //             and "row:<n>" then walks it; rackfull buys slots
 //             and fills them, so the list overflows kVisibleRows and scrolls;
 //             row:<n> walks the cursor down it; daemons stocks the SELL counter, and
-//             offer:<n> cycles a sale sheet to its nth offer — pet:wire_heir makes the
+//             offer:<n> cycles a sale sheet to its nth offer. Pet:wire_heir makes the
 //             second one a twin, so REIMAGE reads open)
 //        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
 //             stats opens the panel's STATE page, kit its second) ·
-//        simbattle [fight [stats]] (the REAL entry — buffs carried in from outside,
+//        simbattle [fight [stats]] (the REAL entry. Buffs carried in from outside,
 //             e.g. armbuffs simbattle fight stats) · malbear
 //        bruinforce (Good Daemon) · berserkernel (Bad Daemon) · csf (Critical Failure)
-// expl [inside|bossready|endgame] (the nested area/sub-area ladder — one nav
+// expl [inside|bossready|endgame] (the nested area/sub-area ladder. One nav
 //        LEVEL per frame: the top-level zone picker, "inside" for area 0's own block,
 //        "bossready" for that block with its gauntlet unlocked, "rerun" for it already
 //        beaten, "endgame" for the every-area-cleared picker) ·
@@ -109,54 +109,54 @@
 //             visible; "refarm" arms an already-cleared sub-area, whose badge counts down
 //             to the rung auto-progress steps to next; "sector:<n>" clears every area
 //             below n and arms area n instead of 0, so a fight there stands on that
-//             area's own backdrop — e.g. wildcombat sector:3; "sector:dive" arms the
+//             area's own backdrop: e.g. wildcombat sector:3; "sector:dive" arms the
 //             DeepWeb Dive instead)
-// dock [fight|deep|scout|brief] (ROCK THE DOCK's arena screen — the eight-operator
+// dock [fight|deep|scout|brief] (ROCK THE DOCK's arena screen: the eight-operator
 //        bracket; "fight" plays the operator's own first bout out so the frame shows a
 //        settled round, "deep" plays the bracket as far forward as the pet can carry it
 //        so the field has collapsed and the tree has narrowed, "scout" holds B into the
 //        focused entrant's kit sheet, "brief" chords into the paged explainer)
 // explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
-//        second chord) · explore auto (the armed habitat with it running — the EXPL
+//        second chord) · explore auto (the armed habitat with it running: the EXPL
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
 //        wildcombat (arm → Network Ping to a wild intro → live combat; sinkhole seeds
 //        a Sinkhole Trap so the 3rd intro option shows) · walk (alias of explore)
 // wifi [new|fond|hometurf] (arm → ping to the Wi-Fi network event,; bounded search,
 //        auto-Sinkholes through any Wild encounters rolled along the way. The three
 //        named forms seed the ledger so the discovery beat resolves that way, which is
-//        what picks how far the pet eats the network glyph — pass a `beats` count to
+//        what picks how far the pet eats the network glyph: pass a `beats` count to
 //        land on a frame of the absorb; bare "wifi" is the empty-queue beat)
 // shiboleet [hail|verdict [wrong]|refused|boon] [fight] [sigils:<n>] (the guardian
 //        encounter's screens. Bare "shiboleet" is the RIDDLE drawn in the CANT; "hail" is
-//        the beat before it and "verdict" the one after — what the guardian made of the
+//        the beat before it and "verdict" the one after: what the guardian made of the
 //        answer, with "wrong" picking a reply it will not take. "refused" and "boon"
-//        search for the two bands that never ask anything at all — the refusal and the
-//        quiet word — and land on the verdict each resolves onto ("boon" wants a high
+//        search for the two bands that never ask anything at all (the refusal and the
+//        quiet word), and land on the verdict each resolves onto ("boon" wants a high
 //        `sigils:` to be reachable). "fight" carries on into the guardian's own COMBAT,
 //        where its SWARM holds the rival seat.
-//        `sigils` is how many letters the pet has learned to read, 0..26 — at 0 the panel
+//        `sigils` is how many letters the pet has learned to read, 0..26: at 0 the panel
 //        is nonsense and at 26 it is plain English, with every stage between. `beats`
-//        steps the swarm — on the FX clock on the meeting screens, on the stage's own
-//        clock in a fight — and walks the riddle board's patience bar down)
+//        steps the swarm (on the FX clock on the meeting screens, on the stage's own
+//        clock in a fight), and walks the riddle board's patience bar down)
 // beats:<n> (any scene: override the positional beat count, for a scene whose subject has
 //        to be animated into its shape before the frame is worth taking)
 // rank (Hacker Rank rank-up celebration on the idle badge,; crosses
 //        a rank via registerNetwork, then resolves one event to surface it)
 //        postencounter (a wild fight ridden to its own auto-dismiss, landing the
-//        frame on Nav::PostEncounter — the bandwidth/frag STATUS readout)
+//        frame on Nav::PostEncounter. The bandwidth/frag STATUS readout)
 // outro [known] (a wild fight ridden to a WIN and held ON the combat screen, so the
-//        frame lands inside the beaten rival's dissolve — pass a `beats` count to walk
+//        frame lands inside the beaten rival's dissolve. Pass a `beats` count to walk
 //        it. Bare "outro" shows whichever the pet's kit earns; "known" grants the
 //        rival's moves first, which turns the absorb back into a shred)
 // hacker [batt:<pct>] (A+C → the Hacker face home; "batt:<pct>" feeds a battery
-//        reading in, which is the only way the face's glyph appears on the host —
-//        there is no ADC here, and an absent reading deliberately draws nothing) ·
+//        reading in, which is the only way the face's glyph appears on the host.
+//        There is no ADC here, and an absent reading deliberately draws nothing) ·
 //        hacker profile [decorated] (the PROFILE
-// viewer; "decorated" seeds the widest identity it can hold — the longest crew
+// viewer; "decorated" seeds the widest identity it can hold. The longest crew
 // name, a Title equipped, and the rank that unlocks the longest rank title) · hacker shop [hub] [row:<n>] [buy] (the SHOP; "hub" buys the MERGE HUB
 //        first, which is what reveals its two recipe rows, and row:<n> A-cycles
 //        down the list to reach them) ·
-// hacker merge [recipes] [stock] (the MERGE HUB craft list — the slot is itself a
+// hacker merge [recipes] [stock] (the MERGE HUB craft list. The slot is itself a
 //        SHOP purchase, so the scene buys it before entering) ·
 // hacker vault (the VAULT cash-in list, stocked with a Decryptogram ticket and
 //        every container tier) ·
@@ -171,12 +171,12 @@
 #include "tunables.h"
 #include "core/app/game.h"
 #include "core/content/content_arcade.h"
-#include "core/content/content_crews.h"   // kCrews — the widest name the PROFILE holds
-#include "core/app/game_internal.h"   // kMergeRecipeCount — the MERGE HUB dump wins them all
-#include "core/app/game_rig_shop.h"    // kRigSlotServices — the SHOP's SERVICES head slot
+#include "core/content/content_crews.h"   // kCrews: the widest name the PROFILE holds
+#include "core/app/game_internal.h"   // kMergeRecipeCount: the MERGE HUB dump wins them all
+#include "core/app/game_rig_shop.h"    // kRigSlotServices: the SHOP's SERVICES head slot
 #include "core/model/hacker_rank.h"   // the rank ladder, for the widest title on it
 #include "core/render/canvas.h"
-#include "core/render/font.h"         // textWidth — picking the widest of a table
+#include "core/render/font.h"         // textWidth: picking the widest of a table
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/content/content_backgrounds.h"
@@ -186,18 +186,18 @@
 #include "core/ui/cfg_screen.h"
 #include "core/content/story.h"
 #include "core/ui/expl_screen.h"
-#include "core/ui/items_screen.h"     // itemResolvesLockout — the "nofood" bag
+#include "core/ui/items_screen.h"     // itemResolvesLockout: the "nofood" bag
 
 using namespace mal;
 
-// The CHROMATOPHORE's three buttons are three skins, in chip order — so a dump that
+// The CHROMATOPHORE's three buttons are three skins, in chip order, so a dump that
 // wants a particular skin worn presses the button that wears it rather than a cursor.
 static ButtonEvent chromaPress(int skin) {
     const Button b = skin == 0 ? Button::A : skin == 1 ? Button::B : Button::C;
     return {b, true, false};
 }
 
-// A complete C press — a list reads C as a tap/hold pair, so the press edge alone
+// A complete C press: a list reads C as a tap/hold pair, so the press edge alone
 // settles nothing (CONTRIBUTING.md's button contract).
 static void tapC(mal::Game& g) {
     g.onButton({mal::Button::C, true, false});
@@ -210,7 +210,7 @@ static bool hasFlag(int argc, char** argv, const char* f) {
     return false;
 }
 
-// The active canvas composed into the full panel and written out as binary PPM — the
+// The active canvas composed into the full panel and written out as binary PPM: the
 // one exit both the screen path and the bare-backdrop path below take.
 static int writePanel(const Framebuffer& fb, const char* out, int beats) {
     std::vector<Rgb565> panel(static_cast<size_t>(kPanelW) * kPanelH,
@@ -237,14 +237,14 @@ int main(int argc, char** argv) {
     const char* out = (argc > 2) ? argv[2] : "frame.ppm";
     // A SCENE may name its own beat count, which the positional one cannot express: the
     // contact sheet runs every screen at the same beat (tools/screens.sh), and a scene
-    // whose subject has to be animated INTO its shape — a guardian's swarm settling out
-    // of the scatter it was reset from — is otherwise stuck being dumped mid-arrival.
+    // whose subject has to be animated INTO its shape (a guardian's swarm settling out
+    // of the scatter it was reset from) is otherwise stuck being dumped mid-arrival.
     for (int i = 3; i < argc; ++i)
         if (std::strncmp(argv[i], "beats:", 6) == 0) beats = std::atoi(argv[i] + 6);
 
     // A backdrop on its own, with no screen composed over it. Nothing about a scene
-    // needs a Game, and the whole question a look at one answers — does it still read
-    // with its floor somewhere else — is a question about the ground it is handed.
+    // needs a Game, and the whole question a look at one answers (does it still read
+    // with its floor somewhere else) is a question about the ground it is handed.
     //
     // The theme is applied HERE as well as on the Game path below, because a scene is
     // painted out of palColor and sceneTint like everything else and this branch returns
@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
         : hasFlag(argc, argv, "berserkernel") ? "berserkernel"
         : hasFlag(argc, argv, "bruinforce") ? "bruinforce"
         : "paypup";
-    // "pet:<id>" renders any roster creature by id (e.g. pet:tadpoll) — used to
+    // "pet:<id>" renders any roster creature by id (e.g. pet:tadpoll): used to
     // eyeball the cat/frog lines. Overrides the fixed flags above.
     for (int i = 3; i < argc; ++i)
         if (std::strncmp(argv[i], "pet:", 4) == 0) startCreature = argv[i] + 4;
@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
                             Game::Tip::HatchIsolation, Game::Tip::HatchChroma})
             game.markTipSeen(t);
     if (hasFlag(argc, argv, "hungry")) game.model().setHunger(10);  // Critical band
-    // "nofood" empties the bag of everything a Lockout could be fed — the state the
+    // "nofood" empties the bag of everything a Lockout could be fed: the state the
     // ITEMS no-meal notice, the EXPL "!" and the Lockout's shut feed row are about.
     if (hasFlag(argc, argv, "nofood"))
         for (const ItemDef* d : ContentRegistry::embedded().allItems())
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
     if (hasFlag(argc, argv, "iconsonly")) game.setUiMode(UiMode::IconsOnly);
     if (hasFlag(argc, argv, "textonly")) game.setUiMode(UiMode::TextOnly);
     // Any frame, in any theme. Most sets are LOCKED on a fresh save (content_themes.h),
-    // and the engine refuses one that is — so the chip is granted first and the unlock
+    // and the engine refuses one that is, so the chip is granted first and the unlock
     // is played rather than bypassed: what this renders is a frame a real device could
     // reach. An unknown name lands on the base set (palThemeByName) and says so, because
     // the frame it would otherwise write looks exactly like a run with no theme flag and
@@ -377,7 +377,7 @@ int main(int argc, char** argv) {
     // threshold instead, which is the other shape the banner takes.
     if (hasFlag(argc, argv, "ach")) game.unlockAchievement(ach::kTrojanUnleashed);
     // "acheggline" earns the unlock that puts a new KIND of egg in the hatch menu,
-    // which is the one announcement that HOLDS — its own plate, its own copy, and no
+    // which is the one announcement that HOLDS: its own plate, its own copy, and no
     // deadline (Game::achBannerHeld).
     if (hasFlag(argc, argv, "acheggline")) game.unlockAchievement(ach::kHashCollision);
     if (hasFlag(argc, argv, "achburst"))
@@ -399,11 +399,11 @@ int main(int argc, char** argv) {
         game.tick(static_cast<uint32_t>(i) * kHeartbeatMs);
 
     // "armbuffs" arms all three item buffs (Restore Point/Ambig-USB/Backup
-    // Drive) regardless of which screen flag follows — so it shows on the
+    // Drive) regardless of which screen flag follows, so it shows on the
     // idle habitat's top-left buff badge as well as the STAT BUFFS page.
     // Stocks 2 of each (not 1): useItem() flips nav_ to Nav::Submenu when an
     // item's count hits 0 ("item left the list"), which would confuse the
-    // enterSlot() navigation below — leaving 1 in stock sidesteps that.
+    // enterSlot() navigation below. Leaving 1 in stock sidesteps that.
     if (hasFlag(argc, argv, "armbuffs")) {
         game.inventory().add("restore_point", 2);
         game.debugUseItem("restore_point");
@@ -412,13 +412,13 @@ int main(int argc, char** argv) {
         game.inventory().add("backup_drive", 2);
         game.debugUseItem("backup_drive");
         // The two DeepWeb depth buffs as well, which takes BUFFS to all five rows it
-        // can hold at once — the state the page has to scroll rather than draw.
+        // can hold at once: the state the page has to scroll rather than draw.
         game.inventory().add("deep_learning_core", 2);
         game.debugUseItem("deep_learning_core");
         game.inventory().add("zeroday_bell", 2);
         game.debugUseItem("zeroday_bell");
     }
-    // "fullkit" equips every unlocked move slot and every mod slot — pair it with a
+    // "fullkit" equips every unlocked move slot and every mod slot: pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
     if (hasFlag(argc, argv, "fullkit")) game.debugFillLoadout();
     // "pantry" puts one of EVERY item in the bag: the whole ICON_ITEM_* set in ITEMS
@@ -427,7 +427,7 @@ int main(int argc, char** argv) {
         for (const ItemDef* d : game.content().allItems())
             game.inventory().add(d->id, 1);
 
-    // A COMPLETE press — down and up. Four screens read B as a tap/hold pair and every
+    // A COMPLETE press: down and up. Four screens read B as a tap/hold pair and every
     // LIST reads C as one (Game::listBackStep), so on those a press edge alone only
     // ARMS the gesture and settles nothing: a scene that drills in with a bare press
     // silently renders the screen ABOVE the one it named. Everywhere else the release
@@ -456,7 +456,7 @@ int main(int argc, char** argv) {
         game.onButton({Button::B, true, false});
     };
     // "feed:<id>" eats one named food through the real Use path and lands on the
-    // feeding modal (e.g. feed:tortilla_chip, feed:r007_b33r) — the way to eyeball
+    // feeding modal (e.g. feed:tortilla_chip, feed:r007_b33r): the way to eyeball
     // that the modal's gauges follow the item's own effects rather than a fixed
     // Hunger row. Stocks 2 so the modal's return path still has a detail to go back to.
     const char* feedId = nullptr;
@@ -468,7 +468,7 @@ int main(int argc, char** argv) {
         // The modal opens at its own beat 0, after the heartbeat above has already run,
         // so `beats` is re-spent inside it to land on a frame of the bite. Stepped on
         // the DISSOLVE's clock (kFxAnimMs), which is what `beats` indexes for any scene
-        // showing an FX_ABSORB — a heartbeat step would sample every fourth frame.
+        // showing an FX_ABSORB: a heartbeat step would sample every fourth frame.
         uint32_t ft = static_cast<uint32_t>(beats) * kHeartbeatMs;
         for (int i = 1; i <= beats; ++i) {
             ft += kFxAnimMs;
@@ -482,7 +482,7 @@ int main(int argc, char** argv) {
         game.debugUseItem("rollback");
     } else if (hasFlag(argc, argv, "repartition")) {
         // Repartition's two-step stat picker, on the same leveled pet. "to" advances it
-        // past the FROM step, which is the only way to see the trade readout — the two
+        // past the FROM step, which is the only way to see the trade readout: the two
         // steps share a Nav state and differ only in what has been picked.
         game.inventory().add("repartition", 1);
         game.debugUseItem("repartition");
@@ -511,7 +511,7 @@ int main(int argc, char** argv) {
                 game.debugTasteFoods(std::atoi(argv[i] + 4));
         while (steps-- > 0) game.onButton({Button::A, true, false});
         // "scroll:<n>" then takes B n times, which on the three flowed pages
-        // (TIERS/LOADOUT/BUFFS) advances the row window — the way to see the rows past
+        // (TIERS/LOADOUT/BUFFS) advances the row window: the way to see the rows past
         // the first screenful, and that the last window lands clear of the hint band.
         // A COMPLETE press: B is a tap/hold pair on these pages and the advance settles
         // on the release.
@@ -665,8 +665,8 @@ int main(int argc, char** argv) {
         }
         else if (hasFlag(argc, argv, "device")) {
             openTarget(CfgScreen::Device);
-            // "row:<n>" walks the group's cursor down, so a row below the fold — and
-            // the glyph it carries — can be looked at in its list.
+            // "row:<n>" walks the group's cursor down, so a row below the fold (and
+            // the glyph it carries) can be looked at in its list.
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "row:", 4) == 0)
                     for (int k = std::atoi(argv[i] + 4); k > 0; --k)
@@ -704,7 +704,7 @@ int main(int argc, char** argv) {
             // Stand in for what the arbiter pushes on a device, since a host build
             // never mounts one. The default is the case the screen exists for: two
             // rows switched on, one of them actually on the air. "idle" is the
-            // nothing-running end and "all" the crowded one — every toggle on with a
+            // nothing-running end and "all" the crowded one: every toggle on with a
             // live update job outranking the lot, which is the only way the
             // non-selectable UPDATE row appears.
             if (hasFlag(argc, argv, "all")) {
@@ -728,8 +728,8 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "background")) {
             // The picker is mostly LOCKED rows on a fresh save, which is the state it
             // ships in and the one worth looking at. "earned" plays the four grants
-            // instead — a species raised, an area cleared, a bracket taken, a ladder
-            // climbed — so the other half of the list can be seen without walking one.
+            // instead (a species raised, an area cleared, a bracket taken, a ladder
+            // climbed), so the other half of the list can be seen without walking one.
             if (hasFlag(argc, argv, "earned")) {
                 game.markCreatureRaised("cuttlefork");   // a swimmer's place
                 game.markCreatureRaised("tadpoll");      // the Phishing line's
@@ -740,7 +740,7 @@ int main(int argc, char** argv) {
                 game.unlockAchievement("NETS_100");      //    that pay out a place
                 game.unlockAchievement("STEPS_100K");
                 // "all" owns every row: the whole ladder cleared and every achievement
-                // a row names earned, so any place can be picked — the one way to see
+                // a row names earned, so any place can be picked. The one way to see
                 // an area's or a prize's place in the habitat without earning it.
                 if (hasFlag(argc, argv, "all")) {
                     for (int a = 0; a < kAreaCount; ++a) game.debugClearSector(a);
@@ -776,7 +776,7 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "updates")) {
             // UPDATES: "ready" fills in what the platform tier would push at boot
             // (a stored network + a manifest source), so the screen shows the verdict
-            // rather than the missing-setup copy. There is no consent to seed —
+            // rather than the missing-setup copy. There is no consent to seed:
             // pressing CHECK NOW is what grants the connection.
             if (hasFlag(argc, argv, "ready")) {
                 game.setNetProvisioned(true);
@@ -845,7 +845,7 @@ int main(int argc, char** argv) {
             game.tick(kFactoryRevealMs + kHeartbeatMs); // hold elapses -> reveal
         }
     } else if (hasFlag(argc, argv, "arch")) {
-        // ARCH opens on its GROUP PICKER now — NEW EGG, ACTIVE, one row per creature
+        // ARCH opens on its GROUP PICKER now: NEW EGG, ACTIVE, one row per creature
         // family, RECORDS. "group:<n>" opens the nth of those, so a family shelf can be
         // looked at; without it the frame is the picker itself.
         enterSlot(SubmenuId::Arch);
@@ -961,7 +961,7 @@ int main(int argc, char** argv) {
         game.onButton({Button::A, true, false});
         game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
-        // "fight" takes the tier and runs the real fight — unlike the `combat` flag's
+        // "fight" takes the tier and runs the real fight: unlike the `combat` flag's
         // dev hook, this enters through Game::buildPlayerCombatant, so buffs carried
         // in from outside (a Backup Drive shield, the ally buff) are on the combatant.
         if (hasFlag(argc, argv, "fight")) {
@@ -1020,7 +1020,7 @@ int main(int argc, char** argv) {
         }
     } else if (hasFlag(argc, argv, "farm")) {
         // re-farm: a CLEARED sub-area stays re-armable. Clear area 0 fully,
-        // then arm a cleared sub — stays at the idle habitat so the FARMING badge shows
+        // then arm a cleared sub: stays at the idle habitat so the FARMING badge shows
         // (no misleading WINS/BOSS progress toward an already-beaten boss).
         for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(0, s, true);
         if (hasFlag(argc, argv, "list"))
@@ -1037,7 +1037,7 @@ int main(int argc, char** argv) {
         // EXPL's own ACTIVITY PICKER in front of both.
         // "endgame" is the other end of the same screen: every area CLEARED, so every
         // zone shows its own glyph (or the pending-art frame) and every category is
-        // open — the densest the screen ever gets. "bossready" clears
+        // open. The densest the screen ever gets. "bossready" clears
         // area 0's five sub-areas WITHOUT clearing the area, which is the one state that
         // names the area gauntlet's boss on its row.
         const bool rerun = hasFlag(argc, argv, "rerun");
@@ -1070,7 +1070,7 @@ int main(int argc, char** argv) {
         // walked to: what the page looks like does not depend on which milestone handed
         // the chapter over, and walking a gauntlet to its end is a long way round to a
         // screen. "beat:<n>" picks which of the zone's four (StoryBeat order), "area:<n>"
-        // which zone, and "scroll:<n>" takes B n times to reach a later window — which
+        // which zone, and "scroll:<n>" takes B n times to reach a later window, which
         // is how to see that the last one lands clear of the countdown rule and the
         // hint band. "archive" opens the CHAPTERS list instead, with every chapter this
         // build ships already read, which is the fullest that list ever gets.
@@ -1091,7 +1091,7 @@ int main(int argc, char** argv) {
                         game.onButton({Button::B, true, false});
         }
     } else if (hasFlag(argc, argv, "dock")) {
-        // ROCK THE DOCK — the operator bracket (game_tourney.cpp). Clearing area 0 is what
+        // ROCK THE DOCK: the operator bracket (game_tourney.cpp). Clearing area 0 is what
         // reaches The Pirate Bayou and so opens the arena's EXPL row, which is the LAST
         // row of the top level; A walks the cursor to it and B draws a bracket. "fight"
         // runs the operator's first match to a verdict, so the frame lands on the
@@ -1108,7 +1108,7 @@ int main(int argc, char** argv) {
         };
         if (hasFlag(argc, argv, "deep")) {
             // Play the bracket forward as far as the pet can take it, so the frame
-            // lands on a field that has already collapsed — which is the only way to
+            // lands on a field that has already collapsed, which is the only way to
             // LOOK at the later rounds' tree and at the room they open up.
             for (int r = 0; r < kTourneyRounds &&
                             game.tourneyPhase() == Game::TourneyPhase::Ready; ++r) {
@@ -1126,7 +1126,7 @@ int main(int argc, char** argv) {
             tapB();                                    // dismiss the verdict
         } else if (hasFlag(argc, argv, "scout")) {
             // Park on a rival rather than on the operator's own row, so the sheet shows
-            // somebody else's kit — which is what the gesture is for.
+            // somebody else's kit, which is what the gesture is for.
             while (game.tourneyCursor() == game.tourneySlot())
                 game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});   // arm the hold...
@@ -1158,7 +1158,7 @@ int main(int argc, char** argv) {
                 if (textWidth(kCrews[i].displayName) >
                     textWidth(kCrews[widest].displayName)) widest = i;
             // Enlisting is gated on a home network, and the HOME NET row is one of the
-            // lines being looked at — so seed a long SSID rather than the shortest one
+            // lines being looked at, so seed a long SSID rather than the shortest one
             // that would let joinCrew through.
             game.setHomeNetwork(0x001122334455ull, "THE_PROMISED_LAN");
             game.joinCrew(widest);
@@ -1170,7 +1170,7 @@ int main(int argc, char** argv) {
             game.debugSetNetworksSeen(hackerRankTierUnlock(longest) *
                                       (kHackerRankXpPerRank / kHackerRankXpPerNetwork));
         }
-        // A battery reading, so the face's glyph can be LOOKED at — the native tier
+        // A battery reading, so the face's glyph can be LOOKED at: the native tier
         // can prove the fill level is right but not that it clears the text beside it.
         for (int i = 3; i < argc; ++i) {
             if (std::strncmp(argv[i], "batt:", 5) != 0) continue;
@@ -1190,7 +1190,7 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "profile")) enterHackerSlot(HackerSlotId::Profile);
         else if (hasFlag(argc, argv, "duel")) {
             // LINK's peer list. There is no radio on the host, so the three peers
-            // come in through debugSeedPeer — one per side plus an unenlisted
+            // come in through debugSeedPeer: one per side plus an unenlisted
             // operator, which is the set that shows all three crew presentations
             // at once. Audit capture (armed above for the other hacker slots) owns
             // the radio when it runs, and LINK refuses to draw a list it could not
@@ -1206,7 +1206,7 @@ int main(int argc, char** argv) {
             enterHackerSlot(HackerSlotId::Link);
         }
         else if (hasFlag(argc, argv, "shop")) {
-            // "hub" buys the MERGE HUB first — the way to see the list with and
+            // "hub" buys the MERGE HUB first: the way to see the list with and
             // without it. "row:<n>" then A-cycles down to reach a given row.
             if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.debugBuyMergeHub(); }
             // "services" buys the two rows that RUN on their own, which is what puts
@@ -1230,7 +1230,7 @@ int main(int argc, char** argv) {
                 if (hasFlag(argc, argv, "info")) {
                     // The DISK MAINTENANCE page is the one with something to read: a
                     // billed service, and the only readout with a live price on it. A
-                    // is LIFTED, not left down — a held A repeats its step (the list
+                    // is LIFTED, not left down: a held A repeats its step (the list
                     // contract), and the tick that fires the hold below would walk the
                     // cursor off the row this is trying to reach.
                     game.onButton({Button::A, true, false});
@@ -1264,7 +1264,7 @@ int main(int argc, char** argv) {
             enterHackerSlot(HackerSlotId::Merge);
         } else if (hasFlag(argc, argv, "vault")) {
             // VAULT: stock one of every container tier, deliberately added in the
-            // WRONG order — the list's own sort is what should land Epic on top.
+            // WRONG order. The list's own sort is what should land Epic on top.
             game.inventory().add("sealed_cache_common", 3);
             game.inventory().add("decryptogram", 2);   // the ticket row, above the caches
             game.inventory().add("sealed_cache_epic", 1);
@@ -1276,8 +1276,8 @@ int main(int argc, char** argv) {
             // CREW: seed known networks (ledger history) plus a live scan sighting, so
             // the home-network picker shows both halves of its merged list. `joined`
             // enlists first (the allegiance card's filled state); `netpick` opens the
-            // picker; `red`/`blue` open that side's roster and `detail` a crew's page
-            // — the four views of the screen, one flag each.
+            // picker; `red`/`blue` open that side's roster and `detail` a crew's page:
+            // the four views of the screen, one flag each.
             game.debugSeedNetworkLedger(0x001122334455ull, "HOME_ROUTER", 12);
             game.debugSeedNetworkLedger(0x0066778899AAull, "CAFE_GUEST", 3);
             const uint8_t heard[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
@@ -1320,7 +1320,7 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "rank")) {
             // Cross the first rank deterministically via the DEVICE seam
             // (registerNetwork isn't limited by the 8-slot simulated dedup pool),
-            // arming rankUpPending — the celebration then surfaces on the idle badge
+            // arming rankUpPending: the celebration then surfaces on the idle badge
             // the next time an event resolves through returnToExplore.
             for (int k = 0; k < kHackerRankXpPerRank / kHackerRankXpPerNetwork + 2; ++k) {
                 const uint8_t bssid[6] = {0xAB, 0xCD, 0xEF, 0x00, 0x00,
@@ -1355,7 +1355,7 @@ int main(int argc, char** argv) {
         } else {
             enterExplCat(ExplCat::Story);
             // The ladder is nested: the first B expands the focused sector, the second
-            // arms the sub-area the cursor lands on — and arming is what drops the game
+            // arms the sub-area the cursor lands on, and arming is what drops the game
             // back to the IDLE habitat with the explore badge live.
             for (int i = 0; i < deepSector; ++i)
                 game.onButton({Button::A, true, false});   // walk to sector[n]
@@ -1418,7 +1418,7 @@ int main(int argc, char** argv) {
         } else if (hasFlag(argc, argv, "encounter") || hasFlag(argc, argv, "wildcombat")) {
             // Every screen an explore step can land on has to be answered, because the
             // fallback is `ping`, and the A+C chord on anything but the armed habitat
-            // opens the Hacker face instead of stepping — one unhandled screen and the
+            // opens the Hacker face instead of stepping: one unhandled screen and the
             // walk stops without ever reaching a fight.
             // Walk until a fight is in front of us. BOTH navs end the walk, because
             // `ping`'s second press doubles as the Encounter's own Fight key: a step
@@ -1452,7 +1452,7 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});  // Fight -> live combat
                 for (int i = 1; i <= 4; ++i)                  // a few action beats
                     game.tick(t += kHeartbeatMs);
-                // B cycles the mid-fight panel, same as the `combat` dev hook — but on a
+                // B cycles the mid-fight panel, same as the `combat` dev hook, but on a
                 // REAL wild, which is the only fight whose KIT page can mark a prize.
                 if (hasFlag(argc, argv, "stats") || hasFlag(argc, argv, "kit"))
                     game.onButton({Button::B, true, false});
@@ -1460,7 +1460,7 @@ int main(int argc, char** argv) {
             }
         } else if (hasFlag(argc, argv, "wifi")) {
             game.inventory().add("sinkhole_trap", 20);   // bypass wild encounters, free
-            // Which discovery the event resolves — the thing the pet does to the
+            // Which discovery the event resolves: the thing the pet does to the
             // network glyph (FX_ABSORB). Bare "wifi" queues nothing, which is the
             // empty-queue beat; the three named ones seed the ledger so the sighting
             // below lands as new / fond / home-turf.
@@ -1492,14 +1492,14 @@ int main(int argc, char** argv) {
                 } else ping();
             }
             // The event opens at its own beat 0, so `beats` is re-spent inside it to
-            // land on a frame of the absorb — on the dissolve's clock, and stopping if
+            // land on a frame of the absorb: on the dissolve's clock, and stopping if
             // the hands-off hold resolves the event off the screen underneath us.
             for (int i = 1; i <= beats && game.nav() == Game::Nav::Wifi; ++i)
                 game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "shiboleet")) {
             // The guardian's riddle, drawn in the CANT. `sigils:<n>` is the whole point
             // of the scene: at 0 the panel is a wall of nonsense, and every sigil turns
-            // one more letter of it into itself — the same riddle, legible in stages.
+            // one more letter of it into itself. The same riddle, legible in stages.
             // The reply the cursor is on is never the interesting part, so nothing here
             // steers it.
             game.inventory().add("sinkhole_trap", 20);
@@ -1521,7 +1521,7 @@ int main(int argc, char** argv) {
                     // One of the two bands that never asks anything: the refusal's
                     // verdict, which has to make a boss out of nowhere legible, and the
                     // boon's, which is what fluency is FOR. Both are searched for rather
-                    // than forced, since the welcome is a roll — pair `boon` with a high
+                    // than forced, since the welcome is a roll: pair `boon` with a high
                     // `sigils:` or the search will not find one.
                     const auto want = wantRefused ? Game::ShiboleetWelcome::Affront
                                                   : Game::ShiboleetWelcome::Boon;
@@ -1556,7 +1556,7 @@ int main(int argc, char** argv) {
             // "fight" carries on into the guardian's own COMBAT, the other screen its
             // swarm is drawn on and the one where it used to appear as a borrowed pet
             // sheet. The stage runs on kCombatAnimMs, which is also the clock the swarm
-            // steps on there — so the same `beats` count means the same thing.
+            // steps on there, so the same `beats` count means the same thing.
             if (hasFlag(argc, argv, "fight")) {
                 for (int i = 0; i < 8 && game.nav() != Game::Nav::Combat; ++i)
                     game.onButton({Button::B, true, false});
@@ -1564,7 +1564,7 @@ int main(int argc, char** argv) {
                     game.tick(t += kCombatAnimMs);
             }
             // `beats` steps the guardian's SWARM, which is what actually moves on the
-            // hail and the verdict — so this ticks the FX clock (kFxAnimMs) rather than
+            // hail and the verdict, so this ticks the FX clock (kFxAnimMs) rather than
             // the heartbeat, exactly as the Wi-Fi dissolve's scene does. Four of these
             // per heartbeat also means a scene can run the flock well into its shape
             // before the screen's own hands-off hold resolves out from under it.
@@ -1575,7 +1575,7 @@ int main(int argc, char** argv) {
         } else if (hasFlag(argc, argv, "rank")) {
             game.inventory().add("sinkhole_trap", 20);
             // Rank already crossed (device seam above). Fire steps until the first
-            // FULL-SCREEN event appears and resolve it — that returnToExplore consumes
+            // FULL-SCREEN event appears and resolve it: that returnToExplore consumes
             // rankUpPending and writes the celebration onto the idle badge.
             for (int i = 0; i < 600 && game.nav() == Game::Nav::Idle; ++i) ping();
             switch (game.nav()) {
@@ -1627,7 +1627,7 @@ int main(int argc, char** argv) {
             // Ride a wild fight to a WIN and hold ON the combat screen for `beats`, so
             // the frame lands inside the beaten rival's dissolve rather than past it.
             // Which dissolve plays is the pet's own kit against the rival's
-            // (Game::rivalFieldsUnknownMove) — "known" grants the rival's moves first,
+            // (Game::rivalFieldsUnknownMove): "known" grants the rival's moves first,
             // which is what turns the absorb back into a shred.
             const bool known = hasFlag(argc, argv, "known");
             for (int i = 0; i < 600; ++i) {
@@ -1646,7 +1646,7 @@ int main(int argc, char** argv) {
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
                         game.tick(t += kHeartbeatMs);
                     if (game.combat().outcome() == Combat::Outcome::Win) break;
-                    // A loss has no outro — keep walking until one is won.
+                    // A loss has no outro: keep walking until one is won.
                     for (int k = 0; k < kExploreRevealHoldBeats + 2 &&
                             game.nav() == Game::Nav::Combat; ++k)
                         game.tick(t += kHeartbeatMs);
@@ -1660,7 +1660,7 @@ int main(int argc, char** argv) {
             // Ride a wild fight to resolution, then let explore-mode's own
             // hands-off auto-dismiss land the frame on the
             // post-encounter STATUS overlay instead of
-            // pressing past it — the captured frame IS the readout screen.
+            // pressing past it: the captured frame IS the readout screen.
             for (int i = 0; i < 400 && game.nav() != Game::Nav::Combat; ++i) {
                 if (game.nav() == Game::Nav::Wifi)
                     game.onButton({Button::B, true, false});
@@ -1675,7 +1675,7 @@ int main(int argc, char** argv) {
                     game.nav() == Game::Nav::Combat; ++k)
                 game.tick(t += kHeartbeatMs);   // auto-dismiss -> Nav::PostEncounter
         }
-        // ("explore" and "walk": no further driving — the idle badge is the frame.)
+        // ("explore" and "walk": no further driving. The idle badge is the frame.)
     } else if (hasFlag(argc, argv, "bottom")) {   // idle C → carousel@8
         game.onButton({Button::C, true, false});
     } else if (hasFlag(argc, argv, "carousel")) { // idle A → carousel@1
@@ -1704,7 +1704,7 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});   // take it
             game.onButton({Button::B, true, false});   // place it
         }
-        // "take" leaves a letter in hand, which is the OTHER control state — the
+        // "take" leaves a letter in hand, which is the OTHER control state: the
         // cell cursor and its own hint band.
         if (hasFlag(argc, argv, "take") && game.cryptogram().running())
             game.onButton({Button::B, true, false});
@@ -1752,7 +1752,7 @@ int main(int argc, char** argv) {
                 game.onButton({Button::B, true, false});
             }
         } else if (hasFlag(argc, argv, "lose")) {
-            // Aim at whichever half does NOT hold the live egg — the mirror of "win" —
+            // Aim at whichever half does NOT hold the live egg (the mirror of "win"),
             // so the run resolves on round one every time, deterministic regardless of
             // seed. The clutch now ends the instant the target leaves the span (see
             // game_eggpick.cpp), so unlike "win" this never needs more than one commit.
@@ -1803,9 +1803,9 @@ int main(int argc, char** argv) {
                 const int want = d == 1 ? 0 : d == kIsolationCols ? 1 : d == -1 ? 2 : 3;
                 const int turn = (want - game.isolation().dir() + 4) % 4;
                 // Every corner on this path is a single quarter-turn (the path never
-                // reverses on itself), so turn is always 1 or 3 here — 1 is a RIGHT
+                // reverses on itself), so turn is always 1 or 3 here; 1 is a RIGHT
                 // turn (C), which this used to send to B, a no-op while running (only
-                // A/C steer — see onIsolation). That silently dropped every right turn,
+                // A/C steer. See onIsolation). That silently dropped every right turn,
                 // so the worm took its one working left turn and then ran straight
                 // until it stalled on a wall, instead of actually walking the cycle.
                 if (turn == 3) game.onButton({Button::A, true, false});
@@ -1814,7 +1814,7 @@ int main(int argc, char** argv) {
             }
         }
         // "bank" takes the verdict's B, which spends the run and leaves the Vermicell
-        // egg incubating at idle — the state the whole minigame hands back to.
+        // egg incubating at idle: the state the whole minigame hands back to.
         if (hasFlag(argc, argv, "bank") && !game.isolation().running())
             game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "chroma")) {

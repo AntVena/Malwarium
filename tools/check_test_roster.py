@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""check_test_roster.py — every native gate is defined once and listed once.
+"""check_test_roster.py: every native gate is defined once and listed once.
 
 The native suite is per-subject units (`test/test_native/test_<subject>.cpp`) over one
 roster (`test_main.cpp`'s MAL_RUN_ALL_GATES). The roster generates each gate's
-declaration, so a roster entry naming nothing fails to LINK — but the other direction
+declaration, so a roster entry naming nothing fails to LINK, but the other direction
 has no compiler behind it: a gate that is written and never listed simply doesn't run,
 and a green suite says nothing about it. That is what this checks.
 

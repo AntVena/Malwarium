@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run.sh — rebuild the engine and (re)launch the native host preview window.
+# run.sh: rebuild the engine and (re)launch the native host preview window.
 #
 # Each run regenerates assets, does a fast incremental build of malwarium_host,
 # kills any running instance, and relaunches it detached so the window stays up

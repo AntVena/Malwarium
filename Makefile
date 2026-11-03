@@ -1,4 +1,4 @@
-# Malwarium — repo-root convenience targets.
+# Malwarium: repo-root convenience targets.
 #
 # Deliberately NOT wired into platformio.ini (no extra_scripts pre-hook): running python
 # on every device build would be a surprise. These are developer-invoked, first-cut helpers.
@@ -17,7 +17,7 @@ pedia: dump-content
 # banner in tools/dump_content.cpp): descriptions are templates the device expands
 # from each row's magnitudes, so running the device's expander is what keeps the
 # site's numbers from disagreeing with the panel's. The tool needs only the content
-# tables + the expander — no framebuffer, no assets, no engine — so it compiles
+# tables + the expander (no framebuffer, no assets, no engine), so it compiles
 # directly here instead of linking malcore, and works without cmake.
 dump-content: build/dump_content
 build/dump_content: tools/dump_content.cpp src/core/content/effect_text.cpp \
@@ -35,7 +35,7 @@ build/dump_content: tools/dump_content.cpp src/core/content/effect_text.cpp \
 
 # Staleness guard: regenerate to a temp file and diff against the committed copy.
 # Fails (non-zero) if they differ, so a content change without a re-gen gets caught.
-# Data only — the asset sync is `pedia`'s job, and a check shouldn't edit the tree.
+# Data only: the asset sync is `pedia`'s job, and a check shouldn't edit the tree.
 #
 # Run by the native CI job (.github/workflows/gates.yml) and deliberately NOT by
 # tools/gates.sh: it guards a publish rather than a build, and the edit loop stays
@@ -90,7 +90,7 @@ pedia-sd: pedia
 
 # Build the `web` artifact an on-device update downloads, and print the manifest
 # row that describes it. The device unpacks this over /sdcard/web with no
-# decompressor, so the shape is fixed — tools/make_web_tar.py is its reference
+# decompressor, so the shape is fixed: tools/make_web_tar.py is its reference
 # producer, and that file's header states the format the reader requires.
 #
 # The archive is written by a script rather than `tar` because it has to be
@@ -126,7 +126,7 @@ pedia-tar: pedia
 #   PLATFORMIO_BUILD_FLAGS='-DUPDATE_MANIFEST_URL=\"http://192.168.1.50:8000/manifest.json\"' \
 #     pio run -e waveshare_s3_154 -t upload
 #
-# BASE is whatever the DEVICE can reach — a laptop's LAN address, not localhost.
+# BASE is whatever the DEVICE can reach: a laptop's LAN address, not localhost.
 # `pio run` has no -D of its own; PLATFORMIO_BUILD_FLAGS is what appends to the
 # environment's build_flags, and the escaped quotes make the macro a string literal.
 #
@@ -138,14 +138,14 @@ pedia-tar: pedia
 DIST ?= dist
 FW_ENV ?= waveshare_s3_154
 # V=1 streams the compiler's output instead of swallowing it. Publishing is a
-# build, and a build you can't see is one you can only wait on — tools/
+# build, and a build you can't see is one you can only wait on: tools/
 # serve_updates.sh turns this on by default for exactly that reason.
 V ?= 0
 PIO_OUT = $(if $(filter-out 0,$(V)),,>/dev/null)
 
 # Build the firmware image and stage it under its version, so two builds of
 # different versions can sit in dist/ at once and a device can be moved between
-# them. Version comes from include/version.h — the same numbers the running build
+# them. Version comes from include/version.h: the same numbers the running build
 # reports, so a staged image can never claim a version the firmware won't.
 firmware-artifact:
 	@pio run -e $(FW_ENV) $(PIO_OUT)
@@ -157,7 +157,7 @@ firmware-artifact:
 	echo "built $(DIST)/mal-$$maj.$$min.$$pat.bin  ($$(wc -c < "$(DIST)/mal-$$maj.$$min.$$pat.bin" | tr -d ' ') bytes)"
 
 # Build both artifacts and the manifest that lists them, then validate the result
-# with the DEVICE's parser — a manifest the device would reject looks exactly like
+# with the DEVICE's parser: a manifest the device would reject looks exactly like
 # a dead network from the operator's side, so the publish fails here instead.
 #
 # The firmware `code` below repacks MAJOR/MINOR/PATCH the way include/version.h's
@@ -187,13 +187,13 @@ manifest: firmware-artifact
 	@$(MAKE) --no-print-directory manifest-check
 
 # Re-validate whatever is in dist/ without rebuilding it. Also the thing to run
-# against a manifest fetched back off a real host, to prove what is SERVED parses
-# — not just what was generated.
+# against a manifest fetched back off a real host, to prove what is SERVED parses,
+# not just what was generated.
 manifest-check: build/check_manifest
 	@./build/check_manifest "$(DIST)/manifest.json" "$(DIST)"
 
 # The validator is the DEVICE's own manifest parser wrapped in a main(), and that
-# parser is self-contained — so it compiles from its two files here rather than
+# parser is self-contained, so it compiles from its two files here rather than
 # linking malcore, and a publish works anywhere a C++17 compiler does (same
 # reasoning as build/dump_content above).
 build/check_manifest: tools/check_manifest.cpp src/core/net/update_manifest.cpp \
@@ -203,7 +203,7 @@ build/check_manifest: tools/check_manifest.cpp src/core/net/update_manifest.cpp 
 	    tools/check_manifest.cpp src/core/net/update_manifest.cpp
 
 # The three boot images the USB flasher writes in front of the app, staged under
-# fixed names because — unlike the app and the bundle — they do not carry a
+# fixed names because (unlike the app and the bundle) they do not carry a
 # version: the flasher reads the app's filename out of the manifest and knows
 # these three by convention (pages/flash/flash.js names the addresses).
 #
@@ -214,7 +214,7 @@ build/check_manifest: tools/check_manifest.cpp src/core/net/update_manifest.cpp 
 #
 # bootloader.bin and partitions.bin are build output; boot_app0.bin ships with the
 # Arduino framework, so it is copied out of the PlatformIO package tree. Both
-# lookups fail loudly — a publish missing one of these serves a flasher that
+# lookups fail loudly: a publish missing one of these serves a flasher that
 # 404s halfway through, which is worse than a publish that didn't happen.
 PIO_CORE  ?= $(HOME)/.platformio
 BOOT_APP0 ?= $(PIO_CORE)/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
@@ -236,7 +236,7 @@ boot-images: firmware-artifact
 # The served pages themselves. pages/README.md documents the directory for someone
 # reading the repo and is not part of the site, so it is the one file dropped.
 # The browser demo: the engine compiled to wasm, written into pages/play/ so `site`
-# picks it up with the rest of the pages. Needs the Emscripten SDK on PATH — the
+# picks it up with the rest of the pages. Needs the Emscripten SDK on PATH: the
 # script says so and stops if it is missing. Not committed (see .gitignore): it is
 # derived from the engine exactly like src/generated/, and rebuilt on the way to a
 # publish so the demo can never be older than the firmware beside it.

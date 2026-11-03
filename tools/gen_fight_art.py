@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen_fight_art.py — the combat screen's 1-bit vocabulary: strike marks and status glyphs.
+gen_fight_art.py. The combat screen's 1-bit vocabulary: strike marks and status glyphs.
 
 This is an AUTHORING step, not a build step, and it owns the PNGs it emits: the
 committed files under assets/ui/ and assets/icons/ are what the atlas compiles, and
@@ -15,32 +15,32 @@ Why a tool at all
 Same reason the pantry has one (tools/gen_item_icons.py): these are one-ink shapes at a
 size where hand work drifts, and they are only worth anything AS A SET. A strike mark
 answers "what just hit me" by silhouette alone, so the five of them have to be five
-clearly different shapes drawn to one weight — one getting a 1px stroke and the next a
+clearly different shapes drawn to one weight: one getting a 1px stroke and the next a
 3px one is the whole read gone. The vocabulary below is that weight, expressed as the
 only forms a fight mark is allowed to be made of.
 
 The rules it enforces, because they cannot be expressed otherwise:
-  * one ink, full alpha or none — every sheet here is TINTED at draw time, so a grey
+  * one ink, full alpha or none: every sheet here is TINTED at draw time, so a grey
     would be a grey of whatever colour the screen picked;
   * strokes are 2px minimum, because a 1px line vanishes against a creature;
   * a mark is drawn as though the blow travels RIGHT, and the engine mirrors it for a
-    blow going the other way (SpriteData::facing, core/render/sprite.h) — so every
+    blow going the other way (SpriteData::facing, core/render/sprite.h), so every
     recipe here bows, points and trails one way only.
 
 PAIRS, and why every source has exactly two
 -------------------------------------------
 Fighters trade blows for a whole fight, so a source that owned one mark showed the same
 drawing every few seconds and the mark stopped reading as an event. Each source gets a
-pair, and the engine walks it on the fight's own swing count — so no two blows in a row
+pair, and the engine walks it on the fight's own swing count, so no two blows in a row
 draw the same frame, which is the sequence a player actually watches.
 
-The pair is not always two variants of one form — it is whatever says the line twice.
+The pair is not always two variants of one form: it is whatever says the line twice.
 Ransomware varies its slash; Phishing spends its two on different halves of the same
 idea (the lure, then the strike that follows it).
 
 Metamorphic has no pair, and cannot want one: none of its rows casts itself. Every
 wildcard rolls a move out of another line or the common pool (content_moves.cpp), so a
-Metamorphic pet already shows the mark of whatever it rolled — the same thing FX_CAMO
+Metamorphic pet already shows the mark of whatever it rolled: the same thing FX_CAMO
 does with that line's colours.
 """
 
@@ -63,7 +63,7 @@ ICON_DIR = os.path.join(REPO, "assets", "icons")
 # as a mark BETWEEN the fighters rather than as one landing ON one of them.
 STRIKE_W, STRIKE_H = 28, 44
 
-# A status glyph's cell — the size the fight strip already draws (8x8, one per condition,
+# A status glyph's cell: the size the fight strip already draws (8x8, one per condition,
 # tinted). Two frames is the whole animation budget: the strip sits under a fighter's feet
 # and anything busier there competes with the fight above it.
 GLYPH_W, GLYPH_H = 8, 8
@@ -97,7 +97,7 @@ class G:
                 self.px(x, y, on)
 
     def disc(self, cx, cy, r, on=1):
-        """A superellipse rather than a circle — blockier, which is the house look."""
+        """A superellipse rather than a circle: blockier, which is the house look."""
         for y in range(self.h):
             for x in range(self.w):
                 dx = abs((x - cx) / max(r, 0.5))
@@ -111,7 +111,7 @@ class G:
         self.disc(cx, cy, r - w, 0)
 
     def stroke(self, pts, w=2, on=1):
-        """A thick polyline — the 2px minimum is the point of it."""
+        """A thick polyline: the 2px minimum is the point of it."""
         r = max(int(w) // 2, 0)
         for i in range(len(pts) - 1):
             x0, y0 = pts[i]
@@ -127,7 +127,7 @@ class G:
     def shear(self, k):
         """Tilt: shift each row sideways in proportion to its distance from centre.
 
-        What turns one drawing into a pair for free — a skull that leans one way and then
+        What turns one drawing into a pair for free: a skull that leans one way and then
         the other is the same skull, and at 8px a one-pixel lean is the whole tilt.
         """
         out = [[0] * self.w for _ in range(self.h)]
@@ -168,7 +168,7 @@ def sheet(frames):
 # the mark is on screen to answer.
 
 def gash(g, cx, cy, half, bow=6, thick=4):
-    """A tapered crescent — a cut, bowing and thickening through its belly.
+    """A tapered crescent: a cut, bowing and thickening through its belly.
 
     Both ends come to a point, so the stroke reads as something swept rather than as a
     bar someone laid down. `half` is what separates a Ransomware slash from a common one:
@@ -197,7 +197,7 @@ def barb(g, tipx, cy, back, spread):
         g.stroke([(back, cy + side * spread),
                   (back - 5, cy + side * (spread + 5))], w=2)           # flared barb
         # Streaks trailing off the barbs. Without them the head is a clean triangle on a
-        # stick, which is the shape of a UI arrow — a thing that points rather than a
+        # stick, which is the shape of a UI arrow: a thing that points rather than a
         # thing that was thrown. The motion is what makes it a thrust.
         for k in (0, 1):
             y = cy + side * (spread + 2 + k * 6)
@@ -210,7 +210,7 @@ def jaws(g, cx, cy, w, h, gap, tooth):
     Trojan's form, off its own passive: an armed trap hijacking the turn
     (LinePassive::ExecOverride) is a thing that was waiting and then closed.
 
-    `h` is the arch, and it is what actually says open or shut — not `gap`. The arcs bow
+    `h` is the arch, and it is what actually says open or shut, not `gap`. The arcs bow
     AWAY from each other, hinged at their corners the way a mouth is, so a deep arch is a
     mouth open at the middle however close the two bases are set. Shut means flattening
     the arch until the teeth meet along the whole bite.
@@ -223,7 +223,7 @@ def jaws(g, cx, cy, w, h, gap, tooth):
             fall = (w * w - i * i) / float(w * w)
             pts.append((cx + i, base + side * (h * fall)))
         g.stroke(pts, w=3)
-        # Teeth, hanging off the arc into the gap — three a side, biggest at the middle.
+        # Teeth, hanging off the arc into the gap: three a side, biggest at the middle.
         for i in (-w // 2, 0, w // 2):
             fall = (w * w - i * i) / float(w * w)
             y0 = base + side * (h * fall)
@@ -262,7 +262,7 @@ def strike_common(v):
 
 
 def strike_ransomware(v):
-    """Big slashes — the same form as common, spent at full reach. The line that locks
+    """Big slashes: the same form as common, spent at full reach. The line that locks
     your files hits like something with claws, and it is the loudest mark in the set."""
     g = G(STRIKE_W, STRIKE_H)
     if v == 0:
@@ -284,7 +284,7 @@ def strike_ransomware(v):
 
 def strike_phishing(v):
     """The lure, then the strike. Bubbles rising off the bait on one frame and the barbed
-    thrust on the other — the two halves of getting somebody to come to you."""
+    thrust on the other: the two halves of getting somebody to come to you."""
     g = G(STRIKE_W, STRIKE_H)
     if v == 0:
         g.ring(8, 31, 6)
@@ -314,7 +314,7 @@ def strike_trojan(v):
 
 
 def strike_worm(v):
-    """Little projectiles, several at once. Three fat ones, then a looser spread of five —
+    """Little projectiles, several at once. Three fat ones, then a looser spread of five:
     the count is what changes, because a swarm is what this line is."""
     g = G(STRIKE_W, STRIKE_H)
     if v == 0:
@@ -348,7 +348,7 @@ def glyph_dot(v):
 def star(g, cx, cy, r):
     """A sparkle: a filled diamond, which at this size is the only star there is room for.
 
-    Bars crossing would have been a plus — the sides have to come IN between the points
+    Bars crossing would have been a plus: the sides have to come IN between the points
     for the eye to call it a star, and below about 7px across there is no way to do that
     and still have a body left. The diamond keeps the four points and spends nothing.
     """
@@ -360,7 +360,7 @@ def star(g, cx, cy, r):
 
 def glyph_stun(v):
     """Stars going round. Two of them swapping size and corner across the pair, which is
-    the cartoon read for a head that has stopped working — a spiral held still was just a
+    the cartoon read for a head that has stopped working: a spiral held still was just a
     shape, and said "stunned" only because it was captioned STUN elsewhere.
     """
     g = G(GLYPH_W, GLYPH_H)

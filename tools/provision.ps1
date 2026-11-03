@@ -131,7 +131,7 @@ function Invoke-DoSd {
     Copy-Item (Join-Path $RepoRoot 'web\assets\*') (Join-Path $webDst 'assets') -Recurse -Force
     Copy-Item (Join-Path $RepoRoot 'web\data\*')   (Join-Path $webDst 'data')   -Recurse -Force
 
-    # Verify it landed — not just that the copy didn't throw.
+    # Verify it landed, not just that the copy didn't throw.
     $missing = @()
     foreach ($f in 'index.html', 'style.css', 'app.js', 'data\pedia_data.js') {
         if (-not (Test-Path (Join-Path $webDst $f))) { $missing += "$webDst\$f" }

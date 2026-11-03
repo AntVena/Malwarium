@@ -4,12 +4,12 @@
 Why this is a gate and not a thing you notice: an unparseable workflow does not
 report a syntax error. GitHub creates a run, gives it the FILE PATH as its name
 instead of the `name:` field, and completes it in zero seconds with no jobs, no
-steps and no logs — `gh run view --log-failed` answers "log not found". On a
+steps and no logs: `gh run view --log-failed` answers "log not found". On a
 repo whose releases fire a second workflow that DOES parse, the green publish
 sits directly above the broken gates run in `gh run list`, and the whole CI tier
 can stay silently dead for several releases.
 
-The trigger for writing this: `- name: 'Pedia data freshness` — a step name whose
+The trigger for writing this: `- name: 'Pedia data freshness`. A step name whose
 leading apostrophe is part of the product's own word ('Pedia). Bare, it opens a
 YAML single-quoted scalar that never closes, and the file stops parsing from
 there. Every apostrophe-leading name in this repo is a candidate for the same
@@ -17,7 +17,7 @@ slip, and the local gates could not see it because tools/gates.sh runs the build
 not the workflow that runs the build.
 
 Checks each file under .github/workflows/ parses, and that what it parses into
-still looks like a workflow — `on` and `jobs` present, every job carrying steps.
+still looks like a workflow: `on` and `jobs` present, every job carrying steps.
 A file that parses into something structurally wrong is the same outage.
 """
 import pathlib
@@ -51,7 +51,7 @@ def main() -> int:
             failures.append(f"{rel}: parses, but not into a mapping")
             continue
         # `on:` is YAML 1.1's boolean true, which safe_load hands back as the KEY
-        # True rather than the string "on" — both spellings count as present.
+        # True rather than the string "on": both spellings count as present.
         if "on" not in doc and True not in doc:
             failures.append(f"{rel}: no `on:` trigger block")
         jobs = doc.get("jobs")

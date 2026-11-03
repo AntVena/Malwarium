@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# screens.sh — render the screen catalogue to PNGs for a visual sweep.
+# screens.sh: render the screen catalogue to PNGs for a visual sweep.
 #
 #   ./tools/screens.sh [outdir]      # default: build/screens
 #
 # Why this exists: the native tier can prove a STRING fits a budget, but not that two
 # things drawn on the same line miss each other, and not that a panel's copy is being
-# cut. Those show up the moment you look at the frame, and nowhere else — a font or a
+# cut. Those show up the moment you look at the frame, and nowhere else: a font or a
 # layout constant moves, thirty screens still "render", and a handful are quietly
 # overprinting. Run this after any change to the grid (core/ui/layout.h), the font, or
 # a shared widget, and look at the sheet.
@@ -15,7 +15,7 @@
 #
 # Each line below is one scene; the flags are dump_frame's own (see its header for the
 # full vocabulary). A scene that renders the idle habitat means its flags didn't match
-# and the line needs fixing — the script says so rather than leaving you to spot it in
+# and the line needs fixing: the script says so rather than leaving you to spot it in
 # a sheet of twenty.
 set -euo pipefail
 
@@ -118,7 +118,7 @@ SCENES=(
   "hacker_merge|hacker merge recipes stock"
   "shiboleet|shiboleet"           "shiboleet_half|shiboleet sigils:13"
   "shiboleet_fluent|shiboleet sigils:24"
-  # FX_SWARM: the guardian's body, one scene per FlockMood — a swarm is judged on whether
+  # FX_SWARM: the guardian's body, one scene per FlockMood. A swarm is judged on whether
   # the moods read as different creatures, and that is a looking question, not a gate one.
   # The `beats` count runs the flock to its shape before the frame is taken.
   "shiboleet_hail|shiboleet hail beats:70"

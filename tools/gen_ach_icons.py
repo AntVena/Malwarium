@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen_ach_icons.py — the achievement board's 1-bit glyphs, and the grammar they share.
+gen_ach_icons.py: the achievement board's 1-bit glyphs, and the grammar they share.
 
 An AUTHORING step, not a build step, and it owns the PNGs it emits: the committed files
 under assets/icons/ are what the web 'Pedia serves, and this is what they are
@@ -14,33 +14,33 @@ Why a tool at all
 -----------------
 The 'Pedia draws achievements as a GRID, and a grid only reads if the rows share a
 grammar. assets/ASSET_MANIFEST.md (§875) states it: one bespoke glyph per row, no
-reuse, and most rows are LADDERS — one motif plus a countable tally, so a reader sees
+reuse, and most rows are LADDERS: one motif plus a countable tally, so a reader sees
 which rung a row is before they read anything. That is a rule about the SET, which is
 exactly the kind of rule hand-drawing drifts away from one file at a time.
 
 So the grammar lives here as code rather than as a convention people remember:
 
-  * 20x20, one ink, full alpha or none — pure white on transparent, tinted at draw
+  * 20x20, one ink, full alpha or none: pure white on transparent, tinted at draw
     time. No greys: they survive neither the tint nor the x1.75 upscale.
-  * strokes are 2px, for the same reason the pantry's are — a 1px line disappears.
+  * strokes are 2px, for the same reason the pantry's are: a 1px line disappears.
   * the MOTIF occupies rows 0..13. Rows 14..19 belong to the footer, and a motif that
     reaches into them is what makes a tally stop reading as a count.
   * the FOOTER is one of four, and it is what the row's own kind decides:
-      tally(n)  a ladder rung — n marks, 2px wide, pitch 4, centred (start x = 11-2n);
+      tally(n)  a ladder rung: n marks, 2px wide, pitch 4, centred (start x = 11-2n);
                 past five it wraps onto a second line (see tally)
-      bar()     "all of them" — a full-width rule under the motif
-      chevron() "took one deep" — a narrowing wedge
-      shelf()   "all of them, alive, AT ONCE" — the bar with two uprights
+      bar()     "all of them": a full-width rule under the motif
+      chevron() "took one deep": a narrowing wedge
+      shelf()   "all of them, alive, AT ONCE": the bar with two uprights
     The first three are measured off the shipped art (BOSS_FIRST..BOSS_100 for the
     tally, FULL_LINE_TROJAN for the bar, DEEP_LINE_TROJAN for the chevron), so a glyph
     made here lands in the same grid as one drawn before this file existed. The fourth
     is built ON the bar for the same reason: the ARCH collection rows say the same
-    "every one of them" the bar does, plus the part the bar cannot — that they were all
-    on the rack together — so it is that rule inside a bracket, not a new shape.
+    "every one of them" the bar does, plus the part the bar cannot: that they were all
+    on the rack together, so it is that rule inside a bracket, not a new shape.
 
 A MOTIF is authored as ASCII below, which is the only honest way to hand-place pixels
 at this size: what you read in the source is what the device draws. A motif is shared
-by every row on its ladder — that is the point of a ladder — and the footer is what
+by every row on its ladder (that is the point of a ladder), and the footer is what
 tells the rungs apart.
 """
 
@@ -51,7 +51,7 @@ import sys
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gen_assets import decode_png_rgba  # noqa: E402  — the atlas's own reader
+from gen_assets import decode_png_rgba  # noqa: E402:  the atlas's own reader
 
 SIZE = 20
 MOTIF_ROWS = 14          # rows 0..13; 14..19 are the footer's
@@ -72,7 +72,7 @@ def tally(n):
     Five marks fill the cell (start x = 1), so a sixth rung WRAPS rather than packing
     the pitch tighter: five marks on a first line and the remainder centred on a
     second, each line two rows tall (14..15 and 17..18). Counting stays "five, and
-    one more" — the way a hand keeps a tally — instead of six marks too close to
+    one more" (the way a hand keeps a tally), instead of six marks too close to
     tell apart at x1.75. That also caps a ladder at ten rungs, which is more than
     any has.
     """
@@ -121,7 +121,7 @@ def shelf():
 
     The ARCH collection rows (a whole line, the whole roster, one of every family) are
     the only ones whose claim is about a MOMENT rather than a lifetime, and bar() cannot
-    carry that distinction on its own — FULL_LINE_WORM ("raised them all") and WING_WORM
+    carry that distinction on its own: FULL_LINE_WORM ("raised them all") and WING_WORM
     ("all five on the shelf together") would otherwise be the same picture. The uprights
     are what makes the rule a shelf: the same full-width bar, bracketed.
     """
@@ -131,7 +131,7 @@ def shelf():
 
 
 def plain():
-    """No footer — a one-off Event row, which has no rung to be on."""
+    """No footer: a one-off Event row, which has no rung to be on."""
     return {}
 
 
@@ -165,7 +165,7 @@ def from_item(item_id):
     """A dish's own inventory glyph (ICON_ITEM_<ID>), centred in the motif band.
 
     A "cook this one dish" row is about a specific plate, and the player already knows
-    that plate by sight off the ITEMS list — so the honest picture is the one they have
+    that plate by sight off the ITEMS list, so the honest picture is the one they have
     been looking at, read here rather than redrawn. Same reason inherit() exists: two
     hand-drawn pictures of one thing drift, and a copy taken at render time cannot.
 
@@ -174,7 +174,7 @@ def from_item(item_id):
     item is already composed across the full width, and re-centring an odd-width glyph
     would knock a symmetric one off its axis.
 
-    A dish whose ink is taller than the band is simply not one this takes — cropping a
+    A dish whose ink is taller than the band is simply not one this takes: cropping a
     20-row composition into 14 loses a feature or thins a stroke, and both are worse than
     a motif drawn for the band. Author that one in MOTIFS like every other.
     """
@@ -186,7 +186,7 @@ def from_item(item_id):
 
 MOTIFS = {}
 
-# ROCK THE DOCK — a deck on pilings under a mooring bollard. The arena's identity is
+# ROCK THE DOCK: a deck on pilings under a mooring bollard. The arena's identity is
 # the DOCK, and the tally carries the rung, which is the division of labour every
 # ladder here uses.
 MOTIFS["dock"] = """
@@ -206,7 +206,7 @@ MOTIFS["dock"] = """
 ....................
 """
 
-# UNDERDOG — the short fighter, marked, beside the tall one it put out. The mark is
+# UNDERDOG: the short fighter, marked, beside the tall one it put out. The mark is
 # what makes it a result rather than two bars: without it this is a chart.
 MOTIFS["underdog"] = """
 ....................
@@ -225,7 +225,7 @@ MOTIFS["underdog"] = """
 ..######..########..
 """
 
-# PUNCHING UP — an arrow through a broken ceiling. The break is the point: the bar is
+# PUNCHING UP: an arrow through a broken ceiling. The break is the point: the bar is
 # the Daemon band the row is about arriving without.
 MOTIFS["punchup"] = """
 .####...####...####.
@@ -244,7 +244,7 @@ MOTIFS["punchup"] = """
 ........####........
 """
 
-# ENLISTED — a shield cleaved down the middle. Two sides, and the whole of enlisting is
+# ENLISTED: a shield cleaved down the middle. Two sides, and the whole of enlisting is
 # picking one. Reads as the CREW slot's shield (ICON_CREW) at a fifth of the cell.
 MOTIFS["enlisted"] = """
 ....................
@@ -263,7 +263,7 @@ MOTIFS["enlisted"] = """
 ........####........
 """
 
-# The Metamorphic line's own mark, the bell — the same mark NEVER_SEEN and DEEP_COVER
+# The Metamorphic line's own mark, the bell. The same mark NEVER_SEEN and DEEP_COVER
 # carry (§875: "both the line's bell"). Solid here: the hollow one is spoken for, it
 # means the hatch run that was never spotted.
 MOTIFS["bell"] = """
@@ -284,7 +284,7 @@ MOTIFS["bell"] = """
 """
 
 
-# DUEL WON — one fighter standing, one toppled. The FIRST_DUEL glyph says a duel was
+# DUEL WON: one fighter standing, one toppled. The FIRST_DUEL glyph says a duel was
 # FOUGHT (two packets crossing); this ladder counts the ones that ended, so what it
 # draws is the ending rather than the exchange.
 MOTIFS["duel_won"] = """
@@ -304,7 +304,7 @@ MOTIFS["duel_won"] = """
 ....................
 """
 
-# THE STOVE — a pan over flame. Deliberately not the CUISINE bowl: that ladder counts
+# THE STOVE: a pan over flame. Deliberately not the CUISINE bowl: that ladder counts
 # dishes HELD, and this one counts dishes cooked, which is a stove and not a table.
 MOTIFS["stove"] = """
 ....................
@@ -323,7 +323,7 @@ MOTIFS["stove"] = """
 ....................
 """
 
-# THE PALATE — a plate with a fork laid across it. The kitchen ladder beside it
+# THE PALATE: a plate with a fork laid across it. The kitchen ladder beside it
 # (CUISINE, a bowl) counts dishes the OPERATOR has got hold of; this one counts what one
 # pet has actually eaten, and a cleared plate is the picture of that. Two motifs rather
 # than one shared bowl for exactly that reason: they are different claims, and a reader
@@ -345,7 +345,7 @@ MOTIFS["palate"] = """
 ....................
 """
 
-# THE FAVOURITE — the palate's plate with a heart over it in place of the fork: the
+# THE FAVOURITE. The palate's plate with a heart over it in place of the fork: the
 # same table, and the one dish on it this pet loves. A one-off, so it wears no footer.
 MOTIFS["favourite"] = """
 ....................
@@ -364,7 +364,7 @@ MOTIFS["favourite"] = """
 .....##########.....
 """
 
-# THE REPERTOIRE — a stack of move cards, the top one dealt clear of the rest. The moves
+# THE REPERTOIRE: a stack of move cards, the top one dealt clear of the rest. The moves
 # ladder counts what ONE pet has learned of everything it could, which is a hand being
 # collected rather than a shelf being filled.
 MOTIFS["repertoire"] = """
@@ -384,7 +384,7 @@ MOTIFS["repertoire"] = """
 ....................
 """
 
-# THE QUOTE BOARD — a framed grid with cells open and closed, which is what a
+# THE QUOTE BOARD: a framed grid with cells open and closed, which is what a
 # Decryptogram mid-solve actually looks like.
 MOTIFS["cipher"] = """
 ....................
@@ -403,7 +403,7 @@ MOTIFS["cipher"] = """
 ....................
 """
 
-# PEERS — a bus with operators hanging off it, the same read ICON_PEERS uses for the
+# PEERS. A bus with operators hanging off it, the same read ICON_PEERS uses for the
 # slot: the roster of who this device has heard, not a crowd of figures.
 MOTIFS["peers"] = """
 ....................
@@ -422,7 +422,7 @@ MOTIFS["peers"] = """
 ....................
 """
 
-# STEPS — two prints on a trail. Sparse on purpose: a walk is the one explore row that
+# STEPS: two prints on a trail. Sparse on purpose: a walk is the one explore row that
 # measures distance rather than what was found at the end of it.
 MOTIFS["steps"] = """
 ....................
@@ -441,7 +441,7 @@ MOTIFS["steps"] = """
 ..........##..##....
 """
 
-# THE RACK — a frame of stacked units. Distinct from SECOND_INSTANCE's two side-by-side
+# THE RACK: a frame of stacked units. Distinct from SECOND_INSTANCE's two side-by-side
 # stacks, which is a glyph about a PAIR; this one is about how full the rack is.
 MOTIFS["rack"] = """
 ....................
@@ -460,7 +460,7 @@ MOTIFS["rack"] = """
 ....................
 """
 
-# SEEN — an eye. The third bestiary axis needed a mark that is not a creature: raising
+# SEEN: an eye. The third bestiary axis needed a mark that is not a creature: raising
 # and defeating both already own one, and only this row is about merely looking.
 MOTIFS["eye"] = """
 ....................
@@ -479,7 +479,7 @@ MOTIFS["eye"] = """
 ....................
 """
 
-# A TITLE — a medal on its ribbon. Earned for a cleared zone, but drawn as the receipt
+# A TITLE: a medal on its ribbon. Earned for a cleared zone, but drawn as the receipt
 # rather than the zone, so it cannot be mistaken for the AREA rows beside it.
 MOTIFS["title"] = """
 ....................
@@ -498,7 +498,7 @@ MOTIFS["title"] = """
 ....................
 """
 
-# FRAGGER — a crossed-out fragment over the beam that is coming for it, and the scan head.
+# FRAGGER: a crossed-out fragment over the beam that is coming for it, and the scan head.
 MOTIFS["cab_fragger"] = """
 ....................
 ...##############...
@@ -516,7 +516,7 @@ MOTIFS["cab_fragger"] = """
 ....................
 """
 
-# SAFE_HANDS — a file dropping into the head's cupped hands: FRAGGER's catch.
+# SAFE_HANDS. A file dropping into the head's cupped hands: FRAGGER's catch.
 MOTIFS["catch"] = """
 ....................
 ......########......
@@ -535,11 +535,11 @@ MOTIFS["catch"] = """
 """
 
 # --- The five arcade cabinets ------------------------------------------------
-# One per cabinet, each wearing its own GAME's mark — the shape TOWER_OF_FRAGGLE
+# One per cabinet, each wearing its own GAME's mark: the shape TOWER_OF_FRAGGLE
 # already set for a cabinet row. Not a cabinet silhouette with a mark inside it: at
 # 20px the screen would be eight pixels across and every one of them would read alike.
 
-# SPOT THE PHISH — a raft of eggs with the live one standing proud of the rest.
+# SPOT THE PHISH: a raft of eggs with the live one standing proud of the rest.
 MOTIFS["cab_clutch"] = """
 ....................
 .......####.........
@@ -557,7 +557,7 @@ MOTIFS["cab_clutch"] = """
 ....................
 """
 
-# ISOLATION PROTOCOL — the worm doubled back on itself, and the byte it is going for.
+# ISOLATION PROTOCOL: the worm doubled back on itself, and the byte it is going for.
 MOTIFS["cab_isolation"] = """
 ....................
 ..##############....
@@ -575,7 +575,7 @@ MOTIFS["cab_isolation"] = """
 ..........####......
 """
 
-# DISK DECRYPTION — a padlock over three tumblers, which is the board's whole shape:
+# DISK DECRYPTION. A padlock over three tumblers, which is the board's whole shape:
 # three slots, and a key either falls or it does not.
 MOTIFS["cab_decryption"] = """
 ....................
@@ -594,7 +594,7 @@ MOTIFS["cab_decryption"] = """
 ....................
 """
 
-# DECRYPTOGRAM — letters standing open in a line with the closed cells between them.
+# DECRYPTOGRAM: letters standing open in a line with the closed cells between them.
 # The QUOTES ladder draws the whole framed board; this is one line off it.
 MOTIFS["cab_cryptogram"] = """
 ....................
@@ -613,7 +613,7 @@ MOTIFS["cab_cryptogram"] = """
 ....................
 """
 
-# CHROMATOPHORE — the line's bell, PARTED. The set of three bell glyphs differ only in
+# CHROMATOPHORE: the line's bell, PARTED. The set of three bell glyphs differ only in
 # treatment (ASSET_MANIFEST.md §875): solid is the line, hollow is the hatch run that
 # was never spotted, and parted is the cabinet it is played on.
 MOTIFS["cab_chroma"] = """
@@ -638,7 +638,7 @@ MOTIFS["cab_chroma"] = """
 # since. Their motifs are new; the CUISINE rungs inherit, because that ladder's own
 # motif is already drawn and only its later rungs were missing.
 
-# METHODS KNOWN — a chef's hat. The kitchen now has three ladders and they must not be
+# METHODS KNOWN: a chef's hat. The kitchen now has three ladders and they must not be
 # one picture: CUISINE draws the BOWL (dishes held), SERVICE draws the STOVE (dishes
 # cooked), and this draws the person who was taught, which is what a recipe is.
 MOTIFS["recipes"] = """
@@ -658,7 +658,7 @@ MOTIFS["recipes"] = """
 ....................
 """
 
-# TIRAMISUDO — layers under a dusting. The only food that permanently upgrades the pet,
+# TIRAMISUDO: layers under a dusting. The only food that permanently upgrades the pet,
 # so it is the one dish worth drawing as something built rather than served.
 MOTIFS["tiramisudo"] = """
 ..##...##...##...##.
@@ -677,7 +677,7 @@ MOTIFS["tiramisudo"] = """
 ....................
 """
 
-# SPARE RIBS — a rack: the trimmed end, then two ribs. The ITEMS glyph is the same rack
+# SPARE RIBS. A rack: the trimmed end, then two ribs. The ITEMS glyph is the same rack
 # running off the bottom of its cell, which is what a rack does on a counter; here it is
 # the whole thing, because a motif that stops at the band edge reads as cut off.
 MOTIFS["spare_ribs"] = """
@@ -697,7 +697,7 @@ MOTIFS["spare_ribs"] = """
 ...###############..
 """
 
-# BUFFER OVERFLOAT — the glass, stem and foot. The ITEMS glyph stands a row taller on a
+# BUFFER OVERFLOAT: the glass, stem and foot. The ITEMS glyph stands a row taller on a
 # longer stem; the drink is the bowl and the base, so the stem is what gives here.
 MOTIFS["buffer_overfloat"] = """
 .....###########....
@@ -716,7 +716,7 @@ MOTIFS["buffer_overfloat"] = """
 ......########......
 """
 
-# PORTRIDGE — a bowl, steaming, and nothing else. The method that changes nothing, so
+# PORTRIDGE: a bowl, steaming, and nothing else. The method that changes nothing, so
 # the glyph is deliberately the plainest thing in the pantry.
 MOTIFS["portridge"] = """
 ....................
@@ -735,7 +735,7 @@ MOTIFS["portridge"] = """
 ....................
 """
 
-# RECURSIVE TURDUCKEN — three domes, each inside the last. The row is called Base Case
+# RECURSIVE TURDUCKEN: three domes, each inside the last. The row is called Base Case
 # and the joke only works if a reader can count the nesting, so the sizes step hard.
 MOTIFS["turducken"] = """
 ....................
@@ -757,7 +757,7 @@ MOTIFS["turducken"] = """
 # --- The ARCH shelf's own three ----------------------------------------------
 
 # A SPECIMEN JAR with something alive in it. The zoology ladder's mark: the rack motif
-# beside it is about how full the shelf is, and this one is about what is ON it — a
+# beside it is about how full the shelf is, and this one is about what is ON it. A
 # kept creature, not a parked one. Drawn INSET from x=4: shelf() puts its uprights at
 # x=2..3 and 16..17, and a jar whose walls landed on them would read as one tall
 # container rather than as a jar standing on a shelf.
@@ -778,7 +778,7 @@ MOTIFS["jar"] = """
 ....................
 """
 
-# ONE OF EACH — a clade: specimens on their own branches off one trunk. Three tips
+# ONE OF EACH. A clade: specimens on their own branches off one trunk. Three tips
 # rather than five, for the same reason the tally tops out at five marks: past that the
 # strokes merge. What the row counts is in its prose; what the glyph says is FAMILIES.
 MOTIFS["clade"] = """
@@ -798,7 +798,7 @@ MOTIFS["clade"] = """
 ....................
 """
 
-# THE RACK WITH NOTHING FREE — the same frame as the "rack" motif above, with every bay
+# THE RACK WITH NOTHING FREE: the same frame as the "rack" motif above, with every bay
 # packed instead of shelved. The pair is deliberate: one glyph is a shelf you are still
 # filling, the other is the moment it stopped having room.
 MOTIFS["rack_full"] = """
@@ -818,7 +818,7 @@ MOTIFS["rack_full"] = """
 ....................
 """
 
-# COPIES — identical cards cascading off one another. Not the two towers
+# COPIES: identical cards cascading off one another. Not the two towers
 # SECOND_INSTANCE draws (that glyph is about a PAIR meeting, and it gates a line);
 # this is a ladder about how deep the stack of one species goes.
 MOTIFS["clones"] = """
@@ -840,7 +840,7 @@ MOTIFS["clones"] = """
 
 # --- The roster --------------------------------------------------------------
 # One row per glyph: the achievement id it is drawn for, its motif, and its footer.
-# A ladder is N entries over ONE motif — which is the whole reason the motifs above
+# A ladder is N entries over ONE motif, which is the whole reason the motifs above
 # are named for subjects rather than for rows.
 
 GLYPHS = [
@@ -912,8 +912,8 @@ GLYPHS = [
     ("ICON_ACH_CUISINE_120", inherit("ICON_ACH_CUISINE_3"), tally(5)),
     # ...and its capstone, which is REDRAWN rather than left alone. It shipped wearing
     # tally(3), which was right when it was the third rung of three and is now the same
-    # picture as CUISINE_25. A capstone is a bar in this grammar anyway — "all of them"
-    # is not a count — so the fix and the convention are the same edit.
+    # picture as CUISINE_25. A capstone is a bar in this grammar anyway ("all of them"
+    # is not a count), so the fix and the convention are the same edit.
     ("ICON_ACH_CUISINE_ALL", inherit("ICON_ACH_CUISINE_3"), bar()),
 
     # --- What ONE PET has got through ----------------------------------------
@@ -939,7 +939,7 @@ GLYPHS = [
     ("ICON_ACH_COOK_PORTRIDGE", "portridge", plain()),
     ("ICON_ACH_COOK_TURDUCKEN", "turducken", plain()),
 
-    # The rest of the EPIC tier — one row per dish, each wearing the dish.
+    # The rest of the EPIC tier: one row per dish, each wearing the dish.
     ("ICON_ACH_COOK_ESCALOPE", from_item("privilege_escalope"), plain()),
     ("ICON_ACH_COOK_SPARE_RIBS", "spare_ribs", plain()),
     ("ICON_ACH_COOK_RACELETTE", from_item("racelette"), plain()),
@@ -955,7 +955,7 @@ GLYPHS = [
     # ceiling it is measured against is one the player bought.
     ("ICON_ACH_NO_VACANCY", "rack_full", plain()),
 
-    # The zoology ladder — different species KEPT, three rungs and a capstone. The
+    # The zoology ladder: different species KEPT, three rungs and a capstone. The
     # capstone takes the shelf rather than the bar: what it claims is "all of them at
     # once", which is the distinction shelf() exists to draw.
     ("ICON_ACH_ZOO_5", "jar", tally(1)),
@@ -964,8 +964,8 @@ GLYPHS = [
     ("ICON_ACH_ZOO_ALL", "jar", shelf()),
     ("ICON_ACH_ZOO_FAMILIES", "clade", shelf()),
 
-    # The five WINGS: each family's own mark — the same one its FULL_LINE row wears,
-    # inherited rather than redrawn — under the shelf. Read beside those rows the pair
+    # The five WINGS: each family's own mark (the same one its FULL_LINE row wears,
+    # inherited rather than redrawn) under the shelf. Read beside those rows the pair
     # is legible on sight: a bar for a 'Pedia filled in over a hundred lifecycles, a
     # shelf for every one of them kept alive at the same time.
     ("ICON_ACH_WING_RANSOMWARE", inherit("ICON_ACH_FULL_PEDIA_L1"), shelf()),
@@ -973,7 +973,7 @@ GLYPHS = [
     ("ICON_ACH_WING_TROJAN", inherit("ICON_ACH_FULL_LINE_TROJAN"), shelf()),
     ("ICON_ACH_WING_WORM", inherit("ICON_ACH_FULL_LINE_WORM"), shelf()),
     # The bell is authored here rather than shipped as art first, so it is named, not
-    # inherited — the same way FULL_LINE_METAMORPHIC takes it.
+    # inherited: the same way FULL_LINE_METAMORPHIC takes it.
     ("ICON_ACH_WING_METAMORPHIC", "bell", shelf()),
 
     ("ICON_ACH_TWINS_3", "clones", tally(1)),
@@ -981,7 +981,7 @@ GLYPHS = [
     # --- The arcade's long tail ----------------------------------------------
     # Rungs above ladders that stopped where a casual player stops. Every one INHERITS
     # its ladder's motif. The three single rows that became the foot of a ladder —
-    # ARCADE_WINS_10, SUNK_COST, TOWER_OF_FRAGGLE — take their own motif back with the
+    # ARCADE_WINS_10, SUNK_COST, TOWER_OF_FRAGGLE: take their own motif back with the
     # one mark a first rung wears, so the rungs above them count up from it.
     ("ICON_ACH_ARCADE_500", inherit("ICON_ACH_ARCADE_100"), tally(4)),
     ("ICON_ACH_ARCADE_1000", inherit("ICON_ACH_ARCADE_100"), tally(5)),
@@ -1047,7 +1047,7 @@ GLYPHS = [
 
 
 def _read_rows(path, what):
-    """A shipped PNG as SIZE rows of ASCII — the tool's one way of reading art back."""
+    """A shipped PNG as SIZE rows of ASCII: the tool's one way of reading art back."""
     if not os.path.exists(path):
         raise ValueError("%s: no such glyph to take a motif from" % what)
     w, h, px = decode_png_rgba(path)
@@ -1108,7 +1108,7 @@ def build(motif_name, footer):
 
 
 def to_rgba(grid):
-    """The glyph as a flat RGBA buffer — what both the writer and --check compare."""
+    """The glyph as a flat RGBA buffer: what both the writer and --check compare."""
     px = bytearray()
     for row in grid:
         for on in row:

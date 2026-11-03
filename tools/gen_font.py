@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gen_font.py — rasterise FONT_UI into the glyph table src/core/render/font_glyphs.cpp.
+gen_font.py: rasterise FONT_UI into the glyph table src/core/render/font_glyphs.cpp.
 
 This is an AUTHORING step, not a build step. It runs by hand when the face or its
 size changes, and its output is committed like any other source file:
@@ -16,7 +16,7 @@ FontFace::Regular is what the TTF rasterises to. FontFace::Bold is DERIVED from
 it here rather than pulled from a second TTF: each scanline is smeared one
 column to the right (`b | (b >> 1)`). A separate bold face would come with its
 own advance and its own cell, and every layout constant in src/core/ui/layout.h
-is built on this one — deriving keeps kFontW / kFontH / kFontAdvance shared, so
+is built on this one: deriving keeps kFontW / kFontH / kFontAdvance shared, so
 a caller switching face moves no pixel it did not ask to move. `bold_cost`
 below reports what that costs, and the answer goes in the generated file.
 
@@ -30,12 +30,12 @@ from, and neither the gates nor a fresh clone need Pillow to compile.
 
 Why 8px, and why this face
 --------------------------
-VISUAL_LANGUAGE.md §2.1 rules out anti-aliased rendering — it smears at this
+VISUAL_LANGUAGE.md §2.1 rules out anti-aliased rendering: it smears at this
 size. Pixel Operator is a PIXEL font, so it is crisp only at the size it was
 drawn for and integer multiples of it. PixelOperatorMono8 is the 8px cut, and at
 8px it rasterises to pure on/off with no grey levels at all. `check_crisp` below
 enforces that, so a face or size that quietly antialiases fails here rather than
-on the panel — which is the one thing a reader cannot spot in a hex table.
+on the panel, which is the one thing a reader cannot spot in a hex table.
 
 Mono is what buys tabular digits (§2.1): every glyph advances 8px, so a gauge
 value or a countdown never reflows as it changes. The 16px cut of the same
@@ -49,7 +49,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TTF = os.path.join(REPO, "assets", "fonts", "PixelOperatorMono8.ttf")
 OUT = os.path.join(REPO, "src", "core", "render", "font_glyphs.cpp")
 
-SIZE = 8       # the face's own design size — see the module note above
+SIZE = 8       # the face's own design size: see the module note above
 CELL = 8       # mono advance and cell height at that size
 FIRST = 32     # ' '
 LAST = 126     # '~'
@@ -58,7 +58,7 @@ LAST = 126     # '~'
 #
 # The bar for adding one is high: the committed table should be the face, so that
 # changing the face changes the text. A row belongs here only when the cut is
-# genuinely illegible at SIZE — not when it is merely ugly.
+# genuinely illegible at SIZE, not when it is merely ugly.
 #
 # U+0026 AMPERSAND is the one that qualifies. Pixel Operator's '&' at 8px collapses
 # to a shape that differs from its own 'S' in two pixels, so "Salted&Hashed Browns"
@@ -117,7 +117,7 @@ def check_crisp(cp, px):
 
 
 def smear(rows):
-    """One cell's scanlines widened a column to the right — the BOLD cut."""
+    """One cell's scanlines widened a column to the right: the BOLD cut."""
     return [r | (r >> 1) for r in rows]
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen_pedia_data.py — regenerate web/data/pedia_data.js from the firmware content tables.
+"""gen_pedia_data.py: regenerate web/data/pedia_data.js from the firmware content tables.
 
 Sources:
   tools/dump_content.cpp (compiled)       -> creatures, egg lines, items, mods, moves
@@ -7,14 +7,14 @@ Sources:
 
 The content tables arrive as JSON from the firmware's OWN code rather than being
 re-parsed here, because a regex over an initializer list has to index each row's fields
-by position — so reordering a struct field silently changes what the site publishes —
+by position, so reordering a struct field silently changes what the site publishes,
 and because descriptions are templates the firmware expands from each row's magnitudes
 (core/content/effect_text.h). Running the device's expander is the only way the site's
 numbers cannot disagree with the device's. `make pedia` compiles the tool first; point
 --dump-content elsewhere to use a build you already have.
 
 Creature snarky hints + infosec context ride along on each CreatureDef row
-(creatures/<line>/line.h owns them — the game is the single source of truth for its own
+(creatures/<line>/line.h owns them: the game is the single source of truth for its own
 flavour text, the same way ItemDef carries `effect`). Do NOT re-key copy here.
 
 Also COPIES every asset the generated data references into the served bundle
@@ -25,14 +25,14 @@ Usage (from the repo root):
   python3 tools/gen_pedia_data.py [--repo .] [--out web/data/pedia_data.js]
 
 Add a creature/item/move to its content_*.cpp table, run `make pedia` (which rebuilds
-the dump tool first), done — the 'Pedia stays in sync. If a creature row has no hint the
+the dump tool first), done: the 'Pedia stays in sync. If a creature row has no hint the
 script emits a TODO hint and warns.
 """
 import argparse, filecmp, json, re, shutil, subprocess, sys
 from pathlib import Path
 
-# The frame grid a sprite sheet is cut on is gen_assets.py's fact — it is what the
-# firmware renders — so read it from there rather than restating it here.
+# The frame grid a sprite sheet is cut on is gen_assets.py's fact (it is what the
+# firmware renders), so read it from there rather than restating it here.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gen_assets
 
@@ -45,8 +45,8 @@ _ATLAS = {}
 def asset_path(repo, name):
     """Where `name`.png lives in the bundle, or None if nothing compiles it.
 
-    Which PNGs exist and where they sit is gen_assets.py's fact — assets/ is filed
-    into subfolders for readability while an asset's id stays its basename — so the
+    Which PNGs exist and where they sit is gen_assets.py's fact: assets/ is filed
+    into subfolders for readability while an asset's id stays its basename, so the
     site asks rather than composing a path. That is also what stops the two from
     drifting: the site can only ever show art the firmware carries.
     """
@@ -59,8 +59,8 @@ def asset_path(repo, name):
 def sprite_geometry(repo, name, warnings):
     """Locate `name`.png and describe its frame grid for web/app.js.
 
-    Returns the bundle-relative path plus the CELL size (one frame — what the site
-    shows) and the SHEET size (the whole image — what the site scales the background
+    Returns the bundle-relative path plus the CELL size (one frame: what the site
+    shows) and the SHEET size (the whole image: what the site scales the background
     to). Both are needed: a sheet is a grid of frames, so sizing the background by
     the cell alone squashes the whole strip into one frame's box.
     """
@@ -87,7 +87,7 @@ def sync_assets(repo, data, dest, warnings):
     The sweep runs both ways. A sprite that gets renamed or retired stops being
     referenced but doesn't stop EXISTING, so without the prune below the bundle only
     ever grows, quietly carrying art nothing draws onto a card with finite room. Only
-    .png files are pruned — PAL_CORE.json and anything else hand-staged in the bundle
+    .png files are pruned: PAL_CORE.json and anything else hand-staged in the bundle
     isn't reference-driven and isn't ours to remove.
     """
     refs = {c["sprite"] for c in data["creatures"]}
@@ -123,7 +123,7 @@ def sync_assets(repo, data, dest, warnings):
     return len(refs), copied, pruned
 
 # The firmware's itemIcon() (src/core/ui/items_screen.cpp) resolves an item's glyph by
-# CONVENTION — ICON_ITEM_<UPPER ID> — and only names an item explicitly where it borrows
+# CONVENTION (ICON_ITEM_<UPPER ID>), and only names an item explicitly where it borrows
 # another item's art. So the site derives the same way (item_icon below) and mirrors only
 # those borrowings: a new item needs a row here ONLY if it reuses someone else's glyph.
 ITEM_ICON_REUSE = {  # id -> the asset it borrows, named not pathed (see asset_path)
@@ -144,7 +144,7 @@ def item_icon(repo, item_id):
     """The glyph the device would draw for `item_id`, or None if it has no art.
 
     Mirrors itemIcon(): the naming convention first, then the explicit reuses, then
-    nothing — a None here is a real gap in assets/, not a missing table row.
+    nothing: a None here is a real gap in assets/, not a missing table row.
     """
     return (asset_path(repo, f"ICON_ITEM_{item_id.upper()}")
             or asset_path(repo, ITEM_ICON_REUSE.get(item_id, "")))
@@ -152,7 +152,7 @@ def mod_icon(repo, mod_id):
     """The glyph the device would draw for `mod_id`, or None if it has no art.
 
     Mirrors mods_screen.cpp, which builds ICON_MOD_<UPPER ID> and draws nothing when that
-    file is absent — so this is the CONVENTION, never a hand-kept map. A map here would go
+    file is absent, so this is the CONVENTION, never a hand-kept map. A map here would go
     stale silently: a mod missing from it renders with the generic slot glyph in the bundle
     while shipping real art on the device, and nothing on either side would say so. A None
     is a real gap in assets/, the same as item_icon()'s.
@@ -166,7 +166,7 @@ MOVE_ICONS = {
 # No MOD_TIERS / sector map here on purpose: a mod's tier IS a ladder position, and the
 # ladder is the firmware's to state (areas/area_defs.h, published through the dump's
 # "areas"). A copy kept here would read correctly right up until an area was inserted or
-# reordered, then quietly label every mod with the wrong area — with nothing on either
+# reordered, then quietly label every mod with the wrong area: with nothing on either
 # side to notice. Both are built from the dump instead, in build_ladder_names().
 CONTEXT_USE = {"LockoutOnly": "LOCKOUT ONLY", "PreEncounter": "PRE-ENCOUNTER"}
 MOVE_GROUPS = {
@@ -179,7 +179,7 @@ def build_ladder_names(content):
     """Tier -> the area(s) that hand out that rank, straight off the published ladder.
 
     The deepest rung shares its rank with the DeepWeb Dive (one past the ladder, no
-    AreaDef of its own), so that entry names both — which is what the site shows for an
+    AreaDef of its own), so that entry names both, which is what the site shows for an
     endgame mod that can come from either.
     """
     areas = content["areas"]
@@ -318,7 +318,7 @@ def main():
     # Ids only, exactly as the dump publishes them: an ingredient id IS an item id, so
     # the site joins each one onto the item row it already has rather than carrying a
     # second copy of every dish name. A row whose output isn't in the item table is a
-    # real break — the dish would render nameless — so it warns rather than passing
+    # real break (the dish would render nameless), so it warns rather than passing
     # through quietly.
     item_ids = {d["id"] for d in items}
     recipes = []
@@ -348,7 +348,7 @@ def main():
     fn = combat[combat.index(marker):]
     fn = fn[: fn.index("\n};") + 3]
     # The trailing pair is the isWild flag and the creature's SIGNATURE
-    # (CombatEnemy::signatureMoveId) — the one move it carries at every depth, where the
+    # (CombatEnemy::signatureMoveId): the one move it carries at every depth, where the
     # baseline kit before it survives only the shallowest rung. Optional in the pattern so
     # a row without one still parses, and folded into the kit below because it is the kit:
     # what a wild is worth farming is what it can teach, and this is the part of that
@@ -408,7 +408,7 @@ def main():
 
     # ---- achievements ----
     # Straight through from the firmware's own table (content_achievements.cpp), trigger
-    # prose already expanded by the device's own expander — so adding an achievement is a
+    # prose already expanded by the device's own expander, so adding an achievement is a
     # C++ row and nothing here. `hidden` rows keep their masked trigger text.
     achievements = []
     for a in content["achievements"]:
@@ -430,7 +430,7 @@ def main():
                  # The padlock every not-yet-unlocked row draws instead of its own
                  # glyph. Published rather than composed in web/app.js, so where the
                  # PNG lives stays one fact (asset_path) and sync_assets sees it as a
-                 # reference — otherwise the bundle only carries it by the accident
+                 # reference, otherwise the bundle only carries it by the accident
                  # of some achievement row happening to use the same glyph.
                  "lockIcon": asset_path(repo, "ICON_LOCK")},
         "creatures": creatures,
@@ -446,7 +446,7 @@ def main():
 
     out = args.out
     out.parent.mkdir(parents=True, exist_ok=True)
-    js = ("// pedia_data.js — GENERATED by tools/gen_pedia_data.py — DO NOT hand-edit.\n"
+    js = ("// pedia_data.js (GENERATED by tools/gen_pedia_data.py): DO NOT hand-edit.\n"
           "window.PEDIA_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n")
     out.write_text(js, encoding="utf-8")
 

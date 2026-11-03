@@ -1,9 +1,9 @@
-// check_manifest.cpp — read a manifest with the SAME parser the device uses.
+// check_manifest.cpp: read a manifest with the SAME parser the device uses.
 //
 //   ./check_manifest <manifest.json> [artifact-dir]
 //
 // A published manifest that the device rejects is indistinguishable, from the
-// operator's side, from a dead network — so the generator that writes one
+// operator's side, from a dead network, so the generator that writes one
 // (`make manifest`) is checked against core/net/update_manifest.h rather than
 // against a human reading JSON. Exits non-zero on anything the device would
 // refuse, which is what makes it usable as a publish gate.
@@ -11,7 +11,7 @@
 // Given an artifact directory it also re-derives each row's size on disk, because
 // the other half of a broken publish is a manifest that parses perfectly and
 // describes a file that has since been rebuilt. (The SHA-256 is not re-derived
-// here — the generator computes it from the same file in the same run, and adding
+// here: the generator computes it from the same file in the same run, and adding
 // a second implementation of it to disagree with is how that check rots.)
 #include <cstdio>
 #include <cstring>
@@ -79,8 +79,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Neither of the two rows the device looks up is required to exist — a publish
-    // may legitimately carry only one — but saying which are present beats letting
+    // Neither of the two rows the device looks up is required to exist (a publish
+    // may legitimately carry only one), but saying which are present beats letting
     // a typo'd id look like nothing was published.
     std::printf("  firmware row: %s\n", m.byId("firmware") ? "present" : "absent");
     std::printf("  web row:      %s\n", m.byId("web") ? "present" : "absent");

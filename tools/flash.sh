@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# flash.sh — flash the Malwarium firmware, and OPTIONALLY re-stage the web
+# flash.sh: flash the Malwarium firmware, and OPTIONALLY re-stage the web
 # 'Pedia bundle onto the device's SD card in the same run.
 #
 # Two things live on two different media: the firmware goes into the ESP32's
 # internal flash over USB, while the 'Pedia site (web/) lives on the microSD
-# card. They change on opposite cadences — you reflash often, but the SD bundle
-# only drifts when web/ or the content tables change — so SD staging is OPT-IN
+# card. They change on opposite cadences (you reflash often, but the SD bundle
+# only drifts when web/ or the content tables change), so SD staging is OPT-IN
 # behind --pedia and never touches the card on a plain flash.
 #
 # The catch is physical: staging needs the card mounted in a READER on this
@@ -20,7 +20,7 @@
 #   ./tools/flash.sh --pedia /Volumes/MALWARIUM   # stage 'Pedia to SD, then flash
 #   ./tools/flash.sh --pedia /Volumes/MALWARIUM --no-upload
 #                                                 # ONLY re-sync the SD 'Pedia
-#                                                 # (no reflash — for when an
+#                                                 # (no reflash. For when an
 #                                                 # update desynced the site)
 #   ./tools/flash.sh --env waveshare_s3_154_bringup --port /dev/cu.usbmodemXXXX
 #   ./tools/flash.sh --wait-wake
@@ -39,12 +39,12 @@
 #                    sleeps the SoC (config.h IDLE_SLEEP_FALLBACK_MS) and the
 #                    USB-Serial/JTAG peripheral goes unresponsive with it.
 #                    The periodic timer-wakeup pulse alone isn't a reliable
-#                    target — loop() finds nothing changed and re-sleeps
+#                    target: loop() finds nothing changed and re-sleeps
 #                    almost immediately, too short a window for esptool's
 #                    handshake. The loop prints a one-time prompt to press a
 #                    button on the device instead: a real button wake resets
 #                    the screen's own inactivity timer, holding USB up for the
-#                    30s+ that follows — that's the window this is really
+#                    30s+ that follows. That's the window this is really
 #                    retrying into. Each failed esptool connect attempt already
 #                    spends ~14s in its own internal retry loop, so looping the
 #                    upload comfortably covers the time it takes to notice the
@@ -126,7 +126,7 @@ if [ "$DO_UPLOAD" -eq 1 ]; then
 fi
 
 # --- flash-space report (best-effort, never fails the run) -----------------
-# The NOT_ENOUGH_SPACE regression (docs — the save partition silently filling
+# The NOT_ENOUGH_SPACE regression (docs. The save partition silently filling
 # with no warning until a write started failing) is why this exists: surface
 # both capacities at flash time instead of finding out the hard way later.
 if [ "$DO_UPLOAD" -eq 1 ]; then
@@ -140,7 +140,7 @@ if [ "$DO_UPLOAD" -eq 1 ]; then
 
     # The static table above only gives CAPACITY. Actual save USAGE is runtime
     # data (Game::saveBlobSizeBytes) that only the device itself can report, via
-    # the "[save] ... blob=X/YB" boot line (main.cpp) — grab it with a short,
+    # the "[save] ... blob=X/YB" boot line (main.cpp): grab it with a short,
     # best-effort serial listen. DTR must be asserted (plain `cat`/shell
     # redirection on this native-USB-JTAG port won't trigger it) or the device
     # sits in its host-wait boot path instead of proceeding, so this needs

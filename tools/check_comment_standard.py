@@ -3,19 +3,19 @@
 
 docs/COMMENT_STANDARD.md's central rule: a comment orients a reader *in the moment*,
 so it names other CODE freely and never names a planning card. The failure it guards
-against is not style, it's rot — docs/MASTER_TODO.md is a Kanban board whose sections
+against is not style, it's rot: docs/MASTER_TODO.md is a Kanban board whose sections
 are renumbered every time a card lands, so a comment citing "§1c" is describing a
 different item within a session or two, and the reader has no way to tell.
 
 Only the unambiguous half of that doc's strip-on-sight list is mechanised here:
 
-  * MASTER_TODO / Next-phase / Feedback #N   — the board, by name.
-  * FB-<ID> row ids, Phase N milestone tags  — cards, by number.
-  * (D3), (J.21b)                            — row ids in their PARENTHESISED form.
-  * #12, "Move-slot rework #11"              — bare card numbers (hex colours survive).
-  * (PO), "PO asked/noted/said", "cowork decided" — attribution.
-  * ISO dates                                — time provenance; git log is the changelog.
-  * "it used to be", "now lives in", "superseded" — CHANGE NARRATION (see below).
+  * MASTER_TODO / Next-phase / Feedback #N:   the board, by name.
+  * FB-<ID> row ids, Phase N milestone tags:  cards, by number.
+  * (D3), (J.21b):                            row ids in their PARENTHESISED form.
+  * #12, "Move-slot rework #11":              bare card numbers (hex colours survive).
+  * (PO), "PO asked/noted/said", "cowork decided": attribution.
+  * ISO dates:                                time provenance; git log is the changelog.
+  * "it used to be", "now lives in", "superseded": CHANGE NARRATION (see below).
 
 Bare § refs stay a human read: they are ordinary English besides, and a checker that
 cries wolf gets switched off. That is also why only the parenthesised form of a row id
@@ -36,9 +36,9 @@ session that wrote it.
 Against those, two exemptions carry the standard's own "the old wire format is literally
 the subject" exception:
 
-  * MIGRATION_UNITS — save.cpp/save.h/game_persist.cpp describe formats they no longer
+  * MIGRATION_UNITS: save.cpp/save.h/game_persist.cpp describe formats they no longer
     write, which is what they are for.
-  * Any comment naming a save version (`v33`, `v51`) — the same exception wherever it
+  * Any comment naming a save version (`v33`, `v51`): the same exception wherever it
     lands, which is how a save-migration TEST comment keeps its wire-format note.
 
 EM DASHES are counted rather than banned. docs/COMMENT_STANDARD.md's "Write plainly"
@@ -69,14 +69,14 @@ PATTERNS = [
     (re.compile(r"\([DJ]\.?\d+[a-z]?\)"), "cites a planning row id"),
     # A bare #N card number. The one thing in this repo that legitimately carries a '#'
     # inside a comment is a hex colour (`#14171c`), so the lookahead excludes any six-hex
-    # run before the digits are read — including an all-numeric one, which is the case a
+    # run before the digits are read, including an all-numeric one, which is the case a
     # "not followed by a hex char" test would have let through.
     (re.compile(r"#(?![0-9a-fA-F]{6})\d{1,3}\b"), "cites a planning card number"),
     (re.compile(r"\(PO\)|\bPO (?:asked|noted|said)|cowork decided"), "attributes a decision"),
     (re.compile(r"\b20\d\d-\d\d-\d\d\b"), "dates the code (git log is the changelog)"),
 ]
 
-# Change narration, past-tense-about-the-code only — the half that cannot double as a
+# Change narration, past-tense-about-the-code only: the half that cannot double as a
 # present-tense fact. Held apart from PATTERNS because EXEMPT_VERSION_NOTE and
 # MIGRATION_UNITS apply to these and to nothing else.
 NARRATION = [
@@ -89,11 +89,11 @@ NARRATION = [
     (re.compile(r"\bnow\s+lives?\s+(?:on|in|at|under|beside|with)\b", re.I),
      "narrates a move (say where it IS, not that it moved)"),
     # Past participle only. Present-tense "supersedes" is a live relation between two
-    # things that both exist — "the reply that supersedes the frame being repeated".
+    # things that both exist: "the reply that supersedes the frame being repeated".
     (re.compile(r"\bsuperseded\b", re.I), "narrates a replacement"),
     (re.compile(r"\breplace[sd]?\s+the\s+old\b", re.I), "narrates a replacement"),
     (re.compile(r"\buntil\s+recently\b|\bshipped\s+on\b", re.I), "dates the code"),
-    # "this session ships X" — the session that wrote a line is the one thing a reader
+    # "this session ships X": the session that wrote a line is the one thing a reader
     # opening it cold can never be in.
     (re.compile(r"\bthis\s+session\s+(?:ships?|shipped|adds?|added|introduces?|introduced"
                 r"|moves?|moved|renames?|renamed|removes?|removed|brings?|brought)\b", re.I),

@@ -6,7 +6,7 @@ name: gates
 
 # claude/** and ccr-* ride alongside main because a Claude Code on the web session
 # works on a branch named one of those ways and opens no pull request, so without it a remote session
-# pushes into silence — and it is the tier it cannot run itself that goes unchecked:
+# pushes into silence, and it is the tier it cannot run itself that goes unchecked:
 # the sandbox network policy refuses the PlatformIO registry, so the S3 build exists
 # nowhere but here. workflow_dispatch stays for running either tier against any ref
 # on demand.
@@ -30,7 +30,7 @@ jobs:
       - name: Workflows parse
         run: python3 tools/check_workflows.py
       - name: Generate the sprite/palette codegen
-        # src/generated is not committed — it is derived from assets/, and the
+        # src/generated is not committed: it is derived from assets/, and the
         # engine does not compile without it.
         run: python3 tools/gen_assets.py
       - name: Configure
@@ -41,14 +41,14 @@ jobs:
         run: ctest --test-dir build --output-on-failure
       # The leading apostrophe is part of the NAME ('Pedia), so the whole string is
       # double-quoted. Bare, it opens a YAML single-quoted scalar that never closes
-      # and the file stops parsing — which GitHub reports as a 0-second run with no
+      # and the file stops parsing, which GitHub reports as a 0-second run with no
       # jobs and no logs, not as a syntax error.
       - name: "'Pedia data freshness"
         # Here and NOT in tools/gates.sh: this guards a PUBLISH, not a build. Stale
         # pedia data cannot break the firmware or the device, and gates.sh is the
         # tight edit loop whose whole bet is that it stays cheap enough to always
-        # run. This job already has the two halves the check needs — a C++ compiler
-        # for tools/dump_content.cpp and python3 — so it costs one compile here.
+        # run. This job already has the two halves the check needs (a C++ compiler
+        # for tools/dump_content.cpp and python3), so it costs one compile here.
         #
         # It catches two things: a content-table edit that never got re-generated,
         # and a generator that can no longer parse what it scrapes (gen_pedia_data.py

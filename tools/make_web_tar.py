@@ -4,8 +4,8 @@
 The device downloads this artifact and checks it against the SHA-256 the manifest
 published alongside it, so the hash has to describe the CONTENT and nothing else.
 Plain `tar` does not manage that: it records each file's mtime and the building
-user's uid/gid, so the same bundle built twice — on a laptop and on a CI runner,
-or on one runner twice — produces two different archives and two different hashes.
+user's uid/gid, so the same bundle built twice: on a laptop and on a CI runner,
+or on one runner twice: produces two different archives and two different hashes.
 A device that fetched the manifest before a rebuild and the artifact after one
 would then fail its digest check and report Corrupt, which reads as a hostile
 network when it is really just a second build of identical files.
@@ -15,9 +15,9 @@ emitted in sorted order, with a fixed mtime, uid/gid 0, no user/group names, and
 normalised modes. Same files in, same bytes out, anywhere.
 
 The shape the device requires (src/core/net/tar_reader.h):
-  * UNCOMPRESSED — the reader is a fixed-offset header parse, nothing inflates.
+  * UNCOMPRESSED: the reader is a fixed-offset header parse, nothing inflates.
   * USTAR, not PAX. Python defaults to PAX, which prefixes the archive with an
-    extended header the reader can only treat as Skip — legal, but a block of
+    extended header the reader can only treat as Skip: legal, but a block of
     payload that exists solely to describe metadata nothing here reads.
   * Files at the archive's TOP LEVEL, no leading `web/` or `./` component: the
     device supplies the extraction root, so the archive must not name one.
@@ -32,8 +32,8 @@ import os
 import sys
 import tarfile
 
-# A fixed timestamp for every entry. The value is arbitrary — nothing reads an
-# mtime off this archive — but it sits above FAT32's 1980 floor so an extracted
+# A fixed timestamp for every entry. The value is arbitrary (nothing reads an
+# mtime off this archive), but it sits above FAT32's 1980 floor so an extracted
 # file can carry it on the device's SD card without being clamped.
 FIXED_MTIME = 1577836800  # 2020-01-01T00:00:00Z
 

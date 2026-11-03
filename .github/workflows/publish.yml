@@ -1,12 +1,12 @@
 # Publish everything the release host serves to GitHub Pages: the update
 # artifacts a device downloads and the manifest that lists them, the three boot
 # images the browser flasher writes in front of the app, and the pages themselves
-# (pages/ — a landing page, /flash/, and the browser demo at /play/).
+# (pages/. A landing page, /flash/, and the browser demo at /play/).
 #
 # Pages is the publish host because the device needs exactly one thing: stable
 # URLs that return bytes. It has no use for tags, an API or release metadata, and
 # every one of those is a way for a check to fail before it reaches a firmware
-# byte. The manifest IS the version pointer — publishing a new version means
+# byte. The manifest IS the version pointer: publishing a new version means
 # overwriting one file, so the device asks nothing and simply reads.
 #
 # The pages ride along in the same deploy rather than in one of their own, because
@@ -21,7 +21,7 @@
 # release commit lands. Tags are not used (the tag trigger stays, and publishes
 # the same bytes): `make pages` reads the version from include/version.h and
 # web/VERSION, never from the ref. Bump include/version.h (firmware) and/or
-# web/VERSION (bundle) FIRST — a device only installs an artifact whose code
+# web/VERSION (bundle) FIRST: a device only installs an artifact whose code
 # beats what it already runs, so an unbumped publish is a publish nobody receives.
 name: publish
 
@@ -58,7 +58,7 @@ jobs:
             ~/.cache/pip
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
           # Without a prefix fallback, ANY edit to platformio.ini misses the cache
-          # outright and re-downloads the whole espressif32 toolchain — and the
+          # outright and re-downloads the whole espressif32 toolchain, and the
           # save step only runs on a green job, so one timeout leaves the next run
           # cold as well. The restore key reuses the last toolchain and lets pio
           # fetch only what actually changed.
@@ -68,14 +68,14 @@ jobs:
         run: pip install --upgrade platformio
       # The other half of the pair in gates.yml: a workflow that fails to parse
       # never starts, so it cannot report its own outage. This file runs on a tag
-      # and gates.yml on every push — whichever of the two is intact reports the
+      # and gates.yml on every push: whichever of the two is intact reports the
       # other, and a release is exactly when a silently dead gates tier matters.
       - name: Workflows parse
         run: pip install pyyaml && python3 tools/check_workflows.py
       - name: Generate the sprite/palette codegen
         run: python3 tools/gen_assets.py
       # The browser demo is part of the publish (`make pages` runs `demo`), and it
-      # is the engine compiled to wasm — so the publish host needs a C++-to-wasm
+      # is the engine compiled to wasm, so the publish host needs a C++-to-wasm
       # toolchain the same way it needs PlatformIO for the firmware. Pinned rather
       # than `latest`: the demo a visitor plays should change when the engine
       # changes, not when a toolchain rolls underneath it.
@@ -102,7 +102,7 @@ jobs:
         # (build/check_manifest). A manifest the device would reject looks exactly
         # like a dead network from the operator's side, so the publish fails here
         # instead of on her desk. It then stages the boot images and pages/ beside
-        # them, failing just as loudly if a boot image is missing — a flasher that
+        # them, failing just as loudly if a boot image is missing: a flasher that
         # 404s partway through is worse than a publish that didn't happen.
         run: make pages BASE=https://antvena.github.io/Malwarium
       - uses: actions/configure-pages@v6
@@ -114,12 +114,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # One deploy at a time, and never cancel one midway — a half-deployed Pages
+    # One deploy at a time, and never cancel one midway: a half-deployed Pages
     # site is a manifest pointing at artifacts that may not be there yet. Only
     # the DEPLOY is serialised, not the whole workflow: a concurrency group at
     # workflow level parks the loser as a run with no jobs in it, and a run with
     # no jobs is one the API will neither cancel nor delete if it ever stops
-    # advancing — it just holds the group against every later publish. Held here,
+    # advancing. It just holds the group against every later publish. Held here,
     # a blocked publish is a visible queued job inside a run that `gh run cancel`
     # can clear. Builds are free to overlap; they only produce artifacts, and the
     # last deploy to run is the one the site serves either way.

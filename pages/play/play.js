@@ -1,4 +1,4 @@
-// play.js — the shell around the wasm engine.
+// play.js: the shell around the wasm engine.
 //
 // Owns everything outside the panel: booting the module, and turning taps and keys
 // into the button EDGES the engine expects. The wasm draws itself onto #screen and
@@ -12,7 +12,7 @@
 
   // Button ordinals, matching mal::Button (platform/platform.h): A=NEXT, B=ACCEPT,
   // C=CANCEL. A+C held together is the Exploit chord, which the engine resolves
-  // itself from the two edges — the page never names it.
+  // itself from the two edges: the page never names it.
   var KEYS = {
     KeyZ: 0, ArrowLeft: 0,
     KeyX: 1, ArrowDown: 1, Space: 1,
@@ -35,7 +35,7 @@
   document.querySelectorAll('.key').forEach(function (el) {
     var btn = parseInt(el.dataset.btn, 10);
     // Pointer events cover mouse, touch and pen in one path. Capture keeps the
-    // release coming to this element even if the finger slides off it mid-hold —
+    // release coming to this element even if the finger slides off it mid-hold,
     // otherwise the button sticks down forever.
     el.addEventListener('pointerdown', function (e) {
       e.preventDefault();

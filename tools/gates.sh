@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gates.sh — the build/test cycle: the native suite, then the S3 firmware build.
+# gates.sh (the build/test cycle): the native suite, then the S3 firmware build.
 #
 # QUIET ON SUCCESS, LOUD ON FAILURE. Everything goes to a log; only failures are
 # printed, and only the lines that matter. A green run is three lines, so running
@@ -8,7 +8,7 @@
 # The two tiers answer different questions and neither substitutes for the other.
 # The native suite is the fast one and covers `src/core`. The S3 build is the only
 # thing that compiles `src/platform/esp32`, so a green native run says nothing
-# about whether the firmware still links — that is why it is here and not optional.
+# about whether the firmware still links: that is why it is here and not optional.
 #
 #   ./tools/gates.sh              native + S3 (the normal cycle)
 #   ./tools/gates.sh --native     native only, for a tight edit loop
@@ -49,7 +49,7 @@ run() {
         echo "--- from $LOG ---" >&2
         # The interesting lines, not the whole build: compiler errors, ctest's
         # failure list and PlatformIO's summary all match one of these. Fall back
-        # to the tail when nothing does — a step can fail in a way no pattern
+        # to the tail when nothing does: a step can fail in a way no pattern
         # anticipated (a Python traceback, a missing tool), and "it failed" with
         # no output is the one report that helps nobody.
         local hits
@@ -65,7 +65,7 @@ run() {
 }
 
 # The pantry's ITEMS glyphs are generated from tools/gen_item_icons.py, and the PNGs
-# it owns are committed — so this catches a recipe edited without regenerating, and an
+# it owns are committed, so this catches a recipe edited without regenerating, and an
 # icon hand-edited out from under its recipe. Runs before codegen, because a stale
 # glyph would otherwise be compiled into the atlas without complaint.
 run "item icons" python3 tools/gen_item_icons.py --check || exit 1

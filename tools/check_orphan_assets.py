@@ -10,12 +10,12 @@ creatures nobody added.
     python3 tools/check_orphan_assets.py            # report + non-zero on orphans
     python3 tools/check_orphan_assets.py --list     # just print the orphan names
 
-Park an orphan in assets/_attic/ (untracked, not compiled — see its README), or give
+Park an orphan in assets/_attic/ (untracked, not compiled: see its README), or give
 it a consumer. An asset can be consumed three ways, all of which count here:
 
   1. Named literally in source, as `ASSET_<NAME>` or as a "<NAME>" string on a content
      row (a CreatureDef spriteName, a CombatEnemy sprite, an achievement icon path).
-  2. Built at draw time from a content id — items_screen/mods_screen/train_screen
+  2. Built at draw time from a content id: items_screen/mods_screen/train_screen
      format `ICON_ITEM_`/`ICON_MOD_`/`ICON_MOVE_` + the id, uppercased. Those never
      appear literally anywhere, so they're resolved here against the actual ids.
   3. Listed in KEEP below, for art that is deliberately compiled without a caller.
@@ -37,7 +37,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gen_assets
 
-# Compiled deliberately, with no caller — do not report these.
+# Compiled deliberately, with no caller: do not report these.
 KEEP = {
     # The stand-in a creature is wired to while its real art doesn't exist yet. One
     # per lifecycle stage, kept as a complete set: the stage that happens to have no
@@ -48,7 +48,7 @@ KEEP = {
     "SPR_PET_GENERIC_SCRIPT",
     "SPR_PET_GENERIC_DAEMON",
     # Nothing else. Art drawn ahead of the feature that will draw it belongs here while
-    # it waits, but every entry is a check the tree stops making — so an exception earns
+    # it waits, but every entry is a check the tree stops making, so an exception earns
     # its place only for as long as there is genuinely no consumer to point at.
     #
     # Two kinds of art look like they need one and do not. A sector glyph is named on its

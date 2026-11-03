@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Snap a source image onto a creature's palette and hand it back device-ready.
 
-The other half of `sheetpack.py`. That one owns GEOMETRY — which pixels land in which
+The other half of `sheetpack.py`. That one owns GEOMETRY, which pixels land in which
 56x48 cell, and what the trip down costs. This one owns COLOUR and COVERAGE: the tones a
 sprite is allowed to use, and the hard alpha edge the blitters need. Neither knows about
 the other, so a sheet can be re-snapped without repacking and repacked without re-snapping.
@@ -9,11 +9,11 @@ the other, so a sheet can be re-snapped without repacking and repacked without r
 Run it before sheetpack when the source is generated or painted art; skip it entirely for
 a sheet that is already on-palette.
 
-WHY EACH PASS EXISTS — every one of these is a bug that shipped or nearly did:
+WHY EACH PASS EXISTS. Every one of these is a bug that shipped or nearly did:
 
   SHARPEN BEFORE THE RESIZE (--height), AT A STRENGTH THAT FOLLOWS THE RATIO. Generated
   source arrives two to four times the size of the cell it has to live in. A plain
-  area-average at 4:1 melts adjacent forms into one flat mass — two tentacles side by
+  area-average at 4:1 melts adjacent forms into one flat mass: two tentacles side by
   side become a paddle. An unsharp pass on the SOURCE first keeps the seam that tells
   them apart. Order matters: sharpening after the resize just amplifies what the average
   already threw away. But the pass only rescues a steep trip: on a gentle one it is the
@@ -24,7 +24,7 @@ WHY EACH PASS EXISTS — every one of these is a bug that shipped or nearly did:
   AREA-AVERAGE, NOT NEAREST. Nearest-neighbour deletes whole rows and columns, and thin
   detail sits on exactly those lines: one measured egg lost 3,983 one-pixel features that
   way, and its whole surface pattern with them. sheetpack's `decimate` mode is nearest by
-  design — it preserves REGISTRATION across frames, which matters more there. Here nothing
+  design: it preserves REGISTRATION across frames, which matters more there. Here nothing
   is being registered against anything, so the better filter wins.
 
   LUMINANCE-WEIGHTED SNAP. Nearest colour in plain RGB happily swaps a mid tone for one a
@@ -33,7 +33,7 @@ WHY EACH PASS EXISTS — every one of these is a bug that shipped or nearly did:
 
   THE ACCENT CHANNEL (--accent). The one that actually bit. A line's eye colour is often
   its only non-body hue, and it is small. Average a three-pixel eye into the red around it
-  and the result is a muddy colour that snaps to red — the eyes VANISH, silently, at every
+  and the result is a muddy colour that snaps to red: the eyes VANISH, silently, at every
   scale ratio, and nothing about the output looks broken. So an accent is masked in the
   source, carried down on its own channel, and stamped back afterwards. A source block
   holding any accent keeps it.
@@ -42,7 +42,7 @@ WHY EACH PASS EXISTS — every one of these is a bug that shipped or nearly did:
   a rule keyed on green winning misses the second one completely.
 
   BINARY ALPHA. gen_assets.py wants a hard mask, and the x1.75 blitter smears anything
-  soft. Generated art arrives with a partial-alpha fringe — a couple of hundred pixels on
+  soft. Generated art arrives with a partial-alpha fringe: a couple of hundred pixels on
   a creature-sized sprite.
 
   ONE OUTLINE INK (--outline). The roster does not agree with itself here: measured on the
@@ -84,7 +84,7 @@ def is_accent(px, accents, tol=60):
     """Near one of the declared accents, OR bright and not red-dominant.
 
     The second half is what catches an accent the caller spelled slightly differently
-    from how the source actually rendered it — the normal case for generated art, where
+    from how the source actually rendered it: the normal case for generated art, where
     one eye comes back as a scatter of neighbouring golds no two of which match the hex.
 
     Tuned against two failures, not guessed. Requiring green to beat red missed a pale
@@ -142,7 +142,7 @@ def outline(im, ink):
 
 
 def edge_tones(im):
-    """Distinct colours on the silhouette edge — 1 is consistent, more is not."""
+    """Distinct colours on the silhouette edge: 1 is consistent, more is not."""
     src = im.load()
     tones = set()
     for y in range(im.height):
@@ -188,8 +188,8 @@ def main():
     if a.height:
         w = round(im.width * a.height / im.height)
         # The sharpen's strength FOLLOWS THE RATIO, because the pass is a rescue for a
-        # steep trip down and damage on a gentle one. Full strength from 2:1 — the
-        # regime it was written for and measured in — then ramped to nothing at 1:1.
+        # steep trip down and damage on a gentle one. Full strength from 2:1 (the
+        # regime it was written for and measured in), then ramped to nothing at 1:1.
         # Radius 3 at 180% on an image barely being resized does not preserve a seam,
         # it drives every edge to the palette's extremes: measured on a Metamorphic
         # Daemon strip at 1.11:1, the fixed pass took the deep tones from 37% of the
