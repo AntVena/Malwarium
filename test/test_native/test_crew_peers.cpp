@@ -1,12 +1,12 @@
-// test_crew_peers.cpp — native gates for the Hacker CREW and the PEERS ledger.
+// test_crew_peers.cpp: native gates for the Hacker CREW and the PEERS ledger.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-#include "core/content/effect_text.h"   // effectText — a crew Exploit's page prose
-#include "core/ui/layout.h"             // kMargin — the width that prose is wrapped to
+#include "core/content/effect_text.h"   // effectText: a crew Exploit's page prose
+#include "core/ui/layout.h"             // kMargin: the width that prose is wrapped to
 
 // --- Hacker CREW: membership, the home-network gate, and the crew Exploit -------
 
@@ -100,7 +100,7 @@ void test_crew_escalation_banks_damage_as_power() {
 }
 
 // Net Neutrality snaps the live stat leans back to what the pet walked in with, and
-// then holds them there: a siphon that lands afterwards takes nothing — and, because a
+// then holds them there: a siphon that lands afterwards takes nothing, and, because a
 // steal is a transfer, pays the thief nothing either.
 void test_crew_net_neutrality_resets_then_floors_the_leans() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -135,7 +135,7 @@ void test_crew_net_neutrality_resets_then_floors_the_leans() {
 }
 
 // Malbeast In The Middle copies the enemy's own self-buffs onto the player as they
-// land — and only once it has been fired.
+// land, and only once it has been fired.
 void test_crew_mitm_copies_enemy_buffs() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant p = mkCombatant(r, "P", 5000, 1, {"quick_jab"});
@@ -231,7 +231,7 @@ void test_crew_requires_home_network() {
     CHECK(!g.joinCrew(kCrewCount));               // out of range -> refused, no change
     CHECK(g.crewIndex() == 0);
 
-    // Clearing the home network drops the crew with it — a member is always somebody's
+    // Clearing the home network drops the crew with it: a member is always somebody's
     // defender.
     g.setHomeNetwork(0, "");
     CHECK(!g.hasHomeNetwork() && g.crewIndex() == -1);
@@ -246,7 +246,7 @@ void test_crew_screen_pick_home_then_enlist() {
     const uint8_t bssid[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     walkAndCreditNetwork(g, bssid, "Neighbour");   // one known network in the ledger
 
-    // Explore-mode claims A+C for its control overlay, so stop exploring first —
+    // Explore-mode claims A+C for its control overlay, so stop exploring first:
     // the Hacker face is only reachable from a quiet habitat.
     while (g.nav() != Game::Nav::Idle) tapC(g);
     // A running walk claims the A+C chord for its control overlay, so the Hacker face
@@ -310,7 +310,7 @@ void test_crew_screen_pick_home_then_enlist() {
     CHECK(g.nav() == Game::Nav::Cursor);
 }
 
-// The Hub's two side rows are the fixed Red/Blue pair, and each opens its OWN side —
+// The Hub's two side rows are the fixed Red/Blue pair, and each opens its OWN side:
 // the roster is filtered, not reordered, so a crew is found wherever it sits in the
 // table. Enlisting from the Red screen cannot land you in a Blue crew.
 void test_crew_sides_filter_the_roster() {
@@ -383,13 +383,13 @@ void test_crew_detail_gates_enlist_on_the_home_net() {
     CHECK(g.crewView() == Game::CrewView::Detail);   // ...and doesn't bounce you out
 }
 
-// Every crew's page has a description and it resolves its template — the same gate
+// Every crew's page has a description and it resolves its template: the same gate
 // test_effect_text_templates_resolve holds the other content types to, extended to the
 // one table that now authors prose of its own.
 //
 // The line bound is an AUTHORING budget, not a correctness one: the detail page pages
 // its description on A rather than truncating it, so a longer row would still be
-// readable — it would just cost a press nobody should have to spend on four sentences.
+// readable. It would just cost a press nobody should have to spend on four sentences.
 void test_crew_exploit_descriptions_resolve_and_fit() {
     for (int i = 0; i < kCrewCount; ++i) {
         const EffectText prose = effectText(kCrews[i].exploit);
@@ -406,8 +406,8 @@ void test_crew_exploit_descriptions_resolve_and_fit() {
     }
 }
 
-// The picker answers one question — "which of the networks I can hear RIGHT NOW am I
-// claiming?" — so every row is a live in-range sighting. History alone is never an
+// The picker answers one question ("which of the networks I can hear RIGHT NOW am I
+// claiming?"), so every row is a live in-range sighting. History alone is never an
 // offer; the ledger only supplies the walked-in tally that tells the familiar network
 // apart from its neighbours' APs.
 void test_crew_picker_offers_networks_in_range() {
@@ -424,11 +424,11 @@ void test_crew_picker_offers_networks_in_range() {
 
     const int n = g.crewNetworkRows(rows, kNetVisibleCap);
     CHECK(n == 2);                                   // one row per in-range network
-    // Most-walked first — the tally is evidence for the choice, not a source of rows.
+    // Most-walked first: the tally is evidence for the choice, not a source of rows.
     CHECK(std::strcmp(rows[0].name, "WALKED_PAST") == 0 && rows[0].count == 7);
     CHECK(std::strcmp(rows[1].name, "IN_RANGE") == 0 && rows[1].count == 0);
 
-    // A network in range is a real, claimable offer — no walk required first.
+    // A network in range is a real, claimable offer: no walk required first.
     g.setHomeNetwork(rows[1].key, rows[1].name);
     CHECK(g.hasHomeNetwork() && std::strcmp(g.homeNetworkName(), "IN_RANGE") == 0);
 }
@@ -512,7 +512,7 @@ void test_register_peer_counts_encounters_not_frames() {
     CHECK(e.timesMet == 1);                                  // ...one encounter
     CHECK(g.peerLedger().size() == 1);
 
-    // They walk away — the snapshot ages them out, so the room is empty again.
+    // They walk away: the snapshot ages them out, so the room is empty again.
     g.tick(t += kPeerVisibleFreshMs + 1);
     CHECK(g.livePeerCount() == 0);
 
@@ -590,7 +590,7 @@ void test_peer_rows_live_first_and_deduped() {
 
 // Release gate: a grayscale screenshot of PEERS must stay fully readable. The one
 // status meaning on this screen is "is this operator here right now", and it is
-// carried by a WORD (LIVE) against a count (x2) — never by colour — so a live and a
+// carried by a WORD (LIVE) against a count (x2) (never by colour), so a live and a
 // remembered row must differ in lit pixels with the hue thrown away. Rendering both
 // states and diffing the state column is what actually proves that.
 void test_peers_screen_grayscale_live_vs_remembered() {
@@ -621,7 +621,7 @@ void test_peers_screen_grayscale_live_vs_remembered() {
     // The row itself reads without colour at all: tag, pet and crew are lit glyphs.
     CHECK(anyLitGray(live, 0, 46, kActiveW, 110));
 
-    // Same operator, no longer in range — the roster row survives, the LIVE tag
+    // Same operator, no longer in range: the roster row survives, the LIVE tag
     // must not. Compare the right-hand state column between the two renders.
     g.tick(t += kPeerVisibleFreshMs + 1);
     CHECK(g.livePeerCount() == 0);
@@ -636,8 +636,8 @@ void test_peers_screen_grayscale_live_vs_remembered() {
     CHECK(diff > 0);   // LIVE vs. the meeting count differ in LUMINANCE, not just hue
 }
 
-// Opening PEERS arms the LINK radio on its own — two people holding devices
-// together shouldn't wait on a duty cycle — and closing it hands the radio back.
+// Opening PEERS arms the LINK radio on its own (two people holding devices
+// together shouldn't wait on a duty cycle), and closing it hands the radio back.
 // LINK stays independent of the AUDIT ladder in both directions: announcing is a
 // separate consent from listening, so neither toggle may imply the other.
 void test_peers_screen_raises_link_without_touching_config() {
@@ -668,7 +668,7 @@ void test_peers_screen_raises_link_without_touching_config() {
 }
 
 // Opening the CREW screen arms the passive scan on its own so the picker has live
-// results, and closing it hands the radio straight back to the config-dictated mode —
+// results, and closing it hands the radio straight back to the config-dictated mode:
 // without ever touching the persisted CFG opt-in, and without arming capture.
 void test_crew_screen_raises_scan_without_touching_config() {
     Game g{StartMode::Hatched};
@@ -689,7 +689,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
     tapC(g);                         // leave CREW
     CHECK(!g.radioScanWanted());                          // config-dictated mode restored
 
-    // With AUDIT already on, the screen changes nothing — it only ever raises.
+    // With AUDIT already on, the screen changes nothing: it only ever raises.
     g.setNetScanEnabled(true);
     CHECK(g.radioScanWanted());
     g.onButton(press(Button::B));
@@ -700,7 +700,7 @@ void test_crew_screen_raises_scan_without_touching_config() {
 
 // The CREW screen outlives the global 5s menu-idle collapse. It has to: holding the
 // screen open is what arms the scan, so defocusing on the standard budget powered the
-// radio down before a sweep could finish — the picker starved itself and stayed empty
+// radio down before a sweep could finish. The picker starved itself and stayed empty
 // forever. It still collapses eventually, on the kRadioScreenDefocusMs budget.
 void test_crew_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched};
@@ -718,7 +718,7 @@ void test_crew_screen_outlives_the_menu_idle_timer() {
     CHECK(g.crewScreenOpen());                            // still open
     CHECK(g.radioScanWanted());                           // ...so the radio stays armed
 
-    // But not forever — the longer budget still expires.
+    // But not forever: the longer budget still expires.
     g.tick(t += kRadioScreenDefocusMs);
     CHECK(!g.crewScreenOpen());
     CHECK(!g.radioScanWanted());                          // radio handed back on collapse
@@ -741,14 +741,14 @@ void test_peers_screen_outlives_the_menu_idle_timer() {
     CHECK(g.peersScreenOpen() && g.linkWanted());
     CHECK(g.radioScreenOpen());                           // ...and holds the panel awake
 
-    // Well past the point any other submenu would have collapsed, with no input —
-    // this is the case that bit on hardware: reading a peer's row takes longer than
+    // Well past the point any other submenu would have collapsed, with no input.
+    // This is the case that bit on hardware: reading a peer's row takes longer than
     // five seconds.
     for (int i = 0; i < 8; ++i) g.tick(t += kAutoDefocusMs);
     CHECK(g.peersScreenOpen());                           // still open
     CHECK(g.linkWanted());                                // ...so the radio stays armed
 
-    // But not forever — the longer budget still expires and hands the radio back.
+    // But not forever: the longer budget still expires and hands the radio back.
     g.tick(t += kRadioScreenDefocusMs);
     CHECK(!g.peersScreenOpen());
     CHECK(!g.linkWanted());
@@ -756,7 +756,7 @@ void test_peers_screen_outlives_the_menu_idle_timer() {
 }
 
 // PROTECTION RACKET (Shakedown Artists): while it is ticking, every hit the holder LANDS
-// hands kCrewRakePct of its own final damage straight back as Health — and the clock is
+// hands kCrewRakePct of its own final damage straight back as Health, and the clock is
 // the holder's OWN turns, not the opponent's, which is what separates it from the
 // death-save sharing the same counter.
 void test_crew_rake_returns_a_cut_of_every_hit() {
@@ -867,7 +867,7 @@ void test_crew_failover_survives_a_turn_with_no_cast() {
     cb.commitOverride();
     CHECK(cb.player().crewExploit.charges == 2);
     // The stun burns the turn and resolveTurn returns before any cast. Nothing was
-    // duplicated, so nothing was spent — the spare is still in the bag afterwards.
+    // duplicated, so nothing was spent: the spare is still in the bag afterwards.
     cb.step();
     CHECK(cb.player().lockedTurnsLeft == 0);     // the turn was spent on the lock
     CHECK(cb.player().crewExploit.charges == 2);
@@ -878,7 +878,7 @@ void test_crew_failover_survives_a_turn_with_no_cast() {
 // PROFILE is the read-only operator viewer, and every line on it is content that grows:
 // a crew name, a zone Title, and a Hacker Rank title off a ladder that is meant to be
 // appended to. The screen draws each of them through the shared pair widget or a
-// full-width marquee, so nothing can print through anything else — but a value that
+// full-width marquee, so nothing can print through anything else, but a value that
 // needs more room than the line has still costs the LABEL its letters, and that is a
 // loss no frame reports. This is the budget stated as an arithmetic fact.
 //
@@ -894,7 +894,7 @@ void test_operator_profile_rows_pack() {
     };
 
     // RANK carries the widest value on the screen: "R{n} {title}". Swept over every
-    // named tier, over the ranks between them, and past the end of the ladder — the
+    // named tier, over the ranks between them, and past the end of the ladder: the
     // rank is unbounded and the title caps, so the worst case is somewhere in the
     // middle rather than at either end.
     char rankVal[24];
@@ -924,7 +924,7 @@ void test_operator_profile_rows_pack() {
     CHECK(pairFits("BANDWIDTH", "999/999"));
 
     // HOME NET's value is an SSID off the air, which arrives at whatever width it
-    // likes — the row is gated on the LABEL still having room for its own letters.
+    // likes: the row is gated on the LABEL still having room for its own letters.
     CHECK(textWidth("HOME NET") <= kPairRoom / 2);
 
     // The identity lines: crew and Title each own a line, because the widest pair of

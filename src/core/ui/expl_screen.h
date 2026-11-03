@@ -1,18 +1,18 @@
-// expl_screen.h — EXPL submenu + the wild-encounter intro / event screens it
+// expl_screen.h: EXPL submenu + the wild-encounter intro / event screens it
 // launches. The list is the NESTED area/sub-area ladder: a linear
 // ladder of AREAS (Citrus Circuit → The Pirate Bayou), each holding 5 numbered
 // SUB-AREAS. Area gating is LINEAR complete-to-advance: area N
 // unlocks once area N-1's 5-stage gauntlet is cleared (`sectorCleared[]`); area 0 is
-// always open. Within an open area every sub-area is reachable — you arm one (→
+// always open. Within an open area every sub-area is reachable: you arm one (→
 // explore-mode on the idle habitat) and clear it via a 10-win streak → its
 // boss; clearing all 5 unlocks the AREA boss. Hacker Rank gates nothing (reward-only,
 // ). Selecting a row hands off to explore-mode or the shared combat core.
 #pragma once
 
 #include "core/content/areas/area_defs.h"
-#include "core/render/canvas.h"   // kActiveW — the category row's own text budget
-#include "core/ui/layout.h"     // kMargin / kRowIcon — ...and its two insets
-#include "core/ui/ui_state.h"   // ExplCat — the activity the list is showing
+#include "core/render/canvas.h"   // kActiveW: the category row's own text budget
+#include "core/ui/layout.h"     // kMargin / kRowIcon: ...and its two insets
+#include "core/ui/ui_state.h"   // ExplCat: the activity the list is showing
 
 namespace mal {
 
@@ -20,7 +20,7 @@ class ContentRegistry;
 class Framebuffer;
 struct SpriteData;
 
-// Aliases of the canonical area-ladder constants (area_defs.h) — kAreaCount there
+// Aliases of the canonical area-ladder constants (area_defs.h): kAreaCount there
 // is derived from the area-folder list itself, so this is the only place the
 // ladder's size is named; adding an area (see that header) grows both without a
 // second count to keep in sync. kExplSubAreas is the per-area sub-area count (5,
@@ -34,29 +34,29 @@ constexpr int kExplSubAreas = kSubAreasPerArea;
 // pair via the helpers below (sub == -1 → the area header / area-boss row). The
 // count is `explRowCount()`. State/selectability is derived from three durable flag
 // blocks the caller owns:
-//   areaCleared      — [kExplSectors]                    (area's 5-stage gauntlet beaten)
-//   subCleared       — [kExplSectors * kExplSubAreas]    (sub-area's boss beaten)
-//   subBossUnlocked  — [kExplSectors * kExplSubAreas]    (10-win streak unlocked its boss)
+//   areaCleared:      [kExplSectors]                    (area's 5-stage gauntlet beaten)
+//   subCleared:       [kExplSectors * kExplSubAreas]    (sub-area's boss beaten)
+//   subBossUnlocked:  [kExplSectors * kExplSubAreas]    (10-win streak unlocked its boss)
 // Any block may be null (treated as all-false). Row-major index = area*kExplSubAreas+sub.
 constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
 // The ladder is BRACKETED by three SPECIAL rows, none of them an AreaDef: the DEEPWEB
 // DIVE and the DARKWEB CRAWL above it (which draw as kDeepWebSector / kDarkWebSector,
-// area_defs.h — one and two past the real ladder, so they stay terminal even as the
+// area_defs.h: one and two past the real ladder, so they stay terminal even as the
 // ladder grows) and ROCK THE DOCK below it, the operator bracket held in The Pirate
 // Bayou (content_tournament.h). Each is a single row with no sub-areas, and while
-// locked each is an inert "??????" teaser — which is what makes them read as promises
+// locked each is an inert "??????" teaser, which is what makes them read as promises
 // rather than as rows that appear from nowhere.
 //
 // THEIR POSITIONS IN THIS SPACE ARE NOT WHAT THE PLAYER SEES. The row space is the
 // flat address every state lookup and every save flag is keyed by, and the screen is
-// the ACTIVITY PICKER over it (ExplCat, below) — so the two endless rows are reached
+// the ACTIVITY PICKER over it (ExplCat, below), so the two endless rows are reached
 // through ENDLESS, the ladder through STORY, and the arena row is never drawn as a row
 // at all: its state is what the ARENA category is drawn FROM. What stays fixed here is
 // the addressing, which is why adding a category costs no row and moving one costs no
 // migration.
 constexpr int kExplLeadRows = 2;   // the DeepWeb Dive, then the DarkWeb Crawl
-// ROCK THE DOCK's row. It has no place in any drawn level — the arena is one press off
-// the category picker — but it keeps its address so explRowState stays the ONE place
+// ROCK THE DOCK's row. It has no place in any drawn level (the arena is one press off
+// the category picker), but it keeps its address so explRowState stays the ONE place
 // every zone's unlock is decided, the arena's included.
 constexpr int kExplTailRows = 1;
 inline int explRowCount() {
@@ -84,7 +84,7 @@ enum class ExplRowState {
     AreaProgress,   // area open, boss not yet reachable → "n/5" cleared-sub count
     AreaBossReady,  // all 5 sub-areas cleared, area not → "> AREA BOSS" (selectable)
     AreaCleared,    // area's gauntlet beaten → BEAT, or DONE once the area has nothing
-                    // left to teach this pet (the tag is settled with the "?n" count —
+                    // left to teach this pet (the tag is settled with the "?n" count:
                     // see ExplListView's move-to-learn blocks)
     SubLocked,      // its AREA is locked → "??????" + LOCKED (open areas' subs never lock)
     SubOpen,        // armable, not yet won → OPEN (selectable → arm explore)
@@ -93,7 +93,7 @@ enum class ExplRowState {
                     // takes priority over EXPLORING so the action stays reachable)
     SubCleared,     // its boss beaten → BEAT (DONE once learned out, as above), but
                     // still RE-FARMABLE: selectable to re-arm explore for full XP+Bits +
-                    // diminishing loot, so a beaten rung stays a training ground — which
+                    // diminishing loot, so a beaten rung stays a training ground, which
                     // is exactly what a fresh pet, walking a ladder of BEAT rows it has
                     // learned none of, is being pointed at.
     DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
@@ -116,13 +116,13 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
 // locked rows). Pure function of the state.
 bool explRowSelectable(ExplRowState s);
 
-// The WORD a row's right-anchored state tag carries — the meaning channel, since colour
+// The WORD a row's right-anchored state tag carries: the meaning channel, since colour
 // on this screen is only emphasis. `movesToLearn` is that row's "?n" count (see
 // ExplListView), which is the whole of what separates BEAT from DONE on a beaten row.
 // Public so a gate can assert what a row SAYS rather than read it out of pixels.
 const char* explRowTagWord(ExplRowState s, int movesToLearn);
 
-// The width a category row's own two dim lines are held to — the gap from the glyph
+// The width a category row's own two dim lines are held to: the gap from the glyph
 // column to the right margin. Public because the blurb below is AUTHORED copy and a
 // native gate measures it against this: a line that overruns travels (drawTextMarquee)
 // rather than being cut, which costs the reader a still line for nothing.
@@ -142,7 +142,7 @@ const char* explCatBlurb(ExplCat c);
 // 1+kExplSubAreas rows, whatever explRowCount() grows to.
 //
 // `explRowLandable` (Game) is the further "does the cursor stop here" filter on top of
-// this — every landable row is in-level, but not the reverse (a locked area is shown as
+// this: every landable row is in-level, but not the reverse (a locked area is shown as
 // "??????" and skipped by the cursor).
 inline bool explRowInLevel(int row, ExplCat cat, int navArea) {
     if (cat == ExplCat::Endless)
@@ -153,8 +153,8 @@ inline bool explRowInLevel(int row, ExplCat cat, int navArea) {
 }
 
 // The widest the "?n" move-to-learn lead ever draws, as the string a row budget is
-// measured against. Two digits is the ceiling by construction — a zone's pool is the
-// kits of a handful of enemies, not the roster — and the gate that budgets every EXPL
+// measured against. Two digits is the ceiling by construction (a zone's pool is the
+// kits of a handful of enemies, not the roster), and the gate that budgets every EXPL
 // name against this asserts no shipped zone outgrows it
 // (test_expl_names_stay_scrollable). Public because the budget has two readers and they
 // must not each guess.
@@ -165,15 +165,15 @@ constexpr const char* kExplLearnLeadMax = "?99";
 // unreadable at both ends (same reason as ShopRowView, below).
 struct ExplListView {
     int cursor = 0;                  // focused row, 0..explRowCount()-1
-    // The durable flag blocks — see the contract above. Any may be null (all-false).
+    // The durable flag blocks: see the contract above. Any may be null (all-false).
     const bool* areaCleared = nullptr;
     const bool* subCleared = nullptr;
     const bool* subBossUnlocked = nullptr;
     int exploringSector = -1;        // the armed/running sub-area (or -1) → EXPLORING
     int exploringSub = -1;
-    ExplCat cat = ExplCat::None;     // which activity is open — None draws the picker
-    int navArea = -1;                // the nav level — see explRowInLevel above
-    // How many STORY chapters the walk has written so far — the CHAPTERS row's own
+    ExplCat cat = ExplCat::None;     // which activity is open: None draws the picker
+    int navArea = -1;                // the nav level: see explRowInLevel above
+    // How many STORY chapters the walk has written so far. The CHAPTERS row's own
     // readout, and what locks it: an archive with nothing in it is not a place to go.
     int storyChapters = 0;
     // The armed sub-area's win streak and the count that unlocks its boss, so the
@@ -185,15 +185,15 @@ struct ExplListView {
     int bestDarkWebDepth = 0;        // ...and the Crawl's, the same job for the same reason
     // The arena row's own progress readout: how many entrants are still standing in the
     // run in progress (0 = no run), and which round it is on. Same job bestDeepWebDepth
-    // does for the dive — the frontier row answers "where am I up to" where the choice
+    // does for the dive: the frontier row answers "where am I up to" where the choice
     // is made, rather than only once the screen is open.
     bool tourneyRunning = false;
     int tourneyAlive = 0;
     int tourneyRound = 0;
-    // HOW MANY MOVES ARE LEFT HERE, per row — the count of moves the current pet could
+    // HOW MANY MOVES ARE LEFT HERE, per row: the count of moves the current pet could
     // still learn in each zone (Game::areaMovesToLearn and friends). Drawn as a "?n"
     // lead just left of the state tag: n things in this place the pet does not know yet.
-    // A QUESTION MARK is this screen's own word for that — it is what a locked row is
+    // A QUESTION MARK is this screen's own word for that: it is what a locked row is
     // drawn as ("??????"), so the glyph already means "you have not seen what is here"
     // everywhere else on the list. A plus would read as a modifier, which is what it is
     // on every other number the device draws.
@@ -209,10 +209,10 @@ struct ExplListView {
     //
     // Blocks are row-major and may be null (nothing marked, the honest default for a
     // caller that has no pet to ask about). A LOCKED row is never marked whatever the
-    // block says — it is drawn as "??????", and a count beside that would be spoiling a
+    // block says: it is drawn as "??????", and a count beside that would be spoiling a
     // zone the player cannot reach.
-    const int* areaMovesToLearn = nullptr;      // [kExplSectors]   — the top-level zone row
-    const int* gauntletMovesToLearn = nullptr;  // [kExplSectors]   — the AREA GAUNTLET row
+    const int* areaMovesToLearn = nullptr;      // [kExplSectors]:   the top-level zone row
+    const int* gauntletMovesToLearn = nullptr;  // [kExplSectors]:   the AREA GAUNTLET row
     const int* subMovesToLearn = nullptr;       // [kExplSectors * kExplSubAreas]
     int deepWebMovesToLearn = 0;                // ...and the two endless rows' own
     int darkWebMovesToLearn = 0;
@@ -224,25 +224,25 @@ struct ExplListView {
 // EXPL's list, at whichever of its three levels `v` describes: the ACTIVITY PICKER
 // when v.cat is None, else the open category's rows one LEVEL at a time
 // (explRowInLevel). Areas carry their own sector glyph (ICON_SECTOR_<AREA_ID>,
-// resolved through `reg` — a missing one draws as an empty frame rather than shifting
+// resolved through `reg`: a missing one draws as an empty frame rather than shifting
 // the row).
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v);
 
 // Is category `c` reachable at all? LOCKED categories still draw (as a "??????" row,
 // the same promise a locked zone makes) but the cursor skips them. STORY is never
-// locked — area 0 is always open — and CHAPTERS opens the moment the walk has written
+// locked (area 0 is always open), and CHAPTERS opens the moment the walk has written
 // its first chapter. Derived from the same flag blocks a row state is, so the picker
 // and the level behind it can never disagree about whether there is anything there.
 bool explCatOpen(ExplCat c, const ExplListView& v);
 
 // Explore-mode idle badge: a thin status line under the top track, drawn
-// over the idle habitat while explore-mode is active — a pulsing cursor +
+// over the idle habitat while explore-mode is active. A pulsing cursor +
 // "EXPL <label>" (the armed sub-area) and, right-anchored, the field of whichever
 // mode the walk is in. Dual-coded (glyph + text + fraction), grayscale-safe.
 // The badge's right-field state, dual-coded (a distinct WORD per mode so it reads in
 // grayscale): WINS n/N (progress to the sub-boss) · BOSS READY · NEXT IN n (wins left
 // before auto-progress steps off this rung) · FARM n/N | FARM LOW (a re-armed cleared
-// sub — Bandwidth remaining) · DEPTH n (the DeepWeb Dive win count).
+// sub. Bandwidth remaining) · DEPTH n (the DeepWeb Dive win count).
 //
 // AutoNext is what a CLEARED sub-area reads while auto-progress is armed, and it is the
 // one mode that answers a question about the FUTURE: a re-farm has no boss left to
@@ -258,7 +258,7 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
                       ExploreBadgeMode mode);
 
 // Explore-control overlay: the walk's own action list, opened by the A+C chord over the
-// habitat. A CURSOR list, exactly like combat's Exploit picker — the chord opens it and
+// habitat. A CURSOR list, exactly like combat's Exploit picker: the chord opens it and
 // then plain A/B/C drive it (A next row, B do it, C back out). The chord itself is never
 // a navigation key inside a screen it opened: that is not what the Exploit chord is for,
 // and A+C is awkward to hit besides, since A registers on its own first.
@@ -284,7 +284,7 @@ struct ExploreControlView {
 };
 void drawExploreControl(Framebuffer& fb, const ExploreControlView& v);
 
-// Sector accessors ("difficulty-scaled by sector tier") — sector identity
+// Sector accessors ("difficulty-scaled by sector tier"): sector identity
 // is data owned by this file; Game reads it through these rather than duplicating
 // the roster. `explSectorOpen` implements the linear gate: sector 0 is always open,
 // sector N>0 opens once `sectorCleared[N-1]` is set (a null array = only sector 0).
@@ -292,14 +292,14 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v);
 bool explSectorOpen(int idx, const bool* sectorCleared);
 int explSectorTier(int idx);
 const char* explSectorName(int idx);
-// The area's SHORT name for the walk badge (AreaDef::badge) — the display name whole when
+// The area's SHORT name for the walk badge (AreaDef::badge): the display name whole when
 // a row names none, which the badge-fit gate then measures like any other.
 const char* explSectorBadge(int idx);
 const char* explSubAreaName(int sector, int idx);
 
 // Zone-completion Title: clearing sector `idx`'s boss/gauntlet grants
 // this equippable, player-level Title (Citrus Circuit → "CERTIFIED DOWNLOADER",
-// The Pirate Bayou → "LEECH LORD"). One Title per sector — the unlock/equip state
+// The Pirate Bayou → "LEECH LORD"). One Title per sector: the unlock/equip state
 // lives in Game (persisted); the name string is sector-owned data. Out-of-range
 // returns "".
 const char* sectorTitle(int idx);
@@ -318,7 +318,7 @@ struct EncounterIntroView {
 };
 void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v);
 
-// How much of the network glyph the pet gets through on a Wi-Fi event — the picture of
+// How much of the network glyph the pet gets through on a Wi-Fi event: the picture of
 // the discovery beat's reward, matched to Game::NetDiscovery. Eaten whole for a network
 // it has never seen, nibbled for one it is merely fond of, left standing for its own
 // home turf, and absent entirely when the radio queued nothing to find.
@@ -358,12 +358,12 @@ void drawWifiEvent(Framebuffer& fb, const WifiEventView& v);
 // "MOOR-TO-MOOR"); `modShopName` is the mod storefront's ("CHIP SHOP" /
 // "PLUNDER PORT" / "MOOR TO MODS"). Both fall back to sector 0's storefront for an
 // out-of-range sector. A storefront's actual LISTINGS (arbitrary-length, priced in
-// Bits + item costs) are resolved through Game's shopListing* accessors, not here —
+// Bits + item costs) are resolved through Game's shopListing* accessors, not here:
 // those need the ContentRegistry to turn an id into a display name.
 const char* shopName(int sector);
 const char* modShopName(int sector);
 
-// One rendered shop row for drawShop — resolved display strings/counts so the
+// One rendered shop row for drawShop: resolved display strings/counts so the
 // render layer stays registry-agnostic (Game resolves ids -> names via
 // shopListingName/shopListingDescription/etc, game_render.cpp's drawShopScreen).
 struct ShopRowView {
@@ -376,7 +376,7 @@ struct ShopRowView {
     // What the SHOPPER already has of this row's goods, and the ceiling on it
     // (0 = uncapped). A mod row is the un-equipped spare pool against MOD STORAGE
     // (Game::shopListingHeld / shopListingHeldCap), drawn as the "HAVE n/cap" the mod
-    // detail panel uses (mods_screen.h) — and a full pool is what the STORAGE FULL buy
+    // detail panel uses (mods_screen.h), and a full pool is what the STORAGE FULL buy
     // reason names, so the row carries the number that reason is derived from. An
     // uncapped row (an item stack) draws no HAVE column at all: with no ceiling to
     // measure against it would only cost the name the width it reads in.
@@ -385,10 +385,10 @@ struct ShopRowView {
 };
 
 // The tightest description budget on any screen: a storefront squeezes the selected
-// row's own prose between the last listing and the buy reason. This is the WORST case
-// — a storefront stocking the full kShopMaxRows; a one- or two-listing shop's adaptive
+// row's own prose between the last listing and the buy reason. This is the WORST case:
+// a storefront stocking the full kShopMaxRows; a one- or two-listing shop's adaptive
 // list leaves several times as much. Public so a content row stocked by an area shop
-// (content/areas/<id>/area.cpp) can be held to the worst case — anything longer is
+// (content/areas/<id>/area.cpp) can be held to the worst case: anything longer is
 // silently truncated when a shop happens to be full.
 constexpr int kShopDescLines = 3;
 
@@ -412,18 +412,18 @@ void drawShop(Framebuffer& fb, const StorefrontView& v);
 // Warp-key picker: the walk's B overlay listing the held warp keys
 // (Access Token / Safe-Mode Key), one row each, cursor-highlighted, with an
 // A-next / B-use / C-back hint band. Using one jumps to its target event. Dual-coded
-// (the row list + spelled-out hint) — grayscale-safe. No new art; reuses list chrome.
+// (the row list + spelled-out hint): grayscale-safe. No new art; reuses list chrome.
 void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
                     int cursor);
 
 // Post-encounter status readout: after a WILD (non-boss,
 // non-Sim) fight resolves win or loss, a brief ~2s overlay shows the persistent
 // BANDWIDTH spend + FRAGMENTATION change it just caused, before returning to the
-// habitat — so the player knows whether to keep exploring or go defrag. The
+// habitat, so the player knows whether to keep exploring or go defrag. The
 // fragmentation half is tri-state, dual-coded by WORD (never colour alone):
-//   None     — frag wasn't in play this encounter (row omitted entirely).
-// Shielded — 's Bandwidth shield covered the tax ("FRAG SHIELDED").
-//   Rose     — the tax landed ("FRAG +n", `fragDelta` is that positive n).
+//   None:     frag wasn't in play this encounter (row omitted entirely).
+// Shielded: 's Bandwidth shield covered the tax ("FRAG SHIELDED").
+//   Rose:     the tax landed ("FRAG +n", `fragDelta` is that positive n).
 enum class PostEncounterFragState { None, Shielded, Rose };
 struct PostEncounterView {
     // This fight's Bandwidth before/after, against the cap. bwBefore==0 reads as

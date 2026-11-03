@@ -28,7 +28,7 @@ namespace {
 // so the slack goes to the spec panel below instead of being reserved empty.
 constexpr int kModPickerMaxRows = 6;
 
-// ICON_MOD_<UPPER ID> — the per-mod glyph naming convention.
+// ICON_MOD_<UPPER ID>: the per-mod glyph naming convention.
 const SpriteData* modIcon(const ContentRegistry& reg, const char* id) {
     char name[40];
     std::snprintf(name, sizeof(name), "ICON_MOD_%s", id);
@@ -37,7 +37,7 @@ const SpriteData* modIcon(const ContentRegistry& reg, const char* id) {
     return reg.sprite(name);
 }
 
-// Uppercased copy of a line id ("phishing" -> "PHISHING") for the LOCKED reason text —
+// Uppercased copy of a line id ("phishing" -> "PHISHING") for the LOCKED reason text:
 // mirrors modIcon's uppercasing idiom above.
 void upperLine(char* out, size_t outSize, const char* s) {
     size_t i = 0;
@@ -56,10 +56,10 @@ bool lineLocked(const ModDef* m, const char* petLine) {
 
 // Detail-page prose reserve: the prose starts under the name/readout block and has to
 // leave room for the slot readout + gate rows below it. modDetailProseLines() is what
-// the prose ACTUALLY gets — this reserve minus the gap the readout leaves behind it.
+// the prose ACTUALLY gets: this reserve minus the gap the readout leaves behind it.
 constexpr int kDetailProseLines = 5;
 // The footer under the panel. SLOT/HAVE, the gate rows and the verdict line answer ONE
-// question between them — can this go on, and where — so they stack at a single pitch,
+// question between them (can this go on, and where), so they stack at a single pitch,
 // tighter than the prose pitch above them, with the panel's unfilled reserve as the gap
 // that fences the group off. Spacing them unevenly is what made the dim SLOT/HAVE row
 // read as a tail of the block above rather than the head of this one. Same footer pitch
@@ -90,7 +90,7 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadou
         if (load.owns(m->id)) out.push_back(m);
     // Fittable first. std::stable_sort, not sort: registry order is the mod table's own
     // order and is what keeps a pool that grows by one from reshuffling everything the
-    // player had learned the position of — so the two halves each keep it.
+    // player had learned the position of, so the two halves each keep it.
     std::stable_sort(out.begin(), out.end(),
                      [&](const ModDef* a, const ModDef* b) {
                          return modLockedFor(*a, petLevel, petLine, load, slot) <
@@ -116,7 +116,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
         if (moves.equipped(i)) ++movesOn;
 
     // Each row's readout answers "how much of this is filled in", so the hub is a
-    // status page as well as a menu — the two counted rows show n/total and PRACTISE,
+    // status page as well as a menu: the two counted rows show n/total and PRACTISE,
     // which counts nothing, names its stakes instead (the one thing worth knowing
     // before entering it).
     char status[kLoadoutHubRows][16];
@@ -326,7 +326,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     drawHeaderBand(fb, "MODS");
 
     // Icon + name + the effect TAG (the stat-delta shorthand, e.g. "+DEF"). The tag owns
-    // the right end and the name yields, exactly as drawItemDetail's rarity tag does —
+    // the right end and the name yields, exactly as drawItemDetail's rarity tag does:
     // this page's name has an icon's width less to work with than the picker row's.
     const SpriteData* icon = modIcon(reg, mod.id);
     if (icon) drawSprite(fb, *icon, 0, kMargin, 30);
@@ -336,7 +336,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
 
     // The readout as an aligned grid, then the prose under it (spec_sheet.h): every
     // magnitude the row hands combat is reserved room and drawn, and the prose takes
-    // what's left — so a retune can never outrun the description, and a long
+    // what's left, so a retune can never outrun the description, and a long
     // description can never push a magnitude off the screen.
     const SpecRows spec = specRows(mod);
     const EffectText prose = effectText(mod);   // must outlive the draw
@@ -349,7 +349,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     const int afterStats =
         drawSpecSheet(fb, kMargin, 56, kActiveW - 2 * kMargin, proseFloor, sheet).endY;
 
-    // ONE-SHOT flag — a consumed-on-trigger mod carries a distinct, grayscale-safe
+    // ONE-SHOT flag: a consumed-on-trigger mod carries a distinct, grayscale-safe
     // caveat line (the word itself is the channel; HOT tints it too). It is a caveat ON
     // the description, so it hangs directly under it rather than at a fixed y of its
     // own, and the footer below measures from it.
@@ -377,7 +377,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     drawText(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
     // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
-    // that the number stopped climbing on purpose — that is the MOD STORAGE row's whole
+    // that the number stopped climbing on purpose: that is the MOD STORAGE row's whole
     // pitch, and the only place it gets made.
     char have[16];
     const int held = load.countOf(mod.id);

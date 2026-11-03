@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// UNDER THE SURFACE — where a swimmer is at home. Every other place in the set puts an
+// UNDER THE SURFACE, where a swimmer is at home. Every other place in the set puts an
 // empty field above the horizon and calls it sky; this one fills it, because the whole
 // point of being underwater is that there is something between you and the light.
 //
@@ -16,7 +16,7 @@ namespace {
 // toward the horizon. That is the opposite of every horizon scene here, and it is the
 // single cue that says "you are looking up through this" before any kelp is drawn.
 // The water never reaches `paper`. It is tempting to let the deep go to nothing, but
-// the pet stands at the FLOOR — silhouetting it against the darkest band on the panel
+// the pet stands at the FLOOR: silhouetting it against the darkest band on the panel
 // costs the creature its own read, which is the one thing a backdrop may never do.
 constexpr uint8_t kToneSurface = 50;   // the lit water just under the top
 constexpr uint8_t kToneDeep = 26;      // and what it fades to at the bed
@@ -35,7 +35,7 @@ constexpr uint8_t kToneBedLip = 108;
 constexpr int kWaterBands = 4;
 
 // The light shafts coming down from the surface. Wide, faint and slanted the same way,
-// because sunlight through a swell is one direction and not a fan — and kept to the
+// because sunlight through a swell is one direction and not a fan, and kept to the
 // outer thirds, where nothing a screen draws needs the contrast.
 struct Shaft { int x, w; };
 constexpr Shaft kShafts[] = {{14, 9}, {36, 5}, {176, 7}, {200, 11}};
@@ -43,8 +43,8 @@ constexpr int kShaftLean = 3;   // columns the shaft slides per quarter of its f
 
 // The kelp: stands rooted in the bed and rising most of the way up, each a stipe that
 // wanders as it goes and throws blades off alternate sides. A stand is one long bend
-// rather than a silhouette table — kelp is the one thing here with no straight edge in
-// it — and the blades are what stop a stipe reading as a pipe.
+// rather than a silhouette table (kelp is the one thing here with no straight edge in
+// it), and the blades are what stop a stipe reading as a pipe.
 struct Stand { int x, h, w; uint8_t tone; int sway; int bladePitch; };
 constexpr Stand kStands[] = {
     {18, 126, 5, kToneKelpNear, 7, 11}, {34, 100, 4, kToneKelp, 5, 13},
@@ -63,8 +63,8 @@ void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g) {
     // Cleared first like every other place: a column this leaves unpainted is black,
     // which is invisible on a dark set and a hole in the picture on a light one.
     fb.clear(palColor(Pal::PAPER));
-    // The water column, lit at the top and lost at the bed. Filled rather than cleared
-    // — there is no `paper` anywhere in this scene, which is what being submerged is.
+    // The water column, lit at the top and lost at the bed. Filled rather than cleared:
+    // there is no `paper` anywhere in this scene, which is what being submerged is.
     // The column runs to the FLOOR, not to the horizon: this is one body of water and
     // the bed is its bottom, so there is no middle band to leave between them. Every
     // horizon scene has one; a submerged one does not, and calling sceneMiddle here
@@ -84,7 +84,7 @@ void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g) {
             fb.fillRect(s.x + y * kShaftLean / (g.horizonY / 4 + 1), y, s.w, 1, shaft);
 
     // The kelp, swaying on the heartbeat. Each column steps a pixel sideways every few
-    // rows, and the phase carries the whole stand — so a stand bends rather than
+    // rows, and the phase carries the whole stand, so a stand bends rather than
     // wobbling, which is the difference between weed and static.
     for (int i = 0; i < static_cast<int>(sizeof(kStands) / sizeof(kStands[0])); ++i) {
         const Stand& st = kStands[i];
@@ -98,7 +98,7 @@ void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g) {
             const int lean = st.sway * k / st.h * phase;
             fb.fillRect(st.x + lean, y, st.w, 1, c);
             // A blade every so often, alternating sides and trailing the way the stand
-            // is leaning — so the whole plant agrees about which way the water is going.
+            // is leaning, so the whole plant agrees about which way the water is going.
             if (k % st.bladePitch) continue;
             const int side = (k / st.bladePitch) & 1 ? 1 : -1;
             const int len = kBladeLen - (k % 3);
@@ -115,7 +115,7 @@ void drawKelpDriftScene(Framebuffer& fb, int beat, const SceneGround& g) {
         fb.fillRect(kBubbles[i][0], sceneSkyY(g, kBubbles[i][1]) - rise, 2, 2, bubble);
     }
 
-    // The bed. Seamless — silt has no seams — so the pitch is off and the texture is
+    // The bed. Seamless (silt has no seams), so the pitch is off and the texture is
     // the lit lip alone.
     sceneFloor(fb, g, /*seamPitch=*/0, kToneBed, kToneSilt, kToneBedLip);
 }

@@ -18,14 +18,14 @@
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 
-// game_hacker.cpp — the Hacker face (07, /HACK2/SHOP1).
+// game_hacker.cpp: the Hacker face (07, /HACK2/SHOP1).
 //
 // A+C at the top level flips PET ↔ HACKER (toggleFace). The Hacker face reuses the
-// pet-side carousel + submenu contracts wholesale — the same Nav::Idle/Cursor/Submenu
-// states and the same A/B/C cursor cycling — so the only bespoke code here is the
+// pet-side carousel + submenu contracts wholesale (the same Nav::Idle/Cursor/Submenu
+// states and the same A/B/C cursor cycling), so the only bespoke code here is the
 // hacker slot roster, the PROFILE viewer and VAULT, and the terminal-reskin centre
 // canvas. The SHOP (the Rig Shop and its SERVICES board) lives in game_rigshop.cpp;
-// MERGE HUB's own L2 screen in game_merge.cpp (this face only sells the hub itself —
+// MERGE HUB's own L2 screen in game_merge.cpp (this face only sells the hub itself:
 // the recipes cooked in it are won off a Decryptogram), and CREW's (enlist + home
 // network) in game_crew.cpp.
 // PEERS (met operators) lives in game_peers.cpp and LINK (1v1 duels) in game_pvp.cpp;
@@ -41,7 +41,7 @@ void Game::toggleFace() {
     // Land on the face's idle/centre canvas. Drop any cursor + sub-state so a
     // flip is a clean top-level context switch, never mid-submenu on the other face.
     nav_ = Nav::Idle;
-    // Focus the first ACCESSIBLE hacker slot rather than blindly slot 0 — landing on an
+    // Focus the first ACCESSIBLE hacker slot rather than blindly slot 0: landing on an
     // inaccessible slot (B inert) would be a bad first impression. Computed from the
     // roster so it survives a reorder. Pet face has no such gating, so it always rests
     // on slot 0.
@@ -127,7 +127,7 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
 namespace {
 // Is this an item the VAULT cashes in? Two Use-actions qualify: a sealed cache opens
 // for a reward draw, and a Decryptogram buys a board. Both are spent HERE rather than
-// pet-side, because what either pays out is player-level — which is also what
+// pet-side, because what either pays out is player-level, which is also what
 // itemUsable's two gate messages say from the other side.
 bool vaultCashable(const ItemDef& d) {
     return d.use == ItemDef::Use::OpenContainer || d.use == ItemDef::Use::PlayCryptogram;
@@ -141,7 +141,7 @@ int Game::vaultOwnedRows(const ItemDef** rows, int max) const {
         const ItemDef* d = registry_.item(s.id);
         if (d && vaultCashable(*d) && n < max) rows[n++] = d;
     }
-    // Tickets above caches, then richest draw first — a cache's rarity IS its payout
+    // Tickets above caches, then richest draw first: a cache's rarity IS its payout
     // tier (content_items.cpp grades bits/draws/pool by it), so the top cache row is
     // always the best thing to open, and a Decryptogram outranks all of them because it
     // is the only row here that is a GAME rather than a draw. Inventory order is
@@ -162,7 +162,7 @@ void Game::cashVaultRow(const ItemDef& d) {
     // mid-quote costs the ticket rather than duplicating it.
     if (inventory_.count(d.id) <= 0) return;
     // Every quote won already? Then there is no first-solve prize left and the board is
-    // replayed for Bits — the same deal the arcade cabinet offers, minus the cabinet.
+    // replayed for Bits: the same deal the arcade cabinet offers, minus the cabinet.
     const int quote = pickQuote(quotesLeftToWin() ? QuotePick::Unsolved
                                                   : QuotePick::SolvedOnly);
     if (quote < 0) return;   // an empty pool: keep the ticket rather than eat it
@@ -175,10 +175,10 @@ void Game::cashVaultRow(const ItemDef& d) {
 }
 
 void Game::onHackerVault(const ButtonEvent& ev) {
-    // VAULT — cash in what a pet has no use for, OFF pet ITEMS. Build the list of
+    // VAULT: cash in what a pet has no use for, OFF pet ITEMS. Build the list of
     // owned cashable stacks (caches to decrypt, Decryptograms to play); A cycles, C
     // backs to the carousel. B: unowned e resolves the focused row immediately
-    // (cashVaultRow); owned, B becomes a tap/hold gesture ON A CACHE ROW — arm here and
+    // (cashVaultRow); owned, B becomes a tap/hold gesture ON A CACHE ROW. Arm here and
     // resolve on the button-RELEASE edge (vaultBulkReleaseB, a short tap cashes just
     // the one) or on the hold crossing kBulkOpenHoldMs (tick() bulk-opens every cache
     // sharing the row's rarity instead).
@@ -190,7 +190,7 @@ void Game::onHackerVault(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         hackerVaultRow_ = (hackerVaultRow_ + 1) % n;
     } else if (ev.button == Button::B) {
-        // The hold gesture is a CACHE gesture — "open every cache of this rarity" means
+        // The hold gesture is a CACHE gesture: "open every cache of this rarity" means
         // nothing on a Decryptogram, and arming it there would swallow the tap that is
         // supposed to start a board. A ticket row therefore always resolves on the press.
         if (bulkOpenUnlocked() &&
@@ -206,7 +206,7 @@ void Game::onHackerVault(const ButtonEvent& ev) {
 void Game::vaultBulkReleaseB() {
     if (!(face_ == Face::Hacker && nav_ == Nav::Submenu &&
           enteredHackerId() == HackerSlotId::Vault && bulkOpenUnlocked()))
-        return;   // bHeld_ was armed elsewhere (e.g. the unrelated CFG hold) — no-op
+        return;   // bHeld_ was armed elsewhere (e.g. the unrelated CFG hold): no-op
     const ItemDef* rows[16];
     const int n = vaultOwnedRows(rows, 16);
     if (n == 0) return;
@@ -221,7 +221,7 @@ void Game::vaultBulkReleaseB() {
 void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     fb.clear(palColor(Pal::PAPER));
 
-    // Terminal scanline pass over the living area — the procedural "console" tell
+    // Terminal scanline pass over the living area: the procedural "console" tell
     // (SCREEN_FX budget). Dim horizontal lines every few rows; grayscale-safe
     // (it only darkens, never re-colours, so the readout stays legible).
     for (int y = kLivingTop; y < kLivingBottom; y += 4)
@@ -230,20 +230,20 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 
     int y = kLivingTop + 8;
 
-    // HackerTag — the operator's handle, framed like a prompt banner.
+    // HackerTag: the operator's handle, framed like a prompt banner.
     char tag[kHackerTagMax + 8];
     std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
     drawText(fb, kMargin, y, tag, palColor(Pal::INK));
     y += kFontH + 6;
 
-    // Crew line — the operator's allegiance, or the prompt toward the CREW slot.
+    // Crew line: the operator's allegiance, or the prompt toward the CREW slot.
     if (const CrewDef* c = activeCrew())
         drawText(fb, kMargin, y, c->displayName, palColor(Pal::INK));
     else
         drawText(fb, kMargin, y, "NO CREW - SEE CREW SLOT", palColor(Pal::INK_DIM));
     y += kFontH + 4;
 
-    // Equipped Title — its real home is the Hacker face. NONE → greyed.
+    // Equipped Title: its real home is the Hacker face. NONE → greyed.
     if (equippedTitle_ >= 0) {
         char t[28];
         std::snprintf(t, sizeof(t), "* %s", equippedTitleName());
@@ -256,7 +256,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     fb.fillRect(kMargin, y, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
     y += 6;
 
-    // Rank + NETS/SHAKES — the brag line the PROFILE viewer expands.
+    // Rank + NETS/SHAKES: the brag line the PROFILE viewer expands.
     char rank[28];
     std::snprintf(rank, sizeof(rank), "RANK %d %s", hackerRank_,
                   hackerRankTitle(hackerRank_));
@@ -270,7 +270,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     drawText(fb, kActiveW - kMargin - textWidth(shakes), y, shakes,
              palColor(Pal::INK_DIM));
     y += kFontH + 4;
-    // Queued sightings not yet flushed to SD — the "walk soon" pressure gauge.
+    // Queued sightings not yet flushed to SD: the "walk soon" pressure gauge.
     char queued[24];
     std::snprintf(queued, sizeof(queued), "QUEUED %d/%d", pendingNetworks(),
                   kPendingNetworkQueueCap);
@@ -280,14 +280,14 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     drawText(fb, kMargin, y, queued, queuedColor);
     y += kFontH + 6;
 
-    // Battery — the operator's own power budget, the one readout here that is about
+    // Battery: the operator's own power budget, the one readout here that is about
     // the DEVICE rather than the operator, which is why it sits under the stats with
     // a line to itself instead of pairing off with one of them. It gets the line
     // because the glyph is a 16px cell against an 8px face: sharing a row would either
     // crop it or prise the stat rows apart.
     //
-    // Dual-coded three times over — countable bars, the emptying shell, and the
-    // printed number — so the HOT a flat pack takes is the only channel a grayscale
+    // Dual-coded three times over (countable bars, the emptying shell, and the
+    // printed number), so the HOT a flat pack takes is the only channel a grayscale
     // shot loses, which is what the tinting rule asks. Absent on the host and on a
     // board with the monitor off: an empty shell there would report a flat battery
     // rather than no battery, and silence is the honest reading.
@@ -307,7 +307,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
         y += glyph.h + 6;
     }
 
-    // Blinking console cursor — the "idle terminal" motion.
+    // Blinking console cursor: the "idle terminal" motion.
     const bool on = ((beat_ / 2) & 1) == 0;
     drawText(fb, kMargin, y, on ? "> _" : ">", palColor(Pal::ACCENT));
 
@@ -329,7 +329,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         case HackerSlotId::Peers: drawHackerPeers(fb); break;     // game_peers.cpp
         case HackerSlotId::Link: drawHackerLink(fb); break;       // game_pvp.cpp
         case HackerSlotId::Merge: drawHackerMerge(fb); break;     // game_merge.cpp
-        // PROFILE — the read-only operator viewer (the STAT analog). SCAN is never
+        // PROFILE: the read-only operator viewer (the STAT analog). SCAN is never
         // entered (hackerSlotAccessible), so it shares the fallback onHackerSubmenu uses.
         case HackerSlotId::Profile:
         default:
@@ -339,7 +339,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
 }
 
 void Game::drawHackerVault(Framebuffer& fb) const {
-    // VAULT — cash in what a pet has no use for, OFF pet ITEMS. One row per owned
+    // VAULT: cash in what a pet has no use for, OFF pet ITEMS. One row per owned
     // cashable stack (name + count); A cycles, B spends it (cashVaultRow), C exits.
     drawHeaderBand(fb, "VAULT");
 
@@ -359,7 +359,7 @@ void Game::drawHackerVault(Framebuffer& fb) const {
         if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
         // The cache glyph takes its rarity's colour. The tint states nothing new:
         // every container's own name carries the tier word ("Epic Cache"), and the
-        // list is ordered by it — see core/ui/theme.h.
+        // list is ordered by it. See core/ui/theme.h.
         if (const SpriteData* icon = itemIcon(registry_, rows[i]->id))
             drawSpriteTinted(fb, *icon, 0, kMargin, rowY - 7,
                              rarityColor(rows[i]->rarity));
@@ -377,7 +377,7 @@ void Game::drawHackerVault(Framebuffer& fb) const {
     const bool ticket = rows[sel]->use == ItemDef::Use::PlayCryptogram;
     drawText(fb, kMargin, kActiveH - 20, ticket ? "B PLAY" : "B DECRYPT",
              palColor(Pal::ACCENT));
-    // The bulk-open hint (exception rule, VISUAL_LANGUAGE §4.2) — only once owned, so
+    // The bulk-open hint (exception rule, VISUAL_LANGUAGE §4.2), only once owned, so
     // an unowned player is never shown a gesture they don't have. Never on a ticket
     // row, which has no bulk gesture to advertise.
     if (bulkOpenUnlocked() && !ticket)
@@ -391,7 +391,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
     drawText(fb, kMargin, 28, tag, palColor(Pal::INK));
 
-    // Crew, then Title — a line each, not a pair sharing one (unaffiliated → greyed).
+    // Crew, then Title: a line each, not a pair sharing one (unaffiliated → greyed).
     // Both are content that grows to 20 characters against a 26-character line, so
     // side by side the widest pair leaves the crew a five-character window to scroll
     // through, which is no way to read the one word that says who you run with.
@@ -415,7 +415,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     //
     // The pitch is 16 against an 8px face, so every row keeps a full cell of air under
     // it and the block reads as one list. Nine rows plus the bandwidth bar is what the
-    // foot holds at that pitch — HOME NET's text ends at 218 against a 224 canvas, so a
+    // foot holds at that pitch: HOME NET's text ends at 218 against a 224 canvas, so a
     // tenth row needs the pitch or the identity block above to give something up first.
     auto statRow = [&](int ry, const char* label, const char* value, Rgb565 vc) {
         drawLabelValue(fb, kMargin, ry, label, palColor(Pal::INK_DIM), value, vc,
@@ -433,12 +433,12 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     statRow(92, "NETS", nets, palColor(Pal::INK));
     // SHAKES is UNSPENT/LIFETIME, the same n/N shape QUEUED uses below. A shake is what
     // buys a sigil of the Cant (game_shiboleet.cpp), so the number that matters when
-    // standing in front of a guardian is what is left to spend — and the lifetime tally
+    // standing in front of a guardian is what is left to spend, and the lifetime tally
     // is still the brag it always was, right beside it.
     char shakes[16];
     std::snprintf(shakes, sizeof(shakes), "%d/%d", shakesUnspent(), handshakesSeen_);
     statRow(108, "SHAKES", shakes, palColor(Pal::INK));
-    // SIGILS — how much of the guardians' language this device can read. Dim at zero,
+    // SIGILS: how much of the guardians' language this device can read. Dim at zero,
     // because none of it is a real state rather than a missing one, and ACCENT once the
     // whole Cant is known: at that point no guardian will ever refuse the pet again.
     char sigils[16];
@@ -447,14 +447,14 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
             palColor(sigilsKnown() == 0 ? Pal::INK_DIM
                      : sigilsKnown() >= kCantSigils ? Pal::ACCENT : Pal::INK));
 
-    // SPECIES — distinct creatures this device has ever raised (Game::speciesRaised,
+    // SPECIES: distinct creatures this device has ever raised (Game::speciesRaised,
     // save v39). A collection stat rather than a radio one, but it belongs on the
     // operator face for the same reason the others do: it outlives every pet.
     char species[12];
     std::snprintf(species, sizeof(species), "%d", speciesRaised());
     statRow(140, "SPECIES", species, palColor(Pal::INK));
 
-    // STEPS — explore steps walked across every pet this device has raised, which is
+    // STEPS: explore steps walked across every pet this device has raised, which is
     // the one explore stat measured directly rather than through a result (a boss, a
     // sub-area, a network). The STEPS ladder is scored off it (AchSeries::StepsWalked),
     // so this is also where a player reads how far they are from the next rung.
@@ -463,7 +463,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
                   static_cast<unsigned long>(lifetimeSteps_));
     statRow(156, "STEPS", steps, palColor(Pal::INK));
 
-    // QUEUED — sightings waiting in RAM for a walk (EXPL Wi-Fi event) to flush
+    // QUEUED: sightings waiting in RAM for a walk (EXPL Wi-Fi event) to flush
     // them into the SD-backed ledger; nears kPendingNetworkQueueCap = new
     // sightings start dropping, so this is the "walk your pet soon" signal.
     char queued[16];
@@ -474,7 +474,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
                                     : palColor(Pal::INK);
     statRow(172, "QUEUED", queued, queuedColor);
 
-    // BANDWIDTH — the farming pool, shown n/N with its fill bar so the player
+    // BANDWIDTH: the farming pool, shown n/N with its fill bar so the player
     // reads their farm budget on the operator face. The bar level is the grayscale channel.
     char bw[16];
     std::snprintf(bw, sizeof(bw), "%d/%d", bandwidth_, bandwidthMax());
@@ -484,7 +484,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     drawProgressBar(fb, kMargin, 198, kActiveW - 2 * kMargin, 7, t,
                     palColor(Pal::ACCENT));
 
-    // HOME NET — the network this operator defends (set in CREW). Sits with the
+    // HOME NET: the network this operator defends (set in CREW). Sits with the
     // identity stats because it's a property of the player, not the pet.
     statRow(210, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
             hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::INK_DIM));

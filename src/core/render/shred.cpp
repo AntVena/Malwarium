@@ -9,7 +9,7 @@ namespace mal {
 namespace {
 
 // Rows leave in a stagger rather than all at once, packed into the first part of the
-// sweep so the last one still has a slide left in it — the same headroom FX_ABSORB
+// sweep so the last one still has a slide left in it: the same headroom FX_ABSORB
 // keeps for the same reason.
 constexpr int kDepartSpan = 150;    // of 255
 
@@ -25,7 +25,7 @@ constexpr int kTrailMax = 7;
 
 // A row thins before it goes, dropping alternate pixels once it is most of the way
 // out. The gap pattern is the row's own scatter, so it frays instead of dimming
-// uniformly — which is what survives at this palette's contrast, where a fade to 30%
+// uniformly, which is what survives at this palette's contrast, where a fade to 30%
 // against PAPER is nearly a fade to nothing.
 constexpr uint8_t kFrayFrom = 140;
 
@@ -43,7 +43,7 @@ void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
     if (cellW <= 0 || cellH <= 0) return;
 
     for (int py = 0; py < cellH; ++py) {
-        // Everything about a sliver is this one roll on its ROW — so the whole row
+        // Everything about a sliver is this one roll on its ROW, so the whole row
         // travels as a piece, which is what makes it a line instead of a smear of
         // independently wandering pixels.
         const uint32_t rh = dissolveHash(py, 0x5EED);
@@ -78,7 +78,7 @@ void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
             const int restX = srcX + px * num / den;
             const int y = srcY + py * num / den;
 
-            // The head, then the streak behind it — drawn back toward the rest position
+            // The head, then the streak behind it: drawn back toward the rest position
             // so the trail always points at where the row came from, whichever way it
             // went. Each sample dims, so the line has a direction you can read.
             for (int t = 0; t < trail; ++t) {

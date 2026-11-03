@@ -1,7 +1,7 @@
-// Napstorrent Moors — Napster/P2P, a marshy journey toward the castle it
+// Napstorrent Moors: Napster/P2P, a marshy journey toward the castle it
 // foreshadows (AREA_NAMING.md). Reached by landing off the Net-Sea and walking
 // inland; its CASTLE CAUSEWAY is what walks up to Castle Rapidscare, so the moors
-// must stay directly before the keep in kAreaList — that adjacency is the one thing
+// must stay directly before the keep in kAreaList: that adjacency is the one thing
 // about this area's position the fiction actually depends on.
 #include "core/content/areas/area_defs.h"
 
@@ -10,16 +10,16 @@
 namespace mal {
 
 namespace {
-// This area's WILD-win drop table — what a won wild encounter here hands over.
+// This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
 // content_items.cpp). The first four are the staple set every area shares: two
-// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
-// Niche-flavour pass mod pool, plus Faraday Cage (tier 3) — the counter to this
+// Niche-flavour pass mod pool, plus Faraday Cage (tier 3): the counter to this
 // area's own signature boss rider (data_rot, below).
 const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
                                  "cipher_asic", "faraday_cage", "prowlware",
@@ -29,13 +29,13 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
                                  // trickle that gives the first of those a use.
                                  "seedbox_array", "decoy_peer", "trickle_charger",
                                  "rowhammer",
-                                 // The four lines the Cipher ASIC above left out — the
+                                 // The four lines the Cipher ASIC above left out: the
                                  // deep end of the soft-affinity pattern is the whole
                                  // roster's now, not one line's.
                                  "whale_hook", "logic_bomb", "reseed_loop",
                                  "signature_churn"};
 
-// MOOR-TO-MOOR — the item storefront: this area's own stock/price per item, same
+// MOOR-TO-MOOR. The item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.
 // Both Browns are stocked here and nowhere else: meeting a dish is what a
 // Decryptogram asks for before its prize ladder will teach the recipe for it
@@ -45,7 +45,7 @@ const char* const kModPool[] = {"overclock_chip", "heat_sink", "honeytoken",
 // The Hypervisor-USB is the one device in its family anyone sells, and it is priced in
 // its own family rather than in Bits alone: four Sandbox-USBs, which drop nowhere but the
 // DeepWeb Dive. So the deep end of the soak ladder is reached by diving for the rare one
-// four times over — the counter is where the four are ASSEMBLED, not where the ladder is
+// four times over: the counter is where the four are ASSEMBLED, not where the ladder is
 // skipped. Stocked one per visit for the same reason.
 const ShopListingDef kShopListings[] = {
     {"disk_scrubber", 8, 14},
@@ -55,7 +55,7 @@ const ShopListingDef kShopListings[] = {
     {"salted_hashed_browns", 4, 512},
 };
 
-// MOOR TO MODS — the mod storefront: this area's own tier-3 mods, priced in Bits
+// MOOR TO MODS. The mod storefront: this area's own tier-3 mods, priced in Bits
 // plus an item cost drawn from this area's own item shop above.
 const ShopListingDef kModShopListings[] = {
     {"heat_sink", kShopStock, 512, {{"disk_scrubber", 15}}},
@@ -153,7 +153,7 @@ const AreaDef kAreaNapstorrentMoors = {
     /*areaBossMoveId=*/"runaway_fork",
     /*apexThreatMoveId=*/"data_rot",  // the signature boss's DoT rider
     // The moors is the mail area, and its wilds carry mail's plainest form: Reply All
-    // is Mail Storm without the size — no rider, no wind-up, which in a pool built out of
+    // is Mail Storm without the size. No rider, no wind-up, which in a pool built out of
     // riders is its own niche.
     /*wildAttackMoveId=*/"chain_letter",
     /*wildDefendMoveId=*/"private_tracker",
@@ -163,11 +163,11 @@ const AreaDef kAreaNapstorrentMoors = {
     {"THE INDEX KEEPER",
      {"delisted"},
      // Keeper of the listing. Everything out here exists because it is written down, and
-     // it is the one doing the writing — so a pet is a clerical matter until it answers.
+     // it is the one doing the writing, so a pet is a clerical matter until it answers.
      {{"YOU ARE NOT YET WRITTEN DOWN.", "IT LOOKS FOR YOUR NAME."},
       {"ANSWER, AND I WILL ADD YOU.", "IT HOLDS A PLACE OPEN."},
       {"WHAT IS NOT LISTED IS NOT HERE.", "YOU ARE A FILING MATTER."}},
-     // How it takes the answer — pleased, displeased, affront, boon. A clerk to the
+     // How it takes the answer: pleased, displeased, affront, boon. A clerk to the
      // last: nothing it does to a pet is worse than what it does to the listing.
      {{"YOU ARE WRITTEN DOWN NOW.", "A LINE IS ADDED FOR YOU."},
       {"I AM STRIKING YOU OUT.", "YOUR ENTRY IS SCRATCHED."},

@@ -1,4 +1,4 @@
-// content_arcade.cpp — the arcade cabinet table. One row per playable minigame; see
+// content_arcade.cpp: the arcade cabinet table. One row per playable minigame; see
 // content_arcade.h for the field schema and what adding a cabinet costs.
 
 #include "core/content/content_arcade.h"
@@ -9,7 +9,7 @@ namespace mal {
 
 namespace {
 
-// Each engine's RULES page (GameBriefDef, content_arcade.h) — what A+C opens mid-play,
+// Each engine's RULES page (GameBriefDef, content_arcade.h): what A+C opens mid-play,
 // on top of the run, whichever door the player came in through (cabinet, a MAINT
 // played variant, or an egg's hatch). Kept to the mechanic itself: none of these
 // mentions Bits, an incubation clock, or a clean streak, because what a run PAYS is the
@@ -92,7 +92,7 @@ const GameBriefDef kChromaBrief[] = {
 };
 
 const ArcadeGameDef kArcadeGames[] = {
-    // A played MAINT board, off its pet. Nothing about the board changes here — it is
+    // A played MAINT board, off its pet. Nothing about the board changes here: it is
     // the same board MAINT plays, so practice here carries over.
     {"stacker", "FIREWALL",
      "WALL OFF BOTH INTRUDERS BEFORE THEY LAND.",
@@ -119,7 +119,7 @@ const ArcadeGameDef kArcadeGames[] = {
      ArcadeGameKind::Clutch, ArcadeScoring::WinLose, ArcadeUnlock::Always,
      kClutchBrief, static_cast<int>(sizeof(kClutchBrief) / sizeof(kClutchBrief[0]))},
 
-    // The Worm hatch, with the clock replaced by a flat target — so a clean run is a
+    // The Worm hatch, with the clock replaced by a flat target, so a clean run is a
     // clean run whatever the pet is or isn't incubating.
     {"isolation", "ISOLATION PROTOCOL",
      "EAT THE BUFFER WITHOUT EATING YOURSELF.",
@@ -139,7 +139,7 @@ const ArcadeGameDef kArcadeGames[] = {
      kDecryptionBrief,
      static_cast<int>(sizeof(kDecryptionBrief) / sizeof(kDecryptionBrief[0]))},
 
-    // The VAULT's quote board, with no ticket spent and no prize but Bits — and only
+    // The VAULT's quote board, with no ticket spent and no prize but Bits, and only
     // over quotes already solved, so the cabinet is a re-run rather than a way to farm
     // the pool for free. That is also why it is the one gated row: there is nothing to
     // re-run until kQuoteArcadeUnlockWins quotes have been cracked the honest way.
@@ -151,7 +151,7 @@ const ArcadeGameDef kArcadeGames[] = {
      kCryptogramBrief,
      static_cast<int>(sizeof(kCryptogramBrief) / sizeof(kCryptogramBrief[0]))},
 
-    // The Metamorphic hatch, with no egg riding on it — and the one cabinet whose
+    // The Metamorphic hatch, with no egg riding on it, and the one cabinet whose
     // SUBJECT can change: a pet on the family that wears borrowed colours rehearses on
     // the board itself, and anybody else's pet watches the egg do it (Game::chromaSubject).
     // Its dial moves the window like the paced games, and HARD adds the rule the hatch

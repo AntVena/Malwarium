@@ -8,7 +8,7 @@ namespace mal {
 namespace {
 // A fixed record: u64 key, u32 count, u8 nameLen, then nameLen name bytes
 // (explicit field writes, not a raw struct dump, so host/device compiler padding
-// never matters). Not a versioned save format — this file only ever round-trips
+// never matters). Not a versioned save format: this file only ever round-trips
 // with itself on one device, so a format change just means "delete and re-scan"
 // (the ledger rebuilds through walking, unlike the save blob).
 bool writeEntry(FILE* f, const NetworkLedger::Entry& e) {
@@ -100,7 +100,7 @@ bool NetworkLedger::inTopN(uint64_t key, int n) const {
 }
 
 void NetworkLedger::writeThrough() const {
-    if (path_[0] == '\0') return;  // no backing file (SD absent) — RAM-only is fine
+    if (path_[0] == '\0') return;  // no backing file (SD absent): RAM-only is fine
 
     char tmpPath[72];
     std::snprintf(tmpPath, sizeof(tmpPath), "%s.tmp", path_);

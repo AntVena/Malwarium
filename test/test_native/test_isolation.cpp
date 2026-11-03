@@ -1,4 +1,4 @@
-// test_isolation.cpp — native gates for the Isolation Protocol, the Worm egg's hatch
+// test_isolation.cpp: native gates for the Isolation Protocol, the Worm egg's hatch
 // minigame, and the SECOND_INSTANCE gate that puts the line on the menu at all.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -53,7 +53,7 @@ void test_isolation_step_moves_without_growing() {
 }
 
 // Two of the same turn inside one step is ONE quarter-turn, not a U-turn into its own
-// neck — a mistimed double-press costs an input, never the run. A left and a right in
+// neck: a mistimed double-press costs an input, never the run. A left and a right in
 // the same interval cancel to straight.
 void test_isolation_double_turn_is_one_quarter() {
     Isolation iso;
@@ -86,7 +86,7 @@ void test_isolation_wall_ends_the_run() {
 // The successor of `cell` on a Hamiltonian cycle over the whole buffer: row 0 is the
 // return corridor, and every column below it is walked down (even) or up (odd). Every
 // cell is on it exactly once, so a worm that follows it eats every byte placed and can
-// never meet itself — which is what makes a CLEAN run reachable in a test at all.
+// never meet itself, which is what makes a CLEAN run reachable in a test at all.
 static int isoCycleNext(int cell) {
     const int col = cell % kIsolationCols, row = cell / kIsolationCols;
     if (row == 0) return col > 0 ? cell - 1 : kIsolationCols;      // left, then drop in
@@ -121,7 +121,7 @@ static void isoEat(Isolation& iso, int n) {
     }
 }
 
-// Its own body is lethal too — which only means anything once the worm is long enough
+// Its own body is lethal too, which only means anything once the worm is long enough
 // to reach itself. Three cells cannot: the tightest loop a worm can turn is four steps
 // wide, and the cell it started on has vacated by the time the head comes back round.
 // Fed up to seven, the same loop closes on its own neck.
@@ -159,7 +159,7 @@ void test_isolation_cycle_run_finishes_clean() {
     isoEat(iso, 30);
     CHECK(iso.state() == Isolation::State::Clean);
     CHECK(iso.dots() == 30);
-    // Every byte is worth kIsolationGrowth cells on top of the three it started with —
+    // Every byte is worth kIsolationGrowth cells on top of the three it started with,
     // except the last, which ends the run on the step that eats it, so the tail it was
     // still owed never gets walked out.
     CHECK(iso.length() ==
@@ -176,7 +176,7 @@ static void archStore(Game& g) {
     enterArchNewEgg(g);                // ARCH's NEW EGG row: store the active, then hatch
 }
 
-// The Worm line is not on the menu until the rack has held two of one species at once —
+// The Worm line is not on the menu until the rack has held two of one species at once:
 // the line about replication asks you to replicate something first.
 void test_worm_line_gated_on_second_instance() {
     Game g;
@@ -228,7 +228,7 @@ void test_isolation_opens_on_a_laid_worm_egg() {
           static_cast<int>(kBootHatchMs / kIsolationDotMs));
 }
 
-// The worm walks its own real-ms cadence, not the shared heartbeat — and the incubation
+// The worm walks its own real-ms cadence, not the shared heartbeat, and the incubation
 // clock is frozen underneath it, so the goal it quoted stays the goal it is judged by.
 void test_isolation_steps_on_its_own_cadence() {
     Game g = wormEgg();
@@ -263,7 +263,7 @@ void test_isolation_crash_banks_a_minute_per_byte() {
 }
 
 // A CLEAN protocol eats the whole clock: the egg hatches out of the minigame rather
-// than waiting one out, and WORM_WHISPERER — which asks for exactly this run — fires.
+// than waiting one out, and WORM_WHISPERER (which asks for exactly this run) fires.
 void test_isolation_clean_run_hatches_and_unlocks() {
     Game g = wormEgg();
     CHECK(!g.hasAchievement(ach::kWormWhisperer));

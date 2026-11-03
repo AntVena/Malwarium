@@ -1,4 +1,4 @@
-// spec_sheet.h — the one layout every "what does this thing do" panel uses.
+// spec_sheet.h: the one layout every "what does this thing do" panel uses.
 //
 // A move / mod / item / rig upgrade is described by the same three things, so they
 // get one renderer instead of four private layouts that each rediscover the maths:
@@ -10,7 +10,7 @@
 // The layout rule that makes it fit, in both senses: **the readout is bounded and is
 // never cut; the prose is elastic and scrolls.** The readout comes from a fixed
 // generated vocabulary (effect_text.h's specRows), so its height is knowable and can
-// simply be reserved — a magnitude never silently vanishes off the end of a line.
+// simply be reserved. A magnitude never silently vanishes off the end of a line.
 // Prose is authored, so its length isn't knowable: it takes whatever is left and
 // reports the overflow, and the caller offers a scroll rather than truncating.
 //
@@ -46,7 +46,7 @@ struct SpecSheetLayout {
 
 // Draw into the band [y, maxY) across `w` pixels from `x`. Never draws past maxY.
 // The gap drawSpecSheet leaves between the readout block and the prose under it.
-// Public because a screen sizing its own prose band has to subtract it — a panel
+// Public because a screen sizing its own prose band has to subtract it: a panel
 // budget that forgets it reads one line high, and the line it loses is the tail of a
 // description, cut with nothing on screen to say so.
 constexpr int kSpecBlockGap = 4;
@@ -54,7 +54,7 @@ constexpr int kSpecBlockGap = 4;
 SpecSheetLayout drawSpecSheet(Framebuffer& fb, int x, int y, int w, int maxY,
                               const SpecSheet& s);
 
-// Total prose lines at this width — for a caller sizing its own scroll bounds.
+// Total prose lines at this width: for a caller sizing its own scroll bounds.
 int proseLineCount(int w, const char* prose);
 
 }  // namespace mal

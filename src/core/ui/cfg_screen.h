@@ -1,7 +1,7 @@
-// cfg_screen.h — CFG submenu: a settings list (L2) whose rows open
+// cfg_screen.h (CFG submenu): a settings list (L2) whose rows open
 // read-only viewers / toggles / group screens (L3). Flattens the spec's "System
-// Info" + "User Registry" into one list. The hidden Factory Reset is NOT a row
-// — it is reached only by a hold-B gesture off System Info.
+// Info" + "User Registry" into one list. The hidden Factory Reset is NOT a row:
+// it is reached only by a hold-B gesture off System Info.
 //
 // The list is SIX rows, which is exactly the viewport (kVisibleRows), so it never
 // scrolls. Settings that belong to one another are reached through a GROUP screen
@@ -9,7 +9,7 @@
 // is running at all, RADIO holds the three radio toggles (AUDIT / LINK / PEDIA AP)
 // plus the one line that says which
 // of them the arbiter has actually granted the radio. A group is not a fourth nav
-// level — like the UPDATES screen's check/confirm/progress faces, it is another
+// level: like the UPDATES screen's check/confirm/progress faces, it is another
 // CfgScreen inside the same Nav::Detail, and its children return to it.
 //
 // Reaching the 'net is NOT a row here. It has no standing setting to hold: UPDATES
@@ -17,8 +17,8 @@
 // why that screen reports the connection instead of one of its own.
 //
 // Two units implement this header. cfg_screen.cpp draws the settings list and its
-// viewers, toggles and groups — screens over state this device already holds.
-// update_screen.cpp draws the UPDATES faces and the QR pages — screens that run a
+// viewers, toggles and groups: screens over state this device already holds.
+// update_screen.cpp draws the UPDATES faces and the QR pages: screens that run a
 // job, or hand a URL to something that can. The declarations below are grouped the
 // same way, settings first.
 #pragma once
@@ -52,13 +52,13 @@ struct CfgRow {
 // the row count and points `out` at the static array.
 int cfgRows(const CfgRow*& out);
 
-// The rows of a group screen — Device (UI MODE, BRIGHTNESS, SOUND, VOLUME, THEME,
+// The rows of a group screen: Device (UI MODE, BRIGHTNESS, SOUND, VOLUME, THEME,
 // BACKGROUND, TRAVEL MODE…) or Radio (PEDIA AP, LINK, AUDIT). Any other screen has none, so a caller can ask
 // "is this a group?" by testing the count. Returns the count, points `out` at the array.
 int cfgGroupRows(CfgScreen group, const CfgRow*& out);
 
 // The group screen a child returns to on C (or after applying), or the child's
-// own value when it isn't inside one — so a radio toggle backs out to RADIO and
+// own value when it isn't inside one, so a radio toggle backs out to RADIO and
 // a top-level row backs out to the list. PediaQr's parent is Radio: it is entered
 // from PEDIA AP, which has already applied by then.
 CfgScreen cfgParentGroup(CfgScreen s);
@@ -68,14 +68,14 @@ const char* uiModeName(UiMode m);
 
 // L2 settings list. `hackerTag` drives the HACKERTAG row's value preview,
 // `equippedTitle` the TITLE row's (the equipped Title name, or "NONE"), and
-// `radioOwner` the RADIO row's — the row previews what the radio is DOING, not
+// `radioOwner` the RADIO row's: the row previews what the radio is DOING, not
 // how many toggles are on, since only one of them can be live at a time.
 void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
                  const char* equippedTitle, RadioOwner radioOwner);
 
 // L3 DEVICE group: the presentation settings, each previewing its live value, plus
 // TRAVEL MODE and FORMAT SD. B opens the focused row, C backs to the list. The two
-// actions draw no value preview — the others are settings that are always at some
+// actions draw no value preview: the others are settings that are always at some
 // level, and an action has no state to report, which the empty value column says
 // without a word of copy.
 // Ten rows, so it scrolls.
@@ -98,12 +98,12 @@ void drawCfgDevice(Framebuffer& fb, const CfgDeviceView& v);
 // applied one, and `unlockedMask` bit i whether row i has been earned. B applies, C
 // backs out.
 //
-// Each row paints a strip of SWATCHES in the set it is offering — paper, ink, accent and
+// Each row paints a strip of SWATCHES in the set it is offering: paper, ink, accent and
 // the calm/warn/hot ladder, read out of that theme rather than the live one
 // (palColorIn). A theme is a thing you can only judge by looking at it, and a list of
 // names would make choosing one a matter of applying each in turn. Every row still says
 // its name and tags the applied one ACTIVE (a locked one LOCKED), so the screen reads
-// with the colour taken away — which is the only reason a wall of swatches is allowed
+// with the colour taken away, which is the only reason a wall of swatches is allowed
 // on it.
 //
 // A locked row is drawn dim and still drawn IN ITS OWN COLOURS, unlike a locked Title
@@ -114,12 +114,12 @@ void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedM
 
 // L3 BACKGROUND picker: the place the pet stands in (core/render/scenes.h).
 //
-// Row 0 is AUTO — the pet's own home, which is what the habitat drew before there was
-// anything to choose — and rows 1..kBackgroundCount are content_backgrounds.h's table in
+// Row 0 is AUTO (the pet's own home, which is what the habitat drew before there was
+// anything to choose), and rows 1..kBackgroundCount are content_backgrounds.h's table in
 // its own order. `ownedMask` bit (row-1) is whether that row has been earned; a row that
 // has not is greyed and refuses B, the way a locked Title does. It is 32 bits wide
-// because kBackgrounds is a table that grows — every ladder on the device is a candidate
-// to pay one out — and a mask narrower than the table it indexes fails by silently
+// because kBackgrounds is a table that grows (every ladder on the device is a candidate
+// to pay one out), and a mask narrower than the table it indexes fails by silently
 // locking the rows past its end rather than by not compiling.
 //
 // A steps over EVERY row rather than only the owned ones, which is the difference
@@ -137,12 +137,12 @@ void drawTravelConfirm(Framebuffer& fb, int pick);
 
 // The frame that replaces the confirm once travel sleep is requested, held on the
 // panel by the device tier for long enough to be read before it powers the panel
-// down. It exists to answer the question a dark device provokes — this is the last
+// down. It exists to answer the question a dark device provokes: this is the last
 // thing on screen, so the wake gesture is what it says.
 void drawTravelSleeping(Framebuffer& fb);
 
 // L3 FORMAT SD confirm. Leads with what is lost (everything on the card), names the
-// card it would act on (`sd`: its size, or that it can't be read yet — the usual reason
+// card it would act on (`sd`: its size, or that it can't be read yet. The usual reason
 // to be here is a card the boot mount refused), and says what to do once it is ready.
 // Starts on NO like every screen that asks a second time. Busy is an update job holding
 // the card: the YES row is struck through and the screen says why.
@@ -150,12 +150,12 @@ enum class SdCardUse : uint8_t { Free, Busy };
 void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUse use);
 
 // The FORMAT SD faces after the yes: FORMATTING while the device tier works (no hint
-// band — every button is inert), then OK with the new size and the next step, or
+// band. Every button is inert), then OK with the new size and the next step, or
 // FAILED with the likely cause. Any button leaves from either result.
 void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd);
 
 // L3 RADIO group: the three radio toggles, in the arbiter's priority order with the
-// highest first, headed by the one thing no individual toggle screen can report —
+// highest first, headed by the one thing no individual toggle screen can report,
 // which of them the arbiter has actually put on the air (`owner`). `updateLive`
 // draws a fourth, non-selectable row ABOVE them for as long as an update job holds
 // the radio: it outranks all three, so the screen would otherwise show a set of
@@ -166,8 +166,8 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
 // It draws that as one group: a row that is ON is INDENTED under a radio mark
 // (filled = on the air, hollow = switched on, waiting behind a row above it), and a
 // row that is OFF sits flush left with no mark, outside the group. The value column
-// stays what the operator set; the mark is what became of it. Three channels —
-// words in the header line, the mark's fill, the indent — none of them colour, so a
+// stays what the operator set; the mark is what became of it. Three channels
+// (words in the header line, the mark's fill, the indent) none of them colour, so a
 // grayscale screenshot still says who has the radio.
 //
 struct CfgRadioView {
@@ -206,7 +206,7 @@ struct SysInfoView {
 void drawSysInfo(Framebuffer& fb, const SysInfoView& v);
 
 // L3 HackerTag arcade editor. `tag` is the working buffer (fixed
-// kHackerTagMax cells); `caret` is the focused cell (0..kHackerTagMax — the last
+// kHackerTagMax cells); `caret` is the focused cell (0..kHackerTagMax: the last
 // position is the ⏎ confirm). Renders the cells, the caret highlight, the confirm
 // cell, and the editor hint line (A cycle · B next · C delete).
 void drawHackerTag(Framebuffer& fb, const char* tag, int caret);
@@ -229,7 +229,7 @@ void drawSoundMode(Framebuffer& fb, int pick, SoundMode current);
 // unselectable, the equipped one shows "ACTIVE". `focusSector` is the highlighted
 // choice (-1 = the NONE row, else a sector index); `unlockedMask` bit i = sector i
 // unlocked; `equippedSector` is the currently-applied Title (-1 = none). Dual-coded
-// (LOCKED/ACTIVE text + the row cursor) — grayscale-safe. B applies, C cancels.
+// (LOCKED/ACTIVE text + the row cursor): grayscale-safe. B applies, C cancels.
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
                 int equippedSector, int beat);
 
@@ -238,7 +238,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
 // discovery, feeds NETS) / 2 SCAN+CAPTURE (adds passive WPA-handshake -> .pcap).
 // Higher = more battery; capture structurally requires scan, so there is no
 // scan-off/capture-on option. `current` is the live level, `pick` the focused one
-// (cycles A). PASSIVE only — no deauth/injection; carries the authorized-use
+// (cycles A). PASSIVE only: no deauth/injection; carries the authorized-use
 // disclaimer since the top level writes captured frames to SD.
 void drawAuditMode(Framebuffer& fb, int pick, int current);
 
@@ -250,7 +250,7 @@ enum class OnOff : uint8_t { Off, On };
 void drawApToggle(Framebuffer& fb, int pick, OnOff current);
 
 // L3 pet-to-pet LINK toggle. OFF/ON like the AP toggle above, but its copy leads
-// with what turning it ON transmits — announcing identity is a different consent
+// with what turning it ON transmits: announcing identity is a different consent
 // from the AUDIT ladder's listening, so the screen has to say so rather than let
 // the player infer it from the row name.
 //
@@ -265,7 +265,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach);
 // There is no separate internet consent to arm first: pressing CHECK NOW is the
 // directive to go online, and the job hands the radio back when it reaches a
 // terminal outcome (Game::netConnectWanted). So the association's own progress is
-// reported HERE, as the first step of a job — `net` drives the CONNECTING → FETCHING
+// reported HERE, as the first step of a job: `net` drives the CONNECTING → FETCHING
 // split and a failed join names the setup portal that fixes it.
 //
 struct UpdateCheckView {
@@ -290,8 +290,8 @@ void drawUpdateCheck(Framebuffer& fb, const UpdateStatus& status, const NetStatu
 // is always the flasher, which is why the middle is the only part that varies.
 int updateCheckRows(const UpdateStatus& status);
 
-// What B on `row` actually does. Three different acts share one cursor — start a
-// check, open an install confirm, open the flasher QR — so both the input handler
+// What B on `row` actually does. Three different acts share one cursor (start a
+// check, open an install confirm, open the flasher QR), so both the input handler
 // and the renderer ask this instead of deriving it from the index twice and
 // eventually disagreeing.
 enum class UpdateRowKind : unsigned char { Check, Install, FlashQr };
@@ -303,13 +303,13 @@ UpdateRowKind updateCheckRowKind(const UpdateStatus& status, int row);
 UpdateTarget updateCheckRowTarget(const UpdateStatus& status, int row);
 
 // The second yes. Names what is about to be replaced and what it is replaced with,
-// and starts on NO — an install is never one press away from the row that offered
+// and starts on NO: an install is never one press away from the row that offered
 // it. `pick` is 0 = NO, 1 = YES.
 void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVersion,
                        const char* toVersion, int pick);
 
 // A running (or finished) install: which artifact, how far in, and what it cost if
-// it failed. Progress is dual-coded — a bar AND the byte counts — so the screen
+// it failed. Progress is dual-coded (a bar AND the byte counts), so the screen
 // still reports in grayscale. `net` names the join an install does for itself,
 // which is the phase before any byte arrives.
 void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
@@ -321,7 +321,7 @@ void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
 // at a fork, or at a laptop, gets that host's flasher for free.
 //
 // False (and an empty `out`) when there is no source to derive from, or the
-// result wouldn't fit — a device with nowhere to look has no page to offer, and
+// result wouldn't fit: a device with nowhere to look has no page to offer, and
 // the UPDATES screen already says so.
 bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap);
 
@@ -331,8 +331,8 @@ bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap);
 // down while the cable goes in. C exits.
 void drawUpdateQr(Framebuffer& fb, const char* manifestUrl);
 
-// L3 'Pedia QR: real, scannable QR pages the player cycles with A, in step order —
-// page 0 = join the local AP (WIFI: payload), then the home-network setup page
+// L3 'Pedia QR: real, scannable QR pages the player cycles with A, in step order.
+// Page 0 = join the local AP (WIFI: payload), then the home-network setup page
 // while none is stored, then the 'Pedia URL. Reached by turning the AP on
 // (PEDIA AP → ON). The AP address is fixed (192.168.4.1), so every code is static.
 // Whether a home network is stored, which is what drops the setup page.

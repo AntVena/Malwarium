@@ -1,19 +1,19 @@
 #pragma once
 
-// game_rig_shop.h — the Rig Shop: the Hacker-face SHOP's account-upgrade rows
+// game_rig_shop.h (the Rig Shop): the Hacker-face SHOP's account-upgrade rows
 // (bandwidth pool, explore-frag reducers, ITEMS/VAULT gesture unlocks, rack slots,
 // combat/cache Bits %, the Merge Hub). Named "Rig" to stay unambiguous from the
 // *explore-event* shops
 //
-// Private, engine-internal, sibling to game_internal.h — inline const (C++17 inline
+// Private, engine-internal, sibling to game_internal.h: inline const (C++17 inline
 // variable, header-only), shared by game_rigshop.cpp (buy dispatch + row rendering) and
 // game_merge.cpp (which reads the Merge Hub row). Every row is data: adding an upgrade
 // is a new `kRigUpgrades[]` entry, never new buy/render logic.
 //
-// Magnitudes live on the row (src/core/content/CONTENT_STANDARD.md rule 2) — each constant below is
+// Magnitudes live on the row (src/core/content/CONTENT_STANDARD.md rule 2): each constant below is
 // used by exactly one row, so none of it lives in tunables.h. The one exception is
 // kFragTriggerReducedPct (tunables.h), which the Reduce-Frag-Trigger row's readout
-// shares with Game::applyBattleFatigue's combat calc — a genuinely dual-consumed table.
+// shares with Game::applyBattleFatigue's combat calc: a genuinely dual-consumed table.
 //
 // A row's READOUT is data too, not a formatter: `RigReadout` says where the number
 // comes from (a linear ramp off a base, or a tier table) and how to print it, and
@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <cstring>
 
-#include "core/content/effect_text.h"   // SpecRows/SpecBuilder — the shared readout
+#include "core/content/effect_text.h"   // SpecRows/SpecBuilder: the shared readout
 #include "core/content/recipe_wire.h"   // kMergeRecipeWireBytes, which sizes Game::recipesOwned_
 #include "tunables.h"
 
@@ -35,17 +35,17 @@ namespace mal {
 // A rig row's purchase state is a single int LEVEL (0 = never bought): a tiered row's
 // purchase count, or 0/1 for a one-time unlock. `Game::rigLevel_` is sized to this.
 inline constexpr int kMaxRigUpgrades = 24;   // headroom for future rows
-// Bandwidth has no purchase cap (unlike every other row) — a maxLevel this large is
+// Bandwidth has no purchase cap (unlike every other row): a maxLevel this large is
 // never actually reached, so the generic "MAXED" check is permanently false for it.
 inline constexpr int kRigLevelUnlimited = 1 << 20;
 
-// Rig row indices — the SHOP list's cursor space and Game::rigLevel_'s index space.
+// Rig row indices: the SHOP list's cursor space and Game::rigLevel_'s index space.
 // Values are stable (persisted positionally: rows below kRigRowExtBase have their own
-// named save fields, the rest ride the rigLevelsExt tail by position) — never reorder
+// named save fields, the rest ride the rigLevelsExt tail by position), never reorder
 // existing rows, and append new ones at the END.
 //
-// Everything here is BOUGHT. The one thing the Hacker face hands out that isn't — a
-// MERGE HUB recipe — is not a row at all: recipes are their own content table with
+// Everything here is BOUGHT. The one thing the Hacker face hands out that isn't (a
+// MERGE HUB recipe) is not a row at all: recipes are their own content table with
 // their own save bits (core/content/content_recipes.h), because a recipe has no price,
 // no levels and no place in a storefront list. The hub itself is the last rig row
 // cooking needs.
@@ -78,7 +78,7 @@ enum RigRow {
 };
 
 // The SHOP list's head slot. SERVICES is not a purchase and so has no row in the
-// table, but it IS the first thing in the list — negative so it shares the list's
+// table, but it IS the first thing in the list: negative so it shares the list's
 // cursor space (RigShopScreen::slot) with a row index without colliding with one.
 inline constexpr int kRigSlotServices = -1;
 
@@ -111,7 +111,7 @@ inline constexpr int kFragTriggerStart = 256;
 inline constexpr int kFragTriggerMaxTier = 6;
 
 // --- d/e: one-time gesture unlocks -------------------------------------------
-// No tiers, no computed text — Items Type-Tabs arms the ITEMS hold-B FOOD/BUFFS/QUEST
+// No tiers, no computed text. Items Type-Tabs arms the ITEMS hold-B FOOD/BUFFS/QUEST
 // filter cycle (kItemFilterHoldMs, tunables.h); Vault Bulk-Open arms the VAULT hold-B
 // "open every cache of this rarity" gesture (kBulkOpenHoldMs, tunables.h).
 inline constexpr int kShopItemTabsCost = 1024;
@@ -121,7 +121,7 @@ inline constexpr int kShopBulkOpenCost = 2048;
 // A one-time unlock that puts a category tile screen (ALL/FOOD/BUFFS/KEYS/TOOLS,
 // items_screen.h's kItemPickerTiles) in FRONT of the ITEMS list: entering ITEMS lands on
 // the picker, B drills into that category, C walks back to it. Independent of Items
-// Type-Tabs — either row is useful alone — but owning both upgrades the hold-B
+// Type-Tabs (either row is useful alone), but owning both upgrades the hold-B
 // gesture to the picker's finer CATEGORY axis (Game::nextItemFilter's categoryAxis),
 // so the two never disagree about what a tab means. The Lockout Open-Items path
 // never routes through the picker: a crisis doesn't get an extra screen.
@@ -129,7 +129,7 @@ inline constexpr int kShopItemPickerCost = 2048;
 
 // --- Containment Rack Slot -----------------------------------------------------
 // +1 permanent ARCH rack slot per purchase (rackSlots() = kRackSlots + level), to a
-// ceiling of kRackSlots + this — 64 slots, which is what the ARCH is SIZED for: the
+// ceiling of kRackSlots + this; 64 slots, which is what the ARCH is SIZED for: the
 // roster is 35 species, so a full shelf holds one of every one of them with room over
 // for duplicates, both halves of a care branch, and whatever families ship later.
 //
@@ -137,8 +137,8 @@ inline constexpr int kShopItemPickerCost = 2048;
 // ladder this replaces priced the sixteenth slot at 16.7 MILLION Bits and the whole
 // ladder at 33.5M, which is not a Bits sink but a wall: past the first handful the rows
 // were unbuyable, so the capacity above them was decoration. The log-step prices a
-// 32-slot shelf at ~75K cumulative — a real mid-to-late goal beside the 50K Bits
-// achievement — and the full 64 at ~325K, which is a long project rather than a joke.
+// 32-slot shelf at ~75K cumulative (a real mid-to-late goal beside the 50K Bits
+// achievement), and the full 64 at ~325K, which is a long project rather than a joke.
 inline constexpr int kRackSlotUpgradeStart = 512;
 inline constexpr int kRackSlotUpgradeMax = 60;
 
@@ -165,13 +165,13 @@ inline constexpr int kDataMiningPctPerLevel = 4;
 inline constexpr int kRigMergeHubCost = 4096;
 
 // --- g/h: Auto Backup / Continuous Auto-Backup --------------------------------
-// One-time unlocks that spare the player a manual Backup Drive use — they arm the same
+// One-time unlocks that spare the player a manual Backup Drive use. They arm the same
 // death-save the item does (Game::autoArmBackupShield, free: the effect is applied
 // without spending a drive from the Vault). Auto Backup arms it the moment explore-mode
 // starts (Game::startExplore/startDeepWebDive) if it isn't already armed; Continuous
 // Auto-Backup does the same check at every resolved explore event (Game::
-// returnToExplore) — so it re-arms mid-run whenever a fight spends the save or its hour
-// lapses. Both are no-ops while the save is already live — never doubles up.
+// returnToExplore), so it re-arms mid-run whenever a fight spends the save or its hour
+// lapses. Both are no-ops while the save is already live, never doubles up.
 //
 // These sit high on the price ladder on purpose: what they automate is not a negated
 // hit but a life, so Continuous in particular is close to "the pet does not die
@@ -184,17 +184,17 @@ inline constexpr int kRigContinuousBackupCost = 8192;
 // events (Game::maybeAutoDefrag, called from Game::returnToExplore) once
 // Fragmentation reaches that tier's threshold. Buying deeper into the ladder both
 // LOWERS the trigger threshold (catches Fragmentation earlier) and RAISES the
-// per-run Bits cost (a multiple of the normal defragCost()) — tighter upkeep costs
+// per-run Bits cost (a multiple of the normal defragCost()). Tighter upkeep costs
 // more, which is the point: it buys more safety margin for an older, stronger (and
 // so more heavily-explored) pet. Doubling purchase-price ladder. (Future: defragCost()
-// itself may later scale with defragCount() — out of scope here, but this table
+// itself may later scale with defragCount(). Out of scope here, but this table
 // doesn't hardcode around that.)
 //
 // The whole ladder lives inside the CRITICAL Fragmentation band (kFragCautionMin 40 /
 // kFragCriticalMin 75, tunables.h), and that placement is the balance: a rig with the
 // deepest tier owned still explores through the entire Caution band on its own and is
 // only caught at 80, near the top. Fragmentation is meant to be a pressure the player
-// answers — with a MAINT run, a Disk Scrubber, a Stacker board — so what this row buys
+// answers (with a MAINT run, a Disk Scrubber, a Stacker board), so what this row buys
 // is an emergency backstop against the cliff, not a pet that is never dirty. The upkeep
 // multiples are steep for the same reason: a tier that fires often should be felt in
 // the wallet every time it does, which is what makes switching it off (the SHOP's
@@ -207,7 +207,7 @@ inline constexpr int kDiskMaintenanceCostMult[kDiskMaintenanceMaxTier] = {4, 8, 
 // --- j: Passive XP Farming ------------------------------------------------------
 // +1 combat XP per hunger point the pet loses to passive decay per level, but only
 // counting points lost while hunger stayed ABOVE the row k window threshold
-// (Game::hungerXpThreshold) — read at the model tick that decays Hunger
+// (Game::hungerXpThreshold). Read at the model tick that decays Hunger
 // (Game::tick, game_core.cpp). A well-fed pet quietly levels; letting hunger run
 // low earns nothing past the threshold. Log-stepped price, sibling shape to
 // Scraping Cluster.
@@ -226,7 +226,7 @@ inline constexpr int kHungerXpWindowStepPct = 5;
 // --- l: Well-Fed XP Boost -----------------------------------------------------
 // +kCombatXpPctPerLevel%% combat XP per level (Game::applyCombatXpBonus), active only
 // while current Hunger is at or above row m's window threshold (Game::
-// combatXpWindowThreshold) — a fed-and-happy pet fights sharper. Log-stepped
+// combatXpWindowThreshold). A fed-and-happy pet fights sharper. Log-stepped
 // price, sibling shape to Enhanced DataMining.
 inline constexpr int kCombatXpPctStart = 256;
 inline constexpr int kCombatXpPctMax = 20;
@@ -234,7 +234,7 @@ inline constexpr int kCombatXpPctPerLevel = 1;
 
 // --- m: XP Boost Window -----------------------------------------------------------
 // Widens row l's qualifying hunger range, same shape as row k (independent
-// threshold — buying one window doesn't move the other).
+// threshold. Buying one window doesn't move the other).
 inline constexpr int kCombatXpWindowStart = 1024;
 inline constexpr int kCombatXpWindowMaxTier = 8;
 inline constexpr int kCombatXpBaseThreshold = 90;
@@ -243,7 +243,7 @@ inline constexpr int kCombatXpWindowStepPct = 5;
 // --- n: Link Aggregator -------------------------------------------------------
 // The bonded-uplink card: instead of the pool trickling back one point at a time, every
 // channel the rig has bought pulls its share, so the refill is measured against the
-// pipe's own size. A one-time unlock that changes the SHAPE of Bandwidth regen — a
+// pipe's own size. A one-time unlock that changes the SHAPE of Bandwidth regen: a
 // regen tick restores kLinkAggregatorPct%% of the SPENT pool (bandwidthMax() -
 // bandwidth(), floored at the flat 1 an unbought rig gets) instead of that flat +1
 // (Game::bandwidthRegenAmount, read by the regen loop in Game::tick). The interval
@@ -251,7 +251,7 @@ inline constexpr int kCombatXpWindowStepPct = 5;
 //
 // It is deliberately worthless below a 100-point pool: rounded up, 1%% of anything up
 // to 100 spent is the +1 every rig already gets. What it is FOR is the player who has
-// bought "INCREASE BANDWIDTH" hundreds of times — a pool that deep refills at a
+// bought "INCREASE BANDWIDTH" hundreds of times: a pool that deep refills at a
 // hundredth of its own hole rather than one point at a time, so the row's value is
 // bought entirely with row a's purchases. Priced to match: 2^17, the top of the
 // storefront's power-of-two ladder, and still a fraction of what the pool it rescues
@@ -271,19 +271,19 @@ inline constexpr int kRigAutoDiveGearCost = 8192;
 struct RigUpgradeDef;  // fwd decl for the table below
 
 enum class RigEffectKind : uint8_t {
-    None = 0,          // nothing mutated at buy time — other code reads the level directly
+    None = 0,          // nothing mutated at buy time: other code reads the level directly
     GrantBandwidth,     // magnitude added to the LIVE bandwidth_ pool, capped at the new max
 };
 
 // Where a readout's number comes from at a given purchase level.
 enum class RigValueCurve : uint8_t {
-    Flag = 0,   // no number at all — the label IS the statement ("HOLD B: FILTER")
+    Flag = 0,   // no number at all. The label IS the statement ("HOLD B: FILTER")
     Ramp,       // base + level*step (step may be negative: a reducer counts down)
-    Tiers,      // level 0 => base, else table[level-1] — for a hand-picked ladder
+    Tiers,      // level 0 => base, else table[level-1]: for a hand-picked ladder
 };
 
 // One line of a rig row's readout. `label` names it, `valueFmt` prints one number
-// (carrying its own sign/unit — "+%d%%", "%d+", "%d"), and rigSpec renders the pair
+// (carrying its own sign/unit: "+%d%%", "%d+", "%d"), and rigSpec renders the pair
 // the player is deciding between as "NOW -> NEXT", collapsing to just NOW once the row
 // is maxed. `zeroText` swaps a word in for a 0 value where 0 means "off" rather than
 // "zero of something"; a 0 value with no zeroText drops the line entirely, which is how
@@ -299,7 +299,7 @@ struct RigReadout {
     const char* zeroText = nullptr;
 };
 
-// Up to two readouts per row — the second is for a row whose purchase moves a
+// Up to two readouts per row: the second is for a row whose purchase moves a
 // side-effect too (Disk Maintenance buys a lower trigger AND a higher upkeep), the
 // same shape as ModDef's magnitude/magnitude2 pair.
 inline constexpr int kMaxRigReadouts = 2;
@@ -315,14 +315,14 @@ struct RigUpgradeDef {
     int effectMagnitude;
     const char* logText;            // Hacker-Log line on purchase
     RigReadout readouts[kMaxRigReadouts];
-    // Does this row run as a SERVICE — something that acts on its own, between events,
-    // without the player asking — and so belongs on the SHOP's SERVICES screen, where an
+    // Does this row run as a SERVICE (something that acts on its own, between events,
+    // without the player asking), and so belongs on the SHOP's SERVICES screen, where an
     // owned one can be switched off and back on (Game::rigFeatureActive)? True for the
     // rows that spend something or take a decision out of the player's hands; false for
     // a row that only ever raises a number or arms a gesture the player still performs,
     // which has nothing to switch off. Trailing, so a row that isn't one says nothing.
     bool service = false;
-    // What that service does and what RUNNING it costs, in prose — the description
+    // What that service does and what RUNNING it costs, in prose: the description
     // half of the info page a held B opens on the SERVICES board (drawSpecSheet's
     // authored text, under the row's own readout). It is written for a player deciding
     // whether to switch something back on months after buying it, so it says the price
@@ -494,7 +494,7 @@ inline constexpr int kRigUpgradeCount =
     static_cast<int>(sizeof(kRigUpgrades) / sizeof(kRigUpgrades[0]));
 
 // The RigRow whose row carries `id`, or -1. For anything that names a rig row as DATA
-// rather than as a cursor position — a quote's prize (content_quotes.h) is the first —
+// rather than as a cursor position. A quote's prize (content_quotes.h) is the first,
 // so a reward table spells "bandwidth" and not the integer 0.
 inline int rigRowIndexById(const char* id) {
     if (!id) return -1;

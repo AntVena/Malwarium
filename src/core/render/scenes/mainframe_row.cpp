@@ -8,13 +8,13 @@ namespace mal {
 
 namespace {
 
-// A DATACENTRE AISLE — a prize backdrop that reads in pure value, and should. Nothing
+// A DATACENTRE AISLE: a prize backdrop that reads in pure value, and should. Nothing
 // about a rack room is a colour; it is a corridor of identical dark faces with lights
 // on them, and the identity is entirely in the perspective and the blinking.
 //
 // It borrows sceneGrid's VANISHING POINT and none of its grid. A rank of cabinets is
-// placed by picking the row where it MEETS THE FLOOR — near the foot of the canvas for
-// the one you could touch, close to the horizon for the one at the end — and everything
+// placed by picking the row where it MEETS THE FLOOR (near the foot of the canvas for
+// the one you could touch, close to the horizon for the one at the end), and everything
 // else follows from that row: sceneConverge says how far in the aisle has narrowed by
 // then, and the same fraction shortens the cabinet. Two scenes needing that one call is
 // exactly why it is a primitive rather than a detail inside the grid.
@@ -41,7 +41,7 @@ constexpr int kRanks = 6;
 constexpr int kCabH = 96;
 
 // The lamps. Four to a face, blinking on a pattern derived from the beat and the rank's
-// own index — a blink, not a slide, and the only blinking in the whole set. Arithmetic
+// own index: a blink, not a slide, and the only blinking in the whole set. Arithmetic
 // rather than a roll for the reason every scene's tables are authored: a screen's rows
 // are read over this, and a sky that reshuffles is the one moving thing behind them.
 constexpr int kLedRows = 4;
@@ -53,9 +53,9 @@ constexpr int kLedDuty = 3;
 void drawMainframeRowScene(Framebuffer& fb, int beat, const SceneGround& g) {
     fb.clear(palColor(Pal::PAPER));
 
-    // The walkway, all the way down. The far half is simply darker than the near — an
+    // The walkway, all the way down. The far half is simply darker than the near (an
     // aisle does not open onto anything, so what is at the end is the absence of light
-    // rather than a wall — and the raised-floor tiles take over where it is close
+    // rather than a wall), and the raised-floor tiles take over where it is close
     // enough to see them. Both go down before the ranks, so a cabinet stands on the
     // floor rather than the floor being painted across its feet.
     fb.fillRect(0, g.horizonY, kActiveW, kActiveH - g.horizonY, sceneTone(kToneFar));
@@ -82,7 +82,7 @@ void drawMainframeRowScene(Framebuffer& fb, int beat, const SceneGround& g) {
     const Rgb565 dark = sceneTone(kToneLedOff);
     const int span = kActiveH - g.horizonY;
 
-    // Far to near, so a nearer rank stands in front of the one behind it — which is
+    // Far to near, so a nearer rank stands in front of the one behind it, which is
     // what turns a set of rectangles into a corridor with depth in it.
     for (int r = kRanks - 1; r >= 0; --r) {
         const int baseY = g.horizonY + span * (kRanks - r) / kRanks;

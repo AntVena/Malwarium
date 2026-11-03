@@ -11,13 +11,13 @@
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 
-// game_chroma.cpp — the CHROMATOPHORE, the Metamorphic line's hatch minigame.
+// game_chroma.cpp: the CHROMATOPHORE, the Metamorphic line's hatch minigame.
 //
 // A Polystaria egg is a translucent bell with nothing of its own to hide behind, so the
 // moment it is laid it rehearses the only defence its line has. The water under it takes
 // one of three colours, A/B/C wear one skin each, and a sweep crosses the panel on a
 // shrinking clock: be wearing the water when it arrives and the pass is HIDDEN, be
-// caught in the wrong skin — or halfway through the change — and the run is over with
+// caught in the wrong skin (or halfway through the change), and the run is over with
 // whatever it already earned.
 //
 // It is the line's own argument played as a game. Every other hatch minigame is about
@@ -29,11 +29,11 @@
 // creature in, so "wearing it" is literally the same ramp on both, and a retune of the
 // hue can never desynchronise the two. What it costs is one call: the pet is drawn with
 // drawSpriteCamo instead of drawSpriteUpscaled, and the level it is drawn at is the
-// model's own settle (Chromatophore::wearPct) rather than a second animation clock — so
+// model's own settle (Chromatophore::wearPct) rather than a second animation clock, so
 // the scatter crawling across the creature IS the thing the sweep is about to score.
 //
 // GRAYSCALE. The three skins are a luminance ladder (assets/PAL_CORE.json's camo block)
-// and the water is TEXTURED per skin besides — streaks, stipple, bands — so which skin
+// and the water is TEXTURED per skin besides (streaks, stipple, bands), so which skin
 // is down there survives the colour being taken away, and the chips below name all
 // three in words. Colour is the fast channel here, never the only one.
 //
@@ -48,7 +48,7 @@ namespace mal {
 namespace {
 
 // One skin: the colour it is, and what it is called. INDEX-addressed, because that is
-// what the model deals in — kSkins[i] is the whole mapping from a rule to a screen.
+// what the model deals in: kSkins[i] is the whole mapping from a rule to a screen.
 struct Skin {
     Pal tone;
     const char* name;
@@ -64,7 +64,7 @@ static_assert(sizeof(kSkins) / sizeof(kSkins[0]) == kChromaSkins,
 
 // The water, and the three chips under it. Named for what it is rather than as a panel,
 // since canvas.h already owns kPanelW/kPanelH for the physical display. Drawn at native
-// active res like every other piece of chrome — nothing here is art, so there is no cell
+// active res like every other piece of chrome: nothing here is art, so there is no cell
 // grid to keep whole.
 constexpr int kWaterX = 16;
 constexpr int kWaterY = 46;
@@ -97,7 +97,7 @@ CamoRamp skinRamp(int skin) {
 }
 
 // The water, in one skin. The fill is the ramp's own mid tone and the texture is drawn
-// out of the same ramp, so a plate is never anything but the colour it claims to be —
+// out of the same ramp, so a plate is never anything but the colour it claims to be,
 // and the PATTERN is what carries the skin once the hue is gone: weed runs vertical,
 // seabed grains stipple, a bloom drifts in horizontal bands.
 void drawPlate(Framebuffer& fb, int skin, const CamoRamp& ramp) {
@@ -105,20 +105,20 @@ void drawPlate(Framebuffer& fb, int skin, const CamoRamp& ramp) {
     const Rgb565 dark = ramp.tone[0];
     const Rgb565 lit = ramp.tone[ramp.count - 1];
     switch (skin) {
-        case 0:   // KELP — standing weed
+        case 0:   // KELP: standing weed
             for (int x = 0; x < kWaterW; x += 12) {
                 fb.fillRect(kWaterX + x, kWaterY, 3, kWaterH, dark);
                 fb.fillRect(kWaterX + x + 6, kWaterY + 6, 1, kWaterH - 12, lit);
             }
             break;
-        case 1:   // SILT — grains on the bed
+        case 1:   // SILT: grains on the bed
             for (int y = 0; y < kWaterH; y += 8)
                 for (int x = (y / 8 % 2) * 4; x < kWaterW; x += 8) {
                     fb.fillRect(kWaterX + x, kWaterY + y, 2, 2, dark);
                     fb.fillRect(kWaterX + x + 4, kWaterY + y + 4, 1, 1, lit);
                 }
             break;
-        default:  // BLOOM — drifting bands
+        default:  // BLOOM: drifting bands
             for (int y = 0; y < kWaterH; y += 14) {
                 fb.fillRect(kWaterX, kWaterY + y, kWaterW, 4, dark);
                 fb.fillRect(kWaterX, kWaterY + y + 6, kWaterW, 1, lit);
@@ -133,8 +133,8 @@ void drawPlate(Framebuffer& fb, int skin, const CamoRamp& ramp) {
 
 const CreatureDef* Game::chromaSubject() const {
     // The pet, whenever the pet is something that plausibly does this. Every hatch route
-    // in lands here — the egg on the shelf IS the pet, and it is on the family that
-    // wears borrowed colours — so the fallback below only ever answers for an arcade
+    // in lands here (the egg on the shelf IS the pet, and it is on the family that
+    // wears borrowed colours), so the fallback below only ever answers for an arcade
     // cabinet played by somebody else's pet.
     if (pet_) {
         const CreatureLine* fam = creatureLine(pet_->line);
@@ -167,11 +167,11 @@ void Game::onChroma(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
     if (!chroma_.running()) {
         // Parked on the result. B banks and leaves; C is DISABLED, like every other
-        // hatch screen — there is no pet to go back to, only an egg to get on with.
+        // hatch screen: there is no pet to go back to, only an egg to get on with.
         if (ev.button == Button::B) finishChroma();
         return;
     }
-    // ALL THREE BUTTONS ARE SKINS — the deviation from the standard A/B/C contract this
+    // ALL THREE BUTTONS ARE SKINS. The deviation from the standard A/B/C contract this
     // screen spells out in its hint band, and the reason the game can be played at all:
     // a skin has to be one press, in the order the chips are drawn, or the choice costs
     // more time than the window gives. B is therefore not a commit and C is not a
@@ -186,7 +186,7 @@ void Game::onChroma(const ButtonEvent& ev) {
 void Game::finishChroma() {
     // An arcade run has no clock to spend the passes on: the till takes the score and
     // that is the whole settlement. The cabinet run is ENDLESS, so it has no clean() to
-    // report — a win is passing the till's own line (kArcadeChromaWinPasses), which the
+    // report: a win is passing the till's own line (kArcadeChromaWinPasses), which the
     // score is free to go well past.
     if (arcadeRun_) {
         finishArcadeRun(chroma_.passes() >= kArcadeChromaWinPasses, chroma_.passes(),
@@ -205,7 +205,7 @@ void Game::finishChroma() {
     // row (WORM_WHISPERER) is the same idea on the same seam.
     if (chroma_.clean()) unlockAchievement(ach::kNeverSeen);
     if (bootHatchRemainMs_ == 0) {
-        completeHatch();   // nothing left to incubate — hatch here, not a tick later
+        completeHatch();   // nothing left to incubate: hatch here, not a tick later
         return;
     }
     nav_ = Nav::Idle;
@@ -251,7 +251,7 @@ void Game::drawChroma(Framebuffer& fb) const {
         fb.clearClip();
     }
 
-    // The sweep, over everything in the water — it is looking AT the creature, so it
+    // The sweep, over everything in the water: it is looking AT the creature, so it
     // cannot pass behind it. Held at the far edge once the run is over, where it stands
     // as the reason the verdict says what it says. Clipped to the water, because a
     // search light spilling onto the chrome either side would read as part of the
@@ -269,7 +269,7 @@ void Game::drawChroma(Framebuffer& fb) const {
     fb.clearClip();
 
     // The three chips: one per skin, in button order, each filled with the skin it
-    // offers and named in words. The WORN one is the one with the frame around it —
+    // offers and named in words. The WORN one is the one with the frame around it:
     // shape, not brightness, so the answer to "what am I wearing" holds in grayscale
     // and against a chip whose own colour is nearly the ink's.
     for (int i = 0; i < kChromaSkins; ++i) {
@@ -283,7 +283,7 @@ void Game::drawChroma(Framebuffer& fb) const {
             fb.fillRect(x + kChipW - 2, kChipY, 2, kChipH, ink);
         }
         // The label takes the ramp's darkest or lightest tone, whichever the chip is
-        // not — the one piece of text on this screen that cannot use INK, since the
+        // not: the one piece of text on this screen that cannot use INK, since the
         // chip beneath it is a different colour on every row.
         const Rgb565 label = luminance(r.tone[r.count / 2]) > 0.5f ? r.tone[0]
                                                                    : r.tone[r.count - 1];
@@ -297,7 +297,7 @@ void Game::drawChroma(Framebuffer& fb) const {
         const char* verdict = clean ? "NEVER SEEN" : "SPOTTED - RUN ENDED";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, kVerdictY, verdict, ink);
 
-        // The effect line is priced in incubation, which an arcade run doesn't have —
+        // The effect line is priced in incubation, which an arcade run doesn't have:
         // there it reports the passes themselves and lets the payout screen do the money.
         char effect[32];
         if (arcadeRun_)
@@ -332,7 +332,7 @@ void Game::drawChroma(Framebuffer& fb) const {
              chroma_.hidden() ? palColor(Pal::ACCENT) : ink);
 
     // UI_HINT_BAND. All three buttons wear a skin here, so the band names them in the
-    // order the chips sit — A on the left of the device is the left chip.
+    // order the chips sit: A on the left of the device is the left chip.
     char hint[36];
     std::snprintf(hint, sizeof(hint), "A %s  B %s  C %s", kSkins[0].name, kSkins[1].name,
                   kSkins[2].name);

@@ -1,4 +1,4 @@
-// story_screen.h — the chapter READER, and the ARCHIVE read back through afterwards.
+// story_screen.h: the chapter READER, and the ARCHIVE read back through afterwards.
 // A prose page (core/ui/prose_page.h) plus a deadline; the countdown rule is what stops
 // a page turning itself from reading as a crash.
 #pragma once

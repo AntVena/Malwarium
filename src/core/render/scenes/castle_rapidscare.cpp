@@ -8,11 +8,11 @@ namespace mal {
 
 namespace {
 
-// THE KEEP, FROM UNDER THE GATE — and the scene that inverts everything the others do.
+// THE KEEP, FROM UNDER THE GATE, and the scene that inverts everything the others do.
 // There is no distance here and no horizon to put it on: a wall fills the whole band,
 // and the only sky is the strip left above its crenellation. That is the claustrophobia,
 // and it is also the proof that the primitives are general rather than a set of calls
-// that only make horizon pictures. sceneMiddle is deliberately never called — a flat
+// that only make horizon pictures. sceneMiddle is deliberately never called: a flat
 // fill between the horizon and the floor is exactly the band this place does not have.
 //
 // Nothing moves. A keep is the one place on the ladder that should be completely still,
@@ -34,7 +34,7 @@ constexpr uint8_t kToneLip = 132;
 constexpr uint8_t kWallTopUp = 200;
 
 // The crenellation: sixteen columns, alternating merlon and gap. Even rather than
-// ragged on purpose — every other silhouette on the ladder is broken up, and this one
+// ragged on purpose: every other silhouette on the ladder is broken up, and this one
 // is built, which is the difference between a landscape and a fortification.
 constexpr uint8_t kMerlonH = 9;
 constexpr uint8_t kCrenellation[] = {9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9, 0};
@@ -43,7 +43,7 @@ constexpr uint8_t kCrenellation[] = {9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9, 0, 9
 // every few rows on a wall this tall is texture the eye reads as noise.
 constexpr int kCoursePitch = 15;
 
-// The arrow slits. Two pixels wide is the whole of the figure — a slit is a slit
+// The arrow slits. Two pixels wide is the whole of the figure: a slit is a slit
 // because it is narrow, so the tone does the rest. `lit` is the two with something
 // behind them, and they are the only bright pixels in the scene.
 struct Slit { int x, drop; bool lit; };
@@ -83,7 +83,7 @@ void drawCastleRapidscareScene(Framebuffer& fb, int, const SceneGround& g) {
 
     // The gate, cut through everything above, and the portcullis hanging into its head.
     // The teeth are the one place this scene is allowed a ragged edge, and they point
-    // the wrong way round from every silhouette beside them — which is what says the
+    // the wrong way round from every silhouette beside them, which is what says the
     // thing overhead is holding itself up rather than standing on something.
     const int gateY = g.floorY - kGateH;
     fb.fillRect(kGateX, gateY, kGateW, kGateH, sceneTone(kToneGate));

@@ -8,12 +8,12 @@ namespace mal {
 
 namespace {
 
-// PAYWALL RIDGE — a wild wireframe range under a slit sun.
+// PAYWALL RIDGE: a wild wireframe range under a slit sun.
 //
 // Cool land, hot sky: the range and the grid are the same blue-green surface, and the
 // one warm thing in the picture is the sun behind it.
-constexpr Pal kLand = Pal::NEON_HI;     // acid green — the lines
-constexpr Pal kDeep = Pal::NEON_LO;     // electric blue — the faces between them
+constexpr Pal kLand = Pal::NEON_HI;     // acid green: the lines
+constexpr Pal kDeep = Pal::NEON_LO;     // electric blue: the faces between them
 constexpr Pal kSun = Pal::FRAG_HI;
 
 constexpr uint8_t kToneHaze = 26;
@@ -25,7 +25,7 @@ constexpr uint8_t kToneContour = 96;
 constexpr uint8_t kToneSpur = 66;
 constexpr uint8_t kToneGrid = 124;
 
-// Control points the ridge is interpolated between — x, then height above the horizon.
+// Control points the ridge is interpolated between: x, then height above the horizon.
 // Asymmetric on purpose; the low run at 96..126 is the pass.
 struct Peak { int16_t x; uint8_t h; };
 constexpr Peak kRidge[] = {
@@ -75,7 +75,7 @@ void drawPaywallRidgeScene(Framebuffer& fb, int beat, const SceneGround& g) {
                 kToneStar, kDeep);
 
     // The sun, drawn whole and then striped: the bites widen downward, which is the
-    // venetian read — even ones would be a beach ball.
+    // venetian read, even ones would be a beach ball.
     const Rgb565 cut = palColor(Pal::PAPER);
     const int sunY = sceneSkyY(g, kSunUp);
     sceneDisc(fb, kSunX, sunY, kSunR, kToneSun, kSun);

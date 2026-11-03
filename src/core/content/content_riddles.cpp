@@ -1,4 +1,4 @@
-// content_riddles.cpp — the SHIBOLEET pool. One row per riddle; see
+// content_riddles.cpp: the SHIBOLEET pool. One row per riddle; see
 // content_riddles.h for the field schema, the two rules a row must pass, and why the
 // first reply is always the true one.
 
@@ -9,7 +9,7 @@ namespace mal {
 namespace {
 
 // A guardian is a thing that watches a network and has done so for a very long time. It
-// asks the way the old riddles ask — a door, a mirror, a shadow, a candle burning down —
+// asks the way the old riddles ask (a door, a mirror, a shadow, a candle burning down),
 // and it does not know it is a program.
 //
 // TWO RULES, AND THE SECOND IS THE ONE THAT KEEPS GETTING BROKEN.

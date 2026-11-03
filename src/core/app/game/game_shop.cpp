@@ -1,14 +1,14 @@
-// game_shop.cpp — the EXPL storefronts: what a shop stocks, what it charges, and the
+// game_shop.cpp (the EXPL storefronts): what a shop stocks, what it charges, and the
 // buy flow (part of the Game unit split, core/app/game.h).
 //
-// Both storefronts an area owns run through here — its item shop and its mod shop —
+// Both storefronts an area owns run through here (its item shop and its mod shop),
 // because the difference between them is which registry resolves a listing id, not
 // how a shop behaves. The rows themselves belong to the area
 // (content/areas/area_defs.h's AreaStorefrontDef); this unit owns the visit: the
 // per-visit stock that refills on entry, the accessors the screen reads a row
 // through, and the purchase that spends Bits plus any item costs on the row.
 //
-// Split out of game_explore.cpp, which owns the walk — stepping, loot rolls, the
+// Split out of game_explore.cpp, which owns the walk: stepping, loot rolls, the
 // sub-area boss ladder. A shop is reached FROM an explore event and is otherwise
 // independent of it: nothing here reads the streak, the boss state or the step
 // counter.
@@ -23,7 +23,7 @@ namespace mal {
 
 namespace {
 // Bounds-clamped: an out-of-range row (or no storefront entered yet) reads as
-// empty/zero rather than reading past the array — callers loop 0..listingCount()
+// empty/zero rather than reading past the array. Callers loop 0..listingCount()
 // which already stays in range, but the accessors stay safe on their own.
 bool shopRowInRange(const AreaStorefrontDef* front, int i) {
     return front && i >= 0 && i < front->listingCount;
@@ -47,8 +47,8 @@ void Game::startShopEvent() {
 }
 
 void Game::startModShopEvent() {
-    // The current sector's MOD storefront (CHIP SHOP / PLUNDER PORT / MOOR TO MODS)
-    // — same shape as startShopEvent, just resolving through the area's modShop and
+    // The current sector's MOD storefront (CHIP SHOP / PLUNDER PORT / MOOR TO MODS):
+    // same shape as startShopEvent, just resolving through the area's modShop and
     // the mod registry (shopIsModShop_ picks that at render/buy time).
     shopFront_ = &area(exploreSector_).modShop;
     shopIsModShop_ = true;
@@ -118,7 +118,7 @@ int Game::shopListingHeld(int i) const {
     if (!shopRowInRange(shopFront_, i)) return 0;
     const char* id = shopFront_->listings[i].id;
     // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
-    // (Loadout::grant) — an installed mod was consumed and left the pool, so it is
+    // (Loadout::grant): an installed mod was consumed and left the pool, so it is
     // neither held nor in the way of holding another.
     return shopIsModShop_ ? loadout_.countOf(id) : inventory_.count(id);
 }
@@ -127,7 +127,7 @@ int Game::shopListingHeldCap(int i) const {
     if (!shopRowInRange(shopFront_, i)) return 0;
     // Only mods have a ceiling: the MOD STORAGE rig row's allowance, the same one every
     // other grant site measures against. An inventory stack has none, so an item row
-    // reports 0 — the screen reads that as "no HAVE column", and the buy gate as
+    // reports 0: the screen reads that as "no HAVE column", and the buy gate as
     // "nothing to be full of".
     return shopIsModShop_ ? modStorageCap() : 0;
 }
@@ -139,7 +139,7 @@ const char* Game::shopRowRefusal(int i) const {
     // Storage before the wallet: a full mod pool is the one refusal Bits cannot answer,
     // so naming a price the player could meet would send them off to earn Bits that
     // still would not buy this. The buy is refused OUTRIGHT rather than taken and
-    // dropped — Loadout::grant would return false and the Bits would be gone for a mod
+    // dropped: Loadout::grant would return false and the Bits would be gone for a mod
     // that never arrived.
     const int cap = shopListingHeldCap(i);
     if (cap > 0 && shopListingHeld(i) >= cap) return "STORAGE FULL";
@@ -161,7 +161,7 @@ const char* Game::shopStatusLine() const {
 }
 
 void Game::buyShopItem() {
-    if (!shopRowBuyable(shopCursor_)) return;   // inert — the sign says which reason
+    if (!shopRowBuyable(shopCursor_)) return;   // inert: the sign says which reason
     const int i = shopCursor_;
     const ShopListingDef& def = shopFront_->listings[i];
 
@@ -171,7 +171,7 @@ void Game::buyShopItem() {
 
     char buf[28];
     if (shopIsModShop_) {
-        // A shop buy runs through the same storage cap a drop does — the row is
+        // A shop buy runs through the same storage cap a drop does: the row is
         // storage-gated at the till (shopRowRefusal's STORAGE FULL), so reaching here
         // means there was room for it.
         const ModDef* m = registry_.mod(def.id);
@@ -189,7 +189,7 @@ void Game::buyShopItem() {
 void Game::onShop(const ButtonEvent& ev) {
     // B buys the SELECTED row (while stock + wallet + item costs allow); C leaves
     // back to the idle habitat. A cycles the selection through every listing
-    // (wraps) — a no-op, not an exit, on a single-listing storefront so a stray
+    // (wraps): a no-op, not an exit, on a single-listing storefront so a stray
     // "Next" press can't drop the player out mid-shop. Any press restarts the
     // hands-off hold so an engaged shopper isn't auto-left.
     exploreEventBeat_ = 0;

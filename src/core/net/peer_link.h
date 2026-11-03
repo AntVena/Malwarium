@@ -1,4 +1,4 @@
-// peer_link.h — the pet-to-pet HELLO beacon's wire format.
+// peer_link.h: the pet-to-pet HELLO beacon's wire format.
 //
 // PURE + HOST-TESTABLE, like eapol.h/pcap.h/network_ledger.h: this is only the
 // encode/decode of the bytes another Malwarium broadcasts about itself. The radio
@@ -6,19 +6,19 @@
 // roster that remembers them is PeerLedger (peer_ledger.h). Neither is needed to
 // test this, and this file pulls in no Arduino/ESP-IDF header.
 //
-// A HELLO answers exactly one question — "who is standing next to me?" — with the
+// A HELLO answers exactly one question ("who is standing next to me?") with the
 // operator's identity (HackerTag), what they are currently raising (species +
 // stage), and who they run with (crew + team). It is a BROADCAST announcement: it
 // asks for nothing and changes no state on the receiver beyond their met-list.
 //
-// UNTRUSTED INPUT. Every field of a decoded HELLO is attacker-controlled — it
+// UNTRUSTED INPUT. Every field of a decoded HELLO is attacker-controlled: it
 // arrives unauthenticated from any device in range. decodePeerHello sanitizes
 // accordingly (see its contract): callers may render a decoded struct and write it
 // to the ledger directly, and must not assume the sender was honest about it.
 //
 // Sizing note: one HELLO is kPeerHelloSize bytes against ESP-NOW v1's 250-byte
 // per-frame limit, so a beacon is always a single frame with room to grow. Growth
-// goes through kPeerProtoVersion — append fields and bump it; decode rejects a
+// goes through kPeerProtoVersion: append fields and bump it; decode rejects a
 // version it does not understand rather than misreading its layout.
 #pragma once
 
@@ -31,7 +31,7 @@ namespace mal {
 
 constexpr uint8_t kPeerProtoVersion = 1;
 
-// Field capacities INCLUDE the terminator, and are what the wire reserves — a
+// Field capacities INCLUDE the terminator, and are what the wire reserves: a
 // longer source string is truncated at encode, never overruns.
 constexpr int kPeerTagCap = kHackerTagMax + 1;
 constexpr int kPeerPetCap = 24;
@@ -57,7 +57,7 @@ struct PeerHello {
 // null or `cap` is too small. Strings are truncated to their field capacity.
 size_t encodePeerHello(const PeerHello& in, uint8_t* out, size_t cap);
 
-// Parse a received frame. Returns false — leaving `out` untouched — unless the
+// Parse a received frame. Returns false (leaving `out` untouched), unless the
 // frame is exactly kPeerHelloSize bytes, carries the Malwarium magic, and declares
 // a protocol version this build understands.
 //

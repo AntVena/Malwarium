@@ -1,4 +1,4 @@
-// idle_wander.h — where a resting creature stands inside the idle habitat.
+// idle_wander.h: where a resting creature stands inside the idle habitat.
 //
 // The habitat pins its occupant to the middle of the shelf; this walks that anchor
 // a little way around the living box, so a pet at rest is somewhere slightly
@@ -8,7 +8,7 @@
 // above it, a swimmer ignores the shelf entirely and drifts on both axes at once,
 // and a Ground mover is a slow walker that also gives up the shelf bob.
 //
-// Offsets are LOGICAL px from the anchor — +x right, +y UP off the shelf. The
+// Offsets are LOGICAL px from the anchor: +x right, +y UP off the shelf. The
 // habitat (game_render.cpp drawHabitat) scales them into the active canvas and
 // draws the sprite there; nothing else about the pose changes, so this animates a
 // single-frame creature as much as a fully authored sheet.
@@ -27,7 +27,7 @@ namespace mal {
 // The box the anchor may stray into, in logical px. A pet cell is 56x48 logical on
 // a 128-wide canvas, so 36px of slack exists to either side; the rest is margin, so
 // even a full-width sprite stays clear of the bezel. The ceiling is short of the
-// living zone's full height for the same reason at the top — the carousel caption
+// living zone's full height for the same reason at the top: the carousel caption
 // band and the hunger alert both sit in the air above the shelf.
 constexpr int kWanderHalfSpanX = 24;
 constexpr int kWanderRiseMax = 22;
@@ -41,14 +41,14 @@ public:
     void step(Locomotion loco);
 
     // Back onto the anchor, with nowhere to be. What the habitat holds a creature
-    // that is not moving under its own power on — an unhatched egg sits where it was
+    // that is not moving under its own power on: an unhatched egg sits where it was
     // laid, with its incubation readout drawn directly above it.
     void park();
 
     int offsetX() const { return x_; }   // logical px, + right of the anchor
     int offsetY() const { return y_; }   // logical px above the shelf, never below it
 
-    // Mid-trip rather than parked between them — what a creature with an authored walk
+    // Mid-trip rather than parked between them: what a creature with an authored walk
     // clip poses on, so the legs move exactly on the beats the anchor does. BOTH terms
     // are load-bearing: step() retargets the moment a trip lands, so there is distance
     // left to the next target for the whole of the rest that follows, and distance alone
@@ -62,7 +62,7 @@ public:
     // a creature spends most of its life parked between trips, and a heading that
     // collapsed to a default the instant it arrived would snap the sprite round at the
     // end of every walk. It holds the last direction it actually moved in, so a pet
-    // resting faces the way it came. True until something has moved it — nothing has a
+    // resting faces the way it came. True until something has moved it: nothing has a
     // heading before its first trip, and rightward is the direction the roster's own
     // seat convention treats as forward (core/render/sprite.h).
     bool headingRight() const { return headingRight_; }
@@ -70,14 +70,14 @@ public:
     // Whether this mover's pose carries the shelf bob on top of the drift. Two movers
     // skip it, for opposite reasons: a swimmer moves continuously already, so a bob
     // over that reads as jitter rather than breathing, while a Ground mover is defined
-    // by never breaking contact with the floor — a 2px lift, even for one beat, is the
+    // by never breaking contact with the floor. A 2px lift, even for one beat, is the
     // one thing it must not do (Locomotion, content/defs.h).
     static bool bobs(Locomotion loco) {
         return loco != Locomotion::Swim && loco != Locomotion::Ground;
     }
 
     // Re-point this wander's own stream. Two wanders start life identical, so several
-    // on one screen — a worm and the ambient copies beside it — would otherwise march
+    // on one screen (a worm and the ambient copies beside it) would otherwise march
     // in lockstep and read as one animation drawn three times instead of as separate
     // creatures. Seeding is the whole of what tells them apart.
     void seed(uint32_t s) { rng_ = s; }

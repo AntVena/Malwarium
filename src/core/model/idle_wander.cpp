@@ -5,12 +5,12 @@ namespace {
 
 // What one mover's trip looks like: logical px per heartbeat while under way, and
 // heartbeats parked between trips. Only the wander spends these, so the magnitudes
-// sit with it rather than in tunables.h. The shape of each row IS the locomotion —
-// a walker takes long pauses and never leaves the shelf (stepY 0), a flier is almost
+// sit with it rather than in tunables.h. The shape of each row IS the locomotion.
+// A walker takes long pauses and never leaves the shelf (stepY 0), a flier is almost
 // always gliding somewhere, a swimmer drifts on both axes at a single slow pace and then
 // holds station, a Ground mover is a walker slowed down: half the pace over a shorter
 // reach, resting longer at the end of it, and giving up the shelf bob entirely, and a
-// Static one has no trip at all — a zero pace is a fixed point, so it retargets forever
+// Static one has no trip at all. A zero pace is a fixed point, so it retargets forever
 // and arrives nowhere rather than being special-cased out of the walk.
 //
 // THE SWIMMER'S REST IS SIZED AGAINST THE CLIP IT HAS TO MAKE ROOM FOR, which is why it

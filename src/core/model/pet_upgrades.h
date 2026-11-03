@@ -1,9 +1,9 @@
-// pet_upgrades.h — the permanent upgrades a PET carries for the rest of its life.
+// pet_upgrades.h: the permanent upgrades a PET carries for the rest of its life.
 //
 // Everything else an item arms on a pet lapses: a shield is spent, a dive buff is
 // consumed, a timer runs out. These do not. They are granted ONCE per pet by an Epic
 // dish out of the MERGE HUB (content_items.cpp's cooked-dish block), they belong to the
-// CREATURE rather than to the run — so an ARCH freeze/thaw keeps them (SaveStoredPet) —
+// CREATURE rather than to the run, so an ARCH freeze/thaw keeps them (SaveStoredPet),
 // and the only way to have one twice is to raise a second pet.
 //
 // Grouped because they travel together everywhere: Game holds one of these, freezePet
@@ -15,11 +15,11 @@
 //
 // The FAVOURITE DISH rides here too, though no item grants it: it is rolled once per
 // pet from every Rare-or-better food (Game::ensureFavouriteFood), hidden until the pet
-// is fed it, and from then on is a standing stat grant like the dishes' — so it travels
+// is fed it, and from then on is a standing stat grant like the dishes', so it travels
 // through the rack, the save and the BUFFS page on exactly the same path.
 #pragma once
 
-#include "tunables.h"   // kLevelStatCount — the combat-stat axis statBonus is indexed on
+#include "tunables.h"   // kLevelStatCount: the combat-stat axis statBonus is indexed on
 #include "core/content/defs.h"
 
 namespace mal {
@@ -30,7 +30,7 @@ struct PetUpgrades {
     int bandwidthRegenMin = 0;
     // OFF-LEVEL combat-stat points: 0 power · 1 defense · 2 speed · 3 max-Health, the same
     // axis Game::statPoints_ uses (game_internal.h's levelStatName). Added to the earned
-    // points wherever the pet is built into a fighter, so a point is a point in combat —
+    // points wherever the pet is built into a fighter, so a point is a point in combat,
     // but counted in NEITHER the level (which stays == the sum of EARNED points) nor the
     // Rollback picker, which is what makes them unsheddable. A Rollback can therefore never
     // take a pet below what it was fed.
@@ -51,7 +51,7 @@ struct PetUpgrades {
 inline constexpr int kFavouriteFoodStatBonus = 3;
 
 // Can `d` be rolled as a pet's favourite? Every Food of Rare rarity or better, so a
-// favourite is something worth finding rather than the first snack in the bag — and
+// favourite is something worth finding rather than the first snack in the bag, and
 // only one the ITEMS flow actually feeds (Game::useItem's Food branch), so it can be
 // found at all.
 inline bool favouriteFoodEligible(const ItemDef& d) {
@@ -61,7 +61,7 @@ inline bool favouriteFoodEligible(const ItemDef& d) {
 
 // Every ONCE-PER-PET gate a content row can be held to, in one value: the permanent
 // grants above, plus the two that arm rather than upgrade (a Yubi-Cookie's care-mistake
-// wipe and a Restore Point's shield — Game holds those as their own flags, because
+// wipe and a Restore Point's shield. Game holds those as their own flags, because
 // unlike the upgrades they do not travel with the pet through the rack).
 //
 // It exists so ONE function can answer "has this pet already taken what that row grants"
@@ -74,7 +74,7 @@ struct PetLifetimeGates {
 };
 
 // Has this pet already spent what `d` grants once in a life? False for any row carrying
-// no such effect — there is nothing to have spent — which is why a caller that wants to
+// no such effect (there is nothing to have spent), which is why a caller that wants to
 // DISPLAY the fact asks itemIsOncePerPetLifetime(d) first: "no grant" and "grant already
 // taken" are different things and must never read the same.
 inline bool lifetimeGrantSpent(const ItemDef& d, const PetLifetimeGates& g) {

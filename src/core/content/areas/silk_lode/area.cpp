@@ -1,12 +1,12 @@
-// The Silk Lode — Silk Road punned Road → Lode (AREA_NAMING.md), the seam the Castle's
+// The Silk Lode: Silk Road punned Road → Lode (AREA_NAMING.md), the seam the Castle's
 // COMMENT CATACOMBS bottom out onto. A lode is a vein running through rock; this one is
-// not ore. Every word this hobby uses for the 'net is already arachnid — a web, a
-// crawler, a spider that walks it — and thirty years of calling them dead metaphors is
+// not ore. Every word this hobby uses for the 'net is already arachnid (a web, a
+// crawler, a spider that walks it), and thirty years of calling them dead metaphors is
 // what this area is about being wrong.
 //
 // The five stretches are ordered as a DESCENT rather than as a terrain family: a stair
 // (built), a funnel and a fissure (not), a gullet (a passage something HAS), and then a
-// shrine — which is the reveal that somebody put a building down here and it was not us.
+// shrine, which is the reveal that somebody put a building down here and it was not us.
 // Its court is hacker groups and botnets, two of them fought as more than one round
 // because a plural banner has to deliver a crowd (AREA_NAMING.md §3.2).
 #include "core/content/areas/area_defs.h"
@@ -32,7 +32,7 @@ const char* const kModPool[] = {"crib_sheet",     "vault_door",    "spoof_relay"
                                 "bastion_host",   "tarpit_array",  "kernel_panic",
                                 "shadow_copy",    "clean_room",    "dma_breach"};
 
-// THE FLY TRAP — a food shop, in a lode full of spiders, called that. The joke is the
+// THE FLY TRAP: a food shop, in a lode full of spiders, called that. The joke is the
 // whole storefront, and the Sinkhole Traps are also what the mod counter below charges.
 const ShopListingDef kShopListings[] = {
     {"spam", 12, 4},
@@ -40,7 +40,7 @@ const ShopListingDef kShopListings[] = {
     {"dyno_nuggets", 4, 104},
 };
 
-// WHAT THE WEB CAUGHT — it did not stock anything, it just has things. Crib Sheet is
+// WHAT THE WEB CAUGHT: it did not stock anything, it just has things. Crib Sheet is
 // priced in Bits plus a stack of the traps from the shop above: the trade is a drawer of
 // one-shot escapes melted down into never losing your grip on the fight in the first
 // place.
@@ -147,7 +147,7 @@ const AreaDef kAreaSilkLode = {
       {"raise_host"},
       {{"THE FIRST HOST", -1}, {"NECURS THE RAISER"}}},
      // The signature is a SINGLE round on purpose: subBossEnemy hands the apex rider to
-     // sub 4 only, and an escort is that boss drawn a rung shallower — so a gauntlet here
+     // sub 4 only, and an escort is that boss drawn a rung shallower, so a gauntlet here
      // would put the area's tell on a doorway instead of on the wall. A hierophant is the
      // one who shows the sacred, and is singular, which a coven is not.
      {"THE 29A HIEROPHANT", "SPR_BOSS_29A_HIEROPHANT", {"polymorph"}}},
@@ -164,11 +164,11 @@ const AreaDef kAreaSilkLode = {
     // put out a line, and everything arrives eventually, and it is in no hurry about you.
     {"THE PATIENT WEAVER",
      {"held_thread"},
-     // Its whole register is ARRIVAL — it does not come to you, and it does not have to.
+     // Its whole register is ARRIVAL: it does not come to you, and it does not have to.
      {{"I DID NOT COME TO YOU.", "IT HAS NOT MOVED AT ALL."},
       {"YOU WALKED ONTO THE LINE.", "SOMETHING IS ALREADY TAUT."},
       {"EVERYTHING ARRIVES EVENTUALLY.", "IT IS IN NO HURRY AT ALL."}},
-     // Pleased, displeased, affront, boon — all four graded as slack or tension on a
+     // Pleased, displeased, affront, boon: all four graded as slack or tension on a
      // thread, because that is the only thing it has ever measured anything in.
      {{"THEN I WILL LET THIS ONE GO.", "ONE THREAD GOES SLACK."},
       {"THE LINE WAS ALWAYS MINE.", "EVERY THREAD DRAWS IN."},

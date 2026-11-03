@@ -8,13 +8,13 @@ namespace mal {
 
 namespace {
 
-// THE LINE — the pass of a working kitchen, seen from the cook's side. The prize the
+// THE LINE: the pass of a working kitchen, seen from the cook's side. The prize the
 // MERGE HUB's recipe ladder pays out, so what it is made of is the ladder's own
 // vocabulary: a ticket rail with paper on it, burners with rings alight, a shelf of
 // pans, and stainless everywhere else.
 //
 // STAINLESS IS WHY THIS READS IN VALUE. A steel kitchen has no colour opinion of its
-// own — it is the light bouncing off it — so the room is the plain ramp and the only
+// own (it is the light bouncing off it), so the room is the plain ramp and the only
 // tint in the scene is FRAG_HI at the burners, low enough to be a warmth under a pan
 // rather than a hue. That is the one warm point of light in a grey room, which is what
 // a kitchen at service actually looks like.
@@ -28,7 +28,7 @@ constexpr uint8_t kToneHood = 52;        // the extraction hood hanging over the
 constexpr uint8_t kToneHoodLip = 96;     // its lit lower edge
 constexpr uint8_t kToneBaffle = 34;      // the filter baffles across its face
 constexpr uint8_t kToneRail = 74;        // the ticket rail
-constexpr uint8_t kToneTicket = 132;     // paper on it — the brightest wide thing here
+constexpr uint8_t kToneTicket = 132;     // paper on it: the brightest wide thing here
 constexpr uint8_t kTonePan = 84;         // hanging pans
 constexpr uint8_t kTonePanLit = 134;     // the side of one facing the hood
 constexpr uint8_t kToneRange = 46;       // the range front, under the pass
@@ -52,7 +52,7 @@ constexpr int kBafflePitch = 12;
 
 // The ticket rail and what is clipped to it: dockets at authored positions, each a
 // couple of columns of paper hanging off a wire. Authored rather than rolled for the
-// reason every scene's tables are — a screen's copy is read over this, and paper that
+// reason every scene's tables are: a screen's copy is read over this, and paper that
 // reshuffled between repaints would be the one moving thing behind it.
 constexpr int kRailDrop = 26;            // rows below the top of the canvas
 struct Ticket { uint8_t x, w, h; };
@@ -63,14 +63,14 @@ constexpr Ticket kTickets[] = {
 
 // The pans, hung on the wall between the rail and the pass. A pan at this size is a
 // disc and a stub of handle, and they are given to one side so the middle of the panel
-// — where a screen puts its sprite — keeps the plainest wall in the scene.
+// (where a screen puts its sprite) keeps the plainest wall in the scene.
 struct Pan { uint8_t x, r; };
 constexpr Pan kPans[] = {{86, 8}, {104, 6}, {170, 7}};
 constexpr int kPanDropBelowRail = 22;
 
 // The burners. Four rings across the range top, each a shallow ellipse; a ring is
 // ALIGHT on a slow rotation off the beat, so at any moment two of the four are lit and
-// the pair walks along the line. A blink, not a slide — the same rule the rack lamps
+// the pair walks along the line. A blink, not a slide: the same rule the rack lamps
 // keep (mainframe_row.cpp).
 constexpr int kBurners = 4;
 constexpr int kBurnerR = 9;
@@ -89,7 +89,7 @@ void drawTheLineScene(Framebuffer& fb, int beat, const SceneGround& g) {
     for (int y = kTileH; y < g.horizonY; y += kTileH)
         fb.fillRect(0, y, kActiveW, 1, grout);
 
-    // The hood, and the lit strip along its lower edge — the light source the whole
+    // The hood, and the lit strip along its lower edge: the light source the whole
     // room is lit by, and the reason the pans below it have a bright side.
     fb.fillRect(0, 0, kActiveW, kHoodDepth, sceneTone(kToneHood));
     const Rgb565 baffle = sceneTone(kToneBaffle);
@@ -127,7 +127,7 @@ void drawTheLineScene(Framebuffer& fb, int beat, const SceneGround& g) {
         fb.fillRect(p.x - 1, cy - p.r - 5, 2, 5, pan);         // the handle, hung up
     }
 
-    // The range front, filling the band between the wall and the pass — the one place
+    // The range front, filling the band between the wall and the pass: the one place
     // the burners' warmth lands anywhere but on the ring itself.
     sceneMiddle(fb, g, kToneRange);
 

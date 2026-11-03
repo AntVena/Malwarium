@@ -1,9 +1,9 @@
-// theme.h — where a game concept becomes a colour.
+// theme.h: where a game concept becomes a colour.
 //
 // The palette has two layers under this one: `Pal` names the ROLES a colour can
 // play (core/render/palette.h), and the generated table gives each role a value
-// per theme. This file is the third and last: it maps a DOMAIN value — an item's
-// rarity, a crew's side — onto the role that carries it.
+// per theme. This file is the third and last: it maps a DOMAIN value (an item's
+// rarity, a crew's side) onto the role that carries it.
 //
 // It exists so that mapping lives exactly once. A screen that needs "what colour
 // is Epic" asks here; it never repeats the switch, and it never reaches for a
@@ -17,7 +17,7 @@
 //
 // THE TINTING RULE. Drawing something in a colour is decoration, never
 // information: a tint may only ever repeat a meaning the same screen already
-// carries some other way — a word, a count, a shape. It must never be the only
+// carries some other way. A word, a count, a shape. It must never be the only
 // channel, or the screen fails the grayscale gate. The ITEMS row tints its icon
 // by rarity AND prints the rarity word beside it; the Sealed Cache tiers are
 // countable chevrons before they are colours. Both survive being desaturated,
@@ -40,8 +40,8 @@ inline Rgb565 rarityColor(ItemDef::Rarity r) {
     return palColor(Pal::RARITY_COMMON);
 }
 
-// The Red/Blue axis: Operators vs. Guardians. Every surface that shows a side —
-// a crew name, a duel banner, a team glyph — comes through here.
+// The Red/Blue axis: Operators vs. Guardians. Every surface that shows a side
+// (a crew name, a duel banner, a team glyph) comes through here.
 inline Rgb565 teamColor(bool red) {
     return palColor(red ? Pal::TEAM_RED : Pal::TEAM_BLUE);
 }
@@ -52,7 +52,7 @@ inline Rgb565 teamColor(bool red) {
 // with a sword and a shield (PAL_CORE's `team` block), the shield-pool bar on the combat
 // screen already draws in TEAM_BLUE and the ransom strip in CALM.
 //
-// Hues repeat across the set on purpose — speed and a stun are both WARN, a wall and a
+// Hues repeat across the set on purpose: speed and a stun are both WARN, a wall and a
 // bubble are both TEAM_BLUE. The glyph is what separates them, per the tinting rule
 // above: colour may only repeat a meaning the shape already carries.
 inline Rgb565 combatVsColor(CombatVsKind k) {

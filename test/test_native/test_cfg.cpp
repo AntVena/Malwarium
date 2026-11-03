@@ -1,4 +1,4 @@
-// test_cfg.cpp — native gates for the CFG tree.
+// test_cfg.cpp: native gates for the CFG tree.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -7,7 +7,7 @@
 
 #include "dev_config.h"   // DEV_CFG_RESET_ROW
 
-#include "core/ui/layout.h"  // listScrollTop — the shared list-window offset
+#include "core/ui/layout.h"  // listScrollTop: the shared list-window offset
 
 // CFG UI Mode toggle is wired to the live Game::setUiMode: cycle the
 // option, B applies and changes the carousel presentation in-menu.
@@ -134,8 +134,8 @@ void test_cfg_format_sd_refused_during_update() {
 // is a reset, so a wake re-enters through that save. Whatever the gap was, the state
 // it comes back to must be the state it left.
 //
-// Manufactured at the seam — the save the sleep writes, reloaded the way a wake
-// reloads it — rather than by trying to sleep, which the host tier cannot do.
+// Manufactured at the seam (the save the sleep writes, reloaded the way a wake
+// reloads it), rather than by trying to sleep, which the host tier cannot do.
 void test_travel_sleep_credits_nothing_to_the_gap() {
     MemSaveStore store;
     Game before(StartMode::Hatched, "paypup", &store);
@@ -164,7 +164,7 @@ void test_travel_sleep_credits_nothing_to_the_gap() {
     CHECK(!tight.saveNow());
 }
 
-// A setting inside a group returns to that group, not to the top of CFG — and the
+// A setting inside a group returns to that group, not to the top of CFG, and the
 // group's cursor lands on the row just left, so a second visit resumes there.
 void test_cfg_group_back_resumes_row() {
     Game g{StartMode::Hatched};
@@ -196,7 +196,7 @@ void test_cfg_radio_reports_owner() {
 }
 
 // The RADIO group tells the operator "nearest the top wins", so the row order has
-// to BE the arbiter's priority order — otherwise the screen's one explanation of
+// to BE the arbiter's priority order, otherwise the screen's one explanation of
 // why a switched-on row isn't running is a lie. RadioOwner is declared lowest
 // priority first (radio_status.h), so the table read top-down must be strictly
 // descending in that enum. AUDIT maps to two owners; it is compared at the higher
@@ -346,8 +346,8 @@ void test_cfg_factory_reset_scopes_differ() {
       CHECK(g.speciesRaised() >= 1); }
 }
 
-// Grayscale gate: every CFG screen reads with colour stripped (ink + structure) —
-// the list, both group screens, and every setting inside them.
+// Grayscale gate: every CFG screen reads with colour stripped (ink + structure).
+// The list, both group screens, and every setting inside them.
 void test_cfg_screens_grayscale() {
     Framebuffer fb(kActiveW, kActiveH);
     const int W = kActiveW, H = kActiveH;
@@ -473,7 +473,7 @@ void test_cfg_tips_replay() {
     CHECK(fresh.replayableTips().size() == 1);
 }
 
-// SD RECHECK is the A press on System Info, not a list row — it acts on the SD
+// SD RECHECK is the A press on System Info, not a list row: it acts on the SD
 // line that screen already reports through.
 void test_cfg_sysinfo_sd_recheck() {
     Game g{StartMode::Hatched};

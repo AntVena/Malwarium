@@ -10,7 +10,7 @@ namespace {
 
 // THE CIPHER HUT. The prize for cracking the Decryptogram board, and the room the board
 // is about: a wartime codebreakers' hut, timber walls and a plank floor, with a BOMBE
-// along the back wall — the machine that cracked the day's key by spinning drums
+// along the back wall. The machine that cracked the day's key by spinning drums
 // through every setting until one fitted. Its drums turn on the heartbeat, each at its
 // own rate, which is the scene's one motion and the whole of what the board asks the
 // player to do by hand.
@@ -43,7 +43,7 @@ constexpr uint8_t kCabinetTopUp = 206;
 
 // The drums: three rows of nine, `kDrumPitch` apart, the first row `kDrumTop` rows
 // under the cabinet's top. A drum is a disc with a darker rim, and a mark that walks
-// round it — eight positions, each row turning at its own rate, the way a Bombe's
+// round it: eight positions, each row turning at its own rate, the way a Bombe's
 // fast, middle and slow drums did.
 constexpr int kDrumCols = 9, kDrumRows = 3;
 constexpr int kDrumR = 7;

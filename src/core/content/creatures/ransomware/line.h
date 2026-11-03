@@ -1,4 +1,4 @@
-// The Ransomware family — Boot->Script is LINEAR, then Script->Daemon BRANCHES.
+// The Ransomware family: Boot->Script is LINEAR, then Script->Daemon BRANCHES.
 //
 // The CryptoShell egg hatches one of three Process pets, each heading a chain of
 // its own: the CANINE chain (Paypup -> Barkmail -> { Wire Heir | Extorgi }), the
@@ -6,8 +6,8 @@
 // FELINE chain (Conkittenate -> Kalico -> { Pwnther | Breecheetah }). Each
 // `evolvesToId` is the linear hop; a BRANCH node leaves it null and defines the two
 // successors instead, picked by the care budget at evolution time. A branch's pair
-// carries DISTINCT art on a SHARED palette — SPR_PET_BRUINFORCE squares up,
-// SPR_PET_BERSERKERNEL rears and roars — so which branch a player got reads at a
+// carries DISTINCT art on a SHARED palette (SPR_PET_BRUINFORCE squares up,
+// SPR_PET_BERSERKERNEL rears and roars), so which branch a player got reads at a
 // glance while both still read as the same animal. They also differ mechanically
 // via the power/Frag multipliers.
 //
@@ -15,7 +15,7 @@
 // Lockout/Cipher moves + the Ransom Lock passive to these pets.
 //
 // The braced array before `locomotion` is CreatureDef::slotKinds (PLACEHOLDER
-// layout — see the field comment in defs.h): slot0/1 lean Attack at Process; slot2
+// layout. See the field comment in defs.h): slot0/1 lean Attack at Process; slot2
 // Defend from the Script on; slot3 splits at the Daemon branch (Good -> Defend
 // durable, Bad -> Attack glass cannon), mirroring the power/Frag lean. CryptoShell
 // (egg) never reaches a real slot before hatching, so it carries an all-Attack
@@ -48,7 +48,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Barkmail's two Daemons: the noble line and the one that took it.
     // Wire Heir's sheet is one row of 8 frames at the 96x64 Daemon cell, so unlike every
-    // 56x48 sheet it needs its frame width declared in gen_assets.py's FRAME_W_OVERRIDES —
+    // 56x48 sheet it needs its frame width declared in gen_assets.py's FRAME_W_OVERRIDES:
     // 768 is not a whole number of 56px cells, and the default rule would read the strip
     // as one very wide frame.
     {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_WIRE_HEIR",
@@ -68,8 +68,8 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Malbear's sheet is one row of 8 columns (56x48 each): the first 3 are the
-    // resting loop, and the full 8 are the swing. Both clips therefore play row 0
-    // — which columns the attack actually wants is an art call, not a code one.
+    // resting loop, and the full 8 are the swing. Both clips therefore play row 0,
+    // which columns the attack actually wants is an art call, not a code one.
     {"malbear", "Malbear", Stage::Script, "SPR_PET_MALBEAR", nullptr,
      /*good=*/"bruinforce", /*bad=*/"berserkernel", 100, 100, "ransomware",
      "A moody, oversized adolescent that sits directly on your user interface and refuses to move.",
@@ -78,7 +78,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/3, /*holdBeats=*/4},
                 {"attack", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
-    // Malbear's two Daemons: the same bear either way — one holds the line, the other
+    // Malbear's two Daemons: the same bear either way. One holds the line, the other
     // has stopped caring whether it survives the fight, which is what the branch
     // multipliers below say too.
     {"bruinforce", "Bruinforce", Stage::Daemon, "SPR_PET_BRUINFORCE",
@@ -104,7 +104,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
 
     // --- Cat line ----
     // Conkittenate's sheet is a single 448x48 row of 8 columns, all of it one idle
-    // loop — the cub has one thing to do and spends its whole row doing it, where
+    // loop: the cub has one thing to do and spends its whole row doing it, where
     // Kalico below splits four rows across four poses.
     {"conkittenate", "Conkittenate", Stage::Process, "SPR_PET_CONKITTENATE", "kalico",
      nullptr, nullptr, 100, 100, "ransomware",
@@ -120,7 +120,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
     // play: "idle" and "walk" split the habitat on whether the wander is moving the
     // anchor (drawHabitat, game_render.cpp), and "attack"/"hurt" pose the fight on the
     // swing and the recoil (fightPose, combat_screen.cpp). The clip names are the
-    // contract — a creature that declares none of them draws its row 0 and nothing
+    // contract: a creature that declares none of them draws its row 0 and nothing
     // else changes, which is what every single-row sheet in this file relies on.
     {"kalico", "Kalico", Stage::Script, "SPR_PET_KALICO", nullptr,
      /*good=*/"pwnther", /*bad=*/"breecheetah", 100, 100, "ransomware",
@@ -135,7 +135,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
                 {"attack", /*row=*/2, /*frames=*/8, /*holdBeats=*/1},
                 {"hurt", /*row=*/3, /*frames=*/8, /*holdBeats=*/1}}},
     // Pwnther spends the 96x64 Daemon cell (CREATURE_VISUAL_RULES §7) rather than the
-    // 56x48 the Script rows above take — the stage's payoff is read as scale, and one
+    // 56x48 the Script rows above take: the stage's payoff is read as scale, and one
     // oversized frame is what gen_assets cuts a pet sheet into when its width is not a
     // whole number of 56px cells.
     {"pwnther", "Pwnther", Stage::Daemon, "SPR_PET_PWNTHER",
@@ -145,7 +145,7 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Breecheetah takes the same 96x64 cell and the same palette as its Good sibling
-    // above, and spends both differently — where Pwnther is bulk under grey plate,
+    // above, and spends both differently, where Pwnther is bulk under grey plate,
     // this is a bare green sprinter wearing its shell as glowing pips and flat decal
     // tiles. Same line, same branch signature, opposite silhouettes: which one a
     // player got reads across the room (CREATURE_VISUAL_RULES §4).

@@ -31,7 +31,7 @@ void drawCenteredText(Framebuffer& fb, int y, const char* s, Rgb565 c) {
     drawText(fb, (kActiveW - textWidth(s)) / 2, y, s, c);
 }
 
-// One vitals gauge on the feeding modal — the same label/ramp language the STAT
+// One vitals gauge on the feeding modal: the same label/ramp language the STAT
 // vitals page uses (stat_screen.cpp), so a stat reads identically wherever it is
 // drawn. `dir` is which way the food just moved it and `good` whether that was
 // in the pet's favour (down is the favour for Fragmentation, up for the rest).
@@ -68,7 +68,7 @@ int buildFeedGaugeRows(const ItemDef& d, const PetModel& m, const FeedVitals& b,
         const int dv = dir(b.frag, m.fragmentation());
         out[n++] = {"FRAG", m.fragmentation(), m.fragZone(), GaugeInk::FragRamp, dv, dv < 0};
     }
-    // Happiness has two movers — a flat add, and Null Noodles' pull TOWARD 50%,
+    // Happiness has two movers: a flat add, and Null Noodles' pull TOWARD 50%,
     // which numbs or lifts depending purely on the mood it found.
     if (feedTargets(d, ItemEffect::Kind::Happy) ||
         feedTargets(d, ItemEffect::Kind::HappyToward50)) {
@@ -102,7 +102,7 @@ void drawEvolveModal(Framebuffer& fb, const EvolveView& v) {
     if (v.pathLine) drawCenteredText(fb, 166, v.pathLine, palColor(Pal::INK_DIM));
     if (v.slotLine) drawCenteredText(fb, 180, v.slotLine, palColor(Pal::ACCENT));
 
-    // UI_HINT_BAND — C is disabled here, so the deviation is surfaced.
+    // UI_HINT_BAND: C is disabled here, so the deviation is surfaced.
     drawCenteredText(fb, 200, "B CONTINUE   C DISABLED", palColor(Pal::INK_DIM));
 }
 
@@ -115,7 +115,7 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int be
 
     // The pet corrupting out: draw it, then lay FX_CRITICAL_FAIL glitch bands over
     // it (maxed FX_CORRUPTION). The band count/position is the grayscale-safe
-    // channel — the crash reads without colour. Jittered per heartbeat.
+    // channel: the crash reads without colour. Jittered per heartbeat.
     drawPetCentered(fb, pet, beat, 96);
     for (int i = 0; i < 6; ++i) {
         const int gy = 58 + i * 13;
@@ -127,7 +127,7 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int be
     drawCenteredText(fb, 150, "SPECIMEN LOST.", palColor(Pal::INK));
     drawCenteredText(fb, 164, "ARCHIVED AS CORRUPTED.", palColor(Pal::INK_DIM));
 
-    // UI_HINT_BAND — B acknowledges (once the crash has held); C is disabled.
+    // UI_HINT_BAND: B acknowledges (once the crash has held); C is disabled.
     drawCenteredText(fb, 200, phase == CsfPhase::Held ? "B ACKNOWLEDGE   C DISABLED" : "SYSTEM HALTING",
                      palColor(Pal::INK_DIM));
 }
@@ -139,7 +139,7 @@ void drawFeedingModal(Framebuffer& fb, const PetModel& m, const FeedingView& v) 
     // The bite itself: the food comes apart into the pet over the first kAbsorbBeats,
     // and the beats after are its afterglow, so the whole thing lands inside the
     // modal's existing kFeedBeats hold. What the food DID is still the gauge rows
-    // below — the picture is the second channel, never the only one.
+    // below: the picture is the second channel, never the only one.
     //
     // The blocks take the food's RARITY colour (theme.h), so a rare meal goes in
     // looking like one. That is decoration and nothing more: this screen makes no
@@ -173,7 +173,7 @@ void drawFeedingModal(Framebuffer& fb, const PetModel& m, const FeedingView& v) 
         std::snprintf(num, sizeof(num), "%3d", r.value);
         drawText(fb, 188, y, num, palColor(Pal::INK));
         // Direction is its own glyph channel, so which way the bar just moved
-        // survives grayscale — the colour underneath it is a second coding, not
+        // survives grayscale: the colour underneath it is a second coding, not
         // the carrier. A stat the food leaves where it found it says nothing.
         if (r.dir != 0)
             drawText(fb, 210, y, r.dir > 0 ? "+" : "-",
@@ -216,13 +216,13 @@ void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
                  palColor(Pal::INK));
     }
 
-    // Two-path choice — the focused one carries the row cursor.
+    // Two-path choice: the focused one carries the row cursor.
     const int yItems = 150, yPay = 166;
     char payLine[20];
     std::snprintf(payLine, sizeof(payLine), "PAY %d BITS", v.bitsCost);
     Rgb565 payCol = v.canPay ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
     // With nothing to feed, the row still opens ITEMS (whose notice says the same), but
-    // it reads as shut and names where food comes from — this is the moment a player
+    // it reads as shut and names where food comes from: this is the moment a player
     // learns that the walk, not a menu, is where the next meal is.
     const char* feedLine = !v.hasFood    ? "NO FOOD - FIND IN EXPL"
                          : !failing     ? "FEED IT"
@@ -241,7 +241,7 @@ void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
                  v.canPay ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
     }
 
-    // UI_HINT_BAND — C is disabled, so the deviation must be surfaced; and A is the
+    // UI_HINT_BAND: C is disabled, so the deviation must be surfaced; and A is the
     // only way to the second row, so it is named too.
     drawCenteredText(fb, 200, "A SWITCH B SELECT C DISABLED", palColor(Pal::INK_DIM));
 }

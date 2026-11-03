@@ -27,13 +27,13 @@ void Game::addCareMistakeShielded(int n) {
 // --- Lockout ---------------------------------------------------------------
 
 void Game::fireLockout() {
-    // Hunger hit 0: charge the "went hungry" care mistake (split budget) — one
+    // Hunger hit 0: charge the "went hungry" care mistake (split budget). One
     // half of a fully-failed Lockout's 2-mistake cost; the other +1 lands on expiry.
     // Shielded like every Game-level positive mistake.
     addCareMistakeShielded(kWentHungryMistakes);
     log_.push(LogEventType::CareMistake, "went hungry");
     ++away_.hungry;
-    // A crisis modal preempts AND cancels explore-mode — the streak resets.
+    // A crisis modal preempts AND cancels explore-mode: the streak resets.
     exploreActive_ = false;
     exploreStreak_ = 0;
     clearDiveDepthBuffs();
@@ -66,7 +66,7 @@ void Game::expireLockout() {
 
 void Game::resolveLockout() {
     // 'Pedia SURVIVED_LOCKOUT: the RESOLVED path only (feed /
-    // pay-Bits / item-use) — every call site funnels through here, never through
+    // pay-Bits / item-use). Every call site funnels through here, never through
     // expireLockout()'s failure path.
     unlockAchievement(ach::kSurvivedLockout);
     lockoutActive_ = false;
@@ -85,7 +85,7 @@ void Game::startHatch() {
     // a fresh save LAYS THE EGG at idle. Line-select
     // precursor: when more than one egg line is unlocked, first present the
     // choice (Ransomware vs Phishing); layEgg() runs on the player's B. With a single
-    // line the modal auto-skips — this keeps the historical straight-to-egg boot.
+    // line the modal auto-skips: this keeps the historical straight-to-egg boot.
     const auto lines = availableEggLines();   // only UNLOCKED lines (Phishing gates on DEEPWEB_DEPTH_8)
     if (lines.size() > 1) {
         installPet(nullptr);         // empty save while choosing (no egg laid yet)
@@ -107,7 +107,7 @@ void Game::layEgg(const EggLineDef* line) {
     installPet(registry_.creature(hatchLine_ ? hatchLine_->eggCreatureId : "cryptoshell"));
     model_ = PetModel();                 // fresh Boot-Sector vitals (frozen while egg)
     for (int& t : signalTally_) t = 0;   // Boot-stage dominant signal starts fresh
-    // creature levels are PER-PET — a newly laid egg begins the level system
+    // creature levels are PER-PET: a newly laid egg begins the level system
     // fresh (the opposite of Titles/Rank, which survive a pet's death). This is the
     // single "new egg" chokepoint (fresh boot, Store, CSF, resetToHatch), so resetting
     // here covers them all; evolution keeps the level (it doesn't pass through here).
@@ -115,18 +115,18 @@ void Game::layEgg(const EggLineDef* line) {
     combatLevel_ = 0;
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
     lastLevelUpStat_ = -1;
-    // The stamped Attack/Defend layout is per-pet too — a
+    // The stamped Attack/Defend layout is per-pet too: a
     // fresh egg starts every slot Unset so its own raise re-derives the layout
     // from scratch (same new-egg chokepoint as the level reset above).
     for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;
     // The equipped/owned move loadout is per-pet too (owned moves are earned by
-    // THIS pet's raise) — reset alongside the level/slot-kind state above so
+    // THIS pet's raise): reset alongside the level/slot-kind state above so
     // a new egg never inherits a prior pet's (possibly wrong-line, wrong-stage)
     // equipped moves, which combat would then silently drop to Quick Jab for. A
-    // fresh egg starts owning every move native to ITS OWN line — a line's moves
+    // fresh egg starts owning every move native to ITS OWN line: a line's moves
     // are its nature, not a lucky drop; the generic pool is wild-encounter-only.
     moveLoadout_ = MoveLoadout::startingForLine(registry_, hatchLine_ ? hatchLine_->id : nullptr);
-    // Installed mod SLOTS are per-pet hardware, like the move loadout above — a
+    // Installed mod SLOTS are per-pet hardware, like the move loadout above: a
     // fresh egg starts with nothing installed. The SPARE pool is untouched: mods
     // are found like items, shared across whichever pet is currently active. Skip
     // on the very first egg (petsRaised_ == 0 here, pre-increment below) so
@@ -149,17 +149,17 @@ void Game::layEgg(const EggLineDef* line) {
     // a new egg starts back at the shared regen interval, with no off-level stat points
     // and no XP rate, however many plates the last one ate.
     upgrades_ = PetUpgrades{};
-    // ...and an empty plate. The palate is the pet's, not the operator's — what the
+    // ...and an empty plate. The palate is the pet's, not the operator's: what the
     // DEVICE has ever held stays in collectedItems_ forever, and this is the set that
     // starts over, which is what makes STAT's FOODS grid something each pet fills in.
     petFoodsEaten_.clear();
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
-    // start-depth Pass — a fresh egg has never dived and carries nothing armed.
+    // start-depth Pass: a fresh egg has never dived and carries nothing armed.
     bestDeepWebDepth_ = 0;
     clearDiveDepthBuffs();
     pendingDeepWebStartDepth_ = -1;
     pendingDiveStartBonusPct_ = 0;
-    // the re-farm diminishing-returns curve is PER-PET (not per-device) —
+    // the re-farm diminishing-returns curve is PER-PET (not per-device):
     // a fresh pet finds every cleared area an undepleted training ground again. This
     // is the single new-egg chokepoint, so zeroing here covers fresh boot / Store /
     // CSF / resetToHatch; the pet-swap path (archDeployStored) resets it too.
@@ -173,7 +173,7 @@ void Game::layEgg(const EggLineDef* line) {
     ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
     generation_ = petsRaised_;
     // The generation ladder is swept off petsRaised_ (AchSeries::PetsRaised), so
-    // incrementing it here is the whole trigger — and it fires the moment the NEW egg is
+    // incrementing it here is the whole trigger, and it fires the moment the NEW egg is
     // laid, matching "raise N pets across lifecycles" rather than waiting on this one to
     // also finish hatching.
     nav_ = Nav::Idle;
@@ -183,7 +183,7 @@ void Game::layEgg(const EggLineDef* line) {
 }
 
 void Game::startHatchGame(const EggLineDef* line) {
-    // The applier for EggLineDef::hatchGame — the one place a line's hatch shape turns
+    // The applier for EggLineDef::hatchGame: the one place a line's hatch shape turns
     // into behaviour. Called with the egg already laid and parked at idle, so a kind
     // that does nothing here simply leaves the player there.
     if (!line) return;
@@ -198,7 +198,7 @@ void Game::startHatchGame(const EggLineDef* line) {
             startEggPick(kEggPickRounds);
             break;
         case HatchGame::Isolation:
-            // The goal is the WHOLE incubation clock, priced in bytes — so "clean"
+            // The goal is the WHOLE incubation clock, priced in bytes, so "clean"
             // means the run that hatched the egg by itself, and WORM_WHISPERER has
             // something exact to test. Rounded up, so a clock that isn't a whole
             // number of minutes still has to be finished rather than merely reached.
@@ -208,7 +208,7 @@ void Game::startHatchGame(const EggLineDef* line) {
         case HatchGame::Chroma:
             // The board as shipped: the window shrinks round by round and the water
             // never changes under the pet mid-window. Switching is the arcade's HARD
-            // setting alone — a hatch is somebody's first minute with a new line, and
+            // setting alone: a hatch is somebody's first minute with a new line, and
             // the ramp it needs is the one it can see coming.
             startChroma(kChromaRounds, kChromaWindowMs, /*switching=*/false);
             break;
@@ -257,7 +257,7 @@ const CreatureDef* Game::rollHatchProcess(const EggLineDef* line) {
 
 void Game::completeHatch() {
     // The egg hatches straight to PROCESS (redesign): the Boot-Sector shell
-    // and the egg share a sprite, so revealing it looked unhatched — instead the
+    // and the egg share a sprite, so revealing it looked unhatched, instead the
     // decrypt jumps to the first real petware. Target = a RANDOM Process from the egg
     // line's pool (rollHatchProcess), so the same egg can hatch different species.
     const CreatureDef* egg = registry_.creature(hatchLine_ ? hatchLine_->eggCreatureId
@@ -269,13 +269,13 @@ void Game::completeHatch() {
     defragCount_ = 0;             // a brand-new pet has never been defragged
     stampSlotKinds();             // lock this pet's newly-unlocked slot(s)
     // The Game constructor pre-equips slot 1 with a Defend move (MoveLoadout::
-    // starting()) before any creature has stamped a kind onto it — this is the
+    // starting()) before any creature has stamped a kind onto it. This is the
     // first stamp slot 1 ever gets, so validate now rather than carry a possible
     // mismatch silently into the raise.
     enforceSlotKindInvariant();
     bootHatchRemainMs_ = 0;       // no longer an egg
     // The device's first pet hatches into the Caution band (kStartFragmentation), so
-    // MAINT's "!" invites a defrag from its first minute — and a QUICK one can fail into
+    // MAINT's "!" invites a defrag from its first minute, and a QUICK one can fail into
     // a care ERROR before the player knows what one is. One Defrag Tool makes that first
     // defrag a sure thing; MAINT lists it as the GUARANTEED row, one press of A away.
     if (petsRaised_ == 1) {
@@ -319,7 +319,7 @@ void Game::noteCareSignal(DominantSignal s) {
 }
 
 CareBranch Game::effectiveCareBranch() const {
-    // A Dying pet is not on a branch — 5/5 is Critical System Failure, which no USB
+    // A Dying pet is not on a branch: 5/5 is Critical System Failure, which no USB
     // reaches around. Everything else answers to whatever is in the override slot.
     const CareBranch earned = model_.careBranch();
     if (earned == CareBranch::Dying) return earned;
@@ -338,7 +338,7 @@ const char* Game::evolutionTargetId() const {
     // gates it out -> Critical System Failure). Single-entry pools today, so the pick
     // is deterministic (entries[0]); the weighted draw lands with the real roster.
     // The branch is read through effectiveCareBranch(), so a Bad-USB/Signed-USB in the
-    // port decides it instead — including on this pool, which is the branch a player
+    // port decides it instead, including on this pool, which is the branch a player
     // spent the whole stage earning and therefore the one an override has to reach.
     const bool bad = effectiveCareBranch() == CareBranch::Bad;
     if (const DaemonPoolDef* pool = registry_.daemonPool(pet_->id, bad)) {
@@ -353,7 +353,7 @@ const char* Game::evolutionTargetId() const {
 
 namespace {
 // The dwell required in the CURRENT stage before its evolution gate opens
-// (Process and Script are the only stages that reach this — Boot exits via
+// (Process and Script are the only stages that reach this: Boot exits via
 // the Decryption Hatch, Daemon is a terminus with no successor).
 uint32_t evolveStageDurationMs(Stage current) {
     return current == Stage::Script ? kEvolveScriptToDaemonMs : kEvolveProcessToScriptMs;
@@ -367,10 +367,10 @@ uint32_t Game::evolveDwellMs() const {
     // boundary is the branch the whole raise was aimed at, so stretching the last stage
     // before an ending is deliberately the more expensive thing to do. The stage is read
     // live rather than remembered from arm-time, which is safe because a soak is spent at
-    // the boundary it stretched — the stage it goes in at is the stage it comes out at.
+    // the boundary it stretched: the stage it goes in at is the stage it comes out at.
     //
     // Nothing overflows: the longest stage is 32h, the deepest soak x8 (the Hypervisor-USB,
-    // content_items.cpp), doubled on a Script = x16, so 512h in ms — under half of what a
+    // content_items.cpp), doubled on a Script = x16, so 512h in ms. Under half of what a
     // u32 holds.
     const Stage stage = pet_ ? pet_->stage : Stage::Process;
     const uint32_t base = evolveStageDurationMs(stage);
@@ -384,11 +384,11 @@ bool Game::evolveEligible() const {
     // are linear; Script->Daemon branches (evolutionTargetId picks Good/Bad from the
     // care budget). The Daemon successors are termini (no successor), so they never
     // qualify. 5/5 routes to Critical System Failure, not evolution.
-    // An unhatched egg never takes the normal Boot->Process boundary — the
+    // An unhatched egg never takes the normal Boot->Process boundary: the
     // Decryption Hatch IS that transition now (redesign), so completeHatch
     // owns it; the egg-at-idle incubation clock, not time-in-stage, gates it.
     if (inEggPhase()) return false;
-    // A Halt-USB in the port refuses the boundary outright — not a longer wait but no
+    // A Halt-USB in the port refuses the boundary outright, not a longer wait but no
     // arrival at all, which is what parks a pet at a stage on purpose. Checked before the
     // clock, because a held pet's clock is not the reason it isn't evolving.
     if (evolveHold_) return false;
@@ -401,7 +401,7 @@ bool Game::evolveEligible() const {
 bool Game::hasNextEvolution() const {
     if (inEggPhase()) return true;                    // the hatch is the next boundary
     // A held pet has no next boundary for as long as the hold is in, so STAT's EVOLVE
-    // row reads MAX — the same thing it reads at a terminus, and true in the same sense.
+    // row reads MAX: the same thing it reads at a terminus, and true in the same sense.
     // WHY it reads MAX is on the BUFFS page and on the habitat's armed-buff strip, which
     // is where every other armed state already explains itself.
     if (evolveHold_) return false;
@@ -427,13 +427,13 @@ void Game::fireEvolution() {
     if (!next) return;
     // Cross-line Trojan infiltration: a pet whose row names a divert target has a
     // kTrojanDivertPct chance to become a Trojan instead of its normal successor. Rolled
-    // once here — fireEvolution runs once per boundary, whereas evolutionTargetId is
+    // once here: fireEvolution runs once per boundary, whereas evolutionTargetId is
     // const and called repeatedly, so the roll can't live there. Same LCG as the hatch draw.
     //
     // The ROW is the gate, not the stage. A `stage == Process` test here would fit only a
     // roster where every divert is Phishlet's and a Trojan is by definition a Script you
-    // got instead of your own. The Worm line diverts one boundary later — Rootgrub trades
-    // its Daemon for one, not its Script — so a stage test would make that a second
+    // got instead of your own. The Worm line diverts one boundary later (Rootgrub trades
+    // its Daemon for one, not its Script), so a stage test would make that a second
     // mechanism rather than the same one used twice. Nothing is needed in its place: a
     // creature with no successor never reaches fireEvolution at all, and a row that must
     // not divert says so by leaving evolvesToTrojanId null.
@@ -472,10 +472,10 @@ void Game::completeEvolution() {
     if (evolveTo_) {
         // 'Pedia achievements, evaluated BEFORE the swap: model_ still holds the care
         // budget that decided which branch fired. The branch NOT taken is deliberately
-        // NOT marked seen — seeing means having FACED a species in combat
+        // NOT marked seen: seeing means having FACED a species in combat
         // (Game::markCreatureSeen), and a sibling revealed by the evolution cinematic
         // was never fought.
-        // Flawless is about the RAISE, so it stays on the raw mistake count — no device
+        // Flawless is about the RAISE, so it stays on the raw mistake count: no device
         // makes a run flawless. Gone Rogue is about the DAEMON that came out, so it reads
         // effectiveCareBranch(): a pet that ended up on the bad line went rogue whether a
         // Bad-USB steered it there or five months of neglect did.
@@ -500,7 +500,7 @@ void Game::completeEvolution() {
             stampSlotKinds();
             enforceSlotKindInvariant();
             // Arriving on a line can be an achievement in its own right, and the line's
-            // row is what says so (CreatureLine::raisedAchievement) — the Trojan divert
+            // row is what says so (CreatureLine::raisedAchievement): the Trojan divert
             // is the only arrival recognised today, but this seam never learns that.
             if (const CreatureLine* cl = registry_.creatureLine(newLine))
                 if (cl->raisedAchievement) unlockAchievement(cl->raisedAchievement);
@@ -521,7 +521,7 @@ void Game::completeEvolution() {
     stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)
     nav_ = Nav::Idle;
     dirty_ = true;
-    persistSave();                     // a structural change — persist immediately
+    persistSave();                     // a structural change: persist immediately
     // Not logged in v1.
 }
 
@@ -536,13 +536,13 @@ void Game::stampSlotKinds() {
     if (!pet_) return;
     const int unlocked = MoveLoadout::slotsForStage(pet_->stage);
     for (int i = 0; i < unlocked && i < kMaxMoveSlots; ++i) {
-        if (slotKinds_[i] != SlotKind::Unset) continue;   // locked in — never rewritten
+        if (slotKinds_[i] != SlotKind::Unset) continue;   // locked in, never rewritten
         slotKinds_[i] = pet_->slotKinds[i] == MoveKind::Defend ? SlotKind::Defend
                                                                 : SlotKind::Attack;
     }
     // A pet always fights with everything it's earned: an unlocked slot that's
     // still empty (never equipped, or a slot whose only candidate unlocked AFTER
-    // it was stamped — e.g. a second Attack slot stamped at Process, still empty,
+    // it was stamped; e.g. a second Attack slot stamped at Process, still empty,
     // gets filled the moment Script unlocks a second owned Attack move) falls back
     // to the strongest owned+unlocked move of its stamped kind instead of sitting
     // on the generic Quick Jab. Walked in slot order, live-checking slotOf() as it
@@ -578,8 +578,8 @@ void Game::enforceSlotKindInvariant() {
 bool Game::csfRevealed() const { return csfBeat_ >= kCsfHoldBeats; }
 
 void Game::fireCSF() {
-    // The dying state's ageing window expired — terminal. CSF is the top modal
-    // priority, so it clears any lower-priority modal state it preempts —
+    // The dying state's ageing window expired: terminal. CSF is the top modal
+    // priority, so it clears any lower-priority modal state it preempts,
     // including explore-mode.
     exploreActive_ = false;
     exploreStreak_ = 0;
@@ -625,7 +625,7 @@ void Game::wipeDeviceProgress() {
     // device preferences (brightness, UI mode, sound), which are how the operator likes
     // their hardware rather than anything they earned, and the device-level
     // SD-backed ledgers (core/net/network_ledger.h, peer_ledger.h), which are files on
-    // a card the operator can remove — a save wipe has no business deleting them. The
+    // a card the operator can remove. A save wipe has no business deleting them. The
     // SHAKES handshake ledger is SD-backed too but pet-level (it follows handshakesSeen_
     // below), so it IS cleared here, which truncates its card file.
     seenCreatures_.clear();
@@ -647,7 +647,7 @@ void Game::wipeDeviceProgress() {
     handshakesSeen_ = 0;
     handshakeLedger_.clear();
     cantSigils_ = 0;      // the Cant is unlearned again, and the purse it was bought
-    shakesSpent_ = 0;     // with is empty — both follow the handshakes they came from
+    shakesSpent_ = 0;     // with is empty: both follow the handshakes they came from
     titlesUnlocked_ = 0;
     equippedTitle_ = -1;
     for (int a = 0; a < kAreaCount; ++a) {
@@ -669,7 +669,7 @@ void Game::wipeDeviceProgress() {
 void Game::resetToHatch() {
     // Dev shortcut (host key / device gesture / tests): wipe to a fresh empty
     // save and re-enter the Decryption Hatch. Mirrors the FreshHatch constructor
-    // path so a retest is identical to a real first boot — no reflash needed.
+    // path so a retest is identical to a real first boot: no reflash needed.
     model_ = PetModel();
     inventory_ = Inventory::starting();
     log_ = EventLog{};
@@ -696,7 +696,7 @@ void Game::resetToHatch() {
     bHeld_ = false;
     // A full wipe: clear the persisted save + the rack + lifetime/identity state,
     // so the next boot is a genuine first boot. The scope
-    // split (Reset Pet keeps 'Pedia) lands with the SD store — both wipe today.
+    // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
     rack_.clear();
     records_.clear();
     loadout_ = Loadout::starting();
@@ -741,14 +741,14 @@ void Game::resetToHatch() {
     saveDirty_ = false;
     lastSaveMs_ = nowMs_;
     if (store_) store_->clear();
-    startHatch();          // lays a fresh egg at idle (persists it — durable, save v9)
+    startHatch();          // lays a fresh egg at idle (persists it: durable, save v9)
     dirty_ = true;
 }
 
 // Zone-completion Titles -----------------------------------
 
 void Game::unlockTitle(int sector) {
-    // Grant the sector's Title (player-level). Idempotent — re-clearing a sector
+    // Grant the sector's Title (player-level). Idempotent: re-clearing a sector
     // (or a migrated save that already had it) never double-logs. Auto-equip the
     // first Title earned so the reward is visible without a trip to CFG.
     if (sector < 0 || sector >= kAreaCount) return;

@@ -42,7 +42,7 @@ bool Inventory::remove(const char* id, int n) {
 
 Inventory Inventory::starting() {
     Inventory inv;
-    // The sample shelf — enough to exercise FOOD / INGREDIENTS / BUFFS / QUEST groups,
+    // The sample shelf: enough to exercise FOOD / INGREDIENTS / BUFFS / QUEST groups,
     // and no more. Two distinct foods is deliberate: it leaves the operator one short of
     // the Taste Tester rung (content_achievements.cpp's FoodsCollected ladder starts at
     // three), so the first food they find is the first thing they earn.

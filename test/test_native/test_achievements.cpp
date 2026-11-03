@@ -1,4 +1,4 @@
-// test_achievements.cpp — native gates for the achievement catalogue and its ladder.
+// test_achievements.cpp: native gates for the achievement catalogue and its ladder.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -8,7 +8,7 @@
 // --- Achievement catalogue + machinery ------------------------------------------
 
 // The mod table carries save wire numbers for the same reason the achievement table does
-// — the owned-mod pool is stored as a count per wire — so it needs the same guard. A
+// (the owned-mod pool is stored as a count per wire), so it needs the same guard. A
 // duplicated number would make two mods share a slot in that array, which reads back as
 // the wrong mod in the player's pool rather than as any kind of error.
 void test_mod_table_wires_are_unique_and_in_range() {
@@ -102,12 +102,12 @@ void test_achievement_table_is_well_formed() {
         if (d.series == AchSeries::LineRaised || d.series == AchSeries::ItemCollected ||
             d.series == AchSeries::DeepWebDepthLine || d.series == AchSeries::RackLineHeld)
             CHECK(d.key && d.key[0]);
-        // Reward ids must name real items — a typo here is a reward that never arrives.
+        // Reward ids must name real items: a typo here is a reward that never arrives.
         ContentRegistry r = ContentRegistry::embedded();
         for (const AchievementReward& rw : d.rewards)
             if (rw.kind == AchievementReward::Kind::Item)
                 CHECK(rw.id && r.item(rw.id) != nullptr);
-        // The trigger template must fully resolve — no stray braces reaching a reader.
+        // The trigger template must fully resolve: no stray braces reaching a reader.
         const EffectText txt = achievementTrigger(d);
         if (std::strchr(txt.c_str(), '{'))
             std::printf("  UNRESOLVED TRIGGER TOKEN: %s -> %s\n", d.id, txt.c_str());
@@ -128,7 +128,7 @@ void test_achievement_table_is_well_formed() {
         if (!achievementById(id)) std::printf("  MISSING ACHIEVEMENT ID: %s\n", id);
         CHECK(achievementById(id) != nullptr);
     }
-    // The legacy fourteen keep wire numbers 0-13 in their original enum order — that is
+    // The legacy fourteen keep wire numbers 0-13 in their original enum order: that is
     // what makes the pre-v40 u32 mask a straight byte copy rather than a mapping table.
     const char* kLegacyWireOrder[] = {
         "FIRST_BRUTE_FORCE", "SURVIVED_LOCKOUT", "FLAWLESS_RUN", "GONE_ROGUE",
@@ -149,9 +149,9 @@ void test_achievement_table_is_well_formed() {
 // string-literal pointers read from DIFFERENT translation units (this file and
 // game_combat.cpp). The variable itself is one address (C++17 guarantees that), but
 // nothing guarantees the LITERAL each TU's copy of that address points at is the same
-// object across TUs — only linkers that happen to fold identical string constants make
+// object across TUs, only linkers that happen to fold identical string constants make
 // raw `==` pass. That held on macOS/ld64 (folds by default) and failed on Linux/GCC's
-// default linker, which doesn't — the same cross-TU hazard achievementById() already
+// default linker, which doesn't: the same cross-TU hazard achievementById() already
 // avoids by looking up ids with strcmp instead of pointer identity.
 // Retire whatever banner is up by advancing past ITS OWN dwell, which is derived from
 // the copy it carries (Game::achBannerDwellMs) and is only kAchBannerMs for the short
@@ -176,7 +176,7 @@ void test_backup_drive_achievement_mapping() {
     CHECK(sameAchId(backupDriveAchievement(BU::Restored, O::Lose), ach::kNeededMoreBackup));
     // Fleeing settles nothing: the pet is alive and the story isn't over.
     CHECK(backupDriveAchievement(BU::Restored, O::Fled) == nullptr);
-    // The restore that wasn't enough — including on a mutual KO, which resolves as a Win
+    // The restore that wasn't enough, including on a mutual KO, which resolves as a Win
     // even though the pet never got back up.
     CHECK(sameAchId(backupDriveAchievement(BU::Overwhelmed, O::Lose), ach::kShatteredPlatter));
     CHECK(sameAchId(backupDriveAchievement(BU::Overwhelmed, O::Win), ach::kShatteredPlatter));
@@ -211,7 +211,7 @@ void test_achievement_ladder_unlocks_and_pays() {
 }
 
 // RecipesKnown counts METHODS, not plates. The distinction is the whole reason the
-// series exists beside FoodsCollected — a dish handed over by a cache must not advance
+// series exists beside FoodsCollected: a dish handed over by a cache must not advance
 // it, because the ladder it measures is the Decryptogram's.
 void test_recipes_known_counts_methods_not_dishes() {
     Game g{StartMode::Hatched};
@@ -255,7 +255,7 @@ void test_achievement_goal_all_tracks_the_set_size() {
 // The rack is read by two ladders at once and they must not be able to stand in for one
 // another: RACK_* counts HEADS, ZOO_* counts SPECIES, and TWINS_* counts the deepest
 // stack of ONE species. A shelf of four identical pets is a full-ish rack, a collection
-// of one, and a respectable pile of clones — all three at the same time.
+// of one, and a respectable pile of clones: all three at the same time.
 void test_achievement_rack_zoology_counts_species_not_heads() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
@@ -285,7 +285,7 @@ void test_achievement_rack_zoology_counts_species_not_heads() {
     CHECK(!g.hasAchievement("TWINS_8"));          // ...and so is the deeper stack
 }
 
-// A WING is one family's whole roster, alive at the same time — kGoalAll over that
+// A WING is one family's whole roster, alive at the same time: kGoalAll over that
 // line's own count, so the rung moves when the line does. And "at once" cuts both ways:
 // the VALUE falls the moment a pet leaves the shelf, while the earned bit does not,
 // because an achievement records a moment reached rather than a state maintained.
@@ -310,7 +310,7 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     CHECK(g.hasAchievement("WING_TROJAN"));
     CHECK(g.achValue(*wing) == line->count);
 
-    // Release one — Deploy -> Release on the stored pet's record — and the count drops
+    // Release one (Deploy -> Release on the stored pet's record), and the count drops
     // back while the row stays earned.
     enterArchStoredPet(g, "coaxeel");
     g.onButton(press(Button::A));
@@ -371,7 +371,7 @@ void test_achievement_banner_waits_for_the_home_screen() {
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
     while (g.achBanner()) { passBanner(g, t); g.tick(t += kHeartbeatMs); }
-    g.onButton(press(Button::A));                 // summon the carousel — no longer idle
+    g.onButton(press(Button::A));                 // summon the carousel: no longer idle
     CHECK(g.nav() != Game::Nav::Idle);
     g.unlockAchievement(ach::kFlawlessRun);
     g.tick(t += kHeartbeatMs);
@@ -471,7 +471,7 @@ void test_species_dive_records_feed_the_depth_rows() {
     CHECK(!g.hasAchievement("DEEP_BENCH_3"));
 }
 
-// The collection ladders count what has EVER been held, not what is in the bag now —
+// The collection ladders count what has EVER been held, not what is in the bag now:
 // spending an item must never un-earn an achievement.
 void test_collected_items_survive_being_spent() {
     Game g{StartMode::Hatched};
@@ -487,7 +487,7 @@ void test_collected_items_survive_being_spent() {
 }
 
 // pets{} counts a creature the player still HOLDS in any of the three places a
-// pet can sit — active, frozen in the ARCH rack, or an ARCH record. Those are all
+// pet can sit: active, frozen in the ARCH rack, or an ARCH record. Those are all
 // paths that install or record a pet, so all three land in the raised tally too.
 void test_pedia_state_json_rack_and_record_hatched() {
     SaveData a;
@@ -511,7 +511,7 @@ void test_pedia_state_json_rack_and_record_hatched() {
 }
 
 // End-to-end trigger, the first: a cracked DISK DECRYPTION board flips FIRST_BRUTE_FORCE
-// (Game::finishDecryption). Waiting an egg out does NOT — the achievement is named for
+// (Game::finishDecryption). Waiting an egg out does NOT: the achievement is named for
 // breaking a key, and an egg that hatched on its own clock never had one to break.
 void test_pedia_first_brute_force_achievement() {
     { Game g(StartMode::FreshHatch);
@@ -531,7 +531,7 @@ void test_pedia_first_brute_force_achievement() {
 }
 
 // End-to-end trigger, the second: a real Good-branch and a real Bad-branch Daemon
-// evolution (Game::completeEvolution) — FLAWLESS_RUN/GONE_ROGUE fire on the correct
+// evolution (Game::completeEvolution). FLAWLESS_RUN/GONE_ROGUE fire on the correct
 // branch only, and the sibling NOT taken stays LOCKED. Seeing is a fight; an
 // evolution cinematic is not one, so the branch it reveals is not a reveal.
 void test_pedia_evolution_achievements_leave_the_sibling_locked() {
@@ -568,7 +568,7 @@ void test_pedia_evolution_achievements_leave_the_sibling_locked() {
 // --- The held NEW EGG LINE banner ------------------------------------------
 
 // Every other announcement retires on a timer. The one that says a new KIND OF EGG is
-// available does not: it is the only banner with an instruction in it — go and lay one —
+// available does not: it is the only banner with an instruction in it (go and lay one),
 // so it waits for the player to acknowledge it, and the press that does so is spent.
 void test_new_egg_line_banner_holds_until_a_press() {
     Game g{StartMode::Hatched};
@@ -602,16 +602,16 @@ void test_new_egg_line_banner_holds_until_a_press() {
     CHECK(g.nav() != Game::Nav::Idle);
 }
 
-// An ordinary unlock is untouched by any of that — it still retires on its own clock,
+// An ordinary unlock is untouched by any of that: it still retires on its own clock,
 // which is what keeps the held plate meaning something on the rare occasions it appears.
 // The dwell is DERIVED, which is the whole of this item: the banner stays up for one
 // full marquee cycle of its longest line, so the time a name gets is a function of the
 // name. Measured against marqueeCycleBeats directly rather than against a copied
-// formula — if the two ever disagree, the banner is the one that is wrong.
+// formula, if the two ever disagree, the banner is the one that is wrong.
 void test_achievement_banner_dwell_follows_its_copy() {
     const int room = kActiveW - 2 * kMargin;
 
-    // A line that fits is two holds, and that already clears the floor — so every
+    // A line that fits is two holds, and that already clears the floor, so every
     // ordinary banner sits longer than kAchBannerMs rather than exactly on it.
     const uint32_t fits =
         static_cast<uint32_t>(marqueeCycleBeats("SHORT", room)) * kHeartbeatMs;
@@ -626,7 +626,7 @@ void test_achievement_banner_dwell_follows_its_copy() {
     CHECK(static_cast<uint32_t>(longBeats) * kHeartbeatMs > fits);
 
     // The live banner agrees with the helper. Drained to a quiet home screen first, then
-    // one row armed by name — a fresh save may or may not have something already waiting,
+    // one row armed by name: a fresh save may or may not have something already waiting,
     // and this gate is about the arithmetic rather than about the starting roster.
     Game g{StartMode::Hatched};
     uint32_t t = 0;
@@ -665,12 +665,12 @@ void test_ordinary_banner_still_retires_on_its_own() {
 // The unlock banner is three centred lines on a 38px plate over the habitat, and all
 // three are content: an achievement name, an egg-line name, and a reward that names an
 // item. Centred text that outgrows the canvas is cut at BOTH ends, which reads as a
-// rendering fault rather than as long copy — so the banner centres only while a line
+// rendering fault rather than as long copy, so the banner centres only while a line
 // fits and scrolls it in the margins otherwise (game_render.cpp).
 //
-// Scrolling is the safety net, not the plan. The timer no longer forces that — a
+// Scrolling is the safety net, not the plan. The timer no longer forces that. A
 // banner's dwell is one full marquee cycle of its own longest line
-// (Game::achBannerDwellMs), so a traveling line does get to finish — but a line the
+// (Game::achBannerDwellMs), so a traveling line does get to finish, but a line the
 // player must READ IN ONE PIECE is better than one they must watch, and a table that
 // keeps every line inside the plate never spends a banner on the difference. So this
 // stays a gate on the CONTENT, through the same composition the screen does.

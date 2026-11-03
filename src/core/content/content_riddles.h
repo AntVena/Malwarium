@@ -1,8 +1,8 @@
-// content_riddles.h — the SHIBOLEET pool: what a guardian can put to a pet.
+// content_riddles.h (the SHIBOLEET pool): what a guardian can put to a pet.
 //
 // A row is a riddle and three replies. The guardian draws all four in the CANT
 // (core/model/cant.h), so what the player actually sees is legible only as far as their
-// sigils reach — the pool is written in plain words and enciphered at the moment it is
+// sigils reach: the pool is written in plain words and enciphered at the moment it is
 // asked. Nothing here knows about the cipher, the same way content_quotes.h knows
 // nothing about how a letter opens.
 //
@@ -11,39 +11,39 @@
 //     {"I AM THE ONLY PART OF A WALL THAT AGREES WITH YOU.",
 //      {"A DOOR", "A WINDOW", "A CRACK"}},
 //
-// A ROW MUST BE A RIDDLE, NOT A DEFINITION. A riddle misdirects — the imagery points at
+// A ROW MUST BE A RIDDLE, NOT A DEFINITION. A riddle misdirects: the imagery points at
 // a person, a place, an animal, and every line turns out to have been literally true of
 // the answer only once you have it. A row that describes its answer in its answer's own
 // terms is trivia in a riddle's clothes. If a row can be answered without re-reading it,
 // it is not finished.
 //
-// AND ITS ANSWER MUST BE A WORD ANYONE KNOWS — a door, an echo, a name, nothing. Never a
+// AND ITS ANSWER MUST BE A WORD ANYONE KNOWS: a door, an echo, a name, nothing. Never a
 // nonce, an off-by-one, a passive scan. Someone who solves the riddle and still cannot
 // answer it has been beaten by vocabulary rather than by the puzzle, which defeats the
 // entire screen: the point of learning the CANT is that READING the question is what
-// wins it. The machine belongs in the guardian's voice, never in the word it wants back
-// — a stale record is a ghost that still answers to a name, and anyone can answer that.
+// wins it. The machine belongs in the guardian's voice, never in the word it wants back:
+// a stale record is a ghost that still answers to a name, and anyone can answer that.
 //
 // The decoys carry the rest: each is a plain word the imagery could honestly have been
 // pointing at, so a fluent pet still has to choose and a blind pick stays a real gamble.
 //
 // THE FIRST REPLY IS THE TRUE ONE, always. The three are SHUFFLED when the riddle is
 // asked (Game::startShiboleet), so authoring position carries no information and an
-// author cannot accidentally teach the pool a habit — "it's usually the second one" is
+// author cannot accidentally teach the pool a habit: "it's usually the second one" is
 // not a thing a player can learn here.
 //
 // TWO RULES A NEW ROW MUST PASS, both checked by the native content gate rather than by
 // eye (test/test_native/test_shiboleet.cpp):
 //   * The riddle WRAPS into kRiddleBodyLines lines at kRiddleBodyW, and every reply fits
-//     kRiddleReplyW on one line. A character count is the wrong check — wrapping wastes
-//     the tail of most lines — so write it and run the gate.
+//     kRiddleReplyW on one line. A character count is the wrong check (wrapping wastes
+//     the tail of most lines), so write it and run the gate.
 //   * Its text is A-Z, digits, spaces and plain ASCII punctuation. FONT_UI is ASCII
 //     32..126 (tools/gen_font.py) and anything outside it renders as a hole. Curly
 //     quotes and en-dashes are the usual offenders; normalise them.
 //
 // A riddle carries NO wire number, unlike a Decryptogram quote: the save keeps which
 // SIGILS are known and nothing per-riddle, so a row may be rewritten, reordered or
-// dropped freely. What a guardian asked last time is not a fact worth persisting — the
+// dropped freely. What a guardian asked last time is not a fact worth persisting: the
 // reward was the sigil, and the sigil is what the save has.
 //
 // Compiled-in and index-addressed, like the quotes and the crews.
@@ -56,7 +56,7 @@ namespace mal {
 // whole difficulty curve at zero sigils, so it is a constant and not a per-row field.
 constexpr int kRiddleReplies = 3;
 
-// The panel the pool is written against, in CELLS rather than pixels — the same shape
+// The panel the pool is written against, in CELLS rather than pixels: the same shape
 // core/model/cryptogram.h states its board in, and for the same two reasons. Content
 // must not depend on the UI layer (a header that reached for core/ui/layout.h would put
 // every screen constant into every unit that includes a Game), and a column count is
@@ -72,7 +72,7 @@ constexpr int kRiddleReplyCols = kRiddleBodyCols - kRiddleReplyIndentCols;
 
 struct RiddleDef {
     const char* text;
-    // replies[0] is the TRUE one. See the banner — the order shown is shuffled.
+    // replies[0] is the TRUE one. See the banner: the order shown is shuffled.
     const char* replies[kRiddleReplies];
 };
 

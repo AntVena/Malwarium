@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// The glitch quantum, in SOURCE pixels — the malbeast nibble (tools/gen_malbeast_art.py's
+// The glitch quantum, in SOURCE pixels: the malbeast nibble (tools/gen_malbeast_art.py's
 // NIB). Every tell works in whole blocks of this so the corruption is as blocky as the body;
 // a tear or a lit cell that landed off this grid would read as a finer, cleaner renderer than
 // the thing it is corrupting.
@@ -16,11 +16,11 @@ constexpr int kBlock = 4;
 
 // A torn band shears by at most this many blocks to either side. Two blocks (8 source px, 14
 // dest px at the ×1.75 creature scale) is far enough to read as broken without throwing a
-// slice clear of the body — past that it reads as debris rather than as a bad scanline.
+// slice clear of the body: past that it reads as debris rather than as a bad scanline.
 constexpr int kMaxTearBlocks = 2;
 
 // Rolls per phase. A band tears, or a cell corrupts, only when its hash clears a threshold,
-// so most of the sprite is intact most of the time and the glitch reads as intermittent — a
+// so most of the sprite is intact most of the time and the glitch reads as intermittent: a
 // signal breaking up, not static. Out of 256.
 constexpr uint32_t kTearChance = 70;    // ~27% of bands shear on a given phase
 constexpr uint32_t kHotChance = 22;     // ~9% of interior blocks light hot
@@ -60,7 +60,7 @@ void drawSpriteGlitch(Framebuffer& fb, const SpriteData& s, int frame,
     for (int py = 0; py < cellH; ++py) {
         const int bandRow = py / kBlock;
         const int tear = bandTear(bandRow, clock, block);
-        // A sheared band carries a one-block hot fringe on the side it is travelling toward —
+        // A sheared band carries a one-block hot fringe on the side it is travelling toward:
         // the mis-clocked-scanline colour split. 0 for an untorn band.
         const int ghostDir = tear > 0 ? 1 : (tear < 0 ? -1 : 0);
 

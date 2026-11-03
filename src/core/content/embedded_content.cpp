@@ -1,10 +1,10 @@
-// embedded_content.cpp — the content pack + art, compiled in.
+// embedded_content.cpp: the content pack + art, compiled in.
 //
 // This is the FIRST ContentSource/AssetSource implementation. It holds no content
 // itself: each table lives in its own content_<type>.cpp unit (see content_tables.h)
 // so every table stays small and skimmable. This file just ASSEMBLES those tables into
 // the ContentSource the registry reads. An SD-backed source is a parallel implementation
-// merged at boot — not a change to anything that reads the registry.
+// merged at boot, not a change to anything that reads the registry.
 #include <algorithm>
 #include <cstring>
 

@@ -1,7 +1,7 @@
-// scenes.h — the backdrop CATALOGUE: which SceneId is drawn by which function.
+// scenes.h (the backdrop CATALOGUE): which SceneId is drawn by which function.
 //
 // One table, in scenes.cpp, is the whole dispatch. A new place is a file under
-// render/scenes/, a row on SceneId (render/scene_id.h) and a row here — and because the
+// render/scenes/, a row on SceneId (render/scene_id.h) and a row here, and because the
 // table is indexed by the enum, an id with no drawing is a build failure rather than a
 // screen that comes up empty.
 //
@@ -19,10 +19,10 @@ namespace mal {
 class Framebuffer;
 
 // What every scene is. The ground comes LAST because it is the parameter a caller
-// varies — the same place drawn under a fighter's feet and under a resting pet.
+// varies: the same place drawn under a fighter's feet and under a resting pet.
 using SceneDraw = void (*)(Framebuffer& fb, int beat, const SceneGround& g);
 
-// The drawing for an id, or nullptr for SceneId::None — which is the answer for a place
+// The drawing for an id, or nullptr for SceneId::None, which is the answer for a place
 // whose backdrop is not authored yet, not an error.
 SceneDraw sceneFor(SceneId id);
 

@@ -1,4 +1,4 @@
-// content_crews.cpp — the crew table. One row per enlistable crew; see
+// content_crews.cpp: the crew table. One row per enlistable crew; see
 // content_crews.h for the field schema and how a new Exploit kind is added.
 
 #include "core/content/content_crews.h"
@@ -24,7 +24,7 @@ const CrewDef kCrews[] = {
      {"ESCALATION", CrewExploitKind::PowerByDamageDealt, 3,
       "Your next {mag} landed hits each bank their own damage as Power for the rest "
       "of the fight. Every one pays for the next."}},
-    // Blue's answer to everything that erodes a pet rather than hitting it — the
+    // Blue's answer to everything that erodes a pet rather than hitting it. The
     // Phishing siphons, a Trojan trap's armour rot: be exactly the pet you brought,
     // and stay it.
     {"injection_protection", "INJECTION PROTECTION", "know thyself",

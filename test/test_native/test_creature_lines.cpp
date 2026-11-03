@@ -1,4 +1,4 @@
-// test_creature_lines.cpp — native gates for the creature lines, the Trojan divert and the Clutch Pick.
+// test_creature_lines.cpp: native gates for the creature lines, the Trojan divert and the Clutch Pick.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -8,7 +8,7 @@
 // --- New lines: cat (Ransomware) + frog (Phishing) -------------------------
 
 // The CryptoShell (Ransomware) egg's random hatch pool holds Paypup, Conkittenate
-// AND Pingcub — every Process creature on the ransomware line is a
+// AND Pingcub: every Process creature on the ransomware line is a
 // candidate, so the same egg can hatch any of the three species. None of them is
 // deep-dive gated the way Phishlet is, so all three are in the pool from a fresh save.
 void test_hatch_pool_ransomware() {
@@ -154,7 +154,7 @@ void test_anglerfish_line_evolution_branch() {
     }
 }
 
-// Trojan family — content wiring: pierce attacks (armorPiercePct 100), trap defends,
+// Trojan family. Content wiring: pierce attacks (armorPiercePct 100), trap defends,
 // the two creatures on line "trojan", and Phishlet's cross-line divert hook.
 void test_trojan_content() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -178,7 +178,7 @@ void test_trojan_content() {
           std::strcmp(ph->evolvesToTrojanId, "keyloggerhead") == 0);
     // Phishlet's divert replaces a LINEAR hop, so it names one target and no Bad half.
     CHECK(!ph->evolvesToTrojanBadId);
-    // Rootgrub's replaces a care BRANCH, so it names both — that pairing is the whole
+    // Rootgrub's replaces a care BRANCH, so it names both: that pairing is the whole
     // reason evolvesToTrojanBadId exists, and a row with a Bad half but no Good one
     // would silently never divert.
     const CreatureDef* rg = r.creature("rootgrub");
@@ -198,7 +198,7 @@ void test_trojan_content() {
 // The Worm line's divert, which is the SAME hook one boundary later: Rootgrub trades its
 // Daemon rather than its Script, and the pair it lands on is care-branched exactly like
 // the Shenloop/Threadbore pair it replaced. Guards the two things that would break
-// quietly — the stage gate in Game::fireEvolution having been dropped, and the Bad half
+// quietly: the stage gate in Game::fireEvolution having been dropped, and the Bad half
 // being read from the care budget rather than the divert always taking the Good one.
 void test_worm_script_divert_branch() {
     {   // Good care + divert seed: Rootgrub -> Coaxeel, NOT Shenloop.
@@ -232,7 +232,7 @@ void test_worm_script_divert_branch() {
 }
 
 // The cross-line infiltration divert (the headline mechanic): a Phishlet that rolls the
-// divert becomes Keyloggerhead (a Trojan) instead of ClickBait — dropping its Phishing
+// divert becomes Keyloggerhead (a Trojan) instead of ClickBait. Dropping its Phishing
 // moves for the Trojan kit and unlocking the family. Seeded so the roll is deterministic.
 void test_trojan_cross_line_divert() {
     {   // divert seed: Phishlet -> Keyloggerhead, loadout re-seeded, family unlocked
@@ -259,7 +259,7 @@ void test_trojan_cross_line_divert() {
 }
 
 // Trojan combat: (1) a pierce attack ignores a defended enemy's damage cut; (2) an armed
-// trap springs on an incoming hit — evasion cuts the damage taken, rebound chips the
+// trap springs on an incoming hit. Evasion cuts the damage taken, rebound chips the
 // attacker, and the trap is consumed; (3) Execution-Override chance gates off-line and
 // scales with armed traps.
 void test_trojan_combat() {
@@ -279,7 +279,7 @@ void test_trojan_combat() {
     }
 
     // (2) Trap trigger. Player NOT on line "trojan" (nullptr) so the Execution-Override
-    //     passive can't interfere — the trap mechanic itself is not line-gated. Equal
+    //     passive can't interfere: the trap mechanic itself is not line-gated. Equal
     //     speed -> strict alternation, player first: step1 arms logic_bomb, step2 the
     //     enemy's packet_storm springs it.
     {
@@ -325,7 +325,7 @@ static Game phishingEgg() {
 }
 
 // Aim at whichever half actually holds the live egg, every round. Mirrors the cut
-// game_eggpick.cpp documents — alternating columns/rows over the 8x4 clutch — so it
+// game_eggpick.cpp documents (alternating columns/rows over the 8x4 clutch), so it
 // also pins that order: a change to the split axis or count fails here.
 static void eggPickPlayPerfect(Game& g) {
     const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
@@ -356,7 +356,7 @@ void test_eggpick_win_halves_incubation() {
     CHECK(g.inEggPhase());                          // still an egg, just a faster one
 }
 
-// Picking the wrong half loses the egg for good — the run resolves on THAT turn rather
+// Picking the wrong half loses the egg for good: the run resolves on THAT turn rather
 // than playing out the rounds it has left, and the incubation clock is left at full
 // length.
 void test_eggpick_miss_keeps_full_incubation() {
@@ -385,7 +385,7 @@ void test_eggpick_aim_is_not_cancel() {
     CHECK(g.eggPickRound() == 1);                    // only B advances a round
 }
 
-// The live egg never hides in a wrapped cell — the odd-row shift puts the last cell of
+// The live egg never hides in a wrapped cell: the odd-row shift puts the last cell of
 // those rows half off each edge of the clutch, which has no honest left/right answer.
 void test_eggpick_target_never_wraps() {
     for (uint32_t seed = 1; seed <= 64; ++seed) {
@@ -471,8 +471,8 @@ void test_hatch_reveal_covers_the_decryption_line() {
     CHECK(g.nav() == Game::Nav::ModalHatchReveal);
 }
 
-// Grayscale gate. The aim rides on SHAPE first — a bar down the aimed half's outer
-// edge, which moves to the other edge when the aim flips — backed by a luminance step
+// Grayscale gate. The aim rides on SHAPE first (a bar down the aimed half's outer
+// edge, which moves to the other edge when the aim flips) backed by a luminance step
 // between the aimed, still-in-play, and eliminated cells. None of it is carried by hue.
 void test_eggpick_grayscale() {
     Framebuffer fb(kActiveW, kActiveH);
@@ -498,7 +498,7 @@ void test_eggpick_grayscale() {
         CHECK(meanLum(kActiveW - 4, kActiveW, top, bot) > meanLum(0, 4, top, bot));
     }
     {   // Committing round 1 halves the columns, so the surviving crop is strictly
-        // narrower than the full raft and recentres on it — the panel's own outer edge,
+        // narrower than the full raft and recentres on it: the panel's own outer edge,
         // which round 1 still covered in backdrop art, is now bare background rather
         // than a decoy. A stand-in for "eliminated cells aren't drawn at all" that
         // doesn't hardcode the crop's own zoom/centring arithmetic.
@@ -628,7 +628,7 @@ void test_firmware_version_ordering() {
 }
 
 // A clip names a row and a column count on the creature's OWN sheet, and nothing at
-// draw time re-checks that the row exists — drawSpriteUpscaled indexes it. So the gate
+// draw time re-checks that the row exists: drawSpriteUpscaled indexes it. So the gate
 // is here, across the whole roster rather than the cat line alone: a sheet re-cut to
 // fewer rows, or a clip row typed one too high, reads off the end of the pixel array
 // and lands as garbage on the panel rather than as a build failure.
@@ -645,7 +645,7 @@ void test_creature_clips_fit_their_sheets() {
             CHECK(clip.frames > 0 && clip.frames <= s->frames);
             CHECK(clip.holdBeats > 0);
             // frameAt must stay inside the declared columns for any beat, including the
-            // wrap — the whole point of holdBeats is that it slows a clip without
+            // wrap: the whole point of holdBeats is that it slows a clip without
             // walking off the end of it.
             for (int beat = 0; beat < clip.frames * clip.holdBeats * 3; ++beat)
                 CHECK(clip.frameAt(beat) >= 0 && clip.frameAt(beat) < clip.frames);
@@ -667,7 +667,7 @@ void test_cat_line_clip_wiring() {
         CHECK(c);
         CHECK(c->frames == 8);
     }
-    // One pose per row, no two sharing — the reason this sheet costs four rows.
+    // One pose per row, no two sharing: the reason this sheet costs four rows.
     CHECK(kalico->clip("idle")->row == 0);
     CHECK(kalico->clip("walk")->row == 1);
     CHECK(kalico->clip("attack")->row == 2);
@@ -695,7 +695,7 @@ void test_combatant_carries_its_creature() {
 }
 
 // The walk clip is gated on the wander actually moving the anchor, so "travelling" has
-// to go false the beat the trip lands — otherwise a parked creature keeps walking on
+// to go false the beat the trip lands, otherwise a parked creature keeps walking on
 // the spot for the whole rest period.
 void test_wander_travelling_tracks_the_trip() {
     IdleWander w;

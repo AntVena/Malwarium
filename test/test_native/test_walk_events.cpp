@@ -1,4 +1,4 @@
-// test_walk_events.cpp — native gates for the walk's non-combat events — Wi-Fi, shops, caches and warp keys.
+// test_walk_events.cpp (native gates for the walk's non-combat events) Wi-Fi, shops, caches and warp keys.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -7,14 +7,14 @@
 
 // Same search, but keeps re-rolling (resolving each non-matching outcome via
 // B, or riding out+dismissing an awakened-guardian fight) until the specific
-// sub-outcome `want` comes up, leaving the game AT Nav::Wifi with it unresolved
-// — so a test can then press B itself and assert the resolution.
+// sub-outcome `want` comes up, leaving the game AT Nav::Wifi with it unresolved,
+// so a test can then press B itself and assert the resolution.
 static void walkToWifiOutcome(Game& g, Game::WifiOutcome want) {
     for (int tries = 0; tries < 50 && g.nav() != Game::Nav::Wifi; ++tries) {
         walkToWifiEvent(g);
         if (g.nav() != Game::Nav::Wifi) return;   // search exhausted (shouldn't happen)
         if (g.wifiOutcome() == want) return;
-        g.onButton(press(Button::B));             // wrong outcome — resolve, keep looking
+        g.onButton(press(Button::B));             // wrong outcome: resolve, keep looking
         if (g.nav() == Game::Nav::Combat) {        // an awakened-guardian miss
             uint32_t t = 0;
             for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
@@ -36,7 +36,7 @@ void test_wifi_event_reached() {
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
     // Like Walk/Encounter/Combat, it's an activity screen beyond the 3-deep
-    // menu budget — the global 5s auto-defocus must stay suspended while it's
+    // menu budget: the global 5s auto-defocus must stay suspended while it's
     // up (analogy), not silently drop the player out mid-event.
     g.tick(kAutoDefocusMs + kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Wifi);
@@ -44,7 +44,7 @@ void test_wifi_event_reached() {
 
 // A real network only credits the lifetime networks-seen counter once the EXPL
 // Wi-Fi event actually resolves it (never at registerNetwork/scan time), and
-// only for a GENUINELY new BSSID — never decreasing, never re-crediting a
+// only for a GENUINELY new BSSID, never decreasing, never re-crediting a
 // repeat, and never crediting anything when nothing was queued.
 void test_wifi_networks_seen_counter() {
     Game g{StartMode::Hatched};
@@ -68,7 +68,7 @@ void test_wifi_networks_seen_counter() {
     CHECK(g.networksSeen() == 1);
 
     // Re-queue the SAME BSSID: the ledger already knows it, so the next event
-    // resolves it as a repeat — never a second credit.
+    // resolves it as a repeat, never a second credit.
     walkAndCreditNetwork(g, bssid, "Neighbour");
     CHECK(g.networksSeen() == 1);
 }
@@ -96,7 +96,7 @@ void test_wifi_open_cache_grants_loot() {
     CHECK(g.bits() == bits0 + kLootBitsReward);
 }
 
-// Drive the audit-capture SM to Hot ("broadcasting") — the only signal that
+// Drive the audit-capture SM to Hot ("broadcasting"): the only signal that
 // flags the player as a target. Toggle on (-> Armed) then a captured
 // handshake (-> Hot).
 static void makeHot(Game& g) {
@@ -107,7 +107,7 @@ static void makeHot(Game& g) {
 }
 
 // Awakened guardian routes straight into the shared wild-combat path with LIVE
-// stakes ("reuse startWildCombat/Nav::Combat") — no Fight/Flee/Sinkhole
+// stakes ("reuse startWildCombat/Nav::Combat"): no Fight/Flee/Sinkhole
 // intro, the guardian is already hostile. A guardian only wakes when the player
 // is HOT: drive the SM hot up front, then search. The walk helpers keep
 // the game clock low (each resets a local tick base at 0), so nowMs stays well
@@ -167,9 +167,9 @@ void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
 }
 
 // The gate: merely DISCOVERING networks never flags the player hot, so a
-// non-hot player is never auto-attacked by a Wi-Fi event — over a large sample of
+// non-hot player is never auto-attacked by a Wi-Fi event. Over a large sample of
 // Wi-Fi events, none awaken a guardian and none route into combat. (Wild-step
-// combats reached separately are the expected majority path — not our concern here.)
+// combats reached separately are the expected majority path, not our concern here.)
 void test_wifi_never_awakens_when_not_hot() {
     Game g{StartMode::Hatched};
     CHECK(!g.auditCapture().broadcasting());         // not hot: no capture done
@@ -187,7 +187,7 @@ void test_wifi_never_awakens_when_not_hot() {
 }
 
 // Friendly visit grants a transient ally buff for the next 3 battles (
-// ) — the v1 substitute for the doc-07 Met-Pets Roster: it boosts
+// ). The v1 substitute for the doc-07 Met-Pets Roster: it boosts
 // the player's combat power (buildPlayerCombatant) rather than naming a
 // remembered pet, consumed one battle at a time regardless of outcome.
 void test_wifi_friendly_visit_grants_ally_buff() {
@@ -204,7 +204,7 @@ void test_wifi_friendly_visit_grants_ally_buff() {
 }
 
 // Hands-off Wi-Fi reveal: with no button press the rolled outcome auto-
-// plays out after the ~3s reveal hold — here a sleeping guardian's free loot — and
+// plays out after the ~3s reveal hold (here a sleeping guardian's free loot), and
 // hands back to the idle habitat so exploration keeps running. Zero presses.
 void test_wifi_auto_plays_out_after_hold() {
     Game g{StartMode::Hatched};
@@ -228,7 +228,7 @@ void test_wifi_auto_plays_out_after_hold() {
 }
 
 // ===========================================================================
-// Backlog / — shops as explore events + the two shop consumables.
+// Backlog /: shops as explore events + the two shop consumables.
 // A storefront is a self-contained walk event (like the Wi-Fi event): one item,
 // restocked + priced per that area's own shop def (src/core/content/areas/). Byte
 // to Eat (Citrus Circuit -> Null Noodles) and Pier-to-Peer (The Pirate Bayou ->
@@ -237,7 +237,7 @@ void test_wifi_auto_plays_out_after_hold() {
 
 // Bounded search: walk until the periodic roll types a storefront shop event,
 // leaving the game AT Nav::Shop. Dismisses any other typed event (Wild via a
-// Sinkhole Trap, Wi-Fi via B, boss via ride-out) — robust to the weight mix.
+// Sinkhole Trap, Wi-Fi via B, boss via ride-out): robust to the weight mix.
 // `stopAt` is the shop nav (Shop or ModShop) this walk is trying to reach; landing
 // in the OTHER shop kind just leaves it (C) so the walk keeps stepping instead of
 // getting stuck there.
@@ -304,8 +304,8 @@ void test_shop_event_buy_decrements() {
     CHECK(g.nav() == Game::Nav::Idle);
 }
 
-// Broke gate: with fewer Bits than the price, a buy is inert — no spend, no
-// item, no stock draw — and the status line spells out the reason (grayscale).
+// Broke gate: with fewer Bits than the price, a buy is inert (no spend, no
+// item, no stock draw), and the status line spells out the reason (grayscale).
 void test_shop_buy_gated_when_broke() {
     Game g{StartMode::Hatched};
     walkToShop(g);
@@ -346,7 +346,7 @@ void test_shop_sold_out_after_stock() {
 }
 
 // Arbitrary-length listing cycling: A steps the cursor through EVERY listing (not
-// just a 0/1 toggle) and wraps back to 0 — generic over whatever count the current
+// just a 0/1 toggle) and wraps back to 0. Generic over whatever count the current
 // area's storefront happens to carry, so a future area with more rows doesn't need
 // a new test.
 void test_shop_cursor_cycles_all_listings() {
@@ -363,7 +363,7 @@ void test_shop_cursor_cycles_all_listings() {
 }
 
 // Mod shop: buying spends Bits AND every item cost the listing carries (not Bits
-// alone), then grants the mod into the loadout's spare pool — a guaranteed buy, not
+// alone), then grants the mod into the loadout's spare pool. A guaranteed buy, not
 // a lucky drop.
 void test_mod_shop_buy_grants_mod() {
     Game g{StartMode::Hatched};
@@ -386,7 +386,7 @@ void test_mod_shop_buy_grants_mod() {
         CHECK(g.shopListingCostHave(row, k) == 0);   // the cost items were consumed
 }
 
-// Item-cost gate: an ample wallet alone isn't enough — a mod-shop listing's item
+// Item-cost gate: an ample wallet alone isn't enough. A mod-shop listing's item
 // cost(s) must also be held, or the buy stays inert (mirrors the Bits-only gate
 // test_shop_buy_gated_when_broke, but for the NEW cost axis this feature adds).
 void test_mod_shop_buy_gated_by_item_cost() {
@@ -431,7 +431,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     const int stock0 = g.shopListingStock(row);
     CHECK(!g.shopRowBuyable(row));
     CHECK(std::strcmp(g.shopStatusLine(), "STORAGE FULL") == 0);
-    g.onButton(press(Button::B));                     // inert — nothing changes hands
+    g.onButton(press(Button::B));                     // inert: nothing changes hands
     CHECK(g.bits() == bits0);
     CHECK(g.shopListingStock(row) == stock0);
     CHECK(g.loadout().countOf(id) == cap);
@@ -452,7 +452,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
 
 // The storefront reports what the shopper already HOLDS of a row, so "do I need this"
 // is answerable at the shelf. An ITEM row reads the inventory stack and is uncapped
-// (heldCap 0 — the screen prints a bare count); a MOD row reads the un-equipped spare
+// (heldCap 0: the screen prints a bare count); a MOD row reads the un-equipped spare
 // pool, which is what modStorageCap() bounds.
 void test_shop_rows_report_what_is_already_held() {
     Game g{StartMode::Hatched};
@@ -492,10 +492,10 @@ void test_shop_auto_leaves_after_hold() {
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
     uint32_t t = g.lifetimeUptimeMs();                   // continue from the game's clock
-    // A reveal-length wait is NOT enough — the decision hold is longer.
+    // A reveal-length wait is NOT enough: the decision hold is longer.
     for (int i = 0; i < kExploreRevealHoldBeats + 2; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Shop);
-    // A press restarts the hold — the engaged shopper keeps the shop open.
+    // A press restarts the hold: the engaged shopper keeps the shop open.
     g.onButton(press(Button::A));                        // one-item shop: A is a no-op cycle
     for (int i = 0; i < kExploreDecisionHoldBeats - 2; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Shop);                   // the press extended the window
@@ -566,11 +566,11 @@ void test_sealed_cache_walk_find() {
 }
 
 // Decrypting a Sealed Cache now happens in the Hacker VAULT, NOT pet-side
-// ITEMS. (a) pet-side Use is inert (gated "OPEN IN VAULT (A+C)" — nothing consumed);
+// ITEMS. (a) pet-side Use is inert (gated "OPEN IN VAULT (A+C)". Nothing consumed);
 // (b) VAULT B decrypts: consumes one container, draws the reward pool (>= flat Bits),
 // logs it, reveals the yield (Nav::CacheYield).
 void test_sealed_cache_open_grants_reward() {
-    // (a) pet-side ITEMS no longer opens caches — Use is inert.
+    // (a) pet-side ITEMS no longer opens caches: Use is inert.
     {
         Game g{StartMode::Hatched};
         g.inventory().add("sealed_cache", 2);
@@ -601,8 +601,8 @@ void test_sealed_cache_open_grants_reward() {
     }
 }
 
-// Every rarity-tiered cache is an openable Quest container carrying no vitals/price
-// — found, not bought, opened for its draw. Distinct rarities across the family.
+// Every rarity-tiered cache is an openable Quest container carrying no vitals/price:
+// found, not bought, opened for its draw. Distinct rarities across the family.
 void test_sealed_cache_item_shape() {
     ContentRegistry r = ContentRegistry::embedded();
     const ItemDef* d = r.item("sealed_cache");
@@ -625,7 +625,7 @@ void test_sealed_cache_item_shape() {
 
 // opening a tiered cache pays that tier's Bits and drops item(s) from the
 // tier's rarity-specific pool. The epic tier is the multi-item drop (2 items), and
-// its pool is scarce-utility only — none of the common consumables. Grayscale-
+// its pool is scarce-utility only: none of the common consumables. Grayscale-
 // independent: assertions are on ids + counts.
 void test_cache_epic_pool_and_multidrop() {
     Game g{StartMode::Hatched};
@@ -650,7 +650,7 @@ void test_cache_epic_pool_and_multidrop() {
 }
 
 // The common tier pays the common Bits and drops exactly one consumable from its
-// pool — a cheaper draw than epic. Counted over the cache's OWN pool rather than a
+// pool: a cheaper draw than epic. Counted over the cache's OWN pool rather than a
 // hand-listed set of ids, so adding a row to the pantry can't quietly turn this into
 // a test of five specific items that the draw is now allowed to miss.
 void test_cache_common_pool_single_drop() {
@@ -672,11 +672,11 @@ void test_cache_common_pool_single_drop() {
 // Earn-path coverage: EVERY understood item must be obtainable in play, not just
 // listed in the registry. An item is earnable if it is on the one-time starting
 // shelf, in some container's reward pool (ItemDef::cache.pool), in the walk loot-cache
-// pool (kLootPool), in some AREA's own wild-win drop table (areaWildLootTable — the
+// pool (kLootPool), in some AREA's own wild-win drop table (areaWildLootTable. The
 // ladder's rows plus the DeepWeb Dive's standalone pool, which is the only source of the
 // three unbuyable USBs), shop-buyable (bitsPrice), a container the walk can FIND
 // (cache.findWeight > 0) or a warp key, the OUTPUT of a Hacker MERGE HUB recipe
-// (game_internal.h kMergeRecipes — its two INPUT ingredients still need their own
+// (game_internal.h kMergeRecipes. Its two INPUT ingredients still need their own
 // earn path, same as any other item), or handed over by an ACHIEVEMENT reward.
 //
 // Note the container rule is findWeight, not "is a container": a cache that is only ever
@@ -693,7 +693,7 @@ void test_item_earn_coverage() {
     };
     auto isMergeOutput = [](const char* id) {
         // Indexed, not ranged: the table is an extern array in content_recipes.cpp, so
-        // its bound is not visible here — kMergeRecipeCount is what travels with it.
+        // its bound is not visible here; kMergeRecipeCount is what travels with it.
         for (int i = 0; i < kMergeRecipeCount; ++i)
             if (std::strcmp(kMergeRecipes[i].outputId, id) == 0) return true;
         return false;
@@ -703,11 +703,11 @@ void test_item_earn_coverage() {
             if (std::strcmp(kLootPool[i].id, id) == 0) return true;
         return false;
     };
-    // Every area's wild-win table, the DeepWeb Dive's included — asked through
+    // Every area's wild-win table, the DeepWeb Dive's included: asked through
     // areaWildLootTable so the ladder's rows and the dive's standalone pool answer the
     // same question, which is the job that helper exists to do.
     auto inWildLootPool = [](const char* id) {
-        // ...every real area, and BOTH endless zones — kDarkWebSector is the last index
+        // ...every real area, and BOTH endless zones: kDarkWebSector is the last index
         // there is, so walking to it is what keeps this honest as zones are added.
         for (int idx = 0; idx <= kDarkWebSector; ++idx) {
             const AreaLootTable t = areaWildLootTable(idx);
@@ -727,7 +727,7 @@ void test_item_earn_coverage() {
     for (const ItemDef* it : r.allItems()) {
         // The one deliberate orphan: the untiered original cache. It predates the rarity
         // tiers and is kept ONLY so a save written before them still has an openable
-        // container — nothing grants it any more, and nothing should.
+        // container: nothing grants it any more, and nothing should.
         if (std::strcmp(it->id, "sealed_cache") == 0) continue;
         const bool earnable =
             starting.count(it->id) > 0 ||                        // starting shelf
@@ -749,7 +749,7 @@ void test_item_earn_coverage() {
     // The three unbuyable USBs live at the bottom of the DeepWeb Dive and nowhere else:
     // no cache pays them out, no walk cache rolls them, and no counter sells them. Only
     // their Epic upgrade is for sale (Moor-to-Moor), and it is priced in four of the rare
-    // one — so every route to the family still runs through the dive.
+    // one, so every route to the family still runs through the dive.
     for (const char* usb : {"bad_usb", "signed_usb", "sandbox_usb"}) {
         CHECK(inWildLootPool(usb));
         CHECK(!inLootPool(usb));
@@ -758,7 +758,7 @@ void test_item_earn_coverage() {
     }
     CHECK(r.item("hypervisor_usb")->bitsPrice > 0);
     // The untiered legacy cache is deliberately unfindable now, and so is the earned-only
-    // Commendation Cache — the walk must never roll either.
+    // Commendation Cache: the walk must never roll either.
     CHECK(r.item("sealed_cache")->cache.findWeight == 0);
     CHECK(r.item("commend_cache")->cache.findWeight == 0);
 }
@@ -797,7 +797,7 @@ void test_warp_item_shape() {
 }
 
 // A warp key held in inventory is INERT from the ITEMS use path ("USE ON THE WALK"),
-// so a stray Use can't burn it for nothing — the count is untouched.
+// so a stray Use can't burn it for nothing: the count is untouched.
 void test_warp_key_inert_from_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("access_token", 1);
@@ -806,7 +806,7 @@ void test_warp_key_inert_from_items() {
 }
 
 // Using the Access Token WHILE EXPLORING (A+C control chord → B opens the picker,
-// B spends it) warps straight to a shop event — consumes the key and lands on
+// B spends it) warps straight to a shop event: consumes the key and lands on
 // Nav::Shop (re-homed onto the control chord).
 void test_access_token_warps_to_shop() {
     Game g{StartMode::Hatched};
@@ -825,7 +825,7 @@ void test_access_token_warps_to_shop() {
 // Using the Safe-Mode Key while exploring warps to a safe rest: it de-frags the pet
 // by the key ROW's own Frag magnitude, consumes the key, and returns to the idle
 // habitat (no combat). Read off the row rather than a constant, so retuning the key
-// retunes the gate — the magnitude is the row's to own.
+// retunes the gate: the magnitude is the row's to own.
 void test_safe_mode_key_warps_to_rest() {
     ContentRegistry reg = ContentRegistry::embedded();
     const ItemDef* key = reg.item("safe_mode_key");
@@ -849,7 +849,7 @@ void test_safe_mode_key_warps_to_rest() {
     CHECK(g.inventory().count("safe_mode_key") == 0);          // key consumed
 }
 
-// With no warp keys held, the control overlay's B (Warp) is a harmless no-op — it
+// With no warp keys held, the control overlay's B (Warp) is a harmless no-op: it
 // opens no picker and stays in the overlay ("else inert").
 void test_explore_warp_no_keys_is_noop() {
     Game g{StartMode::Hatched};
@@ -899,7 +899,7 @@ void test_warp_key_walk_find() {
             case Game::Nav::Shiboleet:
             case Game::Nav::ShiboleetVerdict:
                 // The area guardian a dry sighting queue routes to (game_net.cpp), in its
-                // three screens. Step through and move on — it is not what this gate is
+                // three screens. Step through and move on: it is not what this gate is
                 // hunting, but a screen this loop does not press is a screen it spins on
                 // forever.
                 g.onButton(press(Button::B));
@@ -911,7 +911,7 @@ void test_warp_key_walk_find() {
     CHECK(g.nav() == Game::Nav::Idle);               // explore was NOT interrupted
 }
 
-// Null Noodles: the "empty feeling" food — de-frags, makes the pet HUNGRIER
+// Null Noodles: the "empty feeling" food; de-frags, makes the pet HUNGRIER
 // (negative eating, the explicit exception to "+Hunger = fills"), and pulls
 // Happiness TOWARD 50% from ABOVE (a too-happy pet is numbed down).
 void test_null_noodles_effects() {
@@ -928,7 +928,7 @@ void test_null_noodles_effects() {
     CHECK(g.inventory().count("null_noodles") == 0); // consumed
 }
 
-// The Null Noodles Happiness pull works from BELOW 50 too — it lifts a miserable
+// The Null Noodles Happiness pull works from BELOW 50 too: it lifts a miserable
 // pet toward the midpoint (the "numb" middle), never past it.
 void test_null_noodles_happy_pull_from_below() {
     Game g{StartMode::Hatched};
@@ -943,7 +943,7 @@ void test_null_noodles_happy_pull_from_below() {
     CHECK(g.model().happiness() == 50);              // clamped to the midpoint
 }
 
-// R007_B33R: fills Hunger, lifts Happiness, but RAISES Fragmentation — the
+// R007_B33R: fills Hunger, lifts Happiness, but RAISES Fragmentation. The
 // straightforwardly indulgent counterpart to Null Noodles.
 void test_r007_b33r_effects() {
     Game g{StartMode::Hatched};

@@ -1,4 +1,4 @@
-// wire_field.h — fixed-width ASCII string slots, shared by the radio wire formats.
+// wire_field.h: fixed-width ASCII string slots, shared by the radio wire formats.
 //
 // Both peer_link.h (the HELLO beacon) and pvp_link.h (the duel handshake) lay their
 // strings out the same way: a fixed-width slot, NUL-padded, written and read byte by

@@ -1,4 +1,4 @@
-// test_arcade.cpp — native gates for the GAMES arcade: the till, the difficulty dial,
+// test_arcade.cpp (native gates for the GAMES arcade): the till, the difficulty dial,
 // and the promise that a cabinet run never touches what the game's own context owns.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -29,7 +29,7 @@ void test_arcade_pays_the_attempt() {
     g.onButton(press(Button::B));                 // START
     CHECK(g.nav() == Game::Nav::Stacker);
     CHECK(g.inArcadeRun());
-    tapC(g);                 // stop on row 0 — nothing banked
+    tapC(g);                 // stop on row 0: nothing banked
 
     CHECK(g.nav() == Game::Nav::ArcadeResult);
     CHECK(!g.inArcadeRun());
@@ -65,7 +65,7 @@ void test_arcade_perfect_board_pays_the_bonus() {
 
 // The contract that makes the arcade safe to reuse a real minigame: a cabinet run is
 // off the pet entirely. No Fragmentation cleaned, no process cleaned, no played-by-hand
-// tally, and none of its achievements — a played board in MAINT does all four.
+// tally, and none of its achievements: a played board in MAINT does all four.
 void test_arcade_stacker_leaves_the_disk_alone() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
@@ -74,7 +74,7 @@ void test_arcade_stacker_leaves_the_disk_alone() {
 
     enterArcadeCabinet(g, arcadeRowOf("stacker"), ArcadeDifficulty::Medium);
     const int bitsAtStart = g.bits();
-    g.onButton(press(Button::B));                 // START — costs nothing
+    g.onButton(press(Button::B));                 // START: costs nothing
     CHECK(g.bits() == bitsAtStart);
     CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
     g.onButton(press(Button::B));
@@ -108,10 +108,10 @@ void test_arcade_difficulty_paces_the_run() {
     CHECK(medium < hard);
 }
 
-// The Clutch has no clock to speed up, so its dial is how many times the raft halves —
+// The Clutch has no clock to speed up, so its dial is how many times the raft halves:
 // a narrower survivor, found from less information. The run now resolves the instant
 // the live egg falls out of the surviving span (see game_eggpick.cpp), so the dial is
-// a CEILING, not a guaranteed length — only a run that keeps the egg in span the whole
+// a CEILING, not a guaranteed length, only a run that keeps the egg in span the whole
 // way actually spends every round the dial allows. Asserted on that perfect path, which
 // is still the one thing the setting is allowed to change.
 void test_arcade_clutch_rounds_follow_the_dial() {
@@ -136,7 +136,7 @@ void test_arcade_clutch_rounds_follow_the_dial() {
             g.onButton(press(Button::B));
             ++commits;
         }
-        CHECK(g.eggPickWon());   // the egg was kept in span every round — never lost early
+        CHECK(g.eggPickWon());   // the egg was kept in span every round, never lost early
         return commits;
     };
     CHECK(roundsToResolvePerfect(ArcadeDifficulty::Easy) == kArcadeClutchRoundsEasy);
@@ -160,7 +160,7 @@ void test_arcade_isolation_is_off_the_clock() {
     CHECK(!g.inEggPhase());                       // a raised pet, playing for fun
 
     // Steer nothing: the worm starts heading right and walks into the far wall, which
-    // is the fastest honest end (turning every step just cycles it forever — see
+    // is the fastest honest end (turning every step just cycles it forever. See
     // test_isolation_cycle_run_finishes_clean).
     for (int i = 0; i < 400 && g.isolation().running(); ++i)
         g.tick(static_cast<uint32_t>((i + 1) * 400));
@@ -174,7 +174,7 @@ void test_arcade_isolation_is_off_the_clock() {
 }
 
 // The three ladders read off the same two tallies, so the gate that matters is that
-// they read them DIFFERENTLY — a losing run must move plays and losses but not wins.
+// they read them DIFFERENTLY: a losing run must move plays and losses but not wins.
 void test_arcade_ladders_split_plays_wins_losses() {
     Game g{StartMode::Hatched};
     const int row = arcadeRowOf("stacker");
@@ -200,7 +200,7 @@ void test_arcade_ladders_split_plays_wins_losses() {
 
 // The board's own joke, and the one arcade row that is a SHAPE rather than a tally:
 // a breach over a single course. Fires wherever the board is played, so it
-// is asserted through a MAINT run — the context the arcade borrowed it from.
+// is asserted through a MAINT run: the context the arcade borrowed it from.
 void test_stack_overflow_fires_on_the_second_row() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
@@ -211,7 +211,7 @@ void test_stack_overflow_fires_on_the_second_row() {
     g.onButton(press(Button::B));
     CHECK(g.hasAchievement(ach::kStackOverflow));
 
-    // A board built higher does not earn it — the course is the first one, exactly.
+    // A board built higher does not earn it: the course is the first one, exactly.
     Game n{StartMode::Hatched};
     n.model().setFragmentation(60);
     startPlayedMaint(n, MaintKind::Av, ArcadeGameKind::Stacker);
@@ -222,7 +222,7 @@ void test_stack_overflow_fires_on_the_second_row() {
 }
 
 // v47: the per-cabinet tallies survive a reboot, and they are keyed by the cabinet's
-// id rather than by its row — so the tally that comes back is the one that went out.
+// id rather than by its row, so the tally that comes back is the one that went out.
 void test_arcade_tallies_persist() {
     MemSaveStore store;
     const int row = arcadeGameIndexById("stacker");
@@ -292,7 +292,7 @@ void test_arcade_endless_chroma_records_a_high_score() {
     CHECK(g.arcadeBestById("chroma") == scored);      // reachable by id, as a row keys it
 }
 
-// The high score is player-level and survives a power cycle (save v55) — a run with no
+// The high score is player-level and survives a power cycle (save v55): a run with no
 // finish line has a number and nothing else to come back for, so the number has to last.
 void test_arcade_high_score_survives_a_reboot() {
     MemSaveStore store;
@@ -324,7 +324,7 @@ void test_arcade_high_score_survives_a_reboot() {
 // back underneath a save the new one has already rewritten, so a v55 blob has to load on
 // a build that has never heard of v55. It does, because the tail is written last and read
 // behind its own version gate: rewriting the version stamp in place is exactly what an
-// older reader sees — every field before the tail intact, and the tail simply not read.
+// older reader sees. Every field before the tail intact, and the tail simply not read.
 void test_arcade_high_score_tail_is_rollback_safe() {
     MemSaveStore store;
     Game g{StartMode::Hatched, "paypup", &store};

@@ -1,4 +1,4 @@
-// effect_text.cpp — {token} expansion + the derived stat line (see effect_text.h).
+// effect_text.cpp: {token} expansion + the derived stat line (see effect_text.h).
 #include "core/content/effect_text.h"
 
 #include "core/content/content_themes.h"
@@ -12,7 +12,7 @@ namespace mal {
 namespace {
 
 // One substitutable value, named as it appears between the braces. `text` non-null makes
-// it a WORD token (substituted verbatim, `value` ignored) — for the rare template whose
+// it a WORD token (substituted verbatim, `value` ignored): for the rare template whose
 // blank is an id rather than a magnitude, e.g. an achievement's "{key} line".
 struct Token {
     const char* name;
@@ -35,7 +35,7 @@ std::size_t appendInt(char* out, std::size_t cap, std::size_t at, int v) {
 }
 
 // Substitute every `{token}` / `{|token|}` in `tmpl` from `toks`. An unknown token is
-// copied through braces and all — visible in-game and asserted against by the native
+// copied through braces and all: visible in-game and asserted against by the native
 // gate, so a renamed field fails loudly instead of quietly dropping its number.
 void expand(EffectText& out, const char* tmpl, const Token* toks, int nToks) {
     const std::size_t cap = sizeof(out.buf);
@@ -48,7 +48,7 @@ void expand(EffectText& out, const char* tmpl, const Token* toks, int nToks) {
             continue;
         }
         const char* close = std::strchr(p, '}');
-        if (!close) {  // unterminated — pass the rest through verbatim
+        if (!close) {  // unterminated: pass the rest through verbatim
             at = append(out.buf, cap, at, p);
             break;
         }
@@ -70,7 +70,7 @@ void expand(EffectText& out, const char* tmpl, const Token* toks, int nToks) {
             at = append(out.buf, cap, at, hit->text);
         } else if (hit) {
             at = appendInt(out.buf, cap, at, abs ? std::abs(hit->value) : hit->value);
-        } else {  // leave the braces in — the gate test fails on them
+        } else {  // leave the braces in: the gate test fails on them
             for (const char* q = p; q <= close && at + 1 < cap; ++q) {
                 out.buf[at++] = *q;
                 out.buf[at] = '\0';
@@ -132,8 +132,8 @@ const char* itemEffectToken(ItemEffect::Kind k) {
         case ItemEffect::Kind::RemoveCareMistakeOnce: return "mistakes";
         case ItemEffect::Kind::ClearMistakeShieldOnce: return "shields";
         case ItemEffect::Kind::ForceTrojanDivert: return "divert";
-        // The soak's factor is ONE number that is both halves of the trade — the clock
-        // it stretches and the XP it pays — which is why one token serves a sentence
+        // The soak's factor is ONE number that is both halves of the trade (the clock
+        // it stretches and the XP it pays), which is why one token serves a sentence
         // that names it twice. The branch-override pair is below with the other flags.
         case ItemEffect::Kind::ArmEvolveSoak:
         case ItemEffect::Kind::ArmEvolveSoakLate: return "soak";
@@ -246,7 +246,7 @@ EffectText effectText(const CrewExploitDef& d) {
 }
 
 EffectText effectText(const AchievementDef& d, int effectiveGoal) {
-    // `{n}` is the goal the row is actually held to — which for a kGoalAll row is the
+    // `{n}` is the goal the row is actually held to, which for a kGoalAll row is the
     // size of the set it counts over, resolved by the caller (app/game_achievements.h).
     // That is the whole point of templating this prose: "all {n} sub-areas" restates
     // itself when an area is added, instead of going quietly stale.
@@ -278,7 +278,7 @@ SpecRows specRows(const ItemDef& d) {
                 s.add("HAPPY>50", "%d", e.magnitude);
                 break;
             case ItemEffect::Kind::Frag: s.add("FRAG", "%+d", e.magnitude); break;
-            // "once per lifecycle" is a caveat, not a magnitude — every row carrying
+            // "once per lifecycle" is a caveat, not a magnitude: every row carrying
             // one already says so in its own prose, so the grid keeps the number.
             case ItemEffect::Kind::RemoveCareMistakeOnce:
                 s.add("MISTAKE", "-%d", e.magnitude);
@@ -327,7 +327,7 @@ SpecRows specRows(const ItemDef& d) {
                 s.add("BANDWIDTH", "%+d", e.magnitude);
                 break;
             // The permanent grants report the bare stat and its size, and leave the
-            // FOR-LIFE half to the row's prose — where the other once-per-lifetime items
+            // FOR-LIFE half to the row's prose, where the other once-per-lifetime items
             // already say it. A label carrying it too would push these past the half
             // column (fitsHalf, ui/widgets.cpp) and cost every Epic dish a grid line it
             // needs for the sentence that explains the grant.
@@ -340,7 +340,7 @@ SpecRows specRows(const ItemDef& d) {
             case ItemEffect::Kind::XpRateBonusPct:
                 s.add("XP RATE", "%+d%%", e.magnitude);
                 break;
-            // A flag, not a number — the cure is unconditional when a ghost is
+            // A flag, not a number: the cure is unconditional when a ghost is
             // there and a no-op when it isn't, so there is nothing to print but
             // the fact that the row does it.
             case ItemEffect::Kind::ClearReplicationGhost:
@@ -439,7 +439,7 @@ SpecRows specRows(const ModDef& d) {
             s.add("SIPHON+", "%+d%%", d.magnitude);
             break;
         // Both read as percentage POINTS on a passive's roll, so the label names the roll
-        // rather than the mod — a player comparing two rows sees what moved.
+        // rather than the mod: a player comparing two rows sees what moved.
         case ModEffect::ExecOverridePct:
             s.add("HIJACK", "%+d%%", d.magnitude);
             break;
@@ -456,12 +456,12 @@ SpecRows specRows(const ModDef& d) {
             s.add("COPY WORTH", "%+d%%", d.magnitude);
             break;
         case ModEffect::PolymorphEffectPct:
-            // Not a percentage — it is stat POINTS paid per effect kind, so the value is
+            // Not a percentage: it is stat POINTS paid per effect kind, so the value is
             // written as the count it is rather than borrowing a %% that would read as one.
             s.add("PER EFFECT", "%+d", d.magnitude);
             break;
     }
-    // The Speed mod's secondary knob is a COST, not a second effect — every other
+    // The Speed mod's secondary knob is a COST, not a second effect: every other
     // magnitude2 user spells its own pair out above.
     if (d.effectKind == ModEffect::Speed && d.magnitude2)
         s.add("POWER", "-%d%%", d.magnitude2);
@@ -501,7 +501,7 @@ SpecRows specRows(const MoveDef& d) {
     if (d.lockTurns) s.add("FREEZE", "%d", d.lockTurns);
     if (d.dotDamage) s.add("DOT", "%dx%d", d.dotDamage, d.dotTurns);
     // Leads the steal block: it is the one steal that outlives its own hit, since the
-    // pool MOVES rather than the hit landing harder. Short label on purpose — the grid
+    // pool MOVES rather than the hit landing harder. Short label on purpose: the grid
     // packs two rows to a line when both fit half-width (gridLines), so a compact row
     // here fills the power row's line instead of opening another at the end.
     if (d.stealMaxHpPct) s.add("MAX HP", "%d%%", d.stealMaxHpPct);
@@ -514,13 +514,13 @@ SpecRows specRows(const MoveDef& d) {
         s.add("REBOUND", "%d%%", d.trapReboundPct);
         s.add("ARMOR ROT", "-%d", d.trapArmorRot);
         // What holding this trap adds to the Execution-Override hijack chance
-        // (Combat::execOverrideChance) — otherwise the row's one magnitude that
+        // (Combat::execOverrideChance), otherwise the row's one magnitude that
         // reaches the player nowhere at all.
         if (d.trapPassiveBonusPct) s.add("OVERRIDE", "%+d%%", d.trapPassiveBonusPct);
     }
     // Worm replication: what the cast puts on the board. The move's own `kind` already
     // decided which sort spawns, so the readout names the sort rather than repeating the
-    // chance under two labels — and only the magnitude that kind actually reads follows
+    // chance under two labels, and only the magnitude that kind actually reads follows
     // it. Both are shares of the parent, which is why they carry a %.
     if (d.replicaSpawnPct) {
         const bool defender = d.kind == MoveDef::Kind::Defend;

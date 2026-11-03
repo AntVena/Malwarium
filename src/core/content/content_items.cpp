@@ -1,4 +1,4 @@
-// content_items.cpp — the item table (ItemDef + its ItemEffect levers).
+// content_items.cpp: the item table (ItemDef + its ItemEffect levers).
 //
 // One content table (see content_tables.h). Edit rows here; the registry picks
 // them up unchanged via embedded_content.cpp.
@@ -6,22 +6,22 @@
 
 namespace mal {
 
-// Each row lists its on-Use pet levers in `effects` (ItemEffect kind+magnitude — the
+// Each row lists its on-Use pet levers in `effects` (ItemEffect kind+magnitude: the
 // complete, scannable set; magnitudes live here, never in tunables). Trailing hand-off
 // fields (combatHeal / preEncounterXp / bitsPrice / walkWarp / use) point at the OTHER
-// systems an item reaches — a plain feed/buff row leaves them defaulted. See ItemDef.
+// systems an item reaches: a plain feed/buff row leaves them defaulted. See ItemDef.
 //
 // Never type a magnitude into the description text: write `{hunger}` / `{heal}` /
 // `{depth}` and effect_text.h substitutes the value from this same row, so retuning a
 // number retunes the prose with it. The screens also draw a derived stat line under
 // the prose (statLine()), which reports every magnitude here whether or not the
-// sentence mentions it — so a description is flavour, not explanation. Its voice and
+// sentence mentions it, so a description is flavour, not explanation. Its voice and
 // rules are CONTENT_STANDARD.md's *Description voice*.
 // Reward pools ---------------------------------------------------------------
 // The item sets a container draws from, and the one the walk's own loot-cache event
 // pays out of (kLootPool, declared in content_tables.h for game_explore). Pools live
-// HERE, beside the rows they name, so a cache's whole definition — purse, draw count,
-// pool, find weight — reads off one place: its own row's CacheDef.
+// HERE, beside the rows they name, so a cache's whole definition (purse, draw count,
+// pool, find weight) reads off one place: its own row's CacheDef.
 //
 // Pools are rarity-graded: the common tiers hand over consumables, the higher ones add
 // the scarce utility items. Every understood item needs a live earn path (the native
@@ -30,7 +30,7 @@ namespace mal {
 //
 // A pool row is a LootEntry (defs.h): an id, plus a weight ONLY when this pool wants
 // that item at a different frequency from everywhere else. A bare `{"id"}` draws at
-// the item's own ItemDef::dropWeight, which in turn falls back to its rarity — so read
+// the item's own ItemDef::dropWeight, which in turn falls back to its rarity, so read
 // the weights on the rows here as exceptions, and the item table as the rule.
 namespace {
 const LootEntry kCachePoolCommon[]   = {{"dyno_nuggets"}, {"tortilla_chip"},
@@ -90,7 +90,7 @@ const LootEntry kCachePoolUncommon[] = {{"dyno_nuggets"}, {"r007_b33r"},
 const LootEntry kCachePoolRare[]     = {{"backup_drive"}, {"sinkhole_trap"},
                                         {"rollback"}, {"deep_learning_module"},
                                         {"kernel_bell"}, {"decryptogram"},
-                                        // THE SCARCE SHELF — the six staples the EPIC
+                                        // THE SCARCE SHELF: the six staples the EPIC
                                         // dishes want, one apiece (content_recipes.cpp).
                                         // They are here rather than on the Uncommon pool
                                         // because they are the throttle on how many
@@ -113,12 +113,12 @@ const LootEntry kCachePoolEpic[]     = {{"rollback"}, {"repartition"}, {"yubi_co
 constexpr int kChipDrawWeight = 6;
 
 // The Commendation Cache's own pool: what an achievement pays out. Deliberately not
-// the Epic pool — a commendation is earned by playing a whole ladder out, so it hands
+// the Epic pool: a commendation is earned by playing a whole ladder out, so it hands
 // over the scarce per-lifetime shields and the deepest diving bells rather than
 // re-rolling the same walk consumables a found cache already gives.
 // ...plus the PALETTE CHIPS, the one thing in here that is not a consumable: each
 // unlocks a colour set for good (content_themes.h), so a chip is worth a draw exactly
-// once and then stops being loot at all — rollLootEntry drops one whose set is already
+// once and then stops being loot at all; rollLootEntry drops one whose set is already
 // unlocked to weight 0 rather than letting it cost a commendation a real prize. At
 // kChipDrawWeight they are a bit under half the pool while any remain and none of it
 // once they are all in, which is the shape a finite set of unlocks should have: a
@@ -137,11 +137,11 @@ template <int N>
 constexpr int poolN(const LootEntry (&)[N]) { return N; }
 // The share of a staple's own dropWeight it draws at in kLootPool below. The pantry
 // is meant to be the bulk of what a CACHE hands over, but the walk's loot event is the
-// only source of the diving bells and the scarce utility items — at full weight the
+// only source of the diving bells and the scarce utility items: at full weight the
 // staples would crowd those out of the one place they come from, so every pantry row
 // there carries this override instead.
 constexpr int kStapleWalkWeight = 8;
-// ...and the share the six SCARCE staples draw at — the ones the Epic dishes are gated
+// ...and the share the six SCARCE staples draw at: the ones the Epic dishes are gated
 // on (kCachePoolRare above). A quarter of an ordinary staple's, so a walk still turns
 // one up now and then and an Epic dish stays cookable without a cache, just slowly.
 // This is the one number that decides how fast a player can hand a pet a permanent
@@ -151,13 +151,13 @@ constexpr int kRareStapleWalkWeight = 2;
 
 // The walk loot-cache event's own pool (Game::grantLootReward + the Wi-Fi sleeping-
 // guardian / open-cache sub-outcomes), and the legacy `sealed_cache`'s draw. The
-// DeepWeb Dive's depth items ride here too — earned from any area's walk loot, not
+// DeepWeb Dive's depth items ride here too: earned from any area's walk loot, not
 // gated to the dive itself (they're only USEFUL there).
 const LootEntry kLootPool[] = {{"dyno_nuggets"}, {"tortilla_chip"},
     {"pwnzu_sauce"}, {"backup_drive"}, {"rollback"}, {"repartition"}, {"osi_dip"},
     {"deep_learning_module"}, {"deep_learning_core"}, {"backdoor_bell"},
     {"rootkit_bell"}, {"kernel_bell"}, {"zeroday_bell"}, {"decryptogram"},
-    // The pantry, thinned to kStapleWalkWeight apiece — see the note on that constant.
+    // The pantry, thinned to kStapleWalkWeight apiece: see the note on that constant.
     {"spam", kStapleWalkWeight}, {"breadcrumbs", kStapleWalkWeight},
     {"c_salt", kStapleWalkWeight}, {"grepsed_oil", kStapleWalkWeight},
     {"cronstarch", kStapleWalkWeight}, {"boolean_cubes", kStapleWalkWeight},
@@ -218,10 +218,10 @@ const ItemDef kItems[] = {
      /*preEncounterXp=*/0, /*bits=*/0, /*walkWarp=*/ItemDef::WalkWarp::None,
      /*use=*/ItemDef::Use::Consume, /*category=*/ItemDef::Category::Keys},
     
-     // the Defrag Tool — a common consumable spent by a TOOL DEFRAG in MAINT
+     // the Defrag Tool: a common consumable spent by a TOOL DEFRAG in MAINT
     // for a GUARANTEED clean (no fail roll). Never used from the ITEMS path (gated in
     // itemUsable); sold at the shop + drops from wild loot so it's obtainable. No new
-    // glyph — reuses the MAINT defrag icon (itemIcon fallback).
+    // glyph: reuses the MAINT defrag icon (itemIcon fallback).
     {"disk_scrubber", "Defrag Tool", ItemDef::Type::Quest,
      ItemDef::Rarity::Common, "Puts scattered pieces back right next to their neighbours.",
      ItemDef::Context::Anytime, /*effects=*/{}, /*combatHeal=*/0,
@@ -239,7 +239,7 @@ const ItemDef kItems[] = {
 
     // Boot Accelerator: the egg accelerator, in the starting kit and stocked at
     // Pier-to-Peer. Use on a Boot-Sector egg takes its CutIncubationMin off the
-    // incubation, floored at the crackable window — every line's hatch minigame is
+    // incubation, floored at the crackable window: every line's hatch minigame is
     // played at lay-time, so there is nothing left for an item to open. Quest-typed
     // (falls through the egg-phase ITEMS gate), no vitals, egg-only.
     {"boot_accelerator", "Boot Accelerator", ItemDef::Type::Quest,
@@ -251,7 +251,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Keys},
 
     // Decryptogram: a found ticket to one DECRYPTOGRAM board (content_quotes.h). Cashed
-    // in at the Hacker VAULT, never from ITEMS — the prize is a player-level account
+    // in at the Hacker VAULT, never from ITEMS: the prize is a player-level account
     // unlock, so it is spent where the other things you cash in are, and itemUsable
     // gates the pet path with "CASH IN AT VAULT (A+C)" the way it does a sealed cache.
     // Priceless on purpose: no storefront sells one, so the pool only drains as fast as
@@ -276,7 +276,7 @@ const ItemDef kItems[] = {
                 kCachePoolCommon, poolN(kCachePoolCommon), /*findWeight=*/50}},
 
     // Backdoor/Rootkit/Kernel/Checkpoint Bell: a diving bell lowers you straight to a
-    // depth instead of swimming down — these arm the NEXT DeepWeb Dive to skip
+    // depth instead of swimming down. These arm the NEXT DeepWeb Dive to skip
     // straight to a given depth (SetDeepWebStartDepth(ToBest)), consumed the moment
     // that dive starts, so a pet re-earns its way back to a genuine struggle
     // without re-walking every shallow depth first.
@@ -290,7 +290,7 @@ const ItemDef kItems[] = {
     // The everyday ration, and the widest-spread food in the game: the starting shelf,
     // both cache pools, the walk's loot pool, every area's drop table and one storefront
     // all hand these over. A dyno is the container a process runs inside, so nuggets cut
-    // in its shape are what the pantry feeds a process — which is the whole joke, and the
+    // in its shape are what the pantry feeds a process, which is the whole joke, and the
     // reason this is the one food that turns up everywhere rather than anywhere special.
     // It fills and patches and does nothing else; the ghost cure is Unlinkguine's job.
     {"dyno_nuggets", "Dyno Nuggets", ItemDef::Type::Food,
@@ -301,7 +301,7 @@ const ItemDef kItems[] = {
 
     // The ghost cure, and the counterpart to Linkguine ("every strand joined to the
     // last one"): unlink() severs the reference to a copy, which is exactly a
-    // Replication Ghost's problem — the phantom process a failed defrag leaves behind
+    // Replication Ghost's problem. The phantom process a failed defrag leaves behind
     // on a Critical disk (Worm-line only, game_care.cpp's resolveMaint). Cooked rather
     // than found: the Merge Hub row folds a Jailapeño into Linkguine, so curing a ghost
     // is something you learn to make instead of something you happen to hold.
@@ -327,7 +327,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime, {{IE::Kind::Happy, 10}}},
 
      // Sinkhole Trap: bypass the next wild encounter for a flat XP lump (preEncounterXp,
-    // applied by game_combat::resolveSinkhole — a hand-off, not an on-Use pet effect).
+    // applied by game_combat::resolveSinkhole. A hand-off, not an on-Use pet effect).
     {"sinkhole_trap", "Sinkhole Trap", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon, "Trouble headed your way gets quietly sent nowhere.",
      ItemDef::Context::PreEncounter, /*effects=*/{}, /*combatHeal=*/0,
@@ -341,7 +341,7 @@ const ItemDef kItems[] = {
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/5},
     
     // The untiered Sealed Cache: no findWeight, so the walk's cache roll
-    // (game_explore.cpp) never picks it — it
+    // (game_explore.cpp) never picks it. It
     // exists so a save written before the rarity tiers still has an openable container,
     // and it pays out of the shared walk-loot pool at that event's own rate.
     {"sealed_cache", "Sealed Cache", ItemDef::Type::Quest,
@@ -362,7 +362,7 @@ const ItemDef kItems[] = {
      /*dropWeight=*/0, /*cache=*/{/*bits=*/18, /*draws=*/1, /*drawChancePct=*/100,
                 kCachePoolUncommon, poolN(kCachePoolUncommon), /*findWeight=*/30}},
 
-    // Rootkit Bell: the Backdoor Bell's deeper cousin — see its comment above.
+    // Rootkit Bell: the Backdoor Bell's deeper cousin. See its comment above.
     {"rootkit_bell", "Rootkit Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Uncommon, "Gets in below the level a normal check reaches.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 32}, {IE::Kind::DiveStartBonusPct, 50}}},
@@ -370,7 +370,7 @@ const ItemDef kItems[] = {
     // STAPLE INGREDIENTS --------------------------
     // The pantry: the raw materials recipes are built out of. Grouped together rather
     // than filed under the rarity headings above because what makes one of these
-    // findable is being a STAPLE, not its tier — the tier only says how much a pet
+    // findable is being a STAPLE, not its tier: the tier only says how much a pet
     // gets out of eating one raw, which is generally "not much, and sometimes less
     // than nothing". Most carry an explicit dropWeight so the pantry isn't a flat
     // shelf: what every kitchen is full of (Spam, Breadcrumbs) turns up far more often
@@ -418,7 +418,7 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/55},
 
-    // Boolean Cubes take no dropWeight — Common's own default is exactly the middle
+    // Boolean Cubes take no dropWeight: Common's own default is exactly the middle
     // of this shelf, which is where they belong.
     {"boolean_cubes", "Boolean Cubes", ItemDef::Type::Food, ItemDef::Rarity::Common,
      "Either it's in the stock or it isn't.",
@@ -473,7 +473,7 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/35},
 
-    // Kernel Oil takes Uncommon's own default weight — the middle of its shelf.
+    // Kernel Oil takes Uncommon's own default weight: the middle of its shelf.
     {"kernel_oil", "Kernel Oil", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
      "Works its way right down to the bottom of the pan.",
      ItemDef::Context::Anytime, {{IE::Kind::Happy, -5}, {IE::Kind::Frag, -5}}},
@@ -510,7 +510,7 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/12, /*cache=*/{},
      // The one perishable. Low enough that a stack usually survives a feeding session,
-     // high enough that hoarding it is a losing plan — which is the whole point of the
+     // high enough that hoarding it is a losing plan, which is the whole point of the
      // trade against Spoiled Macrol, the Pier-to-Peer currency it decays into.
      /*spoil=*/{"spoiled_macrol", 5}},
 
@@ -526,7 +526,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/8},
 
     // The second shelf of the pantry: the raw materials the dishes below the staples
-    // reach for. Same rule as the first shelf — a tier says how little a pet gets out
+    // reach for. Same rule as the first shelf: a tier says how little a pet gets out
     // of eating one raw, and the dropWeight ladder says how often you trip over it.
     {"self_signed_flour", "Self-Signed Flour", ItemDef::Type::Food,
      ItemDef::Rarity::Common,
@@ -593,7 +593,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/40},
 
     // Bootmeal cooks into Portridge, which is the same bowl at the same tier for the
-    // same numbers — the one recipe in the kitchen that changes nothing but where it
+    // same numbers: the one recipe in the kitchen that changes nothing but where it
     // runs. The pair only reads as a joke because these effects and this rarity are
     // literally the ones on that dish's row.
     {"bootmeal", "Bootmeal", ItemDef::Type::Food, ItemDef::Rarity::Common,
@@ -687,7 +687,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/0},
 
     // The pantry's third shelf: the produce, dry goods, protein and sweets the rest of
-    // the kitchen reaches for. Same rule as the shelves above — the tier says how little
+    // the kitchen reaches for. Same rule as the shelves above: the tier says how little
     // a pet gets out of eating one raw, and every row here is an ingredient in at least
     // one recipe, so no shelf is only ever chewed on.
     {"parsenips", "Parsenips", ItemDef::Type::Food, ItemDef::Rarity::Common,
@@ -1060,7 +1060,7 @@ const ItemDef kItems[] = {
      "Fixed all the problems in one go. Grandma Yubi would be proud.",
      ItemDef::Context::Anytime, {{IE::Kind::Hunger, 100}, {IE::Kind::Frag, -100}, {IE::Kind::Happy, 100}}, /*combatHeal=*/0},
 
-    // Created when Tor-Tilla Chip and OSI Dip are combined (Hacker MERGE HUB) — the
+    // Created when Tor-Tilla Chip and OSI Dip are combined (Hacker MERGE HUB): the
     // eighth layer OSI Dip was missing. Fills every stat at once.
     {"fully_stacked_nachos", "Fully-Stacked Nachos", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
@@ -1069,7 +1069,7 @@ const ItemDef kItems[] = {
 
     // Hashed Browns + Salted&Hashed Browns: the pantry's first cooked dish and its
     // second pass through the pan. Both are MERGE HUB outputs (game_internal.h's
-    // kMergeRecipes) AND stocked at Moor-to-Moor — buying one is how a player MEETS
+    // kMergeRecipes) AND stocked at Moor-to-Moor: buying one is how a player MEETS
     // the dish, which is what a Decryptogram asks for before it will teach either
     // recipe (game_internal.h's MergeRecipe::requiresItems). They are also the only
     // cooked dishes a storefront carries: every other one is the recipe or nothing.
@@ -1088,7 +1088,7 @@ const ItemDef kItems[] = {
 
     //
     // COOKED DISHES --------------------------
-    // What the pantry is FOR. Every row below is a MERGE HUB output and nothing else —
+    // What the pantry is FOR. Every row below is a MERGE HUB output and nothing else:
     // no shop stocks one, no pool drops one, so the only way to hold a plate is to own
     // the recipe (game_rig_shop.h) and have the raw staples in the bag. They are filed
     // together rather than under their rarity headings for the same reason the staples
@@ -1167,7 +1167,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 15}, {IE::Kind::Frag, -10}}},
 
-    // EPIC — the upgrade that is not a stat: a permanently shorter Bandwidth regen.
+    // EPIC. The upgrade that is not a stat: a permanently shorter Bandwidth regen.
     // First helping only, like every grant in the tier; after that the pet already has
     // root and this is simply a very good pudding that tops the pool up, which is what
     // its second effect is for.
@@ -1193,7 +1193,7 @@ const ItemDef kItems[] = {
      {{IE::Kind::Hunger, 40}, {IE::Kind::Happy, 10}}},
 
     // The pantry's first SECOND-ORDER dish: its lead ingredient is another cooked
-    // dish, not a staple. Which is what a casserole is — yesterday's cooking, kept.
+    // dish, not a staple. Which is what a casserole is: yesterday's cooking, kept.
     {"cacherole", "Cacherole", ItemDef::Type::Food,
      ItemDef::Rarity::Rare,
      "Made ahead and kept close so it's ready the second you want it.",
@@ -1291,7 +1291,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 40}, {IE::Kind::Frag, -15}}},
 
-    // The fourth service — the rest of the kitchen. Filed by what they are rather than
+    // The fourth service: the rest of the kitchen. Filed by what they are rather than
     // by tier, like every dish above: bread and bakery, then the pans, then the plates,
     // then the puddings, then what you drink with them.
     {"buguette", "Buguette", ItemDef::Type::Food,
@@ -1410,7 +1410,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 55}, {IE::Kind::Happy, 20}}, /*combatHeal=*/30},
 
-    // EPIC — a race is decided by who gets there first, which is what a Speed point buys.
+    // EPIC: a race is decided by who gets there first, which is what a Speed point buys.
     {"racelette", "Racelette", ItemDef::Type::Food, ItemDef::Rarity::Epic,
      "First to the pan wins. Ties get messy.",
      ItemDef::Context::Anytime,
@@ -1470,7 +1470,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 45}, {IE::Kind::Happy, 25}, {IE::Kind::Frag, -15}}},
 
-    // EPIC — a spare in the array is the whole idea of a Defence point: one more thing
+    // EPIC. A spare in the array is the whole idea of a Defence point: one more thing
     // that has to fail before anything is actually lost.
     {"spare_ribs", "Spare RIBs", ItemDef::Type::Food, ItemDef::Rarity::Epic,
      "Always cook a few more than you need. You'll be glad you did.",
@@ -1483,7 +1483,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 60}, {IE::Kind::Happy, 20}}, /*combatHeal=*/35},
 
-    // EPIC — the pet keeps a Power point for life. The pun is the mechanic: an escalation
+    // EPIC: the pet keeps a Power point for life. The pun is the mechanic: an escalation
     // is not a thing you do twice, so the first plate roots it and later ones are veal.
     {"privilege_escalope", "Privilege Escalope", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
@@ -1528,7 +1528,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, -5}, {IE::Kind::Frag, -12}}},
 
-    // The condiments — small effects, but they are what the big plates are built on.
+    // The condiments: small effects, but they are what the big plates are built on.
     {"ai_oli", "AI-oli", ItemDef::Type::Food, ItemDef::Rarity::Uncommon,
      "Whipped up with total confidence. Taste it before you trust it.",
      ItemDef::Context::Anytime,
@@ -1569,7 +1569,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 20}, {IE::Kind::Happy, 30}}},
 
-    // EPIC — the one Epic dish that grants no stat at all. A profiler doesn't make the
+    // EPIC: the one Epic dish that grants no stat at all. A profiler doesn't make the
     // pet stronger, it makes every hour it spends teach it more, which is an XP rate.
     {"profilerole", "Profilerole", ItemDef::Type::Food, ItemDef::Rarity::Epic,
      "One bite and you know exactly where your afternoon went.",
@@ -1663,7 +1663,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime,
      {{IE::Kind::Hunger, 25}, {IE::Kind::Happy, 25}}},
 
-    // EPIC — the pet's max Health IS its buffer, and this is the drink that writes past
+    // EPIC: the pet's max Health IS its buffer, and this is the drink that writes past
     // the end of it. The Fragmentation it adds is the cost of taking the extra room.
     {"buffer_overfloat", "Buffer Overfloat", ItemDef::Type::Food,
      ItemDef::Rarity::Epic,
@@ -1698,7 +1698,7 @@ const ItemDef kItems[] = {
     // (ItemEffect::ArmCombatShieldBuff, save v30). Every hit lands in full; the drive is
     // read once, at the moment the pet would be overwhelmed (Combat::checkOutcome), and
     // hands back half of MAX Health from wherever the pet ended up. So it usually saves
-    // a life and sometimes doesn't — a blow that buried the pet deeper than half its max
+    // a life and sometimes doesn't: a blow that buried the pet deeper than half its max
     // is past restoring, which is the honest version of what a backup can do. Consumed
     // either way, win or lose. Deliberately NOT the RAID Mirror mod's job: the mod
     // spends itself negating the first hit of any size, whereas the drive ignores hits
@@ -1719,15 +1719,15 @@ const ItemDef kItems[] = {
      /*dropWeight=*/0, /*cache=*/{/*bits=*/30, /*draws=*/1, /*drawChancePct=*/100,
                 kCachePoolRare, poolN(kCachePoolRare), /*findWeight=*/15}},
 
-    // Kernel Bell: the Backdoor Bell's deeper cousin still — see its comment above.
+    // Kernel Bell: the Backdoor Bell's deeper cousin still. See its comment above.
     {"kernel_bell", "Kernel Bell", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare, "Pops you straight down to the core.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepth, 64}, {IE::Kind::DiveStartBonusPct, 100}}},
 
     // Deep-Learning Module: arms the dive's depth-per-win multiplier
-    // (ArmDeepWebDepthMultiplier) — the pet "learns" the shallow depths fast so it
+    // (ArmDeepWebDepthMultiplier). The pet "learns" the shallow depths fast so it
     // skips ahead on every win instead of one step at a time. Overwrites, doesn't
-    // stack — a fresh Module/Core just replaces whichever multiplier is currently
+    // stack: a fresh Module/Core just replaces whichever multiplier is currently
     // armed. Lets a blitzing endgame pet catch back up to a real fight faster.
     {"deep_learning_module", "Deep-Learning Module", ItemDef::Type::Tool,
      ItemDef::Rarity::Rare, "It's seen enough dives to know which bits to skip.",
@@ -1737,7 +1737,7 @@ const ItemDef kItems[] = {
     //
      // The Yubi-Cookie is a COOKIE: it is eaten, it fills the pet up, and the pet is
     // happier for it every single time. What it does once in a life is forget a care
-    // mistake — the same shape the Epic dishes take, a very good meal with one
+    // mistake: the same shape the Epic dishes take, a very good meal with one
     // permanent thing folded into it, which is why it is filed with the food rather
     // than with the buffs it arms none of.
     {"yubi_cookie", "Yubi-Cookie", ItemDef::Type::Food,
@@ -1746,7 +1746,7 @@ const ItemDef kItems[] = {
      {{IE::Kind::RemoveCareMistakeOnce, 1}, {IE::Kind::Hunger, 20},
       {IE::Kind::Happy, 40}}},
     
-     // Restore Point: a System-Restore shield — Use on a Process/Script pet to
+     // Restore Point: a System-Restore shield. Use on a Process/Script pet to
     // arm protection against the NEXT care mistake, once per lifetime. The shield is
     // per-pet, consumed on the next positive mistake.
     {"restore_point", "Restore Point", ItemDef::Type::Buff,
@@ -1756,7 +1756,7 @@ const ItemDef kItems[] = {
     // Epic Cache: Open in the VAULT for an Epic Reward not locked to any area in particular
     // The Epic cache is also a second, non-boss MOD source: `modChancePct` is the
     // chance an Open ALSO yields a permanent mod, rolled globally rarity-weighted (even
-    // a tier-4 mod can surface — its rolled equip-level gate holds it until the pet is
+    // a tier-4 mod can surface. Its rolled equip-level gate holds it until the pet is
     // deep enough). The yield reveal shows the items/Bits; the mod lands in MODS.
     {"sealed_cache_epic", "Epic Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
@@ -1769,7 +1769,7 @@ const ItemDef kItems[] = {
                 /*modChancePct=*/50}},
 
     // The Commendation Cache: the standing reward for an ACHIEVEMENT
-    // (content_achievements.cpp rows list it in `rewards`). findWeight 0 — it is never
+    // (content_achievements.cpp rows list it in `rewards`). findWeight 0: it is never
     // found on a walk, only earned, which is the whole point of it being a different
     // container from the four the 'net drops. Its purse and mod chance sit above Epic's
     // because a ladder takes far longer to finish than a cache takes to find.
@@ -1783,15 +1783,15 @@ const ItemDef kItems[] = {
                 kCachePoolCommend, poolN(kCachePoolCommend), /*findWeight=*/0,
                 /*modChancePct=*/60}},
 
-    // The PALETTE CHIPS. Six objects that do the same thing — hold one and the colour
-    // set it carries is unlocked in CFG for good (content_themes.h) — so they are one
+    // The PALETTE CHIPS. Six objects that do the same thing. Hold one and the colour
+    // set it carries is unlocked in CFG for good (content_themes.h), so they are one
     // family and written as one block. Each is a Quest/Keys row that is INERT in the bag:
     // itemUsable answers "SET IN CFG > THEME", because the chip is not spent to apply a
     // theme and applying one is not a thing done to the pet. Nothing sells them and
     // nothing but a commendation drops them.
     //
     // Rare or Epic by what the set costs to give up on the device it is imitating: the
-    // two that are somebody else's hardware — a sunset arcade cabinet, a pocket LCD —
+    // two that are somebody else's hardware (a sunset arcade cabinet, a pocket LCD)
     // are Epic; the four that are a filter over the tube you already own are Rare.
     {"sunset_rom", "Sunset ROM", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,
@@ -1847,7 +1847,7 @@ const ItemDef kItems[] = {
     
     // Warp to a safe zone and rest off some fragmentation. The rest is the whole
     // point of the key, so how deep it cleans is a magnitude on THIS row (a negative
-    // Frag effect — rest de-frags), applied by resolveSafeRestEvent through the same
+    // Frag effect: rest de-frags), applied by resolveSafeRestEvent through the same
     // applyItemEffects every other item goes through.
     {"safe_mode_key", "Safe-Mode Key", ItemDef::Type::Quest,
      ItemDef::Rarity::Uncommon,
@@ -1858,7 +1858,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Keys},
     
     // Rollback: a TOOL, and the row the band is shaped around. Use opens a stat picker
-    // (use=Rollback) and hands the operator a lever over the stat TABLE — the pet is the
+    // (use=Rollback) and hands the operator a lever over the stat TABLE: the pet is the
     // same creature either side of it, which is what puts it here rather than in Buffs
     // (the rule is on ItemDef::Type). Sheds one earned combat-stat point (-1 that stat, -1 level)
     // so the pet re-grinds that level and re-rolls a fresh +1. A reward-pool drop; inert
@@ -1873,12 +1873,12 @@ const ItemDef kItems[] = {
     // Repartition: Rollback's sibling, and the OTHER way to argue with the stat table.
     // Where a Rollback hands a point back to the dice and charges a level's grind for
     // the re-roll, this one moves a point the pet already has onto a stat the operator
-    // names — same level, same total, a different shape. So it is a lever over the same
+    // names: same level, same total, a different shape. So it is a lever over the same
     // system (a TOOL, like its sibling), and its whole cost is the item: there is no
     // grind to pay because nothing was un-earned, which is what puts it an entire tier
     // above the Rollback. Use opens the two-step picker (use=Repartition): a FROM stat
     // with a point to spare, then a TO stat that isn't it. Inert at level 0, for the
-    // same reason a Rollback is — nothing earned, nothing to move — and it cannot reach
+    // same reason a Rollback is (nothing earned, nothing to move), and it cannot reach
     // an off-level point an Epic dish granted (core/model/pet_upgrades.h), because those
     // are not on the earned table at all.
     {"repartition", "Repartition", ItemDef::Type::Tool,
@@ -1896,15 +1896,15 @@ const ItemDef kItems[] = {
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/1024},
 
     // --- The rest of the USB family ------------------------------------------------
-    // Four devices that all steer the SAME boundary the Ambig-USB does — the pet's next
-    // evolution — which is what makes them one family and why the soak pair below can
+    // Four devices that all steer the SAME boundary the Ambig-USB does (the pet's next
+    // evolution), which is what makes them one family and why the soak pair below can
     // lock the port against the other three (defs.h's isUsbEffect). All but the
     // Hypervisor are DeepWeb Dive drops (areas/deepweb_dive/area.cpp): no counter sells
     // the ability to overrule how a pet was raised, so the only way to hold one is to go
     // down and take it.
 
     // Bad-USB: the firmware attack the name comes from, and the item that does to a pet
-    // what it does to a host — the branch is decided by the DEVICE, not by the record.
+    // what it does to a host. The branch is decided by the DEVICE, not by the record.
     // Forces the BAD successor at the next branching evolution however clean the care
     // budget was. Deliberately scarcer than its Epic tier-mates (dropWeight): a run's
     // ending is the one thing the care loop is FOR, so buying your way past it should
@@ -1918,7 +1918,7 @@ const ItemDef kItems[] = {
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/1},
 
     // Signed-USB: the same device with a vendor signature on its firmware, and the exact
-    // inverse item — the GOOD successor whatever the record says, which is the half that
+    // inverse item. The GOOD successor whatever the record says, which is the half that
     // rescues a badly-raised pet rather than the half that ruins a well-raised one. Same
     // one slot as the Bad-USB: plugging either in replaces the other.
     {"signed_usb", "Signed-USB", ItemDef::Type::Tool,
@@ -1931,7 +1931,7 @@ const ItemDef kItems[] = {
 
     // Sandbox-USB: hold the process under observation instead of letting it run to term.
     // A Process-stage-only plug that stretches THIS stage's evolution dwell by {soak} and
-    // pays {soak} times the XP for everything the pet does while it is stretched — the
+    // pays {soak} times the XP for everything the pet does while it is stretched: the
     // same pet, arriving later and further along, which is the whole trade. It holds the
     // port shut while it runs (defs.h's isUsbEffect), so a soak is a decision about the
     // stage rather than one buff among several: no divert, no branch override, not even a
@@ -1944,7 +1944,7 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/3},
 
-    // Hypervisor-USB: the Sandbox-USB's Epic upgrade — four times as deep AND it reaches a
+    // Hypervisor-USB: the Sandbox-USB's Epic upgrade. Four times as deep AND it reaches a
     // stage the Sandbox cannot. On a Script it still pays x{soak} XP but the clock costs
     // DOUBLE that, because a Script's boundary is the branch the whole raise was aimed at:
     // stretching the last stage before an ending is worth more than stretching a middle
@@ -1958,7 +1958,7 @@ const ItemDef kItems[] = {
     // across the two boundaries this holds shut, on top of a move slot per stage and the
     // Script-gated half of the move roster. A pet held at Process to farm is giving up
     // all of that for as long as it is armed, and the four Sandbox-USBs it is built from
-    // are DeepWeb Dive drops — a zone that scales to the pet's own level from depth 0, so
+    // are DeepWeb Dive drops: a zone that scales to the pet's own level from depth 0, so
     // the ingredients are gated behind the one place the hold makes hardest to farm. The
     // XP has to be worth a stage to be worth arming at all.
     {"hypervisor_usb", "Hypervisor-USB", ItemDef::Type::Tool,
@@ -1967,7 +1967,7 @@ const ItemDef kItems[] = {
      ItemDef::Context::Anytime, {{IE::Kind::ArmEvolveSoakLate, 8}},
      /*combatHeal=*/0, /*preEncounterXp=*/0, /*bits=*/2048},
 
-    // Halt-USB: the pet stops evolving. Not a stretch of the clock — a refusal to reach
+    // Halt-USB: the pet stops evolving. Not a stretch of the clock: a refusal to reach
     // the boundary at all, and the only device in the family that is never consumed,
     // because no boundary arrives to consume it. It comes out when an Eject-USB pulls it,
     // when the pet goes back on the ARCH rack, or never. What it is FOR is parking a pet
@@ -1983,7 +1983,7 @@ const ItemDef kItems[] = {
 
     // Eject-USB: pull whatever is in the port and drop its effect, whichever device it
     // was. The family's undo, and the one thing that goes in while a soak or a hold is
-    // already there — a port that could only be emptied by the boundary it was refusing
+    // already there: a port that could only be emptied by the boundary it was refusing
     // to reach would be a trap rather than a decision. Drawn commoner than the devices it
     // undoes (dropWeight), for the same reason.
     {"eject_usb", "Eject-USB", ItemDef::Type::Tool,
@@ -1994,7 +1994,7 @@ const ItemDef kItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/8},
 
-    // Checkpoint Bell: the Backdoor Bell's ultimate cousin — instead of a fixed depth,
+    // Checkpoint Bell: the Backdoor Bell's ultimate cousin, instead of a fixed depth,
     // it warps the next DeepWeb Dive straight to THIS PET's own best-ever depth
     // (SetDeepWebStartDepthToBest reads bestDeepWebDepth_ at dive-start), never any
     // other pet's or the device's frontier.
@@ -2003,7 +2003,7 @@ const ItemDef kItems[] = {
      "Saved at your finest moment and ready to load.",
      ItemDef::Context::Anytime, {{IE::Kind::SetDeepWebStartDepthToBest, 0}, {IE::Kind::DiveStartBonusPct, 100}}},
 
-    // Deep-Learning Core: Deep-Learning Module's Epic upgrade — see its comment above.
+    // Deep-Learning Core: Deep-Learning Module's Epic upgrade. See its comment above.
     {"deep_learning_core", "Deep-Learning Core", ItemDef::Type::Tool,
      ItemDef::Rarity::Epic, "Trained on more dives than you'll ever take.",
      ItemDef::Context::Anytime, {{IE::Kind::ArmDeepWebDepthMultiplier, 4}, {IE::Kind::DiveStepBonusPct, 100}}},

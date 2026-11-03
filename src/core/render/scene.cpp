@@ -15,7 +15,7 @@ namespace {
 // and quietly admits every one added afterwards; this way a new PAL_CORE role has to be
 // let in on purpose. `ink-dim` is the value ramp every scene that reads in grey uses,
 // the fragmentation pair is the purple-to-pink no interface state has claimed, `track`
-// is the chrome grey — dim enough to sit under text by construction — and the `neon`
+// is the chrome grey (dim enough to sit under text by construction), and the `neon`
 // pair exists for this list alone: a blue and a green kept deliberately off `accent`
 // and `calm` so a backdrop can be either colour without wearing a focus or a state.
 constexpr Pal kSceneAnchors[] = {Pal::INK_DIM, Pal::FRAG_LO, Pal::FRAG_HI, Pal::TRACK,

@@ -6,7 +6,7 @@
 
 #include "tunables.h"
 #include "core/content/content_tables.h"
-#include "core/content/content_themes.h"   // themeForChip — a chip is inert here, and loot once
+#include "core/content/content_themes.h"   // themeForChip: a chip is inert here, and loot once
 #include "core/ui/items_screen.h"
 
 namespace mal {
@@ -43,21 +43,21 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
         gateMsg = "USABLE AFTER HATCH"; return false;
     }
     // Warp keys are spent only ON the walk (the B warp picker), never from
-    // the ITEMS use path — otherwise a stray Use would burn a key for nothing.
+    // the ITEMS use path, otherwise a stray Use would burn a key for nothing.
     if (d.walkWarp != ItemDef::WalkWarp::None) {
         gateMsg = "USE ON THE WALK"; return false;
     }
-    // Rollback is inert with nothing to shed — a level-0 pet has no earned
+    // Rollback is inert with nothing to shed: a level-0 pet has no earned
     // points, so the picker would be empty. Gate it clearly instead of opening blank.
     if (d.use == ItemDef::Use::Rollback && combatLevel_ <= 0) {
         gateMsg = "NO LEVELS TO ROLL"; return false;
     }
-    // Repartition wants a point to MOVE, which is the same demand — level == the count
+    // Repartition wants a point to MOVE, which is the same demand: level == the count
     // of earned points, so a level-0 pet has nothing on the table to pick up.
     if (d.use == ItemDef::Use::Repartition && combatLevel_ <= 0) {
         gateMsg = "NO POINTS TO MOVE"; return false;
     }
-    // The Boot Accelerator only shortens an egg's incubation — nothing to do once hatched.
+    // The Boot Accelerator only shortens an egg's incubation: nothing to do once hatched.
     if (d.use == ItemDef::Use::DecryptEgg && !inEggPhase()) {
         gateMsg = "USABLE ON EGG ONLY"; return false;
     }
@@ -67,7 +67,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     // the way a sealed cache points at the VAULT.
     if (themeForChip(d.id)) { gateMsg = "SET IN CFG > THEME"; return false; }
     // the Defrag Tool is spent only by a TOOL DEFRAG in MAINT (a guaranteed
-    // clean), never from the ITEMS use path — a stray Use would burn it for nothing.
+    // clean), never from the ITEMS use path: a stray Use would burn it for nothing.
     if (d.use == ItemDef::Use::GuaranteeDefrag) {
         gateMsg = "USE IN MAINT DEFRAG"; return false;
     }
@@ -82,7 +82,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
         gateMsg = "CASH IN AT VAULT (A+C)"; return false;
     }
     // A LOCKING device (a soak, a hold) owns the boundary while it is in, so nothing else
-    // in the family goes in beside it — not a divert, not a branch override, not a second
+    // in the family goes in beside it, not a divert, not a branch override, not a second
     // soak. The Eject-USB is the one exception, because pulling that device is its job: a
     // port that could only be emptied by the boundary it was refusing to reach would be a
     // trap rather than a decision. Checked ahead of the inert test below so the refusal
@@ -103,7 +103,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
             return false;
         }
     }
-    // Nothing left for this one to do — say so and keep the item, rather than
+    // Nothing left for this one to do: say so and keep the item, rather than
     // spending it on a state it already holds.
     if (itemUseIsInert(d, gateMsg)) return false;
     if (lockoutItemsContext_) {
@@ -142,7 +142,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
             case ItemEffect::Kind::None:
                 continue;
             // A vitals lever always lands. Feeding an already-full pet wastes
-            // some of the fill, but that's the player's call to make — only a
+            // some of the fill, but that's the player's call to make, only a
             // use that can achieve LITERALLY nothing is worth refusing.
             case ItemEffect::Kind::Hunger:
             case ItemEffect::Kind::HungerStacking:
@@ -167,8 +167,8 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 break;
             // The branch-override pair shares ONE slot, so a second device pointing the
             // way the slot already points would buy nothing. Pointing it the OTHER way
-            // always does something — that is what "most recently plugged in wins" means
-            // — and so does arming it over a care record that happens to agree today,
+            // always does something (that is what "most recently plugged in wins" means),
+            // and so does arming it over a care record that happens to agree today,
             // since the record can still change and the override cannot.
             case ItemEffect::Kind::ForceEvolveBranchGood:
                 ++armingEffects;
@@ -181,7 +181,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "BAD BRANCH ARMED";
                 break;
             // The two locking devices. Both are unreachable while the port gate above
-            // stands (it refuses every USB but the Eject whenever either is armed) — kept
+            // stands (it refuses every USB but the Eject whenever either is armed): kept
             // as the effect-side statement of the same fact, so the vocabulary answers for
             // itself rather than depending on the order of two gates.
             case ItemEffect::Kind::ArmEvolveSoak:
@@ -198,7 +198,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
             case ItemEffect::Kind::ClearUsbPort:
                 // The undo is the one device whose inert case a player will actually meet:
                 // it goes in over a locked port on purpose, so the only time it achieves
-                // nothing is on an EMPTY one — and then it is refused and kept rather
+                // nothing is on an EMPTY one, and then it is refused and kept rather
                 // than spent on a port that is already the way it would leave it.
                 ++armingEffects;
                 if (usbPortOccupied()) return false;
@@ -222,8 +222,8 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
             // Both bells are measured against the depth a dive would actually start at
             // (armedDeepWebStartDepth), never the raw pending field: a live Checkpoint
             // arming is a negative SENTINEL there, so comparing against it would let any
-            // bell — including a second Checkpoint, which can only re-arm what is already
-            // armed — spend itself over a deeper start.
+            // bell (including a second Checkpoint, which can only re-arm what is already
+            // armed) spend itself over a deeper start.
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 ++armingEffects;
                 if (e.magnitude > armedDeepWebStartDepth()) return false;
@@ -235,21 +235,21 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
             // The pay bonus rides on the arming beside it, which already decides
-            // whether this use achieves anything — so it neither counts as an arming
+            // whether this use achieves anything, so it neither counts as an arming
             // nor answers the question on its own.
             case ItemEffect::Kind::DiveStartBonusPct:
             case ItemEffect::Kind::DiveStepBonusPct:
                 break;
             case ItemEffect::Kind::CutIncubationMin:
                 // The clock is already inside the reveal window, which the cut is
-                // floored at — spending one there would take the item and move nothing.
+                // floored at: spending one there would take the item and move nothing.
                 ++armingEffects;
                 if (inEggPhase() && bootHatchRemainMs_ > kHatchRevealMs) return false;
                 if (!reason) reason = "SHELL ALREADY CRACKING";
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Nothing to cut loose on a pet with no ghost. Only reachable for a row
-                // that carries NOTHING else — Unlinkguine's Hunger fill already
+                // that carries NOTHING else. Unlinkguine's Hunger fill already
                 // answers "not inert" above, which is the intent: it stays an ordinary
                 // food, and only its cure half is conditional.
                 ++armingEffects;
@@ -257,7 +257,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 if (!reason) reason = "NO REPLICATION GHOST";
                 break;
             // None of these can achieve nothing. A permanent grant already spent is the
-            // ordinary case for the Epic dish that carries it — a pet that is already
+            // ordinary case for the Epic dish that carries it: a pet that is already
             // rooted, pointed or profiled eats the plate for the food, which is exactly
             // what a second helping is meant to be, so refusing the use would be
             // refusing a meal. What a spent grant DOES change is the readout: the 'Pedia
@@ -274,7 +274,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
         }
     }
     // A row with no arming effects at all does its work through a hand-off field
-    // (combatHeal, preEncounterXp, a warp key) — never inert on this axis.
+    // (combatHeal, preEncounterXp, a warp key), never inert on this axis.
     if (armingEffects == 0 || !reason) return false;
     why = reason;
     return true;
@@ -292,17 +292,17 @@ void Game::useItem() {
     const ItemDef& d = *detailItem_;
 
     // Openable containers (sealed caches) are now decrypted from the Hacker VAULT
-    // not here — itemUsable gates them ("OPEN IN VAULT (A+C)"), so useItem never
+    // not here: itemUsable gates them ("OPEN IN VAULT (A+C)"), so useItem never
     // reaches this point for one. openSealedCache lives on and is called from onHackerVault.
 
     // Rollback: Use opens the stat picker instead of feeding/buffing. The
-    // item is only consumed when a shed is confirmed (onRollbackPicker B) — cancelling
+    // item is only consumed when a shed is confirmed (onRollbackPicker B): cancelling
     // (C) leaves it in the bag. detailItem_ stays set so the shed path can consume it.
     if (d.use == ItemDef::Use::Rollback) { openRollbackPicker(); return; }
 
     // Repartition: the same hand-off, to the two-step picker that moves a point instead
     // of shedding one. Consumed only on the commit (onRepartitionPicker B at the TO
-    // step) — backing out of either step leaves it in the bag.
+    // step): backing out of either step leaves it in the bag.
     if (d.use == ItemDef::Use::Repartition) { openRepartitionPicker(); return; }
 
     // Boot Accelerator: Use shortens the egg's incubation instead of feeding.
@@ -312,7 +312,7 @@ void Game::useItem() {
         startFeeding(d, lockoutItemsContext_);
         return;
     }
-    // Active quest item used inside a Lockout — resolves it immediately.
+    // Active quest item used inside a Lockout: resolves it immediately.
     if (lockoutItemsContext_ && itemResolvesLockout(d)) {
         inventory_.remove(d.id, 1);
         char buf[28];
@@ -321,8 +321,8 @@ void Game::useItem() {
         resolveLockout();
         return;
     }
-    // Buff (normal context): applied immediately, count decrements. Every pet lever —
-    // Happiness, the Yubi-Cookie mistake removal, the Restore Point shield — is one of
+    // Buff (normal context): applied immediately, count decrements. Every pet lever
+    // (Happiness, the Yubi-Cookie mistake removal, the Restore Point shield) is one of
     // the item's effects[], applied by the one applier; no per-id branching here.
     inventory_.remove(d.id, 1);
     applyItemEffects(d);
@@ -343,10 +343,10 @@ void Game::noteLifetimeGrant(const char* what, const char* valueFmt, int magnitu
 }
 
 void Game::applyItemEffects(const ItemDef& d) {
-    // Apply the item's on-Use pet levers (its ItemEffect list — the single source of
+    // Apply the item's on-Use pet levers (its ItemEffect list: the single source of
     // truth for what an item does to the pet). Hunger/Happy accumulate into ONE
     // PetModel::feed so a food's fill lands as a single beat; the rest apply in place.
-    // Every magnitude comes off the item row (defs.h) — none live in tunables.
+    // Every magnitude comes off the item row (defs.h): none live in tunables.
     int hunger = 0, happy = 0;
     for (const ItemEffect& e : d.effects) {
         switch (e.kind) {
@@ -358,7 +358,7 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::HungerStacking:
                 // Polltatoes: the run counts THIS bite too, so eating one alone still
                 // fills magnitude. The counter is reset by the next passive Hunger
-                // decay (Game::tickHungerAndAwardXp) — a fresh boot starts a fresh
+                // decay (Game::tickHungerAndAwardXp): a fresh boot starts a fresh
                 // run, which is the forgiving reading and keeps a transient combo
                 // counter out of the save blob.
                 ++stackingFoodRun_;
@@ -372,7 +372,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::HappyToward50: {
                 // The "empty feeling": pull Happiness TOWARD 50% from either side
-                // by magnitude, no overshoot — numbs a too-happy pet as much as it lifts
+                // by magnitude, no overshoot. Numbs a too-happy pet as much as it lifts
                 // a miserable one, unlike the flat Happy add.
                 const int h = model_.happiness();
                 if (h > 50) {
@@ -386,7 +386,7 @@ void Game::applyItemEffects(const ItemDef& d) {
             }
             case ItemEffect::Kind::RemoveCareMistakeOnce:
                 // Yubi-Cookie ("Once per pet"): remove mistakes ONCE, then the
-                // per-pet flag latches it — already-spent → no-op.
+                // per-pet flag latches it; already-spent → no-op.
                 if (!yubiConsumed_) {
                     model_.addCareMistake(-e.magnitude);
                     yubiConsumed_ = true;
@@ -404,14 +404,14 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Ambig-USB (save v28): arm a guaranteed Trojan divert at the pet's
                 // next Process->Script evolution (Game::fireEvolution), replacing the
                 // kTrojanDivertPct roll. Re-armable (unlike the once-per-lifetime
-                // shields above) — buying another does no harm.
+                // shields above): buying another does no harm.
                 forceTrojanDivert_ = true;
                 break;
             case ItemEffect::Kind::ForceEvolveBranchGood:
             case ItemEffect::Kind::ForceEvolveBranchBad:
                 // Signed-USB / Bad-USB (save v60): point the next branching evolution at
                 // the Good or the Bad successor whatever the care budget says. ONE slot,
-                // so this overwrites rather than stacks — plugging the opposite device in
+                // so this overwrites rather than stacks: plugging the opposite device in
                 // is how a player changes their mind, and the last one in is the one that
                 // fires. Consumed at the evolution it steers (Game::completeEvolution).
                 evolveBranchOverride_ = e.kind == ItemEffect::Kind::ForceEvolveBranchBad
@@ -423,18 +423,18 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Sandbox/Hypervisor-USB (save v60): stretch this stage's evolution dwell
                 // by the factor and pay the same factor on every XP award while it runs
                 // (Game::evolveDwellMs, Game::addCombatXp). Which of the two Kinds it is
-                // decides only WHERE it may go in (itemUsable) — the arming is identical,
+                // decides only WHERE it may go in (itemUsable): the arming is identical,
                 // and the doubled Script clock is read off the pet's stage, not off here.
                 // It cannot overwrite another soak: itemUsable refuses every USB but the
                 // Eject while one is armed, so this only ever writes into an empty port.
-                // Floored at 1 the way the codec floors it — the factor multiplies a clock
+                // Floored at 1 the way the codec floors it: the factor multiplies a clock
                 // AND an XP award, so a row authored at 0 would stall a pet.
                 evolveSoakFactor_ = e.magnitude > 1 ? e.magnitude : 1;
                 break;
             case ItemEffect::Kind::ArmEvolveHold:
                 // Halt-USB (save v60): stop the pet reaching a boundary at all
                 // (Game::evolveEligible). Never consumed by an evolution, because none
-                // arrives while it is in — an Eject-USB, a rack swap or a new egg are the
+                // arrives while it is in: an Eject-USB, a rack swap or a new egg are the
                 // only ways out, which is what makes parking a pet a real commitment.
                 evolveHold_ = true;
                 break;
@@ -448,14 +448,14 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::ArmCombatShieldBuff:
                 // Backup Drive (save v30): arm the timed combat shield, magnitude
                 // MINUTES from now (Game::buildPlayerCombatant reads the deadline).
-                // Re-armable — using another one just refreshes the window.
+                // Re-armable: using another one just refreshes the window.
                 backupShieldUntilMs_ = lifetimeUptimeMs() + static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
                 break;
             case ItemEffect::Kind::ArmDeepWebDepthMultiplier:
-                // Deep-Learning Module/Core: overwrites, never stacks — buying a second one
+                // Deep-Learning Module/Core: overwrites, never stacks. Buying a second one
                 // just replaces the multiplier. Armed AHEAD of the dive it applies to
-                // (Context::Anytime), so it is cleared only where a DIVE ENDS — the Stop
-                // row and a combat loss, both guarded on inDeepWebDive() — and on a new
+                // (Context::Anytime), so it is cleared only where a DIVE ENDS. The Stop
+                // row and a combat loss, both guarded on inDeepWebDive(), and on a new
                 // pet (game_lifecycle.cpp). Deliberately NOT tied to exploreStreak_'s
                 // reset: the streak resets at both ends of a run, so following it would
                 // clear the buff on the way INTO the dive it was bought for.
@@ -465,7 +465,7 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
                 // this pet's Bandwidth regen for good; later ones latch out here and
-                // leave only the row's ordinary food levers — including its +Bandwidth,
+                // leave only the row's ordinary food levers, including its +Bandwidth,
                 // which is what a second helping is actually for. Granting once is the
                 // whole design: the upgrade is per-pet, so the way to have it twice is
                 // to raise a second pet, not to eat a second plate.
@@ -478,8 +478,8 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::StatPointDefense:
             case ItemEffect::Kind::StatPointSpeed:
             case ItemEffect::Kind::StatPointHealth: {
-                // An Epic dish's off-level point. Granted once per pet PER STAT — four
-                // dishes, four stats, four upgrades a pet can hold at most — and latched
+                // An Epic dish's off-level point. Granted once per pet PER STAT (four
+                // dishes, four stats, four upgrades a pet can hold at most), and latched
                 // out after that so the plate keeps feeding without stacking. It lands
                 // outside statPoints_ on purpose: the level stays equal to the sum of
                 // EARNED points, which is the invariant Rollback sheds against, so
@@ -500,7 +500,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 }
                 break;
             case ItemEffect::Kind::Bandwidth:
-                // A top-up of the live pool, capped at the ceiling the rig has bought —
+                // A top-up of the live pool, capped at the ceiling the rig has bought:
                 // the same clamp grantRigLevel applies, since overfilling would hand
                 // back shielded fights the cap says the operator hasn't paid for.
                 bandwidth_ += e.magnitude;
@@ -522,7 +522,7 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Unlinkguine: cut the phantom process off from the pet it copied.
                 // Guarded on actually HAVING a ghost, so the achievement marks curing one
-                // rather than owning the snack — eating it as ordinary food is the common
+                // rather than owning the snack: eating it as ordinary food is the common
                 // case and must not unlock anything.
                 if (model_.hasGhost()) {
                     model_.setGhost(false);
@@ -539,7 +539,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 break;
             case ItemEffect::Kind::CutIncubationMin: {
                 // Boot Accelerator: a flat bite out of the incubation clock, floored at
-                // kHatchRevealMs rather than at zero — the last stretch is where the
+                // kHatchRevealMs rather than at zero. The last stretch is where the
                 // player cracks the shell by hand (hatchRevealReady), so a cut that
                 // skipped past it would take that away rather than hand it over.
                 const uint32_t cutMs = static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
@@ -556,7 +556,7 @@ void Game::applyItemEffects(const ItemDef& d) {
 const ItemDef* Game::rollLootEntry(const LootEntry* pool, int poolSize) {
     // The one weighted walk over a loot pool, shared by every container's payout and
     // by the walk's own loot-cache event. Each row draws at its LootEntry::weight if it
-    // names one, else at the item's own itemDropWeight() (which falls back to rarity) —
+    // names one, else at the item's own itemDropWeight() (which falls back to rarity),
     // so a pool stays a bare id list until an entry genuinely needs to differ. Advances
     // the shared LCG, so a draw stays deterministic under a fixed seed.
     if (!pool || poolSize <= 0) return nullptr;
@@ -596,7 +596,7 @@ const ItemDef* Game::drawCacheItem(const LootEntry* pool, int poolSize) {
 
 void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** itemsOut,
                             int& itemCountOut, int maxItems) {
-    // Everything a cache pays is on its own row (ItemDef::cache, content_items.cpp) —
+    // Everything a cache pays is on its own row (ItemDef::cache, content_items.cpp):
     // purse, draw count, pool, and whether it also rolls a mod. One uniform payout, so
     // adding a container is a row rather than a branch here.
     const CacheDef& c = d.cache;
@@ -613,7 +613,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     }
     // A rich cache is also a second, non-boss MOD source: rolled globally rarity-weighted
     // (even a tier-4 mod can surface; its rolled equip-level gate holds it until the pet
-    // is deep enough). Granted + logged here — the yield reveal shows the items/Bits, the
+    // is deep enough). Granted + logged here: the yield reveal shows the items/Bits, the
     // mod lands in MODS.
     if (c.modChancePct > 0) {
         rng_ = rng_ * 1664525u + 1013904223u;
@@ -631,7 +631,7 @@ void Game::openSealedCache(const ItemDef& d) {
     std::snprintf(opened, sizeof(opened), "OPENED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, opened);
 
-    cacheYieldCache_ = &d;   // ItemDef lives in the static registry — stable pointer
+    cacheYieldCache_ = &d;   // ItemDef lives in the static registry: stable pointer
     cacheYieldItemCount_ = 0;
     cacheYieldBits_ = 0;
     grantCacheReward(d, cacheYieldBits_, cacheYieldItems_, cacheYieldItemCount_, 2);
@@ -718,7 +718,7 @@ void Game::useBootAccelerator(const ItemDef& d) {
 }
 
 int Game::nextEligibleStat(int cur) const {
-    // The next stat (wrapping) with ≥1 earned point — A cycles only eligible rows
+    // The next stat (wrapping) with ≥1 earned point: A cycles only eligible rows
     // Returns `cur` if it's the only eligible one, or -1 if none are.
     for (int step = 1; step <= kLevelStatCount; ++step) {
         const int i = (cur + step) % kLevelStatCount;
@@ -749,7 +749,7 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         // next one is carried down rather than binned: a pet 90% of the way up its rung
         // lands 90% of the way up the rung below, and re-grinds exactly the level it
         // shed. Carried as the FRACTION, not the raw number, because the rung below is
-        // shorter — banking the raw count would leave a pet over the lower rung's need
+        // shorter: banking the raw count would leave a pet over the lower rung's need
         // and hand the level straight back on the next award. The floor division also
         // keeps it strictly under that need (it was strictly under the taller one), so
         // the shed can never undo itself. Consume the Rollback item + log.
@@ -762,7 +762,7 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
                                              xpToNextLevel() / wasNeed);
             inventory_.remove(detailItem_->id, 1);
             char buf[28];
-            // Surface the shed explicitly — which stat and by how much (
+            // Surface the shed explicitly, which stat and by how much (
             // "show the -1 <stat> on a Rollback"). The stat WORD + signed number are
             // the non-colour channel, so it reads in a grayscale log.
             std::snprintf(buf, sizeof(buf), "ROLLBACK %s -1",
@@ -772,14 +772,14 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         }
         nav_ = Nav::Submenu;   // back to the ITEMS list (the item may have run out)
     } else if (ev.button == Button::C) {
-        nav_ = Nav::Detail;    // cancel — item untouched, back to its detail
+        nav_ = Nav::Detail;    // cancel: item untouched, back to its detail
     }
     dirty_ = true;
 }
 
 int Game::nextRepartitionTarget(int cur) const {
     // The next stat (wrapping) that is not the source. Every stat but that one is a
-    // legal destination — a stat sitting at zero earned points is exactly the stat an
+    // legal destination: a stat sitting at zero earned points is exactly the stat an
     // operator reaches for this item to fill, so unlike the shed picker there is no
     // eligibility to test beyond "not where the point already is".
     for (int step = 1; step <= kLevelStatCount; ++step) {
@@ -819,7 +819,7 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
         } else if (rollbackEligible(repartitionFrom_) &&
                    repartitionRow_ != repartitionFrom_ && detailItem_) {
             // The move: one point off the source, one onto the target. The LEVEL and the
-            // XP bucket are untouched on purpose — nothing was un-earned, so there is no
+            // XP bucket are untouched on purpose: nothing was un-earned, so there is no
             // grind to re-pay; what the item sells is the SHAPE of the table, and the
             // invariant (level == the sum of the earned points) holds because the sum
             // did not change. Consume the item + log.
@@ -841,7 +841,7 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
         // re-opens the source question (cursor back on the source, so the mis-pick is
         // visible), and from the source step it leaves. Nothing has been spent either way.
         if (picking) {
-            nav_ = Nav::Detail;    // cancel — item untouched, back to its detail
+            nav_ = Nav::Detail;    // cancel: item untouched, back to its detail
         } else {
             repartitionRow_ = repartitionFrom_;
             repartitionFrom_ = -1;
@@ -851,7 +851,7 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
 }
 
 void Game::rollPantrySpoilage() {
-    // One roll per held perishable STACK, converting a single unit — so a larder of
+    // One roll per held perishable STACK, converting a single unit, so a larder of
     // twenty rots no faster than a larder of one, and a player who hoards isn't punished
     // for it beyond the flavour. Collected first because converting mutates the vector
     // the roll is walking.
@@ -885,7 +885,7 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     feedBefore_ = {model_.hunger(), model_.fragmentation(), model_.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
     noteCareSignal(DominantSignal::Feeding);   // dominant-signal tally
-    // Feeding from the crisis resolves it immediately — disarm the deadline so it
+    // Feeding from the crisis resolves it immediately: disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).
     if (fromLockout) lockoutActive_ = false;
     char buf[28];

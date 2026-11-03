@@ -9,10 +9,10 @@
 #include "core/ui/prose_page.h"
 #include "core/ui/widgets.h"
 
-// game_arcade.cpp — GAMES: the arcade cabinets.
+// game_arcade.cpp (GAMES): the arcade cabinets.
 //
 // The whole unit is a menu and a till. It starts a minigame that already exists, waits
-// for that game to end the way it always ends, and pays for the attempt — so there is
+// for that game to end the way it always ends, and pays for the attempt, so there is
 // no arcade copy of any game to keep in step with the original, and changing a hatch
 // game changes what the cabinet plays in the same commit.
 //
@@ -21,12 +21,12 @@
 // incubation clock, which a cabinet doesn't have) and a PACE (the difficulty dial). Both
 // are parameters at the start call; nothing inside a game knows the arcade exists.
 //
-// The payout is deliberately mostly flat — see kArcadePlayBits in tunables.h for why.
+// The payout is deliberately mostly flat: see kArcadePlayBits in tunables.h for why.
 
 namespace mal {
 
 namespace {
-// Where the RULES page's prose starts, under drawHeaderBand's title + rule — the same
+// Where the RULES page's prose starts, under drawHeaderBand's title + rule: the same
 // offset ROCK THE DOCK's own BRIEFING opens its reader at (kDockBriefTop,
 // ui/tourney_screen.h), since both sit under the identical band.
 constexpr int kGameBriefReaderTop = 46;
@@ -139,7 +139,7 @@ void Game::drawGameBrief(Framebuffer& fb) const {
 
 // --- The cabinet list (L2) -------------------------------------------------
 //
-// A locked cabinet is ABSENT from the list, not greyed in it — the Rig Shop's rule
+// A locked cabinet is ABSENT from the list, not greyed in it. The Rig Shop's rule
 // (shopRowOffered), and for the same reason: a menu should not advertise a door the
 // player has no key to. arcadeRow_ stays a ROSTER index throughout, so the tallies and
 // the START call index the same space whether or not anything is hidden.
@@ -239,7 +239,7 @@ void Game::startArcadeRun() {
             break;
         case ArcadeGameKind::Chroma:
             // ENDLESS, like the buffer above: the board runs until the sweep finds it.
-            // The dial is the WINDOW, which is the paced games' knob (playStepMs) —
+            // The dial is the WINDOW, which is the paced games' knob (playStepMs),
             // and hard alone turns switching on, which is the only rule any cabinet
             // adds to a game rather than re-times.
             startChroma(/*rounds=*/0, playStepMs(kChromaWindowMs),
@@ -247,12 +247,12 @@ void Game::startArcadeRun() {
             break;
         case ArcadeGameKind::Cryptogram: {
             // The dial IS the quote's difficulty ladder, so the cabinet reuses the same
-            // opening the VAULT would give — no second answer to what MEDIUM means on
+            // opening the VAULT would give: no second answer to what MEDIUM means on
             // a quote board. Only a SOLVED quote is offered: the cabinet is a re-run,
             // never a free route through the pool.
             const int quote = pickQuote(QuotePick::SolvedOnly);
             if (quote < 0) {
-                arcadeRun_ = false;   // nothing to re-run — leave the cabinet page up
+                arcadeRun_ = false;   // nothing to re-run: leave the cabinet page up
                 return;
             }
             CryptogramTier t = CryptogramTier::Hard;
@@ -300,7 +300,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
         arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
         if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
     }
-    // The pet enjoyed itself, and PLAY is the signal that says so — the arcade is the
+    // The pet enjoyed itself, and PLAY is the signal that says so: the arcade is the
     // one place a player can hand a pet that signal on purpose.
     noteCareSignal(DominantSignal::Play);
     markSaveDirty();
@@ -313,7 +313,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
 
 void Game::onArcadeResult(const ButtonEvent& ev) {
     // Informational: the run is banked already, so any press leaves. C is not "back"
-    // here — there is nothing to go back to, only the list to return to.
+    // here: there is nothing to go back to, only the list to return to.
     (void)ev;
     nav_ = Nav::Submenu;
     dirty_ = true;

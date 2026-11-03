@@ -15,7 +15,7 @@
 #include "core/ui/tourney_screen.h"
 #include "core/ui/widgets.h"
 
-// game_tourney_render.cpp — ROCK THE DOCK's three views. The run itself (the seed, the
+// game_tourney_render.cpp: ROCK THE DOCK's three views. The run itself (the seed, the
 // bracket's state machine, what a bout costs and pays) is game_tourney.cpp; this unit
 // only ever reads it.
 //
@@ -25,8 +25,8 @@
 // first round and a face-off by the semi-final, without ever being two screens.
 //
 // WHY THE OPPONENT HAS A FACE AT ALL. The Dock's whole premise is that its entrants
-// are PETWARE — a rolled creature off the hatchable roster rather than a malbeast
-// (content_tournament.h) — and that premise is unprovable on a screen that only ever
+// are PETWARE. A rolled creature off the hatchable roster rather than a malbeast
+// (content_tournament.h), and that premise is unprovable on a screen that only ever
 // spells the species out. The sprite is already in flash for the bout that follows, so
 // showing it costs nothing and is the only thing that says "this is somebody's pet"
 // before the fight starts.
@@ -43,7 +43,7 @@ inline int slotTagWidth() { return textWidth("NEXT"); }
 // When an entrant fires its Exploit, as the tell the briefing promises the operator
 // they can learn ("Some open with it; some wait until they are cornered"). A percentage
 // rather than a mood, because it is a number the operator can check against the health
-// bar during the bout — and the arena is the one place a tell is worth stating up
+// bar during the bout, and the arena is the one place a tell is worth stating up
 // front, since nothing here is a surprise the run can't survive.
 void exploitTell(int atHealthPct, bool eitherSide, char* buf, int n) {
     if (atHealthPct >= 100) std::snprintf(buf, n, "FROM TURN 1");
@@ -67,7 +67,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
     // so it goes down first and the band composes onto it instead of clearing it away.
     drawScene(fb, SceneId::PirateBayou, beat_, kDockGround);
     // Which round it is rides the band's right label. It is a NUMBER the operator
-    // reads rather than a colour, so the header survives grayscale — and the two
+    // reads rather than a colour, so the header survives grayscale, and the two
     // verdicts take the same slot, because "CHAMPION" is also just where you are.
     char where[16];
     if (tourneyPhase_ == TourneyPhase::Champion)
@@ -95,7 +95,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
         const bool focused = slot == cur;
         // Out of the draw and not being read: the row collapses to the strike alone.
         // The strikes are countable, and counting them gives the same answer as the
-        // "n LEFT" readout — which is what keeps the collapse honest in grayscale.
+        // "n LEFT" readout, which is what keeps the collapse honest in grayscale.
         if (!live && !focused) {
             fb.fillRect(kDockTextX, y + kDockOutRowH / 2,
                         textWidth(slot == me ? hackerTag_
@@ -109,7 +109,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
             drawRowCursor(fb, 2, y, palColor(Pal::ACCENT));
         }
         const TourneyCard card = tourneyCard(tourneySeed_, slot);
-        // The operator's own row is captioned with their own tag — an entrant list that
+        // The operator's own row is captioned with their own tag: an entrant list that
         // named seven operators and one "YOU" would be the one row you cannot compare.
         const char* name = slot == me ? hackerTag_ : card.handle;
         const Rgb565 ink = live ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
@@ -147,7 +147,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
     const bool ready = tourneyPhase_ == TourneyPhase::Ready;
     // WHOSE drawing stands on the dock. Waiting on a bout it is the OPPONENT, not the
     // pair: the operator's own pet is on every other screen the device has, and the
-    // one thing the arena has to show is the stranger — which is also the only way a
+    // one thing the arena has to show is the stranger, which is also the only way a
     // 96-wide Daemon and a column of copy fit on one 224px screen. Taking the bracket
     // is the exception, and it is the pet's: a title is a picture of your own pet
     // alone on a dock everybody else has gone home from. Being knocked out draws
@@ -177,7 +177,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
     char line[kDockCardLines][32] = {};
     if (tourneyPhase_ == TourneyPhase::Champion) {
         // A receipt, one item to a line. The purse lands in one lump and is the only
-        // thing the arena ever pays, so it is itemised rather than summarised — and
+        // thing the arena ever pays, so it is itemised rather than summarised, and
         // the band overhead already says CHAMPION, which is the sentence.
         std::snprintf(line[0], sizeof(line[0]), "TITLE TAKEN");
         std::snprintf(line[1], sizeof(line[1]), "+%d BITS", kTourneyWinBits);
@@ -193,7 +193,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
                       tourneyCard(tourneySeed_, opp).handle);
         std::snprintf(line[1], sizeof(line[1]), "%s  L%d", c ? c->displayName : "UNKNOWN",
                       static_cast<int>(tourneyOpponent_.spec.level));
-        // The Exploit as its TAG, not its crew NAME — the short mechanic word every
+        // The Exploit as its TAG, not its crew NAME: the short mechanic word every
         // other surface shows it by (crewExploitTag), and the only form that fits.
         std::snprintf(line[2], sizeof(line[2]), "%s",
                       crewExploitTag(tourneyOpponent_.exploit.kind));
@@ -218,7 +218,7 @@ void Game::drawTourneyBrief(Framebuffer& fb) const {
 
 void Game::drawTourneyScout(Framebuffer& fb) const {
     // The sheet's own header is the only thing that is not the LOADOUT page: WHO this
-    // kit belongs to, WHAT it is, and — since this is the one screen with room for it —
+    // kit belongs to, WHAT it is, and (since this is the one screen with room for it)
     // the drawing. Everything under it is the shared flow.
     const int slot = tourneyScoutedSlot_;
     const bool self = slot == tourneySlot();

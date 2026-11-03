@@ -1,10 +1,10 @@
-// content_passives.h — per-LINE combat passive tuning.
+// content_passives.h: per-LINE combat passive tuning.
 //
 // A line's signature ability is a bespoke hook in Combat (ransomArmRolls,
 // execOverrideChance, syncWormSpeed, the steal-track siphon + bubble-bite in
 // applyEffect), gated on Combatant::line or (for the steal track) purely on which
 // MoveDef fields a line's rows populate. This file holds the CONSTANTS those hooks
-// read — grouped by line, alongside content_moves.cpp's per-move magnitudes, not in
+// read. Grouped by line, alongside content_moves.cpp's per-move magnitudes, not in
 // tunables.h: these numbers only ever move together with a line's move balance, and
 // tuning one without the other breaks the passive's math. Cross-cutting engine
 // constants that apply the same way regardless of line (kLevelDefensePerPoint,
@@ -13,12 +13,12 @@
 
 namespace mal {
 
-// --- Ransomware — Ransom Note --------------------------------------------------
+// --- Ransomware: Ransom Note --------------------------------------------------
 // A stage-scaled chance, rolled at the start of each of the ransomer's own turns, ARMS a
 // ransom window. The window stays open until a hit lands in it: that hit's DAMAGE is held
 // hostage instead of landing, banked into a pool (Combatant::ransomPool) that resets its
 // countdown to kRansomHoldTurns of the ransomer's own turns, and the window closes. When
-// the countdown runs out the whole pool lands in one blow — so a lucky run buys real
+// the countdown runs out the whole pool lands in one blow, so a lucky run buys real
 // fighting time at the price of a cliff that can kill outright. Only damage is deferred;
 // a hit's riders (DoT, stun, steals, armor rot) apply on impact as usual.
 //
@@ -29,7 +29,7 @@ namespace mal {
 //
 // Indexed by Stage (Boot/Process/Script/Daemon); Boot's 0% is inert (an egg can't fight).
 // Because a window persists until it catches something, this is very nearly "what share of
-// the hits the pet takes get held" — which is also what a player perceives, so it is the
+// the hits the pet takes get held", which is also what a player perceives, so it is the
 // dial to turn if the passive reads too rare or too constant. It can afford to be generous:
 // the pool is a DEFERRAL, not a damage cut, and total damage taken is unchanged unless the
 // fight ends before the bill comes due.
@@ -39,7 +39,7 @@ constexpr int kRansomHoldTurns = 3;   // also sizes the combat screen's blip row
 // WORKED UP. The hostage damage is a grudge the pet acts on while it holds: every brace it
 // casts turns this % of the live pool into Power (percentage points), and every attack it
 // lands turns this % into DEF rating. Hit it and it gets angrier; let it hit you and it gets
-// harder to answer. Read off the pool, never spent from it — the line does not heal, so the
+// harder to answer. Read off the pool, never spent from it: the line does not heal, so the
 // bill still lands whole.
 // Indexed by Stage like the arm chance above. Process keeps it faint: a fresh hatchling's
 // first area apex is meant to stop it, and the line is already level at that stage.
@@ -48,13 +48,13 @@ constexpr int kRansomStrikeDefensePctByStage[4] = {0, 10, 50, 50};
 
 // THE GRUDGE (Extortion Ledger's scale). What the pool holds is what the pet has taken and
 // not answered for, so the ledger hits harder the longer that list gets: the mod's power
-// bonus is scaled by the pool measured against the pet's own STAGE body — the same
+// bonus is scaled by the pool measured against the pet's own STAGE body. The same
 // denominator the Obfuscation siphon uses, and for the same reason (a levelled maxHealth
 // would make a Health-steered pet worse at its own line's mechanic).
 //
 // Deliberately a modest scale on top of a bonus that already pays at any pool size. The
 // line is brute force with one gimmick and is meant to be strong from the first turn, not
-// to ramp — so this tilts a fight the pet is already in rather than deciding one.
+// to ramp, so this tilts a fight the pet is already in rather than deciding one.
 constexpr int kLedgerGrudgeFullPct = 100;   // ...at a pool the size of the stage's own body
 constexpr int kLedgerGrudgeMaxPct = 100;    // ...and never more than doubling
 
@@ -63,24 +63,24 @@ constexpr int kLedgerGrudgeMaxPct = 100;    // ...and never more than doubling
 // RansomSeizure). This is the whole reason the seizure
 // is worth having: taking an attack for three turns is a small thing on its own, and
 // measured that way it moved nothing at all. What the line needed was a way to SPEND its
-// wall, because Cipher accumulates DEF rating and has nothing else to do with it — the
+// wall, because Cipher accumulates DEF rating and has nothing else to do with it: the
 // four one-attack-slot Daemons rank almost exactly by how far their line converts defence
 // into damage, and Ransomware was last with no conversion at all. The seized move is the
 // conversion: the ransom note is written in the pet's own encryption.
 constexpr int kRansomSeizedWallPct = 100;   // 100 = the stack's full cut, as bonus damage
 
-// --- Phishing — steal track + Obfuscation-bubble passives ---------------------
+// --- Phishing. Steal track + Obfuscation-bubble passives ---------------------
 // Floors for the generic per-field siphon in Combat::applyEffect (MoveDef's steal*
 // fields): a power siphon can't drag powerMultPct below kStealPowerFloorPct; a speed
 // siphon can't drag speed below kStealSpeedFloor (the target keeps some action tempo).
 constexpr int kStealPowerFloorPct = 20;
 // What a power siphon pays the thief, as a % of what it took. Over 100 so two siphoning
-// kits ramp each other rather than trading the same Power back and forth forever — the
+// kits ramp each other rather than trading the same Power back and forth forever: the
 // fight's total damage climbs until one of them breaks through the other's bubble.
 constexpr int kStealPowerGainPct = 110;
 
 // THE LURE (LinePassive::Lure). Every attack a Phishing pet lands siphons this % of the
-// target's Power, whatever row swung it — the line's steal, made a property of the pet
+// target's Power, whatever row swung it: the line's steal, made a property of the pet
 // rather than only of its steal rows. Small, because the rows it rides with are the
 // multiplier: a steal row stacks its own siphon on top, and the bubble scales the bite.
 // Indexed by Stage like every other line passive.
@@ -88,18 +88,18 @@ constexpr int kPhishLureSiphonPctByStage[4] = {0, 1, 3, 5};
 constexpr int kStealSpeedFloor = 1;
 
 // Feed-frenzy: a landed steal-attack while the caster's Obfuscation shield (shieldHp)
-// is up heals it this permille of the shield's current HP (min 1) — FLOAT, not int, so
+// is up heals it this permille of the shield's current HP (min 1). FLOAT, not int, so
 // a small shield still contributes a meaningful heal instead of truncating to 0.
 constexpr float kFrenzyHealPermille = 15.0f;   // 0.X% of live shieldHp, min 1
 
 // Pool siphon: the Obfuscation bubble SCALES the two bubble-gated steals rather than
-// merely permitting them — a pool the size of the pet's own max Health adds this much to
+// merely permitting them. A pool the size of the pet's own max Health adds this much to
 // their magnitude, capped. This is the line's defence-into-offence conversion, and the
 // counterpart to Ransomware spending its Cipher wall on a seized move: a bubble is a decoy
 // identity, and a bigger decoy takes more off whoever bites it.
 //
 // CONTINUOUS on purpose, not gated on a threshold. Ransomware's seizure is threshold-gated
-// and measured a 27% duty cycle across random legal kits — a large payoff most builds never
+// and measured a 27% duty cycle across random legal kits: a large payoff most builds never
 // meet, because filling a bar takes more turns than a losing fight lasts. Anything that
 // scales with a live quantity instead pays every turn the quantity is live, which is the
 // difference between a mechanic a line HAS and one it reads about.
@@ -110,14 +110,14 @@ constexpr int kPhishPoolSiphonMaxPct = 150;    // ...and never more than this
 // stealCurrentHpPct, these only fire at all while the caster's bubble is up (shieldHp > 0)
 constexpr int kPhishingBiteChancePctByStage[4] = {0, 32, 48, 64};
 
-// Frenzy lean: once the bubble has been stacked past the pet's own max Health — the
+// Frenzy lean: once the bubble has been stacked past the pet's own max Health (the
 // point the shield bar starts churning, so the screen has already promised something
-// changed — more bubble buys less than a bite does, and Combat::chooseMove starts
+// changed) more bubble buys less than a bite does, and Combat::chooseMove starts
 // re-rolling Defend picks into Attack ones. The chance ramps with how far past max
 // Health the pool was stacked, reaching kPhishFrenzyLeanMaxPct at this multiple of it.
 //
 // It reads the pool's HIGH-WATER mark (phishShieldPeak), not its live size, so the lean
-// does NOT ease off as the bubble is chewed back down — a pet that banked a wall commits
+// does NOT ease off as the bubble is chewed back down: a pet that banked a wall commits
 // to spending it. The ratchet releases only when the bubble actually POPS, which is the
 // off-ramp: stop bracing, the enemy eventually breaks through, and the pet returns to
 // mixed play. Re-casting the bubble before it pops holds the frenzy open, which is what
@@ -125,43 +125,43 @@ constexpr int kPhishingBiteChancePctByStage[4] = {0, 32, 48, 64};
 constexpr int kPhishFrenzyLeanFullMult = 2;    // peak >= this x maxHealth -> full lean
 constexpr int kPhishFrenzyLeanMaxPct = 100;
 
-// --- Trojan — Execution-Override + trap cap ------------------------------------
+// --- Trojan: Execution-Override + trap cap ------------------------------------
 // On an enemy's move-pick a Trojan has kExecOverrideBasePct chance PLUS the sum of
 // its armed traps' trapPassiveBonusPct to hijack that move and turn it on the enemy.
-// Low base, high with traps held — so maintaining the trap stack IS the way to make
+// Low base, high with traps held, so maintaining the trap stack IS the way to make
 // it fire. kTrojanTrapCap caps how many Trojan Defend traps can be armed at once (a
-// few pips) — also sizes Combatant::trojanTraps' fixed array.
+// few pips): also sizes Combatant::trojanTraps' fixed array.
 constexpr int kExecOverrideBasePct = 8;
 constexpr int kTrojanTrapCap       = 3;
 
-// --- Worm — Shared Resources + the replication slots ---------------------------
+// --- Worm: Shared Resources + the replication slots ---------------------------
 // Shared Resources has two halves that only make sense together.
 //
-// SPEED LOCKSTEP: a worm's speed is not its own — it is continuously assigned the
+// SPEED LOCKSTEP: a worm's speed is not its own. It is continuously assigned the
 // OPPONENT's (Combat::syncWormSpeed, re-applied at every scheduling tick). Actions are
 // dealt by RELATIVE speed (Combat::pickNextActor), so a worm can never be out-actioned:
 // whatever buffs or siphons the other side, the gauges stay level and the fight
-// alternates. It costs the worm every speed lever in the game — nothing it equips or
+// alternates. It costs the worm every speed lever in the game: nothing it equips or
 // steals can buy it an extra action either. The fiction is the resource share: a worm
 // duplicating on your machine runs on your cycles, so the two of you slow down together.
 // No constant needed for it; matching exactly IS the passive.
 //
 // REPLICATION SLOTS: the screen is 224px of active canvas and a replica is drawn art, so
 // replication is capped by SLOTS rather than left open. One pool shared by both kinds,
-// which is what makes the split a decision — a slot spent on a defender is a slot no
+// which is what makes the split a decision: a slot spent on a defender is a slot no
 // attacker can use.
 constexpr int kWormReplicaSlots = 3;
 
 // A replica's magnitude comes from the OTHER kind's live count, which is the line's whole
 // strategy: attackers are worthless without defenders behind them and defenders are thin
 // without attackers to guard. The first replica of either kind would multiply by zero, so
-// the count floors here — a lone replica is worth exactly its base rather than nothing,
+// the count floors here: a lone replica is worth exactly its base rather than nothing,
 // and every one after it is the real multiplier.
 constexpr int kWormReplicaMultFloor = 1;
 
 // Incoming attacks pick their victim among the parent and its replicas by weight
-// (wormTargetWeights, combat.h). Defenders draw hardest — a body thrown in front is what
-// a defender IS — with attackers next and the parent itself the rarest target, so a full
+// (wormTargetWeights, combat.h). Defenders draw hardest (a body thrown in front is what
+// a defender IS) with attackers next and the parent itself the rarest target, so a full
 // board genuinely hides the worm. These are the numbers to turn if the parent reads
 // either untouchable or unprotected.
 constexpr int kWormTargetWeightParent   = 1;
@@ -176,24 +176,24 @@ constexpr int kWormTargetWeightDefender = 4;
 // body, and full where a Daemon swarm has to answer hits that stage has grown.
 constexpr int kWormDefenderBitePctByStage[4] = {0, 20, 35, 60};
 
-// --- Metamorphic — Polymorph + the wildcard roll --------------------------------
+// --- Metamorphic: Polymorph + the wildcard roll --------------------------------
 // POLYMORPH. Every move this pet casts that it has not already cast THIS FIGHT is
 // absorbed, and pays one stat point's worth in the vocabulary a level-up already spends:
 // an Attack pays Power and Speed, a Defend pays Defense and max-Health (the magnitudes
 // are tunables.h's kLevel*PerPoint, read rather than restated, so the two stay one fact).
 // A repeat pays nothing, which is what makes the line's reward RANGE instead of volume.
 //
-// Nothing caps the payout. The line has no plan to converge on — its slots roll out of a
-// pool far wider than a kit — and acting more often is the whole of what it gets instead,
+// Nothing caps the payout. The line has no plan to converge on (its slots roll out of a
+// pool far wider than a kit), and acting more often is the whole of what it gets instead,
 // so the ramp is the mechanic rather than something to hold down. It compounds on
 // purpose: Speed buys actions, actions buy casts, casts buy Speed. A long fight is where
 // that pops off, and a long fight is what this line is for.
 constexpr int kPolymorphAbsorbCap = 24;   // TECHNICAL bound on the absorbed set, not a
-                                           // balance ceiling — a gauntlet round must not be
+                                           // balance ceiling: a gauntlet round must not be
                                            // able to overrun the array (Combatant::absorbed)
 
 // THE WILDCARD ROLL is two steps: pick a SOURCE by weight, then a row uniformly inside it.
-// A flat pick over the merged pool cannot work — the generic roster runs about four Attack
+// A flat pick over the merged pool cannot work: the generic roster runs about four Attack
 // rows for every one a line contributes, so line moves would surface roughly an eighth of
 // the time and the RUNS that make a borrowed passive worth anything would never happen.
 // Weighting the source instead buys both halves at once: a line's rows come up often enough

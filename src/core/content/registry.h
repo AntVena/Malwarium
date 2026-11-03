@@ -1,8 +1,8 @@
-// registry.h — lookup-by-id over one or more merged content sources.
+// registry.h: lookup-by-id over one or more merged content sources.
 //
 // The engine reads content only through here. Sources are added at boot
 // (embedded first; an SD source later), so new content packs extend the game
-// without touching call sites — the registration seam.
+// without touching call sites: the registration seam.
 #pragma once
 
 #include <algorithm>
@@ -22,8 +22,8 @@ public:
 
     const CreatureDef* creature(const char* id) const;
     // The FAMILY carrying `lineId` (CreatureDef::line), or nullptr. This is how the
-    // line-level facts — the combat passives it carries, the achievement for arriving
-    // on it — are read, so neither the turn engine nor the evolution seam has to know a
+    // line-level facts (the combat passives it carries, the achievement for arriving
+    // on it) are read, so neither the turn engine nor the evolution seam has to know a
     // line by name.
     const CreatureLine* creatureLine(const char* lineId) const;
     const EggLineDef* eggLine(const char* id) const;
@@ -41,7 +41,7 @@ public:
     const MoveDef* chainStep(const char* id) const;
 
     // Evolution routing. daemonPool: the Script->Daemon weighted pool for
-    // `fromId` on the given branch (null if none — the caller then reads the
+    // `fromId` on the given branch (null if none. The caller then reads the
     // creature's own evolvesTo* fields). Every other hop is on the creature row.
     const DaemonPoolDef* daemonPool(const char* fromId, bool badBranch) const;
 
@@ -50,11 +50,11 @@ public:
     // reference would outlive the temporary registry it points into.
 
     // Every known item def, across all sources (the inventory list builds off
-    // this — content stays data-driven, no hardcoded item table in the UI).
+    // this: content stays data-driven, no hardcoded item table in the UI).
     std::vector<const ItemDef*> allItems() const { return items_.rows(); }
     // Every known mod def (the MODS picker builds off this, same rationale).
     std::vector<const ModDef*> allMods() const { return mods_.rows(); }
-    // The mod carrying save wire number `wire` (ModDef::wire), or nullptr — the lookup
+    // The mod carrying save wire number `wire` (ModDef::wire), or nullptr: the lookup
     // the save's owned-mod pool needs, since a blob names a mod by number and not by id.
     // A number belonging to a RETIRED row resolves to nullptr, which is exactly what
     // should happen: its copies are dropped on load rather than resurrected.
@@ -62,21 +62,21 @@ public:
     // Every known move def (the MOVES picker builds off this, same rationale).
     std::vector<const MoveDef*> allMoves() const { return moves_.rows(); }
     // Every known FAMILY, across all sources, in roster order. What a caller asking
-    // about the lines themselves rather than about one line by id needs — the habitat's
+    // about the lines themselves rather than about one line by id needs: the habitat's
     // ambient colour drift walks it to find the families a pet is not (idleCamoSprite).
     std::vector<const CreatureLine*> allCreatureLines() const { return lines_.rows(); }
     // Every known creature def, across all sources. Roster-wide invariants build
     // off this (e.g. the wild-name / roster-name disjointness gate).
     std::vector<const CreatureDef*> allCreatures() const { return creatures_.rows(); }
     // Every known egg line, across all sources (the hatch line-select builds off
-    // this — a new line is a data row, no UI change).
+    // this: a new line is a data row, no UI change).
     std::vector<const EggLineDef*> allEggLines() const { return eggLines_.rows(); }
 
     // Resolve a creature's sprite via the AssetSource (art may ship with content).
     const SpriteData* creatureSprite(const CreatureDef& c) const;
     // A null NAME is a real answer and not a caller's mistake: a row may legitimately
-    // have no sheet — an area guardian is drawn as a flock instead (CombatEnemy::isSwarm,
-    // core/render/swarm.h) — and every draw path already treats a null sheet as an empty
+    // have no sheet. An area guardian is drawn as a flock instead (CombatEnemy::isSwarm,
+    // core/render/swarm.h), and every draw path already treats a null sheet as an empty
     // standard seat. The guard is here rather than at those callers because the lookup
     // below is a strcmp against the asset table, which a null would walk straight into.
     const SpriteData* sprite(const char* name) const {

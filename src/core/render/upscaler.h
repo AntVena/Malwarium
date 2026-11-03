@@ -1,4 +1,4 @@
-// upscaler.h — whole-canvas integer-ratio nearest-neighbour upscale.
+// upscaler.h: whole-canvas integer-ratio nearest-neighbour upscale.
 //
 // The engine renders at 128 logical and upscales the entire canvas by num/den
 // (7/4 = x1.75 -> 224) with NO downscaling, preserving clean logical-pixel
@@ -15,7 +15,7 @@ namespace mal {
 inline int scaledExtent(int n, int num, int den) { return n * num / den; }
 
 // Upscale `src` into `out` (resized to src*num/den). Pixel (ox,oy) samples
-// source (ox*den/num, oy*den/num) — a deterministic 2,2,2,1 expansion for 7/4.
+// source (ox*den/num, oy*den/num): a deterministic 2,2,2,1 expansion for 7/4.
 inline void upscale(const Framebuffer& src, std::vector<Rgb565>& out,
                     int num, int den) {
     const int sw = src.width(), sh = src.height();

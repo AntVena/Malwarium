@@ -1,4 +1,4 @@
-// sound.h — the sound vocabulary: every cue, its tier, and its notes.
+// sound.h (the sound vocabulary): every cue, its tier, and its notes.
 #pragma once
 
 #include <cstdint>

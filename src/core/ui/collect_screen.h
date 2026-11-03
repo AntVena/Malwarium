@@ -1,8 +1,8 @@
-// collect_screen.h — STAT's two COLLECTION pages: what this pet has tasted, and what it
+// collect_screen.h (STAT's two COLLECTION pages): what this pet has tasted, and what it
 // has learned.
 //
-// Both answer the same question about a different roster — "how much of this have I got,
-// and what is left" — and both are per-PET. That is the whole point of them: the device's
+// Both answer the same question about a different roster ("how much of this have I got,
+// and what is left"), and both are per-PET. That is the whole point of them: the device's
 // own lifetime tallies (every item ever held, every species raised) live on the Hacker
 // PROFILE and in the web 'Pedia, and they say nothing about the creature in front of you.
 // A pet is raised one plate and one drop at a time, and until now the only place that
@@ -15,7 +15,7 @@
 //           its own line's first and the shared pool after, each tagged KNOWN or not.
 //
 // The MOVES page is built as the same flowed prose rows LOADOUT and TIERS use
-// (prose_page.h) with no body text — a name and a tag is exactly one of those rows — so
+// (prose_page.h) with no body text (a name and a tag is exactly one of those rows), so
 // it inherits the section windows, the scrollbar and STAT's index anchors for free.
 #pragma once
 
@@ -37,7 +37,7 @@ inline constexpr int kFoodCols = 8;
 // One ROW of the FOODS page: either a rarity SECTION heading, or up to kFoodCols dishes.
 //
 // A row rather than a cell is the unit because that is what the page scrolls by, exactly
-// as the flowed pages scroll by prose rows — and it is what lets a section heading end a
+// as the flowed pages scroll by prose rows, and it is what lets a section heading end a
 // window the way a ProseRow header does. A grid of two hundred anonymous glyphs is a
 // wall; "8/9 COMMON, 0/6 EPIC" over each block of it is a plan.
 struct FoodRow {
@@ -51,7 +51,7 @@ struct FoodRow {
 };
 
 // Every Food in the roster, laid into rows, one rarity group at a time. `eatenSet` is the
-// pet's palate (Game::petFoodsEaten_ — borrowed registry pointers), passed in rather than
+// pet's palate (Game::petFoodsEaten_: borrowed registry pointers), passed in rather than
 // asked for, so this page has no opinion about where a palate is kept or how it persists.
 //
 // Rarity order rather than roster order because rarity is what tells a player whether a
@@ -86,8 +86,8 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
 
 // STAT's MOVES page row model: every move `petLine` can hold, its own line's section
 // first and the generic pool second, tagged KNOWN where `owned` says the pet has it.
-// Moves gated to a later stage are still listed — a move you cannot field yet is exactly
-// the kind of thing this page exists to point at — and carry the stage as their tag
+// Moves gated to a later stage are still listed (a move you cannot field yet is exactly
+// the kind of thing this page exists to point at), and carry the stage as their tag
 // instead, so the page never promises one the pet could field today.
 std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
                                        const MoveLoadout& moves, const char* petLine,

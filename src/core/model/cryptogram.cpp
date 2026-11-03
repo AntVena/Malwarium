@@ -1,8 +1,8 @@
-// cryptogram.cpp — the DECRYPTOGRAM board's rules. See cryptogram.h for the shape and
+// cryptogram.cpp: the DECRYPTOGRAM board's rules. See cryptogram.h for the shape and
 // the reasoning; this file is the wrap, the opening reveals, and the two-stage pick.
 //
 // Split off the header (unlike its three sibling minigame models, which are one header
-// each) because the wrap alone is longer than all of stacker.h — and every screen that
+// each) because the wrap alone is longer than all of stacker.h, and every screen that
 // includes a model pays for its inline body.
 
 #include "core/model/cryptogram.h"

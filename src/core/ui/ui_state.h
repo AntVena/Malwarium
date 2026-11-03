@@ -1,17 +1,17 @@
-// ui_state.h — the UI's own state vocabulary: which submenu, which L3, which
+// ui_state.h (the UI's own state vocabulary): which submenu, which L3, which
 // filter, which mode. What `Game` HOLDS, as opposed to what a screen DRAWS.
 //
 // These types live here rather than beside the renderers that consume them for one
 // structural reason: `Game` stores every one of them as a member, so putting them in
 // a screen header makes core/app/game.h include nine renderers to declare a handful
-// of enums — and then every TU that includes game.h gets the whole UI layer whether
+// of enums, and then every TU that includes game.h gets the whole UI layer whether
 // it draws or not. The split is by what the type IS: an id naming where the player
 // currently is is engine state, and a `draw*` signature is not.
 //
 // Each renderer still owns its own drawing vocabulary (expl_screen's ExplRowState,
 // cfg_screen's CfgRow, items_screen's InvRow) and includes this header for the ids
 // its signatures name. Anything only a screen and its caller pass between themselves
-// belongs there, not here — this file grows only when `Game` gains a member.
+// belongs there, not here: this file grows only when `Game` gains a member.
 //
 // Consumers: core/app/game.h and the game_*.cpp units, plus every core/ui screen
 // header whose signatures name one of these.
@@ -34,14 +34,14 @@ enum class SubmenuId { Stat, Items, Games, Expl, Maint, Mods, Arch, Cfg };
 // and the list only grows. A category costs one press and never moves, so every
 // activity stays two presses from EXPL however many areas the ladder gains.
 //
-// None is the picker ITSELF — the level where no category is open yet.
+// None is the picker ITSELF: the level where no category is open yet.
 enum class ExplCat : uint8_t { None, Story, Endless, Arena, Chapters };
 // The picker's rows, in order. None is not one of them, which is why the mapping is an
 // offset rather than a cast: the enum's first value is a state, not a row.
 constexpr int kExplCatRows = 4;
 inline ExplCat explCatAt(int row) { return static_cast<ExplCat>(row + 1); }
 inline int explCatRow(ExplCat c) { return static_cast<int>(c) - 1; }
-// ARENA and CHAPTERS act on B rather than opening a level of rows — there is exactly
+// ARENA and CHAPTERS act on B rather than opening a level of rows: there is exactly
 // one thing behind each, so a list of one would be a press spent saying nothing. STORY
 // and ENDLESS have levels; this is what says which.
 inline bool explCatHasRows(ExplCat c) {
@@ -50,13 +50,13 @@ inline bool explCatHasRows(ExplCat c) {
 
 // Which page of the MODS submenu is open. MODS is the pet's whole combat LOADOUT:
 // the hub (L2) is a three-row menu, and each row hands the same L2/L3 pair to a
-// different half of it — the mod slot list, the move slot list, or the Sim-Battle
+// different half of it. The mod slot list, the move slot list, or the Sim-Battle
 // tier pick. Practise never rests at the hub level: it opens straight into its L3,
 // so `Hub` is where C from any of the three returns to.
 enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
 // Which STAT screen is open. The six paged readouts are one destination as far as the
-// engine is concerned (statPage_ picks between them); the INDEX is the other — the jump
+// engine is concerned (statPage_ picks between them); the INDEX is the other: the jump
 // list that fronts them, opened by holding B on any page and backed out of onto the page
 // it was opened from.
 enum class StatScreen { Page, Index };
@@ -95,13 +95,13 @@ enum class ItemOrder { ByGroup, LockoutFirst };
 enum class MaintKind { Defrag, Av };
 
 // The ARCH record actions, cycled by A in the L3 record: active → Store; stored →
-// Deploy + Release. Selling is not one of them — it is the SELL group's own counter
+// Deploy + Release. Selling is not one of them: it is the SELL group's own counter
 // (ArchGroup::Kind::Sell), because what a sale pays depends on the pet you are raising
 // as much as on the one being sold, and a pet's own record only knows about itself.
 enum class ArchAction { Store, Deploy, Release };
 
 // What a Daemon sold at ARCH's SELL counter pays, one per sale (game_arch_sale.cpp).
-// Bits always; the two patches spend the Daemon on the ACTIVE pet instead — Reimage
+// Bits always; the two patches spend the Daemon on the ACTIVE pet instead: Reimage
 // rolls an active twin of the same species back to its Script with a clean error log,
 // so the ending can be raised again; Hotfix clears the active pet's care errors.
 enum class SaleOffer : uint8_t { Bits, Reimage, Hotfix };
@@ -111,7 +111,7 @@ constexpr int kSaleOfferCount = 3;
 // the moment its ceiling went to 64 slots: walking to the last shelf past a record tail
 // that only ever grows is not navigation, it is a chore. So ARCH opens on a picker, the
 // same shape ITEMS already uses for its type tabs, and the rack is grouped by CREATURE
-// LINE — which is how a player who keeps one of everything thinks about the shelf.
+// LINE, which is how a player who keeps one of everything thinks about the shelf.
 //
 // NewEgg is a row on that picker rather than an action buried in the active pet's
 // record: laying an egg is the thing people came to ARCH to do and could not find.
@@ -120,7 +120,7 @@ constexpr int kSaleOfferCount = 3;
 struct ArchGroup {
     enum class Kind : uint8_t { NewEgg, Active, Line, Sell, Records };
     Kind kind = Kind::Active;
-    // Kind::Line only — an index into kCreatureLines (creatures/creature_lines.h).
+    // Kind::Line only: an index into kCreatureLines (creatures/creature_lines.h).
     // -1 everywhere else. An INDEX rather than the line id, because the picker's rows
     // are built from that table in its order and nothing else needs to name a family.
     int lineIndex = -1;
@@ -133,7 +133,7 @@ struct ArchGroup {
 // The pet's vitals as they stood BEFORE the food was applied. The feeding modal
 // reports the change that actually happened, which is the only way a pull TOWARD
 // 50% Happiness, or a top-up onto an already-full stat, can state its own
-// direction — the magnitude on the row doesn't know either. Game::startFeeding
+// direction: the magnitude on the row doesn't know either. Game::startFeeding
 // snapshots this the instant before Game::applyItemEffects.
 struct FeedVitals {
     int hunger = 0;

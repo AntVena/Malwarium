@@ -1,4 +1,4 @@
-// game_stat.cpp — STAT: the pet's status reader, its six pages and the INDEX over them.
+// game_stat.cpp (STAT): the pet's status reader, its six pages and the INDEX over them.
 //
 // The submenu is READ-ONLY, which is what shapes its whole button contract. Nothing
 // here is selected or committed, so the three keys are spent entirely on getting to the
@@ -8,7 +8,7 @@
 // STAT opens on VITALS and never on the INDEX. Hunger, frag and the evolve clock are
 // what the slot is entered for, several times a session; a menu in front of them would
 // charge every one of those visits a press to pay for the occasional long jump. The
-// index is what that jump costs instead — one hold, from any page, landing on any page
+// index is what that jump costs instead: one hold, from any page, landing on any page
 // or on any SECTION of one (StatIndexRow::anchor, core/ui/stat_screen.h).
 //
 // The pages' row models are marshalled here too: Game owns the state they report,
@@ -155,8 +155,8 @@ void Game::statIndexReleaseB() {
         return;
     // The window advance. statScrollSpan reports {0, 0} for a page with nothing to
     // scroll and for one whose rows all fit, so B is inert on those. It steps by the
-    // window the page actually DREW — rows are sized to their own text and a section
-    // ends a window early (prose_page.h), so that count varies — and wraps to the top
+    // window the page actually DREW. Rows are sized to their own text and a section
+    // ends a window early (prose_page.h), so that count varies, and wraps to the top
     // past the end.
     const StatScrollSpan span = statScrollSpan();
     if (span.shown > 0 && span.shown < span.total) {
@@ -182,7 +182,7 @@ void Game::openStatIndex() {
 void Game::onStatIndex(const ButtonEvent& ev) {
     // A's REPEAT and C's backward walk are the list contract's (game_listnav.cpp); the
     // tap of each is still this screen's own, the shape every list handler on the device
-    // has — the contract owns how a cursor moves, not when.
+    // has: the contract owns how a cursor moves, not when.
     const std::vector<StatIndexRow> rows = statIndexRows();
     const int n = static_cast<int>(rows.size());
     if (ev.button == Button::A) {
@@ -210,7 +210,7 @@ void Game::drawStat(Framebuffer& fb) const {
         drawStatIndex(fb, statIndexRows(), statIndexRow_, beat_);
         return;
     }
-    // 8 pages: 0 pet vitals (the landing) · 1 the investment ladder — which stat tiers
+    // 8 pages: 0 pet vitals (the landing) · 1 the investment ladder, which stat tiers
     // this pet holds and what the next costs · 2 the equipped loadout (moves + mods,
     // WITH their effect text) · 3 every move this pet could learn · 4 every dish it
     // could eat · 5 currently-armed item buffs · 6 the pet's own species lore · 7 audit

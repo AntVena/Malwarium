@@ -1,4 +1,4 @@
-// pedia_state.cpp — see pedia_state.h. First-cut builder: favors coverage over
+// pedia_state.cpp. See pedia_state.h. First-cut builder: favors coverage over
 // polish (every fixture block is present, several with a documented stub).
 #include "core/app/pedia_state.h"
 
@@ -64,7 +64,7 @@ void appendKeyInt(std::string& out, const char* key, long value, bool comma = tr
     if (comma) out += ',';
 }
 
-// Uppercase, no-space stage tag ("PROCESS"/"SCRIPT"/"DAEMON"/"BOOT SECTOR") —
+// Uppercase, no-space stage tag ("PROCESS"/"SCRIPT"/"DAEMON"/"BOOT SECTOR"):
 // matches the archive-entry `stage` values in web/fixtures/pedia_state.js.
 const char* stageTag(Stage s) {
     switch (s) {
@@ -98,14 +98,14 @@ std::string buildPediaStateJson(const Game& g) {
     appendKeyInt(out, "currency_bits", g.bits());
     appendKeyInt(out, "hacker_rank", g.hackerRank());
     appendKeyInt(out, "networks_seen", g.networksSeen());
-    // Extension beyond the sample fixture (asked for explicitly) — lifetime
+    // Extension beyond the sample fixture (asked for explicitly): lifetime
     // captured handshakes (Audit mode).
     appendKeyInt(out, "handshakes", g.handshakesSeen());
-    // Distinct species this device has raised — the same tally PROFILE's SPECIES row
+    // Distinct species this device has raised: the same tally PROFILE's SPECIES row
     // shows, so the site and the on-device viewer never disagree about the number.
     appendKeyInt(out, "species_raised", g.speciesRaised());
     // Where this device checks for updates, so the site's user section can show
-    // the current value in the field that edits it. Not a secret — it is a
+    // the current value in the field that edits it. Not a secret: it is a
     // download address, and the operator is the one who set it.
     appendKeyString(out, "update_url", g.updateManifestUrl());
 
@@ -115,7 +115,7 @@ std::string buildPediaStateJson(const Game& g) {
     if (const CreatureDef* pet = g.pet()) {
         out += '{';
         // "species" is the field web/app.js actually matches against
-        // D.creatures[].id — keep it the content id, not the display name.
+        // D.creatures[].id: keep it the content id, not the display name.
         appendKeyString(out, "species", pet->id);
         appendKeyString(out, "id", pet->id);
         appendKeyString(out, "stage", stageTag(pet->stage));
@@ -124,7 +124,7 @@ std::string buildPediaStateJson(const Game& g) {
         appendKeyInt(out, "frag_pct", g.model().fragmentation());
         appendKeyInt(out, "mistakes", g.model().careMistakes());
 
-        // THE KIT THIS PET COULD HOLD — the ids only. Which of them it has actually
+        // THE KIT THIS PET COULD HOLD: the ids only. Which of them it has actually
         // learned is already published in the top-level moves{} map, so this is the
         // SCOPE and that is the STATE: two answers to one question would be two things
         // to keep in step. The scope is the line rule (moveAllowedForLine), asked here
@@ -171,9 +171,9 @@ std::string buildPediaStateJson(const Game& g) {
     out += ',';
 
     // --- pets{} (per-creature reveal state) ---------------------------------
-    // "hatched" (Game::creatureRaised — the device's permanent tally of species it
+    // "hatched" (Game::creatureRaised. The device's permanent tally of species it
     // has raised, so a creature stays revealed after its successor stamps over it)
-    // wins over "seen" (Game::markCreatureSeen — faced in a fight but never raised;
+    // wins over "seen" (Game::markCreatureSeen. Faced in a fight but never raised;
     // today only a duel opponent), which wins over "locked".
     appendJsonString(out, "pets");
     out += ':';
@@ -227,8 +227,8 @@ std::string buildPediaStateJson(const Game& g) {
 
     // --- recipes{} (the MERGE HUB methods, keyed by the dish they make) ------
     // The kitchen's second axis. Meeting a dish (items{} above) and knowing how to cook
-    // it are independent facts — a dish can be bought off a shelf without its method
-    // ever dropping — so the site needs both to say which of the two a row is waiting on.
+    // it are independent facts (a dish can be bought off a shelf without its method
+    // ever dropping), so the site needs both to say which of the two a row is waiting on.
     // Enumerated from the content table and answered by Game, so adding a recipe row
     // reaches the site with no edit here.
     appendJsonString(out, "recipes");
@@ -273,7 +273,7 @@ std::string buildPediaStateJson(const Game& g) {
 
     // --- achievements{} -------------------------------------------------------
     // Straight off the table (content/content_achievements.cpp), so a new row reaches
-    // the site with no edit here — there is no second list to keep in step.
+    // the site with no edit here: there is no second list to keep in step.
     appendJsonString(out, "achievements");
     out += ':';
     out += '{';
@@ -285,7 +285,7 @@ std::string buildPediaStateJson(const Game& g) {
     out += "},";
 
     // --- achievement_progress{} ----------------------------------------------
-    // How far along each unfinished ladder is, as "value/goal" — the device has no
+    // How far along each unfinished ladder is, as "value/goal": the device has no
     // achievement browser, so the 'Pedia is where a player finds out they are three
     // sub-areas short. Only the countable rows appear; a one-off moment has nothing
     // meaningful between 0 and done.
@@ -312,7 +312,7 @@ std::string buildPediaStateJson(const Game& g) {
     out += "},";
 
     // --- archive[] (ARCH [RETIRED]/[CORRUPTED] records) ----------------------
-    // TODO(pedia-v2): SaveRecord only carries {id, status, generation} — there
+    // TODO(pedia-v2): SaveRecord only carries {id, status, generation}. There
     // is no per-instance nickname or final-stats snapshot, so `name` falls back
     // to the species display name and `record` is a bare generation note rather
     // than the flavorful "N care mistakes · N days uptime · ..." the fixture

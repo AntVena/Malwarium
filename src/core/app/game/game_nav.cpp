@@ -1,4 +1,4 @@
-// game_nav.cpp — where a button press lands, and where the cursor stands afterwards.
+// game_nav.cpp: where a button press lands, and where the cursor stands afterwards.
 //
 // Two halves of one concern. onButton is the dispatcher: one switch over Nav for the
 // press edge and one for the release, routing to the per-state handler that owns each
@@ -7,14 +7,14 @@
 // than by inventing its own reading of a press.
 //
 // The navigation half below is the carousel and the menu tree the dispatcher moves
-// through — which slot is entered, which are inert, and how the tree collapses back to
+// through, which slot is entered, which are inert, and how the tree collapses back to
 // the habitat. The tick's own half of the button contract (every hold gesture, resolved
 // on a dwell rather than an edge) is Game::tickHeldGestures in game_core.cpp.
 #include "core/app/game.h"
 
 #include "tunables.h"
-#include "core/ui/carousel.h"     // carouselSlots — the slot table the cursor walks
-#include "core/ui/items_screen.h" // buildInventoryRows — the ITEMS list under the cursor
+#include "core/ui/carousel.h"     // carouselSlots: the slot table the cursor walks
+#include "core/ui/items_screen.h" // buildInventoryRows: the ITEMS list under the cursor
 
 namespace mal {
 
@@ -61,12 +61,12 @@ void Game::onButton(const ButtonEvent& ev) {
               : ev.button == Button::B ? Sound::KeyAccept
                                        : Sound::KeyBack);
     // The first press after a long quiet reports what happened meanwhile, and is spent
-    // on it — the pet's state may be nothing like what the player last saw, and the
+    // on it: the pet's state may be nothing like what the player last saw, and the
     // press they meant was decided against that older picture.
     if (nav_ != Nav::AwayDigest && openAwayDigestIfDue(quietMs)) return;
     // A HELD announcement eats the first press, whatever it was. Only the NEW EGG LINE
     // banner holds (Game::achBannerHeld), and only on the home screen, where it is
-    // telling the player about something they can now go and do — so the press that
+    // telling the player about something they can now go and do, so the press that
     // clears it is the acknowledgement, and letting it ALSO open the carousel underneath
     // would mean the banner was dismissed by a gesture aimed at something else. The
     // chord is included deliberately: A+C is a press too, and a player mashing it at a
@@ -75,14 +75,14 @@ void Game::onButton(const ButtonEvent& ev) {
         dismissAchievementBanner();
         return;
     }
-    // A+C is the reserved no-op stub everywhere pet-side EXCEPT combat — the one
+    // A+C is the reserved no-op stub everywhere pet-side EXCEPT combat: the one
     // place the Exploit override is live. The early-out is bypassed
     // only in the combat Nav state, which routes the chord to the override picker.
     if (ev.chordAC) {
         if (nav_ == Nav::Combat) onCombat(ev);
         // ROCK THE DOCK: the arena's BRIEFING. The chord is the device's one spare
         // gesture and the bracket screen has already spent A, B and C, so the explainer
-        // — the only thing that tells an operator what an arena bout even is — rides
+        // (the only thing that tells an operator what an arena bout even is) rides
         // the same "chord opens a reader, then plain A/B/C drive it" shape the explore
         // control overlay uses.
         else if (nav_ == Nav::Tourney) onTourney(ev);
@@ -92,7 +92,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // RULES page instead), since only it knows which stage the board is in.
         else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
         // The other game engines have nothing else living on the chord, so it is
-        // always the RULES page here — open it, or close it if it's already up. The
+        // always the RULES page here: open it, or close it if it's already up. The
         // egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav straight
         // out of layEgg with no menu stop) have no other route to this at all, and the
         // CHROMATOPHORE needs it most: it is the one board whose three buttons are all
@@ -102,20 +102,20 @@ void Game::onButton(const ButtonEvent& ev) {
                  nav_ == Nav::Chroma)
             toggleGameBrief();
         // Hacker face: A+C at the top level flips PET ↔ HACKER. On the HACKER
-        // face this takes priority so the player can ALWAYS return to the pet — nothing
+        // face this takes priority so the player can ALWAYS return to the pet: nothing
         // else claims the chord there (you can't explore/combat/hatch from it).
         else if (face_ == Face::Hacker && (nav_ == Nav::Idle || nav_ == Nav::Cursor))
             toggleFace();
         // Explore-control chord: while explore-mode is running, A+C on the
         // habitat opens the control overlay (A ping / B warp / C stop) instead of the
-        // Hacker face — a deliberate tradeoff (the Hacker face is unreachable until you
+        // Hacker face. A deliberate tradeoff (the Hacker face is unreachable until you
         // Cancel explore). An egg can't explore, so the hatch chord below is unaffected.
         else if (exploreActive_ && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
             nav_ = Nav::ExploreControl;
             exploreCtlRow_ = 0;                     // always opens on the first action
         }
-        // Egg home stretch (redesign): the Exploit chord IS how you hatch —
-        // the ⚡ exploit symbol on the idle screen invites A+C to crack the egg. Which
+        // Egg home stretch (redesign): the Exploit chord IS how you hatch.
+        // The ⚡ exploit symbol on the idle screen invites A+C to crack the egg. Which
         // screen that opens is the line's business: a Decrypt line gets its brute-force
         // minigame from the incubation half-way point, any other line gets the hatch
         // animation in the last kHatchRevealMs. (The first A/C of the chord may have
@@ -124,7 +124,7 @@ void Game::onButton(const ButtonEvent& ev) {
         else if (hatchRevealReady()) openHatchReveal();
         // Otherwise (pet face, idle/cursor, not exploring, past the egg phase): flip to
         // the Hacker face. The lowest-priority top-level action, so the existing chord
-        // meanings above are all preserved. An egg's A+C stays the hatch exploit only —
+        // meanings above are all preserved. An egg's A+C stays the hatch exploit only:
         // the operator face belongs to a raised pet (and stays inert in the first half).
         else if ((nav_ == Nav::Idle || nav_ == Nav::Cursor) && !inEggPhase())
             toggleFace();
@@ -136,8 +136,8 @@ void Game::onButton(const ButtonEvent& ev) {
     // screen whose A can never repeat leaves a flag nothing will ever clear if the
     // release edge is lost, which is why tick()'s auto-defocus does not consult it
     // and why this does not set it in the first place. C's press is
-    // claimed outright — it settles on the release, as a tap (cancel) or a hold (the
-    // backward walk) — and the screen's own C case is reached through leaveFocusedList.
+    // claimed outright. It settles on the release, as a tap (cancel) or a hold (the
+    // backward walk), and the screen's own C case is reached through leaveFocusedList.
     if (listFocus() != ListFocus::None) {
         if (ev.button == Button::A) {
             aHeld_ = true;
@@ -149,7 +149,7 @@ void Game::onButton(const ButtonEvent& ev) {
 
     switch (nav_) {
         case Nav::Idle:
-            // B cracks the egg once its clock is nearly out — the one idle action
+            // B cracks the egg once its clock is nearly out: the one idle action
             // for an egg, and the same thing the A+C chord does. A/C still summon the
             // carousel (an egg can still be carried around / walked to hatch faster).
             if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
@@ -188,7 +188,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     else onArchList(ev);
                     break;
                 // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
-                // one is open is loadoutTab_ (PRACTISE never rests here — it opens
+                // one is open is loadoutTab_ (PRACTISE never rests here. It opens
                 // straight into its L3).
                 case SubmenuId::Mods:
                     if (loadoutTab_ == LoadoutTab::Mods) onModsList(ev);
@@ -236,7 +236,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
         case Nav::CacheYield: onCacheYield(ev); break;
         case Nav::BulkYield: onBulkYield(ev); break;
-        // Post-encounter status readout: informational only — ANY
+        // Post-encounter status readout: informational only. ANY
         // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
         case Nav::PostEncounter: dismissPostEncounter(); break;
         case Nav::Stacker: onStacker(ev); break;
@@ -258,7 +258,7 @@ void Game::onButton(const ButtonEvent& ev) {
             // Line-select: A cycles the highlighted line, B lays that line's egg
             // (-> idle). The A+C chord is the reserved no-op stub, already filtered above.
             //
-            // C BACKS OUT TO ARCH — but only with something on the rack. The rule is
+            // C BACKS OUT TO ARCH, but only with something on the rack. The rule is
             // not "the hatch can't be cancelled", it is "an empty save has no pet to
             // return to", and reaching this modal from an ARCH Store makes that false:
             // the pet is right there on the shelf, frozen, one Deploy away. Cancelling
@@ -275,13 +275,13 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Decryption: onDecryption(ev); break;
         case Nav::Cryptogram: onCryptogram(ev); break;
         case Nav::ModalHatchReveal:
-            // The crack cinematic runs itself and hatches off the end — every button is
+            // The crack cinematic runs itself and hatches off the end: every button is
             // inert for its ~2 seconds, so a stray press can't skip the one animation
             // the screen exists to show.
             break;
         case Nav::ModalEggPick:
             // Clutch Pick: A and C AIM at the first/second half of the clutch (left/top
-            // vs right/bottom, whichever way this round cuts) and B commits that half —
+            // vs right/bottom, whichever way this round cuts) and B commits that half,
             // so C is not "back" here either, and the modal can't be cancelled out of.
             // The RULES overlay (opened on the chord, above) is the one exception: while
             // it's up, B/C read as its scroll/close instead, same as every other engine.
@@ -292,13 +292,13 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::ModalEvolve:
             // B continues once the reveal is up; A is a no-op and C is
-            // disabled (nothing to cancel — the evolution already happened). The
+            // disabled (nothing to cancel: the evolution already happened). The
             // A+C chord is the reserved no-op stub, already filtered above.
             if (ev.button == Button::B && evolveRevealed()) completeEvolution();
             break;
         case Nav::ModalCSF:
             // B acknowledges once the crash FX has held. A is a no-op and C
-            // is DISABLED — death is not cancellable. A+C is the reserved no-op stub
+            // is DISABLED: death is not cancellable. A+C is the reserved no-op stub
             // (already filtered above).
             if (ev.button == Button::B && csfRevealed()) acknowledgeCSF();
             break;
@@ -316,7 +316,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     nav_ = Nav::Submenu;
                 }
             }
-            // C is disabled — a crisis can't be cancelled.
+            // C is disabled: a crisis can't be cancelled.
             break;
     }
 }
@@ -380,7 +380,7 @@ void Game::dropCursor() {
 
 bool Game::slotLocked(SubmenuId id) const {
 #ifdef MALWARIUM_DEMO
-    // CFG is Wi-Fi join / update install / SD mount / Factory Reset — nothing a
+    // CFG is Wi-Fi join / update install / SD mount / Factory Reset: nothing a
     // browser can act on, and a reset that would wipe the demo (demo_config.h).
     if (id == SubmenuId::Cfg) return true;
 #endif
@@ -390,7 +390,7 @@ bool Game::slotLocked(SubmenuId id) const {
         case SubmenuId::Maint:
         case SubmenuId::Mods:
         case SubmenuId::Expl:
-            // Explore-mode is unavailable to a Boot-Sector egg — an egg
+            // Explore-mode is unavailable to a Boot-Sector egg: an egg
             // can't fight, so it can't explore (nor equip or maintain). The
             // old walk-to-accelerate-hatch path retires with the Walk screen; the
             // egg still hatches on its incubation clock + the Wi-Fi network accel.

@@ -1,5 +1,5 @@
-// train_screen.h — the MOVES and PRACTISE halves of the LOADOUT hub
-// (mods_screen.h). MOVES is the slot list — the innate default move (read-only) +
+// train_screen.h: the MOVES and PRACTISE halves of the LOADOUT hub
+// (mods_screen.h). MOVES is the slot list: the innate default move (read-only) +
 // the evolution-gated equip slots + a Sim-Battle launch row; selecting a slot opens
 // the move picker (mirrors MODS). PRACTISE is the same Sim-Battle, reached from the
 // hub instead: a dummy-tier pick, then the combat activity at safe stakes.
@@ -15,11 +15,11 @@ class Framebuffer;
 class ContentRegistry;
 class MoveLoadout;
 
-// Owned moves of `requiredKind` in registry order (excludes the innate default —
+// Owned moves of `requiredKind` in registry order (excludes the innate default:
 // it isn't slottable). Every slot is type-locked to one
 // MoveDef::Kind, so the picker/pool never even lists a wrong-kind move. Unless
 // `showAll`, this also drops every move the pet can't actually equip into `slot`
-// right now: not yet unlocked at `petStage`, wrong-line (defensive — owned() is
+// right now: not yet unlocked at `petStage`, wrong-line (defensive; owned() is
 // already line-scoped), or already occupying a DIFFERENT slot on this pet. `showAll`
 // (the picker's hold-B toggle) restores the full list so a move can still be moved
 // between slots or previewed ahead of its unlock.
@@ -31,7 +31,7 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
 
 // Selectable move rows in cursor order: one per UNLOCKED slot. (The EQUIPPED
 // divider and locked slots are shown but skipped.) Returns how many selectable rows
-// there are for the pet at `stage` — 0 for an egg, which has none.
+// there are for the pet at `stage`: 0 for an egg, which has none.
 int loadoutSelectableCount(Stage stage);
 
 // MOVES slot list.
@@ -47,11 +47,11 @@ struct LoadoutView {
 void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
                  const LoadoutView& v);
 
-// L3 move picker for `slot` (mirrors drawModPicker): "— empty (unequip) —" + the
+// L3 move picker for `slot` (mirrors drawModPicker): ". Empty (unequip). " + the
 // moves the pet can equip here right now (ownedMoveList), the focused move's
 // spec panel (spec_sheet.h), and the inline overwrite confirm. `showAll` (hold B to
 // toggle) reveals the rest too: a move above `petStage` dims with an EVO-{stage} tag,
-// and a move already equipped in a different slot dims with a SLOT n tag — neither is
+// and a move already equipped in a different slot dims with a SLOT n tag. Neither is
 // selectable, mirroring the MODS picker's IN SLOT n gate.
 //
 // The list is ADAPTIVE: it draws only the rows it has (capped + scrolled at
@@ -75,9 +75,9 @@ struct MovePickerView {
 void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
                     const MovePickerView& v);
 
-// L4 move detail — the whole screen for one move, drilled into with B from the picker
+// L4 move detail: the whole screen for one move, drilled into with B from the picker
 // (the same list -> detail -> act shape as ITEMS). The full readout plus prose that
-// pages on A instead of being truncated, and the EQUIP action itself — so the picker
+// pages on A instead of being truncated, and the EQUIP action itself, so the picker
 // never has to be both a chooser and a reader.
 struct MoveDetailView {
     Stage petStage = Stage::BootSector;
@@ -90,7 +90,7 @@ struct MoveDetailView {
 void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
                     const MoveDetailView& v);
 
-// How many prose lines the detail page shows at once, and how many the move needs —
+// How many prose lines the detail page shows at once, and how many the move needs:
 // the caller's scroll bounds. Returns 0 extra when it all fits (no scroll offered).
 int moveDetailProseLines();
 int moveProseLines(const MoveDef& m);

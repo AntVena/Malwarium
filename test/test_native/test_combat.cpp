@@ -1,4 +1,4 @@
-// test_combat.cpp — native gates for the combat engine and MODS.
+// test_combat.cpp: native gates for the combat engine and MODS.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -31,7 +31,7 @@ void test_arch_list_and_record() {
     CHECK(g.nav() == Game::Nav::Cursor);
 }
 
-// MODS data model: mods are PERMANENT — consumed from the spare pool
+// MODS data model: mods are PERMANENT. Consumed from the spare pool
 // when equipped, never unequipped, only overwritten (the old one discarded, not
 // returned). The seed installs two mods and holds two spares.
 void test_loadout_permanent_mods() {
@@ -60,7 +60,7 @@ void test_loadout_permanent_mods() {
     CHECK(l.equipped(3) == nullptr);
 }
 
-// MoveLoadout: a move lives in one slot — equipping it elsewhere
+// MoveLoadout: a move lives in one slot. Equipping it elsewhere
 // MOVES it; the innate default sits outside the slots; slot COUNT grows by Stage.
 void test_move_loadout() {
     MoveLoadout l = MoveLoadout::starting();
@@ -97,11 +97,11 @@ void test_move_loadout() {
 // --- Gate: every area's wild pair resolves, and every wild lives somewhere ---
 //
 // An area names its pair by roster id (AreaDef::wilds), and wildMalbeastIn falls back to
-// the TIER's pair when an id is missing — which is also what a TYPO would do, silently.
+// the TIER's pair when an id is missing, which is also what a TYPO would do, silently.
 // So the ids are checked against the roster here rather than trusted to the fallback, a
 // pair is both slots or neither, and no wild is claimed by two areas (an area's wilds are
-// its own). The reverse holds too: every row of the roster is fielded by some zone — an
-// area's pair, the tier-3 pair the dive draws, or the crawl's own (kDarkWebWilds) — so
+// its own). The reverse holds too: every row of the roster is fielded by some zone. An
+// area's pair, the tier-3 pair the dive draws, or the crawl's own (kDarkWebWilds), so
 // nothing on the roster is a 'Pedia entry no walk can ever meet.
 void test_every_area_fields_a_resolving_pair() {
     std::vector<bool> fielded(kWildMalbeastCount, false);
@@ -143,14 +143,14 @@ void test_every_area_fields_a_resolving_pair() {
 
 // Every combatant the game can put on screen must name a sprite the atlas actually
 // carries. Sprites resolve by STRING at draw time, so a name with no PNG behind it
-// is not a compile error and not a crash — it silently draws nothing, which is how
+// is not a compile error and not a crash: it silently draws nothing, which is how
 // the wild roster spent its life wearing the pet dog's frame. Distinctness is half
 // the point: wilds sharing one sprite is the bug this locks out.
 void test_every_combatant_sprite_resolves() {
     ContentRegistry r = ContentRegistry::embedded();
     std::vector<const char*> wildSprites;
 
-    // The whole roster, row by row — not the tier pairs, which no longer reach every wild
+    // The whole roster, row by row, not the tier pairs, which no longer reach every wild
     // now that areas name pairs of their own.
     for (int i = 0; i < kWildMalbeastCount; ++i) {
         const CombatEnemy e = wildMalbeastAt(i);
@@ -158,7 +158,7 @@ void test_every_combatant_sprite_resolves() {
         CHECK(r.sprite(e.spriteName) != nullptr);
         wildSprites.push_back(e.spriteName);
         // The name is also what the 'Pedia's seen/defeated masks key on, and it has to
-        // land on THIS row's bit — a name resolving to a neighbour's would credit the
+        // land on THIS row's bit: a name resolving to a neighbour's would credit the
         // wrong creature in every save.
         CHECK(wildMalbeastIndex(e.name) == i);
     }
@@ -173,7 +173,7 @@ void test_every_combatant_sprite_resolves() {
     }
 
     // The bosses: every sheet an area names resolves, is two rows (idle, attack), and is
-    // that boss's alone — and an area boss stands taller than the gang it leads. A boss
+    // that boss's alone, and an area boss stands taller than the gang it leads. A boss
     // with no sheet named yet wears kUndrawnBossSprite, which has to resolve too.
     std::vector<const char*> bossSprites;
     for (int a = 0; a < kAreaCount; ++a) {
@@ -273,7 +273,7 @@ void test_brace_only_defend_is_not_recast() {
     CHECK(!braceOnlyDefend(*r.move("packet_storm")));    // not a Defend at all
 
     // A brace-heavy kit that still owns one attack, against a slow enemy so the player
-    // takes runs of turns — the shape that stacks brace onto live brace if nothing stops it.
+    // takes runs of turns: the shape that stacks brace onto live brace if nothing stops it.
     Combatant p = mkCombatant(r, "P", 200, 30,
                               {"quick_jab", "checksum_guard", "null_route"});
     Combatant e = mkCombatant(r, "E", 200, 4, {"quick_jab"});
@@ -294,8 +294,8 @@ void test_brace_only_defend_is_not_recast() {
 }
 
 // stealMaxHpPct MOVES a Health pool: the caster gains the ceiling and the Health inside
-// it, the target loses both. A ceiling alone would be unreachable — combat has no heal to
-// climb into one — so the transfer is what makes the rider a reward and not just a debuff.
+// it, the target loses both. A ceiling alone would be unreachable (combat has no heal to
+// climb into one), so the transfer is what makes the rider a reward and not just a debuff.
 void test_steal_max_health_moves_the_pool() {
     ContentRegistry r = ContentRegistry::embedded();
     const MoveDef* toll = r.move("toll_charge");
@@ -399,11 +399,11 @@ void test_level_stat_curves() {
 }
 
 // Defence tier 2 in a fight: an over-sized one-shot brace used to bin whatever the hit it
-// ate did not need. A committed wall CARRIES that remainder to the next hit instead —
+// ate did not need. A committed wall CARRIES that remainder to the next hit instead:
 // efficiency, which is the thing the % cut's own ceiling stops it being paid in.
 void test_defence_tier_retains_an_unspent_brace() {
     ContentRegistry r = ContentRegistry::embedded();
-    // Equal speed so the order is exactly P(brace), E(hit) — one brace meeting one hit is
+    // Equal speed so the order is exactly P(brace), E(hit): one brace meeting one hit is
     // the whole question, and a speed edge either way would blur it into several.
     auto run = [&](int defPoints, Combat& out) {
         // A big brace against a small hit, so there is a real remainder to argue about.
@@ -427,7 +427,7 @@ void test_defence_tier_retains_an_unspent_brace() {
 
 // The Ransomware seizure (RansomSeizure): a FULL Cipher wall with a ransom already running
 // stops absorbing and takes the attack that hits it, swinging it out of the brace's own slot
-// until the ransom settles — then handing it back. Cipher on its own only ever bought
+// until the ransom settles, then handing it back. Cipher on its own only ever bought
 // survival, which is why the line's defend-heavy pets measured worst of the four.
 void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -449,7 +449,7 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     CHECK(cb.lastSeizure().happened && cb.lastSeizure().onPlayer);   // the screen's cue
     slot = cb.player().ransomSeizure.slot;
     CHECK(slot >= 0);
-    // What it took is the attack that hit, and it now occupies the brace's own slot — so
+    // What it took is the attack that hit, and it now occupies the brace's own slot, so
     // the roll, the picker and every readout see it without knowing what a seizure is.
     CHECK(cb.player().moves[slot] == enemyHit);
     CHECK(cb.player().ransomSeizure.heldMove == cipher);  // ...and the brace is waiting
@@ -461,7 +461,7 @@ void test_ransom_seizes_the_attack_that_hits_a_full_wall() {
     CHECK(cb.player().moves[slot] == cipher);            // given back, same slot
 }
 
-// A Cipher cast ARMS the ransom outright — at Boot, where Ransom Note never rolls, so the
+// A Cipher cast ARMS the ransom outright: at Boot, where Ransom Note never rolls, so the
 // only thing that can have armed it is the brace. A pet without the passive arms nothing.
 void test_cipher_cast_arms_the_ransom() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -480,7 +480,7 @@ void test_cipher_cast_arms_the_ransom() {
 }
 
 // WORKED UP: while the ransom pool holds damage, a brace turns a share of it into Power
-// and a landed attack turns a share into damage cut — and neither spends the pool.
+// and a landed attack turns a share into damage cut, and neither spends the pool.
 void test_ransom_pool_works_the_pet_up() {
     ContentRegistry r = ContentRegistry::embedded();
     const int si = stageIndex(Stage::Daemon);
@@ -526,7 +526,7 @@ void test_cipher_brace_demands_the_pool() {
 }
 
 // Poisoned data (MoveDef::poolRetaliateDot): the Obfuscation ladder's second rung trades
-// pool depth for a bite — an enemy attack landing on the live bubble plants a DoT on the
+// pool depth for a bite. An enemy attack landing on the live bubble plants a DoT on the
 // ATTACKER. It rides the POOL rows on purpose: this line's steals ride its attack moves, and
 // a pet with one attack slot and three defend slots almost never equips one, so a conversion
 // routed through them never reaches the pets that need it.
@@ -662,7 +662,7 @@ void test_combat_item_in_game() {
 void test_combat_channel() {
     ContentRegistry r = ContentRegistry::embedded();
     // Runaway Fork is the roster's one remaining wind-up, and the only row where winding
-    // up IS the move — so it is what holds this path. Every other two-beat move CHAINS
+    // up IS the move, so it is what holds this path. Every other two-beat move CHAINS
     // (MoveDef::chainNextId), which spends both of its turns on something.
     Combatant p = mkCombatant(r, "P", 100, 10, {"runaway_fork"});  // channel 3, power 52
     Combatant e = mkCombatant(r, "E", 100, 10, {"quick_jab"});     // equal speed → P,E,P…
@@ -723,7 +723,7 @@ void test_combat_builders_and_flee() {
     Loadout mods = Loadout::starting();                   // Firewall + Clock-Speed equipped
     Combatant pc = makePlayerCombatant(r, *pet, ml, mods);
     CHECK(pc.maxHealth == kMaxHealthByStage[stageIndex(Stage::Process)]);
-    // One pool entry per unlocked slot — slot 0's equipped packet_storm, and
+    // One pool entry per unlocked slot: slot 0's equipped packet_storm, and
     // slot 1 falls back to the Quick Jab default (the starter leaves it unequipped).
     CHECK(pc.moves.size() == 2);
     CHECK(std::strcmp(pc.moves[0]->id, "packet_storm") == 0);
@@ -742,7 +742,7 @@ void test_combat_builders_and_flee() {
 
 // MODS equip flow: open an empty slot's picker, choose a spare, inspect its detail
 // then equip it (no confirm for an empty slot). The mod is CONSUMED out of
-// the spare pool — equipping is permanent.
+// the spare pool: equipping is permanent.
 void test_mods_equip_flow() {
     Game g{StartMode::Hatched};
     enterLoadoutTab(g, 0);
@@ -775,7 +775,7 @@ void test_mods_equip_flow() {
 }
 
 // MODS overwrite confirm: equipping over a slot that already holds a
-// different mod opens the inline Cancel/Confirm "discards {current} — permanent"
+// different mod opens the inline Cancel/Confirm "discards {current}; permanent"
 // warning. Confirm installs the new mod and DISCARDS the old one; Cancel leaves the
 // slot unchanged and the spare un-consumed.
 void test_mods_overwrite_confirm() {
@@ -811,7 +811,7 @@ void test_mods_overwrite_confirm() {
 }
 
 // the mod detail spells out the effect + flags a ONE-SHOT. The one-shot
-// caveat line is drawn for a consumed-on-trigger mod and absent otherwise —
+// caveat line is drawn for a consumed-on-trigger mod and absent otherwise:
 // the grayscale-safe channel that distinguishes the two mod kinds. It hangs off the
 // prose, so its y follows the description; what identifies it is that it is the only
 // HOT text on a page where no gate is failing (level 0 against a level-0 pet).
@@ -858,7 +858,7 @@ void test_loadout_one_slot_per_mod() {
     CHECK(l.countOf("firewall_patch") == 1);
 }
 
-// mod effects are DATA-DRIVEN (effectKind + magnitude) — makePlayerCombatant
+// mod effects are DATA-DRIVEN (effectKind + magnitude): makePlayerCombatant
 // reads each equipped mod and pokes the matching Combatant field, replacing the old
 // hardcoded per-mod `if`. A line-affinity mod adds its bonus only for a matching line.
 void test_mod_effects_data_driven() {
@@ -910,7 +910,7 @@ void test_backup_drive_death_save_ignores_survivable_hits() {
 }
 
 // A pet that goes down is restored with half its MAX Health, measured from where it
-// actually landed — so the same drive gives back the same amount whatever knocked it
+// actually landed, so the same drive gives back the same amount whatever knocked it
 // over. Records BackupUse::Restored (unlike mirrorFired, not reset per-turn) so Game can
 // clear the buff's timed save-side deadline once the fight ends.
 void test_backup_drive_death_save_restores_half_max_health() {
@@ -919,7 +919,7 @@ void test_backup_drive_death_save_restores_half_max_health() {
     pc.itemShield = true;
     Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});
     // begin() always resets Health to maxHealth unless told to carry a wounded value in
-    // (the gauntlet no-heal-between-rounds path) — use that to start on death's door.
+    // (the gauntlet no-heal-between-rounds path): use that to start on death's door.
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
                        /*carryPlayerHealth=*/1);
     const int jab = r.move("quick_jab")->power;
@@ -932,7 +932,7 @@ void test_backup_drive_death_save_restores_half_max_health() {
     CHECK(c.outcome() != Combat::Outcome::Lose); // the fight did NOT end here
 }
 
-// The save asks one question — is this pet down? — so it needs to know nothing about
+// The save asks one question: is this pet down?, so it needs to know nothing about
 // what put it there: a fatal DoT tick at turn-start restores exactly like a fatal hit.
 void test_backup_drive_death_save_covers_a_fatal_dot() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -950,7 +950,7 @@ void test_backup_drive_death_save_covers_a_fatal_dot() {
 }
 
 // ...and it is a restore, not immortality: half of max added to a deep enough hole still
-// leaves the pet under, and it dies. This is the case that keeps the save honest — it
+// leaves the pet under, and it dies. This is the case that keeps the save honest: it
 // falls straight out of adding a fixed amount rather than setting a floor.
 void test_backup_drive_death_save_loses_to_overkill() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1003,13 +1003,13 @@ void test_mod_thorns_and_deathblast() {
 //
 // applyEffect carries one damage value through a fixed run of phases (combat.h names them
 // in running order). Several are only CORRECT in their current slot, and nothing about the
-// code says so — reordering two of them still compiles and still passes every gate that
+// code says so: reordering two of them still compiles and still passes every gate that
 // only checks a final number. These pin the orderings that would otherwise be prose.
 //
 // Each is one short fight with the phases in question armed, arranged so the two possible
 // orders give DIFFERENT answers. A gate that both orders satisfy would be worthless here.
 
-// FIRST STRIKE is claimed in swingDamage, before anything on the far side has a say — so
+// FIRST STRIKE is claimed in swingDamage, before anything on the far side has a say, so
 // the opening blow is doubled and then capped, not capped and then doubled.
 void test_pipeline_first_strike_lands_before_the_ceilings() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1020,7 +1020,7 @@ void test_pipeline_first_strike_lands_before_the_ceilings() {
     Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
     c.step();
     // Doubled to 40, then the cap refuses all but 25. Were the cap first it would be inert
-    // against a 20 hit and the double would land 40 — twice as much through a mod bought
+    // against a 20 hit and the double would land 40: twice as much through a mod bought
     // to stop exactly that.
     CHECK(c.player().health == 75);
 }
@@ -1055,7 +1055,7 @@ void test_pipeline_floor_does_not_resurrect_a_negated_hit() {
     CHECK(c.player().mirrorFired);
 }
 
-// A MIRRORED hit carries no riders — the negation is of the whole hit, not of its damage
+// A MIRRORED hit carries no riders: the negation is of the whole hit, not of its damage
 // half. This is the only suppression the rider phase honours, which is why it reads
 // mirrorFired and nothing else.
 void test_pipeline_a_mirrored_hit_plants_no_riders() {
@@ -1068,7 +1068,7 @@ void test_pipeline_a_mirrored_hit_plants_no_riders() {
     CHECK(c.player().lockedTurnsLeft == 0);
 }
 
-// A hit an Obfuscation pool swallows WHOLE lands NO rider — a rider rides on damage, and
+// A hit an Obfuscation pool swallows WHOLE lands NO rider: a rider rides on damage, and
 // the pool ate the damage. Economy, not keyword: the pool counters a move that bought both.
 void test_pipeline_a_soaked_hit_lands_no_rider() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1091,13 +1091,13 @@ void test_pipeline_a_soaked_hit_lands_no_rider() {
     CHECK(hit("system_hang", 0).lockedTurnsLeft == 2);
 }
 
-// A PURE RIDER — a cast that deals no damage — reaches the pet through everything, because
+// A PURE RIDER (a cast that deals no damage) reaches the pet through everything, because
 // every defence in the pipeline absorbs damage and there is none to absorb. This is the
 // promise the loadout screen makes, so it is asserted against each interceptor in turn
 // rather than in one fight that happens to meet none of them.
 void test_pure_rider_reaches_the_pet_through_every_defence() {
     ContentRegistry r = ContentRegistry::embedded();
-    // No such move ships yet — the band is a board item — so the gate builds one. That is
+    // No such move ships yet (the band is a board item), so the gate builds one. That is
     // the point: the RULE holds before the content does, and the content lands against it.
     static const MoveDef kPureStun{"t_pure_stun", "Pure Stun", MoveDef::Kind::Attack,
                                    /*power=*/0, 1, "", Stage::BootSector, nullptr,
@@ -1166,7 +1166,7 @@ void test_the_swarm_still_eats_a_damaging_hit() {
 }
 
 // A SELF-BUFF pays on damage dealt to anything. A power siphon swallowed whole by a bubble
-// still takes the Power — and pays the thief more than the victim lost, so two siphoning
+// still takes the Power, and pays the thief more than the victim lost, so two siphoning
 // kits ramp each other instead of trading the same number back and forth.
 void test_siphon_pays_through_a_bubble_and_nets_positive() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1183,7 +1183,7 @@ void test_siphon_pays_through_a_bubble_and_nets_positive() {
     CHECK(c.enemy().powerMultPct - before > stolen);
 }
 
-// THE LURE: any attack a Phishing pet lands siphons a little Power, whatever row swung it —
+// THE LURE: any attack a Phishing pet lands siphons a little Power, whatever row swung it,
 // and a pet off the line siphons nothing with the very same row.
 void test_phishing_lure_siphons_on_any_hit() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1223,7 +1223,7 @@ void test_lockout_stack_pays_when_a_replica_eats_the_hit() {
 }
 
 // A DoT rider STACKS: its per-turn damage adds to what is already ticking, and the clock
-// runs to the longer of the two — so a recast is a ramp, never a wasted turn.
+// runs to the longer of the two, so a recast is a ramp, never a wasted turn.
 void test_dot_rider_stacks_and_keeps_the_longer_clock() {
     ContentRegistry r = ContentRegistry::embedded();
     auto after = [&](int per, int turns) {                  // data_rot plants 5 x 3
@@ -1293,7 +1293,7 @@ void test_pipeline_every_rider_fires() {
     CHECK(hitBy("c2_hijack").scrambleTurns > 0);         // SCRAMBLE
 }
 
-// Deferred-mod pass — ECC Memory: a max single-hit cap. The primitive clamps any ONE
+// Deferred-mod pass. ECC Memory: a max single-hit cap. The primitive clamps any ONE
 // incoming hit to the cap (after all mitigation); makePlayerCombatant resolves the
 // mod's magnitude% of max Health into that flat cap.
 void test_mod_ecc_memory_hitcap() {
@@ -1322,7 +1322,7 @@ void test_mod_ecc_memory_hitcap() {
     CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) > 0);
 }
 
-// Deferred-mod pass — Load Balancer: a big hit is SPLIT (immediate portion now, the rest
+// Deferred-mod pass. Load Balancer: a big hit is SPLIT (immediate portion now, the rest
 // deferred to the victim's next turn-start). Unlike ECC it doesn't reduce total damage.
 void test_mod_load_balancer_split() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1337,13 +1337,13 @@ void test_mod_load_balancer_split() {
     c.step();                                                              // player's turn-start tick
     CHECK(c.player().health == 80);                                        // deferred half now due
     CHECK(c.enemy().health == 94);                                         // ...and the pet still acted (jab 6)
-    // Below the threshold: the hit is NOT split — it lands full immediately, no debt.
+    // Below the threshold: the hit is NOT split. It lands full immediately, no debt.
     Combatant pc2 = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc2.mods.arm(ModEffect::LoadBalance, 25, 50);                          // 20 < 25 → untouched
     Combat c2; c2.begin(pc2, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
     c2.step();  CHECK(c2.player().health == 80);                           // full 20 now
     c2.step();  CHECK(c2.player().health == 80);                           // no deferred tick
-    // The deferred debt can KO ON ITS OWN at turn-start — and the actor then doesn't act.
+    // The deferred debt can KO ON ITS OWN at turn-start, and the actor then doesn't act.
     Combatant weak = mkCombatant(r, "P", 12, 5, {"quick_jab"});
     weak.mods.arm(ModEffect::LoadBalance, 10, 50);
     Combat d; d.begin(weak, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
@@ -1368,13 +1368,13 @@ void test_mod_load_balancer_split() {
     CHECK(lb.mods.mag2(ModEffect::LoadBalance) == 50);
 }
 
-// Deferred-mod pass — Watchdog Timer: the THREAT is a STUN move (system_hang, lockTurns)
+// Deferred-mod pass. Watchdog Timer: the THREAT is a STUN move (system_hang, lockTurns)
 // that freezes the player's turns; the MOD clamps how many turns a stun may last (a hung
 // process reboots after N turns).
 void test_mod_watchdog_timer() {
     ContentRegistry r = ContentRegistry::embedded();
     // Burn: a pre-set 2-turn stun costs exactly 2 turns and deals NO damage in either
-    // direction — the enemy is untouched until the pet is free.
+    // direction. The enemy is untouched until the pet is free.
     Combatant pc = mkCombatant(r, "P", 100, 12, {"quick_jab"});            // acts first
     pc.lockedTurnsLeft = 2;
     Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});            // equal → P,E,P,E,P
@@ -1410,12 +1410,12 @@ void test_mod_watchdog_timer() {
 }
 
 // Stun chaining: a lock that lands leaves RESISTANCE behind (one point per turn frozen,
-// shed one per turn the victim gets to act), and the next stun has to roll against it —
+// shed one per turn the victim gets to act), and the next stun has to roll against it,
 // so a chain-stunned fighter is never locked out of its own fight with no way back.
 void test_stun_chain_resistance() {
     ContentRegistry r = ContentRegistry::embedded();
     // The odds themselves, off the combatant: full chance with a clean pile, then the
-    // Defence curve — every banked point still pays, and none makes a stun impossible.
+    // Defence curve. Every banked point still pays, and none makes a stun impossible.
     Combatant c = mkCombatant(r, "P", 100, 12, {"quick_jab"});
     CHECK(stunLandPct(c) == 100);
     c.lockResist = 1;  CHECK(stunLandPct(c) == defendedDamage(100, kLockResistRatingPerPoint));
@@ -1463,7 +1463,7 @@ void test_stun_chain_resistance() {
         CHECK(sc.player().lockResist == 1);
     }
     // The roll itself: against a pet already carrying resistance the same stun sometimes
-    // lands and sometimes doesn't — and the hit that fails to freeze still does its damage.
+    // lands and sometimes doesn't, and the hit that fails to freeze still does its damage.
     int landed = 0, missed = 0;
     for (uint32_t seed = 1; seed <= 40; ++seed) {
         Combatant rp = mkCombatant(r, "P", 100, 5, {"quick_jab"});
@@ -1478,7 +1478,7 @@ void test_stun_chain_resistance() {
     CHECK(missed > 0);
 }
 
-// Deferred-mod pass — Faraday Cage: the THREAT is a DoT move (data_rot, dot*) that plants
+// Deferred-mod pass. Faraday Cage: the THREAT is a DoT move (data_rot, dot*) that plants
 // corruption ticking at each of the victim's turn-starts; the MOD cuts (or negates) it.
 void test_mod_faraday_cage() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1494,7 +1494,7 @@ void test_mod_faraday_cage() {
     c.step();
     c.step();  CHECK(c.player().health == 85);                            // tick 3
     c.step();
-    c.step();  CHECK(c.player().health == 85);                            // DoT spent — no tick 4
+    c.step();  CHECK(c.player().health == 85);                            // DoT spent: no tick 4
     // Faraday cut at application: the DoT magnitude is reduced (or zeroed) when it's PLANTED.
     auto dotAfterHit = [&](int cut) {
         Combatant p = mkCombatant(r, "P", 100, 5, {"quick_jab"});
@@ -1517,7 +1517,7 @@ void test_mod_faraday_cage() {
     d.step();  CHECK(d.player().health == 0);                             // 3 - 5 → KO
     CHECK(d.outcome() == Combat::Outcome::Lose);
     CHECK(std::strcmp(d.lastMoveName(), "CORRUPTED") == 0);
-    // Data-driven wiring: equipping faraday_cage sets the cut to its own magnitude — read
+    // Data-driven wiring: equipping faraday_cage sets the cut to its own magnitude. Read
     // off the row, since where that number sits on the DoT ladder is a balance question.
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
@@ -1572,8 +1572,8 @@ void test_mod_content_rarity_tier() {
     }
     // powerTier is NOT restated above, because it is not independent data: a rank IS a
     // ladder depth, so a mod's rank must equal the tier of the SHALLOWEST area whose pool
-    // drops it. (Shallowest, not only: a deeper area may re-stock an earlier counter — the
-    // keep does it for Watchdog and Faraday, the Net-Sea for Watchdog — and that restock
+    // drops it. (Shallowest, not only: a deeper area may re-stock an earlier counter (the
+    // keep does it for Watchdog and Faraday, the Net-Sea for Watchdog), and that restock
     // must not restate the mod as harder than where it first appears.) Checked by walking
     // the pools, so inserting or reordering an area is caught here as a contradiction
     // rather than passing on a table nobody re-derived.
@@ -1594,7 +1594,7 @@ void test_mod_content_rarity_tier() {
     CHECK(ca->affinityBonus == 40);
     // Niche-flavour pass: the two hard-gated signatures carry ModDef::requiresLine (a
     // real EQUIP block, distinct from the soft `line`/`affinityBonus` every other mod
-    // uses — Cipher ASIC above stays fully line-agnostic).
+    // uses. Cipher ASIC above stays fully line-agnostic).
     // One hard-gated build-around PER LINE, each naming its own line. Walked off
     // kCreatureLines rather than a list of ids, so a line added without a mod of its own
     // fails here rather than shipping with nothing that speaks to what it is.
@@ -1606,7 +1606,7 @@ void test_mod_content_rarity_tier() {
         CHECK(gated == 1);
     }
     // A hard gate only ever names a REAL line, and only ever sits on an effect kind that
-    // would be inert off-line — the rule that keeps `requiresLine` from being reached for
+    // would be inert off-line: the rule that keeps `requiresLine` from being reached for
     // where a soft `line`/`affinityBonus` would do (content_mods.cpp).
     for (const ModDef* m : r.allMods()) {
         if (!m->requiresLine) continue;
@@ -1623,7 +1623,7 @@ void test_mod_content_rarity_tier() {
         CHECK(m->line == nullptr);                     // never both shapes at once
     }
     // Every line also has a SOFT-affinity mod, and it gates far shallower than the hard
-    // one — "your line starts paying early" is the property, not "a line has some mod".
+    // one: "your line starts paying early" is the property, not "a line has some mod".
     for (const CreatureLine& cl : kCreatureLines) {
         int soft = 0, shallowest = kModEquipLevelMax, hard = 0;
         for (const ModDef* m : r.allMods()) {
@@ -1640,7 +1640,7 @@ void test_mod_content_rarity_tier() {
     }
     // ...and it pays at EVERY DEPTH, not at two of them. One row per line per power tier,
     // counting both shapes (the deepest band's is the hard-gated build-around), walked off
-    // kCreatureLines and the tier count rather than a list of ids — so a band that hands
+    // kCreatureLines and the tier count rather than a list of ids, so a band that hands
     // some line nothing fails here rather than shipping a stretch of the ladder over which
     // a pet's family stops meaning anything.
     for (const CreatureLine& cl : kCreatureLines)
@@ -1663,7 +1663,7 @@ void test_mod_content_rarity_tier() {
 // The SCRAMBLE rider (MoveDef::scrambleTurns, The Silk Lode's apex threat). What it takes
 // is the A+C picker: the rows are reordered and drawn in the Cant, so how much of it the
 // pet can still use is exactly how much of the Cant it can read. The fight itself is
-// untouched, which is the whole shape of the thing — it costs the player their
+// untouched, which is the whole shape of the thing: it costs the player their
 // interventions, never the pet its turns.
 void test_override_scramble_holds_the_picker() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1691,7 +1691,7 @@ void test_override_scramble_holds_the_picker() {
         }
     }
     // (2) Scrambled with NO sigils: every row is held, so the picker is gone. The cursor
-    //     has to sit somewhere, but B refuses it and the use is not spent — the lockout
+    //     has to sit somewhere, but B refuses it and the use is not spent: the lockout
     //     is the mechanic's floor and is asserted rather than avoided.
     {
         Combat cb;
@@ -1759,7 +1759,7 @@ void test_mod_equip_ladder_is_ordered_and_dense() {
         CHECK(hi[t - 1] < lo[t]);
     }
     // DENSITY: walking the sorted gates, no step larger than kModLadderMaxGap. This is the
-    // whole point of authoring the level per row — a raising pet should never cross more
+    // whole point of authoring the level per row: a raising pet should never cross more
     // than a couple of levels with nothing new to slot. Checked as a max STEP rather than
     // a per-bucket count so it stays true however the roster is grouped.
     constexpr int kModLadderMaxGap = 2;
@@ -1800,7 +1800,7 @@ void test_mod_earn_tables_and_reqlevel() {
         CHECK(r.mod(dw)->powerTier == kDeepWebModTier);   // the dive's own authored rung
         sampled.insert(dw);
     }
-    // Every pooled mod is actually REACHABLE — the tier check above would pass just as
+    // Every pooled mod is actually REACHABLE: the tier check above would pass just as
     // happily on a pool whose ids never came up, so assert the sample covers the union of
     // every table. That subsumes the per-id spot-checks (ECC, Load Balancer, Watchdog,
     // Faraday, Ghost Process, the niche-flavour ids) without naming one of them, and it
@@ -1810,7 +1810,7 @@ void test_mod_earn_tables_and_reqlevel() {
             CHECK(sampled.count(area(a).modPoolIds[k]) == 1);
     for (int k = 0; k < kAreaModsDeepWebCount; ++k)
         CHECK(sampled.count(kAreaModsDeepWeb[k]) == 1);
-    // A mod's equip gate is its OWN, authored on the row, and the same for every copy —
+    // A mod's equip gate is its OWN, authored on the row, and the same for every copy:
     // there is no roll to land inside a band. Sampled off two real mods at opposite ends
     // of the ladder rather than named tiers, and asserted to be deterministic, which is
     // the property that replaced the roll.
@@ -1832,7 +1832,7 @@ void test_mod_earn_tables_and_reqlevel() {
 // Data-driven wiring: makePlayerCombatant reads each new ModEffect kind and pokes the
 // matching Combatant field, same idiom as test_mod_effects_data_driven above.
 // A soft-affinity mod pays its line more, and the prose is the only place the operator
-// learns WHICH line — the stat line's ON LINE row carries the number but not the name.
+// learns WHICH line: the stat line's ON LINE row carries the number but not the name.
 void test_mod_affinity_prose_names_the_bonus() {
     ContentRegistry r = ContentRegistry::embedded();
     for (const ModDef* m : r.allMods()) {
@@ -1871,7 +1871,7 @@ void test_mod_niche_flavour_data_driven() {
     CHECK(build("scratch_disk_buffer").defense == base.defense + 9);
     CHECK(build("phishing_rod").mods.mag(ModEffect::StealAmplifyPct) == 75);
     // Extortion Ledger's requiresLine gate is an EQUIP-time UI check (game_care.cpp),
-    // not a combat-engine one — makePlayerCombatant applies whatever is already
+    // not a combat-engine one: makePlayerCombatant applies whatever is already
     // installed, so it correctly still wires up here even off-line (see
     // test_mod_hard_line_gate for the actual gate enforcement).
     //
@@ -1880,7 +1880,7 @@ void test_mod_niche_flavour_data_driven() {
     // reaches and loses again, so the damage path reads both live.
     // The STANDING half is DEF rating and lands on the base; only the seizure window is
     // parked live, because it opens and closes mid-fight. Power is deliberately not the
-    // standing currency — a flat attack bonus measured worth nothing at this tier.
+    // standing currency: a flat attack bonus measured worth nothing at this tier.
     const Combatant el = build("extortion_ledger");
     CHECK(el.defense == base.defense + 54);
     CHECK(el.powerMultPct == base.powerMultPct);
@@ -1893,13 +1893,13 @@ void test_mod_niche_flavour_data_driven() {
     CHECK(wormAttackerDamage(rb, /*movePower=*/20, /*pct=*/50) >
           wormAttackerDamage(base, /*movePower=*/20, /*pct=*/50));
     // Backup Uplink is read post-battle by the Game (like Packet Sniffer), not stored
-    // on Combatant at all — assert its content data directly instead.
+    // on Combatant at all: assert its content data directly instead.
     const ModDef* bu = r.mod("backup_uplink");
     CHECK(bu && bu->effectKind == ModEffect::PostBattleBits && bu->magnitude == 20);
 }
 
 // Botnet Swarm / Air-Gap Ward: bonus scales with the COUNT of equipped Attack/Defend
-// moves — built with an explicit loadout so the composition (2 Attack, 1 Defend) is
+// moves. Built with an explicit loadout so the composition (2 Attack, 1 Defend) is
 // self-evident rather than relying on MoveLoadout::starting()'s defaults.
 void test_mod_botnet_swarm_and_airgap_ward() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1917,7 +1917,7 @@ void test_mod_botnet_swarm_and_airgap_ward() {
     Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
     // Multiplicative, as ModEffect::PowerPct is and for the same reason: it scales the
     // pet's own output rather than adding onto a stage-inflated base. Its sibling below
-    // stays additive — defense is a RATING the Defence curve reads, not a multiplier.
+    // stays additive: defense is a RATING the Defence curve reads, not a multiplier.
     const int swarm = r.mod("botnet_swarm")->magnitude;
     CHECK(sw.powerMultPct == base.powerMultPct * (100 + swarm * 2) / 100);  // 2 Attack moves
 
@@ -1926,7 +1926,7 @@ void test_mod_botnet_swarm_and_airgap_ward() {
     CHECK(wd.defense == base.defense + 7 * 1);    // +7 DEF per Defend move (1)
 }
 
-// The per-kind combine rules (mod_state.cpp) — what happens when two equipped mods
+// The per-kind combine rules (mod_state.cpp): what happens when two equipped mods
 // declare the same ModEffect. Asserted straight on ModStateSet::apply: the loadout can
 // only reach a handful of these pairings with the shipped roster, but every rule has to
 // hold for the next mod that lands on an existing kind.
@@ -1960,9 +1960,9 @@ void test_mod_state_combine_rules() {
     low.apply(ModEffect::MaxHitCapPct, 0, 0);              // declares nothing
     CHECK(low.mag(ModEffect::MaxHitCapPct) == 0);
     low.apply(ModEffect::MaxHitCapPct, 35, 0);
-    low.apply(ModEffect::MaxHitCapPct, 50, 0);             // looser — loses
+    low.apply(ModEffect::MaxHitCapPct, 50, 0);             // looser: loses
     CHECK(low.mag(ModEffect::MaxHitCapPct) == 35);
-    low.apply(ModEffect::MaxHitCapPct, 20, 0);             // tighter — wins
+    low.apply(ModEffect::MaxHitCapPct, 20, 0);             // tighter: wins
     CHECK(low.mag(ModEffect::MaxHitCapPct) == 20);
     // The winner's mag2 rides along (Load Balancer's split share follows its threshold).
     ModStateSet lb;
@@ -2011,7 +2011,7 @@ void test_mod_state_combine_rules() {
 }
 
 // Prowlware's rank: distinct Attack-move power tiers, ascending (weakest = rank 1),
-// resolved per slot — including the empty-slot Quick Jab fallback.
+// resolved per slot, including the empty-slot Quick Jab fallback.
 void test_mod_prowlware_rank_computation() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.creature("malbear");        // Script; slotKinds A,A,D,A
@@ -2030,7 +2030,7 @@ void test_mod_prowlware_rank_computation() {
     CHECK(attackPowerRank(c.moves, 3) == 0);   // past the kit -> no rank
     CHECK(attackPowerRank(c.moves, -1) == 0);  // a hijacked cast indexes no slot
     // A Defend move never ranks, and a kit with one attack tier ranks 1 throughout (no
-    // bonus) — the mod only pays off on a genuine power spread.
+    // bonus): the mod only pays off on a genuine power spread.
     Combatant flat = mkCombatant(r, "F", 100, 5, {"quick_jab", "checksum_guard"});
     CHECK(attackPowerRank(flat.moves, 0) == 1);
     CHECK(attackPowerRank(flat.moves, 1) == 0);
@@ -2078,19 +2078,19 @@ void test_mod_canary_trap() {
     CHECK(c.player().health == 100 - 6);                          // 12 cut 50% -> 6
     CHECK(!c.player().mods.armed(ModEffect::FirstHitCutPct));   // absorbed
     c.step();                                                     // player's turn
-    c.step();                                                     // enemy's second hit — no cut
+    c.step();                                                     // enemy's second hit: no cut
     CHECK(c.player().health == 100 - 6 - 12);
 }
 
 // Meltdown Core: attack power gains the comeback bonus only while at/under the
-// health threshold — checked live every attack, not a one-shot.
+// health threshold. Checked live every attack, not a one-shot.
 void test_mod_meltdown_core() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant low = mkCombatant(r, "P", 100, 12, {"quick_jab"});
     low.health = 25;                                              // 25% <= the 30% threshold
     low.mods.arm(ModEffect::LowHealthPowerPct, 30, 40);
     Combatant e1 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
-    // begin() otherwise starts the player at full Health — carryPlayerHealth is what
+    // begin() otherwise starts the player at full Health: carryPlayerHealth is what
     // actually seats the pre-set low.health (25) for the fight.
     Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 25);
     c1.step();
@@ -2130,7 +2130,7 @@ void test_mod_tripwire() {
     low.health = 30;                                              // 30% <= the 40% threshold
     low.mods.arm(ModEffect::ConditionalThorns, 10, 40);
     Combatant e1 = mkCombatant(r, "E", 100, 12, {"quick_jab"});    // fast, hits first
-    // carryPlayerHealth seats the pre-set low.health (30) — begin() otherwise resets
+    // carryPlayerHealth seats the pre-set low.health (30): begin() otherwise resets
     // the player to full.
     Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 30);
     c1.step();
@@ -2155,9 +2155,9 @@ void test_mod_tripwire() {
 }
 
 // Bubble-gated half of the steal track: stealSpeedPct/stealCurrentHpPct only fire while
-// the caster's Obfuscation shield is up (shieldHp > 0) — the interplay the line is built
+// the caster's Obfuscation shield is up (shieldHp > 0). The interplay the line is built
 // around (the volatile bonus costs the defensive pool's uptime). Both combatants sit at
-// speed 50 (not the usual 10) so 6% of it — smish_hook's stealSpeedPct — lands on an
+// speed 50 (not the usual 10) so 6% of it (smish_hook's stealSpeedPct) lands on an
 // exact float (3.0) instead of a repeating binary fraction. Stage stays at its BootSector
 // default so the Perfect-Bite chance is a guaranteed 0% (kPhishingBiteChancePctByStage[0]),
 // isolating the BASE bubble-gated amounts from the chance-based bonus (see
@@ -2190,7 +2190,7 @@ void test_phishing_bubble_steal() {
     // player: 100 + 6 (the pool that crossed) - 5 (quick_jab) = 101.
     CHECK(c0.player().health == 101);
     // enemy: 100 - 6 (lure) - 23 (strike) = 71. Two real casts, which is the point of the
-    // chain — the wind-up this replaced spent the fight's first turn doing nothing.
+    // chain: the wind-up this replaced spent the fight's first turn doing nothing.
     CHECK(c0.enemy().health == 71);
 
     // Bubble up: stealSpeedPct/stealCurrentHpPct now fire at their base (6%) amounts on
@@ -2221,7 +2221,7 @@ void test_phishing_bubble_steal() {
         CHECK(phishPoolSiphonBonusPct(probe) == kPhishPoolSiphonMaxPct);   // ...and capped
     }
     // This pet is at the BootSector default (to keep Perfect Bite at a guaranteed 0%), so
-    // its body is 40 and a 50 pool reads as +125% — the authored 6% siphons at 13%.
+    // its body is 40 and a 50 pool reads as +125%: the authored 6% siphons at 13%.
     CHECK(c1.player().speed == 56.5f && c1.enemy().speed == 43.5f);   // 13% of 50 = 6.5
     // enemy: 100 - 6 (lure) - 12 (13% of 94, lifesteal) - 23 (siphon-boosted strike) = 59.
     CHECK(c1.enemy().health == 59);
@@ -2236,7 +2236,7 @@ void test_phishing_bubble_steal() {
 // random when a move sets both, as every Phishing steal-attack does); the Phishing Rod's
 // the Phishing Rod scales that bonus specifically, not the base amount. Daemon (45%) is the
 // easiest stage to observe both a biting and a non-biting roll in a short scan. Stage is
-// set directly on the Combatant purely to select the chance-table row — Combat itself never
+// set directly on the Combatant purely to select the chance-table row: Combat itself never
 // checks a move's minStage (that gate lives at the picker/equip layer).
 void test_phishing_perfect_bite() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -2254,7 +2254,7 @@ void test_phishing_perfect_bite() {
     // (phishPoolSiphonBonusPct: a 50 pool on a Daemon body of 100 is +50%), so the 6% siphons
     // at 9%: speed 50 -> 54.5/45.5. Health: quick_jab is absorbed by the player's OWN
     // shieldHp(50), not Health (the pre-existing Obfuscation absorb, ahead of any steal
-    // effect), so carryPlayerHealth(50) only ever moves via the lure's own take — +8
+    // effect), so carryPlayerHealth(50) only ever moves via the lure's own take. +8
     // lifesteal (9% of 94), +6 for the max-Health pool crossing whole, +1 frenzy = 65.
     // A bite doubles ONE of the two volatile steals before the pool scales it: speed goes
     // to 57.5, or Health to 71, never both.
@@ -2274,7 +2274,7 @@ void test_phishing_perfect_bite() {
     CHECK(biteSpeedSeed && biteHpSeed && noBiteSeed);   // all three outcomes reachable
 
     // Rod: re-running a biting seed with the Rod equipped scales the hit up further. It
-    // reaches BOTH bubble-gated steals, not only the bitten one — the mod scales the pool
+    // reaches BOTH bubble-gated steals, not only the bitten one: the mod scales the pool
     // SIPHON that gates them rather than the bite bonus alone, which is what gives it a
     // floor to stand on (a bite is a roll on top of a condition, and a mod confined to it
     // paid on a fraction of a fraction). The bite itself stays exclusive: still one stat
@@ -2292,7 +2292,7 @@ void test_phishing_perfect_bite() {
 
 // Feed-frenzy combo gate: the run is counted by the BUBBLE, not by move adjacency. A
 // two-slot kit alternates strictly (no-consecutive-repeat over two moves), so the
-// Spoof-Bubble cast lands between every pair of bites — and the run survives it, because
+// Spoof-Bubble cast lands between every pair of bites, and the run survives it, because
 // raising the bubble is the thing the combo is gated ON. maxHealth is far above anything
 // the pool reaches so the frenzy LEAN stays off and this measures the gate alone.
 void test_phishing_frenzy_survives_the_bubble() {
@@ -2306,12 +2306,12 @@ void test_phishing_frenzy_survives_the_bubble() {
 
     // Interleaving the brace does not restart the run: several bites have banked, so the
     // streak is past its first cast and the flat bonus is non-zero. Under an ADJACENCY
-    // rule — break on anything but a bite — this kit could never bank anything at all.
+    // rule (break on anything but a bite) this kit could never bank anything at all.
     CHECK(cb.player().phishStreak > 1);
     CHECK(cb.player().phishComboBonus > 0);
 }
 
-// ...and the run DOES break on a bite taken with the bubble down — EXPOSURE is the fail
+// ...and the run DOES break on a bite taken with the bubble down: EXPOSURE is the fail
 // state, not "any other move". Same kit, same seed, no starting pool and no way to raise
 // one (attack-only kit), so every cast is an exposed one.
 void test_phishing_frenzy_breaks_when_exposed() {
@@ -2352,7 +2352,7 @@ void test_phishing_frenzy_breaks_when_exposed() {
 // the bubble is chewed down and releases only when the pool is actually overrun.
 void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
     ContentRegistry r = ContentRegistry::embedded();
-    // The ramp itself, at its most granular point — the combat screen draws its frenzy
+    // The ramp itself, at its most granular point: the combat screen draws its frenzy
     // ribs off this same function, so the tell and the behaviour can't drift apart.
     Combatant probe = mkCombatant(r, "P", 100, 50, {"smish_hook"});
     CHECK(phishFrenzyLeanPct(probe) == 0);            // no pool at all
@@ -2403,14 +2403,14 @@ void test_phishing_frenzy_lean_ratchets_until_the_bubble_pops() {
 
 // Obfuscation shield pool (Phishing defensive track): a shieldPool Defend move POOLS
 // into shieldHp (a second health bar) that absorbs before real Health, overflows the
-// remainder to Health when it pops, and STACKS additively on recast — distinct from the
+// remainder to Health when it pops, and STACKS additively on recast. Distinct from the
 // one-shot `guard` brace every other Defend move sets.
 void test_phishing_shield_pool() {
     ContentRegistry r = ContentRegistry::embedded();
     const MoveDef* sb = r.move("spoof_bubble");
     CHECK(sb && sb->kind == MoveDef::Kind::Defend && sb->shieldPool > 0 && sb->power == 12);
 
-    // Absorb + overflow: cast the bubble (shieldHp 12), then eat a 20-power hit — the
+    // Absorb + overflow: cast the bubble (shieldHp 12), then eat a 20-power hit. The
     // shield soaks 12 and pops, the remaining 8 carries through to Health.
     Combatant p = mkCombatant(r, "P", 100, 10, {"spoof_bubble"});
     Combatant e = mkCombatant(r, "E", 100, 10, {"buffer_overflow"});  // 20 power, no rider
@@ -2476,7 +2476,7 @@ void test_speed_action_economy() {
 }
 
 // NEGATIVE DEFENCE. The rating is uncapped, so the counter to a wall is shred that
-// subtracts from it — and a rating shredded past zero must cost the fighter more, on the
+// subtracts from it, and a rating shredded past zero must cost the fighter more, on the
 // mirrored curve, rather than bottoming out at "no defence". Armor rot is the flat shred
 // that gets there; pierce only ever routes around a POSITIVE rating.
 void test_negative_defense_from_armor_rot() {
@@ -2510,7 +2510,7 @@ void test_negative_defense_from_armor_rot() {
 }
 
 // Minimum penetration: a real attack always lands >=1 through pure defensive mitigation
-// (DEF rating + guard), so no pet is an invincible wall — but RAID Mirror's deliberate full
+// (DEF rating + guard), so no pet is an invincible wall, but RAID Mirror's deliberate full
 // negation is still exempt.
 void test_min_damage_penetration() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -2533,10 +2533,10 @@ void test_min_damage_penetration() {
 
 // The HARD line gate (ModDef::requiresLine, niche-flavour pass): distinct from every
 // other mod's soft `line`/`affinityBonus` bonus. Driven through the real MODS UI,
-// mirroring test_mod_equip_level_gate's pattern — Paypup's starting owned spares are
+// mirroring test_mod_equip_level_gate's pattern: Paypup's starting owned spares are
 // exactly {packet_sniffer, raid_mirror} (Loadout::starting()), so granting ONE more
 // mod always lands it at picker row 2 (registry order, filtered to owned).
-// A mod's equip gate — level a test pet to this and that mod is equippable. Derived from
+// A mod's equip gate: level a test pet to this and that mod is equippable. Derived from
 // the mod's own rank rather than written as a literal, so shifting the ladder moves these
 // tests' targets with it instead of stranding them under a stale level.
 static int modGateCeiling(const char* id) {
@@ -2571,7 +2571,7 @@ void test_mod_hard_line_gate() {
     CHECK(!g2.loadout().owns("extortion_ledger"));
 }
 
-// the rolled equip-LEVEL gate — a spare above the pet's level can't be
+// the rolled equip-LEVEL gate: a spare above the pet's level can't be
 // equipped; leveling past it unlocks the equip. Driven through the real MODS UI.
 void test_mod_equip_level_gate() {
     Game g{StartMode::Hatched};                            // pet at level 0
@@ -2617,7 +2617,7 @@ void test_mod_picker_windows_large_pool() {
     CHECK(lastPick >= 6);
 
     // (a) The focused row-cursor triangle for the LAST mod must still land inside
-    // the windowed list band (y in [22,150)) — the pre-fix math (`kRowTop +
+    // the windowed list band (y in [22,150)): the pre-fix math (`kRowTop +
     // pick*rowH`) would place it at 26 + 15*18 = 296, off the 224-tall panel and
     // nowhere near the visible list.
     ModPickerView pv;
@@ -2653,7 +2653,7 @@ void test_mod_picker_windows_large_pool() {
     }
 }
 
-// Shared Resources (Worm), the SPEED half: a worm's speed is not its own — it is the
+// Shared Resources (Worm), the SPEED half: a worm's speed is not its own. It is the
 // opponent's, continuously. It matches at the opening bell (so the baseline the stat
 // panel diffs against is already the matched value), it re-matches the moment the
 // opponent's speed MOVES mid-fight, and the equal gauges it produces mean neither side
@@ -2674,7 +2674,7 @@ void test_worm_shared_resources_speed() {
     for (int i = 0; i < 8; ++i) { c.step(); CHECK(c.streakCount() == 1); }
 
     // It TRACKS: a Phishing speed siphon drags the enemy's speed up and would normally
-    // leave its victim behind — the worm comes with it instead, and the pair stay equal.
+    // leave its victim behind. The worm comes with it instead, and the pair stay equal.
     Combatant worm = mkCombatant(r, "W", 100, 50, {"quick_jab"});
     worm.setLine(r, "worm");
     Combatant thief = mkCombatant(r, "E", 100, 50, {"smish_hook"});
@@ -2684,14 +2684,14 @@ void test_worm_shared_resources_speed() {
     CHECK(c2.enemy().speed > 50.0f);                // the siphon moved it
     CHECK(c2.player().speed == c2.enemy().speed);   // and the worm moved with it
 
-    // No worm in the fight, nothing matched — an ordinary speed gap stays a speed gap.
+    // No worm in the fight, nothing matched: an ordinary speed gap stays a speed gap.
     Combatant a = mkCombatant(r, "A", 100, 10, {"quick_jab"});
     Combatant b = mkCombatant(r, "B", 100, 40, {"quick_jab"});
     Combat c3; c3.begin(a, b, Combat::Stakes::Safe, 1);
     CHECK(c3.player().speed == 10.0f && c3.enemy().speed == 40.0f);
 }
 
-// Shared Resources (Worm), the ARITHMETIC half — the pure functions the balance is
+// Shared Resources (Worm), the ARITHMETIC half: the pure functions the balance is
 // actually written in (combat.h). Each kind's magnitude comes from the OTHER kind's count
 // AT SPAWN, floored at kWormReplicaMultFloor so the first copy of either sort is worth its
 // base rather than nothing; incoming attacks draw a victim by weight, defenders hardest.
@@ -2714,7 +2714,7 @@ void test_worm_replica_arithmetic() {
     CHECK(wormReplicaDamage(w) == 5);
 
     // What the cover DOES buy is worth more teeth from here on, which is the same dial
-    // read at the moment it matters — so spawn ORDER is the decision, not spawn count.
+    // read at the moment it matters, so spawn ORDER is the decision, not spawn count.
     Combatant uncovered;
     uncovered.maxHealth = 100;
     uncovered.powerMultPct = 100;
@@ -2751,7 +2751,7 @@ void test_worm_replica_arithmetic() {
     CHECK(wormTargetPick(w, 7) == 2 && wormTargetPick(w, 10) == 2);
     CHECK(wormTargetPick(w, 11) == -1);                   // wraps
 
-    // A worm with no copies out is always the target — nothing to hide behind.
+    // A worm with no copies out is always the target: nothing to hide behind.
     Combatant bare;
     CHECK(wormTargetPick(bare, 0) == -1 && wormTargetPick(bare, 999) == -1);
 }
@@ -2781,7 +2781,7 @@ void test_worm_replication_in_combat() {
 
     // Attacking copies pile onto the parent's swing, each adding exactly what it banked
     // when it spawned. Built directly on the Combatant so the arithmetic is read off one
-    // swing rather than through a run of spawn rolls — which is also what makes the
+    // swing rather than through a run of spawn rolls, which is also what makes the
     // banking visible here: these copies are handed their `attack` outright, so cover
     // standing beside them at swing time is cover that arrived too late to matter.
     auto swing = [&](int attackers, int defenders) {
@@ -2808,7 +2808,7 @@ void test_worm_replication_in_combat() {
     CHECK(wormAttackerDamage(covered, /*movePower=*/10, /*pct=*/20) == 4);   // 2 * floor2
 
     // An attack into a worm picks its victim by weight. Both outcomes are reachable, and
-    // when a copy catches it the parent takes NOTHING — a copy is not armour, it is
+    // when a copy catches it the parent takes NOTHING: a copy is not armour, it is
     // somebody else standing there. A 1-Health attacker dies to it and frees its slot,
     // leaving the trace the combat screen plays the dissolve from.
     bool sawParentHit = false, sawCopyKilled = false;
@@ -2836,7 +2836,7 @@ void test_worm_replication_in_combat() {
 
 // THE PANEL USED TO LIE BY OMISSION. Its absorbs-and-afflictions readout was packed
 // into one string and drawn into a 24-character box, so a fighter carrying a shield, a
-// brace, a drive, a ransom bill, traps, a rot and a stun at once had most of that cut —
+// brace, a drive, a ransom bill, traps, a rot and a stun at once had most of that cut,
 // and a fight with all of them live is exactly the fight worth reading. The set is now
 // a token list the draw WRAPS, so this asserts every live state is reported.
 void test_combat_panel_reports_every_live_state() {
@@ -2863,7 +2863,7 @@ void test_combat_panel_reports_every_live_state() {
     c.crewExploit.charges = 2;
 
     // The panel reports a fighter across TWO surfaces, and "the operator cannot see it
-    // mid-fight" is the defect either of them can carry — so both are checked here rather
+    // mid-fight" is the defect either of them can carry, so both are checked here rather
     // than only the one that happens to be a list.
     //
     // The four VITALS are the VS page's column of digits, effective: after the siphon
@@ -2875,7 +2875,7 @@ void test_combat_panel_reports_every_live_state() {
     CHECK(v.maxHealth == c.maxHealth);
 
     // ...and everything else reaches the operator as a ROW of the VS grid: a tag with
-    // each fighter's value under its own column. This is the assertion that matters —
+    // each fighter's value under its own column. This is the assertion that matters:
     // "the operator cannot see it mid-fight" is the defect, and the grid is now the only
     // surface that can carry it.
     const Combatant clean = makeEnemyCombatant(r, simDummy(0));
@@ -2885,7 +2885,7 @@ void test_combat_panel_reports_every_live_state() {
         CHECK(g.has(tag));
     CHECK(g.n <= CombatVsGrid::kCap);        // the set fits its own store, unclipped
 
-    // ...and the rest reaches the operator on the FIGHTER, as its status strip — which is
+    // ...and the rest reaches the operator on the FIGHTER, as its status strip, which is
     // why they are not grid rows. Both surfaces are swept because "the operator cannot
     // see it mid-fight" is the defect either of them can carry, and moving a fact from
     // one to the other must not be a way to lose it.
@@ -2908,7 +2908,7 @@ void test_combat_panel_reports_every_live_state() {
     CHECK(!onStrip(CombatVsKind::Copy));
     CHECK(c.wormReplicaCount > 0);           // ...and the fixture really does have some
     CHECK(st.n <= CombatStatusStrip::kCap);
-    // The deltas ride ON the vital they moved rather than as rows of their own — that
+    // The deltas ride ON the vital they moved rather than as rows of their own: that
     // consolidation is what stopped a loaded fight from overrunning the box.
     for (int i = 0; i < g.n; ++i) {
         if (std::strcmp(g.r[i].tag, "PWR") == 0)
@@ -2921,7 +2921,7 @@ void test_combat_panel_reports_every_live_state() {
     for (int i = 0; i < g.n; ++i)
         if (std::strcmp(g.r[i].tag, "STUN") == 0) CHECK(g.r[i].rival[0] == '\0');
 
-    // Two clean fighters produce the four vitals and nothing else — an ordinary wild
+    // Two clean fighters produce the four vitals and nothing else: an ordinary wild
     // encounter does not open with a list of conditions that are not there.
     Combatant plain = makeEnemyCombatant(r, simDummy(0));
     plain.basePowerMultPct = plain.powerMultPct;
@@ -2935,7 +2935,7 @@ void test_combat_panel_reports_every_live_state() {
     CHECK(pv.maxHealth > 0);
 }
 
-// B CYCLES the panel rather than toggling it — closed, VS, KIT, closed — and paging
+// B CYCLES the panel rather than toggling it (closed, VS, KIT, closed), and paging
 // it never pauses the fight, which is what makes reading it a real decision.
 void test_combat_panel_pages_cycle() {
     Game g{StartMode::Hatched, "paypup"};
@@ -2958,7 +2958,7 @@ void test_combat_panel_pages_cycle() {
 }
 
 // POLYMORPH: the distinct rule, and what one absorption pays. Asserted against a
-// hand-built Combatant rather than a resolved fight — the passive's whole question is
+// hand-built Combatant rather than a resolved fight: the passive's whole question is
 // "have I cast this before", which is a property of the fighter and not of a battle.
 void test_polymorph_pays_once_per_distinct_move() {
     const MoveDef atk{"t_atk", "T Atk", MoveDef::Kind::Attack, 10, 1, "", Stage::BootSector};
@@ -2981,7 +2981,7 @@ void test_polymorph_pays_once_per_distinct_move() {
     CHECK(c.absorbedCount == 1);
 
     // A Defend pays the other pair, and raises the pool it is standing in as well as the
-    // ceiling — a fighter must never be left owing Health it was just granted.
+    // ceiling: a fighter must never be left owing Health it was just granted.
     CHECK(polymorphAbsorb(c, &def));
     CHECK(c.maxHealth == 40 + 40 * kLevelHealthPctPerPoint / 100);   // % of its body
     CHECK(c.health == c.maxHealth);
@@ -3003,7 +3003,7 @@ void test_polymorph_brace_answers_to_the_cap() {
 
     // Enough Defend-side points to clear the ceiling outright. Called directly rather than
     // through an absorb: what is under test is the payment, and the absorbed-set bound
-    // (kPolymorphAbsorbCap) is not the thing that keeps the brace in range — a Mutation
+    // (kPolymorphAbsorbCap) is not the thing that keeps the brace in range. A Mutation
     // Engine multiplier pays many points for one cast.
     const int points = (kLevelDefenseBraceCapPct / kLevelDefenseBracePctPerPoint) + 10;
     polymorphPay(c, MoveKind::Defend, points);
@@ -3011,7 +3011,7 @@ void test_polymorph_brace_answers_to_the_cap() {
     CHECK(c.defenseMultPct == 100 + kLevelDefenseBraceCapPct);   // held at the ceiling
     CHECK(c.defense == points * kLevelDefensePerPoint);          // the rating is uncapped
 
-    // What the ceiling refused was paid in Health, at the brace's own rate — so the
+    // What the ceiling refused was paid in Health, at the brace's own rate, so the
     // absorption is still worth something past the cap instead of silently evaporating.
     const int paid = c.maxHealth - 40;
     CHECK(paid > 40 * kLevelHealthPctPerPoint * points / 100);
@@ -3053,7 +3053,7 @@ void test_wild_pick_weights_its_bands() {
     CHECK(generic > lineA && generic > lineB);           // ...and generic is the common one
     CHECK(lineA + lineB > generic / 2);                  // a line run is not a rarity
 
-    // A borrowed row carries its own line's flags, and a generic one carries none — which
+    // A borrowed row carries its own line's flags, and a generic one carries none, which
     // is what stops the shared roster from handing out passives nobody's line owns.
     CHECK(wildBorrowedPassives(pool, &a1) == pool.passivesA);
     CHECK(wildBorrowedPassives(pool, &b1) == pool.passivesB);
@@ -3069,7 +3069,7 @@ void test_wild_pick_weights_its_bands() {
 
 // The substitution, end to end: a wildcard row never casts ITSELF while its pool has
 // anything in it, the fighter absorbs what it rolls, and the stats it swings with move as
-// it does. Built by hand rather than off content rows — Combat::begin takes Combatants, so
+// it does. Built by hand rather than off content rows: Combat::begin takes Combatants, so
 // the mechanic is assertable before the metamorphic track exists to author it onto.
 void test_wildcard_slot_casts_the_pool_not_itself() {
     static const MoveDef p1{"p1", "Pool One", MoveDef::Kind::Attack, 6, 1, "", Stage::BootSector};
@@ -3124,7 +3124,7 @@ void test_wildcard_slot_casts_the_pool_not_itself() {
 }
 
 // Mutation Engine's axis is NOT Polymorph's. Two plain swings are two absorbed moves and
-// zero effect kinds; one loaded row is one absorbed move and several kinds — which is the
+// zero effect kinds; one loaded row is one absorbed move and several kinds, which is the
 // whole reason the mod is worth a slot beside the passive rather than doubling it.
 void test_mutation_engine_counts_effects_not_moves() {
     MoveDef plainA{"ma", "Plain A", MoveDef::Kind::Attack, 10, 1, "", Stage::BootSector};
@@ -3151,7 +3151,7 @@ void test_mutation_engine_counts_effects_not_moves() {
     c.effectsSeen |= mask;                              // the same row again adds nothing
     CHECK(polymorphEffectCount(c) == 3);
 
-    // A steal that moves Speed and one that moves max-Health are two kinds, not one —
+    // A steal that moves Speed and one that moves max-Health are two kinds, not one:
     // the track spends a bit per stat, which is the reading the mod is named for.
     MoveDef s1{"s1", "Steal Spd", MoveDef::Kind::Attack, 5, 1, "", Stage::BootSector};
     s1.stealSpeedPct = 10;
@@ -3204,7 +3204,7 @@ void test_metamorphic_content_builds_a_real_pool() {
     CHECK(wildBorrowedPassives(atk, trojanRow) != 0);
     CHECK(wildBorrowedPassives(atk, atk.rows[0]) == 0);
 
-    // The Defend wildcard draws the defend half, which is the thinner one — it must still
+    // The Defend wildcard draws the defend half, which is the thinner one: it must still
     // have found rows, or the line's whole defensive side would silently be Quick Jab.
     const WildPool& def = c.wildPools[1];
     CHECK(!def.empty());
@@ -3223,7 +3223,7 @@ void test_metamorphic_content_builds_a_real_pool() {
 // The Exploit picker's two levels. The bands present in the fight are the top level, so
 // the box is at most four rows however deep the bag is, and the rows of one band are the
 // second. One band means no choice, so the picker opens straight on its rows and C there
-// cancels outright — the walk an early-game pet has always had.
+// cancels outright: the walk an early-game pet has always had.
 void test_override_bands_are_the_top_level() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
@@ -3258,7 +3258,7 @@ void test_override_bands_are_the_top_level() {
     CHECK(cb.overridePick() == crewRow);
     CHECK(cb.enterOverrideBand() && !cb.overrideAtBands());
 
-    // Inside a band the walk wraps WITHIN it — a one-row band is a fixed point, and the
+    // Inside a band the walk wraps WITHIN it: a one-row band is a fixed point, and the
     // header naming it never stops being true.
     cb.cycleOverride();
     CHECK(cb.overridePick() == crewRow);
@@ -3274,7 +3274,7 @@ void test_override_bands_are_the_top_level() {
 }
 
 // The LOCK: an operator spends their one Exploit to stop a wildcard slot rolling and keep
-// what it last threw. The slot becomes ORDINARY — it casts that move and nothing else —
+// what it last threw. The slot becomes ORDINARY (it casts that move and nothing else),
 // and the trade is that a locked slot stops feeding Polymorph, because only unlearned
 // casts pay.
 void test_wildcard_lock_freezes_a_slot() {
@@ -3333,8 +3333,8 @@ void test_wildcard_lock_freezes_a_slot() {
 }
 
 // EVERY mod must actually reach the fight. Wiring one up takes THREE edits that no
-// compiler ties together — a ModEffect value, the case in makePlayerCombatant that stores
-// or applies it, and a ModRule row without which ModStateSet::apply silently returns —
+// compiler ties together. A ModEffect value, the case in makePlayerCombatant that stores
+// or applies it, and a ModRule row without which ModStateSet::apply silently returns,
 // so a mod can ship looking complete, read as 0 at its hook, and cost a slot for nothing.
 // Walked over every row rather than a list, so the next mod is covered by arriving.
 void test_every_mod_reaches_the_fight() {
@@ -3346,7 +3346,7 @@ void test_every_mod_reaches_the_fight() {
     // the Defend count, Botnet Swarm off the Attack count, and Mutation Engine is inert
     // without Polymorph running. A single-kind kit reads those as wired nowhere.
     MoveLoadout ml = MoveLoadout::startingForLine(r, "metamorphic");
-    ml.equip(0, "instruction_swap");            // ATK wildcard — also sets `polymorphic`
+    ml.equip(0, "instruction_swap");            // ATK wildcard: also sets `polymorphic`
     ml.equip(1, "signature_drift");             // DEF, so the count-based mods register
     Loadout none;
     const Combatant base = makePlayerCombatant(r, *pet, ml, none);
@@ -3385,7 +3385,7 @@ void test_every_mod_reaches_the_fight() {
 }
 
 // The grudge curve: Extortion Ledger's power bonus scales with what the pet is holding
-// unsettled, and the scale is a property of the FIGHTER rather than of the mod — so it is
+// unsettled, and the scale is a property of the FIGHTER rather than of the mod, so it is
 // assertable without resolving a fight, and the combat screen can draw the number the
 // engine is multiplying by rather than a lookalike.
 void test_ledger_grudge_scales_with_the_pool() {
@@ -3404,7 +3404,7 @@ void test_ledger_grudge_scales_with_the_pool() {
     c.ransomPool = body * 10;
     CHECK(ledgerGrudgePct(c) == kLedgerGrudgeMaxPct);    // ...and it stops there
 
-    // Measured against the STAGE's body, not a levelled maxHealth — the same denominator
+    // Measured against the STAGE's body, not a levelled maxHealth: the same denominator
     // the Obfuscation siphon uses, so a Health-steered pet never gets worse at its own
     // line's mechanic for having raised a different stat.
     Combatant levelled = c;
@@ -3423,15 +3423,15 @@ void test_ledger_grudge_scales_with_the_pool() {
 
 // ===========================================================================
 // THE INVESTMENT LADDER, INSIDE A FIGHT. The tier resolvers are gated as pure
-// functions in test_progression.cpp; these are the other half — that the field
+// functions in test_progression.cpp; these are the other half: that the field
 // each one sets actually changes what happens at the table. Every gate here is
 // an A/B on ONE field of an otherwise identical fight: the seed, the kit and
 // the speeds are held fixed so the RNG stream and the turn order cannot move,
 // and the only difference between the two runs is the rung under test.
 // ===========================================================================
 
-// Speed T1 (first strike): the fight's opening blow, doubled for whoever lands it —
-// once, and once only. Also the thing that is easy to get wrong: the multiplier belongs
+// Speed T1 (first strike): the fight's opening blow, doubled for whoever lands it.
+// Once, and once only. Also the thing that is easy to get wrong: the multiplier belongs
 // to the FIGHT's first hit, not to each fighter's own, so a defender who ate the opening
 // must not still be holding one.
 void test_first_strike_doubles_only_the_opening_hit() {
@@ -3463,7 +3463,7 @@ void test_first_strike_doubles_only_the_opening_hit() {
 }
 
 // Defence T3 (backscatter): a share of what the WALL absorbed is dealt back. Measured on
-// the attacker's Health, and only paid out of damage that was actually mitigated — which
+// the attacker's Health, and only paid out of damage that was actually mitigated, which
 // is what separates it from a flat thorns.
 void test_backscatter_pays_out_of_what_the_wall_absorbed() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -3471,7 +3471,7 @@ void test_backscatter_pays_out_of_what_the_wall_absorbed() {
         Combatant p = mkCombatant(r, "P", 4000, 1, {"quick_jab"});
         Combatant e = mkCombatant(r, "E", 4000, 40, {"quick_jab"});
         // A HEAVY swing on purpose. Every rung on the ladder is a percentage of a
-        // percentage, and the engine's arithmetic is integer throughout — at Quick Jab's
+        // percentage, and the engine's arithmetic is integer throughout: at Quick Jab's
         // own 6-point hit a 40% cut and a 40% cut with 20% pierce through it both floor to
         // the same number, and the gate would read as "the tier does nothing". The lean is
         // the standard combat magnitude knob (powerMultPct), so this is a bigger fighter
@@ -3626,7 +3626,7 @@ void test_power_tiers_get_past_a_defence() {
           throughHardenedWall(kLevelPowerPiercePct, 0));
 
     // GUARD SMASH, against a real brace. The enemy's kit is brace-ONLY, so it puts a
-    // guard up on every turn it gets whatever its Health is doing — which is what makes
+    // guard up on every turn it gets whatever its Health is doing, which is what makes
     // the two runs comparable without steering either of them.
     auto throughBrace = [&r](int smashPct) {
         Combatant p = mkCombatant(r, "P", 400, 40, {"quick_jab"});

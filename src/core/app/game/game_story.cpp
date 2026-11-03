@@ -1,4 +1,4 @@
-// game_story.cpp — the read-set, the fire points, and the reader's clock.
+// game_story.cpp: the read-set, the fire points, and the reader's clock.
 //
 // fireStory returns false (carry on) or true (it took the screen, return), so a
 // milestone gains a beat without knowing stories exist. The read-set is player-level: a
@@ -106,7 +106,7 @@ int Game::storyWindow() const {
 }
 
 void Game::advanceStoryPanel() {
-    // One window on, by exactly the rows that were shown — the step prose_page exports
+    // One window on, by exactly the rows that were shown: the step prose_page exports
     // proseRowsFitting for, so what the reader saw and what the next window starts at
     // can never be two different answers. Past the last window the chapter is over.
     if (!storyChapter_) { finishStoryChapter(); return; }
@@ -120,7 +120,7 @@ void Game::advanceStoryPanel() {
 }
 
 void Game::finishStoryChapter() {
-    // The queued second half of a paired beat first — it is the same sitting, so it
+    // The queued second half of a paired beat first: it is the same sitting, so it
     // opens in place rather than handing back and being fired again.
     if (storyNext_) {
         const StoryChapterDef* next = storyNext_;

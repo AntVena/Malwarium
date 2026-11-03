@@ -1,4 +1,4 @@
-// test_theme.cpp — native gates for the PAL_CORE themes: the ladders every set has to
+// test_theme.cpp (native gates for the PAL_CORE themes): the ladders every set has to
 // hold, the table that offers them, and what unlocks each.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -7,14 +7,14 @@
 //
 // Why this file exists at all: every other grayscale gate renders in whatever theme
 // happens to be active, which is the base set, so it says nothing about the other rows
-// of the table. A theme that broke a ladder would ship green — and the screens it broke
+// of the table. A theme that broke a ladder would ship green, and the screens it broke
 // would be exactly the ones with no words on them to fall back on.
 #include "test_gates.h"
 
-#include "core/content/content_themes.h"  // kThemes — the sets offered, and their unlocks
-#include "core/model/chromatophore.h"     // kChromaSkins — the camo ladder's length
-#include "core/model/disk_decryption.h"   // kDecryptionColours — and the code ladder's
-#include "core/ui/layout.h"               // kMargin — the picker row's own text budget
+#include "core/content/content_themes.h"  // kThemes: the sets offered, and their unlocks
+#include "core/model/chromatophore.h"     // kChromaSkins: the camo ladder's length
+#include "core/model/disk_decryption.h"   // kDecryptionColours, and the code ladder's
+#include "core/ui/layout.h"               // kMargin: the picker row's own text budget
 
 namespace {
 
@@ -23,12 +23,12 @@ namespace {
 // runs every one of them the other way up: its paper is the bright end, its status tints
 // are dark because they are read on white, and its decryption five descend from a rung
 // just off the page instead of climbing to one. None of that is a different KIND of
-// legibility — the separations are identical — so a gate phrased as "ascending, and the
+// legibility (the separations are identical), so a gate phrased as "ascending, and the
 // top clears 0.8" would fail a set that is exactly as readable as the base one, and go
 // on to reject the whole idea of a light theme on a technicality about which end is up.
 //
 // Luminance is read off the RGB565 the panel is actually sent, not the authored hex,
-// because that quantisation is what a player sees — and 5 bits of blue is enough to
+// because that quantisation is what a player sees, and 5 bits of blue is enough to
 // close a margin an author measured in 8.
 float themeLum(int theme, Pal p) { return luminance(palColorIn(theme, p)); }
 
@@ -45,7 +45,7 @@ void test_theme_invariants() {
         CHECK(kPalThemeNames[t] != nullptr && kPalThemeNames[t][0] != '\0');
         for (int u = t + 1; u < kPalThemeCount; ++u)   // a picker row needs its own name
             CHECK(std::strcmp(kPalThemeNames[t], kPalThemeNames[u]) != 0);
-        // The palette name is what the save carries, so it has to fit the blob's cell —
+        // The palette name is what the save carries, so it has to fit the blob's cell:
         // a name too long would come back truncated and resolve to a different set.
         CHECK(std::strlen(kPalThemeNames[t]) < static_cast<size_t>(kSaveIdCap));
 
@@ -62,13 +62,13 @@ void test_theme_invariants() {
         CHECK(std::fabs(lum(Pal::WARN) - paper) > 0.2f);
         CHECK(std::fabs(lum(Pal::HOT) - paper) > 0.2f);
 
-        // Ink on paper is the highest-contrast pair on the device — text lives on it.
+        // Ink on paper is the highest-contrast pair on the device: text lives on it.
         CHECK(far - near > 0.5f);
         // ...and the dim tier is a THIRD value, not a synonym for either: a gated row
         // has to read as text and still read as gated.
         CHECK(lum(Pal::INK_DIM) > near + 0.1f);
         CHECK(lum(Pal::INK_DIM) < far - 0.1f);
-        // The focus hue is drawn on paper too — a cursor box that sank into the page
+        // The focus hue is drawn on paper too: a cursor box that sank into the page
         // would take the one channel that says where you are.
         CHECK(std::fabs(lum(Pal::ACCENT) - paper) > 0.25f);
 
@@ -91,7 +91,7 @@ void test_theme_invariants() {
         CHECK(std::fabs(nearest - paper) > 0.08f);
         CHECK(std::fabs(farthest - paper) > 0.55f);
 
-        // The camo three, on the same footing and for the same reason — and this one is
+        // The camo three, on the same footing and for the same reason, and this one is
         // the tightest fit any set has to make: three rungs 0.15 apart, both ends clear
         // of ink and paper by 0.15, inside whatever range the theme left between them.
         const Pal skins[kChromaSkins] = {Pal::CAMO_KELP, Pal::CAMO_SILT, Pal::CAMO_BLOOM};
@@ -108,13 +108,13 @@ void test_theme_invariants() {
         CHECK(hi < far - 0.15f);
 
         // The held-notice plate: `paper` is drawn as TEXT on it, so the two have to be
-        // a legible pair wherever the theme puts them — and it is not `warn`, which is
+        // a legible pair wherever the theme puts them, and it is not `warn`, which is
         // the distinction the token exists to carry.
         CHECK(std::fabs(lum(Pal::NOTICE_HOLD) - paper) > 0.3f);
         CHECK(std::fabs(lum(Pal::NOTICE_HOLD) - lum(Pal::WARN)) > 0.05f);
 
         // The rarity ramp is read by POSITION, but the top tier still has to be the one
-        // that leaps off the page — which on a light theme means darker, not brighter.
+        // that leaps off the page, which on a light theme means darker, not brighter.
         CHECK(std::fabs(lum(Pal::RARITY_EPIC) - paper) >
               std::fabs(lum(Pal::RARITY_COMMON) - paper) + 0.05f);
     }
@@ -129,7 +129,7 @@ void test_theme_table_covers_the_palette() {
     for (int i = 0; i < kThemeCount; ++i) {
         const ThemeDef& t = kThemes[i];
         // palThemeByName falls back to 0 for a name it doesn't know, so "resolves to 0"
-        // is only honest for the row that IS base — every other row must resolve to a
+        // is only honest for the row that IS base: every other row must resolve to a
         // set of its own.
         const int p = palThemeByName(t.palette);
         CHECK(p == 0 ? std::strcmp(t.palette, kPalThemeNames[0]) == 0 : true);
@@ -143,7 +143,7 @@ void test_theme_table_covers_the_palette() {
         CHECK(kMargin + textWidth(t.earnedBy) <= kActiveW - kMargin);
 
         if (t.source != ThemeSource::Chip) continue;
-        // A chip row's item has to exist, has to be worth finding (Rare or Epic — a
+        // A chip row's item has to exist, has to be worth finding (Rare or Epic. A
         // permanent unlock is not a Common), and has to actually be handed out by
         // something: an unlock nothing drops is a row that can never be reached.
         const ItemDef* d = ContentRegistry::embedded().item(t.earnedById);
@@ -214,7 +214,7 @@ void test_cfg_theme_picker_applies() {
     setPalTheme(0);                                // leave the process in the base set
 }
 
-// A locked set is walked onto and refused — the picker's A steps over every row so the
+// A locked set is walked onto and refused: the picker's A steps over every row so the
 // line under the header can say where each one comes from, and B is what says no.
 void test_cfg_theme_picker_refuses_a_locked_set() {
     Game g{StartMode::Hatched};
@@ -267,7 +267,7 @@ void test_theme_chip_unlocks_its_set() {
     setPalTheme(0);
 }
 
-// The chips are real loot — a commendation actually pays them — and then they stop
+// The chips are real loot (a commendation actually pays them), and then they stop
 // being loot rather than costing one a real prize: a chip already held drops to weight
 // zero, so a device that has every set draws from the pool it started with.
 void test_theme_chips_drop_then_leave_the_pool() {
@@ -308,7 +308,7 @@ void test_theme_chips_drop_then_leave_the_pool() {
 
 // A theme survives a reboot, and survives its own row moving. The blob stores the NAME
 // (save v64), so what a device restores is the set it was told to draw in rather than
-// whatever now sits at that index — and a name this build has no set for falls back to
+// whatever now sits at that index, and a name this build has no set for falls back to
 // base rather than to nothing.
 void test_theme_persists_by_name() {
     MemSaveStore store;
@@ -330,7 +330,7 @@ void test_theme_persists_by_name() {
     }
 
     // What the blob actually carries is the name, so it reads the same however the
-    // table is ordered — and an unknown one is base, the set every build has.
+    // table is ordered, and an unknown one is base, the set every build has.
     SaveData d;
     CHECK(deserializeSave(store.bytes(), d));
     CHECK(std::strcmp(d.theme, kThemes[row].palette) == 0);
@@ -397,8 +397,8 @@ void test_theme_chip_set_survives_a_reboot() {
     setPalTheme(0);
 }
 
-// The picker draws each set in ITSELF — the swatch strips are the only thing on the
-// screen that isn't in the live theme — and still reads with the colour taken away.
+// The picker draws each set in ITSELF (the swatch strips are the only thing on the
+// screen that isn't in the live theme), and still reads with the colour taken away.
 void test_theme_picker_previews_each_set() {
     Framebuffer fb(kActiveW, kActiveH);
     Game g{StartMode::Hatched};

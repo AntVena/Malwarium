@@ -1,9 +1,9 @@
-// mod_state.h — the live per-fight state of a pet's equipped MOD passives.
+// mod_state.h: the live per-fight state of a pet's equipped MOD passives.
 //
 // A Combatant carries one ModStateSet holding an entry per ModEffect kind that needs
 // state for the duration of a fight (a cap, a threshold pair, a one-shot's remaining
-// use). Hooks in the damage pipeline read their own kind out of it — `mods.mag(
-// ModEffect::MaxHitCapPct)`, `mods.spend(ModEffect::RaidMirror)` — so a mod's per-fight
+// use). Hooks in the damage pipeline read their own kind out of it. `mods.mag(
+// ModEffect::MaxHitCapPct)`, `mods.spend(ModEffect::RaidMirror)`, so a mod's per-fight
 // state lives under the same vocabulary content declares it with (ModDef::effectKind,
 // core/content/defs.h) instead of a bespoke Combatant member per passive.
 //
@@ -17,7 +17,7 @@
 
 namespace mal {
 
-// One live passive. `mag`/`mag2` are the aggregated ModDef::magnitude/magnitude2 — the
+// One live passive. `mag`/`mag2` are the aggregated ModDef::magnitude/magnitude2: the
 // same arity content declares, so a kind can never need a number it has no way to
 // author. `pending` is the entry's own mutable counter for the kinds that have one.
 struct ModState {
@@ -32,7 +32,7 @@ struct ModState {
 // property of the MECHANIC, not of any one mod row, which is why it lives in the rule
 // table rather than on ModDef.
 enum class ModCombine : uint8_t {
-    Arm,        // magnitude-free — the passive is simply on, a second copy adds nothing
+    Arm,        // magnitude-free: the passive is simply on, a second copy adds nothing
     Sum,        // magnitudes accumulate
     HighestMag, // strongest primary wins outright, carrying its own mag2
     LowestMag,  // tightest primary wins outright, carrying its own mag2
@@ -49,7 +49,7 @@ struct ModRule {
     bool oneShot;
 };
 
-// The rule for `kind`, or nullptr when the kind keeps no per-fight entry — the stat
+// The rule for `kind`, or nullptr when the kind keeps no per-fight entry: the stat
 // kinds (PowerPct, MaxHealth, …) fold straight into the Combatant's base stats, and the
 // post-battle kinds (PostBattleBits, FatigueFragCut) are read by the Game off ModDef.
 const ModRule* modRule(ModEffect kind);
@@ -60,12 +60,12 @@ public:
     ModState* find(ModEffect kind);
     const ModState* find(ModEffect kind) const;
 
-    // Aggregated magnitudes, 0 when the kind isn't live — so a hook's own `> 0` guard
+    // Aggregated magnitudes, 0 when the kind isn't live, so a hook's own `> 0` guard
     // is the whole "is this mod equipped?" check.
     int mag(ModEffect kind) const;
     int mag2(ModEffect kind) const;
 
-    // Whether a one-shot still has a use left — for a hook that has to TEST the passive
+    // Whether a one-shot still has a use left: for a hook that has to TEST the passive
     // before deciding to consume it.
     bool armed(ModEffect kind) const;
 
@@ -73,7 +73,7 @@ public:
     // doubles as the "is it still armed?" test at the hook.
     bool spend(ModEffect kind);
 
-    // Arm `kind` directly at resolved values, bypassing the equip loop's aggregation —
+    // Arm `kind` directly at resolved values, bypassing the equip loop's aggregation:
     // how the Game arms a passive from outside the mod table and how tests stage one.
     // A one-shot kind comes up with its single pending use.
     void arm(ModEffect kind, int mag = 0, int mag2 = 0);

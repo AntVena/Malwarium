@@ -1,4 +1,4 @@
-// story.h — the CHAPTERS the walk reads out at the beats it reaches in a zone.
+// story.h: the CHAPTERS the walk reads out at the beats it reaches in a zone.
 // Skippable and auto-advancing, so a chapter may motivate a mechanic, never explain one.
 #pragma once
 

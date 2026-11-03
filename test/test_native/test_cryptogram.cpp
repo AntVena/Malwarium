@@ -1,4 +1,4 @@
-// test_cryptogram.cpp — native gates for THE DECRYPTOGRAM: the board's rules, the
+// test_cryptogram.cpp (native gates for THE DECRYPTOGRAM): the board's rules, the
 // quote pool's fit, the per-quote difficulty ratchet, and the two doors into it (the
 // VAULT ticket and the arcade cabinet).
 //
@@ -12,7 +12,7 @@
 
 namespace {
 
-// How many distinct letters a text uses — the number every reveal count is measured
+// How many distinct letters a text uses: the number every reveal count is measured
 // against.
 int distinctLetters(const char* s) {
     bool seen[26] = {false};
@@ -73,7 +73,7 @@ void cashADecryptogram(Game& g, int n = 1) {
 // EVERY QUOTE MUST FIT THE PANEL, and a character count is the wrong way to ask: the
 // wrap wastes the tail of most lines, so the only honest check is to lay the text out
 // and count the rows it actually took. This is the gate content_quotes.h points new
-// rows at — add a quote, run this, and it either fits or it says so.
+// rows at: add a quote, run this, and it either fits or it says so.
 void test_cryptogram_quotes_fit_the_panel() {
     CHECK(quoteCount() > 0);
     Cryptogram c;
@@ -99,7 +99,7 @@ void test_cryptogram_quotes_fit_the_panel() {
         for (const char* p = q.attribution; *p; ++p) CHECK(*p >= ' ' && *p < 127);
 
         // The board loads it, which is where the wrap and the buffer bound are both
-        // enforced. Hardest opening (no extra reveals) — the one with the most closed
+        // enforced. Hardest opening (no extra reveals): the one with the most closed
         // cells, so if any setting overflows the grid this one does.
         CHECK(c.reset(q.text, 0));
         CHECK(c.rowCount() <= kCryptogramRows);
@@ -146,7 +146,7 @@ void test_cryptogram_difficulty_opens_more() {
     CHECK(easy.reset(text, cryptogramExtraReveals(CryptogramTier::Easy)));
     CHECK(medium.poolSize() == hard.poolSize() - 1);
     CHECK(easy.poolSize() == hard.poolSize() - 3);
-    // A solved quote replayed for Bits is offered at the hard opening — the prize is
+    // A solved quote replayed for Bits is offered at the hard opening: the prize is
     // spent, so the puzzle is all that is left and an easy one is not that.
     CHECK(cryptogramExtraReveals(CryptogramTier::Solved) ==
           cryptogramExtraReveals(CryptogramTier::Hard));
@@ -195,7 +195,7 @@ void test_cryptogram_right_letter_opens_every_instance() {
     CHECK(c.score() == 1);
 }
 
-// One wrong placement ends the run. There is no second chance inside a board — the
+// One wrong placement ends the run. There is no second chance inside a board: the
 // second chance is the next board, one rung easier.
 void test_cryptogram_one_wrong_letter_ends_the_run() {
     Cryptogram c;
@@ -210,7 +210,7 @@ void test_cryptogram_one_wrong_letter_ends_the_run() {
     CHECK(c.state() == Cryptogram::State::Failed);
     CHECK(!c.running() && !c.solved());
     CHECK(c.wrongLetter() == wrong && c.wrongCell() == cell);
-    // The board is inert afterwards — no press can revive it or bank a late letter.
+    // The board is inert afterwards: no press can revive it or bank a late letter.
     const int left = c.cellsLeft();
     c.cycle(); c.cycleBack(); c.accept(); c.dropLetter();
     CHECK(c.state() == Cryptogram::State::Failed && c.cellsLeft() == left);
@@ -237,8 +237,8 @@ void test_cryptogram_cursors_run_both_ways() {
     g.onButton(press(Button::A));
     CHECK(c.poolCursor() == start);
 
-    // The cells: same contract, and every stop is a CLOSED cell in both directions —
-    // a back-step that landed on an already-open one would be a stop the forward walk
+    // The cells: same contract, and every stop is a CLOSED cell in both directions.
+    // A back-step that landed on an already-open one would be a stop the forward walk
     // never offers.
     g.onButton(press(Button::B));                 // take the letter
     CHECK(c.stage() == Cryptogram::Stage::PickCell);
@@ -255,7 +255,7 @@ void test_cryptogram_cursors_run_both_ways() {
 }
 
 // A+C hands the letter back; nothing leaves the board. A ticket is spent the moment it
-// is cashed, so an escape hatch here would be a free retry — and with A and C spent on
+// is cashed, so an escape hatch here would be a free retry, and with A and C spent on
 // the two cursor directions, the chord is the only button left to be one. With nothing
 // held, that same chord is free to mean something else instead: the RULES overlay.
 void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
@@ -276,7 +276,7 @@ void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
     CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
     CHECK(g.nav() == Game::Nav::Cryptogram);
 
-    // C alone is a cursor step, never an exit — the deviation the hint band spells out.
+    // C alone is a cursor step, never an exit: the deviation the hint band spells out.
     tapC(g);
     CHECK(g.nav() == Game::Nav::Cryptogram);
 }
@@ -315,7 +315,7 @@ void test_cryptogram_held_cursor_repeats() {
 
 // THE PRIZE LADDER AND THE RECIPE TABLE MUST DESCRIBE THE SAME KITCHEN. A recipe is
 // won off a board or not at all, so one missing from the ladder is one nothing in the
-// game can hand over — a dish that exists, has ingredients, and can never be cooked.
+// game can hand over: a dish that exists, has ingredients, and can never be cooked.
 // The wire numbers carry the save, so they get the same uniqueness check the quotes'
 // do, and the outputs are checked too because the ladder names a recipe BY its dish.
 void test_quote_prize_ladder_covers_every_recipe() {
@@ -357,7 +357,7 @@ void test_quote_prize_pays_the_next_recipe() {
     CHECK(!g.debugRecipeOwned(second));   // one board, one recipe
 
     // B parks back in the VAULT with the second ticket under the cursor, so the next
-    // board is the same two presses a player makes — and it pays the next rung down,
+    // board is the same two presses a player makes, and it pays the next rung down,
     // because the first is no longer something the operator can't cook.
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu);
@@ -368,7 +368,7 @@ void test_quote_prize_pays_the_next_recipe() {
 }
 
 // With no MERGE HUB there is nothing a recipe could be cooked in, so the ladder is
-// stepped over entirely and the board pays the Bandwidth fallback instead — the prize
+// stepped over entirely and the board pays the Bandwidth fallback instead: the prize
 // a Decryptogram used to pay always. Nothing is ever won dead.
 void test_quote_prize_falls_back_without_a_kitchen() {
     Game g{StartMode::Hatched};
@@ -383,7 +383,7 @@ void test_quote_prize_falls_back_without_a_kitchen() {
 
 // The VAULT is the door: the ticket is spent there, a quote comes up unsolved, and
 // solving it pays Bits plus the one account unlock. Driven with no Merge Hub, so the
-// unlock half is the Bandwidth fallback — the recipe ladder has its own gate above.
+// unlock half is the Bandwidth fallback: the recipe ladder has its own gate above.
 void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     Game g{StartMode::Hatched};
     const int bits = g.bits();
@@ -404,7 +404,7 @@ void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     CHECK(g.quotesSolved() == 1);
     CHECK(g.bits() == bits + kQuoteWinBits);
     // The unlock is a free Rig Shop level, and a granted one lands exactly like a
-    // bought one — the cap moves AND the live pool is topped up with it.
+    // bought one: the cap moves AND the live pool is topped up with it.
     CHECK(g.bwUpgradeCount() == bought + 1);
     CHECK(g.bandwidthMax() == pool + kBandwidthUpgradeStep);
 
@@ -414,7 +414,7 @@ void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     CHECK(g.bits() == bits + kQuoteWinBits);
 }
 
-// Losing costs the ticket and pays nothing — and buys the one thing that makes that
+// Losing costs the ticket and pays nothing, and buys the one thing that makes that
 // survivable: the same quote, one rung easier, twice, and then no further.
 void test_cryptogram_losing_ratchets_the_quote_easier() {
     Game g{StartMode::Hatched};
@@ -444,7 +444,7 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);   // Easy is the floor
 }
 
-// An achievement-gated quote is not in the pool until it is earned — the second
+// An achievement-gated quote is not in the pool until it is earned: the second
 // eligibility axis, and the one that lets the table hold quotes worth waiting for.
 void test_cryptogram_gated_quotes_wait_for_their_achievement() {
     Game g{StartMode::Hatched};
@@ -508,7 +508,7 @@ void test_cryptogram_arcade_cabinet_waits_for_eight_wins() {
     CHECK(n == arcadeGameCount() - 1);
     for (int i = 0; i < n; ++i) CHECK(rows[i] != row);
 
-    // The A-cycle skips it too, so the cursor can never rest on a row nobody drew —
+    // The A-cycle skips it too, so the cursor can never rest on a row nobody drew:
     // walked past its position twice over, and B never opens it.
     enterSubmenuId(g, SubmenuId::Games);
     for (int i = 0; i < 2 * arcadeGameCount(); ++i) {
@@ -526,7 +526,7 @@ void test_cryptogram_arcade_cabinet_waits_for_eight_wins() {
 }
 
 // Unlocked, the cabinet is a re-run: only quotes already won, no tier moved, no unlock
-// paid — the arcade's flat Bits and nothing else.
+// paid. The arcade's flat Bits and nothing else.
 void test_cryptogram_arcade_replays_a_solved_quote_for_bits() {
     Game g{StartMode::Hatched};
     const int row = arcadeGameIndexById("cryptogram");
@@ -565,7 +565,7 @@ void test_cryptogram_grayscale() {
     CHECK(anyLitGray(fb, 8, 30, 216, 30 + 5 * 15));
     CHECK(anyLitGray(fb, 8, 156, 216, 156 + 14));
 
-    // Taking a letter changes the pool tile from FILLED to OUTLINED — a shape change,
+    // Taking a letter changes the pool tile from FILLED to OUTLINED: a shape change,
     // which is what has to be true for the two stages to be distinguishable in gray.
     const int lit0 = litTile(fb, 8, 156);
     g.onButton(press(Button::B));

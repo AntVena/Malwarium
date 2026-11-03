@@ -13,7 +13,7 @@ namespace {
 // Every threshold reads kStatTier*Points rather than a literal: the ladder being uniform
 // is the feature, and a row that could name its own number is a row that could break it.
 const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
-    // POWER — the accelerating band, then the two ways past a defence.
+    // POWER: the accelerating band, then the two ways past a defence.
     {{"OVERCLOCK", kStatTier1Points, kLevelPowerPctPerSpecPoint, kLevelPowerPctPerPoint,
       "Every Power point past this one raises your attack {mag}% instead of {mag2}%."},
      {"RING ZERO", kStatTier2Points, kLevelPowerPiercePct, 0,
@@ -21,7 +21,7 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
      {"GUARD SMASH", kStatTier3Points, kLevelPowerGuardSmashPct, 0,
       "A braced target absorbs {mag}% less of your hit."}},
 
-    // DEFENSE — the rating keeps paying, and each rung adds something else on top.
+    // DEFENSE: the rating keeps paying, and each rung adds something else on top.
     {{"HARDENING", kStatTier1Points, kLevelDefensePierceResistPct, 0,
       "Hits that pierce armour lose {mag}% of that piercing against you, so more of "
       "your DEF still applies."},
@@ -31,7 +31,7 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
      {"BACKSCATTER", kStatTier3Points, kLevelDefenseBackscatterPct, 0,
       "{mag}% of the damage your brace absorbs is dealt back to the attacker."}},
 
-    // SPEED — three kinds of tempo, each worth something in a different fight.
+    // SPEED: three kinds of tempo, each worth something in a different fight.
     {{"FIRST STRIKE", kStatTier1Points, kLevelSpeedFirstStrikeMult, 0,
       "If yours is the first hit landed in the fight, it deals {mag}x damage."},
      {"PRIORITY BOOST", kStatTier2Points, kLevelSpeedUnderdogPerPoint, kLevelSpeedPerPoint,
@@ -41,7 +41,7 @@ const StatTierDef kTiers[kLevelStatCount][kStatTierCount] = {
       kLevelSpeedAdrenalineStepPct,
       "+{mag} initiative for every {mag2}% of your max Health already lost."}},
 
-    // MAX-HEALTH — the accelerating band, then the pool spent as damage, then as sustain.
+    // MAX-HEALTH: the accelerating band, then the pool spent as damage, then as sustain.
     {{"EXPANSION", kStatTier1Points, kLevelHealthPctPerSpecPoint, kLevelHealthPctPerPoint,
       "Every max-Health point past this one adds {mag}% of your base Health instead of "
       "{mag2}%."},
@@ -92,7 +92,7 @@ const StatTierDef& statTier(LevelStat stat, int tier) {
 
 int statTierPoints(int tier) {
     // The ladder itself, and the only place its three rungs are enumerated. Read off
-    // POWER's column because every column carries the same thresholds — a gate asserts
+    // POWER's column because every column carries the same thresholds: a gate asserts
     // that, so which one is asked is arbitrary rather than a hidden assumption.
     return kTiers[0][clampTier(tier)].points;
 }
@@ -105,7 +105,7 @@ int statTiersReached(int points) {
 
 int statTierPointsToNext(int points) {
     const int reached = statTiersReached(points);
-    if (reached >= kStatTierCount) return 0;     // topped out — nothing left to owe
+    if (reached >= kStatTierCount) return 0;     // topped out: nothing left to owe
     const int owed = statTierPoints(reached) - points;
     return owed > 0 ? owed : 0;                  // negatives are not a refund
 }

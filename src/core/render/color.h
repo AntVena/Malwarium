@@ -1,4 +1,4 @@
-// color.h — RGB565 helpers shared across the render layer.
+// color.h: RGB565 helpers shared across the render layer.
 #pragma once
 
 #include <cstdint>

@@ -9,12 +9,12 @@ namespace mal {
 namespace {
 
 // How far ahead of the dissolve front the burn edge reaches, in hash units. Wide enough
-// to be seen at ~4fps — a one-step edge on a 4-frame sweep would land on at most one
+// to be seen at ~4fps: a one-step edge on a 4-frame sweep would land on at most one
 // drawn frame and might land on none.
 constexpr uint8_t kEdgeSpan = 26;
 
 // How far the ENDS of a derived ramp (camoRampFromTone) are pulled off the colour it was
-// built from — three quarters of the way down toward black and up toward white. That is
+// built from: three quarters of the way down toward black and up toward white. That is
 // a ramp with real shading in it and still recognisably the colour that was asked for;
 // pulled the whole way, every skin would end at the same two tones and the ramps would
 // only differ in the middle.
@@ -22,7 +22,7 @@ constexpr int kCamoToneEndPct = 75;
 
 // The ends themselves, derived from the colour rather than from two palette tokens. An
 // anchored ladder (PAPER at the bottom, INK at the top) reads well for a UI colour, but
-// it INVERTS for any tone outside that band — a near-white sprite ink pulled "up" toward
+// it INVERTS for any tone outside that band: a near-white sprite ink pulled "up" toward
 // INK comes out darker than it started, and the ramp stops being a value scale, which is
 // the one property everything downstream depends on. Scaling the colour's own channels
 // cannot do that whatever it is handed.
@@ -57,7 +57,7 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     // it is what turns a pet camouflaged as a Worm GREYSCALE rather than flat white.
     if (spriteIsMask(s)) return camoRampFromTone(s.ink, kCamoRampMax);
 
-    // Tally the frame's colours in a fixed table — no allocation, and a sprite that
+    // Tally the frame's colours in a fixed table: no allocation, and a sprite that
     // overflows it is one whose rarest tones we can afford to miss. Kept deliberately
     // larger than kCamoRampMax so the ranking below chooses from a real distribution
     // rather than from whatever happened to appear first.
@@ -80,7 +80,7 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     if (used == 0) return out;
 
     // THE BASELINE. The most-used tone is what the creature reads AS, and a ladder
-    // derived from it fills every rung before a single real colour is placed — so the
+    // derived from it fills every rung before a single real colour is placed, so the
     // ramp is complete whatever the sprite turns out to have, and the pet is never left
     // half-painted or flattened.
     int main = 0;
@@ -91,8 +91,8 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     // THEN THE REAL COLOURS, most-used first, each landing on the rung its own luminance
     // belongs to. Where that rung is already taken the colour moves to the nearest free
     // one rather than being dropped: a rung holding a derived tone is a rung wearing a
-    // colour the other creature does not have, so filling it with a real one — even a
-    // rung off its own value — carries more of that creature than inventing a shade does.
+    // colour the other creature does not have, so filling it with a real one (even a
+    // rung off its own value) carries more of that creature than inventing a shade does.
     // A palette with several tones packed into one value band is exactly where this pays,
     // and it is common: two-tone creatures put both hues at the same lightness on purpose.
     // Every rung still unclaimed at the end keeps the derived tone underneath.
@@ -123,8 +123,8 @@ CamoRamp camoRampFrom(const SpriteData& s, int frame, int row) {
     }
 
     // A VALUE SCALE above all else, which the mixing above can nudge out of order at a
-    // rung boundary. Sorting is nearly a no-op — every real colour was placed on the rung
-    // its own luminance names — and it is what guarantees the one property the remap
+    // rung boundary. Sorting is nearly a no-op (every real colour was placed on the rung
+    // its own luminance names), and it is what guarantees the one property the remap
     // depends on: a lit crown can never be repainted with a core shadow.
     for (int i = 0; i < out.count; ++i)
         for (int j = i + 1; j < out.count; ++j)
@@ -140,7 +140,7 @@ CamoRamp camoRampFromTone(Rgb565 base, int steps) {
     if (steps > kCamoRampMax) steps = kCamoRampMax;
     out.count = steps;
     // `base` sits in the MIDDLE of its own ramp rather than at one end, so the colour
-    // the caller named is the one the eye reads as the skin — a ladder that only ever
+    // the caller named is the one the eye reads as the skin: a ladder that only ever
     // darkened it would wear as a different, muddier colour than the swatch beside it.
     // Below it the tones sink into shadow and above they lift toward the light, both
     // derived from the colour itself (shadeDown / liftUp) so the scale can never invert.
@@ -169,7 +169,7 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
     if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
     if (den <= 0 || num <= 0) return;
     if (from && from->empty()) from = nullptr;
-    // Not camouflaged at all is the ordinary draw — still carrying the caller's flash,
+    // Not camouflaged at all is the ordinary draw: still carrying the caller's flash,
     // which is its own cue and nothing to do with this one. With a palette to fall back
     // TO, the same case is that palette fully worn, which is where a dissolve between
     // two skins starts and finishes.
@@ -191,7 +191,7 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
             const int px = spriteSrcX(s, frame, ox * den / num, mirror);
             const Rgb565 own = spriteColorAt(s, px, py);
             // Hashed on the SOURCE pixel, not the destination one, so the grain is a
-            // property of the sprite and does not crawl when the scale changes — and,
+            // property of the sprite and does not crawl when the scale changes, and,
             // for the same reason, turns with the creature rather than staying put
             // underneath it when the draw is mirrored.
             const uint8_t h = dissolveHash(px, py) & 0xFF;

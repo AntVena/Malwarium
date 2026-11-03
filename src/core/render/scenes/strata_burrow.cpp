@@ -8,13 +8,13 @@ namespace mal {
 
 namespace {
 
-// UNDERGROUND — where a Ground mover is at home. The worms, the grubs and the things
+// UNDERGROUND, where a Ground mover is at home. The worms, the grubs and the things
 // that slink are all down here, and what is around them is not scenery, it is MATERIAL:
 // packed layers with cable running through them and a tunnel already dug.
 //
 // Its identity is horizontal banding, which nothing else in the set uses as a subject.
 // Every other place spends its detail on a silhouette against a field; this one has no
-// field at all — the strata ARE the picture, and the tunnel is the one hole in them.
+// field at all: the strata ARE the picture, and the tunnel is the one hole in them.
 // The layers have to be far enough apart in value to read AS layers. A section drawn in
 // four neighbouring greys is a grey slab with lines in it, which is the failure mode a
 // gate cannot see.
@@ -32,7 +32,7 @@ constexpr uint8_t kToneBedLip = 116;
 
 // The layers, as a share of the ground above the floor and how each one is packed. A
 // band is `t` deep out of 64, so the table reads as a section drawing: thin crust, a
-// thick clay, a grit line, a deep bed. `grit` is whether that layer is speckled — the
+// thick clay, a grit line, a deep bed. `grit` is whether that layer is speckled: the
 // only texture here, and it is what tells a loose layer from a set one.
 struct Layer { uint8_t depth; uint8_t tone; bool grit; };
 constexpr Layer kLayers[] = {{6, kToneTopsoil, false}, {17, kToneStrataA, false},
@@ -41,7 +41,7 @@ constexpr Layer kLayers[] = {{6, kToneTopsoil, false}, {17, kToneStrataA, false}
 constexpr int kLayerScale = 64;
 
 // The buried cable, running along one bedding plane the whole width. A live core inside
-// a sheath, which is why it is two tones — and the brightest thing down here, because
+// a sheath, which is why it is two tones, and the brightest thing down here, because
 // it is the only thing that is not dirt.
 constexpr uint8_t kCableUp = 128;
 constexpr int kCableH = 5;
@@ -55,14 +55,14 @@ constexpr uint8_t kTunnelUp = 52;
 constexpr int kTunnelR = 21;
 
 // How far a bedding plane wanders off level, walked per column and wrapped. Ground does
-// not settle in rules — a section drawn with straight boundaries is a stacked bar chart,
+// not settle in rules: a section drawn with straight boundaries is a stacked bar chart,
 // and the wobble is the single thing that turns it back into geology. Authored rather
 // than rolled, like every other table here: this is drawn behind text that has to stay
 // still between repaints.
 constexpr int8_t kBedding[] = {0, 1, 1, 2, 2, 1, 0, 0, -1, -2, -2, -1, 0, 1,
                                2, 3, 2, 1, 0, -1, -1, -2, -1, 0, 1, 1, 0, -1};
 
-// Roots working down through the upper layers — the only vertical thing in a scene made
+// Roots working down through the upper layers: the only vertical thing in a scene made
 // entirely of horizontals, which is what stops the section reading as a gradient. Each
 // wanders as it descends and thins to nothing.
 struct Root { int x, top, len, lean; };
@@ -73,7 +73,7 @@ constexpr Root kRoots[] = {{22, 4, 62, 1}, {88, 2, 44, -1}, {148, 6, 74, 1},
 // on a wall is a hole painted on it; a hole with somewhere to go is a burrow.
 constexpr int kThroatLen = 54, kThroatDir = 1;
 
-// Grit, as fixed specks rather than a roll — the same rule every scene's tables follow.
+// Grit, as fixed specks rather than a roll: the same rule every scene's tables follow.
 constexpr uint8_t kSpeckles[] = {7, 19, 33, 41, 58, 66, 79, 91, 103, 118,
                                  131, 144, 157, 169, 182, 195, 207, 217};
 
@@ -91,7 +91,7 @@ void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g) {
         const int h = g.floorY * l.depth / kLayerScale;
         // Each column takes the layer down to its own wandering boundary, and each
         // layer reads the table from a different place so two planes never wobble in
-        // step — which is what would make the whole section look folded rather than laid.
+        // step, which is what would make the whole section look folded rather than laid.
         const Rgb565 c = sceneTone(l.tone);
         for (int x = 0; x < kActiveW; ++x) {
             const int w = kBedding[(x / 4 + li * 7) % beds];
@@ -105,7 +105,7 @@ void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g) {
         y += h;
         ++li;
     }
-    // Whatever the layers did not reach, in the deepest of them — the table states a
+    // Whatever the layers did not reach, in the deepest of them: the table states a
     // section, not a total, so the last layer simply runs on to the floor.
     if (y < g.floorY) fb.fillRect(0, y, kActiveW, g.floorY - y, sceneTone(kToneStrataB));
 
@@ -131,7 +131,7 @@ void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g) {
     // The tunnel: the mouth, then a smaller disc set back inside it, so the hole has a
     // depth rather than being a dark circle painted on a wall.
     const int tunnelY = sceneSkyY(g, kTunnelUp);
-    // The throat first, tapering back from the mouth — what makes the mouth a way in
+    // The throat first, tapering back from the mouth: what makes the mouth a way in
     // rather than a circle somebody painted on the wall.
     for (int k = 0; k < kThroatLen; ++k) {
         // Quadratic rather than linear: a throat that narrows fast and then trails off
@@ -144,7 +144,7 @@ void drawStrataBurrowScene(Framebuffer& fb, int beat, const SceneGround& g) {
     sceneDisc(fb, kTunnelX, tunnelY, kTunnelR, kToneRim);
     sceneDisc(fb, kTunnelX, tunnelY, kTunnelR - 3, kToneTunnel);
     // A lit crescent on the upper lip, which is what makes the dark disc a HOLE rather
-    // than a circle painted on the wall — the light in here comes from above, so the
+    // than a circle painted on the wall: the light in here comes from above, so the
     // top of the rim catches it and the bottom does not.
     for (int dx = -kTunnelR + 4; dx < kTunnelR - 3; ++dx) {
         int dy = 0;

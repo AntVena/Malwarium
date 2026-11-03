@@ -1,9 +1,9 @@
-// update_screen.cpp — the software-update and QR flows of the CFG surface,
+// update_screen.cpp: the software-update and QR flows of the CFG surface,
 // declared alongside the settings screens in cfg_screen.h.
 //
 // It sits apart from cfg_screen.cpp because it is a different KIND of screen. The
 // settings screens read and write state this device already holds; these ones run
-// a job — join a network, fetch a manifest, weigh a verdict, install and verify —
+// a job (join a network, fetch a manifest, weigh a verdict, install and verify),
 // and every face here (check, confirm, progress, the two QR pages) is a step of
 // that job or a way into it. The two halves share the layout grid (core/ui/layout.h)
 // and nothing else.
@@ -45,8 +45,8 @@ void urlHost(const char* url, char* out, size_t cap) {
 
 }  // namespace
 
-// The install rows exist only for what a check actually found. No check, no rows
-// — there is nothing to install and nothing to name. Split out because both the
+// The install rows exist only for what a check actually found. No check, no rows:
+// there is nothing to install and nothing to name. Split out because both the
 // row count and the row→kind mapping need the same number and must never differ.
 static int updateInstallRows(const UpdateStatus& status) {
     if (status.state != UpdateState::Available) return 0;
@@ -80,7 +80,7 @@ bool updateFlasherUrl(const char* manifestUrl, char* out, size_t cap) {
     if (len == 0) return false;
 
     // Replace the manifest's own filename with the flasher's directory. The last
-    // '/' AFTER the scheme separator is what divides the two — searching from the
+    // '/' AFTER the scheme separator is what divides the two: searching from the
     // host start rather than from the beginning is what stops "https://host" (no
     // path at all) from being cut at the "//".
     const char* sep = std::strstr(s, "//");
@@ -116,7 +116,7 @@ void drawInstalledLine(Framebuffer& fb, const UpdateCheckView& v) {
 
 
     // WHERE it looks, beside what it would replace. The full manifest URL is set
-    // from the 'Pedia and is far too long for this panel, so this shows the host —
+    // from the 'Pedia and is far too long for this panel, so this shows the host:
     // the part that answers "is this device still pointed at my publish server?".
     // A card-less device has no 'Pedia to read it from, which is the whole reason
     // it has to be legible here.
@@ -126,7 +126,7 @@ void drawInstalledLine(Framebuffer& fb, const UpdateCheckView& v) {
     // The version is the one that never gives way: it is what the verdict below is
     // measured against, and a clipped "V0.81" reads as a real, older version rather
     // than as a cut. So it draws whole and the host takes what is left, right-aligned
-    // when it fits and cut from its tail when it doesn't — the head of a host is the
+    // when it fits and cut from its tail when it doesn't: the head of a host is the
     // part that says which server. drawLabelValue has the opposite priority (its
     // value is whole, its label gives way), which is why this row doesn't use it.
     char host[24];
@@ -154,7 +154,7 @@ int drawUpdateRows(Framebuffer& fb, const UpdateStatus& status, const UpdateChec
     // it would bring, so the confirm that follows is never the first time the
     // operator sees what they are agreeing to.
     //
-    // The flasher row is the one that does not depend on a network — it is the
+    // The flasher row is the one that does not depend on a network: it is the
     // answer to "the check can't run" and to "an update needs the cable", so it is
     // live whenever this device knows a host at all. That makes `v.sourceKnown`
     // rather than `v.ready` what lights it.
@@ -191,7 +191,7 @@ int drawUpdateRows(Framebuffer& fb, const UpdateStatus& status, const UpdateChec
 
 void drawUpdateVerdict(Framebuffer& fb, const UpdateStatus& status, const NetStatus& net,
                        const UpdateCheckView& v, int verdictY) {
-    // Why a check can't run, most-blocking first — each names the screen that
+    // Why a check can't run, most-blocking first: each names the screen that
     // fixes it, since none of them is fixable from here. Both are SETUP: there is
     // no "turn the internet on" step to forget, because pressing CHECK NOW is what
     // grants the connection and finishing the job is what gives it back.
@@ -230,14 +230,14 @@ void drawUpdateVerdict(Framebuffer& fb, const UpdateStatus& status, const NetSta
                 break;
             case UpdateState::Available:
                 // The rows above already say what and which version; this says the
-                // one thing they can't — that pressing B does not commit anything.
+                // one thing they can't: that pressing B does not commit anything.
                 drawText(fb, kMargin, verdictY, "B ON A ROW TO INSTALL.", palColor(Pal::INK_DIM));
                 break;
             case UpdateState::Failed: {
                 drawText(fb, kMargin, verdictY, "CHECK FAILED:", palColor(Pal::WARN));
                 const char* why = "UNKNOWN.";
                 // A join that never came up is the one failure with somewhere to go
-                // fix it, so it says where — the stored credentials are only ever
+                // fix it, so it says where: the stored credentials are only ever
                 // written from the setup portal.
                 const char* fix = nullptr;
                 switch (status.fail) {
@@ -302,7 +302,7 @@ void drawUpdateConfirm(Framebuffer& fb, UpdateTarget target, const char* fromVer
         drawText(fb, kMargin, 104, "YOUR PET IS NOT TOUCHED.", palColor(Pal::INK_DIM));
     }
 
-    // NO first, and NO is where the cursor starts — an install is never one press
+    // NO first, and NO is where the cursor starts: an install is never one press
     // away from the row that offered it.
     static const char* kOpts[2] = {"NO", "YES, INSTALL"};
     for (int i = 0; i < 2; ++i) {
@@ -327,9 +327,9 @@ void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
     const bool fw = install.target == UpdateTarget::Firmware;
     drawText(fb, kMargin, 30, fw ? "FIRMWARE" : "PEDIA SITE", palColor(Pal::INK));
 
-    // The phase, named. Which one it is IS the safety story — nothing is written
+    // The phase, named. Which one it is IS the safety story: nothing is written
     // where it will be used until the digest has already matched. An install raises
-    // its own association, so joining is the phase before any byte arrives — and it
+    // its own association, so joining is the phase before any byte arrives, and it
     // is named rather than shown as a download stuck at zero.
     const char* phase = "";
     switch (install.state) {
@@ -400,7 +400,7 @@ void drawUpdateProgress(Framebuffer& fb, const InstallStatus& install,
 // real scanners read, and grayscale-safe by construction (max luminance contrast).
 // Returns false only if encoding failed (not expected for these short strings).
 static bool blitQr(Framebuffer& fb, const char* text, int oy) {
-    // Stack buffers, sized for the longest payload any caller can hand over — a
+    // Stack buffers, sized for the longest payload any caller can hand over: a
     // stored update source is capped at 160 characters and the flasher address is
     // derived from one, which is what sets the ceiling (~2×408B). The short fixed
     // AP payloads still encode at a low version and simply draw larger, since the
@@ -432,15 +432,15 @@ int pediaQrPages(HomeNetwork home) { return home == HomeNetwork::Saved ? 2 : 3; 
 
 void drawPediaQr(Framebuffer& fb, int page, HomeNetwork home) {
     // Static QR pages, in the order the steps actually happen (the AP address is
-    // fixed at 192.168.4.1): join the AP, then — only while no home network is
-    // stored — set one up, then open the 'Pedia. A cycles, C exits (game_config).
+    // fixed at 192.168.4.1): join the AP, then (only while no home network is
+    // stored) set one up, then open the 'Pedia. A cycles, C exits (game_config).
     // The join SSID matches config.h AP_SSID (default "Malwarium"); an open AP →
     // T:nopass.
     //
     // The setup step earns its place in the middle because it is the second thing
     // that happens on a fresh device and the phone is already on the AP by then.
     // It DISAPPEARS once a network is stored rather than sitting there forever as a
-    // step nobody needs twice — and A always walks past it either way, so it never
+    // step nobody needs twice, and A always walks past it either way, so it never
     // stands between the operator and the 'Pedia.
     const int pages = pediaQrPages(home);
     // With setup gone, the 'Pedia is page 1; with it present, page 2. Naming the
@@ -484,8 +484,8 @@ void drawUpdateQr(Framebuffer& fb, const char* manifestUrl) {
 
     char url[192];
     if (!updateFlasherUrl(manifestUrl, url, sizeof(url))) {
-        // Reachable only defensively — the row that opens this screen is dead
-        // without a source — but a blank panel would be the worst way to say so.
+        // Reachable only defensively (the row that opens this screen is dead
+        // without a source), but a blank panel would be the worst way to say so.
         drawText(fb, kMargin, 40, "NO UPDATE SOURCE SET:", palColor(Pal::WARN));
         drawText(fb, kMargin, 52, "THIS DEVICE KNOWS NO", palColor(Pal::WARN));
         drawText(fb, kMargin, 64, "HOST TO POINT YOU AT.", palColor(Pal::WARN));

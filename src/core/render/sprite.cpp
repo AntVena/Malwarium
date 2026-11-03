@@ -1,9 +1,9 @@
-// sprite.cpp — alpha-composite a sprite frame into the framebuffer.
+// sprite.cpp: alpha-composite a sprite frame into the framebuffer.
 //
 // Every blitter walks SHEET COORDINATES and reads through spriteAlphaAt/spriteColorAt
 // (sprite.h) rather than indexing rgb[]/a[] directly, so the same four loops serve both
 // the full-colour and the 1-bit-mask storage forms. The upscaled pair source their
-// column through spriteSrcX, which is also the whole of how a mirrored draw works —
+// column through spriteSrcX, which is also the whole of how a mirrored draw works:
 // the destination walk is identical either way.
 #include "core/render/sprite.h"
 

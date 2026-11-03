@@ -1,4 +1,4 @@
-// handshake_ledger.h — bounded, FIFO-rotating set of captured-handshake BSSID keys.
+// handshake_ledger.h: bounded, FIFO-rotating set of captured-handshake BSSID keys.
 //
 // PURE + HOST-TESTABLE, file-backed the same way network_ledger.h is: plain POSIX
 // stdio, which resolves to the real filesystem on host and the mounted /sdcard VFS

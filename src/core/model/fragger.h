@@ -1,7 +1,7 @@
-// fragger.h — the rules of FRAGGER, with no rendering and no Game.
+// fragger.h: the rules of FRAGGER, with no rendering and no Game.
 //
 // Blocks fall down three to five lanes toward the scan head at the foot of the disk. A
-// FRAGMENT (drawn crossed out) has to be shot before it lands — one that reaches the disk
+// FRAGMENT (drawn crossed out) has to be shot before it lands: one that reaches the disk
 // ends the run. A FILE is a good block, and the shot cannot get past it: it lands
 // harmlessly, and whatever was queued behind it in that lane can only be shot once it
 // has. A file that lands in the head's own lane is CAUGHT, which is the run's second
@@ -31,14 +31,14 @@ constexpr int kFraggerMaxLanes = 5;
 constexpr int kFraggerRows = 10;   // row 0 enters at the top; the last row is over the head
 
 // One row in two of fall drops a block at all, and of those roughly one in three is a
-// file — the same density on any lane count, so a wider disk is harder only because the
+// file: the same density on any lane count, so a wider disk is harder only because the
 // head has further to go.
 constexpr int kFraggerSpawnPct = 50;
 constexpr int kFraggerFilePct = 35;
 
 // The fall's pace in ms per row, quickening by kFraggerRampMs for every fragment shot.
 // At the start a fragment takes five seconds to cross the disk; kFraggerWinHits in, it
-// reaches the floor, under two — still well above the 110ms the panel is known to
+// reaches the floor, under two: still well above the 110ms the panel is known to
 // sustain (kStackerStepMs), so no row of the fall is ever skipped on screen.
 constexpr int kFraggerStartStepMs = 500;
 constexpr int kFraggerMinStepMs = 180;
@@ -70,9 +70,9 @@ class Fragger {
         state_ = State::Running;
     }
 
-    // One row of fall. The bottom row leaves first — a file is written (and CAUGHT if
+    // One row of fall. The bottom row leaves first. A file is written (and CAUGHT if
     // it lands in the head's lane), a fragment
-    // crashes the run — then everything moves down and a block may enter at the top.
+    // crashes the run, then everything moves down and a block may enter at the top.
     void step() {
         if (state_ != State::Running) return;
         for (int l = 0; l < lanes_; ++l) {

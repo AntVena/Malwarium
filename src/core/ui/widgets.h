@@ -1,4 +1,4 @@
-// widgets.h — reusable engine-drawn UI primitives (no art files).
+// widgets.h: reusable engine-drawn UI primitives (no art files).
 //   UI_SUBMENU_HEADER   title + optional right label + divider rule
 //   UI_HINT_BAND     centred control hint in a filled strip at the canvas foot
 //   UI_GAUGE         10-cell segmented bar (dual-coded: fill level + zone colour)
@@ -7,28 +7,28 @@
 #pragma once
 
 #include "core/content/defs.h"
-#include "core/content/effect_text.h"   // SpecRow — drawSpecGrid's input
+#include "core/content/effect_text.h"   // SpecRow: drawSpecGrid's input
 #include "core/model/pet_model.h"
 #include "core/render/color.h"
-#include "core/render/font_glyphs.h"   // FontFace — drawTextMarquee's cut
-#include "core/render/palette.h"   // palColor — drawHeaderBand's default right colour
+#include "core/render/font_glyphs.h"   // FontFace: drawTextMarquee's cut
+#include "core/render/palette.h"   // palColor: drawHeaderBand's default right colour
 
 namespace mal {
 
 class Framebuffer;
 
-// UI_SUBMENU_HEADER: the band every list and viewer screen opens with — `title`
+// UI_SUBMENU_HEADER: the band every list and viewer screen opens with. `title`
 // at the left margin, `right` (optional) right-aligned opposite it, and the
 // divider rule under both, all on layout.h's grid.
 //
 // It clears the canvas to PAPER first, because opening a screen with this band IS
 // what every list and viewer does, and thirty copies of the same clear is how the
 // per-screen header helpers drifted apart. drawHeaderBandOver below is the band
-// WITHOUT that clear, for the screen that has already painted something under it —
+// WITHOUT that clear, for the screen that has already painted something under it:
 // ROCK THE DOCK's dock scene (ui/tourney_screen.h) is the one, and the two share a
 // body so the title can never sit at a different height on a screen with a backdrop.
 //
-// Both colours are the caller's because what a label MEANS varies — ARCH's slot
+// Both colours are the caller's because what a label MEANS varies: ARCH's slot
 // count is secondary information (INK_DIM), SHOP's Bits wallet is the thing the
 // screen is about (ACCENT), the cache screens tint by rarity, and the wild
 // encounter's title is the alarm itself (WARN). Only ever emphasis: the words are
@@ -39,7 +39,7 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
                     Rgb565 titleColor = palColor(Pal::INK));
 
 // The same band drawn ONTO whatever is already on the canvas. Same title, same
-// right label, same rule, same grid — only the clear is missing.
+// right label, same rule, same grid, only the clear is missing.
 void drawHeaderBandOver(Framebuffer& fb, const char* title,
                         const char* right = nullptr,
                         Rgb565 rightColor = palColor(Pal::INK_DIM),
@@ -55,18 +55,18 @@ constexpr Overflow scrollWhen(bool focused) { return focused ? Overflow::Scroll 
 // it fits, this is exactly drawText and costs nothing extra.
 //
 // When it doesn't fit and `mode` is Scroll, the line travels: it holds at the head
-// long enough to read, walks to the tail, holds again, and snaps back — driven by
+// long enough to read, walks to the tail, holds again, and snaps back. Driven by
 // `beat`, so it advances on the ~4fps heartbeat like every other motion on the
 // device rather than on a timer of its own.
 //
 // Only the FOCUSED row of a list should scroll. An unfocused overflowing row is
 // clipped instead: a screen of lines all travelling at once is unreadable, and
 // the cursor is already the thing that says which row the player is asking about.
-// The 5x7-era ellipsis is not available — the glyph table is ASCII, which the
-// content tests enforce — so the clip is the truncation cue.
+// The 5x7-era ellipsis is not available (the glyph table is ASCII, which the
+// content tests enforce), so the clip is the truncation cue.
 //
 // `face` rides along because a row's NAME is often both the heading of its row and the
-// thing too long for it — a title-weight label that overflows still has to travel, and
+// thing too long for it: a title-weight label that overflows still has to travel, and
 // dropping to Regular to get that is a weight change nobody asked for.
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
                      Rgb565 color, int beat, Overflow mode,
@@ -75,13 +75,13 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
 // The marquee's own clock, in heartbeats. Public because anything that has to stay on
 // screen long enough to be READ must derive its dwell from the same numbers the scroll
 // runs on: a constant chosen to suit one string is too short for the next one, and the
-// failure — a name that leaves before it has finished travelling — is invisible to
+// failure (a name that leaves before it has finished travelling) is invisible to
 // whoever picked the constant, because they were reading a short one.
-constexpr int kMarqueeHoldBeats = 6;    // ~1.5s parked at each end — time to read it
+constexpr int kMarqueeHoldBeats = 6;    // ~1.5s parked at each end: time to read it
 constexpr int kMarqueePxPerBeat = 2;    // ~8px/s, about a character a second
 
 // Heartbeats for one full pass of `s` through a `w`-wide window: both holds, plus the
-// travel between them when it overflows. A line that FITS still returns the two holds —
+// travel between them when it overflows. A line that FITS still returns the two holds:
 // it is not moving, but it is being read, and the caller is asking how long that takes.
 int marqueeCycleBeats(const char* s, int w);
 
@@ -105,13 +105,13 @@ void drawLabelValueIn(Framebuffer& fb, int x, int y, int right, const char* labe
 // Fragmentation is the one stat drawn as something still HAPPENING rather than as
 // a level: its pixels are rolled fresh from `beat`, so the pattern reshuffles every
 // repaint and the disk reads as actively garbling itself. Both screens that show
-// fragmentation go through these two calls so they say it the same way — the FRAG
+// fragmentation go through these two calls so they say it the same way: the FRAG
 // gauge's frontier cell (drawGauge below) and Disk Decryption's played rows
 // (decryption_screen.h). Anything else that grows a fragmentation read should join
 // them here rather than rolling its own dither.
 //
 // Re-rolling is not decoration. Rolls collide, so the sub-cells lit by ONE roll are a
-// sample of the damage rather than a count of it — 4 rolls land as anywhere from 1 to
+// sample of the damage rather than a count of it: 4 rolls land as anywhere from 1 to
 // 4 blocks. Held still, a screen shows the player a single draw and invites them to
 // read it as the number; re-rolled per beat, the samples average back to the true
 // figure over the frames they watch.
@@ -193,7 +193,7 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 void drawCancelConfirm(Framebuffer& fb, int y, int choice);
 
 // UI_HINT_BAND: the control hint, centred in a filled strip pinned to the foot of
-// the canvas. The fill is what makes it a BAND rather than one more row — a hint
+// the canvas. The fill is what makes it a BAND rather than one more row: a hint
 // set as bare text a row-pitch under a list reads as another entry in the list, and
 // dimming it is no help to a reader who is scanning shape rather than words.
 //
@@ -203,7 +203,7 @@ void drawCancelConfirm(Framebuffer& fb, int y, int choice);
 //
 // The height is named because a screen that FLOWS its content (STAT's prose pages
 // size each row to the text it holds) has to subtract the band from the room it
-// has before it lays anything out — the band is drawn last but occupies its strip
+// has before it lays anything out: the band is drawn last but occupies its strip
 // from the start, and a page that discovers it after filling the screen has
 // already overprinted it.
 constexpr int kHintBandH = 16;
@@ -211,10 +211,10 @@ void drawHintBand(Framebuffer& fb, const char* hint);
 
 // The derived readout (effect_text.h's specRows) as an aligned grid: label left,
 // magnitude RIGHT-aligned in its column, so two rows of a list line their numbers
-// up and become comparable at a glance — which a " / "-joined sentence never is.
+// up and become comparable at a glance, which a " / "-joined sentence never is.
 //
 // Packs two cells per line where both clear a column, and gives a wide pair or a
-// flag row (SpecRow::flag — a behaviour with no magnitude) the full width. Returns
+// flag row (SpecRow::flag: a behaviour with no magnitude) the full width. Returns
 // the y just past the last line. It never truncates: the caller is responsible for
 // handing it enough room, which is what gridLines() below is for.
 //
@@ -222,7 +222,7 @@ void drawHintBand(Framebuffer& fb, const char* hint);
 int drawSpecGrid(Framebuffer& fb, int x, int y, int w, const SpecRow* rows, int n,
                  int lineH, Rgb565 labelColor, Rgb565 valueColor);
 
-// How many lines drawSpecGrid will take for the same arguments — so a screen can
+// How many lines drawSpecGrid will take for the same arguments, so a screen can
 // reserve exactly that and lay out whatever follows, without drawing twice.
 int gridLines(int w, const SpecRow* rows, int n);
 

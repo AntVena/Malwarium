@@ -1,4 +1,4 @@
-// test_updates.cpp — native gates for over-the-air updates, the manifest/tar readers and the radio consents.
+// test_updates.cpp: native gates for over-the-air updates, the manifest/tar readers and the radio consents.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -63,8 +63,8 @@ void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
 }
 
 // The v45 pool is a nibble of COUNT per mod wire, two mods to a byte. The packing is
-// where this could go wrong invisibly — a count bleeding into the neighbouring nibble
-// hands the player copies of a mod they never earned — so the odd/even split, the 0..15
+// where this could go wrong invisibly (a count bleeding into the neighbouring nibble
+// hands the player copies of a mod they never earned), so the odd/even split, the 0..15
 // range and the clamp are asserted directly rather than through a save.
 void test_save_mod_count_nibbles_pack_two_mods_per_byte() {
     std::vector<uint8_t> packed;
@@ -80,7 +80,7 @@ void test_save_mod_count_nibbles_pack_two_mods_per_byte() {
     CHECK(saveModCount(packed, 3) == 0);            // neighbours untouched
     CHECK(saveModCount(packed, 6) == 0);
 
-    // Rewriting one nibble must leave its partner alone — the bug that would silently
+    // Rewriting one nibble must leave its partner alone: the bug that would silently
     // move copies between two unrelated mods.
     saveSetModCount(packed, 4, 1);
     CHECK(saveModCount(packed, 4) == 1 && saveModCount(packed, 5) == 12);
@@ -94,7 +94,7 @@ void test_save_mod_count_nibbles_pack_two_mods_per_byte() {
 }
 
 // A count stored against a wire the running content no longer defines is dropped rather
-// than resurrected under some other mod's id — the failure a positional array would have
+// than resurrected under some other mod's id: the failure a positional array would have
 // and a wire-keyed one must not.
 void test_save_mod_count_for_a_retired_wire_is_dropped() {
     MemSaveStore store;
@@ -115,7 +115,7 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
     CHECK(copies == 2);                          // just the two the seed grants
 }
 
-// v37 round-trip: the pet-to-pet LINK opt-in. Only the consent bit is in the blob —
+// v37 round-trip: the pet-to-pet LINK opt-in. Only the consent bit is in the blob:
 // the met operators themselves ride the SD-backed PeerLedger.
 void test_save_v37_link_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
@@ -128,8 +128,8 @@ void test_save_v37_link_roundtrip() {
 
 // The v38 byte is RESERVED: it held a standing internet opt-in and no longer means
 // anything, so a blob written with it set must come back with this device off the
-// 'net. The byte itself has to stay — v39..v42 sit behind it and the tail is read
-// positionally — which is what the second half checks.
+// 'net. The byte itself has to stay (v39..v42 sit behind it and the tail is read
+// positionally), which is what the second half checks.
 void test_save_v38_net_slot_is_reserved() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     a.netReserved = true;                       // whatever a caller puts here...
@@ -152,7 +152,7 @@ void test_save_v38_net_slot_is_reserved() {
 }
 
 // A save is the engine's biggest allocation and it fires off a timer, so it can land
-// while something else holds the heap. On the device that is not a failed save — the
+// while something else holds the heap. On the device that is not a failed save: the
 // Arduino build has exceptions off, so a bad_alloc resets the board and loses the very
 // state being written. The guard has to refuse the attempt, and it has to still say
 // yes where nothing reports heap at all, or the host build would never save.
@@ -171,7 +171,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     CHECK(g.saveHasHeadroom());            // the floor itself is enough
 
     // That bar has to clear the reservation with room to spare, because building the
-    // SaveData allocates BEFORE the buffer is sized — a floor that only covered the
+    // SaveData allocates BEFORE the buffer is sized: a floor that only covered the
     // reservation leaves nothing for the SaveData standing next to it.
     CHECK(kSaveGrowHeapFloorBytes > kSaveReserveBytes);
     // The everyday bar sits below it, which is the whole point of there being two: a
@@ -204,7 +204,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     // That write bought the blob buffer, so every save after it writes into memory the
     // engine already holds and is judged on the everyday floor instead. This is what
     // lets a save land while the radio owns the heap: the SAME reading that turned the
-    // first one away is now enough — and the write still has to actually LAND, because
+    // first one away is now enough, and the write still has to actually LAND, because
     // a guard that quietly stopped saving would pass every did-it-crash check there is.
     CHECK(low.saveHeapFloor() == kSaveHeapFloorBytes);
     low.setHeapProbe([]() -> uint32_t { return kSaveHeapFloorBytes; });
@@ -219,7 +219,7 @@ void test_save_defers_when_the_heap_is_too_low() {
 
 // A write the STORE refused is not a write. Counting it as one is what makes the
 // failure silent: the flag clears, nothing retries, and a reboot later the blob on
-// flash is older than the state that produced it — which is the one symptom that has no
+// flash is older than the state that produced it, which is the one symptom that has no
 // other explanation, a pet replaced by the one before it with nothing in between having
 // looked wrong. So the refusal has to survive as an obligation.
 void test_a_refused_write_is_not_a_save() {
@@ -242,7 +242,7 @@ void test_a_refused_write_is_not_a_save() {
     CHECK(deserializeSave(store.bytes(), stale));
     CHECK(!stale.linkEnabled);                           // flash is behind RAM: the revert
 
-    // It keeps trying rather than giving up — and NOT once per beat. A store that just
+    // It keeps trying rather than giving up, and NOT once per beat. A store that just
     // said no is not one to hammer, so the retries are paced by the same debounce every
     // other write is.
     const int before = store.attempts;
@@ -264,8 +264,8 @@ void test_a_refused_write_is_not_a_save() {
 
 // The reported shape of it, end to end. A hatch persists IMMEDIATELY, and that one call
 // is all that stands between a new pet and a reboot: nothing in completeHatch marks the
-// save dirty on its own — installPet doesn't, and the first-hatch achievement has
-// already fired by the second egg — so a write turned away there would leave the pet in
+// save dirty on its own (installPet doesn't, and the first-hatch achievement has
+// already fired by the second egg), so a write turned away there would leave the pet in
 // RAM only if the retry were the caller's to owe. It is persistSave itself that owes it,
 // which is what makes this true of every "persist immediately" call site rather than only
 // the ones that remember.
@@ -276,7 +276,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     uint32_t t = 0;
     g.tick(t += 1000);
     // The egg's own persist has landed by now, so "flash" holds the pet the device
-    // would come back as — the previous one, in the report.
+    // would come back as: the previous one, in the report.
     SaveData onFlash;
     CHECK(deserializeSave(store.bytes(), onFlash));
     const std::string previous = onFlash.activeId;
@@ -292,7 +292,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     CHECK(deserializeSave(store.bytes(), still));
     CHECK(previous == still.activeId);                   // a reboot here = the old pet
 
-    // The pet is owed a write, so the next store that says yes gets it — no further
+    // The pet is owed a write, so the next store that says yes gets it: no further
     // player action, and no waiting out the 30s autosave.
     store.refuse = false;
     g.tick(t += kSaveDebounceMs);
@@ -304,7 +304,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
 
 // The three radio consents are independent: none of them may imply another, so
 // setting one must never move the others. Reaching the 'net is deliberately NOT
-// among them — it has no standing consent to be independent of.
+// among them: it has no standing consent to be independent of.
 void test_radio_consents_are_independent() {
     Game g{StartMode::Hatched};
     CHECK(!g.linkEnabled() && !g.apEnabled() && !g.netScanEnabled());  // default OFF
@@ -319,7 +319,7 @@ void test_radio_consents_are_independent() {
 }
 
 // Nothing persisted may leave this device able to reach the 'net. The association
-// is raised by a running job and by nothing else, so it cannot outlive the job —
+// is raised by a running job and by nothing else, so it cannot outlive the job,
 // and there is no saved bit left that could smuggle one across a reboot.
 void test_net_access_needs_a_live_job() {
     Game g{StartMode::Hatched};
@@ -349,7 +349,7 @@ static void openUpdatesScreen(Game& g) {
     CHECK(g.nav() == Game::Nav::Detail && g.cfgScreen() == CfgScreen::Update);
 }
 
-// A check needs a network to reach through and somewhere to look — setup, not
+// A check needs a network to reach through and somewhere to look: setup, not
 // permission. Missing either, the ask is refused outright rather than starting a
 // job that would sit holding the radio with nothing to fetch.
 void test_update_check_requires_network_and_source() {
@@ -373,8 +373,8 @@ void test_update_check_requires_network_and_source() {
     CHECK(g.updateStatus().state == UpdateState::Checking);
 }
 
-// THE seam. A check is held by the JOB, not by a screen — a transfer that died the
-// moment the menu collapsed could never finish — so it keeps the radio until it
+// THE seam. A check is held by the JOB, not by a screen (a transfer that died the
+// moment the menu collapsed could never finish), so it keeps the radio until it
 // reaches a terminal outcome, and then hands it straight back.
 void test_update_job_holds_the_radio_past_the_screen() {
     Game g{StartMode::Hatched};
@@ -394,7 +394,7 @@ void test_update_job_holds_the_radio_past_the_screen() {
     CHECK(g.netConnectWanted());
     CHECK(g.radioScreenOpen());              // ...so nothing may sleep the panel either
 
-    // A terminal outcome ends the job and releases the radio — the only thing that
+    // A terminal outcome ends the job and releases the radio: the only thing that
     // does, since no screen is watching it.
     UpdateStatus done;
     done.state = UpdateState::Available;
@@ -408,7 +408,7 @@ void test_update_job_holds_the_radio_past_the_screen() {
     CHECK(g.updateStatus().state == UpdateState::Available);
     CHECK(g.updateStatus().firmwareNewer && !g.updateStatus().webNewer);
 
-    // "Still working" is not terminal — that one keeps the radio.
+    // "Still working" is not terminal: that one keeps the radio.
     UpdateStatus busy;
     busy.state = UpdateState::Checking;
     g.requestUpdateCheck();
@@ -419,7 +419,7 @@ void test_update_job_holds_the_radio_past_the_screen() {
 // UPDATES is a screen you WAIT in front of, so the global 5s menu collapse must not
 // run there. Both halves of the wait are longer than that on their own: a check is an
 // association plus a fetch, and the verdict it leaves is then read and acted on. The
-// job holds the radio by itself (above) — this is about the screen still being there
+// job holds the radio by itself (above): this is about the screen still being there
 // when the answer arrives, and staying long enough to press INSTALL on it.
 void test_updates_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched};
@@ -448,7 +448,7 @@ void test_updates_screen_outlives_the_menu_idle_timer() {
     CHECK(g.updateScreenOpen());
     CHECK(g.updateStatus().state == UpdateState::Available);
 
-    // Not forever, though — an abandoned screen still collapses on the long budget.
+    // Not forever, though: an abandoned screen still collapses on the long budget.
     g.tick(t += kRadioScreenDefocusMs);
     CHECK(!g.updateScreenOpen());
     CHECK(g.nav() == Game::Nav::Idle);
@@ -456,7 +456,7 @@ void test_updates_screen_outlives_the_menu_idle_timer() {
 
 // A latched job must always reach a terminal outcome, because nothing else will
 // ever take the radio off it. The association never coming up is the way that most
-// plausibly happens — a passphrase changed, the router out of range — so a failed
+// plausibly happens (a passphrase changed, the router out of range), so a failed
 // join has to end the job and say so, not leave it claiming to check forever.
 void test_update_job_dies_when_the_join_fails() {
     Game g{StartMode::Hatched};
@@ -500,7 +500,7 @@ static void seedAvailableUpdate(Game& g) {
 
 // An install writes something, so it may only ever run against what a check
 // actually confirmed. A target the last check didn't report as newer is refused
-// outright — otherwise a stale screen, or a row that moved under the cursor, could
+// outright, otherwise a stale screen, or a row that moved under the cursor, could
 // flash an artifact the device never verified exists.
 void test_update_install_needs_a_confirmed_finding() {
     Game g{StartMode::Hatched};
@@ -545,7 +545,7 @@ void test_update_install_needs_a_confirmed_finding() {
 }
 
 // Walking the actual buttons: an install is always two deliberate yeses, and the
-// confirm starts on NO. Pressing B twice — the reflex — must install nothing.
+// confirm starts on NO. Pressing B twice (the reflex) must install nothing.
 void test_update_install_takes_two_yeses() {
     Game g{StartMode::Hatched};
     seedAvailableUpdate(g);
@@ -558,7 +558,7 @@ void test_update_install_takes_two_yeses() {
     g.onButton(press(Button::B));                 // opens the confirm, installs nothing
     CHECK(!g.updateJobLive());
 
-    g.onButton(press(Button::B));                 // B again lands on NO — still nothing
+    g.onButton(press(Button::B));                 // B again lands on NO: still nothing
     CHECK(!g.updateJobLive());
 
     // And C out of the confirm is equally inert.
@@ -601,7 +601,7 @@ void test_flasher_url_follows_the_publish_host() {
     CHECK(updateFlasherUrl("http://192.168.1.50:8000/manifest.json", out, sizeof(out)));
     CHECK(std::strcmp(out, "http://192.168.1.50:8000/flash/") == 0);
 
-    // Only the FILENAME is replaced — a nested publish keeps its whole path.
+    // Only the FILENAME is replaced: a nested publish keeps its whole path.
     CHECK(updateFlasherUrl("https://box.local/a/b/manifest.json", out, sizeof(out)));
     CHECK(std::strcmp(out, "https://box.local/a/b/flash/") == 0);
 
@@ -621,7 +621,7 @@ void test_flasher_url_follows_the_publish_host() {
 }
 
 // The flasher row rides at the BOTTOM of a list whose middle changes, and it is
-// the one row that works without a network — so B opens the code even when a
+// the one row that works without a network, so B opens the code even when a
 // check can't run, which is exactly when someone needs it.
 void test_flasher_row_is_last_and_needs_no_network() {
     Game g{StartMode::Hatched};
@@ -683,7 +683,7 @@ void test_update_install_progress_is_not_terminal() {
     CHECK(g.installStatus().fail == InstallFail::Corrupt);
 
     // An install raises its own association, so it dies the same way a check does
-    // when that join never comes up — nothing else would take the radio off it.
+    // when that join never comes up: nothing else would take the radio off it.
     g.requestUpdateInstall(UpdateTarget::Web);
     CHECK(g.updateJobLive());
     CHECK(g.netStatus().state == NetState::Connecting);
@@ -709,7 +709,7 @@ void tarHeader(uint8_t* block, const char* name, uint32_t size, char type) {
 
 // An archive names its own destinations, so the name check is the whole security
 // story of unpacking one. Anything that could climb out of the extraction root is
-// rejected — never rewritten, because a name we had to fix is not one we understood.
+// rejected, never rewritten, because a name we had to fix is not one we understood.
 void test_tar_rejects_escaping_names() {
     for (const char* bad : {"../evil", "web/../../evil", "/etc/passwd", "a/../../b",
                             "..", "web\\..\\evil", ""}) {
@@ -754,14 +754,14 @@ void test_tar_reads_entries() {
     CHECK(parseTarHeader(block, sizeof(block), &e));
     CHECK(e.kind == TarEntryKind::File && e.size == 512);
 
-    // A size field that isn't octal is a broken header — reporting it as a
+    // A size field that isn't octal is a broken header: reporting it as a
     // zero-length file would leave the stream cursor pointing at nothing real.
     tarHeader(block, "bad.bin", 0, '0');
     std::memcpy(block + 124, "99999999999", 11);  // 8 and 9 are not octal digits
     CHECK(parseTarHeader(block, sizeof(block), &e));
     CHECK(e.kind == TarEntryKind::Invalid);
 
-    // Real tar output is not always the tidy form `make pedia-tar` produces — a
+    // Real tar output is not always the tidy form `make pedia-tar` produces: a
     // bundle built with `tar -C dir .` prefixes every name with "./", and that has
     // to extract to the same place rather than being rejected as suspicious.
     tarHeader(block, "./assets/ICON_STAT.png", 300, '0');
@@ -786,7 +786,7 @@ void test_tar_reads_entries() {
 
 namespace {
 // A well-formed two-artifact manifest, in the published shape. `parse` takes a
-// length, so these helpers pass strlen rather than assuming NUL-termination —
+// length, so these helpers pass strlen rather than assuming NUL-termination:
 // the real input arrives as an HTTP body.
 const char* kGoodManifest =
     "{\"artifacts\":["
@@ -806,7 +806,7 @@ ManifestParse parseOf(UpdateManifest& m, const char* s) {
 }  // namespace
 
 // The published shape round-trips, and rows are reachable by what they ARE rather
-// than where they sit — a later publish reordering the list must not change which
+// than where they sit: a later publish reordering the list must not change which
 // artifact the firmware check reads.
 void test_manifest_parses_published_shape() {
     UpdateManifest m;
@@ -827,7 +827,7 @@ void test_manifest_parses_published_shape() {
 
     CHECK(m.byId("bootloader") == nullptr);   // absent, not row 0 by accident
 
-    // Strictly newer, both directions, and never equal — an update prompt that
+    // Strictly newer, both directions, and never equal: an update prompt that
     // re-offers the build you're already on is one the operator learns to dismiss.
     CHECK(artifactIsNewer(*fw, 401));
     CHECK(!artifactIsNewer(*fw, 402));
@@ -840,7 +840,7 @@ void test_manifest_parses_published_shape() {
 void test_manifest_rejects_junk_and_unusable_rows() {
     UpdateManifest m;
 
-    // Not JSON at all — the portal login page.
+    // Not JSON at all: the portal login page.
     CHECK(parseOf(m, "<!DOCTYPE html><html><body>Sign in</body></html>") ==
           ManifestParse::Malformed);
     CHECK(m.count() == 0);
@@ -877,7 +877,7 @@ void test_manifest_rejects_junk_and_unusable_rows() {
                      "0123456789abcdef0123456789abcdef\"}]}") ==
           ManifestParse::Malformed);
 
-    // A URL too long for the row's buffer is REJECTED, never truncated — a URL cut
+    // A URL too long for the row's buffer is REJECTED, never truncated: a URL cut
     // at the buffer edge still looks like a good row and would fetch the wrong thing.
     std::string longUrl = "{\"artifacts\":[{\"id\":\"firmware\",\"version\":\"1\","
                           "\"code\":1,\"size\":10,\"sha256\":\"0123456789abcdef"
@@ -932,7 +932,7 @@ bool markerOf(VersionMarker& v, const char* s) {
 }
 }  // namespace
 
-// The stamp an installer writes must be the stamp the next check reads — these are
+// The stamp an installer writes must be the stamp the next check reads: these are
 // the two halves of the same fact, and a device that writes one shape and reads
 // another would re-offer a bundle it just installed, forever.
 void test_version_marker_round_trips() {
@@ -977,7 +977,7 @@ void test_version_marker_tolerates_real_files() {
         "version=0.1.0\r\n"));
     CHECK(v.code == 100 && std::strcmp(v.version, "0.1.0") == 0);
 
-    // A key from a publish this build predates is skipped, not fatal — the whole
+    // A key from a publish this build predates is skipped, not fatal: the whole
     // point of a key=value file over a bare number.
     CHECK(markerOf(v, "code=7\nchannel=beta\nnotes=whatever=this=is\nversion=0.0.7\n"));
     CHECK(v.code == 7 && std::strcmp(v.version, "0.0.7") == 0);
@@ -987,13 +987,13 @@ void test_version_marker_tolerates_real_files() {
     CHECK(v.code == 90909 && std::strcmp(v.version, "9.9.9") == 0);
 
     // A version too long to hold is dropped rather than clipped, so the prompt
-    // says nothing instead of naming a version nobody published. The code — the
-    // only field that decides anything — survives.
+    // says nothing instead of naming a version nobody published. The code (the
+    // only field that decides anything) survives.
     CHECK(markerOf(v, "code=3\nversion=0.1.0-rc1-build-20260101\n"));
     CHECK(v.code == 3 && v.version[0] == '\0');
 }
 
-// Unlike the manifest, a marker that won't parse is not a failure to report — it
+// Unlike the manifest, a marker that won't parse is not a failure to report: it
 // reads as "unknown", which makes any published bundle newer and offers a
 // re-install. Redundant, never wrong; the install then replaces the unknown.
 void test_version_marker_absent_reads_as_unknown() {
@@ -1025,7 +1025,7 @@ void test_version_marker_absent_reads_as_unknown() {
 }
 
 // The QR carousel carries the setup step only while there is nothing stored, and A
-// always walks past it — it must never stand between the operator and the 'Pedia.
+// always walks past it: it must never stand between the operator and the 'Pedia.
 void test_qr_setup_step_appears_only_until_provisioned() {
     Game g{StartMode::Hatched};
     CHECK(pediaQrPages(HomeNetwork::Unsaved) == 3);   // join, set up, 'Pedia
@@ -1049,7 +1049,7 @@ void test_qr_setup_step_appears_only_until_provisioned() {
 }
 
 // How an attempt ends decides whether the radio goes back. There is no screen
-// holding it — the JOB is, so the outcomes are read through the job's lifetime.
+// holding it: the JOB is, so the outcomes are read through the job's lifetime.
 void test_net_attempt_outcomes() {
     Game g{StartMode::Hatched};
     g.setNetProvisioned(true);
@@ -1077,7 +1077,7 @@ void test_net_attempt_outcomes() {
 }
 
 // v21 round-trip: the per-pet care-mistake shield + once-per-lifetime item gates,
-// and fragAmountTier. (The v21 tail's dedup-mask field was removed as of v33 —
+// and fragAmountTier. (The v21 tail's dedup-mask field was removed as of v33:
 // see test_save_v33_drops_network_dedup below for that boundary.)
 void test_save_v21_shield_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
@@ -1148,7 +1148,7 @@ void test_ap_toggle_via_cfg_and_persist() {
         CHECK(g.cfgScreen() == CfgScreen::PediaQr);
         tapC(g);             // back to RADIO
 
-        // Turning it OFF has no QR — it backs straight to RADIO.
+        // Turning it OFF has no QR: it backs straight to RADIO.
         g.onButton(press(Button::B));             // re-open (pick starts on ON)
         g.onButton(press(Button::A));             // ON -> OFF
         g.onButton(press(Button::B));             // apply OFF -> RADIO (no QR)
@@ -1205,7 +1205,7 @@ void test_pedia_qr_two_pages_no_timeout() {
     CHECK(!g.qrScreenActive());
     CHECK(g.cfgScreen() == CfgScreen::Radio);
 
-    // CFG screens never auto-defocus at all (the operator is mid-setup) — a long
+    // CFG screens never auto-defocus at all (the operator is mid-setup): a long
     // idle tick leaves the RADIO group right where it was.
     t += kAutoDefocusMs * 2 + kHeartbeatMs;
     g.tick(t);

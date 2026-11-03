@@ -1,4 +1,4 @@
-// game_pedia.cpp — reveal-state + achievement bookkeeping.
+// game_pedia.cpp: reveal-state + achievement bookkeeping.
 //
 // Two related jobs. The 'Pedia reveal tiers (save v25): the glimpsed-but-not-hatched
 // creature set and the raised-species tally. And the achievement system (save v40): the
@@ -7,18 +7,18 @@
 // a player on a device with no achievement browser.
 //
 // The catalogue itself is data (content/content_achievements.cpp) and the set sizes its
-// kGoalAll rows measure against are a pure helper (app/game_achievements.h) — so what
+// kGoalAll rows measure against are a pure helper (app/game_achievements.h), so what
 // lives here is strictly the player's side of it: how far along they are, and what to do
 // when a row lands. Adding an achievement touches none of this file; adding a new PROGRESS
 // SOURCE is one case in achValue(), and a new REWARD is one case in
 // applyAchievementRewards().
 //
-// The handful of rows that can't be swept (AchSeries::Event — the moment leaves no
+// The handful of rows that can't be swept (AchSeries::Event. The moment leaves no
 // counter behind) are fired by hand from wherever they happen: hatch/evolution →
 // game_lifecycle.cpp, Lockout resolve → game_lifecycle.cpp, a duel → game_pvp.cpp, the
 // DevTools honeytoken → ap_server.h.
 #include "core/content/content_backgrounds.h"  // the places an achievement pays out
-#include "core/content/content_homes.h"   // sceneForCreature — a raised creature brings its place
+#include "core/content/content_homes.h"   // sceneForCreature: a raised creature brings its place
 #include "core/app/game.h"
 
 #include <cstdio>
@@ -31,7 +31,7 @@ namespace mal {
 void Game::markCreatureRaised(const char* id) {
     if (!id) return;
     for (const CreatureDef* c : raisedCreatures_)
-        if (std::strcmp(c->id, id) == 0) return;    // already tallied — idempotent
+        if (std::strcmp(c->id, id) == 0) return;    // already tallied: idempotent
     if (const CreatureDef* def = registry_.creature(id)) {
         // Raising a creature is also how its HOME becomes a background the operator may
         // choose (content/content_backgrounds.h). Ownership is derived from this very
@@ -54,7 +54,7 @@ bool Game::creatureRaised(const char* id) const {
 void Game::markCreatureSeen(const char* id) {
     if (!id || creatureRaised(id)) return;          // "raised" always wins over "seen"
     for (const CreatureDef* c : seenCreatures_)
-        if (std::strcmp(c->id, id) == 0) return;    // already glimpsed — idempotent
+        if (std::strcmp(c->id, id) == 0) return;    // already glimpsed: idempotent
     if (const CreatureDef* def = registry_.creature(id)) {
         seenCreatures_.push_back(def);
         markSaveDirty();
@@ -84,7 +84,7 @@ bool Game::petAteFood(const char* id) const {
 
 void Game::markFoodEaten(const ItemDef& d) {
     // Foods only. The palate is what the pet has EATEN, and the grid it feeds shows the
-    // kitchen — a Backup Drive is used, not tasted, and would read as a gap that can
+    // kitchen: a Backup Drive is used, not tasted, and would read as a gap that can
     // never be filled by cooking.
     if (itemCategory(d) != ItemDef::Category::Food) return;
     ensureFavouriteFood();
@@ -178,7 +178,7 @@ bool Game::hasAchievement(const char* id) const {
 void Game::unlockAchievement(const char* id) {
     const AchievementDef* d = achievementById(id);
     // An unknown id is a call site naming a row that no longer exists. Nothing to do but
-    // ignore it — the native gate is what catches the typo, not a runtime crash on a
+    // ignore it: the native gate is what catches the typo, not a runtime crash on a
     // device someone is carrying around.
     if (!d || achBit(achEarned_, d->wire)) return;   // unknown / already earned
     setAchBit(achEarned_, d->wire);
@@ -209,7 +209,7 @@ void Game::applyAchievementRewards(const AchievementDef& d) {
                 bits_ += r.magnitude;
                 break;
             case AchievementReward::Kind::Item:
-                // Straight into the bag — a Commendation Cache is opened from the VAULT
+                // Straight into the bag: a Commendation Cache is opened from the VAULT
                 // when the player chooses, so nothing here interrupts what they are doing.
                 if (r.id && registry_.item(r.id)) inventory_.add(r.id, r.magnitude);
                 break;
@@ -220,7 +220,7 @@ void Game::applyAchievementRewards(const AchievementDef& d) {
 int Game::achValue(const AchievementDef& d) const {
     switch (d.series) {
         case AchSeries::Event:
-            return 0;                       // never swept — fired at its own event
+            return 0;                       // never swept: fired at its own event
         case AchSeries::DeepWebDepth:
             return deepestDiveEver();
         case AchSeries::DeepWebDepthLine: {
@@ -302,7 +302,7 @@ int Game::achValue(const AchievementDef& d) const {
             return n;
         }
         case AchSeries::RigCappedLevels: {
-            // Capped rows only, and clamped to each row's cap — an uncapped row (or an
+            // Capped rows only, and clamped to each row's cap: an uncapped row (or an
             // over-bought one) must not be able to stand in for a row never touched.
             int n = 0;
             for (int i = 0; i < kRigUpgradeCount; ++i) {
@@ -355,7 +355,7 @@ int Game::achValue(const AchievementDef& d) const {
         case AchSeries::RackHeld:
             return rackCount();
         // The four COLLECTION reads of the same shelf. All of them walk the rack rather
-        // than a tally, because every one is a live "at once" fact — a released pet has
+        // than a tally, because every one is a live "at once" fact: a released pet has
         // to take its contribution with it. The walks are O(n^2) in the rack, which is a
         // container that tops out at 64 entries and is only read on the achievement
         // sweep; a set worth allocating would cost more than it saves.
@@ -429,7 +429,7 @@ void Game::sweepAchievements() {
     for (int i = 0; i < kAchievementCount; ++i) {
         const AchievementDef& d = kAchievements[i];
         if (d.series == AchSeries::Event) continue;      // fired at its own site
-        if (achBit(achEarned_, d.wire)) continue;        // already earned — skip the work
+        if (achBit(achEarned_, d.wire)) continue;        // already earned: skip the work
         const int goal = achievementGoal(d);
         if (goal <= 0) continue;                          // kGoalAll on an unbounded series
         const bool sameAsMemo = memoValid && d.series == memoSeries &&
@@ -488,9 +488,9 @@ void Game::dismissAchievementBanner() {
 
 void Game::tickAchievementBanner() {
     // Retire the banner on screen, marking everything it spoke for as announced. Only
-    // here — a banner that was never shown is never marked, so an unlock earned during a
+    // here: a banner that was never shown is never marked, so an unlock earned during a
     // fight waits for the player to come home rather than being spent on nobody.
-    // A HELD banner has no deadline — it waits for dismissAchievementBanner() — so the
+    // A HELD banner has no deadline. It waits for dismissAchievementBanner(), so the
     // retire below must not see it. Everything after that point is unchanged: one at a
     // time, and only while the player is actually looking at the home screen.
     if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_ && !achBannerHeld()) {
@@ -512,8 +512,8 @@ void Game::tickAchievementBanner() {
     if (face_ != Face::Pet || nav_ != Nav::Idle) return;
     const int pending = achPendingNotify();
     if (pending == 0) return;
-    // A burst too long to parade past one at a time — a firmware update retro-awarding a
-    // back catalogue, most likely — collapses into a single "N ACHIEVEMENTS" banner, so
+    // A burst too long to parade past one at a time (a firmware update retro-awarding a
+    // back catalogue, most likely) collapses into a single "N ACHIEVEMENTS" banner, so
     // the home screen isn't unusable for several minutes. Under the threshold they are
     // announced properly, by name, one after another.
     if (pending > kAchBannerBurstMax) {
@@ -548,7 +548,7 @@ bool Game::hatchProcessUnlocked(const CreatureDef* proc) const {
     if (!proc) return false;
     // A Process row states its own gate (CreatureDef::gatedBy); an ungated row is always
     // in its line's random hatch pool (rollHatchProcess). Phishlet is the one gated row
-    // today — the deep-dive reward catch on the Phishing line — so a fresh Phishing egg
+    // today (the deep-dive reward catch on the Phishing line), so a fresh Phishing egg
     // hatches Tadpoll until the player has dived deep, then Tadpoll-or-Phishlet at 50/50
     // (two equal-weight Process members). This mirrors eggLineUnlocked one tier down:
     // there the achievement earns a whole LINE, here the rarer species within one.
@@ -561,7 +561,7 @@ bool Game::eggLineUnlocked(const EggLineDef* line) const {
     // line-select. Three of the four are earned today, and each asks for the kind of
     // play it is about: Phishing for the endless zone (the first DeepWeb-depth
     // milestone), Worm for REPLICATING (the archive holding two of one species at once,
-    // fired from archStoreActive), Metamorphic for the MIRROR — the pet meeting its own
+    // fired from archStoreActive), Metamorphic for the MIRROR. The pet meeting its own
     // species over the LINK or in the arena. Ransomware, the default, is given.
     return !line->gatedBy || hasAchievement(line->gatedBy);
 }

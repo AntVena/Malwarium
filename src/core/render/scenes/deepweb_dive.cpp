@@ -10,7 +10,7 @@ namespace {
 
 // THE DEEP WEB, TAKEN AT ITS WORD. The dive goes down under the Net-Sea to where the
 // cable the walk has followed since the Bayou lies on the bottom, carrying everything
-// nobody indexed — so this is the seabed, with the cable across it and the data
+// nobody indexed, so this is the seabed, with the cable across it and the data
 // running along it as light. The sea is inverted from every sky on the ladder: what
 // light there is comes from ABOVE and fades going down, so the top of the canvas is
 // the lightest water and the bottom is dark.
@@ -18,7 +18,7 @@ namespace {
 // WHERE THINGS STAND IS DECIDED BY WHO COVERS THEM. A fighter stands on each side of
 // the middle and a resting pet in the middle itself, and the habitat's bottom bar hides
 // the floor; so the cable runs through the MIDDLE band, where it is seen either side
-// of any sprite, and the two landmarks are in the margins — a rock spire carrying a
+// of any sprite, and the two landmarks are in the margins: a rock spire carrying a
 // repeater on the left, a vent breathing bubbles up the whole height on the right.
 constexpr uint8_t kToneSurface = 40;   // the water just under the surface
 constexpr uint8_t kToneShaft = 10;     // how much a light shaft adds to the water
@@ -40,7 +40,7 @@ constexpr uint8_t kTonePulseTail = 120;
 
 // The water column: four bands from the top of the canvas down, each a step darker,
 // ending at this share of the way down to the horizon. Below that the water is the
-// page's own dark — the depth the dive is at.
+// page's own dark: the depth the dive is at.
 constexpr int kBands = 4;
 constexpr uint8_t kBandsReach = 224;   // in 256ths of the way from the top to the horizon
 
@@ -63,8 +63,8 @@ constexpr int kVentX = 210;
 constexpr int kBubbleRise = 2;   // rows per beat
 constexpr uint8_t kBubbles[] = {0, 23, 41, 68, 90, 117, 139, 161};
 
-// The far seabed: a low ragged slope on the horizon, which is the only silhouette —
-// down here there is no distance, only a little further down.
+// The far seabed: a low ragged slope on the horizon, which is the only silhouette.
+// Down here there is no distance, only a little further down.
 constexpr uint8_t kRidge[] = {3, 5, 4, 6, 7, 5, 4, 3, 4, 6, 8, 6, 5, 4,
                               3, 4, 5, 7, 6, 4, 3, 5, 6, 4, 3, 4, 5, 3};
 

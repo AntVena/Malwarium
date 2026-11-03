@@ -1,20 +1,20 @@
-// content_arcade.h — the GAMES arcade roster: which minigames have a cabinet.
+// content_arcade.h (the GAMES arcade roster): which minigames have a cabinet.
 //
 // The arcade does not own a single rule of a single game. Every cabinet here points at
-// a minigame that already exists for its own reason — the Worm's hatch, the Phishing
-// line's hatch, a played MAINT run — and the arcade's whole job is to start one with no
+// a minigame that already exists for its own reason (the Worm's hatch, the Phishing
+// line's hatch, a played MAINT run), and the arcade's whole job is to start one with no
 // stakes attached and pay for the attempt. So changing a game changes its cabinet, and
 // a game can never drift from its arcade copy, because there is no copy.
 //
 // A row is therefore mostly COPY: the name on the cabinet, the line that says what the
-// game is, and what its difficulty dial actually moves (the games don't share a knob —
-// most are paced, one is precision, and two also change a RULE). The two fields that
+// game is, and what its difficulty dial actually moves (the games don't share a knob.
+// Most are paced, one is precision, and two also change a RULE). The two fields that
 // aren't copy are `kind`, which
 // Game::startArcadeRun switches on, and `scoring`, which decides how the bonus half of
 // the payout is worked out.
 //
 // ADDING ONE IS ONE ROW PLUS ONE CASE. The row goes in content_arcade.cpp and the case
-// in Game::startArcadeRun — the same shape HatchGame uses (content/defs.h), and for the
+// in Game::startArcadeRun. The same shape HatchGame uses (content/defs.h), and for the
 // same reason: a minigame is engine behaviour, so an id alone can't launch it.
 //
 // Compiled-in and INDEX-addressed, like the crews (content_crews.h) and unlike the
@@ -27,20 +27,20 @@
 
 namespace mal {
 
-// ENDLESS CABINETS. Three of these games have no ending off a cabinet — the worm eats
+// ENDLESS CABINETS. Three of these games have no ending off a cabinet: the worm eats
 // until it crashes, the bell wears skins until it is spotted, and FRAGGER shoots until a
 // fragment lands (that one is endless everywhere). That is a property of
 // the RUN rather than of the row: the same models finish normally at a hatch, and what
 // the cabinet does is start them with no goal (Game::startArcadeRun). What a row still
 // owes such a run is a WIN LINE, which lives in tunables.h beside the other magnitudes
-// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses, kFraggerWinHits) — the score a run is paid in full
+// (kArcadeIsolationWinBytes, kArcadeChromaWinPasses, kFraggerWinHits): the score a run is paid in full
 // for and counted as a win at, never a wall the board stops at. The score itself is
 // kept per cabinet (Game::arcadeBest, save v55), because on a run with no finish line
 // the number IS the game.
 //
 // Which minigame a cabinet starts. One entry per game; the applier is
 // Game::startArcadeRun (game_arcade.cpp), which is the map of every route into a
-// no-stakes run — never an `if (id == "...")` at a call site.
+// no-stakes run, never an `if (id == "...")` at a call site.
 enum class ArcadeGameKind : uint8_t {
     Stacker,     // the slide-and-lock board (core/model/stacker.h)
     Fragger,     // the falling-lanes shooter (core/model/fragger.h)
@@ -52,7 +52,7 @@ enum class ArcadeGameKind : uint8_t {
 };
 
 // What has to be true before a cabinet appears in the GAMES list at all. An ABSENT row,
-// not a greyed one — the same rule the Rig Shop's requiresRow follows, and for the same
+// not a greyed one. The same rule the Rig Shop's requiresRow follows, and for the same
 // reason: a list should never advertise something the player has no route to.
 //
 // One entry per condition, resolved in one place (Game::arcadeCabinetOffered). Most
@@ -73,7 +73,7 @@ enum class ArcadeScoring : uint8_t { Incremental, WinLose };
 
 // The difficulty dial. Every cabinet has one, and so does a played MAINT run (its own
 // setting, Game::maintDifficulty). Medium is the game exactly as its own context plays it, so the arcade never quietly
-// rebalances the original — Easy and Hard are the only settings that change anything.
+// rebalances the original: Easy and Hard are the only settings that change anything.
 enum class ArcadeDifficulty : uint8_t { Easy, Medium, Hard };
 inline constexpr int kArcadeDifficulties = 3;
 
@@ -85,7 +85,7 @@ inline constexpr int arcadeRewardMult(ArcadeDifficulty d) {
 
 // Which minigame each MAINT process's PLAYED variant runs. Any engine can stand on either
 // side: every played game reports the same PlayOutcome (core/app/game.h), and what it
-// buys is decided by the process, never by the game — so swapping these two is the whole
+// buys is decided by the process, never by the game, so swapping these two is the whole
 // change. An engine joins the pool by reporting one (Game::beginPlayedGame lists them).
 inline constexpr ArcadeGameKind kDefragPlayedGame = ArcadeGameKind::Fragger;
 inline constexpr ArcadeGameKind kAvPlayedGame = ArcadeGameKind::Stacker;
@@ -93,7 +93,7 @@ inline constexpr ArcadeGameKind kAvPlayedGame = ArcadeGameKind::Stacker;
 // EASY / MEDIUM / HARD. The word is the grayscale-safe channel for the setting.
 const char* arcadeDifficultyName(ArcadeDifficulty d);
 
-// One section of a game's RULES page — the paged explainer A+C opens mid-play,
+// One section of a game's RULES page: the paged explainer A+C opens mid-play,
 // pausing the engine underneath it (game.h's gameBriefOpen_). A heading and its
 // prose, the same NAME + PROSE shape ROCK THE DOCK's own BRIEFING uses
 // (content_tournament.h's TourneyBriefDef), so it flows through the same reader
@@ -127,17 +127,17 @@ struct ArcadeGameDef {
 
 // Compile-time ceiling on the roster, so the per-cabinet save tallies can be a plain
 // array on Game rather than a heap allocation. content_arcade.cpp static_asserts the
-// real count against it — raise it there and here together, never silently.
+// real count against it: raise it there and here together, never silently.
 inline constexpr int kArcadeMaxCabinets = 8;
 
 const ArcadeGameDef* arcadeGames();
 int arcadeGameCount();
-// Row index for `id`, or -1 — how a saved play tally finds its cabinet again after
+// Row index for `id`, or -1: how a saved play tally finds its cabinet again after
 // the rows have been reordered.
 int arcadeGameIndexById(const char* id);
 // The row for `kind`, or nullptr. Keyed by the ENGINE rather than by cabinet row,
 // because Stacker, Fragger and Isolation are also reached from MAINT and an egg's hatch with no
-// arcade row in play at all — a RULES page opened from either still needs a row.
+// arcade row in play at all: a RULES page opened from either still needs a row.
 const ArcadeGameDef* arcadeGameByKind(ArcadeGameKind kind);
 
 }  // namespace mal

@@ -1,18 +1,18 @@
-// eapol.h — pure 802.11 EAPOL / WPA 4-way-handshake classifier (RF half).
+// eapol.h: pure 802.11 EAPOL / WPA 4-way-handshake classifier (RF half).
 //
 // PURE + HOST-TESTABLE. This is the *brain* the device-tier promiscuous sniffer
 // (platform/esp32/net_capture.h) feeds every captured 802.11 MPDU into. It knows
-// nothing about the radio, channels, SD, or timing — it takes a raw frame buffer
-// (DLT_IEEE802_11, no radiotap — exactly what goes into pcap.h) and answers two
+// nothing about the radio, channels, SD, or timing. It takes a raw frame buffer
+// (DLT_IEEE802_11, no radiotap. Exactly what goes into pcap.h) and answers two
 // questions: "is this an EAPOL-Key frame, and if so which of the WPA 4-way
 // messages (1..4) is it?", and "which BSSID is it for?". A tiny stateful tracker
 // then accumulates the per-BSSID messages and reports when a *crackable* handshake
 // has first been observed, so the device only calls Game::registerHandshake() once
 // per AP. All of that is deterministic byte-parsing, so it's unit-tested natively
-// with synthesized frames — the device file stays thin RF+SD glue on top.
+// with synthesized frames: the device file stays thin RF+SD glue on top.
 //
 // AUTHORIZED USE / PASSIVE ONLY: this only *classifies* frames the radio already
-// heard. Nothing here transmits, injects, deauths, or forces a handshake — it
+// heard. Nothing here transmits, injects, deauths, or forces a handshake: it
 // waits for one that happens on its own and recognises it.
 #pragma once
 
@@ -43,13 +43,13 @@ EapolKeyInfo parseEapolKey(const uint8_t* mpdu, uint32_t len);
 
 // Accumulates 4-way handshake messages per BSSID and reports the first moment a
 // *crackable* pairing has been seen for an AP. Crackable here = we have M2 plus
-// one of its neighbours (M1 or M3) — enough for an offline dictionary attack
+// one of its neighbours (M1 or M3): enough for an offline dictionary attack
 // (ANonce+SNonce+MIC). Stateful but pure: no clock, no radio. The device tier
 // owns one of these per capture session and resets it when the radio powers down.
 class HandshakeTracker {
 public:
     // Bounded so a busy channel can't grow this unboundedly (v1: extra APs past
-    // the cap are ignored — a breadth counter, not an exhaustive audit).
+    // the cap are ignored. A breadth counter, not an exhaustive audit).
     static constexpr int kMaxAps = 16;
 
     // 4-way message bit flags (msg 1..4 -> bit 1..4).
@@ -59,7 +59,7 @@ public:
     static constexpr uint8_t kM4 = 1u << 4;
 
     // Record one classified message for `bssid`. Returns true EXACTLY ONCE per
-    // BSSID — on the transition where that AP's handshake first becomes crackable.
+    // BSSID: on the transition where that AP's handshake first becomes crackable.
     // A msg of 0 (non-4-way) or an unknown/full table is inert (returns false).
     bool observe(const uint8_t* bssid, int msg);
 

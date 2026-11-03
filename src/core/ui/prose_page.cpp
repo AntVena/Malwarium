@@ -17,8 +17,8 @@ int proseBodyH(const char* body) {
 }
 
 // A heading's lead-in is the fence between it and the group before it, so the heading
-// that OPENS a window has nothing to be fenced from — the header band above it already
-// is the fence — and takes none. `top` is the window's first row, which is why the
+// that OPENS a window has nothing to be fenced from (the header band above it already
+// is the fence), and takes none. `top` is the window's first row, which is why the
 // heights are measured per window rather than once for the page.
 int headerLead(int index, int top) { return index == top ? 0 : kProseGroupLead; }
 
@@ -46,7 +46,7 @@ int proseRowsFitting(const std::vector<ProseRow>& rows, int top, int rowTop) {
         //
         // Unless it would buy that with an almost empty screen. A section longer than
         // one window leaves a short tail behind it, and breaking after a tail of one row
-        // spends a whole screen saying very little — so the break is taken only once the
+        // spends a whole screen saying very little, so the break is taken only once the
         // window already holds a screen's worth to break AFTER. Half the body is the
         // line: above it the window reads as full and the heading below reads as the
         // next thing; under it the heading is better off packed in behind the tail.
@@ -92,7 +92,7 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
     for (int v = 0; v < shown; ++v) {
         const ProseRow& r = rows[top + v];
         if (r.header) {
-            // A heading may carry a tag of its own — a running total for the group under
+            // A heading may carry a tag of its own: a running total for the group under
             // it (STAT's TIERS page). Paired with the label rather than placed
             // independently for the same reason the entry rows are: whichever of the two
             // grows, they yield to each other instead of overlapping. Both dim, because a
@@ -105,7 +105,7 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
                 drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
         } else {
             // Name and tag as a PAIR (drawLabelValue), so a long name yields to the tag
-            // instead of running underneath it — the failure two independent drawText
+            // instead of running underneath it: the failure two independent drawText
             // calls produce every time the copy grows.
             drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.tag,
                            palColor(Pal::INK_DIM), beat, Overflow::Clip);

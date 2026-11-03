@@ -20,7 +20,7 @@ void formatWindows(char* out, size_t n, int window, int windows) {
 
 // The auto-advance countdown: a rule that shortens from the right as the window's
 // budget runs out. Drawn in TRACK under INK_DIM so it reads as chrome rather than as a
-// gauge of anything the player owns — what it measures is the screen's own patience.
+// gauge of anything the player owns: what it measures is the screen's own patience.
 void drawStoryClock(Framebuffer& fb, int remainingPct) {
     const int w = kActiveW - 2 * kMargin;
     const int pct = std::max(0, std::min(100, remainingPct));
@@ -46,14 +46,14 @@ void drawStoryPage(Framebuffer& fb, const std::vector<ProseRow>& rows,
 
     // The flow itself. Its own hint is suppressed (prose_page only draws one when the
     // page overflows, and this screen names both keys on every window whether it does
-    // or not) — a chapter that fits on one screen still has to say that B is what ends
+    // or not): a chapter that fits on one screen still has to say that B is what ends
     // it, or the only way off the page is to wait the clock out.
     drawProseRows(fb, rows, v.scrollTop, kStoryBodyTop, v.beat, /*hint=*/nullptr);
 
     drawStoryClock(fb, v.remainingPct);
     // The LAST window's B finishes the chapter rather than turning a page, so the word
     // changes with it: a reader on the final screen is told they are on the final
-    // screen by the key that leaves it. C is the same either way — skip the rest.
+    // screen by the key that leaves it. C is the same either way: skip the rest.
     const bool last = v.window + 1 >= v.windows;
     drawHintBand(fb, last ? "B DONE   C SKIP" : "B NEXT   C SKIP");
 }
@@ -88,7 +88,7 @@ void drawStoryArchive(Framebuffer& fb, const StoryArchiveRow* rows, int rowCount
                         palColor(Pal::TRACK));
             drawRowCursor(fb, 3, y, palColor(Pal::ACCENT));
         }
-        // Title over a dim line naming where and when — the two-line row EXPL's own
+        // Title over a dim line naming where and when: the two-line row EXPL's own
         // list uses, so a chapter reads like the zone row it came from.
         drawTextMarquee(fb, kMargin, y, kActiveW - 2 * kMargin, r.title,
                         palColor(Pal::INK), beat, scrollWhen(focused));

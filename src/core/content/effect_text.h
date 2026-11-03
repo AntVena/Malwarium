@@ -1,4 +1,4 @@
-// effect_text.h — a content row's description, rendered from that row's own numbers.
+// effect_text.h: a content row's description, rendered from that row's own numbers.
 //
 // A description that spells out "reflects 10 damage" has to be re-edited by hand every
 // time the magnitude next to it moves, and nothing catches it when nobody does. So the
@@ -22,7 +22,7 @@
 // picker screen draws), stat_screen (LOADOUT/BUFFS rows), game_explore (shop rows),
 // tools/dump_content.cpp (the 'Pedia's data feed).
 //
-// Adding a token: extend the per-type table in effect_text.cpp — and for an item,
+// Adding a token: extend the per-type table in effect_text.cpp, and for an item,
 // give the new ItemEffect::Kind a name in itemEffectToken() alongside its applier
 // case in Game::applyItemEffects. A row naming a token that doesn't exist leaves the
 // braces in the output, which the native gate asserts against.
@@ -35,13 +35,13 @@
 namespace mal {
 
 // One rendered description. A value type (not a borrowed pointer) because the text is
-// built on demand from the row rather than living in flash next to it — the row model
+// built on demand from the row rather than living in flash next to it: the row model
 // a screen builds owns its string outright.
 //
 // `buf` is also the de-facto AUTHORING CAP on a description: expand() fills it and
 // stops, so prose past kMaxProse characters is silently lost. The native gate
 // (test_effect_text_fits_its_screen_budget) fails on a row that reaches the cap rather
-// than letting the tail disappear — so this is a real limit to write to, not a
+// than letting the tail disappear, so this is a real limit to write to, not a
 // buffer that happens to be big enough today.
 struct EffectText {
     static constexpr int kMaxProse = 191;   // sizeof(buf) - 1
@@ -55,18 +55,18 @@ struct EffectText {
 EffectText effectText(const ItemDef& d);
 EffectText effectText(const ModDef& d);
 EffectText effectText(const MoveDef& d);
-// A crew Exploit's `desc` prose (content_crews.h). One token, `{mag}` — the Exploit's
+// A crew Exploit's `desc` prose (content_crews.h). One token, `{mag}`: the Exploit's
 // whole vocabulary is one magnitude, and a kind that meters nothing simply never
 // writes it.
 EffectText effectText(const CrewExploitDef& d);
 // An achievement's `trigger` prose. `effectiveGoal` is the threshold the row is actually
-// held to — for a kGoalAll row that is the size of the set it counts over, which only the
+// held to: for a kGoalAll row that is the size of the set it counts over, which only the
 // app layer can resolve (app/game_achievements.h's achievementGoal). Pass it in rather
 // than letting this file reach up for it.
 EffectText effectText(const AchievementDef& d, int effectiveGoal);
 
 // One entry of the derived readout, kept as label + value rather than one baked
-// string so a screen can lay the set out as an ALIGNED GRID (drawSpecGrid) — labels
+// string so a screen can lay the set out as an ALIGNED GRID (drawSpecGrid): labels
 // left, magnitudes right-aligned in their column, which is what makes two moves
 // comparable at a glance. `value` empty marks a FLAG (a fixed behaviour with no
 // magnitude, e.g. "TROJAN DIVERT"), which the grid gives a full-width row.
@@ -90,14 +90,14 @@ struct SpecRows {
 };
 
 // Every magnitude the row hands the engine, in display order. The single source of
-// the readout vocabulary — statLine() below is just this joined with " / ", so the
+// the readout vocabulary: statLine() below is just this joined with " / ", so the
 // grid and the one-line form can never disagree about what a row reports.
 SpecRows specRows(const ItemDef& d);
 SpecRows specRows(const ModDef& d);
 SpecRows specRows(const MoveDef& d);
 
 // Assembles a SpecRows. Public because the content tables aren't the only producer of
-// a readout — the Rig Shop's account upgrades build theirs the same way
+// a readout: the Rig Shop's account upgrades build theirs the same way
 // (app/game_rig_shop.h's rigSpec), so they render through the same grid instead of
 // hand-formatting into a fixed buffer. `add` takes a terse label plus a printf'd
 // value; `flag` takes a label alone, for a behaviour with no magnitude to report.
@@ -117,7 +117,7 @@ struct SpecBuilder {
 SpecRows specRowsVersus(const SpecRows& now, const SpecRows& next);
 
 // specRows() joined into one " / "-separated line ("HUNGER +40 / HEAL 30"), for the
-// places that want a string rather than a laid-out grid — the 'Pedia's data feed and
+// places that want a string rather than a laid-out grid: the 'Pedia's data feed and
 // the STAT LOADOUT/BUFFS list rows. Empty when a row has no structured effect to
 // report (a pure-flavour quest item).
 EffectText statLine(const ItemDef& d);

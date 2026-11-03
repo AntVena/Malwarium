@@ -11,7 +11,7 @@ namespace mal {
 namespace {
 // Weighted Sealed-Cache rarity picks for the real-radio discovery rewards
 // (pcap-blowup fix follow-on). `roll` is 0..99 from the shared LCG,
-// matching every other weighted roll in game_items.cpp. Local to this unit —
+// matching every other weighted roll in game_items.cpp. Local to this unit,
 // only resolveNetworkDiscovery()/registerHandshake() below use them.
 const char* rollNetworkDiscoveryCacheId(int roll) {
     return roll < kNetDiscoveryCacheCommonPct ? "sealed_cache_common"
@@ -52,13 +52,13 @@ void Game::startWifiEvent() {
     // Real-network discovery resolves FIRST, and what it found is what ROUTES the rest
     // of this event. The two halves of this screen are ONE decision, not independent
     // rolls: rolled apart, the event can announce a new network, say the pet wanted one,
-    // and then have a friend stop by — three sentences about three different things. The
+    // and then have a friend stop by. Three sentences about three different things. The
     // sighting queue decides instead: something to resolve makes this the discovery beat,
     // and an empty queue is what puts the area's GUARDIAN in front of the pet.
     resolveNetworkDiscovery();
 
     // A dry queue on the cadence beat: the guardian is standing there
-    // (game_shiboleet.cpp). Every Nth dry event, and NOT the first — arming a walk
+    // (game_shiboleet.cpp). Every Nth dry event, and NOT the first: arming a walk
     // resets the streak (game_explore.cpp's startExplore), so summoning on the first
     // miss would put a guardian at the head of every fresh walk and let re-arming farm
     // them. Counting to N first also means a walk has to actually BE somewhere dry for
@@ -77,7 +77,7 @@ void Game::startWifiEvent() {
         wifiOutcome_ = WifiOutcome::SleepingGuardian;
         std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "GUARDIAN'S ASLEEP...");
     } else if (roll < kWifiSleepingPct + kWifiAwakenedPct) {
-        // A guardian only WAKES (→ attacks) when the player is "hot" — i.e. actively
+        // A guardian only WAKES (→ attacks) when the player is "hot": i.e. actively
         // broadcasting after a real handshake capture. Merely *discovering*
         // a network never flags you hot, so an un-hot player sneaks the cache instead
         // of being auto-attacked. `broadcasting()` is the only path into AuditPhase::Hot
@@ -102,7 +102,7 @@ void Game::startWifiEvent() {
 }
 
 void Game::onWifi(const ButtonEvent& ev) {
-    // B plays out the rolled outcome; A/C are no-ops — it auto-resolves,
+    // B plays out the rolled outcome; A/C are no-ops: it auto-resolves,
     // there's no engage/flee choice here the way a wild encounter has one. Any press
     // restarts the hands-off hold so a watching player isn't rushed.
     exploreEventBeat_ = 0;
@@ -113,14 +113,14 @@ void Game::resolveWifiOutcome() {
     switch (wifiOutcome_) {
         case WifiOutcome::SleepingGuardian:
         case WifiOutcome::OpenCache:
-            // Sneak the cache / it's just sitting open — same reward pool as a
+            // Sneak the cache / it's just sitting open: same reward pool as a
             // loot cache ("no new ones").
             grantLootReward(exploreFlavor_, sizeof(exploreFlavor_));
             returnToExplore();
             break;
         case WifiOutcome::AwakenedGuardian:
             // Straight into the shared wild-combat path ("reuse
-            // startWildCombat/Nav::Combat") — no separate Fight/Flee/Sinkhole
+            // startWildCombat/Nav::Combat"): no separate Fight/Flee/Sinkhole
             // intro; the guardian is already awake. Any rank-up celebration
             // waits for finishCombat to return here.
             rollWild();
@@ -144,7 +144,7 @@ void Game::checkHackerRankUp() {
     const int newRank = hackerRankForNetworksSeen(networksSeen_);
     if (newRank <= hackerRank_) return;
     // A single scan can hear several new APs at once and cross more than one rank
-    // (XP model) — pay the flat Bits lump per rank gained. Reward-only: this
+    // (XP model): pay the flat Bits lump per rank gained. Reward-only: this
     // gates nothing, it's just a celebration. Deliberately NOT logged (
     // rank-up is one of the few beats the closed Hacker-Log vocabulary excludes).
     const int gained = newRank - hackerRank_;
@@ -167,13 +167,13 @@ void Game::applyPendingRankUp() {
 
 void Game::setNetScanEnabled(bool on) {
     // Capture depends on the discovery scan, so turning scan OFF also seals/disarms
-    // capture — the escalating Off<Scan<Capture ladder can never sit in a
+    // capture: the escalating Off<Scan<Capture ladder can never sit in a
     // scan-off/capture-on state (see AuditMode).
     const bool disarmCapture = !on && auditCapture_.enabled();
     if (netScanEnabled_ == on && !disarmCapture) return;
     netScanEnabled_ = on;
     if (disarmCapture) auditCapture_.setEnabled(false, nowMs_);
-    markSaveDirty();   // an authorized-use choice — persist it (save v5/v6)
+    markSaveDirty();   // an authorized-use choice: persist it (save v5/v6)
 }
 
 void Game::setAuditCaptureEnabled(bool on) {
@@ -183,7 +183,7 @@ void Game::setAuditCaptureEnabled(bool on) {
     if (auditCapture_.enabled() == on && !armScan) return;
     if (armScan) netScanEnabled_ = true;
     auditCapture_.setEnabled(on, nowMs_);
-    markSaveDirty();   // authorized-use opt-in — persist the toggle (save v5/v6)
+    markSaveDirty();   // authorized-use opt-in: persist the toggle (save v5/v6)
 }
 
 void Game::setAuditMode(AuditMode m) {
@@ -197,12 +197,12 @@ void Game::setAuditMode(AuditMode m) {
 void Game::setApEnabled(bool on) {
     if (apEnabled_ == on) return;
     apEnabled_ = on;
-    markSaveDirty();   // a persisted CFG opt-in — survives a reboot (save v20)
+    markSaveDirty();   // a persisted CFG opt-in: survives a reboot (save v20)
 }
 
 bool Game::registerNetwork(const uint8_t* bssid, const char* ssid) {
     // Scan-time: refresh the in-range snapshot, then queue the sighting for the EXPL
-    // Wi-Fi event to resolve later (resolveNetworkDiscovery, below) — no XP/reward/
+    // Wi-Fi event to resolve later (resolveNetworkDiscovery, below). No XP/reward/
     // log/SD access here, and no dedup against the SD ledger's full history either
     // (that check is deliberately deferred to explore-time, see game.h).
     const uint64_t key = packBssid(bssid);
@@ -242,7 +242,7 @@ bool Game::registerNetwork(const uint8_t* bssid, const char* ssid) {
 }
 
 bool Game::noteVisibleNetwork(uint64_t key, const char* name) {
-    // Already in the snapshot: refresh its timestamp (and its label — a hidden
+    // Already in the snapshot: refresh its timestamp (and its label. A hidden
     // network that later broadcasts its SSID should stop reading as NET-xxxxxx).
     // "Arrived" means arrived: a stale entry for a network that dropped out and came
     // back counts as a fresh arrival, matching what the player just experienced.
@@ -260,7 +260,7 @@ bool Game::noteVisibleNetwork(uint64_t key, const char* name) {
     if (at >= kNetVisibleCap) {
         // Full: evict the STALEST entry (oldest sighting). Anything still in range is
         // being refreshed every sweep, so what goes is whatever the radio has heard
-        // least recently — never something the player is standing in front of.
+        // least recently, never something the player is standing in front of.
         at = 0;
         for (int i = 1; i < visibleNetworkCount_; ++i)
             if (visibleNetworks_[i].lastSeenMs < visibleNetworks_[at].lastSeenMs) at = i;
@@ -295,7 +295,7 @@ void Game::resolveNetworkDiscovery() {
         ++emptyQueueStreak_;
         netDiscoveryFlavor_[0] = '\0';
         netDiscovery_ = NetDiscovery::None;
-        // No penalty. A dry queue costs the pet nothing at all — walking somewhere with
+        // No penalty. A dry queue costs the pet nothing at all: walking somewhere with
         // no new networks is a fact about the PLACE, and taxing Happiness for it would
         // grind a long unmonitored walk down with nothing offered in exchange. The streak
         // is still counted, because startWifiEvent reads it to decide when the guardian
@@ -304,19 +304,19 @@ void Game::resolveNetworkDiscovery() {
     }
 
     emptyQueueStreak_ = 0;
-    // Pop the oldest pending sighting (FIFO — resolve in scan order).
+    // Pop the oldest pending sighting (FIFO: resolve in scan order).
     const PendingNetwork picked = pendingNetworks_[0];
     for (int i = 1; i < pendingNetworkCount_; ++i) pendingNetworks_[i - 1] = pendingNetworks_[i];
     --pendingNetworkCount_;
 
     NetworkLedger::Entry existing;
     if (!networkLedger_.lookup(picked.key, &existing)) {
-        // Genuinely new — the sole source of Hacker Rank XP + the Sealed-Cache
+        // Genuinely new: the sole source of Hacker Rank XP + the Sealed-Cache
         // discovery reward.
         networkLedger_.recordNew(picked.key, picked.name);
         ++networksSeen_;
         // (Hatch acceleration already fired when this sighting was queued, in
-        // registerNetwork — see its comment.)
+        // registerNetwork: see its comment.)
         checkHackerRankUp();
         model_.setHappiness(model_.happiness() + kNetDiscoveryFoundHappyBonus);
 
@@ -341,8 +341,8 @@ void Game::resolveNetworkDiscovery() {
     }
 
     // Repeat: familiar (outside your top favorites, still feeds the pet) vs.
-    // home-turf (inside them — flat, no reward, nudges toward variety). The
-    // top-N check MUST run before recordSeenAgain — this visit's own count is
+    // home-turf (inside them: flat, no reward, nudges toward variety). The
+    // top-N check MUST run before recordSeenAgain: this visit's own count is
     // about to grow, and checking after would compare it against a landscape
     // where it just outgrew itself, self-defeating the "was this occasional
     // UNTIL NOW" question for a network sitting exactly at the boundary.
@@ -377,7 +377,7 @@ bool Game::registerHandshake(const uint8_t* bssid) {
     auditCapture_.noteHandshake(nowMs_);
     if (!handshakeLedger_.insert(packBssid(bssid))) return false;  // already credited this AP
     ++handshakesSeen_;
-    // A genuinely new captured handshake is the rarer, harder-earned event — a
+    // A genuinely new captured handshake is the rarer, harder-earned event: a
     // richer Sealed Cache than the plain-discovery reward above (no Common tier).
     rng_ = rng_ * 1664525u + 1013904223u;
     {

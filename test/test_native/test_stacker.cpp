@@ -1,4 +1,4 @@
-// test_stacker.cpp — native gates for the Stacker minigame, played MAINT runs and the
+// test_stacker.cpp: native gates for the Stacker minigame, played MAINT runs and the
 // Replication Ghost.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -48,7 +48,7 @@ void test_stacker_overhang_falls_and_leaves_the_hand() {
     CHECK(s.width() == kStackerStartWidth);
 
     // Offset by one: the run lands on the wall, and the block over open floor falls to
-    // it — still on the board, but out of the hand, which narrows by exactly that block.
+    // it. Still on the board, but out of the hand, which narrows by exactly that block.
     CHECK(stackerDropAt(s, 2));
     CHECK(stackerRowCount(s, 1) == 2);
     CHECK(s.locked(1, 2) && s.locked(1, 3));
@@ -157,7 +157,7 @@ void test_stacker_one_wall_is_a_breach() {
 // breach.
 void test_stacker_a_costly_hold_scores_less() {
     // One extra ground lock between the walls calls a fifth intruder, which takes a
-    // fifth block — and the line still holds, for less.
+    // fifth block, and the line still holds, for less.
     Stacker s(kStackerGateSeed);
     const int cols[] = {0, 4, 3, 0, 4, 0, 4, 0, 4};
     for (int c : cols) CHECK(stackerDropAt(s, c));
@@ -250,7 +250,7 @@ void test_stacker_seed_spreads_the_intruders() {
     for (int c = 0; c < kStackerCols; ++c) CHECK(seen[c]);
 }
 
-// The run stays ON the board, and every column stays SOLID from the floor — the
+// The run stays ON the board, and every column stays SOLID from the floor: the
 // property that lets height() count a column and a falling block land on its top.
 void test_stacker_run_stays_on_board_and_columns_stay_solid() {
     Stacker s(kStackerGateSeed);
@@ -278,7 +278,7 @@ void test_stacker_row_width_reports_the_row() {
 }
 
 // score() is a breached board's whole reward curve, so the thing worth pinning is that
-// HEIGHT is paid for twice — a block on a high row is worth more than the same block
+// HEIGHT is paid for twice: a block on a high row is worth more than the same block
 // low down.
 void test_stacker_score_pays_for_height_twice() {
     Stacker s(kStackerGateSeed);
@@ -294,7 +294,7 @@ void test_stacker_score_pays_for_height_twice() {
 
 // The two rows a board's SHAPE earns, and the tally underneath them. A perfect board and
 // a one-block board are the two ends of the same measurement, so they are asserted
-// against each other rather than one at a time — reading the wrong end of it is the
+// against each other rather than one at a time: reading the wrong end of it is the
 // mistake worth catching.
 void test_stacker_win_credits_the_tally_and_the_shape_rows() {
     // Every lock on flat ground: nothing ever falls past a wall, so the line is held at
@@ -335,7 +335,7 @@ int scanWorth(const Game& g, int blocks, int frag) {
 }
 
 // A breached scan is NOT a failed scan: it pays for the blocks it landed in
-// Fragmentation and costs nothing extra — but it cleans no process, because only a won
+// Fragmentation and costs nothing extra, but it cleans no process, because only a won
 // run is a full scan. The halves are asserted together because taking only one of them
 // is the mistake.
 void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
@@ -376,7 +376,7 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
 }
 
 // A won scan is a FULL one that cannot fail: debuffs, the ghost and a Quick scan's worth
-// of Fragmentation, all gone — however narrow the hand it was held with.
+// of Fragmentation, all gone, however narrow the hand it was held with.
 void test_stacker_cleared_board_is_a_full_scan() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(95);
@@ -458,8 +458,8 @@ void test_maint_played_variant_walks_the_dial() {
 
 // The wiring is content, not a rule of either process: point each process at the OTHER
 // engine and both still settle on their own terms. A won FRAGGER run as an AV scan is a
-// full scan; a Stacker board as a DEFRAG pays its blocks in frag, and — having no Bits
-// unit — nothing in Bits.
+// full scan; a Stacker board as a DEFRAG pays its blocks in frag, and (having no Bits
+// unit) nothing in Bits.
 void test_played_maint_engines_are_interchangeable() {
     Game a{StartMode::Hatched};
     a.model().setFragmentation(50);
@@ -542,7 +542,7 @@ void test_rolled_defrag_takes_its_fixed_bite() {
 // The Replication Ghost's whole lifecycle, which until now had no way to begin: the
 // model carried a flag, a setter and a save field that nothing ever set true, so the AV
 // screen's GHOST state and the AIR_GAPPED row were both unreachable by play.
-// Worm-line only (game_care.cpp's resolveMaint) — a phantom self-copy is that line's
+// Worm-line only (game_care.cpp's resolveMaint): a phantom self-copy is that line's
 // own failure mode, the way Lockout is Ransomware's, so every raising case here hatches
 // "vermicell" (content_evolution.cpp's Worm BootSector egg) rather than the default.
 void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
@@ -568,7 +568,7 @@ void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
 }
 
 // A Ransomware/Phishing/Trojan disk never forks a ghost, however critical and however
-// badly the defrag fails — the same critical-disk failure that raises one on "vermicell"
+// badly the defrag fails: the same critical-disk failure that raises one on "vermicell"
 // above must be a no-op here, or the mechanic isn't actually line-specific.
 void test_replication_ghost_never_raised_off_the_worm_line() {
     Game g{StartMode::Hatched, "paypup"};             // Ransomware
@@ -578,7 +578,7 @@ void test_replication_ghost_never_raised_off_the_worm_line() {
 }
 
 // The cure, and the achievement that marks it. Unlinkguine stays an ordinary dish when
-// there is nothing to cure — which is the common case, and must not unlock anything.
+// there is nothing to cure, which is the common case, and must not unlock anything.
 // Dyno Nuggets, the everyday dish beside it, must NOT cure or unlock: that half is the
 // point of the split, not incidental coverage.
 void test_unlinkguine_cures_the_ghost_and_unlocks() {
@@ -597,7 +597,7 @@ void test_unlinkguine_cures_the_ghost_and_unlocks() {
     CHECK(g.model().hasGhost());
     g.inventory().add("dyno_nuggets", 1);
     g.debugUseItem("dyno_nuggets");
-    CHECK(g.model().hasGhost());                    // still there — nuggets only feed
+    CHECK(g.model().hasGhost());                    // still there: nuggets only feed
     CHECK(!g.hasAchievement(ach::kAirGapped));
 
     // ...and the dish that names the cure is the one that lands it.
@@ -617,12 +617,12 @@ void test_ghost_also_clears_through_a_successful_av_scan() {
     CHECK(!avGated(g.model()));                     // a ghost is work for the AV screen
     CHECK(!g.model().applyAntivirus(true));          // succeeded
     CHECK(!g.model().hasGhost());
-    // Curing it this way is NOT the Air-Gapped achievement — that row names Unlinkguine.
+    // Curing it this way is NOT the Air-Gapped achievement: that row names Unlinkguine.
     CHECK(!g.hasAchievement(ach::kAirGapped));
 }
 
 // Spoilage: a perishable held through a feeding turns into its `spoilsInto` row, and the
-// conversion is one-for-one — a stack that rots must not lose or gain count, which is the
+// conversion is one-for-one. A stack that rots must not lose or gain count, which is the
 // failure a percentage roll would otherwise hide behind "unlucky".
 void test_perishable_food_spoils_on_a_feeding() {
     Game g(StartMode::Hatched, "paypup");
@@ -630,7 +630,7 @@ void test_perishable_food_spoils_on_a_feeding() {
     int spoilages = 0, prevFresh = 40;
     for (int i = 0; i < 200; ++i) {
         g.inventory().add("dyno_nuggets", 1);
-        g.debugUseItem("dyno_nuggets");   // eat something ELSE — the beat, not the item
+        g.debugUseItem("dyno_nuggets");   // eat something ELSE: the beat, not the item
 
         const int fresh = g.inventory().count("fresh_macrol");
         CHECK(fresh + g.inventory().count("spoiled_macrol") == 40);  // conserved either way
@@ -641,7 +641,7 @@ void test_perishable_food_spoils_on_a_feeding() {
     // A 5% roll that never fires across 200 feedings isn't riding the beat at all.
     CHECK(spoilages > 0);
 
-    // An imperishable row never converts, however much the bag is disturbed — and the
+    // An imperishable row never converts, however much the bag is disturbed, and the
     // chain stops after one stage rather than rotting away to nothing.
     Game h(StartMode::Hatched, "paypup");
     h.inventory().add("spoiled_macrol", 3);
@@ -654,7 +654,7 @@ void test_perishable_food_spoils_on_a_feeding() {
 
 // Tinting: an icon master is a flat fill, so drawing it in another colour must keep
 // its shape exactly and change nothing else. And the theme index has to be the only
-// thing a colour lookup depends on — that indirection is what a theme swap rides on.
+// thing a colour lookup depends on: that indirection is what a theme swap rides on.
 void test_icon_tint_and_theme_indirection() {
     const SpriteData* icon = embeddedAssets().sprite("ICON_ITEM_SEALED_CACHE");
     CHECK(icon != nullptr);
@@ -729,7 +729,7 @@ void test_renamed_ids_table_invariants() {
         CHECK(!resolves(rows[i].from));
         CHECK(resolves(rows[i].to));
 
-        // Flattening: distinct `from`s, and no `to` that is itself renamed — the
+        // Flattening: distinct `from`s, and no `to` that is itself renamed. The
         // rewrite takes exactly one hop and stops.
         for (int j = i + 1; j < n; ++j) CHECK(std::strcmp(rows[i].from, rows[j].from) != 0);
         for (int j = 0; j < n; ++j) CHECK(std::strcmp(rows[i].to, rows[j].from) != 0);
@@ -754,7 +754,7 @@ void test_save_v39_raised_tally_roundtrip() {
     CHECK(g2.speciesRaised() == 2);
 }
 
-// FULL_PEDIA_L1 wants a whole line RAISED, which is only ever true across time — a
+// FULL_PEDIA_L1 wants a whole line RAISED, which is only ever true across time: a
 // line is walked one stage at a time, so no player holds all of it at once and the
 // possession test this replaced could never fire. Seeded through a save so the
 // achievement's own re-check (fired by the evolution below) is what unlocks it.

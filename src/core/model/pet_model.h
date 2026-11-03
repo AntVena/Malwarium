@@ -1,4 +1,4 @@
-// pet_model.h — the pet's vitals + care budget: the data STAT reads and the
+// pet_model.h (the pet's vitals + care budget): the data STAT reads and the
 // raising loop mutates. Pure logic, fully unit-testable.
 #pragma once
 
@@ -19,7 +19,7 @@ enum class CareBranch { Good, Bad, Dying };
 // most recently plugged in is the one that fires. `None` is the ordinary state and the
 // value a save written before the pair existed comes back as, so the wire numbers are
 // pinned rather than positional. It lives beside CareBranch because it is an OVERRIDE OF
-// CareBranch and nothing else — not a fourth branch, which is why it is not one of them.
+// CareBranch and nothing else, not a fourth branch, which is why it is not one of them.
 enum class BranchOverride : uint8_t { None = 0, Good = 1, Bad = 2 };
 
 class PetModel {
@@ -58,7 +58,7 @@ public:
     void feed(int hungerPts, int happyPts);
     // Defrag: success -kDefragReduction frag; failure +kMaintFailPenalty. Returns TRUE
     // on a FAILURE so the Game-level caller can apply the +1 care mistake through the
-    // SHIELDED path (v21 Restore Point covers maint fails too) — PetModel no longer
+    // SHIELDED path (v21 Restore Point covers maint fails too): PetModel no longer
     // touches the mistake counter itself.
     bool applyDefrag(bool success);
     // Defrag by an EXPLICIT amount, with no outcome to report: the Stacker variant's

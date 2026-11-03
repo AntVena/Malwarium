@@ -1,4 +1,4 @@
-// net_status.h — portable home-network association state the platform tier feeds in.
+// net_status.h: portable home-network association state the platform tier feeds in.
 //
 // Joining a network is device-tier work (platform/esp32/net_sta.h drives
 // WiFi.begin), but the *shape* of the reading lives here so the UPDATES screen and

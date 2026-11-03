@@ -1,6 +1,6 @@
-// mods_screen.h — MODS submenu: the LOADOUT hub (L2) that fronts it, the
+// mods_screen.h (MODS submenu): the LOADOUT hub (L2) that fronts it, the
 // equip-slot list, and the mod picker. Slot-based hardware equips; mods move freely
-// between slots. Mod EFFECTS apply in combat — the equip/inspect UI + the Loadout
+// between slots. Mod EFFECTS apply in combat: the equip/inspect UI + the Loadout
 // data model live here.
 //
 // MODS is the pet's whole combat loadout, so the hub's other two rows open screens
@@ -19,7 +19,7 @@ class ContentRegistry;
 class Loadout;
 class MoveLoadout;
 
-// Hub rows, in cursor order — MODS, MOVES, PRACTISE (LoadoutTab's non-Hub values,
+// Hub rows, in cursor order: MODS, MOVES, PRACTISE (LoadoutTab's non-Hub values,
 // offset by one). The Game wraps its cursor on this.
 inline constexpr int kLoadoutHubRows = 3;
 
@@ -35,20 +35,20 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
                     const LoadoutHubView& v);
 
 // Owned mods in picker order: the ones that can go in `slot` RIGHT NOW first, then the
-// ones that can't, each half in registry order. Nothing is hidden — a mod the pet has
+// ones that can't, each half in registry order. Nothing is hidden. A mod the pet has
 // not levelled into is the reason to keep levelling, and dropping it from the list
-// would drop the only place that reason is ever stated — but it stops sitting between
+// would drop the only place that reason is ever stated, but it stops sitting between
 // the player and the mods they can actually fit, which on a grown pool is most of them.
 // `petLevel` / `petLine` / `slot` are the same three gates the rows draw with
 // (drawModPicker), so the order can never disagree with the LOCKED tag beside it.
 //
 // The Game's picker cursor indexes THIS list (Game::onModPicker), so both callers must
-// pass the same three arguments — an order the cursor and the rows disagree about is a
+// pass the same three arguments: an order the cursor and the rows disagree about is a
 // mod equipped by pointing at a different one.
 std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadout& load,
                                         int petLevel, const char* petLine, int slot);
 
-// True if `m` is blocked from `slot` on this pet right now — its rolled equip level is
+// True if `m` is blocked from `slot` on this pet right now: its rolled equip level is
 // above `petLevel`, it wants a line the pet doesn't carry, or the pet already has it in
 // a different slot. The one answer the ordering above, the row's dim + reason tag, and
 // the picker's verdict line all read, so a mod can never sort as available and then
@@ -57,7 +57,7 @@ bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
                   const Loadout& load, int slot);
 
 // L2 equip-slot list: one row per slot, showing the equipped mod + effect tag
-// (or "— empty —"). `cursor` is the focused slot; `beat` scrolls the focused row's name
+// (or ". Empty. "). `cursor` is the focused slot; `beat` scrolls the focused row's name
 // when it is too long to sit beside its tag.
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const Loadout& load, int cursor, int beat);
@@ -89,7 +89,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
                    const ModPickerView& v);
 
 // Prose lines the MODS detail panel actually holds. Its floor grows with the readout,
-// so this is a constant whatever the grid costs — but it is the reserve MINUS the gap
+// so this is a constant whatever the grid costs, but it is the reserve MINUS the gap
 // the grid leaves behind it, which is not the reserve. Published so the content tests
 // hold a mod's description to what the screen will really draw.
 int modDetailProseLines();

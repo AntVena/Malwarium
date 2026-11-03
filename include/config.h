@@ -1,14 +1,14 @@
 // =============================================================================
-//  config.example.h  —  Malwarium hardware configuration template
+//  config.example.h: Malwarium hardware configuration template
 // -----------------------------------------------------------------------------
 //  Copy this file to  include/config.h  and edit the values for YOUR board.
-//  The game engine and web layer must NEVER hardcode a pin — every board-
+//  The game engine and web layer must NEVER hardcode a pin: every board-
 //  specific value lives here. To port to a new board, add a new BOARD_* block
 //  below and select it; you should not need to touch any other source file.
 //
 //  HOW TO USE
 //    1. Pick your board by setting BOARD_TARGET (or pass -D BOARD_* via
-//       platformio.ini build_flags — see the bottom of this file).
+//       platformio.ini build_flags: see the bottom of this file).
 //    2. Fill in any pin marked  // TODO: confirm  for your board.
 //    3. Build.
 //
@@ -55,12 +55,12 @@
 #define PIN_LCD_DC              45   // VERIFIED (demo)
 #define PIN_LCD_RST            40    // VERIFIED (demo)
 #define PIN_LCD_CS             21    // VERIFIED (demo)
-#define PIN_LCD_BL             46    // VERIFIED (demo) — plain GPIO, drive HIGH = on (no PWM)
+#define PIN_LCD_BL             46    // VERIFIED (demo): plain GPIO, drive HIGH = on (no PWM)
 
 // Backlight brightness PWM ------------------------------------
 //  The CFG "BRIGHTNESS" level is persisted engine-side (save v14) and mapped to a 0..255
 //  duty by main.cpp's applyBrightness(). With this at 0 the duty degrades to plain on/off
-//  GPIO, so every level renders full brightness — which also makes the backlight, the
+//  GPIO, so every level renders full brightness, which also makes the backlight, the
 //  largest single draw on a lit panel, unmanageable. The LEDC path is in display_esp32.h,
 //  and lgfx_config.h leaves PIN_LCD_BL alone, so nothing contends for the pin.
 #define HAS_BACKLIGHT_PWM       1    // 1 = LEDC dimming (shipped) · 0 = on/off GPIO fallback
@@ -107,7 +107,7 @@
 // --- Touch (Touch variant only; SKU 33868/33869) ---------------------------
 #define TOUCH_ENABLED           0    // set 1 if you have the capacitive-touch board (CST816)
 
-// --- Buttons  (3 physical: PLUS, BOOT, PWR — all readable) -----------------
+// --- Buttons  (3 physical: PLUS, BOOT, PWR. All readable) -----------------
 //  Active level: these are pulled HIGH and read LOW when pressed.
 #define BUTTON_ACTIVE_LOW       1
 #define BUTTON_COUNT            3
@@ -120,7 +120,7 @@
 //  VERIFIED against the demo + on-device + the official schematic GPIO map:
 //  the 3 buttons are GPIO 0, 5, 4 (active-low), physically left->middle->right.
 //  Schematic net names: GPIO0 = KEY_MINUS (also the BOOT / download-mode strap),
-//  GPIO5 = KEY_PWR (the middle *power* button — it is wired into the battery
+//  GPIO5 = KEY_PWR (the middle *power* button. It is wired into the battery
 //  power latch; see PIN_POWER_HOLD below), GPIO4 = KEY_PLUS. We map the physical
 //  left->middle->right order onto the natural A/B/C.
 #define PIN_BTN_A              0    // leftmost (KEY_MINUS/BOOT) -> NEXT
@@ -132,17 +132,17 @@
 //  "Power"/"BAT" blocks: KEY_PWR + BAT_EN -> 8050 NPN -> AO3401 P-FETs gating
 //  VBAT->VSYS). Pressing PWR (GPIO5) momentarily closes the latch so the CPU
 //  boots; firmware must then drive BAT_EN HIGH to *hold* it closed. If it never
-//  does, the rail collapses the instant PWR is released — the panel flashes for
+//  does, the rail collapses the instant PWR is released. The panel flashes for
 //  <0.1s then dies (USB is immune: VBUS feeds VSYS directly, no latch needed).
 //  Assert HIGH as the very first thing in setup() (main.cpp). BAT_EN = GPIO2
 //  (not a strapping pin, so driving it at boot is safe).
-#define PIN_POWER_HOLD          2    // BAT_EN — HIGH = stay powered on battery
+#define PIN_POWER_HOLD          2    // BAT_EN: HIGH = stay powered on battery
 #define POWER_HOLD_ACTIVE_HIGH  1
 
 // --- Battery monitoring ----------------------------------------------------
 #define BATTERY_MONITOR_ENABLED 1
-#define PIN_BATTERY_ADC         1    // BAT_ADC (GPIO1) — CONFIRMED from schematic
-#define PIN_CHARGE_STAT         3    // CHG_STAT (GPIO3) — ETA6098 charge status
+#define PIN_BATTERY_ADC         1    // BAT_ADC (GPIO1): CONFIRMED from schematic
+#define PIN_CHARGE_STAT         3    // CHG_STAT (GPIO3): ETA6098 charge status
 //  Voltage = (3.3 / 4096) * 3.0 * raw_adc   (R27 200K / R32 100K = 3:1 divider)
 #define BATTERY_ADC_DIVIDER     3.0f
 //  How often the loop takes a fresh reading while the panel is awake. SoC moves
@@ -170,7 +170,7 @@
 #define SCREEN_DIM_MS           20000   // 20s (10s of dim before the 30s blank)
 #define SCREEN_DIM_PERCENT      20      // cap the backlight here while dimmed (matches the lowest CFG notch)
 //  Once the screen is asleep AND the radio has no owner (no Audit Scan/
-//  Capture, no 'Pedia AP) — i.e. nothing external can change game state — the
+//  Capture, no 'Pedia AP): i.e. nothing external can change game state: the
 //  loop light-sleeps the SoC instead of spinning. A button press wakes it
 //  instantly (GPIO wake, independent of this value); this timer wake is only
 //  a fallback in case that GPIO wake is ever somehow missed, so it's sized by
@@ -181,7 +181,7 @@
 #define IDLE_SLEEP_FALLBACK_MS  120000  // 2 min
 //  CPU clock, and the one window it is throttled in. The loop light-sleeps only when
 //  the radio ALSO has no owner, so the state this covers is the dark screen with a
-//  consumer running — an armed audit capture, a live 'Pedia AP — which is exactly the
+//  consumer running (an armed audit capture, a live 'Pedia AP), which is exactly the
 //  "arm it and pocket the device" use, and which otherwise spins at the full clock for
 //  as long as the session lasts.
 //
@@ -206,7 +206,7 @@
 //  two above can push it toward 80. Set equal to CPU_ACTIVE_FREQ_MHZ to disable.
 #define CPU_SCREEN_IDLE_FREQ_MHZ 160
 //  Travel mode (CFG -> DEVICE -> TRAVEL MODE): a deliberate indefinite pause, and
-//  a DEEP sleep rather than the idle light sleep above — the digital core goes down
+//  a DEEP sleep rather than the idle light sleep above. The digital core goes down
 //  and comes back through a reset, which is what makes the pause a real one. The
 //  wake gesture is PIN_BTN_B + PIN_BTN_C held together for this long. Deliberately
 //  NOT the A+C Exploit chord: PIN_BTN_A is GPIO0, the download-mode strap, and a
@@ -221,7 +221,7 @@
 //  A periodic free/largest-block line on serial, plus whether a save would be
 //  allowed to run right now (Game::saveHasHeadroom). LARGEST is the number that
 //  matters: the save wants its blob in one piece, so a fragmented heap refuses it
-//  long before free memory runs out — which is exactly how a save landing during a
+//  long before free memory runs out, which is exactly how a save landing during a
 //  radio hand-off used to reset the device. Chatty by design, so it is its own flag
 //  rather than something a release build carries. The one-off heap figures on the
 //  [radio]/[ap]/[cap] lines are NOT gated by this: those ride traces that already
@@ -237,20 +237,20 @@
 #define HEAP_TRACE_MS           3000    // how often it prints
 //  Tethered-awake: while a USB HOST is attached, hold off both the screen sleep
 //  and the SoC light sleep. Sleeping exists to save battery, and a tethered device
-//  isn't on battery — but the sharper reason is that light sleep drops the
+//  isn't on battery, but the sharper reason is that light sleep drops the
 //  USB-Serial-JTAG link, so a sleeping device disappears from `pio device monitor`
 //  mid-session and the panel goes dark while you're reading it.
 //
 //  The signal is HWCDC::isPlugged(), which tracks USB Start-of-Frame packets from
 //  a real host. A dumb wall charger sends no SOF, so charging overnight from a
-//  plug still sleeps normally — only a computer keeps the device up.
+//  plug still sleeps normally, only a computer keeps the device up.
 //
 //  NO WAKE-ON-PLUG. This SDK has no USB light-sleep wake source
 //  (esp_sleep_enable_usb_serial_jtag_wakeup doesn't exist here), so plugging into
 //  a sleeping device cannot wake it directly. Recovery is the existing
 //  IDLE_SLEEP_FALLBACK_MS timer wake: worst case, the device notices the cable one
 //  fallback period after it went in. USB_SETTLE_MS is what makes that check work
-//  at all — see its note.
+//  at all: see its note.
 #define USB_KEEPS_AWAKE         1       // 1 = a tethered USB host suppresses both sleeps
 //  Grace period after a light-sleep wake before sleep is allowed again. Light
 //  sleep gates the clocks the USB peripheral and the FreeRTOS tick hook both need,
@@ -262,8 +262,8 @@
 // --- OTA trial window ------------------------------------------------------
 //  How long a freshly-installed image must stay up, rendering, before it is
 //  committed and the bootloader's rollback is cancelled (main.cpp). Sized to
-//  outlast the failures worth catching — a panic in setup(), a wedged display
-//  bring-up, an early crash-loop — while staying short enough that a user is
+//  outlast the failures worth catching. A panic in setup(), a wedged display
+//  bring-up, an early crash-loop, while staying short enough that a user is
 //  unlikely to power-cycle inside it. Doing so is harmless anyway: they get a
 //  rollback they didn't need, which is the safe direction to be wrong in.
 #define OTA_PROVE_MS            20000   // 20s
@@ -274,7 +274,7 @@
 //  WiFi.scanNetworks(async), dedup by BSSID in Game::registerNetwork). PASSIVE
 // ONLY: listen/scan, never deauth or inject (the.pcap handshake slice is
 //  separate and NOT built here).
-//  NET_SNIFF_ENABLED is now only a BOARD-CAPABILITY gate — "is a Wi-Fi radio
+//  NET_SNIFF_ENABLED is now only a BOARD-CAPABILITY gate: "is a Wi-Fi radio
 //  present / compile the audit scan path in." The actual on/off is a RUNTIME
 //  toggle the player flips in CFG ("AUDIT SCAN"), persisted in the save blob
 //  (Game::netScanEnabled(), save v5, default OFF). With the toggle OFF the radio
@@ -287,7 +287,7 @@
 //  the scan-done event dispatched from the WiFi task carrying the count.
 //  WiFi.scanComplete() reports WIFI_SCAN_FAILED in the gap between the two, so a
 //  negative result is only believed once a sweep has run well past any legitimate
-//  duration (~6s to cover 14 channels) — see net_sniff.h for why believing it early is
+//  duration (~6s to cover 14 channels): see net_sniff.h for why believing it early is
 //  self-perpetuating.
 #define NET_SNIFF_SCAN_TIMEOUT_MS   15000  // give up on a sweep that never reports
 #define NET_SNIFF_RETRY_MS          2000   // backoff before retrying after that
@@ -295,15 +295,15 @@
 // Pet-to-pet LINK (ESP-NOW) ---------------------------
 //  Broadcast discovery of other Malwarium devices: each device announces itself
 //  (core/net/peer_link.h) and remembers whoever answers (core/net/peer_ledger.h).
-//  Connectionless — no pairing, no association, no peer-table entry for anyone merely
+//  Connectionless: no pairing, no association, no peer-table entry for anyone merely
 //  heard, so the met-list is bounded by storage rather than by ESP-NOW's 20-peer limit,
 //  which only binds a UNICAST conversation. LINK_ENABLED is the BOARD-CAPABILITY gate;
-//  the runtime on/off is Game::linkWanted() — the persisted CFG "LINK" toggle (save v37,
+//  the runtime on/off is Game::linkWanted(): the persisted CFG "LINK" toggle (save v37,
 //  default OFF) plus the stretch the PEERS screen raises it itself. OFF => nothing is sent.
 //
 //  ANNOUNCING IS ITS OWN CONSENT. This transmits the operator's HackerTag, pet and
 //  crew to anyone in range, which is a different act from the audit scan's passive
-//  listening — so it is a separate toggle, never implied by AUDIT SCAN being on.
+//  listening, so it is a separate toggle, never implied by AUDIT SCAN being on.
 //
 //  Both devices must be parked on the SAME channel to hear each other; there is no
 //  channel-hopping rendezvous. PEER_LINK_CHANNEL is that fixed meeting point.
@@ -311,13 +311,13 @@
 #define PEER_LINK_CHANNEL           1      // fixed rendezvous channel (must match peers)
 #define PEER_BEACON_INTERVAL_MS     1000   // HELLO cadence while the radio is ours
 //  The piggyback window. An unassociated ESP-NOW listener cannot use Wi-Fi modem
-//  sleep (that needs an AP's DTIM beacons), so its receiver is on continuously —
+//  sleep (that needs an AP's DTIM beacons), so its receiver is on continuously:
 //  there is no cheap "always listening" mode, and ambient discovery has to be duty
 //  cycled. Rather than power the radio up on its own schedule, LINK borrows the
 //  audit scan's existing radio-up window: after a sweep completes, the radio is
 //  already hot, so it costs only this window rather than a full power cycle.
 //  Discovery probability is bought by the window LENGTH, though, and that part is
-//  not free — two devices whose windows are unsynchronised overlap roughly
+//  not free: two devices whose windows are unsynchronised overlap roughly
 //  2*W/NET_SNIFF_SCAN_INTERVAL_MS of the time, so at 2s/30s expect a few minutes
 //  of co-presence before two ambient devices find each other. Holding the PEERS
 //  screen open skips all of this and discovers in under a second.
@@ -325,7 +325,7 @@
 
 // 'Pedia local Access Point --------------------------
 //  A standalone 2.4GHz SoftAP + tiny HTTP server that serves the 'Pedia landing
-//  page (no internet needed). AP_ENABLED is only a BOARD-CAPABILITY gate — "is a
+//  page (no internet needed). AP_ENABLED is only a BOARD-CAPABILITY gate: "is a
 //  Wi-Fi radio present / compile the AP path in." The actual on/off is a RUNTIME
 //  toggle the player flips in CFG ("PEDIA AP"), persisted in the save blob
 //  (Game::apEnabled(), save v20, default OFF). While ON the AP is the radio's TOP
@@ -347,7 +347,7 @@
 #define AP_IDLE_TIMEOUT_MS          180000 // 3 min with no station associated
 
 // Home-network association (STA) ---------------------
-//  A BOARD-CAPABILITY gate — "is there a radio that can join someone else's
+//  A BOARD-CAPABILITY gate. "is there a radio that can join someone else's
 //  network." There is no runtime opt-in beside it: an update job raises the
 //  association it needs and drops it when it ends, so the radio is claimed on the
 //  spot, per job, never standing (platform/esp32/net_sta.h). Credentials come from
@@ -367,7 +367,7 @@
 //  Where the published artifact list lives: this project's GitHub Pages host, which
 //  CI deploys to on a `v*` tag (.github/workflows/publish.yml, docs/ORIENTATION.md
 //  "Releasing"). Compiled in so a freshly flashed device can check for updates
-//  without anyone typing a URL into it — which is the whole point for an operator
+//  without anyone typing a URL into it, which is the whole point for an operator
 //  who was handed a device rather than building one.
 //
 //  A stored NVS override WINS over this (platform/esp32/update_source.h reads the override
@@ -376,13 +376,13 @@
 //  would otherwise have no way to be told where the new one is. The override is the way out
 //  of that circle, and it is reachable from the device's own setup page.
 //
-//  A FORK SHOULD CHANGE THIS — a fork that leaves it pointed here hands its devices somebody
+//  A FORK SHOULD CHANGE THIS: a fork that leaves it pointed here hands its devices somebody
 //  else's firmware. Empty is legitimate: it means "no source compiled in", and the UPDATES
 //  screen says so rather than failing against a placeholder.
 //
 //  Overridable from the build system, the same way version.h takes its numbers, so
 //  pointing a board at a laptop serving `make manifest` needs no edit here (the
-//  escaped quotes are load-bearing — the macro has to expand to a string literal):
+//  escaped quotes are load-bearing. The macro has to expand to a string literal):
 //
 //    PLATFORMIO_BUILD_FLAGS='-DUPDATE_MANIFEST_URL=\"http://192.168.1.50:8000/manifest.json\"' \
 //      pio run -e waveshare_s3_154 -t upload
@@ -392,24 +392,24 @@
 
 // --- Persistence (NVS / Preferences) ---------------------------------------
 //  The save blob lives under this namespace/key (ESP32 SaveStore). NVS
-//  namespaces are <=15 chars. It lives in NVS_SAVE_PARTITION — a dedicated
+//  namespaces are <=15 chars. It lives in NVS_SAVE_PARTITION. A dedicated
 //  256KB partition (partitions_malwarium.csv, board_build.partitions), not
 //  the stock 20KB `nvs` partition (which stays default-sized for Wi-Fi/BT
-//  calibration data) — the save blob outgrew that 20KB as save fields were
+//  calibration data). The save blob outgrew that 20KB as save fields were
 //  added across versions. Preferences::begin's partition_label parameter
 //  (save_store_esp32.h) is what actually routes to it.
 #define NVS_NAMESPACE           "malwarium"
 #define NVS_SAVE_KEY            "save"
 #define NVS_SAVE_PARTITION      "malsave"
-//  Mirrors partitions_malwarium.csv's malsave size — kept as its own constant
+//  Mirrors partitions_malwarium.csv's malsave size: kept as its own constant
 //  (not derived at runtime; Preferences has no "partition capacity" query) so
 //  the boot-line print (main.cpp) can show blob-size-vs-capacity. Update this
 //  alongside the CSV if that partition is ever resized.
 #define NVS_SAVE_PARTITION_BYTES (256u * 1024u)
 
 //  Home-network credentials (platform/esp32/net_credentials.h) live in their own
-//  NVS namespace, NOT in the save blob: the save is portable — it round-trips
-//  through the ARCH rack and is described to the web 'Pedia — and src/core is
+//  NVS namespace, NOT in the save blob: the save is portable (it round-trips
+//  through the ARCH rack and is described to the web 'Pedia), and src/core is
 //  platform-agnostic, so a passphrase has no business in either. Same partition,
 //  separate namespace, so a Factory Reset of the save leaves the network alone.
 //  Stored PLAINTEXT (stock NVS is not encrypted); anyone with the flash can read
@@ -519,7 +519,7 @@
 
 
 // =============================================================================
-//  platformio.ini  (reference — keep in repo root, not here)
+//  platformio.ini  (reference: keep in repo root, not here)
 //  -------------------------------------------------------------------------
 //  [env:waveshare_s3_154]
 //  platform     = espressif32
@@ -529,6 +529,6 @@
 //  lib_deps     = moononournation/GFX Library for Arduino
 //  -------------------------------------------------------------------------
 //  (If you set the BOARD_* values directly in this file, the -D flags are
-//   optional — but selecting the board from build_flags lets a second board's
+//   optional, but selecting the board from build_flags lets a second board's
 //   env coexist without editing config.h each time.)
 // =============================================================================

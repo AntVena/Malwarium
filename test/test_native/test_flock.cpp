@@ -1,8 +1,8 @@
-// test_flock.cpp — the guardians' bodies: the boids model and the swarm that draws it.
+// test_flock.cpp (the guardians' bodies): the boids model and the swarm that draws it.
 //
 // Two subjects, one file, for the reason test_shiboleet.cpp gives about its three: the
 // model is only interesting because of what the draw makes of it. What the gates here can
-// actually hold is the part a screenshot cannot — that the sim stays inside its cell, that
+// actually hold is the part a screenshot cannot: that the sim stays inside its cell, that
 // it never collapses or blows up, and that the moods are DIFFERENT ENOUGH to read. How it
 // looks is `tools/screens.sh`'s job, and no gate is a substitute for it.
 #include "test_gates.h"
@@ -13,7 +13,7 @@
 
 namespace {
 
-// The cell every gate here works in — the screen's own, so a bound that holds in a test
+// The cell every gate here works in: the screen's own, so a bound that holds in a test
 // holds on the panel (shiboleet_screen.h).
 constexpr int kW = mal::kGuardianCellW;
 constexpr int kH = mal::kGuardianCellH;
@@ -53,7 +53,7 @@ mal::SwarmView viewOf(const mal::Flock& f) {
 
 // THE containment gate. A swarm is drawn in a cell with text directly under it, so a boid
 // that walks out of the box is a mark on somebody's reading. The model has to hold this by
-// itself — the draw's clip is the second line of defence, not the first — and it has to
+// itself (the draw's clip is the second line of defence, not the first), and it has to
 // hold for every mood, because the moods are exactly what change how hard the sim pushes.
 void test_flock_never_leaves_its_cell() {
     for (mal::FlockMood mood : kAllMoods) {
@@ -90,7 +90,7 @@ void test_flock_holds_together_without_collapsing() {
 // The moods are legible AS SHAPES, which is the dual-coding gate for an effect whose only
 // state is a disposition: a guardian that refused the pet and one that is at ease have to
 // be different pictures in grayscale, before either of them is a colour. The two extremes
-// are the pair that has to hold — a refusal draws in and an open swarm spreads out.
+// are the pair that has to hold: a refusal draws in and an open swarm spreads out.
 void test_flock_moods_read_as_different_shapes() {
     int knot = 0, wide = 0;
     for (uint32_t seed = 1; seed <= 8; ++seed) {
@@ -102,7 +102,7 @@ void test_flock_moods_read_as_different_shapes() {
     CHECK(wide > knot * 3 / 2);
 
     // ...and the one a fight hangs off is the FAST one. An agitated guardian is the only
-    // mood the player has to read in a hurry — the fight is one button away — so it has to
+    // mood the player has to read in a hurry (the fight is one button away), so it has to
     // be moving visibly faster than a settled one, which is what draws the streaks.
     int agitated = 0, pleased = 0;
     for (uint32_t seed = 1; seed <= 8; ++seed) {
@@ -137,7 +137,7 @@ void test_flock_settles_quickly_enough_to_be_seen() {
 }
 
 // Two guardians are not the same guardian. The seed is the whole of what tells two flocks
-// apart — the same rule IdleWander::seed keeps — and a meeting seeds off the walk position
+// apart (the same rule IdleWander::seed keeps), and a meeting seeds off the walk position
 // (Game::startShiboleet), so a swarm that ignored its seed would be the identical animation
 // every time anyone met anything.
 void test_two_seeds_are_two_creatures() {
@@ -203,7 +203,7 @@ void test_the_swarm_draws_only_inside_its_cell() {
     }
 }
 
-// It actually PUTS something on the panel, in every mood — the failure this catches is a
+// It actually PUTS something on the panel, in every mood: the failure this catches is a
 // swarm tuned until it is tasteful enough to be invisible, which a containment gate is
 // perfectly happy with.
 void test_the_swarm_is_visible_in_every_mood() {
@@ -253,7 +253,7 @@ inline bool reachGuardianFight(Game& g) {
 
 // A guardian brings NO SHEET to its own fight, and says so. Before this it borrowed
 // SPR_PET_CACHEMUTT, so the thing that had just been speaking the Cant to the pet turned
-// up in the rival seat as somebody's dog — the swarm is only reachable because the row
+// up in the rival seat as somebody's dog: the swarm is only reachable because the row
 // stopped naming a sprite, and isSwarm is what keeps that from reading as missing art.
 void test_a_guardian_fights_as_a_swarm_and_nothing_else_does() {
     for (int a = 0; a < kExplSectors; ++a)
@@ -282,7 +282,7 @@ void test_a_guardian_fights_as_a_swarm_and_nothing_else_does() {
 }
 
 // The body carries over into the fight, re-homed into the FIGHTER's seat. Two cells are in
-// play — the meeting screens' and the stage's — and a flock only ever knows how big its box
+// play (the meeting screens' and the stage's), and a flock only ever knows how big its box
 // is, so a fight that forgot to re-home it would draw a guardian sized for a screen it is
 // no longer on, spilling over the pet standing opposite.
 void test_the_guardians_body_moves_into_the_fighters_seat() {
@@ -306,7 +306,7 @@ void test_the_guardians_body_moves_into_the_fighters_seat() {
 // The mood is the rival Health gauge said in the body: a guardian holding its own appraises
 // the pet, a pressed one fights, and a failing one draws into a knot. Read off the HEALTH
 // BAND and not the hit clock, so it describes the creature rather than flickering with the
-// exchange — the mistake RENDER_PIPELINE.md records FX_CAMO making.
+// exchange: the mistake RENDER_PIPELINE.md records FX_CAMO making.
 void test_a_guardians_body_reads_its_own_health() {
     Game g{StartMode::Hatched};
     // The innate jab in every slot: small, even steps, so no single blow can carry the
@@ -350,7 +350,7 @@ void test_a_guardians_body_reads_its_own_health() {
 }
 
 // The stage still draws, and draws the guardian. A rival seat holding a creature with no
-// sheet is the case every sprite path on that screen has to survive — and the failure that
+// sheet is the case every sprite path on that screen has to survive, and the failure that
 // matters is the quiet one, where it survives by drawing nothing at all.
 void test_the_stage_draws_a_sheetless_guardian() {
     Game g{StartMode::Hatched};

@@ -18,7 +18,7 @@ namespace {
 
 
 // A 1px outline. Local because the Stacker's in-hand run is the only thing that wants
-// one — a filled block is a placed block everywhere else, so "outlined" reading as "not
+// one: a filled block is a placed block everywhere else, so "outlined" reading as "not
 // committed yet" is this screen's own vocabulary, not a general widget.
 void strokeRect(Framebuffer& fb, int x, int y, int w, int h, Rgb565 c) {
     fb.fillRect(x, y, w, 1, c);
@@ -35,7 +35,7 @@ void avStatus(const PetModel& m, char* out, int n) {
 }
 
 // The disk map both processes animate (ANIM_DEFRAG / ANIM_AV_SWEEP). Its three cell
-// states differ in SHAPE — plain track, hollow frame, solid block — so the map reads in
+// states differ in SHAPE (plain track, hollow frame, solid block), so the map reads in
 // grayscale without leaning on the hues laid over it.
 constexpr int kMapCols = 17;
 constexpr int kMapRows = 5;
@@ -89,7 +89,7 @@ void drawDefragMap(Framebuffer& fb, float t) {
 }
 
 // Scan-sweep: a beam walks the columns left to right. Files ahead of it are unchecked
-// (hollow); behind it they are clean (solid), and an infected one is quarantined — its
+// (hollow); behind it they are clean (solid), and an infected one is quarantined: its
 // cell emptied and crossed out, which is the one mark the scan leaves that a solid or
 // hollow cell cannot be mistaken for.
 void drawAvMap(Framebuffer& fb, float t) {
@@ -141,7 +141,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         // The status owns the right end, so the process name yields to it and scrolls
-        // when focused (widgets.h) — DEFRAGMENTATION spelled out is the whole point of
+        // when focused (widgets.h): DEFRAGMENTATION spelled out is the whole point of
         // the row, so it is not the half that gets cut.
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), beat, scrollWhen(i == cursor));
@@ -190,7 +190,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
                       kDefragReduction);
         drawText(fb, kMargin, 34, line, palColor(Pal::INK));
     }
-    // Everything under the headline is a READOUT, and dim is what says so — the
+    // Everything under the headline is a READOUT, and dim is what says so: the
     // same job it does on ITEMS and MODS, where the magnitude grid under the name is
     // dim and the prose above it is INK. Colouring these by row instead made dim
     // alternate down the page and mark no group at all, which spent the one
@@ -205,7 +205,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     drawText(fb, kMargin, 62, line, palColor(Pal::INK_DIM));
     // stage-scaled Bits cost + the wallet, both spelled out so the affordability
     // reads in grayscale (COST N B / HAVE N B). It goes WARN when the wallet is
-    // short, which is how a FAILING gate reads on MODS too — dim while it passes,
+    // short, which is how a FAILING gate reads on MODS too: dim while it passes,
     // lit the moment it is the thing stopping you.
     std::snprintf(line, sizeof(line), "COST %d B   HAVE %d B", v.cost, v.walletBits);
     const bool afford = v.walletBits >= v.cost;
@@ -213,7 +213,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
              afford ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
     // The tool count is a WALLET line, not a pick: it belongs beside HAVE %d B at
     // the readout pitch, above the list, rather than trailing the list at the list's
-    // own pitch — where a dim unindented row still reads as a fourth thing to land
+    // own pitch, where a dim unindented row still reads as a fourth thing to land
     // the cursor on.
     std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", v.toolCount);
     drawText(fb, kMargin, 90, line, palColor(Pal::INK_DIM));
@@ -224,7 +224,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     // Grayscale-safe: the cursor marks the focus, and each row spells its terms in
     // words (n% FAIL / GUARANTEED / NO TOOL / the dial). The 22px above the first row and the 28px
     // below the last are what fence the pick off from the readouts and the action
-    // line — both wider than the 18px the rows keep between themselves.
+    // line: both wider than the 18px the rows keep between themselves.
     const int rowY[3] = {112, 130, 148};
     for (int i = 0; i < 3; ++i) {
         const bool focus = v.variant == i;
@@ -249,7 +249,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     }
 
     // Bottom action line: the gated reason, or the armed action. It names the
-    // ACTION, not the buttons — the band below does those, and the AV branch's
+    // ACTION, not the buttons: the band below does those, and the AV branch's
     // "SCAN" cursor is the same shape.
     const bool toolReady = v.toolCount > 0;
     const bool runnable = afford && (v.variant != 1 || toolReady);
@@ -263,7 +263,7 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     } else if (runnable) {
         drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
         drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
-        // The price of the gamble, as a footnote to the action that takes it — only
+        // The price of the gamble, as a footnote to the action that takes it, only
         // while QUICK is the armed variant, the one of the three that can fail.
         if (v.variant == 0)
             drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
@@ -299,7 +299,7 @@ void drawAvAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) 
     drawText(fb, kMargin, 78, line, palColor(Pal::INK_DIM));
 
     // The two ways to run the same scan, picked the way DEFRAG's three are. Both
-    // free: QUICK rolls for it, the played game cannot fail — a run that stops
+    // free: QUICK rolls for it, the played game cannot fail. A run that stops
     // short still pays its units off the disk.
     const int rowY[2] = {112, 130};
     for (int i = 0; i < kAvVariants; ++i) {
@@ -337,7 +337,7 @@ void drawMaintAction(Framebuffer& fb, const PetModel& m, const MaintActionView& 
 // The right column of a played board's footer: what the run is FOR, the one thing its
 // contexts don't share. A cabinet banks a score against its line; a MAINT run counts
 // the disk down live, and either the Bits it is earning or the Fragmentation it is worth
-// below that. It climbs as the run goes rather than arriving afterwards — that is the
+// below that. It climbs as the run goes rather than arriving afterwards: that is the
 // whole reason to keep playing.
 void drawPlayHudWorth(Framebuffer& fb, const PlayHud& hud) {
     char line[24];
@@ -364,7 +364,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
     drawHeaderBand(fb, hud.title);
 
     // Drawn bottom-up: row 0 is the base, so it sits at the FOOT of the well and the run
-    // climbs toward the header. Cells are WIDE and short — a disk block, not a tile — and
+    // climbs toward the header. Cells are WIDE and short (a disk block, not a tile), and
     // their size is derived from the grid rather than typed twice, so changing
     // kStackerCols/kStackerRows can't desync the drawing from the rules. One row more
     // than the grid is laid out: the open row above the well the intruder starts in.
@@ -418,7 +418,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
         }
 
         // The intruder itself: a hollow frame crossed out, FRAGGER's fragment mark and
-        // the AV map's quarantine mark — the one shape on this board that is a threat.
+        // the AV map's quarantine mark. The one shape on this board that is a threat.
         const Rgb565 hot = palColor(Pal::HOT);
         const int bw = kCellW - 2 * kGap, bh = kCellH - 2 * kGap;
         const int bx = ix + kGap, by = iy + kGap;
@@ -435,7 +435,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
     // The two budgets, as pip bars in the gutters either side of the well, filled from
     // the floor up: locks left on the LEFT, one solid pip each (a spent one is an empty
     // slot, so the bar reads as a supply running down), and intruders still to stop on
-    // the RIGHT, one hollow pip each — the shape, not the side's colour, is what says
+    // the RIGHT, one hollow pip each. The shape, not the side's colour, is what says
     // which bar is the threat. Drops share the cells' row pitch; intruders run at half
     // of it, since a ground lock can call several.
     {
@@ -456,7 +456,7 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
 
     // The run in hand: an OUTLINE, not a fill. Filled means committed everywhere else on
     // this board, so the distinction survives grayscale without needing a second colour,
-    // and its own motion is what says the run is live — no blink, which at this cadence
+    // and its own motion is what says the run is live: no blink, which at this cadence
     // would only read as flicker.
     if (s.running() && s.dropsLeft() > 0)
         for (int c = s.left(); c < s.left() + s.width(); ++c) {
@@ -466,10 +466,10 @@ void drawStackerBoard(Framebuffer& fb, const Stacker& s, const PlayHud& hud) {
                        palColor(Pal::INK));
         }
 
-    // The status/control pair below the well is a live HUD, not a static hint — its
+    // The status/control pair below the well is a live HUD, not a static hint: its
     // right column changes every drop (SCORE or FRAG) rather than naming a fixed
     // button set, which is why it isn't drawHintBand. But every OTHER screen's
-    // footer sits on the same TRACK-filled band, and this one was bare background —
+    // footer sits on the same TRACK-filled band, and this one was bare background:
     // the one place in the app that band vanishes the moment play starts.
     fb.fillRect(0, 178, kActiveW, kActiveH - 178, palColor(Pal::TRACK));
 
@@ -501,7 +501,7 @@ void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const PlayHud& hud, int
     // shape turned into a fall. Lanes are as wide as the run's count allows, so fewer
     // of them means bigger targets rather than a narrow strip in the middle. Every state differs by SHAPE so the board reads in
     // grayscale: an empty slot is plain track, a file a solid block, a fragment a hollow
-    // frame crossed out — the AV map's quarantine mark, here as the thing to shoot.
+    // frame crossed out. The AV map's quarantine mark, here as the thing to shoot.
     constexpr int kMaxLaneW = 48;
     constexpr int kRowH = 13;
     constexpr int kInset = 2;
@@ -534,7 +534,7 @@ void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const PlayHud& hud, int
                     fb.fillRect(x, y, blockW, kBlockH, palColor(Pal::PAPER));
                     strokeRect(fb, x, y, blockW, kBlockH, hot);
                     // A square cross in the middle of the frame, two pixels wide so it
-                    // holds its shape at x1.75 — a cross stretched corner to corner of
+                    // holds its shape at x1.75: a cross stretched corner to corner of
                     // a block this flat reads as an envelope.
                     const int cx = x + (blockW - kCross) / 2, cy = y + (kBlockH - kCross) / 2;
                     for (int d = 0; d < kCross; ++d) {
@@ -546,7 +546,7 @@ void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const PlayHud& hud, int
             }
         }
 
-    // The beam, from the head up to whatever stopped it — the top of the disk for a shot
+    // The beam, from the head up to whatever stopped it: the top of the disk for a shot
     // that met nothing. It stays until the next row falls, which at this cadence is the
     // difference between seeing the shot and having to take it on trust.
     if (shotLane >= 0) {
@@ -555,7 +555,7 @@ void drawFraggerBoard(Framebuffer& fb, const Fragger& f, const PlayHud& hud, int
         fb.fillRect(bx, top, 2, kHeadY - top, palColor(Pal::ACCENT));
     }
 
-    // The scan head: a wide base with a muzzle, solid ACCENT — the one thing on the
+    // The scan head: a wide base with a muzzle, solid ACCENT. The one thing on the
     // board that moves on a press. A run that crashed marks the lane it crashed in.
     if (f.running()) {
         const int hx = x0 + f.lane() * laneW + kInset;
@@ -605,7 +605,7 @@ void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,
         col = palColor(Pal::HOT);
     } else if (outcome == MaintOutcome::Partial) {
         // A played run that came up short still cleaned something, and says so in the
-        // same words a full run does — the difference is the adjective and the number,
+        // same words a full run does: the difference is the adjective and the number,
         // not a failure notice, because nothing failed.
         if (fragRemoved > 0) {
             std::snprintf(line, sizeof(line), "PARTIAL %s  -%d FRAG",

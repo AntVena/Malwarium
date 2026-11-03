@@ -8,14 +8,14 @@ namespace mal {
 
 namespace {
 
-// THE YARD BEHIND THE BUILDING — where a walker is at home, and where an egg sits until
+// THE YARD BEHIND THE BUILDING, where a walker is at home, and where an egg sits until
 // whatever is in it can stand. It is the fallback the whole chain rests on, so it is
 // deliberately the PLAINEST place in the set: a fence, a low plant on the horizon, a
 // dish on the roof, hardstanding underfoot. Nothing here competes for attention,
 // because this is the backdrop most pets will spend most of their life in front of.
 //
-// It is also the one place that has to survive being drawn behind absolutely anything —
-// the caption band, the hunger alert, an unlock banner, an incubation readout — so its
+// It is also the one place that has to survive being drawn behind absolutely anything
+// (the caption band, the hunger alert, an unlock banner, an incubation readout), so its
 // whole range sits low and the only bright pixels are three lit windows.
 constexpr uint8_t kToneSky = 14;
 constexpr uint8_t kToneBuilding = 44;
@@ -30,7 +30,7 @@ constexpr uint8_t kToneKerb = 122;
 constexpr uint8_t kToneLamp = 190;
 
 // The plant behind the fence: a long low block with a stepped end and a stack, which at
-// this size is the entire vocabulary of "industrial building". Even-topped on purpose —
+// this size is the entire vocabulary of "industrial building". Even-topped on purpose:
 // the moors are ragged and the keep is built, and this is built.
 constexpr uint8_t kPlant[] = {0, 0, 14, 14, 14, 14, 14, 14, 20, 20, 14, 14,
                               14, 14, 14, 14, 14, 14, 0, 0, 26, 26, 0, 0};
@@ -46,7 +46,7 @@ constexpr int kWindowW = 2, kWindowH = 3;
 constexpr int kDishX = 200, kDishR = 9;
 
 // The chain-link, standing on the horizon in front of everything. Posts every few
-// columns and a mesh between them, dim enough that the plant reads THROUGH it — which
+// columns and a mesh between them, dim enough that the plant reads THROUGH it, which
 // is the only thing that makes it a fence rather than a wall.
 constexpr int kFenceH = 22, kPostPitch = 32, kMeshPitch = 4;
 
@@ -67,7 +67,7 @@ void drawServerYardScene(Framebuffer& fb, int beat, const SceneGround& g) {
     for (const Window& w : kWindows)
         fb.fillRect(w.x, g.horizonY - w.drop - kWindowH, kWindowW, kWindowH, lit);
 
-    // The dish, as a stack of rows whose width follows the curve — tipped up and open
+    // The dish, as a stack of rows whose width follows the curve: tipped up and open
     // to the left, which is the one asymmetry in an otherwise square scene.
     const Rgb565 dish = sceneTone(kToneDish);
     for (int k = 0; k < kDishR; ++k) {

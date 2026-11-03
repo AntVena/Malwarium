@@ -14,7 +14,7 @@ namespace mal {
 
 namespace {
 
-// The board's geometry, in ACTIVE pixels and drawn at x1 — the Clutch/Isolation
+// The board's geometry, in ACTIVE pixels and drawn at x1: the Clutch/Isolation
 // precedent. Nothing here is art, and whole-pixel cells keep the three columns aligned
 // down all five rows, which is the only thing that makes the history readable as a
 // table rather than as five separate answers.
@@ -26,8 +26,8 @@ constexpr int kBoardY = 30;
 constexpr int kRowPitch = 29;
 constexpr int kFeedbackX = kBoardX + kDecryptionSlots * (kCellW + kCellGap) + 6;
 // The rule under the opening row, sat in the gap between rows 0 and 1. The first
-// attempt is a PROBE — it cannot be deduced, only guessed, and it is one of the two
-// the score floors out (kDecryptionFreeAttempts) — so the board says so by drawing a
+// attempt is a PROBE. It cannot be deduced, only guessed, and it is one of the two
+// the score floors out (kDecryptionFreeAttempts), so the board says so by drawing a
 // line under it rather than by explaining itself in words it has no room for.
 constexpr int kProbeRuleY = kBoardY + kCellH + 4;
 
@@ -60,7 +60,7 @@ void strokeRect(Framebuffer& fb, int x, int y, int w, int h, int t, Rgb565 c) {
     fb.fillRect(x + w - t, y, t, h, c);
 }
 
-// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge — the same
+// Corrupt a cell the way the STAT page corrupts the Fragmentation gauge. The same
 // dither, through the same call (widgets.h): the cell is a 3x3 sub-grid, and damage is
 // sub-blocks that AREN'T THERE, punched back to paper rather than tinted. Rolls are
 // allowed to collide, so the damage clumps instead of spreading evenly, and a colour
@@ -70,13 +70,13 @@ void strokeRect(Framebuffer& fb, int x, int y, int w, int h, int t, Rgb565 c) {
 // This is the board's one piece of ambient feedback: a row's answer is two numbers the
 // player has to hold in their head, and the holes turn the same fact into something the
 // eye reads without counting. It never says WHICH cell is wrong (that is the easy
-// setting's job, below) — a whole row is eaten together.
+// setting's job, below): a whole row is eaten together.
 //
 // The roll is RE-DRAWN EVERY BEAT, which is what makes it honest. `rolls` collisions
 // mean one frame's holes are a sample of the damage rather than a measure of it: three
 // rolls can land as three holes or as one. Holding a single sample still would show the
 // player one draw and let them read it as the number. Re-rolling averages the samples
-// out over the frames they watch, so the hole count converges on the damage — and the
+// out over the frames they watch, so the hole count converges on the damage, and the
 // motion is the point besides, since fragmentation is something the disk is DOING.
 void punchCorruption(Framebuffer& fb, int x, int y, int rolls, uint32_t seed) {
     if (rolls <= 0) return;
@@ -153,7 +153,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, DecryptHints h
                 fb.fillRect(cellX(s), y, kCellW, kCellH, colourOf(d.guess(s)));
                 // Two states worth telling apart, both by SHAPE: the focused slot
                 // carries the cursor box, and a settled one carries a bar under it.
-                // The box does NOT blink — a cursor that is invisible half the time is
+                // The box does NOT blink: a cursor that is invisible half the time is
                 // the one piece of state this screen can least afford to hide, since
                 // A and C both act on wherever it happens to be.
                 if (d.locked(s))
@@ -185,7 +185,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, DecryptHints h
         return;
     }
 
-    // The verdict, and — on a failed run — the key itself. Showing it is the point: a
+    // The verdict, and (on a failed run) the key itself. Showing it is the point: a
     // puzzle that never tells you the answer teaches nothing about the next one, and
     // the last row's own feedback is unreadable without it.
     const bool cracked = d.cracked();

@@ -28,7 +28,7 @@ namespace {
 // slack goes to the description panel below instead of being reserved empty.
 constexpr int kMovePickerMaxRows = 6;
 
-// ICON_MOVE_<UPPER ID> — the per-move glyph naming convention (like ICON_MOD_*).
+// ICON_MOVE_<UPPER ID>: the per-move glyph naming convention (like ICON_MOD_*).
 const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
     char name[40];
     std::snprintf(name, sizeof(name), "ICON_MOVE_%s", id);
@@ -38,7 +38,7 @@ const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
 }
 
 // One equipped-move row: glyph, name, and the move's own kind tag at the right edge.
-// The tag is enforced to match the slot, so it is the fact the row cannot lose —
+// The tag is enforced to match the slot, so it is the fact the row cannot lose:
 // the name yields to it and scrolls when `focused` (widgets.h).
 void moveRowText(Framebuffer& fb, const ContentRegistry& reg, const char* id,
                  int x, int y, Rgb565 nameCol, int beat, bool focused) {
@@ -64,7 +64,7 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           int slot, bool showAll) {
     std::vector<const MoveDef*> out;
     for (const MoveDef* m : reg.allMoves()) {
-        // The innate is owned but not slottable (MoveLoadout::isInnate) — offering it
+        // The innate is owned but not slottable (MoveLoadout::isInnate): offering it
         // would be offering to spend a slot on what an empty slot already falls back to.
         // Wrong-kind moves never list here.
         if (!load.owns(m->id) || load.isInnate(m->id) || m->kind != requiredKind) continue;
@@ -89,7 +89,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
     const int unlocked = MoveLoadout::slotsForStage(v.stage);
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
-    // fixture — it's shown inside an empty slot below, never as a slot of its own.
+    // fixture. It's shown inside an empty slot below, never as a slot of its own.
     drawText(fb, kMargin, 30, "EQUIPPED", palColor(Pal::INK_DIM));
     fb.fillRect(kMargin + textWidth("EQUIPPED") + 6, 34, 90, 1, palColor(Pal::TRACK));
 
@@ -112,12 +112,12 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
         drawText(fb, kSlotLabelX, y, slotLbl, palColor(Pal::INK_DIM));
         if (!unlockedSlot) {
             // Locked slot: the path-ahead affordance. The glyph says "shut" and the
-            // line says what opens it — "AT SCRIPT" alone read as a property of the
+            // line says what opens it: "AT SCRIPT" alone read as a property of the
             // slot rather than as the way out of it.
             //
             // It is "UNLOCK:" and not "UNLOCK AT" because of the budget: the line
             // starts at kSlotTextX and a locked row draws no kind tag, so it owns
-            // everything to the right margin — 15 cells at the mono advance. Slot 0
+            // everything to the right margin; 15 cells at the mono advance. Slot 0
             // is never locked (kMoveSlotsByStage starts at 1), so the longest stage
             // that can appear here is PROCESS, and "UNLOCK AT PROCESS" is 17.
             drawSprite(fb, ASSET_ICON_MOVE_SLOT_LOCKED, 0, kSlotGlyphX, y - 6);
@@ -127,7 +127,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
             drawText(fb, kSlotTextX, y, lk, palColor(Pal::INK_DIM));
         } else if (const char* id = load.equipped(i)) {
             // The equipped move's own kind tag (moveRowText, right edge) already
-            // reads as this slot's type — it's enforced to match.
+            // reads as this slot's type: it's enforced to match.
             moveRowText(fb, reg, id, kSlotGlyphX, y, palColor(Pal::INK), v.beat,
                         i == v.cursor);
         } else {
@@ -140,7 +140,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
             const MoveDef* def = reg.move(load.defaultMove());
             drawText(fb, kSlotTextX, y, def ? def->displayName : "QUICK JAB",
                      palColor(Pal::INK_DIM));
-            // Keep the slot's accepted-kind tag at the right edge — tells the
+            // Keep the slot's accepted-kind tag at the right edge: tells the
             // player what they can equip to replace the fallback.
             const char* tag = moveKindTag(v.slotKinds[i]);
             drawText(fb, kActiveW - kMargin - textWidth(tag), y, tag,
@@ -335,7 +335,7 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     // Icon + name + kind tag. Most moves have no glyph yet, so the name only indents
     // when there is actually art to indent past (mirrors drawModDetail's nameX). The
     // kind tag owns the right end and the name yields to it, as on every other detail
-    // page — the longest shipped move name is wider than what is left beside it.
+    // page: the longest shipped move name is wider than what is left beside it.
     const SpriteData* ic = moveIcon(reg, m.id);
     if (ic) drawSprite(fb, *ic, 0, kMargin, 30);
     drawLabelValue(fb, ic ? kMargin + 26 : kMargin, 36, m.displayName,
@@ -369,7 +369,7 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     }
 
     // A already means "advance", so paging the prose with it needs no exception to the
-    // A/B/C contract — the band just names what is live on this screen.
+    // A/B/C contract: the band just names what is live on this screen.
     const char* hint = laid.proseScrollable
                            ? (locked || equippedHere ? "A MORE   C BACK"
                                                      : "A MORE  B EQUIP  C BACK")

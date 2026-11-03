@@ -1,18 +1,18 @@
-// isolation.h — the rules of the ISOLATION PROTOCOL, with no rendering and no Game.
+// isolation.h: the rules of the ISOLATION PROTOCOL, with no rendering and no Game.
 //
 // The Worm egg's hatch minigame. The worm inside the shell is turned loose in a
 // quarantine buffer with one byte of free memory in it, and it never stops moving: one
 // button turns it left, the other turns it right, and swallowing a byte grows it by
 // kIsolationGrowth cells and puts another byte somewhere else in the buffer. Run into a
 // wall or into its own body and the protocol is over. Swallow `goalDots` of them and it
-// finished CLEAN — the whole reason the run is worth playing, since the caller spends
+// finished CLEAN: the whole reason the run is worth playing, since the caller spends
 // each byte against the incubation clock (Game::finishIsolation).
 //
 // It is snake, and it is the one shape this line could have had: a worm whose entire
 // identity is that it grows by copying itself into whatever space is left, playing a
 // game it loses by running out of space it hasn't already filled with itself.
 //
-// SEEDED, not deterministic — the one place this parts from Stacker beside it. The
+// SEEDED, not deterministic: the one place this parts from Stacker beside it. The
 // Stacker has no RNG on purpose, because its whole variant is "the same board, played
 // better". Here the board IS the worm's own body, which the player builds; only the byte
 // placement is drawn, and a fixed sequence of those would be memorised into a route.
@@ -28,7 +28,7 @@
 
 namespace mal {
 
-// The quarantine buffer. 176 cells at 12 logical px is a 192x132 panel — wide enough to
+// The quarantine buffer. 176 cells at 12 logical px is a 192x132 panel: wide enough to
 // need real steering, short enough to leave the title and the hint band their rows on a
 // 224x224 canvas. A cell index fits in a uint8_t (176 < 256), which is what lets the
 // body below be a byte per segment and live inside Game without a heap touch.
@@ -37,7 +37,7 @@ constexpr int kIsolationRows = 11;
 constexpr int kIsolationCells = kIsolationCols * kIsolationRows;
 constexpr int kIsolationStartLength = 3;
 // Cells the worm gains per byte. A rule of the board rather than a balance dial, the
-// same way kStackerStartWidth is — what it costs the PLAYER (a minute of incubation per
+// same way kStackerStartWidth is: what it costs the PLAYER (a minute of incubation per
 // byte, and how many bytes make a clean run) is the caller's arithmetic, in tunables.h.
 constexpr int kIsolationGrowth = 2;
 
@@ -45,7 +45,7 @@ class Isolation {
   public:
     enum class State : uint8_t {
         Running,
-        Crashed,   // hit a wall or its own body — banks whatever it had already eaten
+        Crashed,   // hit a wall or its own body: banks whatever it had already eaten
         Clean,     // swallowed the goal: the protocol completed
     };
 
@@ -55,7 +55,7 @@ class Isolation {
     // and `goal` bytes to eat for a clean finish. `seed` picks the byte sequence.
     //
     // A `goal` of 0 or less is ENDLESS: no byte count finishes the run, so it ends the
-    // two ways it otherwise can — a crash, or a buffer with no room left to put a byte
+    // two ways it otherwise can. A crash, or a buffer with no room left to put a byte
     // in, which is still CLEAN because there is genuinely nothing left to eat. That is
     // the arcade's shape and not the egg's: a hatch is buying a fixed number of minutes
     // and needs a finish line, a cabinet is a high score and a finish line would cap it.
@@ -69,7 +69,7 @@ class Isolation {
         pendingTurn_ = 0;
         state_ = State::Running;
 
-        // Head near the left wall on the middle row, with its tail behind it — so the
+        // Head near the left wall on the middle row, with its tail behind it, so the
         // opening move is into open buffer and the first byte is never a coin flip the
         // player had no time to steer for.
         const int row = kIsolationRows / 2;
@@ -84,7 +84,7 @@ class Isolation {
     }
 
     // A quarter-turn, banked until the next step. Two of the same in one interval is ONE
-    // turn, not a U-turn into its own neck — an accumulator clamped to a single quarter
+    // turn, not a U-turn into its own neck: an accumulator clamped to a single quarter
     // is what makes a mistimed double-press a lost input rather than an instant death.
     // A left and a right in the same interval cancel, which is the same rule read the
     // other way round.
@@ -113,7 +113,7 @@ class Isolation {
         const uint8_t next = static_cast<uint8_t>(row * kIsolationCols + col);
         const bool eating = next == dot_;
         // The tail cell vacates on this very step unless the worm is mid-growth, so
-        // following your own tail is legal — the classic rule, and the one that keeps a
+        // following your own tail is legal: the classic rule, and the one that keeps a
         // tight coil playable.
         const bool tailFrees = grow_ == 0 && !eating;
         if (body_[next] && !(tailFrees && next == ring_[len_ - 1])) {
@@ -125,7 +125,7 @@ class Isolation {
             body_[ring_[len_ - 1]] = 0;
             --len_;
         } else if (!eating && grow_ > 0) {
-            // Holding the tail is what growing IS, so it costs one queued cell — but
+            // Holding the tail is what growing IS, so it costs one queued cell, but
             // only when the queue is what paid for it. On a step that EATS, the byte
             // already bought the held tail, and charging the queue as well would quietly
             // shrink every byte swallowed while the last one was still being walked out.
@@ -150,7 +150,7 @@ class Isolation {
     bool running() const { return state_ == State::Running; }
     bool clean() const { return state_ == State::Clean; }
     int dots() const { return dots_; }            // bytes swallowed so far
-    // Bytes that would finish it clean, or 0 for an endless run — so a caller printing
+    // Bytes that would finish it clean, or 0 for an endless run, so a caller printing
     // "12 / 30" has to ask whether there is a denominator at all.
     int goal() const { return goal_; }
     bool endless() const { return goal_ <= 0; }

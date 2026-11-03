@@ -9,7 +9,7 @@ namespace {
 
 // THE MOOR AT NIGHT, FROM THE CAUSEWAY. Wet, flat, empty country with no proper network:
 // a handful of farms on the skyline, each talking only to whichever neighbour is in
-// range, and the old stone causeway the cable crosses on. No stars and no moon — a moor
+// range, and the old stone causeway the cable crosses on. No stars and no moon: a moor
 // is overcast, and the mist is what the sky is made of here.
 //
 // THE THREADS ARE THE AREA. Peer to peer means the traffic hangs between the houses
@@ -52,7 +52,7 @@ constexpr uint8_t kMoorline[] = {2, 3, 3, 4, 3, 2, 2, 3, 4, 4, 3, 2, 3, 3,
                                  2, 2, 3, 4, 3, 3, 2, 3, 4, 3, 2, 2, 3, 3};
 
 // The keep on its hill, three pixels a column: the hill climbing out of the moor from
-// the left, and the crenellated tower on its crown hard against the right edge — the
+// the left, and the crenellated tower on its crown hard against the right edge. The
 // columns past where a right-hand fighter stops, so the keep is seen in a fight as
 // well as behind a resting pet.
 constexpr uint8_t kKeepHill[] = {3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14,
@@ -62,7 +62,7 @@ constexpr int kKeepSlitX = 211, kKeepSlitDrop = 24;   // one slit, always lit
 
 // The near pole, standing on the causeway's far edge: where the moor's traffic comes
 // in off the cable, and so where every count starts. `kPoleH` is how far it rises over
-// the floor — enough to clear any sprite's head on either screen.
+// the floor: enough to clear any sprite's head on either screen.
 constexpr int kPoleX = 14;
 constexpr int kPoleH = 66;
 constexpr int kArmW = 9;
@@ -92,7 +92,7 @@ constexpr int kHopSteps = 5;
 constexpr int kHoldBeats = 6;
 
 // The mist: long low strokes over the skyline and the bog, drifting. `y` is rows from
-// the horizon, negative above it. Drawn over the farms on purpose — a moor that showed
+// the horizon, negative above it. Drawn over the farms on purpose: a moor that showed
 // everything cleanly would not be a moor.
 struct Mist { int x, y, w; };
 constexpr Mist kMist[] = {{8, -2, 44}, {120, -3, 52}, {70, -1, 30}, {170, -1, 36},
@@ -109,7 +109,7 @@ constexpr Reed kReeds[] = {{30, 9, 7}, {58, 6, 4}, {72, 9, 5}, {124, 5, 3},
                            {186, 9, 6}, {214, 9, 8}};
 
 // The causeway's stones: courses `kCourseH` rows deep, joints every `kStoneW` columns,
-// each course offset by half a stone from the one above — which is the difference
+// each course offset by half a stone from the one above, which is the difference
 // between laid stone and the Bayou's planking at a glance.
 constexpr int kCourseH = 8;
 constexpr int kStoneW = 24;

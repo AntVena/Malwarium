@@ -1,4 +1,4 @@
-// content_tournament.cpp — ROCK THE DOCK's name, briefing and entrant handles. See
+// content_tournament.cpp: ROCK THE DOCK's name, briefing and entrant handles. See
 // content_tournament.h for the arena, the bracket's shape and every magnitude the roll
 // reads.
 
@@ -11,11 +11,11 @@ const char* const kTourneyName = "ROCK THE DOCK";
 // The briefing, in the order it is read. It answers the four questions the arena's own
 // row cannot: where am I, who are these people, what is different about fighting them,
 // and what am I risking. Written to be read once and then skipped forever, so it leads
-// with the thing that is actually novel — the opponents are real pets — rather than
+// with the thing that is actually novel (the opponents are real pets), rather than
 // with the rules.
 //
 // Second person and present tense, like every other authored string on the device.
-// Sections are kept SHORT on purpose — the page flows whole rows only (prose_page.h),
+// Sections are kept SHORT on purpose: the page flows whole rows only (prose_page.h),
 // so a section that runs past half the panel leaves the rest of the screen empty
 // rather than seating a second one. Four short sections read as a briefing; two long
 // ones read as a wall with a scrollbar.
@@ -51,7 +51,7 @@ const TourneyBriefDef kTourneyBrief[] = {
 const int kTourneyBriefCount =
     static_cast<int>(sizeof(kTourneyBrief) / sizeof(kTourneyBrief[0]));
 
-// Warez/demoscene nicknames — the register another operator would actually pick for
+// Warez/demoscene nicknames: the register another operator would actually pick for
 // themselves, which is what makes an entrant read as a person rather than as a rolled
 // stat block. None names a real handle; each is a joke about the scene's own plumbing
 // (a nuked release, a bad CRC, a ratio nobody can hold).

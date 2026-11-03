@@ -1,9 +1,9 @@
-// update_status.h — portable shape of an update CHECK's outcome.
+// update_status.h: portable shape of an update CHECK's outcome.
 //
 // Fetching the published artifact list is device-tier work
 // (platform/esp32/net_update.h drives the HTTP GET), but what the answer LOOKS
 // like lives here so the UPDATES screen and the native tests can read it
-// without a radio — the same split as net_status.h. The device layer fills one of
+// without a radio: the same split as net_status.h. The device layer fills one of
 // these and hands it to Game::setUpdateStatus().
 //
 // PER-ARTIFACT, never one verdict. The firmware and the SD 'Pedia bundle version
@@ -33,7 +33,7 @@ enum class UpdateState : unsigned char {
 // whatever answered was not a manifest.
 enum class UpdateFail : unsigned char {
     None,
-    NoSource,    // this device has no manifest URL — nowhere to look
+    NoSource,    // this device has no manifest URL: nowhere to look
     NoNetwork,   // never associated, or the host was unreachable
     NoManifest,  // the host answered, but not with a manifest (404, a portal page)
     Malformed,   // it parsed as far as "not the shape we publish"
@@ -44,7 +44,7 @@ struct UpdateStatus {
     UpdateFail fail = UpdateFail::None;
 
     // Per artifact: is the published one strictly newer, and what does it call
-    // itself. The version strings are DISPLAY ONLY — every decision is made on the
+    // itself. The version strings are DISPLAY ONLY: every decision is made on the
     // packed codes, device-side, before one of these is ever filled in.
     bool firmwareNewer = false;
     bool webNewer = false;
@@ -52,14 +52,14 @@ struct UpdateStatus {
     char webVersion[16] = {0};
 };
 
-// Which artifact a job is working on. `None` means the job is a CHECK — one job
+// Which artifact a job is working on. `None` means the job is a CHECK: one job
 // runs at a time, so this is also how the screen knows what it is watching.
 enum class UpdateTarget : unsigned char { None, Firmware, Web };
 
 enum class InstallState : unsigned char {
     Idle,
     Downloading,  // bytes arriving; `received`/`total` drive the bar
-    Verifying,    // the whole artifact is here — hashing it before it counts
+    Verifying,    // the whole artifact is here: hashing it before it counts
     Installing,   // writing it where it will actually be used
     Done,
     Failed,

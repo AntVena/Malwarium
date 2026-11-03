@@ -1,4 +1,4 @@
-// test_pedia.cpp — native gates for the web 'Pedia state JSON and the roster it reads.
+// test_pedia.cpp: native gates for the web 'Pedia state JSON and the roster it reads.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -7,7 +7,7 @@
 
 // MoveLoadout::grant is the guard the wild-win move-drop roll relies on
 // (game.cpp): granting an already-owned move must be a no-op, never a
-// duplicate entry in owned(). Unit-level, not a game loop — the property
+// duplicate entry in owned(). Unit-level, not a game loop: the property
 // belongs to MoveLoadout itself, independent of any RNG.
 void test_move_loadout_grant_no_duplicate() {
     MoveLoadout mv = MoveLoadout::starting();
@@ -21,7 +21,7 @@ void test_move_loadout_grant_no_duplicate() {
 
 // The wild-win reward path (game.cpp applyCombatResult) wires an independent
 // move-drop roll (kWildMoveDropPct) right next to the existing item-drop roll, and the
-// pool is the DEFEATED ENEMY'S WHOLE KIT — you learn a move by beating something that
+// pool is the DEFEATED ENEMY'S WHOLE KIT: you learn a move by beating something that
 // knows it, whether or not it got round to using it on you.
 //
 // Asserted as a CONTRAST rather than a bare "something dropped", because that is what
@@ -40,7 +40,7 @@ static bool learnedMoveNamed(Game& g, const char* displayName) {
     return false;
 }
 
-// True when every move this pet was taught came out of `allowed` — the enemy's own kit.
+// True when every move this pet was taught came out of `allowed`: the enemy's own kit.
 static bool learnedOnlyFrom(Game& g, std::vector<const char*> allowed) {
     for (int k = 0; k < g.log().size(); ++k) {
         const LogEntry& e = g.log().at(k);
@@ -71,9 +71,9 @@ static bool farmForAMove(Game& g, int area, int sub, int tries) {
 }
 
 void test_wild_win_can_drop_a_move() {
-    // The default pet is a Paypup — a Ransomware-LINE pet, so startingForLine gives it
+    // The default pet is a Paypup: a Ransomware-LINE pet, so startingForLine gives it
     // its line kit and nothing generic. Sub 2 of area 0 fields the depth ladder
-    // {quick_jab, packet_storm, buffer_overflow} plus Citrus Circuit's own wild Attack —
+    // {quick_jab, packet_storm, buffer_overflow} plus Citrus Circuit's own wild Attack:
     // its Defend waits for kWildAreaDefendSub. The jab is innate and never taught, so
     // those three names are the whole of what this rung can hand over, which is also the
     // proof the drop reads the ENEMY's kit rather than a table.
@@ -82,8 +82,8 @@ void test_wild_win_can_drop_a_move() {
     CHECK(farmForAMove(deep, 0, 2, 40));
     // Ratio Debt is in the set because the WALK can also put Citrus Circuit's guardian
     // in front of the pet (game_shiboleet.cpp) and a guardian is beaten the same way
-    // anything else is. It is not part of the rung's ladder — it is the one enemy on the
-    // walk that is not drawn from it — which is exactly why naming it here rather than
+    // anything else is. It is not part of the rung's ladder (it is the one enemy on the
+    // walk that is not drawn from it), which is exactly why naming it here rather than
     // filtering it out keeps this a claim about the ENEMY's kit.
     CHECK(learnedOnlyFrom(deep, {"Packet Storm", "Buffer Overflow", "Partial Download",
                                  "Ratio Debt"}));
@@ -96,7 +96,7 @@ void test_wild_win_can_drop_a_move() {
     // Sub 0 is the shallowest rung in the game and it still teaches, because an area's
     // wild Attack rides every rung: the ladder leaves the roster kit (the innate jab
     // alone) standing, and Citrus Circuit's own move is what makes the first wild a
-    // player ever beats worth beating. Only that one — the Defend waits for depth.
+    // player ever beats worth beating. Only that one: the Defend waits for depth.
     Game shallow{StartMode::Hatched};
     enterWalk(shallow);
     CHECK(farmForAMove(shallow, 0, 0, 40));
@@ -104,7 +104,7 @@ void test_wild_win_can_drop_a_move() {
 }
 
 // wildMalbeast now rolls among 2 variants per sector tier instead of
-// returning one fixed enemy — a pure-function check, no Game needed. Default
+// returning one fixed enemy: a pure-function check, no Game needed. Default
 // variantRoll=0 (used by test_combat_force_enemy_first above) keeps returning
 // the original tier-1 enemy, so that gate is unaffected.
 void test_wild_malbeast_roster_variants() {
@@ -117,7 +117,7 @@ void test_wild_malbeast_roster_variants() {
 // Namespace-disjoint guard: the wild-malbeast name pool must not
 // intersect the raised roster's display names. A wild enemy that shares a name
 // with a petware/malbeast in the / roster reads to a player as the same
-// creature — this gate fails the instant a name collides, whichever side a future
+// creature: this gate fails the instant a name collides, whichever side a future
 // name is added on.
 void test_wild_and_roster_names_disjoint() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -128,7 +128,7 @@ void test_wild_and_roster_names_disjoint() {
         for (const CreatureDef* c : roster)
             CHECK(std::strcmp(wild, c->displayName) != 0);
     }
-    // Boss enemy names are a third pool — hold the same invariant so a sub-area
+    // Boss enemy names are a third pool: hold the same invariant so a sub-area
     // boss (and the area gauntlet built from them) never reads as a roster creature the
     // player might raise. Cover every sub-area boss across both areas.
     for (int a = 0; a < kExplSectors; ++a)
@@ -151,7 +151,7 @@ void test_evolution_routing_tables() {
           std::strcmp(good->entries[0].daemonId, "bruinforce") == 0);
     CHECK(bad && bad->count == 1 &&
           std::strcmp(bad->entries[0].daemonId, "berserkernel") == 0);
-    // A pooled Script's row must still agree with its pool — the row is what the
+    // A pooled Script's row must still agree with its pool: the row is what the
     // registry falls back to, so a disagreement would be a silent routing change.
     const CreatureDef* malbear = r.creature("malbear");
     CHECK(malbear && std::strcmp(malbear->evolvesToGoodId, "bruinforce") == 0);
@@ -217,7 +217,7 @@ void test_battery_level_bands() {
     CHECK(batteryLevelStable(100, -1) == kBatteryLevels - 1);
     CHECK(batteryLevelStable(0, -1) == 0);
 
-    // Sitting ON a band edge holds whichever fill is already drawn — that is the
+    // Sitting ON a band edge holds whichever fill is already drawn: that is the
     // whole point, and it holds from either side.
     const int edge = kBatteryLevelFloorPct[2];
     CHECK(batteryLevel(edge) == 2);
@@ -230,7 +230,7 @@ void test_battery_level_bands() {
 }
 
 // Smoothing: one noisy sample must not swing the readout, and a real change must
-// still arrive — including the last point of it, which a plain integer EMA cannot
+// still arrive, including the last point of it, which a plain integer EMA cannot
 // close because the division truncates back to where it started.
 void test_battery_percent_smoothing() {
     CHECK(smoothBatteryPercent(-1, 73) == 73);         // no history: land as-is
@@ -244,7 +244,7 @@ void test_battery_percent_smoothing() {
     for (int i = 0; i < 40; ++i) p = smoothBatteryPercent(p, 40);
     CHECK(p == 40);
 
-    // The one-point gap both ways — the case the rounding guard exists for.
+    // The one-point gap both ways: the case the rounding guard exists for.
     CHECK(smoothBatteryPercent(50, 51) == 51);
     CHECK(smoothBatteryPercent(50, 49) == 49);
     CHECK(smoothBatteryPercent(50, 50) == 50);         // no drift when nothing moved
@@ -284,7 +284,7 @@ void test_set_hacker_tag_validates() {
     CHECK(!g.setHackerTag("HAS SPACE"));
     CHECK(std::strcmp(g.hackerTag(), "NEWTAG_1") == 0);
 
-    // Exactly kHackerTagMax chars is the boundary — must be accepted.
+    // Exactly kHackerTagMax chars is the boundary: must be accepted.
     std::string maxLen(kHackerTagMax, 'Z');
     CHECK(g.setHackerTag(maxLen.c_str()));
     CHECK(std::strcmp(g.hackerTag(), maxLen.c_str()) == 0);
@@ -294,7 +294,7 @@ void test_set_hacker_tag_validates() {
 
 // buildPediaStateJson: on a known (Hatched) state, the payload is well-formed
 // enough to eyeball (balanced braces) and contains the fields a live device
-// reload most needs — the tag, the bits, and the active pet's own "hatched"
+// reload most needs. The tag, the bits, and the active pet's own "hatched"
 // entry in `pets`.
 void test_pedia_state_json_shape() {
     Game g{StartMode::Hatched, "paypup"};
@@ -329,7 +329,7 @@ void test_pedia_state_json_shape() {
     CHECK(json.find("\"DEVTOOLS_INTRUDER\":\"incomplete\"") != std::string::npos);
 }
 
-// A fresh boot (FreshHatch — the real "empty save" first-boot path,
+// A fresh boot (FreshHatch: the real "empty save" first-boot path,
 // redesign) lays the Boot-Sector egg immediately rather than leaving pet()
 // null, so this exercises the "unhatched egg" shape rather than JSON null.
 // buildPediaStateJson defensively emits `null` if pet() ever IS nullptr (no
@@ -347,8 +347,8 @@ void test_pedia_state_json_fresh_hatch_egg() {
     CHECK(json.find("\"cryptoshell\":\"hatched\"") != std::string::npos);
 }
 
-// The recipes{} block alone. items{} and recipes{} are keyed alike on purpose — a
-// method is named by the dish it cooks — so a bare find() over the whole payload would
+// The recipes{} block alone. items{} and recipes{} are keyed alike on purpose (a
+// method is named by the dish it cooks), so a bare find() over the whole payload would
 // happily match the wrong map's entry for the same id.
 static std::string recipesBlock(const std::string& json) {
     const size_t k = json.find("\"recipes\":{");
@@ -359,7 +359,7 @@ static std::string recipesBlock(const std::string& json) {
 // The 'Pedia's two KITCHEN axes, which the FOOD tab masks independently: items{} is
 // "ever held" (Game::itemCollected, the cuisine ladder's own tally) and recipes{} is
 // whether the METHOD has been won. Holding a dish must not imply knowing how to cook
-// it — several are sold on shelves — and eating one must not un-reveal it, which is
+// it (several are sold on shelves), and eating one must not un-reveal it, which is
 // exactly what keying items{} on current possession used to do.
 void test_pedia_state_kitchen_axes() {
     Game g{StartMode::Hatched};
@@ -408,7 +408,7 @@ void test_wild_malbeast_index_mapping() {
 // Save v25 round-trip: seenCreatures + both malbeast masks survive a raw
 // serialize/deserialize cycle, and a real Game::captureSave -> persistSave -> reload
 // round-trips the same state through the public API. (The v25 achievements u32 that used
-// to ride here is no longer written — v40 replaced it with a wire-indexed bitset, whose
+// to ride here is no longer written: v40 replaced it with a wire-indexed bitset, whose
 // own round-trip and migration are gated separately.)
 void test_save_v25_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
@@ -438,7 +438,7 @@ void test_save_v25_roundtrip() {
     CHECK(g2.hasAchievement("BIT_BARON"));
 }
 
-// v27 — the rig-upgrade levels round-trip.
+// v27: the rig-upgrade levels round-trip.
 void test_save_v27_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     a.rackSlotUpgradeCount = 3;
@@ -466,7 +466,7 @@ void test_save_v27_roundtrip() {
     CHECK(g2.dataMiningLevel() == 1);
 }
 
-// v32 — rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips.
+// v32: rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips.
 void test_save_v32_roundtrip() {
     SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
     a.rigLevelsExt = {5, 9};
@@ -492,7 +492,7 @@ static std::string activePetBlock(const std::string& json) {
 }
 
 // The kit SCOPE the pet page draws its grid from: every move this creature's line can
-// ever hold, and nothing else. Ownership is not repeated here — the top-level moves{}
+// ever hold, and nothing else. Ownership is not repeated here: the top-level moves{}
 // map already carries it, and two answers to one question is two things to keep in step.
 void test_pedia_state_publishes_the_pets_learnable_kit() {
     Game g{StartMode::Hatched, "paypup"};      // Ransomware
@@ -525,7 +525,7 @@ void test_pedia_state_publishes_the_pets_one_shot_items() {
         CHECK(pet.find("\"lifetime_items\":{") != std::string::npos);
         CHECK(pet.find("\"yubi_cookie\":\"unspent\"") != std::string::npos);
         CHECK(pet.find("\"restore_point\":\"unspent\"") != std::string::npos);
-        // An ordinary item is not in the block at all — it has nothing to spend.
+        // An ordinary item is not in the block at all: it has nothing to spend.
         CHECK(pet.find("\"rollback\"") == std::string::npos);
     }
 

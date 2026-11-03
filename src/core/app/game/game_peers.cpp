@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "core/app/game_internal.h"   // drawScrollbar — shared with game_crew.cpp
+#include "core/app/game_internal.h"   // drawScrollbar: shared with game_crew.cpp
 #include "core/content/content_crews.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
@@ -14,19 +14,19 @@
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 
-// game_peers.cpp — the Hacker-face PEERS slot: the operators this device has met.
+// game_peers.cpp (the Hacker-face PEERS slot): the operators this device has met.
 //
 // A device announces itself (buildPeerHello -> the platform tier's ESP-NOW beacon,
 // platform/esp32/net_link.h) and remembers whoever it hears (registerPeer). The
-// announcing is gated on Game::linkWanted() — the persisted CFG opt-in, plus the
-// stretch this screen raises it for — so a device with LINK off is silent and
+// announcing is gated on Game::linkWanted() (the persisted CFG opt-in, plus the
+// stretch this screen raises it for), so a device with LINK off is silent and
 // deaf, and opening this screen is itself the explicit act that makes it talk.
 //
 // Two sources feed one list, and keeping them apart is the point: livePeers_ is
 // what the radio can hear this second, peerLedger_ is everyone ever met. A LIVE row
 // renders from the snapshot's fresh HELLO, so it shows what someone is raising
 // right now; a remembered row renders from the roster's last-meeting copy. The
-// merge (peerRows) is what the screen draws, and LIVE leads it — the person
+// merge (peerRows) is what the screen draws, and LIVE leads it: the person
 // standing in front of you is the one you're looking for.
 //
 // Everything but the key and the meeting tally is UNAUTHENTICATED (peer_link.h):
@@ -35,7 +35,7 @@
 namespace mal {
 
 namespace {
-// A peer block is tag / pet / crew — three of them clear the body under the header
+// A peer block is tag / pet / crew: three of them clear the body under the header
 // rule, leaving room for the hint band.
 constexpr int kPeerBlockH = kLineH * 3 + 6;
 constexpr int kPeerVisibleRows = 3;
@@ -46,7 +46,7 @@ constexpr int kPeerVisibleRows = 3;
 void Game::setLinkEnabled(bool on) {
     if (linkEnabled_ == on) return;
     linkEnabled_ = on;
-    markSaveDirty();   // a persisted CFG opt-in — survives a reboot (save v37)
+    markSaveDirty();   // a persisted CFG opt-in: survives a reboot (save v37)
     dirty_ = true;
 }
 
@@ -58,7 +58,7 @@ void Game::buildPeerHello(PeerHello* out) const {
     std::strncpy(h.tag, hackerTag_, sizeof(h.tag) - 1);
 
     // An operator with no pet yet (a fresh device on the Hatch screen) broadcasts an
-    // empty species — the row reads as "no pet" rather than inventing one.
+    // empty species: the row reads as "no pet" rather than inventing one.
     if (pet_) {
         std::strncpy(h.petName, pet_->displayName, sizeof(h.petName) - 1);
         h.stage = static_cast<uint8_t>(pet_->stage);
@@ -81,7 +81,7 @@ bool Game::registerPeer(const uint8_t* mac, const uint8_t* payload, size_t len) 
     if (!mac) return false;
     PeerHello hello;
     // A frame that fails to decode is simply not a peer: wrong magic, a protocol
-    // version this build can't lay out, or a truncated payload. Dropped silently —
+    // version this build can't lay out, or a truncated payload. Dropped silently:
     // anything in range can transmit, so a bad frame is background noise, not an
     // error worth surfacing.
     if (!decodePeerHello(payload, len, &hello)) return false;
@@ -90,7 +90,7 @@ bool Game::registerPeer(const uint8_t* mac, const uint8_t* payload, size_t len) 
     if (key == 0) return false;
 
     // The snapshot takes every beacon; the roster only takes the arrival edge. That
-    // split is what makes timesMet a count of MEETINGS — a device parked next to
+    // split is what makes timesMet a count of MEETINGS: a device parked next to
     // this one beacons once a second and must still read as one encounter.
     if (!noteLivePeer(key, hello)) return false;
 
@@ -158,7 +158,7 @@ int Game::peerRows(PeerRow* rows, int max) const {
     if (!rows || max <= 0) return 0;
     int n = 0;
 
-    // Live first, straight from the snapshot — these rows show what the operator is
+    // Live first, straight from the snapshot: these rows show what the operator is
     // raising THIS SECOND, which is the whole reason the snapshot keeps the full
     // HELLO rather than just a timestamp.
     for (int i = 0; i < livePeerCount_ && n < max; ++i) {
@@ -209,7 +209,7 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
     drawText(fb, kMargin, kContextY, "PEERS MET", palColor(Pal::INK));
 
     // Name whoever actually holds the radio rather than claiming LINKING
-    // unconditionally — an empty list means something entirely different when the
+    // unconditionally: an empty list means something entirely different when the
     // 'Pedia AP has the radio than when nobody is around. Doubles as the notice that
     // this screen announces on its own, so an operator who deliberately keeps LINK
     // off is never surprised into broadcasting.
@@ -222,7 +222,7 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
     fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
     if (n == 0) {
-        // Empty for three very different reasons — say which. Words, never colour.
+        // Empty for three very different reasons: say which. Words, never colour.
         drawText(fb, kMargin, 54,
                  starved ? "LINK CANT RUN" : "NOBODY MET YET", palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 54 + kLineH,
@@ -283,7 +283,7 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
 
     // Ambient discovery borrows the audit scan's radio window, so with the scan off
     // this screen is the ONLY place meetings happen. Saying so here is what keeps a
-    // LINK-on/AUDIT-off device from looking broken — the toggle is working, it just
+    // LINK-on/AUDIT-off device from looking broken: the toggle is working, it just
     // has no ambient airtime to use.
     if (linkAmbientStarved())
         drawText(fb, kMargin, kActiveH - 34, "AMBIENT NEEDS AUDIT SCAN",

@@ -1,4 +1,4 @@
-// test_fragger.cpp — native gates for FRAGGER, as a played MAINT run and a cabinet.
+// test_fragger.cpp: native gates for FRAGGER, as a played MAINT run and a cabinet.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these.
@@ -25,7 +25,7 @@ void shootFragments(Game& g, int n) {
     }
 }
 
-// Land `n` files straight onto the head — one row of fall each. The rest of the bottom
+// Land `n` files straight onto the head: one row of fall each. The rest of the bottom
 // row is cleared first, so nothing the spawner dropped meanwhile can land and end the run.
 void catchFiles(Game& g, int n) {
     for (int i = 0; i < n; ++i) {
@@ -99,7 +99,7 @@ void test_fragger_head_stops_at_the_walls() {
     CHECK(f.lane() == kFraggerMaxLanes - 1);
 }
 
-// The fall quickens with every fragment shot, and stops quickening at its floor — which
+// The fall quickens with every fragment shot, and stops quickening at its floor, which
 // is where the arcade's win line sits, so a run that passes it has seen the whole curve.
 void test_fragger_pace_ramps_to_a_floor() {
     Fragger f = emptyRun();
@@ -120,8 +120,8 @@ void test_fragger_pace_ramps_to_a_floor() {
 }
 
 // The spawner never stacks two blocks in adjacent rows of a lane. That gap is what keeps
-// the file rule fair — a fragment behind a file always has two rows of fall left when the
-// file lands — so it is checked over a long run rather than trusted. Also pins that a
+// the file rule fair (a fragment behind a file always has two rows of fall left when the
+// file lands), so it is checked over a long run rather than trusted. Also pins that a
 // seed replays exactly.
 void test_fragger_spawns_keep_a_gap_and_replay() {
     Fragger a, b;
@@ -204,7 +204,7 @@ void test_fragger_cabinet_leaves_the_disk_alone() {
     CHECK(row >= 0);
     enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
     const int bits = g.bits();
-    g.onButton(press(Button::B));                       // START — costs nothing
+    g.onButton(press(Button::B));                       // START: costs nothing
     CHECK(g.nav() == Game::Nav::Fragger);
     shootFragments(g, kFraggerWinHits + 5);
     crashRun(g);
@@ -240,7 +240,7 @@ void test_fragger_cadence_follows_the_score() {
     CHECK(fast > slow);
 }
 
-// The dial is FRAGGER's lane count — EASY's minimum, and one more per step — in a cabinet
+// The dial is FRAGGER's lane count (EASY's minimum, and one more per step) in a cabinet
 // and a MAINT run alike, since both start it through the same door.
 void test_fragger_lanes_follow_the_dial() {
     for (int d = 0; d < kArcadeDifficulties; ++d) {
@@ -258,7 +258,7 @@ void test_fragger_lanes_follow_the_dial() {
 }
 
 // A played run's payout DOUBLES per step up the dial: the same five hits and three
-// catches pay x1, x2, x4 — in frag and in Bits alike.
+// catches pay x1, x2, x4. In frag and in Bits alike.
 void test_played_rewards_double_per_step() {
     int paid[kArcadeDifficulties] = {0};
     for (int d = 0; d < kArcadeDifficulties; ++d) {

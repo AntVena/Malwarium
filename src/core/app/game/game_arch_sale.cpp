@@ -1,16 +1,16 @@
-// game_arch_sale.cpp — ARCH's SELL counter: trading a finished Daemon off the rack for
+// game_arch_sale.cpp (ARCH's SELL counter): trading a finished Daemon off the rack for
 // Bits or for a patch on the pet being raised (part of the Game unit split,
 // core/app/game.h).
 //
 // A Daemon is the end of a raise, and once there is nothing left for it to become a
 // rack slot holding one is a trophy shelf. The counter is how a finished pet is turned
 // back into the game, three ways:
-//   BITS     — priced on its level (tunables.h's daemonSaleBits).
-//   REIMAGE  — the active pet, if it is the SAME species, goes back to its Script with a
+//   BITS:     priced on its level (tunables.h's daemonSaleBits).
+//   REIMAGE:  the active pet, if it is the SAME species, goes back to its Script with a
 //              clean error log and keeps everything else it has earned. This is what a
 //              duplicate is for: a second copy of the Daemon you did not want buys
 //              another try at the one you did, without raising a third from an egg.
-//   HOTFIX   — the active pet's care errors are cleared, whatever it is.
+//   HOTFIX:   the active pet's care errors are cleared, whatever it is.
 // Whichever it pays, the Daemon leaves a RETIRED record, the headstone a corrupted pet
 // leaves too; Release (game_arch.cpp) is the only way off the rack that leaves none.
 #include "core/app/game.h"
@@ -48,7 +48,7 @@ const CreatureDef* Game::reimageScript(const CreatureDef* daemon) const {
     if (!daemon || daemon->stage != Stage::Daemon) return nullptr;
     // A Daemon one family reached by a Trojan divert has a Script on another family
     // (Rootgrub's Coaxeel). Its own family's Script is preferred where both exist, and
-    // the divert's otherwise — reimaging a diverted pet hands it back the line it was
+    // the divert's otherwise: reimaging a diverted pet hands it back the line it was
     // diverted off, which re-rolls the divert along with the branch.
     const CreatureDef* other = nullptr;
     for (const CreatureDef* c : registry_.allCreatures()) {
@@ -104,7 +104,7 @@ ArchSaleSheet Game::archSaleSheet() const {
             std::snprintf(out.value, sizeof(out.value), "+%d B",
                           daemonSaleBits(sold.combatLevel));
         } else {
-            // A patch's value names the pet that RECEIVES it — the active one, never the
+            // A patch's value names the pet that RECEIVES it: the active one, never the
             // Daemon this sheet is selling.
             std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_->displayName);
         }

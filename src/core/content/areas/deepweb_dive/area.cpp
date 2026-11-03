@@ -16,7 +16,7 @@ const int kDeepWebBossMoveDepth = 256;
 const int kDeepWebModTier = 5;
 
 // The dive's move rungs. Each is what an enemy may KNOW from that depth on, drawn from
-// (not added to) the pool — the rung replaces the roster kit rather than extending it, so
+// (not added to) the pool: the rung replaces the roster kit rather than extending it, so
 // a deep enemy fights like the depth it was found at and not like a tier-3 wild carrying
 // souvenirs.
 //
@@ -29,7 +29,7 @@ const int kDeepWebModTier = 5;
 // Rungs are indexed by an authored DEPTH THRESHOLD each, not by the log curve the zone's
 // level and Bits ramps share. Measured, not assumed: on the log curve the stun-and-rot
 // rung landed at depth 7, and a rung that takes the pet's turns away is worth far more
-// than the handful of stat points depth 7 also buys — a good build went from winning most
+// than the handful of stat points depth 7 also buys. A good build went from winning most
 // dives to winning almost none across a single step. What a rung does to a fight is not
 // proportional to what a stat point does, so it gets its own pacing.
 const char* const kDeepWebMovesR0[] = {"packet_storm", "fork_bomb"};
@@ -57,7 +57,7 @@ const char* const* const kDeepWebMoveRungs[] = {
 // room to settle into one answer before the next thing it doesn't answer shows up.
 //
 // What this pacing buys, measured at pet level 60 over 400 seeded fights a cell (five
-// lines, 80 seeds each) — per-fight win rate by build, which is the shape the zone is FOR:
+// lines, 80 seeds each); per-fight win rate by build, which is the shape the zone is FOR:
 //
 //            depth      0    32    64   128   256   700  1200  2400
 //   all-Defence        82%   43%   17%   15%   15%   15%   13%   14%
@@ -65,14 +65,14 @@ const char* const* const kDeepWebMoveRungs[] = {
 //   spread + boss kit 100%  100%   68%   18%    4%    0%    0%    0%
 //
 // Two things that had to be true: the turtle is the WORST of the three rather than the
-// best, and the LOADOUT outweighs the stat spread — which is what the rung pacing below
+// best, and the LOADOUT outweighs the stat spread, which is what the rung pacing below
 // is justified by, since a rung is a thing to answer with a move.
 //
 // The floor the first two rows settle on is one line's passive and not the curve: a Worm
 // replica eats a hit WHOLE (Combat's replication branch), so it is a count of hits and not
 // a quantity of mitigation, and an arithmetic ramp cannot outgrow a count. The third row
 // spends its slots on the boss kit instead of the line's own replication moves, which is
-// why only it ends at zero. A RUN still ends everywhere — surviving 160 straight fights at
+// why only it ends at zero. A RUN still ends everywhere: surviving 160 straight fights at
 // those rates is zero to three digits in every column.
 const int kDeepWebMoveRungDepths[] = {0, 12, 40, 100, 180};
 const int kDeepWebMoveRungCounts[] = {
@@ -83,7 +83,7 @@ const int kDeepWebMoveRungTotal = arrLen(kDeepWebMoveRungs);
 const int kDeepWebMovesBossCount = arrLen(kDeepWebMovesBoss);
 
 // The dive's own wild pair (area.h). Exit Node strips armor and Onion Layer is the
-// deepest brace anywhere — the terminal zone's answer to "what is down here that is not
+// deepest brace anywhere: the terminal zone's answer to "what is down here that is not
 // down there", handed out by the most ordinary thing in it.
 const char* const kDeepWebWildAttackMoveId = "exit_node";
 const char* const kDeepWebWildDefendMoveId = "onion_layer";
@@ -91,21 +91,21 @@ const int kDeepWebWildDefendDepth = 12;
 
 // The dive's EXPL row glyph. The terminal zone is no AreaDef, so it names its own
 // art here rather than inheriting the ICON_SECTOR_<AREA_ID> convention off a row it
-// doesn't have — same reason its pool and scaling constants live here.
+// doesn't have: same reason its pool and scaling constants live here.
 const char* const kDeepWebIcon = "ICON_SECTOR_DEEPWEB_DIVE";
 const char* const kDeepWebName = "DEEPWEB DIVE";
 const char* const kDeepWebBadge = "DEEPWEB";
 
-// The Dive's chapters — UNAUTHORED. Every beat is empty, which core/content/story.h
+// The Dive's chapters: UNAUTHORED. Every beat is empty, which core/content/story.h
 // reads as "this zone has nothing to say yet" and fires nothing on the walk. The block
 // exists so the archive already has the Dive's slots and filling them is one edit here.
 const AreaStoryDef kStoryDeepWeb = {};
 
-// The dive's mod pool — earned from milestone wins in the endless zone, the
+// The dive's mod pool: earned from milestone wins in the endless zone, the
 // defensive/build-around endgame Epics.
 const char* const kAreaModsDeepWeb[] = {
     "deadman_switch", "raid_mirror",  "ecc_memory",       "load_balancer",
-    // One hard-gated line build-around per line — the dive is where they all live, so
+    // One hard-gated line build-around per line: the dive is where they all live, so
     // reaching it is what opens the deep end of every line at once.
     "phishing_rod",    "extortion_ledger", "ring_zero_shim", "replication_bus",
     "mutation_engine",
@@ -117,7 +117,7 @@ const int kAreaModsDeepWebCount = arrLen(kAreaModsDeepWeb);
 // dive's own Merge Hub ingredient.
 //
 // The five unbuyable USBs used to hang off the end of this list, on the reasoning that no
-// counter sells the ability to overrule how a pet was raised — so the price of one was a
+// counter sells the ability to overrule how a pet was raised, so the price of one was a
 // trip to the end of the map and however deep you could hold on the way back. They went
 // with that slot when the dive gave it up: the dive now opens at Net-Sea, and a mid-game
 // farm handing out the one item class that rewrites a pet's raising would be selling

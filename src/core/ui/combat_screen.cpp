@@ -40,7 +40,7 @@ Zone healthZone(int health, int maxHealth) {
 
 // The stage floor both fighters stand on, and the band above it they occupy. The shelf
 // sits low so a tall Daemon (up to 64 logical / 112 active px) has headroom before it
-// reaches the rival's Health row, at the cost of the player block below it — that block
+// reaches the rival's Health row, at the cost of the player block below it: that block
 // is packed tight against the hint band instead of leaving it mid-screen.
 constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names it too
 
@@ -49,7 +49,7 @@ constexpr int kSpriteShelf = kCombatSpriteShelf;   // the panel's geometry names
 constexpr int kGaugeX = kCombatGaugeX, kGaugeW = kCombatGaugeW;
 
 // The initiative tick: a bar in that gutter, on the side that acts NEXT. The fighters do
-// not simply alternate — Speed decides, and a fast pet takes two in a row — on a screen
+// not simply alternate (Speed decides, and a fast pet takes two in a row) on a screen
 // whose one decision is whether to spend the Exploit before the next blow lands. ACCENT,
 // because which one is up IS the token's meaning; presence and position carry it in
 // grayscale and the colour only repeats them.
@@ -58,8 +58,8 @@ void drawTurnTick(Framebuffer& fb, int y, int h) {
     fb.fillRect(kTurnTickX, y, kTurnTickW, h, palColor(Pal::ACCENT));
 }
 // The outer inset a fighter is seated against before it is allowed to crop, and the cap on
-// the clash lane. The lane is where a fight HAPPENS — the strike mark, the ground a lunge
-// closes and a recoil gives up — so it takes the room the two bodies leave rather than a
+// the clash lane. The lane is where a fight HAPPENS (the strike mark, the ground a lunge
+// closes and a recoil gives up), so it takes the room the two bodies leave rather than a
 // token gap, and the cap is generous because at 1/1 there is room to be. Two Process-stage
 // creatures are 54px of the stage's 220; spending the other 166 on margin would huddle them
 // mid-screen. What is left after the cap goes to the margins, so a pair is centred.
@@ -80,7 +80,7 @@ constexpr int kStageNum = kCombatStageNum, kStageDen = kCombatStageDen;
 // Where a sheet column lands in active px under the creature upscale, as the BLITTER
 // puts it: the first destination column whose source sample has reached `x`. Seating
 // works in these, not in a plain x*num/den, because two independently truncated
-// endpoints can bracket a band one pixel wider than the band itself — and one stray
+// endpoints can bracket a band one pixel wider than the band itself, and one stray
 // column is enough to put a creature inside the lane that exists to keep it out.
 constexpr int scaleUp(int x, int num, int den) {
     return (x * num + den - 1) / den;
@@ -92,7 +92,7 @@ constexpr int scaleUp(int x, int num, int den) {
 //
 // `faceRight` is the direction this SEAT wants its occupant to look; the sheet's declared
 // Facing (core/render/sprite.h) decides whether that costs a mirror. A sheet with no
-// declared facing — the three-quarter pose most of the roster is drawn in — is never
+// declared facing (the three-quarter pose most of the roster is drawn in) is never
 // turned. Seating reads the MIRRORED content band, or a creature padded to one side of its
 // cell would step that padding's width off its seat the moment it turns.
 void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBeat,
@@ -131,7 +131,7 @@ void drawFighter(Framebuffer& fb, const SpriteData* s, int contentX, int animBea
         drawSpriteUpscaled(fb, *s, frame, x, y, num, den, row, mirror);
 }
 
-// Does this fighter wear FX_GLITCH? The malbeasts do — the wilds (SPR_MALBEAST_) and the
+// Does this fighter wear FX_GLITCH? The malbeasts do. The wilds (SPR_MALBEAST_) and the
 // bosses drawn in their style (SPR_BOSS_): a sprite-named enemy spec with no creature row.
 // The Sim dummy and an undrawn boss borrow other sheets and stay clean.
 bool wearsGlitch(const Combatant& c) {
@@ -193,7 +193,7 @@ CombatStage seatStage(const SpriteData* localSprite, const SpriteData* rivalSpri
     // pair that doesn't shares the room by HALVES, not evenly: a fighter narrower than
     // its half is never cropped, and the slack it doesn't want goes to the one that
     // does. Splitting the deficit evenly instead would shave pixels off a Process-stage
-    // creature for the crime of being matched against a Daemon — the loss belongs to
+    // creature for the crime of being matched against a Daemon: the loss belongs to
     // whichever fighter is over its share, and only to it.
     const int avail = kActiveW - 2 * kStageEdge - lane;
     int aL = wL, aR = wR;
@@ -217,7 +217,7 @@ CombatStage seatStage(const SpriteData* localSprite, const SpriteData* rivalSpri
 
 
 // The move a combatant actually cast last, following a wildcard slot through to what it
-// ROLLED — a metamorphic row is a pool, so the slot's own MoveDef says nothing about
+// ROLLED: a metamorphic row is a pool, so the slot's own MoveDef says nothing about
 // which line the cast came from and `lastRolled` is the only thing that does.
 const MoveDef* castMove(const Combatant& c) {
     if (c.lastMoveIdx < 0) return nullptr;
@@ -230,7 +230,7 @@ const MoveDef* castMove(const Combatant& c) {
 // answers with what it ROLLED, every other slot answers with itself.
 //
 // Deliberately NOT castMove above, which stays wildcard-only. That one feeds FX_CAMO,
-// which asks whether a cast was BORROWED — widen it and an ordinary fighter casting a
+// which asks whether a cast was BORROWED: widen it and an ordinary fighter casting a
 // move its opponent happens to carry would start wearing that opponent's colours.
 const MoveDef* castRow(const Combatant& c) {
     if (c.lastMoveIdx < 0) return nullptr;
@@ -242,7 +242,7 @@ const MoveDef* castRow(const Combatant& c) {
 }
 
 // The line a combatant belongs to, or null for one built from a sprite-named spec rather
-// than from a creature — a malbeast, a boss, the dummy. That null is the case the kit
+// than from a creature: a malbeast, a boss, the dummy. That null is the case the kit
 // match below exists for.
 const char* fighterLine(const Combatant& c) {
     return c.creature ? c.creature->line : nullptr;
@@ -289,7 +289,7 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq) {
     }
     const int n = sheet->frames > 0 ? sheet->frames : 1;
     // Modulo the fight's swing count, so the pair walks however many frames the sheet
-    // actually ships — a source drawn with one is simply never alternated.
+    // actually ships: a source drawn with one is simply never alternated.
     return {sheet, ((strikeSeq % n) + n) % n};
 }
 
@@ -341,7 +341,7 @@ namespace {
 
 // Wind-up cue: a channelling combatant's silhouette CHARGES toward warn-bright over
 // kWindupFlashPeriod anim-ticks and drops back, repeating for the wind-up's length. The
-// ramp CLIMBS, where an impact (impactFlashAmt) snaps to its peak and fades — a wind-up
+// ramp CLIMBS, where an impact (impactFlashAmt) snaps to its peak and fades: a wind-up
 // that decayed would read as a hit landing on the charging fighter. Pairs with
 // drawWindupMark's countdown, the countable half that survives grayscale.
 constexpr int kWindupFlashPeriod = 8;
@@ -362,7 +362,7 @@ void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int tur
     const int n = std::max(turnsLeft, std::max(1, turnsTotal));
     const int w = n * kWindupSeg + 2;
     // Held inside the canvas and under the chrome: a cropping Daemon's midpoint can sit
-    // past either screen edge, and a tall one's head can rise past the header — a marker
+    // past either screen edge, and a tall one's head can rise past the header. A marker
     // that says "this one" has to be on screen, and clear of the rows above, to say it.
     const int x = std::max(kMargin, std::min(kActiveW - kMargin - w, midX - w / 2));
     const int y = std::max(kHeaderRule + 22, headY - kWindupSegH - kWindupCaret - 2);
@@ -379,7 +379,7 @@ void drawWindupMark(Framebuffer& fb, int midX, int headY, int turnsLeft, int tur
 // window. It TRAVELS in the direction of the blow, fading as it goes, and is mirrored for
 // a blow going left (SpriteData::facing) so a frozen frame answers "which way" too.
 //
-// WHAT is the source of the cast — its line, or the common pool — and each source owns a
+// WHAT is the source of the cast (its line, or the common pool), and each source owns a
 // PAIR, walked on the fight's swing count (strikeMark, combat_screen.h): one mark per
 // source reads as wallpaper within a few turns. The art is tools/gen_fight_art.py.
 //
@@ -404,7 +404,7 @@ void drawStrikeMark(Framebuffer& fb, int laneX, int laneW, int dir, int beat, in
 
 // Impact "punch" cue (no new art/frames): the side that just took a hit flashes white,
 // and a HEAVY one (heavyHit, combat_screen.h) also recoils a few active-px AWAY from its
-// opponent, both decaying over kImpactPeriod anim-ticks — an "a hit just happened" tell
+// opponent, both decaying over kImpactPeriod anim-ticks. An "a hit just happened" tell
 // that reads independently of the breathe-loop frame, so an accelerated feeding-frenzy
 // streak still feels like a string of impacts rather than a silent, motionless damage
 // number.
@@ -414,7 +414,7 @@ constexpr int kImpactPeriod = 4;
 // so the blow reads as DOUBLING the step its target was already taking off the
 // attacker's lunge rather than as a second motion with a size of its own.
 //
-// What the number buys is travel for a fighter that HAS the room — heldOnStage is what
+// What the number buys is travel for a fighter that HAS the room: heldOnStage is what
 // decides how much of it any given seat can actually spend.
 constexpr int kImpactNudge = 12;
 
@@ -430,7 +430,7 @@ uint8_t impactFlashAmt(int hitBeat) {
 // The damage popup's own window, in anim-ticks: one ordinary turn
 // (kCombatBeatsPerTurn heartbeats at kCombatAnimMs each), so the number is still up when
 // the fight asks what just happened and gone before the next blow lands. A feeding-frenzy
-// streak that resolves faster simply cuts it short with the next hit, which is right —
+// streak that resolves faster simply cuts it short with the next hit, which is right:
 // the newest number is the one being read.
 constexpr int kDamagePopPeriod = 6;
 constexpr int kDamagePopRise = 10;         // active px it climbs over that window
@@ -451,7 +451,7 @@ int damagePopRise(int hitBeat) {
 constexpr int kAttackHopPeriod = 4;
 
 // How far the swinging fighter steps in. Big enough to read as a lunge rather than a
-// shuffle, and it is the lane that makes that affordable — the stage is framed at 1/1
+// shuffle, and it is the lane that makes that affordable: the stage is framed at 1/1
 // and the gap between two fighters is most of the canvas, so the step has somewhere to
 // go. The pair still never meets: the attacker comes forward by this and its target
 // gives up the same distance in the same direction, so the gap between them holds and a
@@ -473,9 +473,9 @@ int attackHopPx(int hopBeat, int dir) {
 // The replication board, drawn on the same shelf as its parent so a worm and its copies
 // read as one force rather than as a pet with UI stuck to it. The glyphs, their frame
 // pairs and how one is seated are in core/ui/worm_replicas.h, shared with the idle
-// habitat — only the fight's own reading of them is below.
+// habitat, only the fight's own reading of them is below.
 
-// How long a destroyed copy's dissolve plays, in anim-ticks — matched to the impact
+// How long a destroyed copy's dissolve plays, in anim-ticks: matched to the impact
 // punch (kImpactPeriod) so the pop and the recoil that caused it read as one beat.
 constexpr int kReplicaDeathPeriod = 4;
 
@@ -498,7 +498,7 @@ void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
     for (int i = n - 1; i >= 0; --i) {
         const int cx = frontX + stride * i + stride / 2;
         // The dissolve takes the slot BEHIND the live board rather than the slot its
-        // copy actually held — which is unknowable, since the array packs the moment one
+        // copy actually held, which is unknowable, since the array packs the moment one
         // dies. It reads as the board having lost its last rank, which is the true part.
         const bool ghost = dying && i == n - 1;
         const bool defender = ghost ? kill.defender : c.wormReplicas[i].defender;
@@ -510,7 +510,7 @@ void drawReplicaRow(Framebuffer& fb, const Combatant& c, bool attacking,
 }
 
 // How many rows each panel page will actually draw. Asked BEFORE the box is filled, so
-// the floor can be cut to the content instead of to the worst case — see the panel block
+// the floor can be cut to the content instead of to the worst case: see the panel block
 // in drawCombat for why the top is the anchored edge and the floor is the one that moves.
 //
 // These count what the draw below emits, and the two have to stay in step: a page that
@@ -538,7 +538,7 @@ int kitPageRows(const Combatant& rival, const RivalPrizes& prizes) {
 }
 
 // One combatant's live line-passive state as a bar plus a pip row, drawn immediately
-// outside its Health gauge. Both fighters get one — a passive changes who wins, so hiding
+// outside its Health gauge. Both fighters get one: a passive changes who wins, so hiding
 // the opponent's would leave the player watching a fight decided by something they cannot
 // see. The rival's is drawn smaller, which is why this takes its sizes as parameters.
 //
@@ -553,7 +553,7 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
                         palColor(i < lit ? on : Pal::INK_DIM));
     };
     // Obfuscation shield (Phishing, combat.h shieldHp): shieldHp can outnumber maxHealth,
-    // so the fill isn't a literal ratio — 1-e^-x saturates toward a full bar as the pool
+    // so the fill isn't a literal ratio; 1-e^-x saturates toward a full bar as the pool
     // grows past current max Health without ever overflowing it. Once it genuinely exceeds
     // max Health the leading edge churns with ink-white flecks, so "there's more here than
     // this bar can draw" reads too.
@@ -562,8 +562,8 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
             ? static_cast<float>(c.shieldHp) / c.maxHealth : 0.f;
         drawProgressBar(fb, x, y, w, barH, 1.0f - std::exp(-ratio), palColor(Pal::TEAM_BLUE),
                         c.shieldHp > c.maxHealth ? BarEdge::Churn : BarEdge::Plain, beat);
-        // Frenzy ribs. The churn above says "this pool is bigger than the bar can draw"
-        // — a statement about SIZE, live every frame the pool is over max Health. The
+        // Frenzy ribs. The churn above says "this pool is bigger than the bar can draw":
+        // a statement about SIZE, live every frame the pool is over max Health. The
         // frenzy is a different claim (the pet has committed to spending the wall) and
         // it OUTLASTS the churn, holding until the pool pops, so the two cannot share
         // one tell. Ribs rather than a hue shift because this strip is read in grayscale
@@ -580,7 +580,7 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
         return;
     }
     // Worm replication slots (combat.h wormReplicaCount): one pip per slot, up to
-    // kWormReplicaSlots — "how much replication is left" is the worm's whole resource,
+    // kWormReplicaSlots. "how much replication is left" is the worm's whole resource,
     // and it is a count with no magnitude, so it reads as pips like the trap stack does.
     // The two kinds are told apart by FILL, not by hue: a defender's pip is solid and an
     // attacker's is a hollow outline, because which sort is standing decides what the
@@ -600,7 +600,7 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
         }
         return;
     }
-    // Trojan traps (combat.h trojanTrapCount): one pip per armed trap, up to the cap —
+    // Trojan traps (combat.h trojanTrapCount): one pip per armed trap, up to the cap.
     // "how many traps are laid", dual-coded by count so it survives grayscale. No bar:
     // a trap stack has a count and no magnitude.
     if (c.trojanTrapCount > 0) {
@@ -610,7 +610,7 @@ void drawPassiveStrip(Framebuffer& fb, const Combatant& c, int x, int y, int w, 
         return;
     }
     // Ransom pool (Ransomware, combat.h ransomPool): damage the passive is HOLDING. Green
-    // because none of it has been taken yet — the Health gauge below is telling the truth
+    // because none of it has been taken yet: the Health gauge below is telling the truth
     // while this is up. Same saturating curve as the shield (the pool can outgrow max
     // Health), floored so the first small hit held still draws a visible sliver: "there is
     // a bill" has to read before "how big". The pips count the turns still owed.
@@ -646,7 +646,7 @@ CombatStatusStrip combatStatusStrip(const Combatant& c, bool withGuard) {
 
 // Which frame of a status glyph is up. A sheet with one cell holds still and one with
 // more walks them, so giving a condition an animation is an art change and not a code
-// change — the same bargain idleFrame makes for creatures (core/render/sprite.h). Halved
+// change: the same bargain idleFrame makes for creatures (core/render/sprite.h). Halved
 // off the anim beat because the strip sits under a fighter's feet: at the full rate a
 // rocking skull competes with the fight it is describing.
 int glyphFrame(const SpriteData& s, int animBeat) {
@@ -676,7 +676,7 @@ CombatVitals combatVitals(const Combatant& c) {
     v.health = c.health > 0 ? c.health : 0;
     v.maxHealth = c.maxHealth;
     // Attack power is the EFFECTIVE figure. Two different mechanics push on the same
-    // number from different fields — a siphon shifts powerMultPct while a Lockout stack
+    // number from different fields: a siphon shifts powerMultPct while a Lockout stack
     // accumulates in stackPowerBonus, and combat multiplies by the SUM (combat.cpp's
     // applyEffect). Reading only one of them makes a stacked pet look like it is purely
     // losing ground to a drain it is in fact out-earning.
@@ -685,7 +685,7 @@ CombatVitals combatVitals(const Combatant& c) {
     // track feeding it. Uncapped, and negative once armour rot has shredded it.
     v.defense = c.defense + c.stackDefenseBonus;
     // Speed is float (a Phishing siphon steals fractional amounts); round to the nearest
-    // whole tick — a decimal point would break the tabular-digit convention every other
+    // whole tick: a decimal point would break the tabular-digit convention every other
     // numeric on the device follows.
     v.speed = static_cast<int>(std::lround(c.speed));
     return v;
@@ -711,7 +711,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
                           bool localGuard) {
     CombatVsGrid g;
     char a[12], b[12];
-    // A pair of cells built the same way for both fighters — the whole grid is this
+    // A pair of cells built the same way for both fighters: the whole grid is this
     // shape, and writing it once is what stops one side from being formatted (or
     // forgotten) differently from the other.
     auto pair = [&](CombatVsKind kind, const char* tag, bool live) {
@@ -728,7 +728,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     std::snprintf(a, sizeof(a), "%d/%d", lv.health, lv.maxHealth);
     std::snprintf(b, sizeof(b), "%d/%d", rv.health, rv.maxHealth);
     pair(CombatVsKind::Health, "HP", true);
-    // Power's delta is everything pushing on it at once — a Phishing siphon moving
+    // Power's delta is everything pushing on it at once: a Phishing siphon moving
     // powerMultPct and a Ransomware Lockout stack accumulating in stackPowerBonus, which
     // combat multiplies by the SUM. One signed figure says which way the pet is going;
     // the effective number beside it says where it has got to.
@@ -760,7 +760,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     // --- What changes what you would do NEXT turn ------------------------------------
     // Frozen: how many turns are left in the lock. Free but still carrying resistance from
     // one: the odds the NEXT stun sticks (stunLandPct). Which of the two a fighter needs is
-    // exactly which one it is showing — the number flips the moment the lock lifts, and a
+    // exactly which one it is showing: the number flips the moment the lock lifts, and a
     // fighter that has shaken the whole pile off drops out of the row.
     auto stunCell = [](char* out, size_t cap, const Combatant& c) {
         if (c.lockedTurnsLeft > 0) std::snprintf(out, cap, "%d", c.lockedTurnsLeft);
@@ -789,7 +789,7 @@ CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival,
     b[0] = '\0';
     pair(CombatVsKind::Guard, "GRD", localGuard && local.guard > 0);
 
-    // The ransom pool and the turns before it lands — the one affliction whose VALUE is
+    // The ransom pool and the turns before it lands: the one affliction whose VALUE is
     // the decision, since it is how much is about to arrive and when.
     auto rnsmCell = [](char* out, size_t cap, const Combatant& c) {
         if (c.ransomPool > 0) std::snprintf(out, cap, "%d/%d", c.ransomPool,

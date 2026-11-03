@@ -1,8 +1,8 @@
-// content_source.h — the seam behind the registry.
+// content_source.h: the seam behind the registry.
 //
 // EmbeddedContentSource ships content compiled in. A future
 // SdContentSource (JSON on the SD card) implements the same
-// interface and is merged in at boot — no engine changes. AssetSource does the
+// interface and is merged in at boot: no engine changes. AssetSource does the
 // same for sprite art (embedded now, card-backed later).
 #pragma once
 
@@ -29,7 +29,7 @@ struct ContentSource {
         return nullptr;
     }
     // Script->Daemon weighted pools. A source with no multi-Daemon content
-    // returns count 0 (nullptr) — the registry then falls through to the next
+    // returns count 0 (nullptr): the registry then falls through to the next
     // source / the per-creature evolvesTo* fields.
     virtual const DaemonPoolDef* daemonPools(int& count) const = 0;
 };

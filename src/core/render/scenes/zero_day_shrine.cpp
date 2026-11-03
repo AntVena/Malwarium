@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// ZERO DAY SHRINE — a colonnade underground, and a shaft of light on the altar.
+// ZERO DAY SHRINE: a colonnade underground, and a shaft of light on the altar.
 //
 // No distance: you are inside it, so nothing is drawn on the horizon and the bands are
 // taken off the ground the screen hands over.
@@ -32,7 +32,7 @@ constexpr uint8_t kToneSeam = 40;
 constexpr uint8_t kToneEdge = 82;
 
 // Where the roof stops and where the arches spring from, as fractions of this ground's
-// sky — the two bands the room is built between.
+// sky: the two bands the room is built between.
 constexpr uint8_t kRoofUp = 238;
 constexpr uint8_t kSpringUp = 150;
 
@@ -69,7 +69,7 @@ void drawZeroDayShrineScene(Framebuffer& fb, int beat, const SceneGround& g) {
     fb.fillRect(0, 0, kActiveW, g.floorY, vault);
 
     // The wall stops short of the cavern roof, so the room is a building standing INSIDE
-    // a cave rather than a facade filling the canvas — and the stalactites have somewhere
+    // a cave rather than a facade filling the canvas, and the stalactites have somewhere
     // to hang.
     const int wallTop = springY - kBayHalf - 10;
     fb.fillRect(0, wallTop, kActiveW, g.floorY - wallTop, sceneTint(kToneWall, kStone));

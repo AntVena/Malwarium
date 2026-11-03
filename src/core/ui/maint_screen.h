@@ -1,4 +1,4 @@
-// maint_screen.h — MAINT submenu: a 2-row list (Defrag / AV) whose actions either
+// maint_screen.h (MAINT submenu): a 2-row list (Defrag / AV) whose actions either
 // launch a non-interruptible process with a success/failure outcome, or hand off to the
 // process's played variant (whichever minigame content_arcade.h wires to it).
 #pragma once
@@ -85,12 +85,12 @@ void drawMaintProcess(Framebuffer& fb, MaintKind kind, float t);
 
 // What a finished run did to the disk. Failed and Cleaned are the only two a ROLLED or
 // BOUGHT run can reach; Partial belongs to the played one, whose board can come up short
-// without that being a failure — no penalty, no care mistake, just a smaller clean.
+// without that being a failure: no penalty, no care mistake, just a smaller clean.
 enum class MaintOutcome : uint8_t { Failed, Cleaned, Partial };
 
 // Outcome toast after the process resolves. `fragRemoved` is what actually came off:
 // the fixed kDefragReduction/kAvReduction for a rolled or bought run, the run's own
-// worth for a played one — which is why the toast prints a number instead of implying
+// worth for a played one, which is why the toast prints a number instead of implying
 // one. Ignored on Failed, which paid kMaintFailPenalty instead. `bitsEarned` is what a
 // played defrag paid on top, drawn only when there is some.
 void drawMaintOutcome(Framebuffer& fb, MaintKind kind, MaintOutcome outcome,

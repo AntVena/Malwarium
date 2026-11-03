@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// NEON SUBNET — a city block standing in a wet grid.
+// NEON SUBNET: a city block standing in a wet grid.
 //
 // Three anchors, split by what they are: the city is the frag ramp, the road under it is
 // the neon blue, and the lights are the pink. Warm windows over a cold street is the

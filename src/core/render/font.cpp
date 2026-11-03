@@ -1,9 +1,9 @@
-// font.cpp — the renderer over FONT_UI's glyph table (see font.h).
+// font.cpp: the renderer over FONT_UI's glyph table (see font.h).
 //
 // Face-independent by construction: everything here is expressed in kFontW /
 // kFontH / kFontAdvance and fontGlyph(), so changing the face is a re-run of
 // tools/gen_font.py and nothing in this file. A FontFace only reaches the
-// lookup — the pixel loops below never learn which cut they are drawing.
+// lookup: the pixel loops below never learn which cut they are drawing.
 #include "core/render/font.h"
 
 #include <cstring>
@@ -20,7 +20,7 @@ int drawText(Framebuffer& fb, int x, int y, const char* s, Rgb565 color,
         if (g) {
             for (int row = 0; row < kFontH; ++row) {
                 const uint8_t bits = g[row];
-                if (!bits) continue;   // blank scanline — most cells have several
+                if (!bits) continue;   // blank scanline: most cells have several
                 for (int col = 0; col < kFontW; ++col)
                     if (bits & (1u << (kFontW - 1 - col)))
                         fb.fillRect(x + col * scale, y + row * scale, scale, scale,

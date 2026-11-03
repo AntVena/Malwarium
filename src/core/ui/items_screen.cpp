@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "core/content/content_recipes.h"  // itemIsRecipeIngredient — the FOOD split
+#include "core/content/content_recipes.h"  // itemIsRecipeIngredient: the FOOD split
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
 #include "core/model/inventory.h"
@@ -24,7 +24,7 @@ namespace {
 
 
 // Group key orders the list; lower sorts first. -1 == the Lockout RESOLVE group.
-// FOOD's own slot splits into two — cooked dishes, then recipe ingredients — rather
+// FOOD's own slot splits into two (cooked dishes, then recipe ingredients), rather
 // than the type-order cast used for Buffs/Quest: eating an ingredient directly is
 // rare, and interleaved by rarity among the actual meals it was the thing a player
 // had to scroll past to find dinner. Derived off content_recipes' own inputs
@@ -51,12 +51,12 @@ const char* groupLabel(int key) {
 
 // Does an item pass the active filter? All = everything. Food/Buffs/Quest read the
 // TYPE axis; Keys/Tools/Ingredients read the finer CATEGORY axis (Ingredients splits
-// Food — itemIsRecipeIngredient, not itemCategory, since that split is derived from
+// Food: itemIsRecipeIngredient, not itemCategory, since that split is derived from
 // the recipe table rather than the row's own category field).
 //
 // TOOLS is the one filter that is not a band: it reads the category axis, so it
 // answers "what can I reach for" across both Type::Tool and the Quest rows that are
-// really tools. That is the question the filter is for — a Defrag Tool and a Rollback
+// really tools. That is the question the filter is for: a Defrag Tool and a Rollback
 // belong in one list whatever their group heading says.
 bool filterMatches(ItemFilter f, const ItemDef& d) {
     switch (f) {
@@ -74,13 +74,13 @@ bool filterMatches(ItemFilter f, const ItemDef& d) {
 
 // Rarity ladder: four cells, one lit per tier up to the item's own (Common 1 .. Epic
 // 4). Lit cells are full-height blocks in the rarity's colour, unlit ones a baseline
-// tick — so the tier is COUNTABLE before it is coloured, which is what lets the row
+// tick, so the tier is COUNTABLE before it is coloured, which is what lets the row
 // icon take the tint at all (the rule in core/ui/theme.h). Returns the width drawn.
 constexpr int kPipW = 3, kPipGap = 2, kPipCells = 4;
 constexpr int kPipStripW = kPipCells * (kPipW + kPipGap) - kPipGap;
 
 // The once-per-life pip: a filled block for a grant this pet can still take, a hollow
-// one for a grant already spent. SOLID vs OUTLINE is the channel — the colour is emphasis
+// one for a grant already spent. SOLID vs OUTLINE is the channel: the colour is emphasis
 // on top of it, exactly as the rarity ladder beside it works, so the row survives a
 // grayscale screenshot. kPipW-square, so the two marks share a column width.
 constexpr int kLifeMarkW = kPipW + 2;
@@ -113,18 +113,18 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 
 // Detail-page description block: the readout starts at kDetailPanelTop and the prose
 // flows under it, down to kDetailPanelBottom. The HAVE row and the action line sit
-// below that, near the bottom of a page that has no hint band — so the panel gets the
+// below that, near the bottom of a page that has no hint band, so the panel gets the
 // room, and the two footer lines take what they need rather than the reverse.
 //
 // HAVE and the action line are a PAIR and are spaced to say so: their pitch is tighter
 // than the prose pitch above them (kFontH + 4 against kLineH), while the gap ABOVE them
-// is wider than either. That is the whole grouping channel on this page — neither footer
+// is wider than either. That is the whole grouping channel on this page: neither footer
 // line reads as a stray row of the block. It is the same footer pitch drawModDetail
 // stacks its gate rows on, so the two pages agree.
 //
 // The gap is MEASURED, not reserved. The panel's reserve bounds how far the readout and
 // prose may reach (a magnitude can never be displaced), but a two-line description ended
-// far short of it and the pair stayed pinned to the bottom anyway — so most of the page
+// far short of it and the pair stayed pinned to the bottom anyway, so most of the page
 // was the fence. drawSpecSheet already reports where it actually stopped, so the pair
 // follows that by kDetailFooterGap and is clamped at the reserve, which is exactly its
 // old position. A full panel is therefore unchanged and only a short one moves.
@@ -148,7 +148,7 @@ void listHeader(Framebuffer& fb, const char* title, int sel, int total) {
 
 }  // namespace
 
-// ICON_ITEM_<UPPER ID> — the per-item inventory glyph naming convention.
+// ICON_ITEM_<UPPER ID>: the per-item inventory glyph naming convention.
 const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
     char name[40];
     std::snprintf(name, sizeof(name), "ICON_ITEM_%s", id);
@@ -156,7 +156,7 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
         if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
     // Every shipped item has its own ICON_ITEM_<ID>, so the name IS the lookup and
     // there is no borrowed-glyph table to keep in step. A null here means a row was
-    // added without art, which the row will show as a blank — add the PNG rather
+    // added without art, which the row will show as a blank: add the PNG rather
     // than patching an exception back in.
     return reg.sprite(name);
 }
@@ -167,7 +167,7 @@ LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates) {
 }
 
 // Lockout-resolving items float to the top in Lockout context: any food (the demand
-// is hunger), plus any row whose own context says LockoutOnly — which is what that
+// is hunger), plus any row whose own context says LockoutOnly, which is what that
 // context MEANS, so the set is read off the rows instead of being a list of ids here
 // (src/core/content/CONTENT_STANDARD.md rule 1). Authoring a second lockout key is a
 // row, not an edit to this function.
@@ -320,7 +320,7 @@ void drawItemTypePicker(Framebuffer& fb, int cursor) {
     // Pitch is set by the tile COUNT against the footer, not chosen for looks: the
     // picker never scrolls (kItemPickerTiles is a fixed set), so every tile
     // has to fit between kRowTop and the footer rule. Six tiles at the old pitch of
-    // 32 put the last row's selection band straight through the rule — the INGREDIENTS
+    // 32 put the last row's selection band straight through the rule: the INGREDIENTS
     // tile is what made six. 26 + 6*30 = 206 clears the rule at kActiveH-16.
     constexpr int kPickRowH = 30;
     for (int i = 0; i < kItemPickerTileCount; ++i) {
@@ -360,7 +360,7 @@ void drawItemsChrome(Framebuffer& fb, const std::vector<InvRow>& rows, const Ite
         listHeader(fb, base, sel, total);
     }
 
-    // The bottom hint band (exception rule, VISUAL_LANGUAGE §4.2) — each owned upgrade contributes its own
+    // The bottom hint band (exception rule, VISUAL_LANGUAGE §4.2): each owned upgrade contributes its own
     // word, so an unowned player's ITEMS list carries no band at all. The Lockout
     // context never routes through the picker, so it never offers "C TYPES".
     char hint[32] = "";
@@ -397,7 +397,7 @@ void drawItemRow(Framebuffer& fb, const InvRow& r, int y, bool focused,
     }
     // The ladder and the count own the right end of the row, so the name yields:
     // it scrolls within what is left rather than drawing through them (widgets.h).
-    // Only the focused row travels — a list of names all sliding at once is
+    // Only the focused row travels: a list of names all sliding at once is
     // unreadable, and the cursor already says which one the player is asking about.
     drawTextMarquee(fb, 40, textY, std::max(0, nameEnd - 40), r.label,
                     palColor(Pal::INK), v.beat, scrollWhen(focused));
@@ -451,10 +451,10 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
     drawHeaderBand(fb, "ITEMS");
 
     // Icon + name + rarity tag. The icon takes the rarity's colour, which is pure
-    // decoration on top of the word printed opposite it — see core/ui/theme.h.
+    // decoration on top of the word printed opposite it: see core/ui/theme.h.
     if (icon) drawSpriteTinted(fb, *icon, 0, kMargin, 30, rarityColor(def.rarity));
     const int nameX = icon ? kMargin + kRowIcon + 6 : kMargin;
-    // Rarity tag (the font has no brackets — colour + word carry it). It owns the
+    // Rarity tag (the font has no brackets: colour + word carry it). It owns the
     // right end; the name yields and scrolls, since the tier is the shorter fact.
     drawLabelValue(fb, nameX, 36, def.displayName, palColor(Pal::INK),
                    rarityName(def.rarity), rarityColor(def.rarity), v.beat, Overflow::Scroll);
@@ -476,7 +476,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
     // kDetailFooterGap). The clamp is what keeps a full panel where it always was.
     const int haveY = std::min(kDetailHaveMaxY, panelEnd + kDetailFooterGap);
     // The once-per-life note takes a line of its own between the two, and only on a row
-    // that has one — every other item's footer is the pair it always was.
+    // that has one: every other item's footer is the pair it always was.
     const int lifeY = haveY + kDetailFooterPitch;
     const int actionY =
         (lifetime == LifetimeMark::None ? haveY : lifeY) + kDetailFooterPitch;
@@ -487,8 +487,8 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
     drawText(fb, kMargin, haveY, have, palColor(Pal::INK_DIM));
 
     // Whether the pet currently in the rig has already taken this row's grant. Both
-    // states are spelled out — a blank line where "already spent" belongs would read as
-    // "not spent" to anyone who has not memorised which rows carry a grant — and the
+    // states are spelled out. A blank line where "already spent" belongs would read as
+    // "not spent" to anyone who has not memorised which rows carry a grant, and the
     // scope is named, because a new egg gets every one of them back.
     if (lifetime != LifetimeMark::None) {
         const bool spent = lifetime == LifetimeMark::Spent;
@@ -544,7 +544,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits, const Yield
             if (icon) drawSprite(fb, *icon, 0, kMargin + 4, y - 6);
             const int nx = icon ? kMargin + 4 + kRowIcon + 6 : kMargin + 4;
             // The rarity word owns the right end and the name yields to it. Nothing on
-            // this page is focused — it is a reveal, not a list — so no row scrolls;
+            // this page is focused (it is a reveal, not a list), so no row scrolls;
             // a name too long for the room is clipped rather than drawn through the
             // word that says what came out.
             drawLabelValue(fb, nx, y, def ? def->displayName : "?", palColor(Pal::INK),
@@ -590,7 +590,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v
             if (r.icon) drawSprite(fb, *r.icon, 0, 20, y - 4);
             // The count is what this tally exists to report, so it owns the right end
             // and the name measures against it (drawLabelValue) rather than running
-            // under it — the same rule the ITEMS list rows follow.
+            // under it: the same rule the ITEMS list rows follow.
             char cnt[8];
             std::snprintf(cnt, sizeof(cnt), "x%d", r.count);
             drawLabelValue(fb, 46, y, r.def ? r.def->displayName : "?",
@@ -650,7 +650,7 @@ void drawRepartitionPicker(Framebuffer& fb, const int points[4], int cursor, int
     for (int i = 0; i < 4; ++i) {
         const int y = 66 + i * 22;
         // What counts as a legal row changes with the step. Taking a point needs one to
-        // take (the Rollback rule); RECEIVING one has no such bar — a stat sitting at
+        // take (the Rollback rule); RECEIVING one has no such bar: a stat sitting at
         // zero is exactly the one an operator reaches for this item to fill.
         const bool eligible = picking ? points[i] > 0 : i != from;
         const bool sel = (i == cursor);

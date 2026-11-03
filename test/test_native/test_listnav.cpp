@@ -1,18 +1,18 @@
-// test_listnav.cpp — the list-navigation contract every screen shares
+// test_listnav.cpp: the list-navigation contract every screen shares
 // (src/core/app/game/game_listnav.cpp): A steps forward and repeats when held, C
 // cancels on a tap and walks BACKWARD when held, and the row set each one walks is
 // whatever the focused screen draws.
 //
-// The gates here drive the real input path — press edges, ticks, release edges — because
+// The gates here drive the real input path (press edges, ticks, release edges), because
 // the whole contract lives in the gap between them: what a press means is decided by how
 // long it stays down, and a gate that only ever sends press edges cannot see that.
 #include "test_gates.h"
 
-#include "core/ui/layout.h"   // kMargin — the row budget these gates mirror
+#include "core/ui/layout.h"   // kMargin: the row budget these gates mirror
 
 // A held A on a scrolling list steps once on the press and then REPEATS, so crossing a
 // long bag costs a dwell rather than a tap per row. The repeat is bounded by the
-// list — it wraps rather than running off the end — and stops dead on release.
+// list (it wraps rather than running off the end), and stops dead on release.
 void test_list_hold_a_repeats_the_step() {
     Game g{StartMode::Hatched};
     g.inventory().add("tortilla_chip", 1);
@@ -23,7 +23,7 @@ void test_list_hold_a_repeats_the_step() {
     g.tick(t);
     const int start = g.itemsRow();
 
-    // A press alone steps exactly one row — the repeat has not begun.
+    // A press alone steps exactly one row: the repeat has not begun.
     g.onButton(press(Button::A));
     const int afterPress = g.itemsRow();
     CHECK(afterPress != start);
@@ -44,7 +44,7 @@ void test_list_hold_a_repeats_the_step() {
     CHECK(g.itemsRow() == parked);
 }
 
-// C keeps its tap — Cancel is the one button whose meaning never bends — and puts the
+// C keeps its tap (Cancel is the one button whose meaning never bends), and puts the
 // backward step on the HOLD. A tap leaves the list; a hold walks the cursor back up it
 // and leaves nothing on release.
 void test_list_hold_c_steps_back_tap_cancels() {
@@ -71,7 +71,7 @@ void test_list_hold_c_steps_back_tap_cancels() {
         g.onButton(lift(Button::A));
         const int forward = g.itemsRow();
 
-        g.onButton(press(Button::C));               // arm — nothing happens yet
+        g.onButton(press(Button::C));               // arm: nothing happens yet
         CHECK(g.nav() == Game::Nav::Submenu);       // in particular, no cancel
         CHECK(g.itemsRow() == forward);
         g.tick(t += kListRepeatDelayMs + kHeartbeatMs);   // cross into the hold
@@ -81,7 +81,7 @@ void test_list_hold_c_steps_back_tap_cancels() {
         CHECK(g.nav() == Game::Nav::Submenu);
         CHECK(g.itemsRow() == back);
     }
-    // (c) One press each way is a round trip — the overshoot this exists to undo.
+    // (c) One press each way is a round trip: the overshoot this exists to undo.
     {
         Game g{StartMode::Hatched};
         g.inventory().add("tortilla_chip", 1);
@@ -100,8 +100,8 @@ void test_list_hold_c_steps_back_tap_cancels() {
     }
 }
 
-// The contract is scoped to LISTS. On a screen with no rows to walk — an inline
-// confirm, a detail page — C is the plain instant cancel it has always been, and a
+// The contract is scoped to LISTS. On a screen with no rows to walk (an inline
+// confirm, a detail page) C is the plain instant cancel it has always been, and a
 // held A repeats nothing.
 void test_list_contract_skips_non_lists() {
     Game g{StartMode::Hatched};
@@ -110,7 +110,7 @@ void test_list_contract_skips_non_lists() {
     g.onButton(press(Button::B));                   // into the item DETAIL page
     CHECK(g.nav() == Game::Nav::Detail);
 
-    // C cancels on the PRESS edge here — no release needed, no dwell.
+    // C cancels on the PRESS edge here: no release needed, no dwell.
     g.onButton(press(Button::C));
     CHECK(g.nav() == Game::Nav::Submenu);
 
@@ -126,7 +126,7 @@ void test_list_contract_skips_non_lists() {
 
 // The MOD picker orders its rows fittable-first: everything the pet can put in this
 // slot right now comes before everything it can't, so a grown pool never buries the
-// usable half. Nothing is dropped — the locked rows are still all there, after.
+// usable half. Nothing is dropped: the locked rows are still all there, after.
 void test_mod_picker_orders_fittable_first() {
     ContentRegistry r = ContentRegistry::embedded();
     Loadout load;
@@ -167,7 +167,7 @@ void test_mod_picker_orders_fittable_first() {
 
 // The cursor and the rows must agree on the order. Both callers pass the same five
 // arguments, so equipping from the picker equips the mod the row under the cursor
-// NAMES — the failure this guards is silent and picks a different mod.
+// NAMES: the failure this guards is silent and picks a different mod.
 void test_mod_picker_cursor_matches_drawn_order() {
     Game g{StartMode::Hatched};
     ContentRegistry r = ContentRegistry::embedded();

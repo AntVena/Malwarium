@@ -6,7 +6,7 @@
 #include "tunables.h"
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_tournament.h"
-#include "core/render/palette.h"   // palThemeByName — the saved theme is resolved by name
+#include "core/render/palette.h"   // palThemeByName: the saved theme is resolved by name
 
 namespace mal {
 
@@ -371,7 +371,7 @@ void Game::restoreOperator(const SaveData& d) {
     homeNetworkKey_ = d.homeNetworkKey;
     std::strncpy(homeNetworkName_, d.homeNetworkName, sizeof(homeNetworkName_) - 1);
     homeNetworkName_[sizeof(homeNetworkName_) - 1] = '\0';
-    // Membership can't outlive the network it defends — the same invariant
+    // Membership can't outlive the network it defends: the same invariant
     // setHomeNetwork enforces, re-applied here so no blob can load into a crew
     // without a home network.
     if (homeNetworkKey_ == 0) crewIndex_ = -1;
@@ -394,13 +394,13 @@ void Game::restoreBag(const SaveData& d) {
     }
     // Loadout (D3 permanent mods): grant the un-equipped spares, then install the
     // slot occupants WITHOUT consuming (they were consumed when first equipped, and a
-    // v17+ save stores spares and slots disjointly). A pre-v17 blob predates the split
-    // — its ownedMods still listed the equipped mods, so drop any owned id that also
+    // v17+ save stores spares and slots disjointly). A pre-v17 blob predates the split:
+    // its ownedMods still listed the equipped mods, so drop any owned id that also
     // sits in a slot, else the migrated save would gift a duplicate spare of each.
     loadout_ = Loadout{};
     if (d.hasModCountData) {
         // v45: a count per wire. The stored count was already capped when it was written,
-        // so it is its own ceiling here — passing modStorageCap() instead would silently
+        // so it is its own ceiling here: passing modStorageCap() instead would silently
         // confiscate copies from a player who had bought MOD STORAGE and then, somehow,
         // lost the purchase. A wire the running content no longer defines resolves to
         // nullptr and its copies are dropped, which is what retiring a mod should do.
@@ -414,7 +414,7 @@ void Game::restoreBag(const SaveData& d) {
     } else {
         // v44 and older: a flat list, one entry per COPY, with a rolled equip level
         // alongside that no longer means anything. Tally per id and keep up to the BASE
-        // cap — not modStorageCap(), because the MOD STORAGE row ships with this version
+        // cap, not modStorageCap(), because the MOD STORAGE row ships with this version
         // and no migrating save can have bought it, so the base is both correct and
         // independent of whether rigLevel_ has been restored yet.
         for (const auto& m : d.ownedMods) {
@@ -452,12 +452,12 @@ void Game::restoreHistory(const SaveData& d) {
 // The active pet's own state: moves, level, slot typing, tallies, flags and upgrades.
 void Game::restorePetProgress(const SaveData& d) {
     // Move loadout (v2). A v1 blob carried no move data (hasMoveData == false), so
-    // the pet is seeded with its line's starting kit — a graceful forward-compat
+    // the pet is seeded with its line's starting kit: a graceful forward-compat
     // migration rather than stripping it to only the innate default move.
     if (d.hasMoveData) {
         moveLoadout_ = MoveLoadout{};
         // The innate is part of what every pet owns, and a blob written before that was
-        // true simply doesn't list it. Granted first, unconditionally — nothing about
+        // true simply doesn't list it. Granted first, unconditionally: nothing about
         // the format changes, a pet restored from any blob just has what it has always
         // been able to swing.
         moveLoadout_.grant(moveLoadout_.defaultMove());
@@ -472,7 +472,7 @@ void Game::restorePetProgress(const SaveData& d) {
     }
     // Creature levels (v11). A v11+ blob restores the 0-based level + XP bucket
     // + earned stat points verbatim. A pre-v11 blob carried only the vestigial 1-based
-    // combatLevel (never applied to combat) — migrate it to a fresh level 0 rather than
+    // combatLevel (never applied to combat): migrate it to a fresh level 0 rather than
     // reinterpret it, so no phantom points appear (hasLevelData distinguishes the two).
     if (d.hasLevelData) {
         combatXp_ = d.combatXp;
@@ -505,7 +505,7 @@ void Game::restorePetProgress(const SaveData& d) {
 
     // Active pet's spent 5/5 recovery window (v42). A pre-v42 blob carries 0, so the
     // pet gets a full window on its next brush with death; the rack pets' values rode
-    // in on rack_ above. dyingArmed_ stays false — the accumulator is the durable half,
+    // in on rack_ above. dyingArmed_ stays false: the accumulator is the durable half,
     // and the first tick at 5/5 re-anchors it against the current clock.
     dyingElapsedMs_ = d.dyingElapsedMs;
 
@@ -521,7 +521,7 @@ void Game::restorePetProgress(const SaveData& d) {
     yubiConsumed_ = d.yubiConsumed != 0;
 
     // v28: the Ambig-USB armed Trojan-divert flag (per-pet; a pre-v28 blob defaults
-    // it to false — no divert armed).
+    // it to false. No divert armed).
     forceTrojanDivert_ = d.forceTrojanDivert != 0;
 
     // v60: the branch override and the soak (per-pet; a pre-v60 blob defaults to an empty
@@ -535,7 +535,7 @@ void Game::restorePetProgress(const SaveData& d) {
     evolveHold_ = d.evolveHold != 0;
 
     // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
-    // pre-v30 blob defaults it to 0 — no shield armed).
+    // pre-v30 blob defaults it to 0. No shield armed).
     backupShieldUntilMs_ = d.backupShieldUntilMs;
 
     // v50/v57: the active pet's permanent Epic-dish upgrades (an older blob → 0: no dish
@@ -558,7 +558,7 @@ void Game::restoreRadio(const SaveData& d) {
     // stand up an AP on a migrated save).
     apEnabled_ = d.apEnabled != 0;
 
-    // Pet-to-pet LINK toggle (v37). A pre-v37 blob defaults it OFF — a migrated
+    // Pet-to-pet LINK toggle (v37). A pre-v37 blob defaults it OFF: a migrated
     // device must never start broadcasting its operator's identity because it was
     // upgraded. Unlike capture/scan there is no invariant to normalize: LINK is
     // independent of the audit ladder, since listening and announcing are separate
@@ -570,7 +570,7 @@ void Game::restoreRadio(const SaveData& d) {
     // (see Game::netConnectWanted). A save carrying the old bit lands off the 'net.
 
     // Audit-capture toggle (v6). A pre-v6 blob defaults it OFF. Rebuild the policy
-    // SM from the persisted intent — the hot/cooldown clock starts fresh (no RTC,
+    // SM from the persisted intent. The hot/cooldown clock starts fresh (no RTC,
     // like Lockout): a reboot clears any in-flight PENALTY window. The 5/5 CSF
     // recovery window is the one exception; see dyingElapsedMs_ above.
     auditCapture_ = AuditCapture{};
@@ -586,7 +586,7 @@ void Game::restoreRadio(const SaveData& d) {
     // lifetime handshake count so a reboot never re-credits a handshake already
     // counted. A pre-v7 blob carries an empty ledger (dedup rebuilds from scratch
     // that session). (The sibling NETS/seenBssids set this used to also restore
-    // was removed as of v33 — see save.h.)
+    // was removed as of v33: see save.h.)
     handshakeLedger_.seed(d.seenHandshakeBssids);
     handshakesSeen_ = d.handshakesSeen;
 }
@@ -594,7 +594,7 @@ void Game::restoreRadio(const SaveData& d) {
 // Areas, sub-areas, re-farm counts and the zone Titles they award.
 void Game::restoreWorldProgress(const SaveData& d) {
     // Area-clear flags (v8). A pre-v8 blob carries an empty vector → nothing cleared
-    // (only area 0 open — the correct default for a save that predates linear gating).
+    // (only area 0 open: the correct default for a save that predates linear gating).
     // Extra saved entries (a future area shrink) are ignored.
     for (int i = 0; i < kAreaCount; ++i)
         sectorCleared_[i] = i < static_cast<int>(d.sectorCleared.size()) &&
@@ -604,7 +604,7 @@ void Game::restoreWorldProgress(const SaveData& d) {
     // per-area bitmasks verbatim. A pre-v13 blob carries empty vectors → MIGRATE: a
     // cleared AREA had every sub-area beaten, so mark all 5 sub-areas cleared + their
     // bosses unlocked; an uncleared area's sub-areas all default false (the honest
-    // default — the legacy per-sector bossUnlocked byte doesn't map to a specific
+    // default. The legacy per-sector bossUnlocked byte doesn't map to a specific
     // sub-area, so an in-flight unlock is dropped rather than mis-attributed).
     const bool haveSub = !d.subCleared.empty() || !d.subBossUnlocked.empty();
     for (int a = 0; a < kAreaCount; ++a) {
@@ -624,7 +624,7 @@ void Game::restoreWorldProgress(const SaveData& d) {
     }
 
     // Zone-completion Titles (v10). A pre-v10 blob carries 0 unlocked / -1 equipped
-    // (nothing earned — the correct default for a save that predates Titles). Mask
+    // (nothing earned: the correct default for a save that predates Titles). Mask
     // off bits above the live sector count, and drop a stale equip whose Title isn't
     // actually unlocked (a future sector shrink), so equippedTitleName() stays honest.
     titlesUnlocked_ = d.titlesUnlocked & ((1u << kAreaCount) - 1u);
@@ -660,11 +660,11 @@ void Game::restoreRig(const SaveData& d) {
     rigLevel_[kRigRowDataMining] = d.dataMiningLevel < 0 ? 0 : d.dataMiningLevel;
 
     // v31: the Merge Hub unlock and the owned-recipe mask (a pre-v31 blob defaults both
-    // to 0 — no Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
+    // to 0. No Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
     // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
     // those into the bits before handing the struct over.
     rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
-    // The bitset is authoritative — save.cpp has already seeded it from the u32 for any
+    // The bitset is authoritative: save.cpp has already seeded it from the u32 for any
     // blob that predates v51, so this reads one field however old the save is. A set
     // longer than this build understands is truncated, which is what "a shorter view"
     // means: those recipes exist in the blob and come back on the build that has them.
@@ -673,7 +673,7 @@ void Game::restoreRig(const SaveData& d) {
         recipesOwned_[i] = d.recipeOwned[i];
 
     // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
-    // → every such row defaults to 0 — a migrated save has bought none of them).
+    // → every such row defaults to 0. A migrated save has bought none of them).
     for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i) {
         const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
         rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
@@ -696,9 +696,9 @@ void Game::restoreReveals(const SaveData& d) {
     //
     // The dedupe is not belt-and-braces: a blob can legitimately carry two ids that are
     // now ONE creature, because a rename row may retire several ids onto the same
-    // successor (save.h's `renamedIds` — the Worm line's two Script placeholders both
+    // successor (save.h's `renamedIds`. The Worm line's two Script placeholders both
     // land on Rootgrub). These lists are tallies, and AchSeries::LineRaised COUNTS the
-    // raised one per line, so a duplicate does not merely waste a slot — it awards a
+    // raised one per line, so a duplicate does not merely waste a slot: it awards a
     // line achievement for a creature the operator raised once. The mark* helpers are
     // idempotent for the same reason; this path bypasses them, so it has to say so.
     seenCreatures_.clear();
@@ -709,7 +709,7 @@ void Game::restoreReveals(const SaveData& d) {
     malbeastDefeatedMask_ = d.malbeastDefeated;
 
     // v40: the achievement bitsets. A blob may be shorter than this build's capacity
-    // (an older save) or longer (a save written by a build with a bigger catalogue) —
+    // (an older save) or longer (a save written by a build with a bigger catalogue):
     // copy what overlaps and leave the rest zero either way, which is what makes the
     // length prefix worth having.
     for (uint8_t& b : achEarned_) b = 0;
@@ -718,7 +718,7 @@ void Game::restoreReveals(const SaveData& d) {
         achEarned_[i] = d.achievementEarned[i];
     for (size_t i = 0; i < d.achievementNotified.size() && i < kAchBytes; ++i)
         achNotified_[i] = d.achievementNotified[i];
-    // v65: the STORY read-set, loaded the same way and clamped the same way — a blob
+    // v65: the STORY read-set, loaded the same way and clamped the same way. A blob
     // from a build with more chapters than this one keeps the bits this build can hold
     // and drops the rest, which is exactly "the chapters it knows about".
     for (uint8_t& b : storyRead_) b = 0;
@@ -742,7 +742,7 @@ void Game::restoreReveals(const SaveData& d) {
     if (d.achievementEarned.empty() && d.achievementsMask != 0) {
         // Pre-v40: the legacy u32 mask, whose bit i IS wire number i (the original 14
         // rows kept their enum order as their wire numbers, precisely so this is a copy
-        // and not a mapping table). `notified` stays clear on purpose — an upgraded
+        // and not a mapping table). `notified` stays clear on purpose: an upgraded
         // device parades everything it has ever earned, which is also how the rows this
         // version retro-awards on the first sweep get announced.
         for (int i = 0; i < 4 && i < kAchBytes; ++i)
@@ -763,14 +763,14 @@ void Game::restoreRecords(const SaveData& d) {
         // above) prove a floor: every cleared sub-area and every cleared area had its
         // boss beaten at least once. Seeding from them means an established device
         // doesn't have to re-beat content it has already finished to earn the early
-        // rungs — and it can only ever UNDER-count, which is the safe direction.
+        // rungs, and it can only ever UNDER-count, which is the safe direction.
         for (int a = 0; a < kAreaCount; ++a) {
             if (sectorCleared_[a]) ++bossWins_;
             for (int s = 0; s < kSubAreasPerArea; ++s)
                 if (subCleared_[a][s]) ++bossWins_;
         }
     }
-    // v44: boards cleared by hand. No pre-v44 seed — see the version note in save.h for
+    // v44: boards cleared by hand. No pre-v44 seed: see the version note in save.h for
     // why defragCount is not one.
     stackerWins_ = d.stackerWins;
     // v56's three tallies. No pre-v56 fallback on purpose (save.cpp's tail note): each
@@ -790,7 +790,7 @@ void Game::restoreRecords(const SaveData& d) {
     tourneyPhase_ = d.tourneyPhase <= static_cast<uint8_t>(TourneyPhase::Champion)
                         ? static_cast<TourneyPhase>(d.tourneyPhase)
                         : TourneyPhase::Ready;
-    // v47: the arcade tallies, resolved back through the roster — a row naming a
+    // v47: the arcade tallies, resolved back through the roster. A row naming a
     // cabinet this build no longer has simply doesn't land anywhere.
     for (int i = 0; i < kArcadeMaxCabinets; ++i) {
         arcadePlays_[i] = 0;
@@ -807,7 +807,7 @@ void Game::restoreRecords(const SaveData& d) {
         arcadeBest_[row] = i < d.arcadeBest.size() ? d.arcadeBest[i] : 0;
     }
     // v48: the per-quote board states. Copy what overlaps and leave the rest zero, the
-    // way the achievement bitsets do — which is what makes the length prefix worth
+    // way the achievement bitsets do, which is what makes the length prefix worth
     // having. A pre-v48 blob carries none, so every quote reads back as never played.
     for (uint8_t& b : quoteStates_) b = 0;
     for (size_t i = 0; i < d.quoteStates.size() && i < kQuoteStateBytes; ++i)
@@ -819,7 +819,7 @@ void Game::restoreShelves(const SaveData& d) {
     collectedItems_.clear();
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);
-    sweepCollectedItems();     // fold in whatever the bag holds — seeds a pre-v40 save
+    sweepCollectedItems();     // fold in whatever the bag holds: seeds a pre-v40 save
     // The palate is NOT swept from the bag for the same reason it is not written there:
     // a pre-v62 save has no record of what its pet ate, and inventing one out of what it
     // happens to be carrying would light cells for meals that never happened.
@@ -835,12 +835,12 @@ void Game::restoreShelves(const SaveData& d) {
     if (d.speciesDiveIds.empty() && d.bestDeepWebDepth > 0)
         // Pre-v40: one pet's own record is the only dive history that was ever kept, so
         // credit it to that pet's species. Everything deeper that earlier pets did is
-        // simply not recoverable — nothing recorded it.
+        // simply not recoverable: nothing recorded it.
         if (const CreatureDef* c = registry_.creature(d.activeId))
             speciesDives_.push_back({c, d.bestDeepWebDepth});
 
     // v39: the raised-species tally, resolved the same way. Then union in every
-    // species the save still POINTS at — the ARCH rack and the ARCH records hold
+    // species the save still POINTS at: the ARCH rack and the ARCH records hold
     // pets that were necessarily raised to get there, so they belong in the tally
     // whether or not the blob said so. That is what rebuilds a pre-v39 save (which
     // carries no tally at all) and what keeps a native one honest. The active pet
@@ -875,7 +875,7 @@ void Game::restoreActivePet(const SaveData& d) {
         lastModelMs_ = nowMs_;
         // Backfill any slot the v24 tail didn't cover (a pre-v24 blob leaves
         // ALL of them Unset here), then drop any restored equip that no longer
-        // matches its slot's stamped kind — pre-release, so enforcing the
+        // matches its slot's stamped kind: pre-release, so enforcing the
         // invariant cleanly on load beats grandfathering a wrong-typed equip.
         stampSlotKinds();
         enforceSlotKindInvariant();
@@ -903,7 +903,7 @@ void Game::restoreSettings(const SaveData& d) {
     if (brightness_ < 0) brightness_ = 0;
     if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
 
-    // The chosen theme (v64), by name. An empty name — every pre-v64 blob — and a name
+    // The chosen theme (v64), by name. An empty name (every pre-v64 blob), and a name
     // this build ships no set for both resolve to base, and going through setThemePick
     // is what APPLIES it: the palette index and this member move together, so the
     // interface that repaints after a load is drawn in the set the save named.
@@ -911,7 +911,7 @@ void Game::restoreSettings(const SaveData& d) {
 }
 
 void Game::restoreBackgroundAndCant(const SaveData& d) {
-    // v58 — the chosen background, validated rather than trusted: a background the
+    // v58. The chosen background, validated rather than trusted: a background the
     // operator does not own is not a state this game should be able to boot into, and a
     // wire from a NEWER build has no row here at all. Both land on AUTO.
     //
@@ -927,7 +927,7 @@ void Game::restoreBackgroundAndCant(const SaveData& d) {
 
     // v59: the CANT. `shakesSpent` is clamped to the lifetime handshake count restored
     // above, so a blob that somehow claims more spent than were ever captured reads back
-    // as an empty purse rather than a negative one — shakesUnspent() would floor it
+    // as an empty purse rather than a negative one: shakesUnspent() would floor it
     // anyway, and clamping here means the next save writes the corrected figure.
     cantSigils_ = d.cantSigils;
     shakesSpent_ = d.shakesSpent < 0 ? 0
@@ -959,21 +959,21 @@ void Game::persistSave() {
     if (!store_) return;
     // An explicit persistSave() ASSERTS there is something worth writing, so it says so
     // before anything below can turn it away. Every guard past this point leaves the
-    // flag set, which is what makes the next tick try again — the contract
+    // flag set, which is what makes the next tick try again: the contract
     // kSaveHeapFloorBytes already documents, and which the ten "persist immediately"
     // call sites (a laid egg, a hatch, a retire) would otherwise each have to remember
     // to arrange for themselves. The autosave path reaches here only when it already
     // wanted a write; a landed one clears the flag on the way out regardless.
     saveDirty_ = true;
     // Defer rather than risk the write. A save fires off a timer, so it can land while
-    // something else holds the heap — on device, the audit capture arming is the
+    // something else holds the heap: on device, the audit capture arming is the
     // measured case. Leaving saveDirty_ set means the next tick tries again, so the
     // only cost is that the write lands a few seconds later; attempting it without
     // room costs a device reset (setHeapProbe).
     //
     // TWO CHECKS, because the write allocates in two stages. captureSave() builds the
     // SaveData's own vectors, and those are easily large enough to spend the headroom
-    // the first check approved — so the second has to be asked AFTER the SaveData
+    // the first check approved, so the second has to be asked AFTER the SaveData
     // exists, not before. It is the one standing between the allocator and everything
     // below it.
     if (!saveHasHeadroom()) { noteSaveDeferred(); return; }
@@ -984,7 +984,7 @@ void Game::persistSave() {
     // Counting it is the only evidence that the guard works rather than that the
     // device merely got lucky.
     if (!saveHasHeadroom()) { noteSaveDeferred(); return; }
-    // Size the buffer when this save needs more of it than the last one left behind —
+    // Size the buffer when this save needs more of it than the last one left behind:
     // the first write after boot, and any later one whose blob has outgrown it. Dropped
     // before it is re-reserved so the peak is the new buffer alone and never both at
     // once, and reached only from behind kSaveGrowHeapFloorBytes, which saveHeapFloor()
@@ -997,12 +997,12 @@ void Game::persistSave() {
     serializeSaveInto(captured, saveBlob_);
     lastBlobSize_ = saveBlob_.size();   // the buffer got sized and filled either way
     // A store that REFUSED the write leaves the blob on flash stale relative to RAM,
-    // which is the failure that reads as "progress silently reverted" a reboot later —
+    // which is the failure that reads as "progress silently reverted" a reboot later:
     // the pet you just hatched replaced by the one before it. Treating it as a write
     // that landed is what makes it silent: the flag would clear, nothing would retry,
     // and saveNow() would tell the travel-sleep path it was safe to power down on a
     // save that never happened. So the flag stays set. lastSaveMs_ still advances,
-    // which paces the retries at kSaveDebounceMs rather than one per beat — a store
+    // which paces the retries at kSaveDebounceMs rather than one per beat: a store
     // that just said no is not one to hammer, and a short write is usually transient.
     if (!store_->save(saveBlob_)) {
         ++saveWritesFailed_;
@@ -1018,10 +1018,10 @@ void Game::persistSave() {
 bool Game::saveNow() {
     if (!store_) return true;   // nothing to lose: no store, no state to strand
     // Unconditional: the state is about to stop existing in RAM, so "nothing has
-    // changed since the last autosave" is not good enough — passive decay moves the
+    // changed since the last autosave" is not good enough. Passive decay moves the
     // model without marking itself, and persistSave's own opening line covers that.
     // The return value is the flag persistSave clears ONLY on a write that landed, so
-    // false means the state is still only in RAM — whether the heap guard turned the
+    // false means the state is still only in RAM, whether the heap guard turned the
     // write away or the store refused it. Either way the caller must not power down.
     persistSave();
     return !saveDirty_;

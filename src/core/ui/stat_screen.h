@@ -1,4 +1,4 @@
-// stat_screen.h — STAT: an 8-page status viewer (read-only) and the INDEX that jumps
+// stat_screen.h (STAT): an 8-page status viewer (read-only) and the INDEX that jumps
 // between the pages.
 //   page 0  VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
 //   page 1  TIERS     the investment ladder: each combat stat's points, the rungs it
@@ -8,7 +8,7 @@
 //   page 4  FOODS     every dish in the game, and which this pet has eaten (ditto)
 //   page 5  BUFFS     currently-armed item buffs (Restore Point/Ambig-USB/Backup
 //                     Drive), each with its effect text and remaining time if timed
-//   page 6  SPECIES   the pet's own lore — line, one-line snarky hint, infosec ref
+//   page 6  SPECIES   the pet's own lore: line, one-line snarky hint, infosec ref
 //   page 7  AUDIT LOG the rolling event history
 // A cycles the pages, B scrolls the flowed ones, HOLD B opens the INDEX and C backs
 // out. Each page dual-codes (grayscale-legible).
@@ -33,13 +33,13 @@ class ContentRegistry;
 class MoveLoadout;
 class Loadout;
 
-// The pages A cycles, and the dots the header's pager draws — one number, so a page
+// The pages A cycles, and the dots the header's pager draws: one number, so a page
 // added to the roster can never leave the pager short.
 inline constexpr int kStatPages = 8;
 
 // The band every STAT page ends with. Two facts belong on it and they are not the same
 // kind: what the key under the reader's thumb does right now, and that the INDEX exists
-// at all. The second is why the band is drawn even on a page with nothing to scroll — a
+// at all. The second is why the band is drawn even on a page with nothing to scroll: a
 // hold gesture nothing names is a gesture nobody finds.
 //
 // `window`/`windows` are the page's own window count and which one is open, 1-based for
@@ -48,41 +48,41 @@ inline constexpr int kStatPages = 8;
 // changing shape.
 void drawStatHintBand(Framebuffer& fb, int window, int windows);
 
-// Build the LOADOUT page's rows (ProseRow, core/ui/prose_page.h — the shared
+// Build the LOADOUT page's rows (ProseRow, core/ui/prose_page.h. The shared
 // name+prose flow this page, BUFFS, and ROCK THE DOCK's opponent sheet all use): a
-// MOVES section (the innate default move, tagged, followed by each equipped —
-// unlocked-slot — move) then a MODS section (each equipped mod, or a single
-// "- NONE -" row when nothing's equipped). EMPTY slots are skipped entirely —
+// MOVES section (the innate default move, tagged, followed by each equipped;
+// unlocked-slot. Move) then a MODS section (each equipped mod, or a single
+// "- NONE -" row when nothing's equipped). EMPTY slots are skipped entirely:
 // nothing to describe. `isEgg` collapses the whole page to a single "- NO LOADOUT -"
 // row (MODS is inert for an egg, `Game::slotLocked`), since there is no combat
 // loadout to show.
 //
 // Pure over its two loadouts, which is what lets the ARENA render a rolled opponent's
 // kit through the identical builder the player reads their own kit through
-// (game_tourney.cpp) — an opponent sheet that laid its own page out would be a second
+// (game_tourney.cpp): an opponent sheet that laid its own page out would be a second
 // answer to "what does this move do".
 std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const MoveLoadout& moveLoad,
                                        const Loadout& modLoad,
                                        Stage stage, bool isEgg);
 
-// How many rows starting at `top` fit the LOADOUT page — the flow's own count
+// How many rows starting at `top` fit the LOADOUT page: the flow's own count
 // (proseRowsFitting) at this page's row top. Exported because the engine advances the
 // B-scroll by exactly what is on screen.
 int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT page 1 — TIERS row model: the investment ladder, as the same flowed prose rows
+// STAT page 1. TIERS row model: the investment ladder, as the same flowed prose rows
 // LOADOUT and BUFFS use (ProseRow). One `header` row per combat stat carrying that stat's
-// point total, then one row per rung — its name, what it does (straight off the shared
+// point total, then one row per rung: its name, what it does (straight off the shared
 // table, core/model/stat_tiers.h) and a tag saying where the player stands on it.
 //
 // The TAG is the whole point of the page and is deliberately the only channel that
 // reports state: "HELD" on a rung already earned, "N TO GO" on the one being climbed,
 // and the bare threshold on the rest. Text rather than colour, because the status pages
-// have to stay readable in grayscale — and because "how far to the next one" is a NUMBER,
+// have to stay readable in grayscale, and because "how far to the next one" is a NUMBER,
 // which no amount of tinting can say.
 //
-// `statPoints` is TOTAL points per stat (Game::totalStatPoint — earned plus an Epic
+// `statPoints` is TOTAL points per stat (Game::totalStatPoint: earned plus an Epic
 // dish's off-level grant), the same count the fight resolves tiers from, so the page can
 // never promise a rung the engine will not honour.
 std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]);
@@ -91,20 +91,20 @@ std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]);
 // of authored prose is several screens of it.
 int tierRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT page 1 — TIERS: the windowed ladder from buildTierRows, scrolling on B like the
+// STAT page 1. TIERS: the windowed ladder from buildTierRows, scrolling on B like the
 // two prose pages after it.
 void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat);
 
-// STAT page 2 — LOADOUT: the windowed row list from buildLoadoutRows, each row's
+// STAT page 2. LOADOUT: the windowed row list from buildLoadoutRows, each row's
 // name + its effect text wrapped WHOLE beneath it, a scrollbar + "B SCROLL" hint
 // band when the list outruns one screen.
-// `scrollTop` is engine-owned — this page has no cursor to drive scrolling off
+// `scrollTop` is engine-owned: this page has no cursor to drive scrolling off
 // (it's read-only), so STAT's B press advances it instead (game_core.cpp).
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat);
 
-// STAT page 0 — VITALS: name + generation + stage indicator, the three vitals
+// STAT page 0. VITALS: name + generation + stage indicator, the three vitals
 // gauges (Hunger / Fragmentation / Happiness) with tabular numerics, the creature
 // level + an XP bar toward the next level, the care-pip budget, and the
 // time-to-next-evolution readout. The vitals and care pips read from the PetModel.
@@ -123,8 +123,8 @@ struct StatScreenView {
 };
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v);
 
-// STAT page 3 — BUFFS row model: one armed item buff, its effect text (rendered
-// from the item's own ItemDef row — single source of truth, no duplicated
+// STAT page 3. BUFFS row model: one armed item buff, its effect text (rendered
+// from the item's own ItemDef row. Single source of truth, no duplicated
 // description), and a countdown for the timed ones (Backup Drive).
 struct BuffRow {
     const char* label;     // the item's displayName
@@ -133,21 +133,21 @@ struct BuffRow {
     uint32_t remainingMs;  // valid only when hasTimer
     // A section heading (ARMED / PERMANENT) rather than a buff: no effect text, no
     // timer, and it opens a window of its own the way a ProseRow header does
-    // (prose_page.h). The two kinds answer different questions — what is running out,
-    // and what this pet simply has now — and the page is unreadable as one flat list
+    // (prose_page.h). The two kinds answer different questions (what is running out,
+    // and what this pet simply has now), and the page is unreadable as one flat list
     // that mixes them.
     bool header = false;
 };
 
 // Build the BUFFS page's rows from the armed-buff state Game tracks as plain
-// per-pet flags (game.h) — Restore Point's mistake shield, Ambig-USB's forced
+// per-pet flags (game.h): Restore Point's mistake shield, Ambig-USB's forced
 // Trojan divert, Backup Drive's timed combat shield, and the two DeepWeb Dive
 // depth buffs (Deep-Learning Module/Core's win multiplier, a Bell's armed start
-// depth). Each armed flag becomes one row naming the ITEM that armed it —
+// depth). Each armed flag becomes one row naming the ITEM that armed it:
 // resolved by scanning the registry for the item whose effect matches the raw
 // state, so the display and the item's own 'Pedia/detail text never drift
 // apart even if the item roster is renamed or rebalanced later.
-// branchOverride/evolveSoakFactor/evolveHoldArmed: the USB port — Game::evolveBranchOverride()
+// branchOverride/evolveSoakFactor/evolveHoldArmed: the USB port. Game::evolveBranchOverride()
 // (None = nothing forced), Game::evolveSoakFactor() (1 = no soak armed) and
 // Game::evolveHoldArmed(). Each resolved to a row the same way the depth buffs are, by
 // finding the item whose effect matches the state. The hold earns its row more than any
@@ -157,7 +157,7 @@ struct BuffRow {
 // startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
 // Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
 // kDeepWebStartDepthUseBest sentinel, in which case startDepthValue is unused).
-// upgrades: Game::petUpgrades() — the PERMANENT entries, one row per grant an Epic dish
+// upgrades: Game::petUpgrades(). The PERMANENT entries, one row per grant an Epic dish
 // has made this pet (core/model/pet_upgrades.h). They arm nothing and never lapse, so
 // they carry no timer and no home-screen icon (the idle status row is for states the
 // operator has to act on); the BUFFS page is where a pet's standing upgrades are
@@ -181,15 +181,15 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
 // is more than one screen holds.
 int buffRowsFitting(const std::vector<BuffRow>& rows, int top);
 
-// STAT page 3 — BUFFS: the armed-buff list from buildBuffRows, each with its
+// STAT page 3. BUFFS: the armed-buff list from buildBuffRows, each with its
 // effect text wrapped WHOLE below the name (and a remaining-time readout for the
 // timed ones), scrolling on B like LOADOUT when more are armed than fit. Empty
 // list shows a plain "no active buffs" line.
 void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
                      int beat);
 
-// STAT page 4 — SPECIES: the pet's own lore, straight off its CreatureDef row
-// (`hint`/`context`, defs.h) — the game owns this copy, same as an item's
+// STAT page 4. SPECIES: the pet's own lore, straight off its CreatureDef row
+// (`hint`/`context`, defs.h). The game owns this copy, same as an item's
 // `effect` text. `line` is the raw line id (e.g. "ransomware"), upper-cased
 // for display; `hint` is the snarky read, `context` the real infosec reference
 // behind the pun, set dim a paragraph below it as an unlabelled footnote. Either
@@ -199,7 +199,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
 // with the foot of the screen still empty.
 void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat);
 
-// STAT page 5 — AUDIT LOG: the rolling event history newest-first, each
+// STAT page 5. AUDIT LOG: the rolling event history newest-first, each
 // a type glyph + terse text. The lifetime/uptime footer lives on the Hacker
 // PROFILE slot, so this page is the log alone and shows the whole ring.
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
@@ -213,7 +213,7 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
 //
 // The readouts are the other half of the point. A row that says "TIERS 7/12" has
 // answered the question that would otherwise cost the page open plus a scroll, so the
-// index is a status screen the way the LOADOUT hub (mods_screen.h) is — you enter a
+// index is a status screen the way the LOADOUT hub (mods_screen.h) is: you enter a
 // page when the summary is not enough, not to find out whether it is.
 
 // One index destination: a page, and the row of that page to open it AT.
@@ -224,8 +224,8 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
 // HEALTH's heading at the top of the window. 0 on the pages that do not flow rows.
 // `sub` rows are the sections INSIDE a page (a stat's rungs, the MOVES half of a
 // loadout) and draw indented under the row that names their page.
-// `label` is borrowed — every producer names a string literal or a row label that
-// outlives the frame — and `value` is formatted, so it is stored.
+// `label` is borrowed (every producer names a string literal or a row label that
+// outlives the frame), and `value` is formatted, so it is stored.
 struct StatIndexRow {
     const char* label = "";
     char value[14] = {0};
@@ -253,7 +253,7 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
 
 // The INDEX: `rows` from top to bottom, the focused one banded, each with its readout
 // right-aligned. The roster has a ceiling (six pages, four stats, two loadout halves)
-// and the pitch is set so all of it fits one screen — nothing here scrolls, which is
+// and the pitch is set so all of it fits one screen: nothing here scrolls, which is
 // the whole reason it is worth opening.
 void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int cursor,
                    int beat);

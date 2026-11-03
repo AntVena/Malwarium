@@ -1,4 +1,4 @@
-// network_ledger.h — persistent ledger of real Wi-Fi networks a pet has walked past.
+// network_ledger.h: persistent ledger of real Wi-Fi networks a pet has walked past.
 //
 // PURE + HOST-TESTABLE, like eapol.h/pcap.h. Backs the EXPL Wi-Fi event's real-
 // network discovery (Game::resolveNetworkDiscovery, game_net.cpp): for each real
@@ -8,7 +8,7 @@
 //
 // Uses plain POSIX stdio (fopen/fread/fwrite), which resolves to the regular
 // filesystem on host and to the mounted /sdcard VFS on-device (the same calls
-// SdCard::selfTest() already uses there) — so this class needs no Arduino/ESP-IDF
+// SdCard::selfTest() already uses there), so this class needs no Arduino/ESP-IDF
 // dependency and no device-only stub. A missing/unset file is not an error: the
 // in-RAM index just starts empty and every mutator still works, so on a device
 // with no SD card this degrades to a session-only (RAM-only) tracker rather than
@@ -31,7 +31,7 @@ public:
 
     // Read an existing ledger file into the in-RAM index. Remembers `path` for
     // later write-throughs. A missing file (no SD, first boot) leaves the index
-    // empty and returns false — not an error; every mutator below still works
+    // empty and returns false, not an error; every mutator below still works
     // in-RAM regardless of whether this ever succeeds.
     bool load(const char* path);
 
@@ -39,7 +39,7 @@ public:
 
     // Records a genuinely-new network at count 1 and write-throughs to disk (if a
     // path is set). `name` may be empty; the caller (Game) always resolves a
-    // display name — real SSID or a BSSID fallback — before calling this.
+    // display name (real SSID or a BSSID fallback) before calling this.
     void recordNew(uint64_t key, const char* name);
 
     // Bumps an existing network's count. If `name` is non-empty and looks like a

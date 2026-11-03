@@ -14,7 +14,7 @@ struct SceneRow {
     SceneDraw draw;
 };
 
-// The catalogue, in SceneId order — the enum indexes this directly, so a row out of
+// The catalogue, in SceneId order: the enum indexes this directly, so a row out of
 // order points a name at another place's drawing. The static_assert below is what
 // stops a new id from being added without one.
 constexpr SceneRow kScenes[] = {

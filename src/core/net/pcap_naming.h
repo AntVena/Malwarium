@@ -1,15 +1,15 @@
-// pcap_naming.h — filename derivation for the Audit.pcap capture.
+// pcap_naming.h: filename derivation for the Audit.pcap capture.
 //
 // PURE + HOST-TESTABLE. Turns a captured network's identity into a bounded,
 // filesystem-safe .pcap filename. Extracted so a capture session is named after
 // the NETWORK it belongs to (a stable, re-derivable name) rather than a
-// sequential session counter — the counter scheme minted one file per arm/seal
+// sequential session counter: the counter scheme minted one file per arm/seal
 // radio cycle regardless of whether anything was actually captured that cycle,
 // which is what filled the SD card (see net_capture.h's session lifecycle for
 // the fix that stops re-deriving the same name on every rearm).
 //
 // The promiscuous EAPOL-only capture path (net_capture.h) only sees DATA frames
-// (WIFI_PROMIS_FILTER_MASK_DATA) — it never hears the management/beacon frames
+// (WIFI_PROMIS_FILTER_MASK_DATA): it never hears the management/beacon frames
 // that would carry an SSID. The SSID is instead supplied by the passive scan
 // (net_sniff.h → SsidCache), which does see it; net_capture.h looks it up when
 // naming a session and falls back to the BSSID form when the network was never
@@ -33,7 +33,7 @@ size_t sanitizeForFilename(const char* raw, char* out, size_t outCap, size_t max
 // sanitizes to something non-empty, `name` is that SSID suffixed with "_" + the
 // last three BSSID octets in hex (e.g. "HomeWiFi_6736b6") so two APs sharing an
 // SSID never collide onto one file; otherwise `name` is the full BSSID lowercase
-// hex (12 chars, no separators) — always available, so naming never falls through
+// hex (12 chars, no separators): always available, so naming never falls through
 // to a counter. `prefix` may be null (treated as empty). Truncates rather than
 // overflows `out`.
 void buildPcapFilename(char* out, size_t outCap, const char* prefix,

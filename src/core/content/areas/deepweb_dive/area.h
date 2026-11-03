@@ -1,12 +1,12 @@
-// deepweb_dive/area.h — the DEEPWEB DIVE's endless-scaling constants.
+// deepweb_dive/area.h: the DEEPWEB DIVE's endless-scaling constants.
 //
 // The dive is an endless zone built off the tier-3 roster, opened by REACHING Net-Sea
-// Crossing (kDeepWebUnlockAreaId) and tuned as the mid-game farm — the DARKWEB CRAWL is
+// Crossing (kDeepWebUnlockAreaId) and tuned as the mid-game farm: the DARKWEB CRAWL is
 // the terminal one. These constants are isolated here rather than in tunables.h since
 // nothing outside the dive reads them.
 #pragma once
 
-#include "core/content/story.h"  // AreaStoryDef — the Dive owns its chapters too
+#include "core/content/story.h"  // AreaStoryDef: the Dive owns its chapters too
 
 namespace mal {
 
@@ -21,7 +21,7 @@ extern const int kDeepWebHealthPerLevel;
 // Depth ramp (the dive's win-streak): without this a dive sits at flat pet-level
 // parity forever. floorLog2(depth+1) turns the streak into a bonus "effective
 // level" added on top of the pet's own level before the health/speed/XP scaling
-// above is computed — logarithmic so early wins ramp fast while deep streaks
+// above is computed: logarithmic so early wins ramp fast while deep streaks
 // flatten out (an endless zone must not runaway-scale). depth=0 -> +0 (flat
 // parity). Depths below are measured from the END of kDeepWebRampFreeDepth's foothold
 // (below), not from the first dive: free+7 -> +3*kDeepWebDepthLevelPerLog2; free+63 ->
@@ -30,14 +30,14 @@ extern const int kDeepWebDepthLevelPerLog2;
 
 // How many wins a dive gets BEFORE the depth ramp starts biting. The dive opens from
 // NET-SEA CROSSING rather than from a cleared ladder, so an arriving pet is a Script with
-// three move slots — and the log curve is at its steepest early, which is the wrong shape
+// three move slots, and the log curve is at its steepest early, which is the wrong shape
 // for that. This is the flat stretch that gives a shallow dive somewhere to stand. BOTH
 // depth terms wait it out (the log level bonus and the linear points term alike), so
 // inside it every dive is the same fight.
 extern const int kDeepWebRampFreeDepth;
 
 // The enemy's random stat spread as a PERCENTAGE of the pet's SURPLUS over
-// kEndlessParLevel (area_defs.h) — not of its whole level. Spending against the whole
+// kEndlessParLevel (area_defs.h), not of its whole level. Spending against the whole
 // level is what produced both of the zone's failures at once: the arriving pet met an
 // endgame body with a full level of points on top of it, and the maxed pet met the same
 // body with a budget its own stage growth had long outrun. The surplus is what a peer is.
@@ -57,7 +57,7 @@ extern const int kDeepWebRampFreeDepth;
 // 300 runs a cell, so read the shape and not the third digit. The three properties this
 // is tuned to hold: an arriving pet clears its first ten dives more often than not and is
 // finished well before depth 40; a maxed pet has a failure point that is deep and
-// REACHABLE rather than theoretical; and past par the curve is level-INVARIANT — lv45 and
+// REACHABLE rather than theoretical; and past par the curve is level-INVARIANT; lv45 and
 // lv60 meet the same fight at the same depth, which is what makes the streak the score.
 extern const int kDeepWebBudgetPct;
 
@@ -72,7 +72,7 @@ extern const int kDeepWebDepthBitsMaxPct;  // cap the bonus (endless-zone guard)
 
 // Depth ramp, STAT half: one extra stat point in the dive's random spread
 // (applyDeepWebScale) per this many depth PAST the foothold. LINEAR, unlike everything
-// above it, and that is the whole job — the logarithmic ramp flattens into a fair fight a
+// above it, and that is the whole job: the logarithmic ramp flattens into a fair fight a
 // good build wins forever, so this is the term that ends a run, and the only one that
 // does now that the level half answers the surplus rather than the level. Bigger = a
 // gentler dive.
@@ -80,7 +80,7 @@ extern const int kDeepWebDepthPointsPerN;
 
 // What a dive enemy KNOWS, by depth. The dive is the only zone whose kit is drawn rather
 // than authored per enemy, because it is the only one with no roster left to author
-// against — so its moves come from the pool the whole ladder already taught, handed back
+// against, so its moves come from the pool the whole ladder already taught, handed back
 // in rungs. This is also the answer to a turtle: a stacked wall is beaten by ARMOR PIERCE
 // (which cuts the % reduction directly) and by DOT (which bypasses mitigation entirely,
 // biting off Health at each turn-start), and the deep rungs are built out of both.
@@ -94,7 +94,7 @@ extern const int kDeepWebDepthPointsPerN;
 // taught rather than front-running it.
 extern const int kDeepWebBossMoveDepth;
 
-// The dive's OWN pair — the Attack and the Defend its malbeasts field on top of whatever
+// The dive's OWN pair: the Attack and the Defend its malbeasts field on top of whatever
 // rung they drew, the same thing an AreaDef names in wildAttackMoveId/wildDefendMoveId.
 // Named here rather than there for the reason everything else about the dive is: it has no
 // row. They ride ALONGSIDE the rungs rather than inside them, so the dive's own two moves
@@ -107,14 +107,14 @@ extern const int kDeepWebBossMoveDepth;
 // what a Daemon pet's own slots hold (kMoveSlotsByStage).
 // The ladder depth the dive's OWN mod pool is authored at (ModDef::powerTier). It used
 // to be read as "the deepest area's tier", which was true only while the dive was the
-// terminal zone and the ladder stopped at the keep — a sixth area moved it, and every
+// terminal zone and the ladder stopped at the keep: a sixth area moved it, and every
 // dive-only mod would have had to be re-ranked to chase it. It is a fact about the pool,
 // so it is stated here rather than derived from a ladder the pool does not sit on.
 extern const int kDeepWebModTier;
 
 extern const char* const kDeepWebWildAttackMoveId;
 extern const char* const kDeepWebWildDefendMoveId;
-// The depth the Defend joins at — the Attack rides from the first dive, so the pair is
+// The depth the Defend joins at: the Attack rides from the first dive, so the pair is
 // the same shallow-one/deep-both weighting the ladder's areas use. Authored rather than
 // derived: it happens to match rung 1's threshold today, and should be free to stop
 // matching it without dragging the rung pacing along.
@@ -128,8 +128,8 @@ extern const char* const kDeepWebName;
 extern const char* const kDeepWebBadge;
 
 // ...and what it MEANS: the Dive's own chapters, AreaDef::story's stand-in
-// (core/content/story.h). The endless zones reach only the AreaIntro beat — there is no
-// gauntlet down here to open or close — so the other three slots stay unauthored.
+// (core/content/story.h). The endless zones reach only the AreaIntro beat (there is no
+// gauntlet down here to open or close), so the other three slots stay unauthored.
 extern const AreaStoryDef kStoryDeepWeb;
 
 extern const char* const* const kDeepWebMoveRungs[];  // rung -> that rung's id list

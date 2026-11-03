@@ -1,4 +1,4 @@
-// The Pirate Bayou — software-piracy/swamp (AREA_NAMING.md). The bayou is where
+// The Pirate Bayou: software-piracy/swamp (AREA_NAMING.md). The bayou is where
 // the ladder first reaches water; its BOOTY CACHE is the last dry stretch before
 // the open Net-Sea.
 #include "core/content/areas/area_defs.h"
@@ -8,35 +8,35 @@
 namespace mal {
 
 namespace {
-// This area's WILD-win drop table — what a won wild encounter here hands over.
+// This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
 // content_items.cpp). The first four are the staple set every area shares: two
-// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
-// Niche-flavour pass mod pool, plus Watchdog Timer (tier 2) — the counter to this
+// Niche-flavour pass mod pool, plus Watchdog Timer (tier 2). The counter to this
 // area's own signature boss rider (system_hang, below): debuting the threat and its
 // counter in the same area's loot table.
 const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch",
                                  "watchdog_timer", "botnet_swarm", "airgap_ward",
                                  "tripwire", "cold_storage",
-                                 // The soft line-affinity mods, one per line — the
+                                 // The soft line-affinity mods, one per line: the
                                  // band where a pet's LINE goes from a first taste to a
                                  // real slot (content_mods.cpp explains the pattern, and
                                  // every other band now carries its own set of these).
                                  "spoof_header", "escrow_buffer", "dropper_payload",
                                  "fork_spur", "junk_padding",
                                  // The pierce family opens here, one band after the
-                                 // first flat power mod — the pair is the point.
+                                 // first flat power mod: the pair is the point.
                                  "drm_stripper"};
 
-// PIER-TO-PEER — the item storefront: this area's own stock/price per item, same
+// PIER-TO-PEER. The item storefront: this area's own stock/price per item, same
 // pattern as the mod storefront below.
 // The Desalinated C-Salt row is a TRADE, not a sale: no Bits, just the Spoiled Macrol
-// nobody else wants. It's the only reliable source of the salt — finding one on a walk
+// nobody else wants. It's the only reliable source of the salt: finding one on a walk
 // is deliberately rarer than catching a fish and letting it turn (content_items.cpp).
 const ShopListingDef kShopListings[] = {
     {"r007_b33r", 8, 5},
@@ -44,7 +44,7 @@ const ShopListingDef kShopListings[] = {
     {"desalinated_c_salt", 4, 0, {{"spoiled_macrol", 1}}},
 };
 
-// PHISHY CHIPS — the mod storefront: this area's own tier-2 mods, each priced in
+// PHISHY CHIPS. The mod storefront: this area's own tier-2 mods, each priced in
 // Bits plus a Backup Drive cost (this area's own signature item find).
 const ShopListingDef kModShopListings[] = {
     {"tpm_chip", kShopStock, 64, {{"backup_drive", 20}}},
@@ -140,7 +140,7 @@ const AreaDef kAreaPirateBayou = {
     SceneId::PirateBayou,
     {"LEECH LANDING", "TORRENT SWAMP", "THE CRACKED KEYS", "WAREZ MARSH",
      "BOOTY CACHE"},
-    // The cracking area, so ARMOR PIERCE is the family its bosses teach — 25%, 50%, and
+    // The cracking area, so ARMOR PIERCE is the family its bosses teach: 25%, 50%, and
     // both of the generic pool's two full-pierce moves. A player who wants to stop caring
     // about walls farms this water.
     {{"NETBUS NIPPER", "SPR_BOSS_NETBUS_NIPPER", {"remote_handle"}},
@@ -167,7 +167,7 @@ const AreaDef kAreaPirateBayou = {
      {{"STATE YOUR BUSINESS. CORRECTLY.", "IT BLOCKS THE WAY."},
       {"THE SEQUENCE IS NOT POSTED.", "IT WANTS SOMETHING EXACT."},
       {"MANY KNOCK. FEW ARE ADMITTED.", "IT COUNTS YOU."}},
-     // How it takes the answer — pleased, displeased, affront, boon. Officious to the
+     // How it takes the answer: pleased, displeased, affront, boon. Officious to the
      // end: every outcome is a door doing something, because that is all it controls.
      {{"THE SEQUENCE WAS CORRECT.", "A DOOR COMES UNLOCKED."},
       {"THAT KNOCK WAS NOT MINE.", "EVERY PORT SHUTS AT ONCE."},

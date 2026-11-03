@@ -1,6 +1,6 @@
 #include "core/ui/tourney_screen.h"
 
-#include "core/model/tournament.h"   // tourneyBlockSize / tourneyBlockStart — the tree the ties draw
+#include "core/model/tournament.h"   // tourneyBlockSize / tourneyBlockStart: the tree the ties draw
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/sprite.h"

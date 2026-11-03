@@ -46,7 +46,7 @@ const char* recordStatusTag(const SaveRecord& rec) {
 
 namespace {
 
-// A creature line's display form is its id in capitals — the same thing STAT's SPECIES
+// A creature line's display form is its id in capitals. The same thing STAT's SPECIES
 // page does with it, and for the same reason: CreatureLine carries no display name and
 // does not need one while the id reads as a word.
 void lineLabel(const CreatureLine& l, char* out, std::size_t n) {
@@ -85,7 +85,7 @@ std::vector<ArchPickRow> buildArchPickerRows(const ContentRegistry& reg,
                                              const std::vector<SaveStoredPet>& rack,
                                              const std::vector<SaveRecord>& records) {
     std::vector<ArchPickRow> out;
-    // NEW EGG leads, because it is the thing people come to ARCH to do — a first row
+    // NEW EGG leads, because it is the thing people come to ARCH to do: a first row
     // here, rather than two screens down inside the active pet's own record.
     out.push_back(pickRow({ArchGroup::Kind::NewEgg, -1}, "NEW EGG", 0));
     out.push_back(pickRow({ArchGroup::Kind::Active, -1}, "ACTIVE", active ? 1 : 0));
@@ -164,8 +164,8 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
 
     // Pitch is set by the tile COUNT against the hint band, the same arithmetic the
     // ITEMS type-picker does: the picker never scrolls, so every row has to fit between
-    // kRowTop and the band. The rows are three groups — this pet (NEW EGG, ACTIVE), the
-    // shelf (one per family) and the way out of it (SELL, RECORDS) — and a gap opens
+    // kRowTop and the band. The rows are three groups. This pet (NEW EGG, ACTIVE), the
+    // shelf (one per family) and the way out of it (SELL, RECORDS), and a gap opens
     // where the group changes, so SELL doesn't read as a sixth family and the shelf
     // doesn't read as ACTIVE's children, which is what indenting it would say. The pitch
     // gives way to the count rather than the gaps: nine rows land at 18.
@@ -190,7 +190,7 @@ void drawArchPicker(Framebuffer& fb, const std::vector<ArchPickRow>& tiles, int 
             fb.fillRect(4, y + 2, kActiveW - 8, pitch - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (pitch - 7) / 2, palColor(Pal::ACCENT));
         }
-        // NEW EGG is always live — it is an action, and "zero of it" means nothing. Every
+        // NEW EGG is always live: it is an action, and "zero of it" means nothing. Every
         // other row dims when its shelf is empty, name and count together, so the row
         // still reads as empty with the colour channel gone.
         const bool live = t.group.kind == ArchGroup::Kind::NewEgg || t.count > 0;
@@ -333,7 +333,7 @@ void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v
                        "MAKE ACTIVE", palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
 
-    // Release: stored pets only — a no-reward drop that frees a rack slot.
+    // Release: stored pets only. A no-reward drop that frees a rack slot.
     if (!isActive) {
         if (action == ArchAction::Release)
             drawRowCursor(fb, kMargin, releaseY, palColor(Pal::ACCENT));

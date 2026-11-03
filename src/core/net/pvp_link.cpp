@@ -9,7 +9,7 @@ namespace mal {
 namespace {
 
 // Frame lead-in. A DIFFERENT magic from the HELLO beacon's "MLWM" so the two formats
-// can share one ESP-NOW receive callback and be told apart on the first four bytes —
+// can share one ESP-NOW receive callback and be told apart on the first four bytes:
 // a duel frame is never misread as a beacon, or the reverse.
 constexpr uint8_t kMagic[4] = {'M', 'L', 'W', 'P'};
 
@@ -52,7 +52,7 @@ size_t writeHeader(uint8_t* out, PvpFrameType type, uint32_t session) {
     return kOffBody;
 }
 
-// A fighter's fixed-width block. Order here is the ONLY definition of the layout —
+// A fighter's fixed-width block. Order here is the ONLY definition of the layout:
 // pvpCommitHash hashes the same bytes, so the two stay in step by construction.
 void writeFighter(uint8_t* out, const PvpFighter& f) {
     size_t o = 0;
@@ -104,7 +104,7 @@ size_t frameSize(PvpFrameType type) {
     return 0;
 }
 
-// Encode INVITE and ACCEPT — identical bodies (a rules byte then a fighter), differing
+// Encode INVITE and ACCEPT: identical bodies (a rules byte then a fighter), differing
 // only in which side of the handshake they are.
 size_t encodeOffer(PvpFrameType type, uint32_t session, const PvpFighter& f,
                    uint8_t* out, size_t cap) {
@@ -162,12 +162,12 @@ bool decodePvpFrame(const uint8_t* in, size_t len, PvpFrame* out) {
     if (len < kPvpHeaderSize) return false;
     if (std::memcmp(in + kOffMagic, kMagic, sizeof(kMagic)) != 0) return false;
     // Unknown version: the field maps below are only valid for layouts this build
-    // knows. Refusing beats guessing — a newer peer's duel is unreachable, not garbled.
+    // knows. Refusing beats guessing: a newer peer's duel is unreachable, not garbled.
     if (in[kOffVersion] != kPvpProtoVersion) return false;
 
     const PvpFrameType type = static_cast<PvpFrameType>(in[kOffType]);
     const size_t want = frameSize(type);
-    // An unknown type reports size 0, which no frame can match — so it falls out here
+    // An unknown type reports size 0, which no frame can match, so it falls out here
     // alongside a wrong-length frame of a known type.
     if (want == 0 || len != want) return false;
 
@@ -182,7 +182,7 @@ bool decodePvpFrame(const uint8_t* in, size_t len, PvpFrame* out) {
             break;
         case PvpFrameType::Decline: {
             const uint8_t r = in[kOffBody];
-            // An unrecognised reason still means "no" — degrade to the plain refusal
+            // An unrecognised reason still means "no": degrade to the plain refusal
             // rather than dropping a frame whose only job is to end the wait.
             f.reason = r <= static_cast<uint8_t>(PvpDeclineReason::Mismatch)
                            ? static_cast<PvpDeclineReason>(r)

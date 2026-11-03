@@ -1,4 +1,4 @@
-// test_explore.cpp — native gates for EXPL: the nested ladder, walking, encounters and boss rounds.
+// test_explore.cpp (native gates for EXPL): the nested ladder, walking, encounters and boss rounds.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -31,7 +31,7 @@ void test_battle_fatigue() {
     }
     // (2) Wild fights fatigue the pet: with the Bandwidth shield EXHAUSTED,
     //     frag climbs over several wild wins. (A stocked pool would absorb the
-    //     tax instead — that's covered by test_bandwidth_farming_resource (6).) Keep the
+    //     tax instead: that's covered by test_bandwidth_farming_resource (6).) Keep the
     //     pool pinned at 0 each iteration so the slow regen can't sneak a charge back in.
     {
         Game g{StartMode::Hatched};
@@ -68,7 +68,7 @@ void test_battle_fatigue() {
 }
 
 // hands-free auto-step: the mode steps ITSELF on a timer from the idle
-// habitat — no button mashing. Ticking ~kWalkAutoStepBeats heartbeats fires a
+// habitat. No button mashing. Ticking ~kWalkAutoStepBeats heartbeats fires a
 // guaranteed event hands-free (here the deterministic first roll leaves Idle).
 void test_explore_autosteps_hands_free() {
     Game g{StartMode::Hatched};
@@ -84,7 +84,7 @@ void test_explore_autosteps_hands_free() {
 }
 
 // every step is a guaranteed event: pinging from the idle habitat NEVER
-// leaves you resting on a "quiet" beat — each ping resolves a real event (an
+// leaves you resting on a "quiet" beat. Each ping resolves a real event (an
 // in-place one keeps you at Idle, a full-screen one moves nav). Over many pings the
 // step counter climbs one-for-one and at least one full-screen event is reached.
 void test_explore_every_step_is_an_event() {
@@ -119,7 +119,7 @@ void test_explore_every_step_is_an_event() {
     CHECK(sawScreenEvent);                               // wild dominates the table
 }
 
-// A wild encounter auto-starts the shared combat core with LIVE stakes —
+// A wild encounter auto-starts the shared combat core with LIVE stakes:
 // this replaces debugStartCombat as the real entry point. A raised pet beats the
 // sector[0] malbeast; on dismiss it returns to the IDLE habitat with explore-mode
 // STILL running (never the EXPL list or the carousel), advances the win-streak, and
@@ -128,7 +128,7 @@ void test_encounter_fight_live_combat_win() {
     Game g{StartMode::Hatched};
     walkToEncounter(g);                                 // lands IN the auto-started fight
     const int bits0 = g.bits();
-    const int xp0 = g.combatXp();   // measure THIS fight's delta — the walk here may
+    const int xp0 = g.combatXp();   // measure THIS fight's delta: the walk here may
                                     // pass through an awakened-guardian combat
     const int streak0 = g.exploreStreak();
     CHECK(g.nav() == Game::Nav::Combat);
@@ -139,7 +139,7 @@ void test_encounter_fight_live_combat_win() {
     CHECK(g.combat().outcome() == Combat::Outcome::Win);
     g.onButton(press(Button::B));                        // dismiss
     // A won WILD fight parks on the post-encounter status readout first
-    // before the habitat — any button dismisses it too.
+    // before the habitat: any button dismisses it too.
     CHECK(g.nav() == Game::Nav::PostEncounter);
     g.onButton(press(Button::B));                        // dismiss the readout
     CHECK(g.nav() == Game::Nav::Idle);                    // back to the habitat,
@@ -155,7 +155,7 @@ void test_encounter_fight_live_combat_win() {
 }
 
 // Hands-off end-to-end: a wild fight auto-starts, auto-resolves, then
-// auto-DISMISSES after the result hold — with ZERO button presses — so explore-mode
+// auto-DISMISSES after the result hold (with ZERO button presses), so explore-mode
 // keeps stepping on its own. A raised pet wins, so the streak advances and the mode
 // stays armed. (Without the auto-dismiss the fight would park on the result beat
 // forever, stalling the background loop.)
@@ -180,12 +180,12 @@ void test_explore_auto_continues_after_fight() {
 // Post-encounter status readout: a brief BANDWIDTH/FRAG delta
 // overlay after an EXPLORE wild fight resolves, so the player knows whether to
 // keep exploring or go defrag. Resolve-and-stop-at-the-overlay helper (mirrors
-// winAutoExploreFight, but doesn't assume Win — a Lose also reaches it).
+// winAutoExploreFight, but doesn't assume Win: a Lose also reaches it).
 // ---------------------------------------------------------------------------
 static void resolveWildFightToPostEncounter(Game& g, uint32_t& t) {
     for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
-    // Bounded only so a stuck fight fails as a test rather than hanging — the loop
+    // Bounded only so a stuck fight fails as a test rather than hanging: the loop
     // exits the moment the nav leaves Combat. The hold is the reveal hold PLUS the
     // beaten rival's dissolve, which the auto-dismiss waits out (combatDissolveRunning).
     for (int i = 0; i < 200 && g.nav() == Game::Nav::Combat; ++i)
@@ -194,7 +194,7 @@ static void resolveWildFightToPostEncounter(Game& g, uint32_t& t) {
 
 // A WON farm fight (a re-armed CLEARED sub-area) with Bandwidth still in the pool
 // hits the shield: the overlay reports the exact 1-charge spend AND
-// SHIELDED (never a frag rise alongside it — the two are mutually exclusive).
+// SHIELDED (never a frag rise alongside it. The two are mutually exclusive).
 void test_post_encounter_reports_bandwidth_shield() {
     Game g{StartMode::Hatched};
     walkToEncounter(g);
@@ -224,7 +224,7 @@ void test_post_encounter_reports_bandwidth_shield() {
     CHECK(g.exploreActive());
 }
 
-// With Bandwidth drained to 0, a farm win is UNSHIELDED — the fatigue tax
+// With Bandwidth drained to 0, a farm win is UNSHIELDED: the fatigue tax
 // can land (it's a chance roll, so this samples several fights). When it lands the
 // overlay reports the exact +n rise; the shield flag stays off throughout, and
 // bandwidth (already 0) never reads as spent again ("nothing to spend" case).
@@ -254,7 +254,7 @@ void test_post_encounter_reports_frag_rise_when_unshielded() {
 }
 
 // Sim-Battle (TRAIN's safe-stakes practice fight) never touches Bandwidth or the
-// explore stakes, so it must never route to Nav::PostEncounter on dismiss —
+// explore stakes, so it must never route to Nav::PostEncounter on dismiss:
 // confirms the overlay is explore-Wild-only, not "any resolved fight".
 void test_post_encounter_never_for_sim_battle() {
     Game g{StartMode::Hatched, "paypup"};
@@ -270,8 +270,8 @@ void test_post_encounter_never_for_sim_battle() {
 }
 
 // The post-encounter readout names the stat a level-up gained (surface the
-// stat delta). Asserted directly on the render function — a non-null level line paints
-// its own band (y~100), a null one leaves it blank — so it's checked without grinding a
+// stat delta). Asserted directly on the render function. A non-null level line paints
+// its own band (y~100), a null one leaves it blank, so it's checked without grinding a
 // fight to an organic level-up. The frag state is None so nothing else occupies that band.
 void test_post_encounter_level_line_renders() {
     Framebuffer withLine(kActiveW, kActiveH), noLine(kActiveW, kActiveH);
@@ -284,7 +284,7 @@ void test_post_encounter_level_line_renders() {
     drawPostEncounter(withLine, pv);
     // The two frames are identical except for the level band (y~100): the line paints
     // there only when present, and nothing above it changes. (regionDiffers is theme-
-    // agnostic — hasDarkInk can't be used since PAPER itself is a dark fill.)
+    // agnostic: hasDarkInk can't be used since PAPER itself is a dark fill.)
     CHECK(regionDiffers(withLine, noLine, 0, 96, kActiveW, 112));  // the line renders
     CHECK(!regionDiffers(withLine, noLine, 0, 0, kActiveW, 90));   // ...only there
 }
@@ -317,7 +317,7 @@ void test_expl_sector_linear_gating() {
     CHECK(explSubAreaName(0, kExplSubAreas)[0] == '\0');   // out of range -> ""
     // Content spot-checks, addressed by area ID rather than ladder index: what an area
     // IS must survive being moved, so a reorder should never land here. The one genuinely
-    // positional fact — its tier — is asserted against the position, not a literal.
+    // positional fact (its tier) is asserted against the position, not a literal.
     auto rung = [](const char* id) {
         for (int i = 0; i < kExplSectors; ++i)
             if (std::strcmp(area(i).id, id) == 0) return i;
@@ -349,7 +349,7 @@ void test_expl_sector_linear_gating() {
     CHECK(std::strcmp(explSubAreaName(keep, kExplSubAreas - 1), "COMMENT CATACOMBS") == 0);
     CHECK(std::strcmp(shopName(keep), "SPAM & SCRAM") == 0);
     CHECK(std::strcmp(modShopName(keep), "THE GHOST IN THE MACHINE") == 0);
-    // The causeway walks up to the keep, so the fiction needs those two ADJACENT — the
+    // The causeway walks up to the keep, so the fiction needs those two ADJACENT: the
     // one ordering constraint on the ladder, and the thing a future insert must not break.
     CHECK(keep == moors + 1);
 }
@@ -365,7 +365,7 @@ void test_expl_sector_linear_gating() {
 // the renderers' own metrics so they can't drift from what ships.
 // A hint band is the one line on a screen that CANNOT yield: it is drawn centred in a
 // full-width strip, nothing scrolls it, and a band wider than the canvas loses whichever
-// control sits at the ends — silently, and only in the state that draws that band. So
+// control sits at the ends. Silently, and only in the state that draws that band. So
 // every band's copy is measured here rather than discovered on the panel.
 void test_hint_bands_fit_the_canvas() {
     static const char* const kBands[] = {
@@ -378,9 +378,9 @@ void test_hint_bands_fit_the_canvas() {
 }
 
 void test_expl_names_stay_scrollable() {
-    // Every EXPL row is a TITLE line — name at kTextX, then the "+n" move-to-learn lead
-    // and the state tag right-aligned against the 8px margin with a margin's gap each —
-    // over a DETAIL line running the full width from the same x. Each name is budgeted
+    // Every EXPL row is a TITLE line. Name at kTextX, then the "+n" move-to-learn lead
+    // and the state tag right-aligned against the 8px margin with a margin's gap each.
+    // Over a DETAIL line running the full width from the same x. Each name is budgeted
     // against the widest tag ITS OWN row pairs with, plus the widest lead ANY row can
     // draw (the lead rides every unlocked row, so no row gets to skip it), then allowed
     // twice that before it counts as unscrollable.
@@ -404,7 +404,7 @@ void test_expl_names_stay_scrollable() {
             CHECK(textWidth(explSubAreaName(s, i)) <= 2 * subNameW);
             // The BANNER is what the row advertises; the ROUND names are what the fight
             // announces once it starts. Both are boss names a player reads, so both are
-            // budgeted here — an escort authored wider than its banner would otherwise
+            // budgeted here: an escort authored wider than its banner would otherwise
             // ship unchecked.
             const SubBossDef& b = area(s).subBosses[i];
             CHECK(textWidth("BOSS: ") + textWidth(b.name) <= 2 * detailW);
@@ -441,7 +441,7 @@ void test_expl_level_scoped_rows() {
         for (int r = 0; r < explRowCount(); ++r) {
             if (!explRowInLevel(r, ExplCat::Story, a)) continue;
             ++inside;
-            // Its own block only — not a neighbour's rows, and no special row.
+            // Its own block only, not a neighbour's rows, and no special row.
             CHECK(!explRowIsSpecial(r) && explRowArea(r) == a);
         }
         CHECK(inside == 1 + kExplSubAreas);                 // boss row + its sub-areas
@@ -507,7 +507,7 @@ void test_bits_reward_bounds() {
 static void clearSubArea(Game& g, int area, int sub) {
     uint32_t t = 0;
     // This helper drives the sub-boss (debugFightSubBoss) and the area boss (the
-    // caller's own loop) by hand, one fight at a time — auto-progress defaulting ON
+    // caller's own loop) by hand, one fight at a time: auto-progress defaulting ON
     // would otherwise auto-launch each boss itself the instant a streak/clear crosses
     // its threshold, out from under the manual trigger this helper is mid-sequencing.
     g.debugSetAutoProgress(false);
@@ -537,8 +537,8 @@ static void clearSubArea(Game& g, int area, int sub) {
     }
     CHECK(g.subBossUnlocked(area, sub));           // 10-win streak unlocked its boss
     // Trigger THIS sub's boss directly: cleared subs are re-farmable (selectable),
-    // so the EXPL "first-selectable" row isn't uniquely the boss-ready frontier —
-    // the UI FIGHT-BOSS path is covered by test_expl_nested_list_nav.
+    // so the EXPL "first-selectable" row isn't uniquely the boss-ready frontier.
+    // The UI FIGHT-BOSS path is covered by test_expl_nested_list_nav.
     g.debugFightSubBoss(area, sub);                // "> FIGHT BOSS" on the frontier row
     CHECK(g.nav() == Game::Nav::Combat);
     for (int i = 0; i < 40000 && !g.subCleared(area, sub); ++i) {
@@ -551,7 +551,7 @@ static void clearSubArea(Game& g, int area, int sub) {
     CHECK(g.subCleared(area, sub));                // its boss beaten → sub-area cleared
 }
 
-// Run the armed walk — auto-fighting whatever it rolls, declining storefronts — until
+// Run the armed walk (auto-fighting whatever it rolls, declining storefronts), until
 // `done`, or a bound. The walk stopping (a loss cancels explore-mode) ends it too, so a
 // caller's CHECK reports the real outcome instead of the loop spinning to its bound.
 template <typename F>
@@ -560,7 +560,7 @@ static void runWalkUntil(Game& g, F done) {
     for (int i = 0; i < 60000 && !done(); ++i) {
         switch (g.nav()) {
             case Game::Nav::Idle:
-                if (!g.exploreActive()) return;    // the walk ended — stop, don't re-arm
+                if (!g.exploreActive()) return;    // the walk ended: stop, don't re-arm
                 pingExplore(g);
                 break;
             case Game::Nav::Combat:
@@ -576,7 +576,7 @@ static void runWalkUntil(Game& g, F done) {
     }
 }
 
-// AUTO-PROGRESS steps the ladder POSITIONALLY — the next rung by index, never "the next
+// AUTO-PROGRESS steps the ladder POSITIONALLY: the next rung by index, never "the next
 // unbeaten one". That is what lets a finished ladder keep rotating, and it means an area
 // spliced into the middle of kAreaList joins the rotation with no rule to update.
 void test_auto_progress_steps_positionally() {
@@ -594,7 +594,7 @@ void test_auto_progress_steps_positionally() {
       CHECK(g.exploreStreak() < kExploreStreakToBoss); }  // re-armed → streak reset
 
     // On the LAST sub-area with the gauntlet not standing (an earlier sub-area is still
-    // unbeaten — what arming auto-progress midway through an area leaves behind), the
+    // unbeaten: what arming auto-progress midway through an area leaves behind), the
     // rotation wraps to the area's first rung rather than stalling on a fight it can't
     // start. Coming round again is what eventually makes the gauntlet reachable.
     { Game g{StartMode::Hatched, "bruinforce"};
@@ -609,14 +609,14 @@ void test_auto_progress_steps_positionally() {
 }
 
 // A won gauntlet rolls the rotation on to the next OPEN area instead of relaunching
-// itself — the one step the shared hand-back hook can't read off the armed sub-area,
+// itself: the one step the shared hand-back hook can't read off the armed sub-area,
 // since "the gauntlet is next" and "the gauntlet just happened" leave the walk standing
 // on the same rung. Also proves a CLEARED area's gauntlet is re-runnable at all.
 void test_auto_progress_gauntlet_rolls_to_next_area() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.debugAddCombatXp(600000);                    // level hard: the gauntlet is winnable
     for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
-    g.debugSetSectorCleared(0, true);              // area 0 DONE — and so re-runnable
+    g.debugSetSectorCleared(0, true);              // area 0 DONE, and so re-runnable
     g.debugSetAutoProgress(true);
     g.debugArmExplore(0, kExplSubAreas - 1);       // the last rung before the gauntlet
     g.debugSetExploreStreak(kExploreStreakToBoss);
@@ -651,7 +651,7 @@ void test_auto_progress_badge_counts_down() {
       g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
       CHECK(!regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
 
-    // OFF: exactly the reverse — the pool is the readout, the streak is not.
+    // OFF: exactly the reverse. The pool is the readout, the streak is not.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugSetSubCleared(0, 0, true);
       g.debugSetAutoProgress(false);
@@ -663,7 +663,7 @@ void test_auto_progress_badge_counts_down() {
       g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
       CHECK(regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
 
-    // The countdown is the streak's complement, floored — it never reads past the step.
+    // The countdown is the streak's complement, floored: it never reads past the step.
     { Game g{StartMode::Hatched};
       g.debugArmExplore(0, 0);
       g.debugSetExploreStreak(0);
@@ -686,8 +686,8 @@ void test_auto_progress_badge_counts_down() {
       CHECK(textWidth(next) <= widest); }
 }
 
-// The walk badge draws two fields on ONE line — the armed rung on the left, the mode's
-// status on the right — and nothing in the drawing measures them against each other, so an
+// The walk badge draws two fields on ONE line (the armed rung on the left, the mode's
+// status on the right), and nothing in the drawing measures them against each other, so an
 // area whose short name runs long overprints its own status instead of failing anywhere a
 // build could see it. This is where that is seen: every shipped area, at every rung, against
 // the widest right field the badge can put beside it.
@@ -728,8 +728,8 @@ void test_explore_badge_fields_never_collide() {
       CHECK(kLabelX + textWidth(line) < kActiveW - kMargin - textWidth(depth)); }
 }
 
-// The walk's A+C overlay carries the rung's XP RATE, and the rate is the whole payout —
-// the level-difference curve against the rung's own depth, plus every live multiplier —
+// The walk's A+C overlay carries the rung's XP RATE, and the rate is the whole payout
+// (the level-difference curve against the rung's own depth, plus every live multiplier),
 // so an operator deciding whether to let auto-progress keep walking a rung can see what
 // it is paying rather than infer it from the level numbers.
 void test_explore_xp_efficiency_reads_the_rung() {
@@ -738,7 +738,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
       g.debugArmExplore(0, 0);
       CHECK(g.exploreXpEfficiencyPct() == 100); }
 
-    // Deeper on the same ladder is the same pet punching up — strictly more per win,
+    // Deeper on the same ladder is the same pet punching up: strictly more per win,
     // and the rung is what moved.
     { Game g{StartMode::Hatched};
       g.debugArmExplore(0, 0);
@@ -746,7 +746,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
       g.debugArmExplore(0, kExplSubAreas - 1);
       CHECK(g.exploreXpEfficiencyPct() > shallow); }
 
-    // ...and a pet that has outgrown a rung is taxed for farming it — but the tax stops
+    // ...and a pet that has outgrown a rung is taxed for farming it, but the tax stops
     // at the curve's floor, so two pets that have both outgrown it by miles read the
     // same trickle rather than nothing at all.
     { Game g{StartMode::Hatched}, far{StartMode::Hatched};
@@ -762,7 +762,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
     // The dive has no rung to read, so its own scale is the answer: parity at depth 0
     // (the flat base) and rising with the streak, which is what makes the endless zone
     // the one place a levelled pet is not taxed for being there. Its FOOTHOLD is part of
-    // that scale — inside it every dive is the same parity fight, so a readout that
+    // that scale: inside it every dive is the same parity fight, so a readout that
     // ramped there would be advertising a rate the walk is not paying.
     { Game g{StartMode::Hatched};
       for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
@@ -779,7 +779,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
     // pays a multiple of the flat base from its very first win (kDarkWebXpPct) because the
     // pet that reaches it has a level bar an order of magnitude longer than the one the
     // dive opens for, so the terminal zone reads as the best XP on the device by a wide
-    // margin at every depth the two share — not by the sliver a shared base would leave.
+    // margin at every depth the two share, not by the sliver a shared base would leave.
     { Game crawl{StartMode::Hatched}, dive{StartMode::Hatched};
       for (int a2 = 0; a2 < kExplSectors; ++a2) {
           crawl.debugSetSectorCleared(a2, true);
@@ -799,8 +799,8 @@ void test_explore_xp_efficiency_reads_the_rung() {
       CHECK(crawl.exploreXpEfficiencyPct() > shallow); }   // ...and its depth still pays
 
     // The overlay draws it, and draws it as a FOOTER: two walks whose rungs pay
-    // differently differ under the rule, and their four action rows are pixel-identical
-    // — the rate is a reading, not a row the cursor can land on.
+    // differently differ under the rule, and their four action rows are pixel-identical:
+    // the rate is a reading, not a row the cursor can land on.
     { Framebuffer shallow(kActiveW, kActiveH), deep(kActiveW, kActiveH);
       auto openOverlay = [](Game& g, int sub, Framebuffer& fb) {
           g.debugArmExplore(0, sub);
@@ -927,7 +927,7 @@ void test_expl_nested_row_helpers() {
     CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) == ExplRowState::AreaBossReady);
     CHECK(explRowSelectable(ExplRowState::AreaBossReady));
     // Clear the area → header CLEARED (inert); area 1 opens (its subs become OPEN).
-    // The area-0 sub rows stay CLEARED but SELECTABLE — a fully-cleared area is still a
+    // The area-0 sub rows stay CLEARED but SELECTABLE: a fully-cleared area is still a
     // farmable training ground (the whole point of re-farming).
     area[0] = true;
     CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) == ExplRowState::AreaCleared);
@@ -972,7 +972,7 @@ void test_area_boss_gauntlet_composition() {
 }
 
 // A SUB-AREA boss is fought as the rounds its own row spells out. The default is one
-// round carrying the banner — and that round must stay identical to what a boss was
+// round carrying the banner, and that round must stay identical to what a boss was
 // before rounds existed, since every unauthored rung is balanced around it. A row that
 // DOES author rounds gets them in order, with SubBossRound::rung read as a depth delta:
 // an escort is the same fight a rung shallower, so it is strictly the weaker enemy.
@@ -987,7 +987,7 @@ void test_sub_boss_rounds_and_escorts() {
             if (b.roundCount() == 1) {
                 ++plain;
                 CHECK(std::strcmp(g.rounds[0].name, b.name) == 0);
-                // The one round IS the area-boss round for this rung — the shared shape
+                // The one round IS the area-boss round for this rung: the shared shape
                 // both paths build from, so a drift between them can't hide.
                 CHECK(g.rounds[0].maxHealth == areaBoss(a).rounds[s].maxHealth);
                 continue;
@@ -996,7 +996,7 @@ void test_sub_boss_rounds_and_escorts() {
             for (int r = 0; r < b.roundCount(); ++r) {
                 CHECK(std::strcmp(g.rounds[r].name, b.round(r).name) == 0);
                 // A negative rung is strictly the softer fight AT EVERY RUNG, including
-                // sub 0 — a doorway boss's escort has to reach below the area's own first
+                // sub 0: a doorway boss's escort has to reach below the area's own first
                 // sub-area to be an escort at all, and flooring there would make the
                 // authored `-1` a silent no-op.
                 if (b.round(r).rung < 0)
@@ -1010,7 +1010,7 @@ void test_sub_boss_rounds_and_escorts() {
 }
 
 // EVERY GENERIC MOVE IS CARRIED BY SOMEBODY. A drop is drawn from the defeated enemy's
-// KIT (Game::rollEnemyMoveDrop), so a generic move no enemy carries is not "rare" — it is
+// KIT (Game::rollEnemyMoveDrop), so a generic move no enemy carries is not "rare": it is
 // unreachable, and nothing about the row says so. Two shipped braces were exactly that
 // until the boss pool placed them. This walks the whole enemy population and fails on the
 // next one, which is the only thing that makes authoring a move safe.
@@ -1029,19 +1029,19 @@ void test_every_generic_move_is_carried() {
         swallow(areaBoss(a));
         // ...and the area's GUARDIAN, which is the only carrier of its own move
         // (content_moves.cpp's guardian pool). It is met on the WALK rather than the
-        // ladder, so nothing above would ever build it — and a guardian move left out of
+        // ladder, so nothing above would ever build it, and a guardian move left out of
         // this sweep would read as an orphan when it is the most reliably reachable
         // family there is.
         for (const char* m : guardianEnemy(a, 0).moveIds) kits.push_back(m);
     }
-    // The wild pool, both variants — and at every RUNG, because applyWildSubAreaRamp
+    // The wild pool, both variants, and at every RUNG, because applyWildSubAreaRamp
     // REPLACES a wild's kit with the depth ladder rather than adding to it. Two moves
     // (buffer_overflow, rootkit_strike) live only on that ladder's deep rungs, so walking
     // the unramped base kit alone would call them orphans.
     //
     // The same walk is where a wild's KIT SIZE is held to the budget, since it builds
-    // every one there is. THREE riders sit on top of the ladder's own rung — the area's
-    // pair and the creature's signature — and both the ceiling (kWildKitMax) and the
+    // every one there is. THREE riders sit on top of the ladder's own rung (the area's
+    // pair and the creature's signature), and both the ceiling (kWildKitMax) and the
     // single brace matter for the same reason a boss is capped at kMaxBossTeaches:
     // Combat::chooseMove is uniform, so each extra move is a share of the turns, and a
     // second brace would be a wild spending half the fight holding.
@@ -1055,7 +1055,7 @@ void test_every_generic_move_is_carried() {
         CHECK(braces <= 1);
         CHECK(static_cast<int>(e.moveIds.size()) <= kWildKitMax);
     };
-    // Each area's OWN pair (wildMalbeastIn), at every rung of it — what a walk there
+    // Each area's OWN pair (wildMalbeastIn), at every rung of it: what a walk there
     // actually meets, now that areas name pairs rather than all reading their tier's.
     for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)
         for (int a = 0; a < kExplSectors; ++a)
@@ -1089,7 +1089,7 @@ void test_every_generic_move_is_carried() {
     for (int i = 0; i < kMovesCount; ++i) {
         const MoveDef& m = kMoves[i];
         if (m.line) continue;                        // a line kit is granted at hatch
-        // The innate jab sits outside the owned pool entirely — rollEnemyMoveDrop skips
+        // The innate jab sits outside the owned pool entirely: rollEnemyMoveDrop skips
         // it by name, so carrying it teaches nobody anything.
         if (std::strcmp(m.id, "quick_jab") == 0) continue;
         ++checked;
@@ -1097,7 +1097,7 @@ void test_every_generic_move_is_carried() {
     }
     CHECK(checked > 20);                             // guard against a vacuous pass
 
-    // Every id a boss NAMES must resolve — a typo'd `teaches` entry would otherwise be a
+    // Every id a boss NAMES must resolve: a typo'd `teaches` entry would otherwise be a
     // move that exists in the table and can never be found, the same bug from the other
     // end. And no kit may hold two Defend moves: chooseMove is uniform, so a second brace
     // is a boss spending half its turns bracing rather than fighting.
@@ -1164,7 +1164,7 @@ void test_boss_threat_moves_area_adjacent() {
 }
 
 // The apex riders are the only thing a boss knows that nothing else does, and until the
-// move drop reached the boss path they were unobtainable — a boss round returns via
+// move drop reached the boss path they were unobtainable: a boss round returns via
 // finishBossRound() before applyCombatResult's drop block ever runs. Beating Pirate
 // Bayou's signature sub-boss (the one carrying `system_hang`) enough times must
 // eventually teach it, which is the re-run incentive the mode was missing.
@@ -1198,13 +1198,13 @@ void test_boss_teaches_its_own_apex_move() {
 
 // The EXPL list's "+n" LEAD: how many moves the pet in front of you could still learn in
 // each zone. It is the same promise the combat KIT page's prize gutter makes about one
-// rival (Game::rivalTeachableMoveMask), made about a place — so it has to come out of the
+// rival (Game::rivalTeachableMoveMask), made about a place, so it has to come out of the
 // same filter. A lead counting something the drop roll would refuse is the screen
 // advertising a reward the game cannot pay, which is the one way this can be wrong.
 void test_expl_move_leads_count_what_a_zone_can_teach() {
     // The POOLS are content: what can be fought in a zone, kits and all. Every one has to
     // fit the two digits the row budget reserves for the lead (kExplLearnLeadMax), and
-    // every zone has to be a subset of the area row that stands for it — an area row
+    // every zone has to be a subset of the area row that stands for it: an area row
     // promising less than one of its own rungs would send a player past the thing they
     // came for.
     auto within = [](const std::vector<const char*>& inner,
@@ -1228,7 +1228,7 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
 
     Game g{StartMode::Hatched};
     // A fresh pet owns its own line's kit and none of the generic pool, so the first area
-    // — whose wilds, bosses and guardian all carry generic rows — has something to teach
+    // (whose wilds, bosses and guardian all carry generic rows) has something to teach
     // from the shallowest rung up.
     CHECK(g.subAreaMovesToLearn(0, 0) > 0);
     CHECK(g.areaMovesToLearn(0) >= g.subAreaMovesToLearn(0, 0));
@@ -1255,7 +1255,7 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
         CHECK(h.areaMovesToLearn(0) > 0);              // the area still owes it too
     }
 
-    // Learn the lot and every lead in the game goes out — nothing keeps counting a move
+    // Learn the lot and every lead in the game goes out: nothing keeps counting a move
     // the pet already has.
     for (int a = 0; a < kExplSectors; ++a)
         for (const char* id : areaMovePool(a)) g.debugGrantMove(id);
@@ -1281,7 +1281,7 @@ void test_expl_beaten_is_not_done_until_learned_out() {
         CHECK(std::strcmp(word(s, 12), "BEAT") == 0);
         CHECK(std::strcmp(word(s, 0), "DONE") == 0);
     }
-    // No other state is moved by the count — an OPEN rung with moves in it is still OPEN,
+    // No other state is moved by the count: an OPEN rung with moves in it is still OPEN,
     // and the lead beside it is what says there is something there.
     CHECK(std::strcmp(word(ExplRowState::SubOpen, 9), "OPEN") == 0);
     CHECK(std::strcmp(word(ExplRowState::SubOpen, 0), "OPEN") == 0);
@@ -1304,7 +1304,7 @@ void test_expl_beaten_is_not_done_until_learned_out() {
 // Two-level nested-list nav: the TOP level lands on the DeepWeb
 // row + area HEADERS; B on an area DRILLS in; INSIDE, A cycles that area's subs (+ the
 // boss-ready header) and B acts (arm / FIGHT BOSS / AREA BOSS); C pops back to the area
-// list. The rendered page is unchanged — only the traversal is two-level.
+// list. The rendered page is unchanged, only the traversal is two-level.
 void test_expl_nested_list_nav() {
     // Drill into area 0, then A-cycle its subs: sub 0 cleared (FARMABLE), sub 1 boss-ready,
     // subs 2-4 open. Inside, firstLandable = sub 0; two A's reach sub 2; B arms it.
@@ -1350,7 +1350,7 @@ void test_expl_nested_list_nav() {
 
     // TOP level cycles whole AREAS (not subs): clear area 0 so area 1 opens; A steps from
     // the area-0 header to the area-1 header (a whole area), and drilling+arming lands in
-    // area 1 — proving A skipped area 0's five sub-rows.
+    // area 1. Proving A skipped area 0's five sub-rows.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugSetSectorCleared(0, true);             // area 0 cleared → area 1 now open
       enterStoryLadder(g);
@@ -1373,7 +1373,7 @@ void test_expl_nested_list_nav() {
       tapC(g);                 // C at the picker → leave EXPL
       CHECK(g.nav() == Game::Nav::Cursor); }
 
-    // Opening EXPL while explore-mode is RUNNING RESUMES where the pet is — already
+    // Opening EXPL while explore-mode is RUNNING RESUMES where the pet is: already
     // drilled into the armed area, cursor already on the armed sub-area. Checking or
     // changing the current walk is why the list gets opened mid-run, so it costs no
     // presses: a single B acts on that sub (re-arms it) rather than drilling anywhere.
@@ -1396,7 +1396,7 @@ void test_expl_nested_list_nav() {
       CHECK(g.nav() == Game::Nav::Combat); }
 
     // The explore-control overlay is a CURSOR LIST: the A+C chord opens it, and from
-    // there plain A/B/C drive it — the chord is the way in and never a navigation key
+    // there plain A/B/C drive it. The chord is the way in and never a navigation key
     // inside the screen it opened. It opens on the first action, A walks the rows, B
     // does the focused one, C backs out with the walk still running.
     { Game g{StartMode::Hatched, "bruinforce"};
@@ -1421,8 +1421,8 @@ void test_expl_nested_list_nav() {
       stopExplore(g);
       CHECK(!g.exploreActive() && g.nav() == Game::Nav::Idle); }
 
-    // The DeepWeb dive resumes inside ENDLESS instead — its row lives in that category,
-    // not in any area — so a running dive opens straight onto its own row and one B
+    // The DeepWeb dive resumes inside ENDLESS instead (its row lives in that category,
+    // not in any area), so a running dive opens straight onto its own row and one B
     // re-arms it.
     { Game g{StartMode::Hatched, "bruinforce"};
       for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
@@ -1436,7 +1436,7 @@ void test_expl_nested_list_nav() {
 // the DEEPWEB DIVE endless zone: unlocked only by clearing every area,
 // arms an endless explore mode on kDeepWebSector, and scales the wild enemy to the
 // PET's level (parity → full base XP forever; no boss ladder).
-// THE DARKWEB CRAWL — the terminal endless zone, reached through the portal at THE SILK
+// THE DARKWEB CRAWL: the terminal endless zone, reached through the portal at THE SILK
 // LODE's ZERO DAY SHRINE. It shares the dive's walk and differs in the two things that
 // make it the end of the map rather than a second farm: a harsher curve, and every fight
 // running with the A+C picker scrambled.
@@ -1452,7 +1452,7 @@ void test_darkweb_crawl() {
         CHECK(c.level > 20);                        // ...and the crawl never had one
         CHECK(wildWinXp(kWildWinXpReward, c.level, 20) > kWildWinXpReward);
         // ...and its kit is two picks from the dive's deep pool, the zone's own pair and
-        // the creature's signature — a handful drawn from the pool, not the pool itself,
+        // the creature's signature: a handful drawn from the pool, not the pool itself,
         // and inside the cap every wild kit is held to.
         CHECK(static_cast<int>(c.moveIds.size()) == 2 + 2 + 1);
         CHECK(static_cast<int>(c.moveIds.size()) <= kWildKitMax);
@@ -1466,7 +1466,7 @@ void test_darkweb_crawl() {
         Game g{StartMode::Hatched, "bruinforce"};
         g.debugStartDarkWebCrawl();
         CHECK(!g.inDarkWebCrawl());                 // inert on a fresh save
-        // REACHING it is not enough — the portal is behind that area's own boss.
+        // REACHING it is not enough: the portal is behind that area's own boss.
         g.debugSetSectorCleared(gate - 1, true);
         g.debugStartDarkWebCrawl();
         CHECK(!g.inDarkWebCrawl());
@@ -1486,7 +1486,7 @@ void test_darkweb_crawl() {
         const AreaLootTable dw = areaWildLootTable(kDarkWebSector);
         CHECK(dw.rows && dw.count > 0);
         // The five unbuyable USBs moved here with the terminal slot and are no longer in
-        // the dive's table — the whole point being that only the end of the map sells the
+        // the dive's table: the whole point being that only the end of the map sells the
         // ability to overrule how a pet was raised.
         auto holds = [](AreaLootTable t, const char* id) {
             for (int i = 0; i < t.count; ++i)
@@ -1497,7 +1497,7 @@ void test_darkweb_crawl() {
         CHECK(!holds(areaWildLootTable(kDeepWebSector), "sandbox_usb"));
     }
     // (4) Its depth record is its OWN, survives a save round-trip, and does not borrow
-    //     the dive's — one figure covering both would let the easier zone speak for the
+    //     the dive's: one figure covering both would let the easier zone speak for the
     //     harder one.
     {
         Game g{StartMode::Hatched, "bruinforce"};
@@ -1507,7 +1507,7 @@ void test_darkweb_crawl() {
     }
     // (5) What it PAYS, which is the other half of being the end of the map. The crawl
     //     opens four areas past the dive to a pet whose next level costs the most it ever
-    //     will, and its runs are a third as long — so a payout merely EQUAL to the dive's
+    //     will, and its runs are a third as long, so a payout merely EQUAL to the dive's
     //     is a payout the zone loses on, and neither ledger may be that.
     {
         // XP: one shared level-difference curve, and the BASE it scales is the zone's own
@@ -1515,7 +1515,7 @@ void test_darkweb_crawl() {
         CHECK(Game::wildWinXpBase(0) == kWildWinXpReward);
         CHECK(Game::wildWinXpBase(kDeepWebSector) == kWildWinXpReward);
         CHECK(Game::wildWinXpBase(kDarkWebSector) == kWildWinXpReward * kDarkWebXpPct / 100);
-        // The lead is a MULTIPLE and not a nudge — the pet down here is paying a geometric
+        // The lead is a MULTIPLE and not a nudge: the pet down here is paying a geometric
         // level cost the dive's arrival never sees, so a crawl win that merely edged a dive
         // win would be the bug this figure answers.
         CHECK(Game::wildWinXpBase(kDarkWebSector) > 4 * kWildWinXpReward);
@@ -1530,7 +1530,7 @@ void test_darkweb_crawl() {
                   wildWinXp(Game::wildWinXpBase(kDeepWebSector), d.level, 45));
         }
         // Bits: the same curve shape the dive's depth ramp has, on the crawl's own
-        // steeper rate and higher ceiling — and actually applied, which is what a zone
+        // steeper rate and higher ceiling, and actually applied, which is what a zone
         // whose constants exist but reach no payout would look identical to.
         CHECK(darkWebDepthBitsPct(0) == 100);               // a fresh crawl: unchanged
         CHECK(darkWebDepthBitsPct(-9) == 100);              // clamps at 0
@@ -1543,7 +1543,7 @@ void test_darkweb_crawl() {
 void test_deepweb_dive() {
     // (1) The pure scaler: enemy level = pet level (parity, so wildWinXp pays the FULL
     //     base forever), and a BUDGET of points spent at random across the same four
-    //     stats a pet levels — not the old fixed Health+speed split. The budget is what
+    //     stats a pet levels, not the old fixed Health+speed split. The budget is what
     //     is pinned here; where any one roll puts it is the feature.
     {
         CombatEnemy e = wildMalbeast(3, 0);
@@ -1554,7 +1554,7 @@ void test_deepweb_dive() {
         applyDeepWebScale(e2, -5);                    // petLevel clamps at 0
         CHECK(e2.level == 0 + kDeepWebEnemyLevelOffset);
     }
-    // (1a) The spread spends the whole budget and no more, and POWER is in the hat —
+    // (1a) The spread spends the whole budget and no more, and POWER is in the hat:
     //      the flat-offence hole that let a stacked wall chip a depth-500 enemy forever.
     {
         const CombatEnemy base = wildMalbeast(3, 0);
@@ -1575,7 +1575,7 @@ void test_deepweb_dive() {
             if (sPts > 0) ++sawSpeed;
             if (hPts > 0) ++sawHealth;
         }
-        // Every stat is reachable — a spread that never rolls Power would be the old bug
+        // Every stat is reachable: a spread that never rolls Power would be the old bug
         // wearing a new shape, and one that never rolls Defence is a claim the dive makes
         // to the player that it doesn't keep.
         CHECK(sawPower > 0 && sawDef > 0 && sawSpeed > 0 && sawHealth > 0);
@@ -1596,7 +1596,7 @@ void test_deepweb_dive() {
         CHECK(over.maxHealth + over.powerMultPct + over.speed + over.defense >
               base.maxHealth + base.powerMultPct + base.speed + base.defense);
     }
-    // (1b) Same seed, same enemy — the dive rolls like every other roll in the engine.
+    // (1b) Same seed, same enemy: the dive rolls like every other roll in the engine.
     {
         CombatEnemy a = wildMalbeast(3, 0), b = wildMalbeast(3, 0);
         applyDeepWebScale(a, 9, 40, 12345u);
@@ -1633,7 +1633,7 @@ void test_deepweb_dive() {
         CombatEnemy e = wildMalbeast(3, 0);
         applyDeepWebScale(e, 10, 0);
         CHECK(e.level == 10);                          // depth=0 -> unchanged parity
-        // Anywhere inside the foothold is the SAME fight as depth 0 — the property the
+        // Anywhere inside the foothold is the SAME fight as depth 0: the property the
         // whole window exists for, so it is asserted at its far edge rather than near it.
         CombatEnemy eF = wildMalbeast(3, 0);
         applyDeepWebScale(eF, 10, kDeepWebRampFreeDepth);
@@ -1712,7 +1712,7 @@ void test_deepweb_dive() {
         g.debugStartDeepWebDive();
         CHECK(!g.inDeepWebDive());  // inert on a fresh save
         // One rung SHORT of the gate: still locked. This is what fails if the gate ever
-        // silently slides — including by an area being spliced in above it.
+        // silently slides, including by an area being spliced in above it.
         for (int a = 0; a + 2 < gate; ++a) g.debugSetSectorCleared(a, true);
         g.debugStartDeepWebDive();
         CHECK(!g.inDeepWebDive());
@@ -1765,7 +1765,7 @@ void test_deepweb_dive() {
         CHECK(g.debugEncounterEnemyLevel() == L + kDeepWebEnemyLevelOffset);  // scaled to pet
     }
     // (4) The Deep-Learning buff SURVIVES the dive it was armed for. It is a
-    //     Context::Anytime item, so the whole point is arming it before diving —
+    //     Context::Anytime item, so the whole point is arming it before diving:
     //     resetting the multiplier in startDeepWebDive would consume it on the way in
     //     and it would never once apply. Only a dive ENDING spends it.
     {
@@ -1821,10 +1821,10 @@ void test_combat_force_enemy_first() {
 }
 
 // A held Sinkhole Trap auto-bypasses a wild encounter in the hands-off auto mode
-// the wild is converted into an XP lump and the trap consumed — no fight,
+// the wild is converted into an XP lump and the trap consumed: no fight,
 // no Fight/Flee intro, straight back to the idle habitat. A bounded search steps
 // explore until a wild is typed (observed as the trap being spent), dismissing any
-// other event along the way. (An awakened-guardian Wi-Fi fight still fights — the
+// other event along the way. (An awakened-guardian Wi-Fi fight still fights: the
 // sinkhole only bypasses the explore-table wild.)
 void test_encounter_sinkhole_bypass() {
     Game g{StartMode::Hatched};
@@ -1859,7 +1859,7 @@ void test_encounter_sinkhole_bypass() {
 }
 
 // Regression: resolveSinkhole() persists immediately, like every other XP grant
-// (finishCombat/finishBossRound) — it's the one XP source that bypasses combat
+// (finishCombat/finishBossRound). It's the one XP source that bypasses combat
 // entirely, so nothing else forces a flush. Before the fix it only markSaveDirty()'d,
 // so an XP/level gain (and the trap's consumption) could vanish on a reboot that lands
 // before the next debounced autosave.
@@ -1893,7 +1893,7 @@ void test_sinkhole_xp_persists_immediately() {
         CHECK(bypassed);
         xp = g.combatXp();
         lvl = g.combatLevel();
-        // No tick() here — a real reboot moments after the item resolves would land
+        // No tick() here: a real reboot moments after the item resolves would land
         // well inside the kSaveAutosaveMs debounce window, so nothing else must be
         // relied on to flush this XP grant to the store.
     }
@@ -1907,16 +1907,16 @@ void test_sinkhole_xp_persists_immediately() {
 // typed event alongside Quiet/Loot/Wild that rolls one of 4 sub-outcomes
 // (sleeping guardian -> loot, awakened guardian -> wild combat, open cache ->
 // loot, friendly visit -> a v1 generic ally-buff substitute for the doc-07
-// Met-Pets Roster) and a lifetime networks-seen counter (dedup'd, —
-// the seed for Hacker Rank, not yet consumed this milestone).
+// Met-Pets Roster) and a lifetime networks-seen counter (dedup'd,.
+// The seed for Hacker Rank, not yet consumed this milestone).
 // ===========================================================================
 
-// The explore-mode flavor line is the walk's only running commentary — what the last
+// The explore-mode flavor line is the walk's only running commentary: what the last
 // step gave you and, when that matters, where it went. It sits in a fixed column in the
 // idle habitat's top-left corner (game_render.cpp's kExploreStatusW), and it is the one
 // piece of copy on the device composed from an ITEM NAME at runtime: "Uncommon Cache"
 // is four characters wider than "Rare Cache", and that was the difference between a
-// line that fit and a line whose tail — the half naming the screen to go to — was gone.
+// line that fit and a line whose tail (the half naming the screen to go to) was gone.
 //
 // It wraps to two lines now, so the ceiling is two, not one. Held here rather than left
 // to the renderer because the third line would run into the achievement plate, and the
@@ -1949,7 +1949,7 @@ void test_explore_flavor_lines_fit() {
     }
 
     // The rest are format strings over numbers. Each is given the widest number it can
-    // carry rather than a typical one — a three-digit Frag shed or Bits payout is the
+    // carry rather than a typical one: a three-digit Frag shed or Bits payout is the
     // case that overruns, and the one nobody reproduces by hand.
     std::snprintf(line, sizeof(line), "SAFE MODE - RESTED (-%d FRAG)", 100);
     CHECK(fits());
@@ -1990,8 +1990,8 @@ static void clearExploreEvent(Game& g, uint32_t& t) {
 }
 
 // Steps are tallied for the LIFETIME of the device as well as for the run. The two
-// counters answer different questions — exploreSteps() is "how far into this walk",
-// lifetimeSteps() is what the STEPS ladder is scored against — so the run counter
+// counters answer different questions; exploreSteps() is "how far into this walk",
+// lifetimeSteps() is what the STEPS ladder is scored against, so the run counter
 // resetting at the top of a walk must not take the lifetime one with it.
 void test_lifetime_steps_accumulate() {
     Game g{StartMode::Hatched};
@@ -2010,7 +2010,7 @@ void test_lifetime_steps_accumulate() {
     CHECK(g.lifetimeSteps() == start + static_cast<uint32_t>(stepped));
 
     // Arming a fresh sub-area zeroes the RUN counter and leaves the lifetime tally
-    // where it was — the whole reason the two are separate fields.
+    // where it was: the whole reason the two are separate fields.
     clearExploreEvent(g, t);
     CHECK(g.nav() == Game::Nav::Idle);
     const uint32_t lifetime = g.lifetimeSteps();

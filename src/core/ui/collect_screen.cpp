@@ -12,7 +12,7 @@
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/ui/layout.h"
-#include "core/ui/stat_screen.h"   // drawStatHintBand — STAT's pages end alike
+#include "core/ui/stat_screen.h"   // drawStatHintBand: STAT's pages end alike
 #include "core/ui/widgets.h"
 
 namespace mal {
@@ -31,7 +31,7 @@ constexpr int kGridX = (kActiveW - kGridW) / 2;      // centred, so both gutters
 constexpr int kSectionH = kProseHeaderH + 4;
 constexpr int kSectionLead = kProseGroupLead;
 
-// ICON_ITEM_<UPPER ID> — the per-item glyph, the same convention the ITEMS bag draws its
+// ICON_ITEM_<UPPER ID>: the per-item glyph, the same convention the ITEMS bag draws its
 // rows from (items_screen.cpp), so a dish looks the same wherever it is met.
 const SpriteData* foodIcon(const ContentRegistry& reg, const char* id) {
     char name[40];
@@ -156,7 +156,7 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
             char tag[12];
             std::snprintf(tag, sizeof(tag), "%d/%d", r.have, r.total);
             // Dim, like every other section heading on the status pages: a fence, not a
-            // row — and its tally is the reason a reader stops here at all.
+            // row, and its tally is the reason a reader stops here at all.
             drawLabelValue(fb, kMargin, hy, r.section, palColor(Pal::INK_DIM), tag,
                            palColor(Pal::INK_DIM), page.beat, Overflow::Clip);
         } else {
@@ -235,7 +235,7 @@ std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
             row.label = m->displayName;
             // Three states, all in the tag, because the tag is the only channel a
             // grayscale screen can read a state off: held, held but not yet fieldable at
-            // this stage, or a gap. A gap says nothing rather than "LOCKED" — it is not
+            // this stage, or a gap. A gap says nothing rather than "LOCKED": it is not
             // locked, it is simply not found yet, and that is the whole invitation.
             if (moves.owns(m->id) || moves.isInnate(m->id))
                 setProseTag(row, moveUnlockedAtStage(*m, stage) ? "KNOWN" : "AT %s",
@@ -246,8 +246,8 @@ std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
 
     // A LITERAL, not the line id upper-cased into a buffer: a ProseRow's label is
     // BORROWED (prose_page.h) and would outlive any local this builder could uppercase
-    // into. Which line it is, is not in doubt on a page about this pet — SPECIES and the
-    // index both name it — and what the heading has to say here is which HALF of the
+    // into. Which line it is, is not in doubt on a page about this pet (SPECIES and the
+    // index both name it), and what the heading has to say here is which HALF of the
     // roster follows: the moves a pet gets for being what it is, or the pool anyone can
     // win off a wild.
     section("LINE MOVES", /*lineHalf=*/true);

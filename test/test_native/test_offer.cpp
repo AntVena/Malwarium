@@ -1,4 +1,4 @@
-// test_offer.cpp — the ITEM OFFER (game_offer.cpp), AUTO DIVE GEAR, and the DIVE PAY
+// test_offer.cpp: the ITEM OFFER (game_offer.cpp), AUTO DIVE GEAR, and the DIVE PAY
 // bonus a bell or Deep-Learning device carries.
 #include "test_gates.h"
 
@@ -13,7 +13,7 @@ Game divingReadyGame(MemSaveStore* store = nullptr) {
 }  // namespace
 
 // A bell and a device armed together pay their DIVE PAY added, for the dive they were
-// armed for and only while it runs — a dive started with nothing armed pays nothing.
+// armed for and only while it runs: a dive started with nothing armed pays nothing.
 void test_dive_gear_pays_a_bonus() {
     Game g = divingReadyGame();
     g.inventory().add("kernel_bell", 1);           // +100

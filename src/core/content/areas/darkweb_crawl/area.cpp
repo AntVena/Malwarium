@@ -6,7 +6,7 @@ namespace mal {
 
 // The level half is the dive's, so a pet meets one curve on both zones; what differs is
 // that there is no foothold and the linear depth term runs twice as fast. Both halves are
-// measured against the crawl's OWN population and its own scramble — see area.h.
+// measured against the crawl's OWN population and its own scramble: see area.h.
 const int kDarkWebEnemyLevelOffset = 0;
 const int kDarkWebDepthLevelPerLog2 = 2;
 const int kDarkWebBudgetPct = 100;
@@ -18,7 +18,7 @@ const int kDarkWebDepthBitsMaxPct = 768;
 // Every 16 wins deep, which is one past the MEDIAN run: over 2000 measured crawls a
 // ladder-cleared pet reaches depth 14 (mean 18.6, p90 41), so a sigil costs a
 // better-than-median run rather than being handed out for showing up. That works out at
-// 0.73 sigils a run and about 35 runs for the whole 26-letter Cant — a campaign, next to
+// 0.73 sigils a run and about 35 runs for the whole 26-letter Cant. A campaign, next to
 // the radio's one capture per handshake, which is the balance this door is meant to keep:
 // a player with no network in range is not locked out of the Cant, and one with an aerial
 // is never made to farm here instead.
@@ -28,7 +28,7 @@ const char* const kDarkWebIcon = "ICON_SECTOR_DARKWEB_CRAWL";
 const char* const kDarkWebName = "DARKWEB CRAWL";
 const char* const kDarkWebBadge = "DARKWEB";
 
-// The Crawl's chapters — UNAUTHORED, exactly as the Dive's are and for the same reason
+// The Crawl's chapters: UNAUTHORED, exactly as the Dive's are and for the same reason
 // (deepweb_dive/area.cpp).
 const AreaStoryDef kStoryDarkWeb = {};
 

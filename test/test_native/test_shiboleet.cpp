@@ -1,10 +1,10 @@
-// test_shiboleet.cpp — the CANT, the guardian encounter, and the riddle pool's
+// test_shiboleet.cpp: the CANT, the guardian encounter, and the riddle pool's
 // content gate.
 //
 // Three subjects, one file, because they only mean anything together: the cipher is
 // what makes the pool legible-or-not, and the encounter is what pays for the sigils
 // that decide which. The pool's own rules (does it fit, is it ASCII) are here rather
-// than in a content unit for the same reason the Decryptogram's are with its board —
+// than in a content unit for the same reason the Decryptogram's are with its board:
 // "does it fit" is a question about the panel, and the panel is what this tests.
 #include "test_gates.h"
 
@@ -14,7 +14,7 @@
 // --- The Cant --------------------------------------------------------------
 
 // The whole alphabet, once each. The reveal order is what decides WHICH letter an Nth
-// sigil is, so a duplicate or a gap would silently make part of the Cant unlearnable —
+// sigil is, so a duplicate or a gap would silently make part of the Cant unlearnable,
 // and the mask would then never fill, stranding the BOON band out of reach forever.
 void test_cant_reveal_order_is_the_whole_alphabet() {
     const char* order = cantRevealOrder();
@@ -29,7 +29,7 @@ void test_cant_reveal_order_is_the_whole_alphabet() {
     for (bool b : seen) CHECK(b);            // ...and none missing
 
     // Learning kCantSigils times fills the mask exactly, and learning again is a no-op
-    // rather than an overflow — the payout path calls learnSigil without checking first.
+    // rather than an overflow: the payout path calls learnSigil without checking first.
     SigilSet s = 0;
     for (int i = 0; i < kCantSigils; ++i) {
         CHECK(sigilCount(s) == i);
@@ -55,8 +55,8 @@ void test_cant_cipher_is_width_preserving() {
         char out[96];
         c.applyTo(src, out, sizeof(out));
         CHECK(std::strlen(out) == std::strlen(src));
-        // Position for position: a letter stays a letter, and everything else — the
-        // spaces and the full stop that carry word shape — passes through as itself.
+        // Position for position: a letter stays a letter, and everything else (the
+        // spaces and the full stop that carry word shape) passes through as itself.
         for (size_t i = 0; src[i]; ++i) {
             const bool letter = src[i] >= 'A' && src[i] <= 'Z';
             if (letter) CHECK(out[i] >= 'A' && out[i] <= 'Z');
@@ -66,7 +66,7 @@ void test_cant_cipher_is_width_preserving() {
 }
 
 // A learned sigil reads plain; an unlearned letter never does. The second half is what
-// makes the first half MEAN anything — if an unlearned letter could land on itself by
+// makes the first half MEAN anything, if an unlearned letter could land on itself by
 // chance, "it reads plainly" would stop being proof the pet knows it.
 void test_cant_sigils_read_plain_and_nothing_else_does() {
     for (int learned = 0; learned <= kCantSigils; ++learned) {
@@ -91,7 +91,7 @@ void test_cant_sigils_read_plain_and_nothing_else_does() {
     }
 }
 
-// The mapping is a PERMUTATION — two letters never share a glyph. A collision would make
+// The mapping is a PERMUTATION: two letters never share a glyph. A collision would make
 // a riddle unsolvable by reading rather than merely hard, since two different letters
 // would be indistinguishable on screen.
 void test_cant_cipher_is_a_permutation() {
@@ -116,7 +116,7 @@ void test_cant_cipher_is_a_permutation() {
 // Every row FITS and is drawable: the riddle wraps into kRiddleBodyLines at the body
 // width, each reply is one line at the reply width, and every character has a glyph in
 // FONT_UI (ASCII 32..126, tools/gen_font.py). Checked by wrapping rather than by
-// counting characters, because a wrap wastes the tail of most lines — a punctuation-heavy
+// counting characters, because a wrap wastes the tail of most lines: a punctuation-heavy
 // short riddle can fail where a well-broken longer one passes.
 void test_riddle_pool_fits_the_panel() {
     const int bodyW = kRiddleBodyCols * kFontAdvance;
@@ -163,7 +163,7 @@ inline void clearGuardianAftermath(Game& g) {
 // for one rather than assume it; returns false if the search ran out.
 //
 // Every band opens on the HAIL, so this steps past it before it can tell which band it
-// got — which is exactly what the player does.
+// got, which is exactly what the player does.
 inline bool reachRiddle(Game& g) {
     for (int i = 0; i < 200; ++i) {
         g.debugStartShiboleet();
@@ -178,7 +178,7 @@ inline bool reachRiddle(Game& g) {
 }
 
 // Commit whatever the cursor is on and step through the verdict the reply earns, leaving
-// the pet wherever the meeting actually ends — the walk, or the guardian's fight.
+// the pet wherever the meeting actually ends: the walk, or the guardian's fight.
 inline void speakAndDismiss(Game& g) {
     g.onButton(press(Button::B));                           // the reply
     if (g.nav() == Game::Nav::ShiboleetVerdict) g.onButton(press(Button::B));
@@ -193,7 +193,7 @@ inline void focusTrueReply(Game& g) {
 // THE regression this system nearly shipped with. The welcome bands were thresholds on
 // fluency, which deadlocked: a pet needed four sigils before a guardian would ask it
 // anything, and winning a riddle is the only way to get one. As chances, a pet that
-// knows NOTHING of the Cant still gets asked — which is the ladder's first rung.
+// knows NOTHING of the Cant still gets asked, which is the ladder's first rung.
 void test_shiboleet_is_reachable_from_zero_sigils() {
     Game g{StartMode::Hatched};
     enterWalk(g);
@@ -207,7 +207,7 @@ void test_shiboleet_is_reachable_from_zero_sigils() {
 }
 
 // A right answer always pays its Happiness and its shed Fragmentation. The SIGIL is the
-// separate half and costs an unspent SHAKE — so a player with no radio, or with capture
+// separate half and costs an unspent SHAKE, so a player with no radio, or with capture
 // switched off, wins everything the walk pays and simply does not learn the language.
 // That split is the whole reason the gate sits on the sigil and not on the win.
 void test_shiboleet_win_pays_without_a_shake_but_buys_no_sigil() {
@@ -224,9 +224,9 @@ void test_shiboleet_win_pays_without_a_shake_but_buys_no_sigil() {
     CHECK(g.shiboleetReply() == Game::ShiboleetReply::Answered);
     CHECK(g.model().happiness() == happy0 + kShiboleetWinHappy);
     CHECK(g.model().fragmentation() == frag0 - kShiboleetWinFragCut);
-    CHECK(g.sigilsKnown() == 0);                 // nothing to trade — no sigil
+    CHECK(g.sigilsKnown() == 0);                 // nothing to trade: no sigil
     // The reply lands on the VERDICT, which is where a player finds out the answer was
-    // taken and — here — what the empty purse cost them. Only then back to the walk.
+    // taken and. Here. What the empty purse cost them. Only then back to the walk.
     CHECK(g.nav() == Game::Nav::ShiboleetVerdict);
     CHECK(g.shiboleetOutcome() == GuardianOutcome::Pleased);
     CHECK(!g.shiboleetVerdictFights());
@@ -251,7 +251,7 @@ void test_shiboleet_win_spends_one_shake_for_one_sigil() {
 }
 
 // A wrong reply costs Happiness and Fragmentation and hands the pet to the guardian's
-// fight. Same for saying nothing at all — C is not an exit here, and neither is the
+// fight. Same for saying nothing at all: C is not an exit here, and neither is the
 // clock; a guardian takes silence for an answer, and the wrong one.
 void test_shiboleet_wrong_and_silent_both_cost_and_fight() {
     for (int silent = 0; silent < 2; ++silent) {
@@ -280,7 +280,7 @@ void test_shiboleet_wrong_and_silent_both_cost_and_fight() {
         CHECK(g.model().happiness() == happy0 - kShiboleetLoseHappy);
         CHECK(g.model().fragmentation() == frag0 + kShiboleetLoseFrag);
         // THE point of the verdict: the fight is something the guardian DID about the
-        // answer, and the player is told so — with the button named for where it leads —
+        // answer, and the player is told so (with the button named for where it leads)
         // before the boss is on screen.
         CHECK(g.nav() == Game::Nav::ShiboleetVerdict);
         CHECK(g.shiboleetOutcome() == GuardianOutcome::Displeased);
@@ -302,13 +302,13 @@ void test_shiboleet_stepping_the_cursor_restarts_the_clock() {
     uint32_t t = 0;
     for (int i = 0; i < kShiboleetReplyHoldBeats - 2; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Shiboleet);
-    g.onButton(press(Button::A));                 // reading — reset the patience
+    g.onButton(press(Button::A));                 // reading: reset the patience
     for (int i = 0; i < kShiboleetReplyHoldBeats - 2; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Shiboleet);      // still up, because A reset it
 }
 
 // A fluent pet is received rather than tested: at a complete Cant the BOON band is
-// reachable, and a boon never opens a riddle or a fight — it pays as the hail is stepped
+// reachable, and a boon never opens a riddle or a fight. It pays as the hail is stepped
 // past, says so on its verdict, and hands back to the walk.
 void test_a_complete_cant_earns_boons() {
     Game g{StartMode::Hatched};
@@ -334,13 +334,13 @@ void test_a_complete_cant_earns_boons() {
             CHECK(!g.shiboleetVerdictFights());  // a quiet word is never a fight
             CHECK(g.shiboleetFlavor()[0] != '\0');
         } else if (g.nav() == Game::Nav::Shiboleet) {
-            g.onButton(press(Button::B));         // a riddle — answer and keep looking
+            g.onButton(press(Button::B));         // a riddle: answer and keep looking
         }
         if (g.nav() == Game::Nav::ShiboleetVerdict) g.onButton(press(Button::B));
         clearGuardianAftermath(g);
     }
     CHECK(sawBoon);
-    // An AFFRONT is impossible at full fluency — the refusal chance scales to nothing —
+    // An AFFRONT is impossible at full fluency (the refusal chance scales to nothing),
     // which is what makes learning the whole Cant mean "it will always hear you out".
     CHECK(kShiboleetAffrontBasePct * (100 - 100) / 100 == 0);
 }
@@ -348,7 +348,7 @@ void test_a_complete_cant_earns_boons() {
 // --- The guardian ----------------------------------------------------------
 
 // A guardian out-classes the rung it is MET on, and is drawn at that rung rather than at
-// the area's deepest — the second thing this system nearly shipped wrong. Pinned to the
+// the area's deepest: the second thing this system nearly shipped wrong. Pinned to the
 // gauntlet's last stage it was a wall a first-sub-area pet could not have built for, and
 // losing here ends the run the same as any wild.
 void test_guardian_outclasses_the_rung_it_is_met_on() {
@@ -362,7 +362,7 @@ void test_guardian_outclasses_the_rung_it_is_met_on() {
             CHECK(guard.defense > 0);
             CHECK(!guard.isWild);              // never the wild challenge buff
             CHECK(guard.name != nullptr);
-            // It must NOT carry the area's apex threat rider — that move is the
+            // It must NOT carry the area's apex threat rider: that move is the
             // signature boss's tell and the only way to earn it.
             if (const char* apex = area(a).apexThreatMoveId)
                 for (const char* m : guard.moveIds)
@@ -374,7 +374,7 @@ void test_guardian_outclasses_the_rung_it_is_met_on() {
     }
 }
 
-// Every area names a guardian, and each one's taught move is UNIQUE to it — a guardian
+// Every area names a guardian, and each one's taught move is UNIQUE to it: a guardian
 // move with a second carrier would quietly duplicate another boss's prize.
 void test_every_area_has_a_guardian_with_its_own_move() {
     std::set<std::string> taught;
@@ -432,8 +432,8 @@ void test_every_guardian_speaks_and_fits_the_panel() {
     }
 }
 
-// The greeting is drawn in the SAME cipher as the riddle. Enciphering it any other way —
-// or not at all — would leak the mapping the riddle is asking the player to work without,
+// The greeting is drawn in the SAME cipher as the riddle. Enciphering it any other way
+// (or not at all) would leak the mapping the riddle is asking the player to work without,
 // and a pet with no sigils would be reading the guardian's speech but not its question.
 void test_guardian_greeting_rides_the_riddles_cipher() {
     Game g{StartMode::Hatched};
@@ -448,7 +448,7 @@ void test_guardian_greeting_rides_the_riddles_cipher() {
     for (int a = 0; a < kAreaCount; ++a)
         for (const GuardianLine& l : area(a).guardian.lines)
             if (l.cant) CHECK(std::strcmp(greet, l.cant) != 0);
-    // The demeanour is the other half and is NEVER enciphered — it is what the pet sees,
+    // The demeanour is the other half and is NEVER enciphered: it is what the pet sees,
     // and it has to be readable from the very first meeting or the pair teaches nothing.
     const char* seen = g.guardianDemeanour();
     CHECK(seen != nullptr && seen[0] != '\0');
@@ -459,7 +459,7 @@ void test_guardian_greeting_rides_the_riddles_cipher() {
     CHECK(authored);
 }
 
-// A FLUENT pet hears the guardian plainly — the payoff the whole ladder climbs to. With
+// A FLUENT pet hears the guardian plainly: the payoff the whole ladder climbs to. With
 // the Cant complete the cipher is the identity, so what it says arrives verbatim.
 void test_a_fluent_pet_hears_the_guardian_plainly() {
     Game g{StartMode::Hatched};
@@ -479,7 +479,7 @@ void test_a_fluent_pet_hears_the_guardian_plainly() {
 
 // EVERY band opens on the HAIL, and none of them resolves underneath it. This is the
 // regression the bracket exists to prevent: an affront used to put a boss on screen with
-// no stated cause, and a boon used to pay silently — in both cases the pet met something
+// no stated cause, and a boon used to pay silently. In both cases the pet met something
 // and the player never saw it. The hail is the one screen all three bands share.
 void test_every_welcome_band_is_met_on_the_hail() {
     Game g{StartMode::Hatched};
@@ -488,7 +488,7 @@ void test_every_welcome_band_is_met_on_the_hail() {
     for (int i = 0; i < 400 && !(sawAffront && sawRiddle); ++i) {
         g.debugStartShiboleet();
         CHECK(g.nav() == Game::Nav::ShiboleetHail);
-        // The hail draws before the band is known, and it draws SOMETHING — the header,
+        // The hail draws before the band is known, and it draws SOMETHING: the header,
         // the guardian's gesture and the Cant strip are on it whatever comes next.
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);
@@ -522,7 +522,7 @@ void test_every_welcome_band_is_met_on_the_hail() {
 
 // Hands-off: a walk nobody is watching still plays the whole meeting out. Both bracketing
 // screens are REVEALS with their own holds (kShiboleetHailHoldBeats /
-// kShiboleetVerdictHoldBeats), so an unattended pet is never parked on one — and the
+// kShiboleetVerdictHoldBeats), so an unattended pet is never parked on one, and the
 // riddle's own clock still answers for it in between.
 void test_the_bracketing_screens_auto_play_out() {
     Game g{StartMode::Hatched};
@@ -602,7 +602,7 @@ void test_cant_persists_across_a_reboot() {
     for (int i = 0; i < 4; ++i) expect = learnSigil(expect);
     CHECK(g2.cantSigils() == expect);
 
-    // A blob written before v59 reads back as an unlearned Cant with a FULL purse —
+    // A blob written before v59 reads back as an unlearned Cant with a FULL purse:
     // every shake such a save ever captured is still there to spend.
     SaveData d{};
     d.handshakesSeen = 7;

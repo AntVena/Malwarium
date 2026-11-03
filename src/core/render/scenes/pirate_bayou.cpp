@@ -8,13 +8,13 @@ namespace mal {
 
 namespace {
 
-// THE HARBOUR'S ART DIRECTION. The machinery is core/render/scene.h — the ramp every
+// THE HARBOUR'S ART DIRECTION. The machinery is core/render/scene.h: the ramp every
 // colour comes from, the silhouette, the floor, the drift. What is here is only what
 // makes this place THIS place: which tones, which skyline, where the moon is.
 //
 // The tones are deliberately bunched near the dark end. Eight rows of list text sit on
 // this sky wherever ROCK THE DOCK draws it, and the picture is not allowed to cost them
-// contrast — so the harbour is built out of what is left BELOW the text, where the
+// contrast, so the harbour is built out of what is left BELOW the text, where the
 // separation between water and plank is the whole of the effect.
 constexpr uint8_t kToneStar = 92;
 constexpr uint8_t kToneGlow = 16;
@@ -29,12 +29,12 @@ constexpr uint8_t kToneMoonMaria = 96;
 
 // The treeline: one column of cypress per step. A 224px screen holding a list of eight,
 // a 96px creature and four lines of copy has no room for a landscape, so there is not
-// one — the far shore is a ragged strip at the waterline, and everything else the scene
+// one: the far shore is a ragged strip at the waterline, and everything else the scene
 // spends is spent on the dock itself, which is the part the operator is standing on.
 constexpr uint8_t kTreeline[] = {3, 6, 2, 5, 4, 3, 2, 6, 3, 5, 2, 4, 6, 3,
                                  2, 5, 3, 6, 4, 2, 5, 3, 6, 2, 4, 3, 5, 2};
 
-// The night sky, as (x, height up the sky) — the second number a 256th of whatever sky
+// The night sky, as (x, height up the sky): the second number a 256th of whatever sky
 // the ground leaves, so the field spreads over 174 rows above a resting pet and packs
 // into 130 above a fighter without losing a star off the top. Sparse and authored for
 // the reason the treeline is authored: rows of text are drawn straight over it. Kept
@@ -47,7 +47,7 @@ constexpr uint8_t kStars[][2] = {{18, 206},  {47, 230}, {73, 180},  {96, 217},
 // The moon, low over the water: high enough up the sky to clear the copy a screen puts
 // on it, low enough that its reflection has water to lie on. On ROCK THE DOCK it lands
 // in the gap between the foot of the field and the top of the opponent's card, and it
-// is therefore MORE of it the further the bracket goes — every entrant knocked out
+// is therefore MORE of it the further the bracket goes: every entrant knocked out
 // shortens the field above it, which is the collapse paying for something twice.
 constexpr int kMoonX = 100;
 constexpr uint8_t kMoonUp = 98;

@@ -8,20 +8,20 @@ namespace mal {
 
 namespace {
 
-// THE CRT BENCH — the workshop the rig is actually built on, and the prize the Hacker
+// THE CRT BENCH: the workshop the rig is actually built on, and the prize the Hacker
 // SHOP's upgrade ladder pays out. A pegboard of tools behind, a rank of tube monitors
 // along the back of the bench, and the bench top itself underfoot.
 //
 // THE PHOSPHOR IS THE ONE TINT. A CRT's light is not a value, it is a colour thrown
-// into a dark room, so the tubes are anchored on FRAG_LO — the violet the palette
-// already carries that no interface state has claimed — and everything the room is
+// into a dark room, so the tubes are anchored on FRAG_LO (the violet the palette
+// already carries that no interface state has claimed), and everything the room is
 // MADE of stays on the plain ramp. Two tubes carry a live trace; the rest hold a
 // resting scanline, so the bench reads as running rather than as switched on.
 //
 // Like the kitchen, it is an interior: there is no distance, so the band above the
 // horizon is the pegboard wall and the horizon is where the bench meets it.
 constexpr uint8_t kToneWall = 24;        // the pegboard
-constexpr uint8_t kTonePeg = 88;         // its hole pattern — a single pixel, so it can carry
+constexpr uint8_t kTonePeg = 88;         // its hole pattern: a single pixel, so it can carry
 constexpr uint8_t kToneTool = 80;        // what is hung on it
 constexpr uint8_t kToneShelf = 58;       // the parts shelf across the top
 constexpr uint8_t kToneBin = 78;         // component bins on it
@@ -42,7 +42,7 @@ constexpr int kPegPitch = 10;
 
 // What is hung on it, as columns of depth hanging DOWN from the shelf: a rack of
 // screwdrivers, then a pair of pliers, then a coil of wire, then a spanner or two.
-// Authored as a silhouette table because that is what a wall of hanging tools is — a
+// Authored as a silhouette table because that is what a wall of hanging tools is: a
 // ragged strip, the same shape a treeline is, read upside down (sceneOverhang).
 //
 // The GAPS carry it. A run of similar depths merges into one bar at this size, so no
@@ -61,8 +61,8 @@ constexpr int kBinPitch = 18, kBinW = 13, kBinH = 8;
 
 // The monitors, standing on the bench line. Each is a case with a tube inset in it;
 // widths differ because a bench is what somebody accumulated rather than what somebody
-// bought, and the tall one is deliberately off-centre so the middle of the panel — where
-// a screen stands its sprite — is the gap between two of them.
+// bought, and the tall one is deliberately off-centre so the middle of the panel (where
+// a screen stands its sprite) is the gap between two of them.
 struct Tube { uint8_t x, w, h; bool live; };
 constexpr Tube kTubes[] = {
     {6, 52, 42, false}, {62, 40, 34, true}, {150, 46, 38, true}, {200, 22, 26, false},
@@ -101,7 +101,7 @@ void drawCrtBenchScene(Framebuffer& fb, int beat, const SceneGround& g) {
     sceneOverhang(fb, kTools, static_cast<int>(sizeof(kTools) / sizeof(kTools[0])),
                   kShelfY + kShelfH, kToneTool);
 
-    // The monitors. Case, then glass inset in it, then whatever the glass is showing —
+    // The monitors. Case, then glass inset in it, then whatever the glass is showing:
     // in that order, so a tube is a hole in a shell rather than a rectangle beside one.
     const Rgb565 shell = sceneTone(kToneCase);
     const Rgb565 bezel = sceneTone(kToneBezel);
@@ -133,7 +133,7 @@ void drawCrtBenchScene(Framebuffer& fb, int beat, const SceneGround& g) {
         }
     }
 
-    // The bench top. No middle band worth the name — a bench meets its wall — so the
+    // The bench top. No middle band worth the name (a bench meets its wall), so the
     // horizon and the floor are close enough that this is one surface with a lit lip.
     // The front takes its own tone rather than the shells': a monitor has to stand out
     // from the wall behind it AND from the bench under it, and one number cannot do both.
@@ -141,7 +141,7 @@ void drawCrtBenchScene(Framebuffer& fb, int beat, const SceneGround& g) {
     sceneFloor(fb, g, /*seamPitch=*/52, kToneBench, kToneSeam, kToneLip);
 
     // The iron in its stand. Two uprights, the cradle between them, the barrel lying in
-    // it, and the tip — the whole of the scene's warmth, and four pixels of it.
+    // it, and the tip: the whole of the scene's warmth, and four pixels of it.
     const Rgb565 stand = sceneTone(kToneBezel);
     scenePost(fb, kIronX, kIronH, g, kToneBezel);
     scenePost(fb, kIronX + 12, kIronH, g, kToneBezel);

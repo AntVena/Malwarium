@@ -1,4 +1,4 @@
-// layout.h — the UI layout grid: the insets and vertical zones every screen
+// layout.h (the UI layout grid): the insets and vertical zones every screen
 // lays out against.
 //
 // assets/VISUAL_LANGUAGE.md §4 describes this grid in prose for whoever is
@@ -7,7 +7,7 @@
 //
 // A screen that wants a different value gives it a NAME OF ITS OWN
 // (expl_screen's kTrackRowTop, items_screen's kPickRowH) rather than redeclaring
-// one of these in a file-private namespace — that is what keeps "the grid" a
+// one of these in a file-private namespace: that is what keeps "the grid" a
 // single answer and a deviation a visible, named choice. Redeclaring one at
 // namespace scope inside `mal` is an ambiguity the compiler catches. Beware the
 // one hole it does not: a `constexpr int kMargin` declared inside a FUNCTION
@@ -17,7 +17,7 @@
 // a list. The band itself is drawn by widgets.h's drawHeaderBand.
 #pragma once
 
-#include "core/render/font.h"  // kFontH — kLineH is derived from it
+#include "core/render/font.h"  // kFontH: kLineH is derived from it
 
 namespace mal {
 
@@ -58,14 +58,14 @@ constexpr int listScrollTop(int cursor, int n, int visible) {
     return top < 0 ? 0 : (top > maxTop ? maxTop : top);
 }
 
-// Text line pitch for a block of prose or a stacked multi-line row — one glyph
+// Text line pitch for a block of prose or a stacked multi-line row: one glyph
 // height plus leading.
 constexpr int kLineH = kFontH + 5;
 
 // --- The Hacker face's second band ----------------------------------------
 //
 // The Hacker sub-screens (CREW, PEERS, LINK, PROFILE) carry a context line under
-// the title — who owns the radio, which network is home — and rule it off before
+// the title (who owns the radio, which network is home), and rule it off before
 // their own content starts. It is a real second band rather than a first row:
 // the state it reports changes what the rows below it MEAN, so it reads as
 // chrome. The pet submenus have no equivalent and start straight at kRowTop.

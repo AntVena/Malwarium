@@ -1,4 +1,4 @@
-// creature_lines.h — the roster, one entry per creature FAMILY.
+// creature_lines.h: the roster, one entry per creature FAMILY.
 //
 // kCreatureLines is the ONE place the roster's families and their order are
 // declared: kCreatureLineCount and kCreatureCount are both derived from it, so
@@ -10,7 +10,7 @@
 // Order is presentation only. Unlike the EXPL ladder (areas/area_defs.h), nothing
 // is keyed by a creature's POSITION: the registry addresses creatures by id, and a
 // save records them by id too (save.h's `seenCreatures`). So a family may be
-// spliced in anywhere, or reordered, with no save-version concern — what a reorder
+// spliced in anywhere, or reordered, with no save-version concern: what a reorder
 // does change is the order the 'Pedia lists species in, since tools/dump_content.cpp
 // walks this list.
 //
@@ -41,7 +41,7 @@ inline constexpr CreatureLine kCreatureLines[] = {
     // than on an id. The turn engine never learns this line's name.
     //
     // It is the one family that WEARS BORROWED COLOURS, which is the same sentence its
-    // wildcard slots are — declared here because a screen outside combat has no cast to
+    // wildcard slots are: declared here because a screen outside combat has no cast to
     // read it off (CreatureLine::wearsBorrowedColours).
     {"metamorphic", kMetamorphicCreatures, kMetamorphicCreatureCount,
      /*passives=*/0, /*raisedAchievement=*/nullptr, /*wearsBorrowedColours=*/true},
@@ -49,7 +49,7 @@ inline constexpr CreatureLine kCreatureLines[] = {
 inline constexpr int kCreatureLineCount =
     sizeof(kCreatureLines) / sizeof(kCreatureLines[0]);
 
-// Every creature in the build, across all families. Derived, never authored — a
+// Every creature in the build, across all families. Derived, never authored: a
 // family's rows are counted where they are defined.
 inline constexpr int totalCreatureCount() {
     int n = 0;
@@ -59,7 +59,7 @@ inline constexpr int totalCreatureCount() {
 inline constexpr int kCreatureCount = totalCreatureCount();
 
 // The family carrying `lineId` (CreatureDef::line), or nullptr if none does. This
-// is what asking "how many creatures are on this line" costs now — a family lookup
+// is what asking "how many creatures are on this line" costs now: a family lookup
 // rather than a scan of the whole roster comparing strings.
 inline const CreatureLine* creatureLine(const char* lineId) {
     if (!lineId) return nullptr;

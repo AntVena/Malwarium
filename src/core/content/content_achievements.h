@@ -1,4 +1,4 @@
-// content_achievements.h — the achievement table: what the device recognises you for.
+// content_achievements.h (the achievement table): what the device recognises you for.
 //
 // An achievement is PLAYER-level: it outlives any one pet, like the HackerTag and the
 // earned Titles. There is no achievement browser on the device (three buttons, 224px), so
@@ -6,7 +6,7 @@
 // time they are looking at it (Game::achBanner*), and the web 'Pedia's achievements map.
 //
 // ADDING ONE IS ONE ROW. That is the whole design goal, because this table is expected to
-// grow by an order of magnitude. A row names a `series` — where its progress comes from —
+// grow by an order of magnitude. A row names a `series` (where its progress comes from),
 // plus the `goal` that series must reach, so a ladder is N rows over one resolver and
 // needs no new code:
 //
@@ -18,10 +18,10 @@
 //     rows rather than one bespoke boolean series each.
 //   * a new progress SOURCE is one AchSeries entry + one case in Game::achProgress.
 //   * a new kind of REWARD is one AchievementReward::Kind + one case in
-//     Game::applyAchievementRewards — never a fresh scalar field on this struct
+//     Game::applyAchievementRewards, never a fresh scalar field on this struct
 //     (src/core/content/CONTENT_STANDARD.md rule 1).
 //
-// WIRE NUMBERS — read before editing. The save stores earned/notified state as a BITSET
+// WIRE NUMBERS: read before editing. The save stores earned/notified state as a BITSET
 // indexed by `wire`, not by row position, so rows may be reordered, regrouped by theme, or
 // removed without invalidating a save. In exchange: **assign the next unused number and
 // never reuse or renumber one.** A retired achievement's number stays burned. The native
@@ -30,12 +30,12 @@
 // Compiled-in and id-addressed, like the crews (content_crews.h) and unlike the registry
 // types: the triggers are engine-side, so there is nothing an SD-card content pack could
 // author on its own today. Promoting this to a ContentSource later is additive (one
-// virtual, one EmbeddedContent override) — it is not a rewrite of this shape.
+// virtual, one EmbeddedContent override): it is not a rewrite of this shape.
 //
 // GROWTH SHAPE: rows are ~4 lines each, so they all live in one content_achievements.cpp.
 // When that stops being skimmable, split it BY GROUP into a content_achievements/ folder
 // (the way an EXPL area got one, src/core/content/areas/AREA_CONTENT_STANDARD.md) rather than inventing a
-// second layout — and don't pre-split ahead of the growth.
+// second layout, and don't pre-split ahead of the growth.
 #pragma once
 
 #include <cstdint>
@@ -43,7 +43,7 @@
 namespace mal {
 
 // Where a row's progress comes from. Each entry is one case in Game::achProgress, which
-// answers with {value, total} — the total being what kGoalAll compares against.
+// answers with {value, total}: the total being what kGoalAll compares against.
 //
 // A series that needs a SUBJECT takes it from the row: `key` for an id (a creature line,
 // an item), `param` for a number (a rarity, a qualifying depth).
@@ -62,14 +62,14 @@ enum class AchSeries : uint8_t {
     LineRaised,         // creatures of line `key` raised (total = that line's roster)
     FoodsCollected,     // distinct Food items ever held (total = every food)
     RarityCollected,    // distinct items of rarity `param` ever held (total = all of them)
-    ItemCollected,      // whether item `key` has ever been held — goal 1
+    ItemCollected,      // whether item `key` has ever been held: goal 1
     // MERGE HUB recipes known (total = every recipe that ships). Distinct from
     // FoodsCollected: holding a dish says somebody handed you one, knowing the method
     // says a Decryptogram taught you to make it, and only the second is a ladder the
     // player climbs deliberately.
     RecipesKnown,
     // The two PER-PET collections (STAT's FOODS and MOVES pages, core/ui/collect_screen.h).
-    // FoodsCollected above is the operator's shelf — a dish counts the moment it reaches
+    // FoodsCollected above is the operator's shelf: a dish counts the moment it reaches
     // the bag, forever. These count what ONE creature has actually got through, and a new
     // egg starts both over, which is what makes them a thing to do again rather than a
     // number that only ever rises.
@@ -79,8 +79,8 @@ enum class AchSeries : uint8_t {
     // cleared the plate.
     PetFoodsEaten,      // distinct Foods the active pet has been fed (total = every food)
     // Distinct moves the active pet holds. Its total is the WHOLE move roster, not the
-    // subset this pet's line can learn — achievementSeriesTotal is pure over content
-    // (game_achievements.h) and cannot ask which creature is on the shelf — so the rungs
+    // subset this pet's line can learn; achievementSeriesTotal is pure over content
+    // (game_achievements.h) and cannot ask which creature is on the shelf, so the rungs
     // here are fixed counts and the series never takes kGoalAll: no pet can learn another
     // line's moves, and a goal nothing can reach is not a goal.
     PetMovesKnown,
@@ -104,7 +104,7 @@ enum class AchSeries : uint8_t {
     // The best SCORE ever reached on the cabinet named by `key`, against a goal that is
     // that score. The two endless cabinets (the CHROMATOPHORE, the Isolation buffer) run
     // until the player fails rather than until they finish, so a win tally says only
-    // that a run cleared the till's line — this is the series that can ask how far past
+    // that a run cleared the till's line: this is the series that can ask how far past
     // it they went. Meaningless on a win-or-lose cabinet, which never reports a score.
     ArcadeCabinetBest,
     // ROCK THE DOCK (content_tournament.h). Brackets TAKEN, not matches won: the arena
@@ -112,20 +112,20 @@ enum class AchSeries : uint8_t {
     // number it can honestly report is how many times the whole thing was taken.
     TourneyWins,
     PvpWins,            // lifetime LINK duels won (AchSeries::Event's FIRST_DUEL counts the meeting)
-    MergesCooked,       // dishes actually cooked at the MERGE HUB — see RecipesKnown
+    MergesCooked,       // dishes actually cooked at the MERGE HUB: see RecipesKnown
     QuotesSolved,       // distinct Decryptograms cracked (total = the whole quote roster)
     TitlesUnlocked,     // zone-completion Titles earned (total = every area)
     PeersMet,           // distinct operators this device has ever met over the radio
     // Distinct species ever LAID EYES ON (total = the roster). The third axis beside
     // SpeciesRaised and MalbeastsDefeated, and the only one a duel, an arena entrant or
-    // a branch-sibling reveal can move — you can meet far more of the roster than you
+    // a branch-sibling reveal can move: you can meet far more of the roster than you
     // will ever raise.
     SpeciesSeen,
     // Pets held in the ARCH rack at once. UNBOUNDED on purpose though the rack has a
     // ceiling: that ceiling is a rig upgrade, so it is player state, and
     // achievementSeriesTotal must stay pure (game_achievements.h). Fixed rungs instead.
     RackHeld,
-    // The rack read as a COLLECTION rather than as a headcount — which is what the
+    // The rack read as a COLLECTION rather than as a headcount, which is what the
     // 64-slot shelf is FOR (game_rig_shop.h): room to keep a live copy of one of
     // everything, not just somewhere to park spares. All of these are "at once", so a
     // value FALLS when a pet is deployed or released; the earned bit never does, because
@@ -163,7 +163,7 @@ struct AchievementReward {
 inline constexpr int kMaxAchievementRewards = 2;
 
 struct AchievementDef {
-    // Stable save identity — the bitset index. Never reused, never renumbered; see the
+    // Stable save identity: the bitset index. Never reused, never renumbered; see the
     // banner above.
     int wire;
     // The 'Pedia's map key and the id every engine call site names
@@ -174,7 +174,7 @@ struct AchievementDef {
     // `{p}` is `param`, so a whole ladder shares one sentence and a retuned threshold
     // retunes the prose with it (core/content/effect_text.h). Never type the number.
     const char* trigger;
-    // The asset NAME (no path, no extension) the web 'Pedia shows beside the row —
+    // The asset NAME (no path, no extension) the web 'Pedia shows beside the row:
     // tools/gen_pedia_data.py resolves it to wherever that PNG sits under assets/.
     // Nothing on the device draws it; the 'Pedia is the only surface that does.
     const char* icon;
@@ -183,7 +183,7 @@ struct AchievementDef {
     const char* key = nullptr; // the series' subject when it is an id
     int param = 0;             // the series' subject when it is a number
     AchievementReward rewards[kMaxAchievementRewards] = {};
-    // The 'Pedia masks the trigger text — for the ones whose fun is not knowing.
+    // The 'Pedia masks the trigger text: for the ones whose fun is not knowing.
     bool hidden = false;
 };
 
@@ -201,7 +201,7 @@ inline constexpr int kAchievementWireCap = 256;
 const AchievementDef* achievementById(const char* id);
 
 // The row at table position `index` (0..kAchievementCount-1), or nullptr out of range.
-// Position, NOT wire number — for sweeping the table, never for storage.
+// Position, NOT wire number: for sweeping the table, never for storage.
 const AchievementDef* achievementAt(int index);
 
 // The ids the ENGINE fires by hand (AchSeries::Event rows, plus the two depth milestones
@@ -221,7 +221,7 @@ inline constexpr const char* kFirstDuel        = "FIRST_DUEL";
 inline constexpr const char* kSecondInstance   = "SECOND_INSTANCE";
 // The mirror, and the gate on the Metamorphic egg line: the operator's own species
 // walking on as the opponent. Fired from Game::noteMirrorMatch, which BOTH places a
-// real species can be faced call — the LINK duel and the arena — because what earns it
+// real species can be faced call (the LINK duel and the arena), because what earns it
 // is the meeting, not which screen arranged it.
 inline constexpr const char* kHashCollision    = "HASH_COLLISION";
 // The two rows that a FIREWALL board's SHAPE decides rather than a tally: how
@@ -233,7 +233,7 @@ inline constexpr const char* kHangingByABit    = "HANGING_BY_A_BIT";
 // wherever the board is played.
 inline constexpr const char* kStackOverflow    = "STACK_OVERFLOW";
 // FRAGGER's shape row: a run that caught more files than it shot fragments, once it has
-// shot kSafeHandsMinHits — fired from Game::finishFragger wherever the run was played.
+// shot kSafeHandsMinHits. Fired from Game::finishFragger wherever the run was played.
 inline constexpr const char* kSafeHands        = "SAFE_HANDS";
 inline constexpr int kSafeHandsMinHits = 10;
 // The three endings a spent Backup Drive can buy, all fired from Game::settleBackupDrive
@@ -243,21 +243,21 @@ inline constexpr const char* kNeededMoreBackup = "NEEDED_MORE_BACKUP";
 inline constexpr const char* kShatteredPlatter = "SHATTERED_PLATTER";
 // Read as CONTENT GATES, not just badges: depth 8 unlocks the Phishing egg line at
 // line-select and depth 64 adds Phishlet to that egg's hatch pool. Neither is named
-// here — a gated row names the achievement that earns it (EggLineDef::gatedBy,
+// here: a gated row names the achievement that earns it (EggLineDef::gatedBy,
 // CreatureDef::gatedBy), so this direction of the link is read off the content.
 // kSecondInstance above gates the Worm line the same way.
-// ROCK THE DOCK's two SHAPE rows — what a bracket was taken WITH, which the win tally
+// ROCK THE DOCK's two SHAPE rows: what a bracket was taken WITH, which the win tally
 // beside them cannot say. Both fire from Game::awardTourneyPurse, where the final
 // opponent is still seated in tourneyOpponent_ and every entrant's level is still
 // derivable from the run seed, so neither costs the save a byte.
 //
 // Note what is deliberately NOT here: "took a bracket without dropping a match". The
 // arena is single elimination (core/model/tournament.h), so dropping a match ENDS the
-// run — that row and DOCK_FIRST would be the same row wearing two names.
+// run: that row and DOCK_FIRST would be the same row wearing two names.
 inline constexpr const char* kDockUnderdog     = "DOCK_UNDERDOG";
 inline constexpr const char* kDockPunchingUp   = "DOCK_PUNCHING_UP";
 // Enlisting in a crew (content_crews.h). An Event rather than a tally because a player
-// belongs to at most one crew at a time and may switch freely — there is no count here
+// belongs to at most one crew at a time and may switch freely: there is no count here
 // that could mean anything, only the moment of first taking a side.
 inline constexpr const char* kCrewEnlisted     = "CREW_ENLISTED";
 // A pet fed its secret favourite dish for the first time (Game::markFoodEaten). An Event

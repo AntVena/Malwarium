@@ -1,4 +1,4 @@
-// dissolve.h — the scatter every "a sprite comes apart" effect is derived from.
+// dissolve.h: the scatter every "a sprite comes apart" effect is derived from.
 //
 // FX_ABSORB (absorb.h) and FX_SHRED (shred.h) both need a stable pseudo-random value
 // per source pixel or per source row: it is what makes a departure order, a slide
@@ -8,7 +8,7 @@
 //
 // The property to protect: an effect built on this is a pure function of the source
 // pixel and the sweep position. It allocates nothing, stores nothing, and draws the
-// same frame twice for the same progress — which is what lets a ~4fps event-driven
+// same frame twice for the same progress, which is what lets a ~4fps event-driven
 // repaint run it and lets the frame gates dump it.
 #pragma once
 

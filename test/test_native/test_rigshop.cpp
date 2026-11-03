@@ -1,21 +1,21 @@
-// test_rigshop.cpp — native gates for the Hacker SHOP rig upgrades and the ITEMS type-tabs/picker.
+// test_rigshop.cpp: native gates for the Hacker SHOP rig upgrades and the ITEMS type-tabs/picker.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
-#include "core/ui/layout.h"   // kLineH — the MERGE HUB window mirrors the list metrics
+#include "core/ui/layout.h"   // kLineH: the MERGE HUB window mirrors the list metrics
 
 // An armed Backup Drive save rides into a REAL fight (Game::buildPlayerCombatant, not
-// the raw makePlayerCombatant the combat-model tests use) — the wiring that matters,
+// the raw makePlayerCombatant the combat-model tests use): the wiring that matters,
 // since the Sim Battle it's stripped from is the only fight that doesn't carry it.
 void test_backup_drive_save_armed_into_wild_combat() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugUseItem("backup_drive");
     CHECK(g.backupShieldArmed());
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
-    // "item left the list" case) — back out to the carousel before the EXPL walk,
+    // "item left the list" case): back out to the carousel before the EXPL walk,
     // which assumes it's starting from the carousel/idle layer.
     tapC(g);
     walkToEncounter(g);
@@ -24,7 +24,7 @@ void test_backup_drive_save_armed_into_wild_combat() {
 }
 
 // Auto Backup (Rig Shop g): the purchased upgrade arms the death-save for free the
-// moment explore-mode starts — and never reaches into the Vault for an actual drive.
+// moment explore-mode starts, and never reaches into the Vault for an actual drive.
 void test_rig_auto_backup_arms_save_on_explore() {
     Game g{StartMode::Hatched, "paypup"};
     const int drives = g.inventory().count("backup_drive");
@@ -80,7 +80,7 @@ void test_explore_arm_returns_to_idle() {
 
 // A guaranteed explore step types a wild encounter among its outcomes. In
 // the hands-off auto mode there's no human at a Fight/Flee intro, so the encounter
-// AUTO-STARTS the fight — live wild combat, no decision screen.
+// AUTO-STARTS the fight: live wild combat, no decision screen.
 void test_walk_event_roll_reaches_encounter() {
     Game g{StartMode::Hatched};
     walkToEncounter(g);
@@ -102,7 +102,7 @@ static void winAutoExploreFight(Game& g) {   // resolve + auto-dismiss the wild 
     for (int i = 0; i < 400 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
     CHECK(g.combat().outcome() == Combat::Outcome::Win);
-    // Bounded only so a stuck fight fails as a test rather than hanging — the loop
+    // Bounded only so a stuck fight fails as a test rather than hanging: the loop
     // exits the moment the nav leaves Combat. The hold is the reveal hold PLUS the
     // beaten rival's dissolve, which the auto-dismiss waits out (combatDissolveRunning).
     for (int i = 0; i < 200 && g.nav() == Game::Nav::Combat; ++i)
@@ -137,7 +137,7 @@ void test_refarm_diminishing_rewards() {
         winAutoExploreFight(g);
         CHECK(g.debugSubRefarmCount(S, U) == 0);
     }
-    // (4) — the curve is PER-PET, not per-device: a farmed-out count resets
+    // (4). The curve is PER-PET, not per-device: a farmed-out count resets
     //     when a new egg is laid, so a fresh pet finds the area undepleted again.
     {
         Game g{StartMode::Hatched};
@@ -153,7 +153,7 @@ void test_refarm_diminishing_rewards() {
     }
 }
 
-// — Bandwidth is a per-fight FRAGMENTATION SHIELD:
+// Bandwidth is a per-fight FRAGMENTATION SHIELD:
 // ANY resolved exploration fight (first-clear, re-farm, or DeepWeb) spends 1 charge to
 // skip the corruption tax; when the pool is dry the tax bites. Contracts:
 //   (1) a cleared-sub farm win SPENDS 1 charge, keeps loot full, and FREEZES the
@@ -162,7 +162,7 @@ void test_refarm_diminishing_rewards() {
 //   (3) Bandwidth REGENERATES over real elapsed time on the heartbeat;
 //   (4) a FIRST-CLEAR (uncleared-sub) win now ALSO spends a charge (the shield covers
 //       every fight, not just farming);
-//   (5) a DeepWeb Dive win ALSO spends a charge (it's prime farming — protect the pet).
+//   (5) a DeepWeb Dive win ALSO spends a charge (it's prime farming: protect the pet).
 void test_bandwidth_farming_resource() {
     // (1) A charge is spent, loot stays full, the decay count is frozen.
     {
@@ -197,8 +197,8 @@ void test_bandwidth_farming_resource() {
         CHECK(g.bandwidth() >= 1);
         CHECK(g.bandwidth() <= kBandwidthMax);         // never over the cap
     }
-    // (4) A first-clear (UNCLEARED sub) win now ALSO spends a charge — the shield covers
-    //     every fight — while leaving the re-farm count untouched (it's not a re-farm).
+    // (4) A first-clear (UNCLEARED sub) win now ALSO spends a charge (the shield covers
+    //     every fight), while leaving the re-farm count untouched (it's not a re-farm).
     {
         Game g{StartMode::Hatched};
         walkToEncounter(g);
@@ -208,7 +208,7 @@ void test_bandwidth_farming_resource() {
         CHECK(g.bandwidth() == bw0 - 1);
         CHECK(g.debugSubRefarmCount(S, U) == 0);       // ...not a re-farm, count stays 0
     }
-    // (5) A DeepWeb Dive win ALSO spends a charge (prime farming — protect the pet).
+    // (5) A DeepWeb Dive win ALSO spends a charge (prime farming: protect the pet).
     {
         Game g{StartMode::Hatched, "bruinforce"};
         for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
@@ -231,7 +231,7 @@ void test_bandwidth_farming_resource() {
         CHECK(g.bandwidth() == bw0 - 1);               // DeepWeb spends the shield too
     }
     // (6) Corruption shield: ANY won exploration fight with Bandwidth left never rolls the
-    // fragmentation (corruption) tax — the spent charge keeps the pet clean.
+    // fragmentation (corruption) tax. The spent charge keeps the pet clean.
     //     So a bigger pool makes exploring safer, not just farming. (First-clear here.)
     {
         Game g{StartMode::Hatched};
@@ -241,7 +241,7 @@ void test_bandwidth_farming_resource() {
         winAutoExploreFight(g);                        // first-clear win, Bandwidth shielded
         CHECK(g.model().fragmentation() == frag0);     // ...no corruption accrued
     }
-    // (7) With Bandwidth exhausted, the shield is gone — the tax can now bite
+    // (7) With Bandwidth exhausted, the shield is gone: the tax can now bite
     //     (a first-clear win at 0 charges leaves the pet exposed; fragmentation may rise).
     {
         Game g{StartMode::Hatched};
@@ -264,7 +264,7 @@ void test_hacker_face_toggle() {
     CHECK(g.face() == Game::Face::Hacker && g.nav() == Game::Nav::Idle);
 
     // toggleFace() already lands the cursor on the first ACCESSIBLE slot (PROFILE);
-    // walk (by id, not index — order is a display detail) to PROFILE and B enters it.
+    // walk (by id, not index: order is a display detail) to PROFILE and B enters it.
     g.onButton(press(Button::A));
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Profile)
         g.onButton(press(Button::A));
@@ -273,7 +273,7 @@ void test_hacker_face_toggle() {
     tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor);                // C backs to the hacker carousel
 
-    // B on an inaccessible slot (SCAN) is inert — stays on the carousel.
+    // B on an inaccessible slot (SCAN) is inert: stays on the carousel.
     while (hackerCarouselSlots()[g.cursor()].id != HackerSlotId::Scan)
         g.onButton(press(Button::A));
     CHECK(!hackerCarouselSlots()[g.cursor()].accessible);
@@ -285,7 +285,7 @@ void test_hacker_face_toggle() {
     CHECK(g.face() == Game::Face::Pet && g.nav() == Game::Nav::Idle);
 }
 
-// a — the Hacker SHOP "Increase Bandwidth" upgrade: a buy spends Bits, raises
+// a. The Hacker SHOP "Increase Bandwidth" upgrade: a buy spends Bits, raises
 // the farming-pool CAP (bandwidthMax) by one step, persists (bwUpgradeCount), and the
 // price climbs per purchase. A buy is inert when the wallet can't afford it.
 void test_hacker_shop_bandwidth_upgrade() {
@@ -359,11 +359,11 @@ void test_rig_link_aggregator_regen() {
 
 namespace {
 // The Hacker face owns the carousel and a running walk owns the A+C chord, so anything
-// that wants the PET face back has to put both down first. Private to this unit — the
+// that wants the PET face back has to put both down first. Private to this unit: the
 // SERVICES gate is the only one that crosses between the two mid-test.
 void backToPetFace(Game& g) {
     if (g.exploreActive() && g.nav() == Game::Nav::Idle) stopExplore(g);
-    // C backs out of a submenu, but on a CAROUSEL it only steps the cursor — so the
+    // C backs out of a submenu, but on a CAROUSEL it only steps the cursor, so the
     // way off the Hacker face is the same A+C chord that reached it, which lands on
     // the pet face at idle.
     while (g.nav() != Game::Nav::Idle && g.nav() != Game::Nav::Cursor) tapC(g);
@@ -385,7 +385,7 @@ void openServices(Game& g) {
 // SHOP > SERVICES (the list's head slot): the switchboard for the rows that act on
 // their own. It appears only once one is owned, B on it opens the board, B on a row
 // stops and starts that service, and a stopped one does nothing until it is started
-// again. The mask persists — a service the player switched off stays off across a boot.
+// again. The mask persists: a service the player switched off stays off across a boot.
 void test_rig_services_switchboard() {
     MemSaveStore store;
     {
@@ -408,7 +408,7 @@ void test_rig_services_switchboard() {
         CHECK(g.rigServicesOffered() && g.rigServicesRunning() == 2);
 
         // The head slot now draws at the top of the storefront, and the board behind it
-        // draws too — both are new screens, so both are rendered at least once here.
+        // draws too: both are new screens, so both are rendered at least once here.
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
@@ -423,7 +423,7 @@ void test_rig_services_switchboard() {
         CHECK(rows[0] == kRigRowAutoBackup && rows[1] == kRigRowDiskMaintenance);
         tapB(g);
         CHECK(!g.rigFeatureActive(kRigRowAutoBackup));
-        CHECK(g.autoBackupUnlocked());              // still bought — a switch isn't a refund
+        CHECK(g.autoBackupUnlocked());              // still bought: a switch isn't a refund
         CHECK(g.rigServicesRunning() == 1);
         backToPetFace(g);
         enterWalk(g);
@@ -461,8 +461,8 @@ void test_rig_services_switchboard() {
     CHECK(g2.rigFeatureActive(kRigRowAutoBackup));
 }
 
-// SHOP > SERVICES, the other half of B: a HELD B reads the focused service out —
-// what it does and what a run of it costs — instead of switching it, so a switch
+// SHOP > SERVICES, the other half of B: a HELD B reads the focused service out
+// (what it does and what a run of it costs), instead of switching it, so a switch
 // thrown long after the purchase is thrown knowingly. A tap still switches.
 void test_rig_service_info_on_hold_b() {
     Game g{StartMode::Hatched};
@@ -474,7 +474,7 @@ void test_rig_service_info_on_hold_b() {
     g.tick(t);
 
     // Held past the threshold: the info page opens and the service is untouched.
-    g.onButton(press(Button::B));                       // arm — nothing flips yet
+    g.onButton(press(Button::B));                       // arm: nothing flips yet
     CHECK(g.shopView() == Game::ShopView::Services);
     g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
     CHECK(g.shopView() == Game::ShopView::ServiceInfo);
@@ -518,7 +518,7 @@ void test_rig_service_info_on_hold_b() {
 // Disk Maintenance is an emergency backstop, not a maid: every tier sits inside the
 // CRITICAL Fragmentation band, and a run bills a multiple of the pet's own defrag price.
 void test_rig_disk_maintenance_thresholds() {
-    // The whole ladder is above the Critical line — a rig with the deepest tier still
+    // The whole ladder is above the Critical line: a rig with the deepest tier still
     // explores the entire Caution band on its own.
     for (int t = 0; t < kDiskMaintenanceMaxTier; ++t)
         CHECK(kDiskMaintenanceThreshold[t] >= kFragCriticalMin);
@@ -536,7 +536,7 @@ void test_rig_disk_maintenance_thresholds() {
     CHECK(g.model().fragmentation() == kDiskMaintenanceThreshold[0] - 1);
     CHECK(g.bits() == bits0);
 
-    // At it, the auto-defrag runs — guaranteed clean, billed at the tier's multiple of
+    // At it, the auto-defrag runs: guaranteed clean, billed at the tier's multiple of
     // this pet's own defrag price, and counted on the same tally that price climbs with.
     g.model().setFragmentation(kDiskMaintenanceThreshold[0]);
     const int runCost = g.defragCost() * kDiskMaintenanceCostMult[0];
@@ -578,7 +578,7 @@ void test_rig_cost_curve_formulas() {
     CHECK(rigUpgradeCost(128, 3, RigCostCurve::kLogStep) == 256);
     CHECK(rigUpgradeCost(128, 4, RigCostCurve::kLogStep) == 512);
 
-    // LogStepHalf: Cost(n) = start * 2^(floor(log2(n+1))-1) — same shape, one tier down.
+    // LogStepHalf: Cost(n) = start * 2^(floor(log2(n+1))-1). Same shape, one tier down.
     CHECK(rigUpgradeCost(128, 0, RigCostCurve::kLogStepHalf) == 64);
     CHECK(rigUpgradeCost(128, 1, RigCostCurve::kLogStepHalf) == 128);
     CHECK(rigUpgradeCost(128, 2, RigCostCurve::kLogStepHalf) == 128);
@@ -590,7 +590,7 @@ void test_rig_cost_curve_formulas() {
 // buy-to-cap MAXES out (inert past kRackSlotUpgradeMax).
 //
 // The ladder is LOG-STEPPED, not doubling. That matters enough to assert: the shelf now
-// reaches 64 slots — one of every species on the roster, with room over — and a doubling
+// reaches 64 slots (one of every species on the roster, with room over), and a doubling
 // ladder over that many rows prices the last one past a trillion Bits, which is a wall
 // rather than a sink. Prices are read off rigUpgradeCost rather than restated, so a
 // retune of the curve or the sticker is a one-line edit there and not a test rewrite.
@@ -639,7 +639,7 @@ void test_hacker_shop_scraping_and_datamining_bonus() {
     CHECK(g.applyCombatBitsBonus(100) == 100 + 100 * g.combatBitsBonusPct() / 100);
     CHECK(g.cacheBitsBonusPct() == 0);                      // untouched by the other track
     // Regression: on-device, buying 1-2 DataMining levels looked inert on a Common
-    // cache (10 Bits) — `bits * pct / 100` truncates to 0 below the 100-Bits-worth-of-
+    // cache (10 Bits). `bits * pct / 100` truncates to 0 below the 100-Bits-worth-of-
     // percent threshold. Any ACTIVE bonus must add at least 1 Bit, even on a tiny grant.
     CHECK(g.applyCombatBitsBonus(10) == 10 + 1);            // 10 * 6% = 0.6 -> would floor to 0
 
@@ -681,7 +681,7 @@ void test_hacker_shop_frag_reducer() {
     CHECK(kBattleFatigueFragMax - static_cast<int>(g.fragAmountTier()) < kBattleFatigueFragMax);
 }
 
-// j/k — Passive XP Farming + its XP Farming Window: buying the rate row pays
+// j/k. Passive XP Farming + its XP Farming Window: buying the rate row pays
 // hungerXpRateLevel() XP per hunger point lost while Hunger stays above
 // hungerXpThreshold(), and buying the window row lowers that threshold so more
 // of a decay step counts. Every case below stays well under kLevelXpBase (100)
@@ -715,7 +715,7 @@ void test_hacker_shop_hunger_xp_farming() {
     // Only 93..91 (3 points) sit above the 90 threshold.
     CHECK(g3.combatXp() == 3 * 1 && g3.model().hunger() == 83);
 
-    // Buying the window row lowers the threshold — more of the same decay counts.
+    // Buying the window row lowers the threshold: more of the same decay counts.
     Game g4{StartMode::Hatched};
     g4.debugSetBits(1000000);
     g4.debugBuyHungerXpRate();                               // rate level 1
@@ -723,12 +723,12 @@ void test_hacker_shop_hunger_xp_farming() {
     CHECK(g4.hungerXpThreshold() == kHungerXpBaseThreshold - kHungerXpWindowStepPct);
     g4.model().setHunger(93);
     g4.debugTickHunger(kHungerMinutesPerPoint * 60u * 1000u * 10u);  // 93 -> 83
-    // max(hungerAfter=83, threshold=85) = 85, so 93-85 = 8 points count — more
+    // max(hungerAfter=83, threshold=85) = 85, so 93-85 = 8 points count: more
     // than g3's 3 (whose threshold, 90, sat above hungerAfter).
     CHECK(g4.combatXp() == 8 * 1);
 }
 
-// l/m — Well-Fed XP Boost + its XP Boost Window: the %% bonus only applies while
+// l/m. Well-Fed XP Boost + its XP Boost Window: the %% bonus only applies while
 // CURRENT Hunger is at or above combatXpWindowThreshold(); buying the window row
 // lowers that bar independently of the hunger-XP-farming window (k) above.
 void test_hacker_shop_combat_xp_boost() {
@@ -752,7 +752,7 @@ void test_hacker_shop_combat_xp_boost() {
     CHECK(g.applyCombatXpBonus(10) == 10 + 1);
 
     // Buying the window row widens the qualifying range without touching the
-    // hunger-XP-farming window (k) — the two thresholds are independent.
+    // hunger-XP-farming window (k): the two thresholds are independent.
     g.debugBuyCombatXpWindow();
     CHECK(g.combatXpWindowThreshold() == kCombatXpBaseThreshold - kCombatXpWindowStepPct);
     CHECK(g.hungerXpThreshold() == kHungerXpBaseThreshold);   // untouched by sibling upgrade
@@ -776,7 +776,7 @@ void test_hacker_shop_combat_xp_boost() {
     CHECK(g2.combatXp() == expectedXp);
 }
 
-// c — the Hacker-SHOP "Reduce Explore Frag TRIGGER %" upgrade: broke → inert,
+// c. The Hacker-SHOP "Reduce Explore Frag TRIGGER %" upgrade: broke → inert,
 // affording a buy → tier up + Bits deducted, buy to cap → MAXED/inert, and the effective
 // battle-fatigue TRIGGER chance drops below the baseline. Sibling to the AMOUNT reducer.
 void test_hacker_shop_frag_trigger() {
@@ -798,8 +798,8 @@ void test_hacker_shop_frag_trigger() {
     CHECK(1000000 - g.bits() == spent);
 }
 
-// d — the Hacker SHOP "ITEMS Type-Tabs" one-time unlock: a buy spends Bits
-// and sets itemTabsUnlocked() (no tiers — a second buy is inert/OWNED, and an
+// d. The Hacker SHOP "ITEMS Type-Tabs" one-time unlock: a buy spends Bits
+// and sets itemTabsUnlocked() (no tiers. A second buy is inert/OWNED, and an
 // unaffordable buy leaves both Bits and the flag untouched).
 void test_hacker_shop_item_tabs_buy() {
     Game g{StartMode::Hatched};
@@ -815,7 +815,7 @@ void test_hacker_shop_item_tabs_buy() {
     CHECK(g.bits() == 9999);
 }
 
-// e — the Hacker SHOP "VAULT Bulk-Open" one-time unlock: same shape as
+// e. The Hacker SHOP "VAULT Bulk-Open" one-time unlock: same shape as
 // d (buy / broke-inert / OWNED-inert), on its own flag + cost.
 void test_hacker_shop_bulk_open_buy() {
     Game g{StartMode::Hatched};
@@ -831,10 +831,10 @@ void test_hacker_shop_bulk_open_buy() {
     CHECK(g.bits() == 9999);
 }
 
-// d — buildInventoryRows(filter) actually narrows the list: Food/Buffs/Quest
+// d; buildInventoryRows(filter) actually narrows the list: Food/Buffs/Quest
 // each return only that type's rows (+ its one header); All matches today's full
 // grouped list. Inventory::starting() carries 2 Food + 3 Buffs + 2 Quest (7 items,
-// 4 headers, per test_inventory_rows_grouped) — Tor-Tilla Chip is Food AND a Nachos
+// 4 headers, per test_inventory_rows_grouped): Tor-Tilla Chip is Food AND a Nachos
 // ingredient (content_recipes.cpp), so the Food filter still splits into its own
 // FOOD/INGREDIENTS pair even though the filter itself doesn't narrow by that axis.
 // Backup Drive is a Buff (its combat shield, content_items.cpp), not a Quest item.
@@ -862,11 +862,11 @@ void test_item_filter_narrows_rows() {
 }
 
 // The ITEMS hold-B gesture. Unowned: B opens the focused row's detail immediately on
-// PRESS (zero regression — no hold, no release wait). Owned: a short tap (release
+// PRESS (zero regression. No hold, no release wait). Owned: a short tap (release
 // before kItemFilterHoldMs) still opens it, on the release edge; holding past the
 // threshold cycles the filter instead (ALL -> FOOD), narrowing the list, and the
 // eventual release is a no-op (bHeld_ already consumed by the hold-fire). A is the
-// plain step throughout — the gesture never touches it.
+// plain step throughout: the gesture never touches it.
 void test_item_hold_b_cycles_filter_tap_opens() {
     // (a) Unowned: B opens the focused row on PRESS alone (no release needed).
     {
@@ -892,7 +892,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         g.onButton(press(Button::A));                 // A steps to row 1 on press
         g.onButton(lift(Button::A));
         const int tc0 = g.inventory().count("tortilla_chip");
-        g.onButton(press(Button::B));                 // arm the hold — nothing opens yet
+        g.onButton(press(Button::B));                 // arm the hold: nothing opens yet
         g.tick(t += kItemFilterHoldMs / 2);           // well under the threshold
         g.onButton(lift(Button::B));                  // release -> short tap -> opens
         CHECK(g.itemFilter() == ItemFilter::All);     // a tap never touches the filter
@@ -914,7 +914,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         g.onButton(lift(Button::B));                    // release AFTER the fire -> no-op
         CHECK(g.itemFilter() == ItemFilter::Food);      // unchanged by the release
         CHECK(g.nav() == Game::Nav::Submenu);
-        // The list is now narrowed to FOOD — B opens the first (only) food row.
+        // The list is now narrowed to FOOD: B opens the first (only) food row.
         const int as0 = g.inventory().count("dyno_nuggets");
         g.onButton(press(Button::B));
         g.onButton(lift(Button::B));                    // tap -> opens the detail
@@ -983,14 +983,14 @@ void test_item_picker_grayscale() {
 // filter and drills into its list, C on the list walks BACK to the picker, and C on
 // the picker leaves ITEMS entirely.
 void test_item_picker_nav_drills_in_and_back() {
-    {   // (a) Unowned — no picker layer anywhere.
+    {   // (a) Unowned: no picker layer anywhere.
         Game g{StartMode::Hatched};
         enterSubmenuId(g, SubmenuId::Items);
         CHECK(g.itemsView() == ItemsView::List);
         tapC(g);                       // straight back out
         CHECK(g.nav() == Game::Nav::Cursor);
     }
-    // (b) Owned — the picker fronts the list.
+    // (b) Owned: the picker fronts the list.
     Game g{StartMode::Hatched};
     g.debugSetBits(kShopItemPickerCost);
     g.debugBuyItemPicker();
@@ -1013,7 +1013,7 @@ void test_item_picker_nav_drills_in_and_back() {
     tapC(g);                           // out of ITEMS
     CHECK(g.nav() == Game::Nav::Cursor);
 
-    // Re-entering resets both the tile cursor and the filter — a visit never
+    // Re-entering resets both the tile cursor and the filter: a visit never
     // inherits the last one's state.
     enterSubmenuId(g, SubmenuId::Items);
     CHECK(g.itemPickRow() == 0 && g.itemFilter() == ItemFilter::All);
@@ -1033,7 +1033,7 @@ void test_item_picker_nav_drills_in_and_back() {
 }
 
 // The Lockout Open-Items escape hatch never routes through the picker, even when
-// it's owned — a crisis doesn't get an extra screen between the player and a meal,
+// it's owned: a crisis doesn't get an extra screen between the player and a meal,
 // and C from that list still returns to the Lockout modal rather than to tiles.
 void test_item_picker_skipped_in_lockout() {
     Game g{StartMode::Hatched};
@@ -1052,7 +1052,7 @@ void test_item_picker_skipped_in_lockout() {
 // Owning the picker upgrades the hold-B tab cycle to the finer CATEGORY axis, so
 // the gesture and the tiles can never disagree about what a tab means. Type-Tabs
 // alone still walks the type axis (its QUEST tab), and holding B on the PICKER
-// screen does nothing at all — only the list arms the gesture.
+// screen does nothing at all, only the list arms the gesture.
 void test_item_hold_b_follows_picker_axis() {
     auto holdB = [](Game& g, uint32_t& t) {
         g.onButton(press(Button::B));
@@ -1060,7 +1060,7 @@ void test_item_hold_b_follows_picker_axis() {
         g.onButton(lift(Button::B));
     };
     {   // (a) Type-Tabs only: ALL -> FOOD -> BUFFS -> TOOLS -> QUEST. TOOLS is a band
-        // on this axis like the others, so the coarse cycle stops at it too — a filter
+        // on this axis like the others, so the coarse cycle stops at it too: a filter
         // that skipped it would leave 14 rows reachable only by owning the picker.
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
@@ -1083,7 +1083,7 @@ void test_item_hold_b_follows_picker_axis() {
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        // On the PICKER, B commits the focused tile — the hold gesture is never armed
+        // On the PICKER, B commits the focused tile: the hold gesture is never armed
         // there, so holding it drills in exactly as a tap would.
         holdB(g, t);
         CHECK(g.itemFilter() == ItemFilter::All);
@@ -1097,14 +1097,14 @@ void test_item_hold_b_follows_picker_axis() {
     }
 }
 
-// e — openAllCachesOfRarity's aggregation: grant N caches of one rarity plus
+// e; openAllCachesOfRarity's aggregation: grant N caches of one rarity plus
 // caches of a DIFFERENT rarity, invoke the bulk path directly (debugBulkOpenCaches),
 // and assert ALL of the target rarity are consumed in one action, the aggregate
 // tally + Bits sum across every open, and the other rarity is left untouched.
 void test_vault_bulk_open_consumes_all_of_rarity() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_common", 4);
-    g.inventory().add("sealed_cache_uncommon", 2);    // different rarity — must survive
+    g.inventory().add("sealed_cache_uncommon", 2);    // different rarity: must survive
     const int bits0 = g.bits();
 
     g.debugBulkOpenCaches("sealed_cache_common");
@@ -1116,14 +1116,14 @@ void test_vault_bulk_open_consumes_all_of_rarity() {
     CHECK(g.bits() == bits0 + g.bulkYieldBits());
     CHECK(g.nav() == Game::Nav::BulkYield);
 
-    // Each common cache draws exactly 1 item (its row's cache.draws == 1) — the tally
+    // Each common cache draws exactly 1 item (its row's cache.draws == 1): the tally
     // sums to 4 across however many distinct item ids were drawn.
     int tallied = 0;
     for (int i = 0; i < g.bulkYieldTallyCount(); ++i) tallied += g.bulkYieldTallyCountAt(i);
     CHECK(tallied == 4);
 }
 
-// e — the VAULT hold-B gesture, end to end through the real Hacker-face
+// e. The VAULT hold-B gesture, end to end through the real Hacker-face
 // navigation: a short tap still opens just the focused cache (unchanged, single-open
 // reveal); holding past kBulkOpenHoldMs bulk-opens everything sharing its rarity in
 // one action (the aggregate reveal), and the eventual release after the fire is a
@@ -1170,7 +1170,7 @@ void test_cache_not_openable_from_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_epic", 1);
     const int bits0 = g.bits();
-    g.debugUseItem("sealed_cache_epic");                   // pet-side ITEMS — now inert
+    g.debugUseItem("sealed_cache_epic");                   // pet-side ITEMS: now inert
     CHECK(g.inventory().count("sealed_cache_epic") == 1);  // not consumed
     CHECK(g.bits() == bits0);                              // no reward paid
     CHECK(g.nav() != Game::Nav::CacheYield);               // no reveal
@@ -1182,7 +1182,7 @@ void test_cache_not_openable_from_items() {
 // THE MERGE HUB'S ROSTER OUTGREW ITS PANEL, which is why the list windows
 // (kMergeVisibleRows). Two things have to hold whatever the recipe table grows to: the
 // tallest screen the window can produce still clears the A NEXT / B MERGE footer, and
-// the focused row is always one of the rows drawn — a cursor the player can't see is
+// the focused row is always one of the rows drawn. A cursor the player can't see is
 // worse than a list that runs off the bottom, because it moves invisibly.
 void test_merge_hub_windows_its_roster() {
     // Mirrors drawHackerMerge's own layout: rows start at 28, each folded row costs a
@@ -1198,7 +1198,7 @@ void test_merge_hub_windows_its_roster() {
     g.debugBuyMergeHub();
     enterHackerSlot(g, HackerSlotId::Merge);
 
-    // Every row in turn, including the last — the clamp's own edge.
+    // Every row in turn, including the last: the clamp's own edge.
     for (int i = 0; i < kMergeRecipeCount; ++i) {
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);

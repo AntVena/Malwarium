@@ -1,9 +1,9 @@
-// defs.h — content definitions, addressed by stable string id.
+// defs.h: content definitions, addressed by stable string id.
 //
 // Content is DATA, not hardcoded switch logic: creatures, egg lines and items
 // are looked up from the ContentRegistry by id. Even the built-in Paypup +
 // Ransomware line go through here, so adding content later (new lines, items,
-// modes) is more data — supplied today by the embedded source, tomorrow by an
+// modes) is more data: supplied today by the embedded source, tomorrow by an
 // SD-backed source implementing the same interface.
 #pragma once
 
@@ -19,26 +19,26 @@ enum class Stage { BootSector, Process, Script, Daemon };
 
 // Attack/Defend move typing. Free-standing rather than
 // nested in MoveDef (below) because CreatureDef, declared next, needs it for its
-// per-slot layout — MoveDef itself aliases this as MoveDef::Kind so every
+// per-slot layout: MoveDef itself aliases this as MoveDef::Kind so every
 // existing `MoveDef::Kind::Attack`-style call site keeps compiling unchanged.
 enum class MoveKind { Attack, Defend };
 
 // How a creature gets around under its own power, which is what the idle habitat's resting
-// motion reads (core/model/idle_wander.h). MOVEMENT only — which sprite row a mover
+// motion reads (core/model/idle_wander.h). MOVEMENT only, which sprite row a mover
 // animates on is the sheet's business. It sets both the wander's pace (idle_wander.cpp's
 // kPaces) and whether the pose takes the shelf BOB, the 2px lift on alternate beats that is
 // the only motion a single-frame sprite has:
-//   Walk   — on the floor, and LIFTS. The bob is its breathing.
-//   Ground — on the floor and STAYS there. For anything whose read depends on never
+//   Walk:   on the floor, and LIFTS. The bob is its breathing.
+//   Ground: on the floor and STAYS there. For anything whose read depends on never
 //            breaking contact (the worm line), and for anything with an authored idle,
 //            where a second rise on a different beat reads as a bounce.
-//   Fly    — holds an altitude clear of the shelf.
-//   Swim   — drifts on both axes; no bob, a lift over a drift reading as jitter.
-//   Static — goes NOWHERE, having no locomotion at all, which is what an egg is. It still
+//   Fly:    holds an altitude clear of the shelf.
+//   Swim:   drifts on both axes; no bob, a lift over a drift reading as jitter.
+//   Static: goes NOWHERE, having no locomotion at all, which is what an egg is. It still
 //            lifts: the bob is the breath rather than the travel, and a shell that neither
 //            moves nor breathes reads as scenery.
 //
-// An egg declares one like anything else and the habitat honours it — most are Static, and
+// An egg declares one like anything else and the habitat honours it: most are Static, and
 // one genuinely adrift in water says Swim.
 enum class Locomotion : uint8_t { Walk, Fly, Swim, Ground, Static };
 
@@ -56,7 +56,7 @@ inline int stageIndex(Stage s) { return static_cast<int>(s); }
 // The care "signal" that dominates a stage decides which successor a creature
 // evolves into ("chosen by dominant stat"). Balanced
 // is the default / tie outcome (and the highest index, so it sorts last). The
-// per-signal creature ids live in the routing tables below — this enum is only
+// per-signal creature ids live in the routing tables below: this enum is only
 // the key; which interactions feed each signal is Game's concern (game.cpp).
 enum class DominantSignal { Feeding, Play, Maintenance, Training, Balanced };
 inline constexpr int kNumDominantSignals = 5;
@@ -73,7 +73,7 @@ inline const char* dominantSignalName(DominantSignal s) {
 }
 
 // How many named animation loops one creature may declare. A structural bound on
-// CreatureDef::clips, not a balance number — raise it when a creature genuinely
+// CreatureDef::clips, not a balance number: raise it when a creature genuinely
 // needs a fifth loop, which costs every row the slot whether it fills it or not.
 constexpr int kMaxAnimClips = 5;
 
@@ -81,7 +81,7 @@ constexpr int kMaxAnimClips = 5;
 // can stack several rows of equal-width frames (sprite.h); a clip says which row
 // plays, how many of that row's columns it uses, and how long each frame holds.
 // Clips are declared on the creature's own row (CreatureDef::clips below), so a
-// sheet and the loops over it are read in one place — a sprite name names ART, and
+// sheet and the loops over it are read in one place: a sprite name names ART, and
 // is not also a key into a table somewhere else that can silently fail to match.
 struct AnimClip {
     const char* name = nullptr;  // "idle", "attack", ...; nullptr = unused slot
@@ -110,7 +110,7 @@ struct CreatureDef {
     // chain (or a branch) later is more data here, not new branching logic.
     const char* evolvesToId = nullptr;
     // Good/Bad evolution branch. When BOTH are set this is
-    // a branch node: the care budget at evolution time picks the successor — 0-2
+    // a branch node: the care budget at evolution time picks the successor; 0-2
     // mistakes -> Good, 3-4 -> Bad (5/5 routes to Critical System Failure, never
     // here). Leave null for a linear hop (evolvesToId above).
     const char* evolvesToGoodId = nullptr;  // care 0-2: durable Good successor
@@ -124,38 +124,38 @@ struct CreatureDef {
     // Creature LINE (see LINE_MOVE_IDENTITIES.md). Every creature in
     // one evolution family shares a line id (e.g. "ransomware"); it gates which
     // LINE-specific moves this pet can learn/equip (moveAllowedForLine). nullptr =
-    // no line (e.g. a bare enemy frame) — such a pet can still learn GENERIC moves.
+    // no line (e.g. a bare enemy frame): such a pet can still learn GENERIC moves.
     const char* line = nullptr;
-    // Flavour text — the GAME owns its own descriptions (single source of truth), the
+    // Flavour text: the GAME owns its own descriptions (single source of truth), the
     // same way ItemDef carries `effect`. `hint` is the one-line snarky read (shown on
     // STAT + the 'Pedia); `context` is the real infosec reference behind the pun ('Pedia).
-    // tools/gen_pedia_data.py reads these straight off the row — do NOT re-key copy in
+    // tools/gen_pedia_data.py reads these straight off the row: do NOT re-key copy in
     // the generator. nullptr = none (a bare enemy frame with no lore).
     const char* hint = nullptr;
     const char* context = nullptr;
     // Per-slot Attack/Defend typing: each of THIS creature's kMaxMoveSlots slots is locked
     // to one MoveKind. Game::stampSlotKinds() reads slotKinds[i] the instant slot i first
     // unlocks for a pet and never rewrites it, so whichever creature occupies the evolution
-    // path at that moment decides the slot for the rest of the raise — evolving Good vs Bad
+    // path at that moment decides the slot for the rest of the raise: evolving Good vs Bad
     // at the Daemon hop can leave slot 3 typed differently per branch. The type-agnostic
     // default move (Quick Jab) ignores this: it fills any empty slot and is never itself
     // equippable.
     //
     // The layout: Process pets lean slot 0/1 Attack (Paypup varies at slot 1 for flavour),
     // Script adds a Defend at slot 2, and the Daemon branch splits at slot 3 to mirror the
-    // power/Frag lean — Good (durable) -> Defend, Bad (glass cannon) -> Attack.
+    // power/Frag lean. Good (durable) -> Defend, Bad (glass cannon) -> Attack.
     MoveKind slotKinds[kMaxMoveSlots] = {MoveKind::Attack, MoveKind::Attack,
                                          MoveKind::Attack, MoveKind::Attack};
     // Cross-line Trojan infiltration hook. When a pet with this set evolves, a
     // kTrojanDivertPct chance (Game::fireEvolution) diverts it into this Trojan
-    // creature instead of its normal successor — the pet keeps its old line's colour
+    // creature instead of its normal successor: the pet keeps its old line's colour
     // but is now a Trojan (losing its line moves for the Trojan kit; see
     // Game::completeEvolution). The first divert unlocks the family. nullptr = no
     // divert path (every non-infiltratable creature). The row is the only gate: the
     // divert fires at whatever boundary the creature carrying it evolves across, so
     // Phishlet trades its Script for one and Rootgrub trades its Daemon.
     const char* evolvesToTrojanId = nullptr;
-    // The Bad-care half of a divert that lands on a BRANCH — set only alongside the
+    // The Bad-care half of a divert that lands on a BRANCH: set only alongside the
     // field above, and only where the divert replaces a Script->Daemon hop that had a
     // care branch of its own to replace. Leaving it null makes the divert unconditional
     // (Phishlet's is), which is right when the boundary being replaced had no branch
@@ -165,12 +165,12 @@ struct CreatureDef {
     // How this creature moves around its habitat at rest. EVERY row states it, even
     // the walkers: how a creature moves is a fact about that creature, and it belongs
     // where the rest of it is read rather than being inferred from an absence. It
-    // also changes WITHIN a line — a Tadpoll swims, the Croaken it becomes does not —
+    // also changes WITHIN a line (a Tadpoll swims, the Croaken it becomes does not),
     // so there is no line-level answer to inherit. The default is a floor for a row
     // that predates a new mover kind, not a licence to leave it off.
     Locomotion locomotion = Locomotion::Walk;
     // Named animation loops over this creature's OWN sheet (spriteName above), in
-    // whatever order reads best — `clip()` finds them by name, nothing by position.
+    // whatever order reads best: `clip()` finds them by name, nothing by position.
     // An unfilled slot has a null name. A creature that declares no clip at all
     // falls back to sprite.h's idleFrame() breathe/blink heuristic on row 0, which
     // is what a single-frame placeholder wants; declaring one is how a multi-row
@@ -178,7 +178,7 @@ struct CreatureDef {
     // src/core/content/creatures/CREATURE_CONTENT_STANDARD.md.
     AnimClip clips[kMaxAnimClips] = {};
     // The achievement that EARNS this row a place in its line's random hatch pool
-    // (content_achievements.h), or nullptr for a row that is always in it —
+    // (content_achievements.h), or nullptr for a row that is always in it:
     // Game::hatchProcessUnlocked reads this, the same way EggLineDef::gatedBy gates a
     // whole line one tier up. Only a Process row is ever drawn for, so a gate on any
     // other stage is inert.
@@ -196,7 +196,7 @@ struct CreatureDef {
 // A combat passive family, carried by a LINE rather than by a creature. One bit per
 // passive the turn engine implements; a line's row names the ones it has, and Combat
 // tests the bit. Adding a passive is one flag here, one row edit, and one hook in
-// combat.cpp — never a line-id string literal in the turn engine.
+// combat.cpp: never a line-id string literal in the turn engine.
 enum class LinePassive : uint8_t {
     RansomNote   = 1 << 0,  // a stage-scaled roll arms a lock (Combat::ransomArmRolls)
     Replication  = 1 << 1,  // replica spawning + Shared Resources (Combat::syncWormSpeed)
@@ -205,7 +205,7 @@ enum class LinePassive : uint8_t {
 };
 
 // A set of the above, held as the underlying type. Rows build one with linePassives()
-// — one spelling whether the line carries one passive or several — and the engine reads
+// (one spelling whether the line carries one passive or several), and the engine reads
 // it back with hasLinePassive(). An empty set is a line with no passive of its own.
 using LinePassives = uint8_t;
 template <class... Ps>
@@ -216,7 +216,7 @@ constexpr bool hasLinePassive(LinePassives set, LinePassive p) {
     return (set & static_cast<uint8_t>(p)) != 0;
 }
 
-// One creature FAMILY — the rows of a single evolution line, which is what
+// One creature FAMILY: the rows of a single evolution line, which is what
 // CreatureDef::line names on every one of them. Each family is defined together in
 // src/core/content/creatures/<id>/line.h and listed once in creature_lines.h; the
 // registry reads creatures family-by-family rather than as one flat roster, so
@@ -227,7 +227,7 @@ struct CreatureLine {
     int count;
     // Which combat passives every row on this line carries. The turn engine asks a
     // combatant for a FLAG and never for a line's name, so moving a passive to another
-    // line — or landing a new line that carries one — is an edit here.
+    // line (or landing a new line that carries one) is an edit here.
     LinePassives passives = 0;
     // The achievement earned the first time a pet arrives on this line, or nullptr for
     // a line whose arrival is not itself recognised. Fired at the one evolution seam
@@ -236,16 +236,16 @@ struct CreatureLine {
     // Does this family repaint itself in another line's colours? A property of the
     // FAMILY rather than of any row, and declared rather than inferred: FX_CAMO
     // (core/render/camo.h) is driven in combat by what a fighter's live cast is, which
-    // says nothing to a screen with no fight on it. A caller outside combat — the
+    // says nothing to a screen with no fight on it. A caller outside combat (the
     // CHROMATOPHORE cabinet choosing whether the pet standing there can plausibly be
-    // its subject — asks this instead of asking a creature's id.
+    // its subject) asks this instead of asking a creature's id.
     bool wearsBorrowedColours = false;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the
 // applier is Game::startHatchGame (game_lifecycle.cpp), which is the map of every
 // route out of layEgg(). A line that wants a new shape adds a kind here plus one
-// case there — never an `if (lineId == "...")` at a call site.
+// case there, never an `if (lineId == "...")` at a call site.
 enum class HatchGame : uint8_t {
     Decrypt,   // DISK DECRYPTION: the payload's key is broken on a five-colour code
                // board, right away (Game::startDecryption).
@@ -266,7 +266,7 @@ struct EggLineDef {
     HatchGame hatchGame = HatchGame::Decrypt;
     // The achievement that EARNS this line (content_achievements.h), or nullptr for a
     // line that is simply given. Game::eggLineUnlocked hides a gated line from
-    // line-select until its row's achievement is held — so "this line is earned" is
+    // line-select until its row's achievement is held, so "this line is earned" is
     // something the row states rather than something the engine knows about its id.
     const char* gatedBy = nullptr;
 };
@@ -299,16 +299,16 @@ struct DaemonPoolDef {
 // Bump if a future item needs more; unused slots stay Kind::None.
 inline constexpr int kMaxItemEffects = 4;
 
-// One structured lever an item pulls on the PET when USED in the ITEMS flow — the
+// One structured lever an item pulls on the PET when USED in the ITEMS flow. The
 // data-driven analog of ModEffect (defs.h below): an item's on-pet effects are a
 // scannable list of kind+magnitude on its row, with magnitudes HERE (never in tunables;
 // src/core/content/CONTENT_STANDARD.md). Applied by Game::applyItemEffects; order-independent, so a
 // row can carry several. Combat Health / shop price / warp /
-// pre-encounter XP are NOT here — they're pulled by other systems (see ItemDef).
+// pre-encounter XP are NOT here: they're pulled by other systems (see ItemDef).
 struct ItemEffect {
     enum class Kind : uint8_t {
         None = 0,             // empty slot / inert
-        Hunger,               // +magnitude Hunger (may be NEGATIVE — Null Noodles'
+        Hunger,               // +magnitude Hunger (may be NEGATIVE: Null Noodles'
                               // "negative eating"; the exception to "+Hunger fills")
         HungerStacking,       // +magnitude Hunger for EACH stacking food already eaten
                               // since the pet last lost a Hunger point to decay, the
@@ -336,8 +336,8 @@ struct ItemEffect {
         // A Kind per direction rather than one Kind with a magnitude, for the same reason
         // the four stat points below are four Kinds: the DIRECTION is the effect, and a
         // magnitude that secretly means an enum is the shape this vocabulary exists to
-        // avoid. They share ONE slot on the pet — arming either replaces the other, so the
-        // most recently plugged in is the one that fires — and are consumed at the
+        // avoid. They share ONE slot on the pet (arming either replaces the other, so the
+        // most recently plugged in is the one that fires), and are consumed at the
         // evolution they steer. Neither rescues a DYING pet: 5/5 is a death, not a branch.
         ForceEvolveBranchGood,
         ForceEvolveBranchBad,
@@ -346,21 +346,21 @@ struct ItemEffect {
         // pet arriving later and further along. Consumed at the evolution it stretched.
         //
         // Two Kinds because the REACH is the effect and the magnitude is already spoken
-        // for by the factor — the same reason the branch pair above is two Kinds. The
+        // for by the factor: the same reason the branch pair above is two Kinds. The
         // plain soak plugs in at PROCESS only; the late one also plugs in at SCRIPT,
         // where the clock costs DOUBLE the factor it pays XP at (Game::evolveDwellMs).
         // A Script boundary is the branch a whole raise was aimed at, so stretching it
         // is the more expensive thing to do and the row says which devices may.
         ArmEvolveSoak,
         ArmEvolveSoakLate,
-        ArmEvolveHold,        // Halt-USB: stop the pet evolving at all. No magnitude — a
+        ArmEvolveHold,        // Halt-USB: stop the pet evolving at all. No magnitude: a
                               // hold is a state, not a size. Unlike everything else in
                               // the family it is NOT consumed at a boundary, because no
                               // boundary arrives while it is in: it stays until an
                               // Eject-USB pulls it, the pet goes back on the rack, or a
                               // new egg is laid. What parks a pet at a stage on purpose.
         ClearUsbPort,         // Eject-USB: pull whatever is in the port and drop its
-                              // effect — the armed divert, the forced branch, the soak,
+                              // effect: the armed divert, the forced branch, the soak,
                               // the hold. Magnitude-free, and the ONE device that goes in
                               // while a locking one is already there (isLockingUsbEffect
                               // below), since undoing a commitment is its whole job.
@@ -373,7 +373,7 @@ struct ItemEffect {
                               // Dive win advances the dive's depth by magnitude steps
                               // instead of 1, so a pet strong enough to blitz the early
                               // depths catches back up to a real fight faster. Doesn't
-                              // stack — using another one just overwrites the
+                              // stack: using another one just overwrites the
                               // multiplier (Game::deepWebDepthMultiplier_).
         SetDeepWebStartDepth, // Backdoor/Rootkit/Kernel Bell: arms the NEXT DeepWeb
                               // Dive to start at depth = magnitude instead of 0
@@ -387,7 +387,7 @@ struct ItemEffect {
                               // (Game::bandwidthRegenBonusMin_, save v50). The first
                               // helping is the upgrade; every one after it is just the
                               // food, because the pet already has root. Per-pet and
-                              // frozen with the pet, so an ARCH Store/Deploy keeps it —
+                              // frozen with the pet, so an ARCH Store/Deploy keeps it:
                               // it is a property of the creature, not of the rig.
                               // Floored at kBandwidthRegenMinutesFloor, so no stack of
                               // helpings makes the pool refill instantly.
@@ -396,7 +396,7 @@ struct ItemEffect {
                               // Shop's GrantBandwidth: an ordinary top-up anyone can
                               // eat, as against a level that raises the ceiling.
         // The four OFF-LEVEL stat points, one Kind per combat stat because the stat IS
-        // the effect — "+1 Power for life" and "+1 Defence for life" are two levers, not
+        // the effect. "+1 Power for life" and "+1 Defence for life" are two levers, not
         // one lever with an argument, and a Kind per stat is what keeps the stat out of
         // `magnitude` (which stays what it is everywhere else: how much). Each grants
         // magnitude points into PetUpgrades::statBonus (core/model/pet_upgrades.h) the
@@ -415,8 +415,8 @@ struct ItemEffect {
                               // hunger decay, this one raises what every source pays.
         ClearReplicationGhost, // Unlinkguine: clear a Replication Ghost
                               // (PetModel::ghost_), the phantom process a defrag that
-                              // failed on a Critical disk leaves behind. Magnitude-free
-                              // — a ghost is a flag, not a quantity. An AV scan clears
+                              // failed on a Critical disk leaves behind. Magnitude-free:
+                              // a ghost is a flag, not a quantity. An AV scan clears
                               // one too, so the pair is the same shape as the defrag
                               // variants: the scan is free but can fail and costs a care
                               // mistake when it does, this is an item that cannot. A
@@ -424,18 +424,18 @@ struct ItemEffect {
                               // snack an ordinary food the rest of the time.
         CutIncubationMin,     // Boot Accelerator: take magnitude MINUTES off the egg's
                               // incubation clock (Game::useBootAccelerator), floored at
-                              // kHatchRevealMs so the last stretch — where the player
-                              // cracks the shell by hand — is never skipped. Egg-only:
+                              // kHatchRevealMs so the last stretch (where the player
+                              // cracks the shell by hand) is never skipped. Egg-only:
                               // itemUsable gates the row on inEggPhase().
         // The DIVE PAY pair: +magnitude PERCENT on the XP and Bits every DeepWeb Dive win
         // pays. A bell starts the dive past its easy depths and a Deep-Learning device
         // jumps it past them win by win, so either one trades the cheap shallow fights
-        // for a shorter, harder run — and without this a player who skipped would simply
+        // for a shorter, harder run, and without this a player who skipped would simply
         // have less to show for it. Each rides on the row it compensates, and lives and
         // dies with that row's own arming, which is why there are two:
-        //   DiveStartBonusPct — beside a bell's start depth. Armed with it, goes live
+        //   DiveStartBonusPct. Beside a bell's start depth. Armed with it, goes live
         //     when the dive it starts begins, and lasts until that dive ends.
-        //   DiveStepBonusPct  — beside a depth multiplier. Replaced and cleared exactly
+        //   DiveStepBonusPct:  beside a depth multiplier. Replaced and cleared exactly
         //     when the multiplier is (Game::deepWebDepthMultiplier_).
         // A bell and a device armed together add. Listed AFTER the effect they ride on:
         // that effect's applier zeroes the slot, so a row without a bonus re-arms none.
@@ -448,7 +448,7 @@ struct ItemEffect {
 
 // Rarity → the drop weight an item falls back to when its own row doesn't name one.
 // Rarity says how much VALUE an item hands the player, so it makes a sane default
-// ordering for scarcity — but only a default: a row that wants to be commoner or
+// ordering for scarcity, but only a default: a row that wants to be commoner or
 // scarcer than its tier-mates sets ItemDef::dropWeight, and a POOL that wants this
 // one item scarcer only THERE sets LootEntry::weight. Sibling to kModRarityWeight
 // (tunables.h), which does the same job for the mod tables.
@@ -456,7 +456,7 @@ inline constexpr int kItemRarityDropWeight[4] = {50, 30, 15, 5};  // Common..Epi
 
 // One row of a loot/reward pool: the item, and optionally the weight it draws at IN
 // THIS POOL. `weight` 0 (the default every plain row carries) defers to the item's own
-// ItemDef::dropWeight, which in turn defers to its rarity — so a pool is written as a
+// ItemDef::dropWeight, which in turn defers to its rarity, so a pool is written as a
 // bare list of ids until some entry actually needs to differ, and only the exception
 // carries a number. Resolved in one place, lootEntryWeight() below.
 //
@@ -468,7 +468,7 @@ struct LootEntry {
 };
 
 // A perishable item's decay: what it turns into, and how likely that is each time the
-// pantry is disturbed. Spoilage has NO clock of its own — it rides a beat already
+// pantry is disturbed. Spoilage has NO clock of its own: it rides a beat already
 // happening (a bite of food), the way ItemEffect::Kind::HungerStacking rides the Hunger
 // tick. Per-stack expiry would make an Inventory stack a list of timestamped objects
 // rather than a count, which is the one shape this must not take.
@@ -482,7 +482,7 @@ struct SpoilDef {
     int pct = 0;                 // percent chance per disturbance, per held stack
 };
 
-// A container item's reward draw — what Open pays out, and how the item is come by.
+// A container item's reward draw: what Open pays out, and how the item is come by.
 // Nested on the row (the same shape CrewDef's exploit uses) rather than kept in a
 // parallel id-keyed table, so ADDING A CACHE IS ONE ITEM ROW: its purse, its pool, how
 // often the walk drops it, and whether it also rolls a mod all sit next to the name.
@@ -502,18 +502,18 @@ struct CacheDef {
     // save), which is what keeps a granted prize off the ambient loot table.
     int findWeight = 0;
     // % chance an Open ALSO yields a permanent mod, rarity-weighted across every tier.
-    // A second, non-boss mod source — 0 on the rows that aren't one.
+    // A second, non-boss mod source: 0 on the rows that aren't one.
     int modChancePct = 0;
 };
 
 struct ItemDef {
-    // WHAT A ROW IS, coarsely — the inventory's group order and the ITEMS hold-B
+    // WHAT A ROW IS, coarsely: the inventory's group order and the ITEMS hold-B
     // filter both read this, and nothing persists it (the inventory saves ids), so a
     // row can be re-banded freely.
     //
     // The line between Buff and Tool is WHAT THE ROW ACTS ON, not when it lands:
-    //   Buff — acts on the PET. Its Health, its care record, what it survives.
-    //   Tool — a lever over a SYSTEM the pet happens to be in: the evolution router,
+    //   Buff. Acts on the PET. Its Health, its care record, what it survives.
+    //   Tool. A lever over a SYSTEM the pet happens to be in: the evolution router,
     //          the Dive's depth ladder, the stat table. It never touches a stat line
     //          directly, and the pet is the same creature after it as before.
     // Both can be armed and pending; "is the pet carrying it" does not separate them,
@@ -525,18 +525,18 @@ struct ItemDef {
     enum class Context { Anytime, LockoutOnly, PreEncounter };
     // Explore-use warp key: a consumable spent
     // DURING the walk (via the walk's B warp picker, not the ITEMS use path) to jump
-    // straight to a target event — Shop = the nearest storefront (Access Token),
+    // straight to a target event. Shop = the nearest storefront (Access Token),
     // SafeRest = a safe rest event (Safe-Mode Key). None = not a warp key.
     enum class WalkWarp { None, Shop, SafeRest };
     // What B (Use) DOES in the ITEMS flow, when not gated. Collapses the old
     // openable/rollback/decryptEgg bool trio into one mutually-exclusive choice so an
     // item can never be two Use-actions at once. Consume = the normal feed/buff/quest
     // path (drives ItemEffect application); the others hand off to their own flow.
-    // Rollback and Repartition are the two that steer the STAT TABLE — one sheds an
-    // earned point, the other moves one across — and each names the row it was cut for
+    // Rollback and Repartition are the two that steer the STAT TABLE (one sheds an
+    // earned point, the other moves one across), and each names the row it was cut for
     // rather than a mechanic a second row could share.
     enum class Use {
-        Consume,        // feed / buff / lockout-resolve — the default path
+        Consume,        // feed / buff / lockout-resolve: the default path
         OpenContainer,  // Sealed Cache: decrypt for a reward draw (VAULT)
         Rollback,       // open the stat picker to shed a level
         Repartition,    // open the two-step stat picker to MOVE an earned point
@@ -545,11 +545,11 @@ struct ItemDef {
         GuaranteeDefrag,// Defrag Tool: spent by a TOOL DEFRAG in MAINT for a clean run,
                         // never from ITEMS (game_care.cpp's resolveMaint)
     };
-    // The ITEMS type-picker's axis (items_screen.h) — one notch finer than `type`,
+    // The ITEMS type-picker's axis (items_screen.h): one notch finer than `type`,
     // which only knows Food/Buff/Quest. `Derive` (the default, and what every row
     // that doesn't say otherwise carries) resolves off the row itself: a Food row is
     // Food, a Buff row is Buffs, a Quest row is Tools. A Quest row that is really a
-    // KEY or token names Keys explicitly — nothing else on ItemDef separates a
+    // KEY or token names Keys explicitly: nothing else on ItemDef separates a
     // Decryption Key from a Defrag Tool. Read it through itemCategory(), never raw.
     enum class Category { Derive, Food, Buffs, Keys, Tools };
 
@@ -576,7 +576,7 @@ struct ItemDef {
     // This item's own reference price: the 'Pedia's listed price, and the generic
     // "is this shop-sellable at all" signal (0 = not sold anywhere). The price a
     // player actually PAYS at a given storefront is that area's own
-    // AreaShopDef::price/price2 (src/core/content/areas/) — deliberately separate,
+    // AreaShopDef::price/price2 (src/core/content/areas/): deliberately separate,
     // so one shop can charge above/below this item's listed price.
     int bitsPrice = 0;
     WalkWarp walkWarp = WalkWarp::None;  // walk B-warp key (game_explore)
@@ -586,10 +586,10 @@ struct ItemDef {
     // 0 (the default) = derive from `rarity` via kItemRarityDropWeight, which is the
     // right answer for most rows; set it when THIS item should be commoner or scarcer
     // than the rest of its tier (a kitchen staple you trip over vs. a tier-mate you
-    // don't). A single pool can still override it for itself — LootEntry::weight.
+    // don't). A single pool can still override it for itself: LootEntry::weight.
     int dropWeight = 0;
-    CacheDef cache = {};                 // Use::OpenContainer rows only — the reward draw
-    SpoilDef spoil = {};                 // perishable rows only — what it turns into, and how often
+    CacheDef cache = {};                 // Use::OpenContainer rows only: the reward draw
+    SpoilDef spoil = {};                 // perishable rows only: what it turns into, and how often
 };
 
 // Does this effect cap at ONE use per PET LIFETIME? These are the only per-pet gates the
@@ -614,7 +614,7 @@ constexpr bool isOncePerPetLifetime(ItemEffect::Kind k) {
            k == ItemEffect::Kind::XpRateBonusPct;
 }
 
-// Is this effect a USB one — something the pet's port HOLDS rather than something the pet
+// Is this effect a USB one: something the pet's port HOLDS rather than something the pet
 // eats? Every USB item steers the same boundary (the next evolution), which is why the
 // soak pair can lock the port against the rest of the family: a stage cannot be both
 // stretched and diverted by two devices at once. Named off the effect vocabulary rather
@@ -630,7 +630,7 @@ constexpr bool isUsbEffect(ItemEffect::Kind k) {
 }
 
 // ...and is it one of the LOCKING ones? A soak and a hold each own the boundary outright
-// — one stretches it, the other refuses to arrive at it — so while either is armed the
+// (one stretches it, the other refuses to arrive at it), so while either is armed the
 // port takes nothing else. The swappable half of the family (the divert, the branch
 // overrides) is deliberately not here: those go in and out freely, which is what makes
 // "the most recently plugged in wins" a rule the player can use rather than a trap.
@@ -648,7 +648,7 @@ constexpr bool itemIsUsb(const ItemDef& d) {
     return false;
 }
 
-// The magnitude of this row's evolve-soak, or 0 if it carries none — what the ITEMS gate
+// The magnitude of this row's evolve-soak, or 0 if it carries none: what the ITEMS gate
 // reads to know a row is one of the soak USBs without re-walking its effects by hand.
 // Both soak Kinds answer here: the factor means the same thing on either, and only the
 // STAGE REACH differs (itemSoakReachesScript below).
@@ -661,14 +661,14 @@ constexpr int itemEvolveSoakFactor(const ItemDef& d) {
 }
 
 // Does this row's soak reach the SCRIPT stage as well as Process? The late Kind is the
-// whole answer — nothing else on the row says it, which is why it is a Kind.
+// whole answer: nothing else on the row says it, which is why it is a Kind.
 constexpr bool itemSoakReachesScript(const ItemDef& d) {
     for (const ItemEffect& e : d.effects)
         if (e.kind == ItemEffect::Kind::ArmEvolveSoakLate) return true;
     return false;
 }
 
-// Is this the port's EJECT — the one device that goes in while a locking one is already
+// Is this the port's EJECT: the one device that goes in while a locking one is already
 // there, because pulling that one is what it does?
 constexpr bool itemEjectsUsbPort(const ItemDef& d) {
     for (const ItemEffect& e : d.effects)
@@ -677,7 +677,7 @@ constexpr bool itemEjectsUsbPort(const ItemDef& d) {
 }
 
 // The combat-stat index an off-level stat-point effect grants into (0 power · 1 defense ·
-// 2 speed · 3 max-Health — game_internal.h's levelStatName names them), or -1 for any
+// 2 speed · 3 max-Health: game_internal.h's levelStatName names them), or -1 for any
 // other kind. The one place the four Kinds map back onto the one array they all write, so
 // no applier or readout hand-writes the correspondence.
 constexpr int statPointEffectIndex(ItemEffect::Kind k) {
@@ -722,10 +722,10 @@ inline int itemDropWeight(const ItemDef& d) {
 }
 
 // A mod's structured combat effect: a data-driven kind + magnitude, applied
-// data-driven in combat.cpp — the same shape MoveDef's effect fields use. Each kind is
+// data-driven in combat.cpp. The same shape MoveDef's effect fields use. Each kind is
 // applied once, at fight start (makePlayerCombatant) or at the matching
 // combat/post-battle hook. Line-agnostic by default (mods are the customization
-// see LINE_MOVE_IDENTITIES.md) — a `line` affinity only ADDS a bonus, never locks.
+// see LINE_MOVE_IDENTITIES.md): a `line` affinity only ADDS a bonus, never locks.
 enum class ModEffect : uint8_t {
     None = 0,        // legacy / inert (no structured effect)
     PowerPct,        // +magnitude% to the pet's attack-power lean (powerMultPct)
@@ -737,31 +737,31 @@ enum class ModEffect : uint8_t {
     FatigueFragCut,  // magnitude% of the battle-fatigue Frag tax (Heat Sink)
     Thorns,          // reflect magnitude damage to any attacker that hits you (Honeytoken)
     DeathBlast,      // on the pet's KO, deal magnitude to the enemy (Deadman Switch)
-    MaxHitCapPct,    // ECC Memory — no single incoming hit may exceed magnitude% of the
+    MaxHitCapPct,    // ECC Memory: no single incoming hit may exceed magnitude% of the
                      // pet's max Health (the "no variance today → cap the burst" read of
                      // ECC: caps channel detonations / crits-in-spirit; magnitude is a %
                      // of max Health, resolved to a flat cap at fight start).
-    LoadBalance,     // Load Balancer — a big hit (>= magnitude% of max Health) is SPLIT:
+    LoadBalance,     // Load Balancer. A big hit (>= magnitude% of max Health) is SPLIT:
                      // magnitude2% of it is DEFERRED to the victim's next turn-start, the
                      // rest lands now. Unlike ECC it doesn't REDUCE total damage, only
-                     // spreads it — buying a turn (heal / land a KO first). If the debt
+                     // spreads it: buying a turn (heal / land a KO first). If the debt
                      // isn't outrun it lands next turn and can KO on its own.
-    WatchdogClamp,   // Watchdog Timer — an incoming STUN (MoveDef::lockTurns) on the pet is
+    WatchdogClamp,   // Watchdog Timer: an incoming STUN (MoveDef::lockTurns) on the pet is
                      // CLAMPED to at most magnitude turns (the watchdog reboots a hung
                      // process). magnitude 1 = you never lose more than one turn to a lock.
-    FaradayCut,      // Faraday Cage — incoming DoT (MoveDef::dot*) on the pet is cut by
-                     // magnitude% (100 = immune — the cage shields against the corruption).
-    ArmorPiercePct,  // DRM Stripper / Hull Auger / Rowhammer / DMA Breach — every hit this
+    FaradayCut,      // Faraday Cage: incoming DoT (MoveDef::dot*) on the pet is cut by
+                     // magnitude% (100 = immune: the cage shields against the corruption).
+    ArmorPiercePct,  // DRM Stripper / Hull Auger / Rowhammer / DMA Breach: every hit this
                      // pet lands ignores magnitude% of the target's DEF rating AND of its
                      // one-shot brace, exactly as MoveDef::armorPiercePct does, and blunted
                      // by the same defender-side pierceResistPct. It is the ANSWER to the
                      // thing that made raw attack power not worth a slot: power raises a
                      // number that a defensive wall then deletes, so the two rows are a
-                     // PAIR — two of three slots spent to make elevated damage actually
+                     // PAIR. Two of three slots spent to make elevated damage actually
                      // arrive. Composed multiplicatively with a move's own pierce (each
                      // cuts what the last one left), so no stack of pierces ever reaches
                      // "the defender has no defence".
-    RegenPerTurn,    // Trickle Charger / Shadow Copy — restore magnitude Health at the start
+    RegenPerTurn,    // Trickle Charger / Shadow Copy: restore magnitude Health at the start
                      // of each of the pet's own turns, clamped to max Health. The one
                      // RECOVERY axis in a combat that otherwise only ever subtracts, which
                      // is also what finally gives a raised max-Health ceiling somewhere to
@@ -773,30 +773,30 @@ enum class ModEffect : uint8_t {
                      // from the tick that is currently killing you.
 
     // --- Niche-flavour build-around mods, one per idea --------------------------
-    FirstStrikeRankMult,  // Prowlware — rank the pet's equipped Attack moves by power
+    FirstStrikeRankMult,  // Prowlware: rank the pet's equipped Attack moves by power
                           // (ties share a rank, weakest = rank 1); the FIRST landed
                           // damaging hit this fight is multiplied by the used move's
                           // rank. Rewards a spread of differently-powered Attack moves
                           // and leading with the strongest.
-    AttackCountPowerPct,  // Botnet Swarm — +magnitude% attack power PER equipped Attack
+    AttackCountPowerPct,  // Botnet Swarm: +magnitude% attack power PER equipped Attack
                           // move (a glass-cannon build-around: stack attack slots).
-    DefendCountDefense,   // Air-Gap Ward — +magnitude DEF rating PER equipped Defend
+    DefendCountDefense,   // Air-Gap Ward: +magnitude DEF rating PER equipped Defend
                           // move (the defensive mirror of Botnet Swarm).
-    FirstHitCutPct,       // Canary Trap — the FIRST hit the pet takes each fight is cut
+    FirstHitCutPct,       // Canary Trap: the FIRST hit the pet takes each fight is cut
                           // an extra magnitude% (a decoy absorbs the opening probe).
-    LowHealthPowerPct,    // Meltdown Core — while own Health <= magnitude% of max, attack
+    LowHealthPowerPct,    // Meltdown Core, while own Health <= magnitude% of max, attack
                           // power rises magnitude2% (a comeback surge, checked live).
-    GambleBattlePowerPct, // Race Condition — a magnitude% chance, rolled once at fight
+    GambleBattlePowerPct, // Race Condition: a magnitude% chance, rolled once at fight
                           // start, to raise attack power magnitude2% for the whole fight.
-    ConditionalThorns,    // Tripwire — like Thorns, but only reflects magnitude damage
+    ConditionalThorns,    // Tripwire: like Thorns, but only reflects magnitude damage
                           // while own Health <= magnitude2% of max (a last-ditch snare;
                           // kept separate from Thorns so it never mixes accumulation with
                           // an always-on Thorns mod equipped alongside it).
-    ScrambleWard,         // Crib Sheet — keeps the A+C picker legible and in its own
+    ScrambleWard,         // Crib Sheet: keeps the A+C picker legible and in its own
                           // order while a scramble rider holds (MoveDef::scrambleTurns).
                           // The counter The Silk Lode pays out for the threat it debuts,
                           // the way the Bayou answers its own stun with a Watchdog Timer.
-    StealAmplifyPct,      // Phishing Rod — amplifies the Obfuscation-bubble "Perfect
+    StealAmplifyPct,      // Phishing Rod: amplifies the Obfuscation-bubble "Perfect
                           // Bite" bonus (Combat::applyEffect) by magnitude% (line-gated
                           // via ModDef::requiresLine); dormant without a live shieldHp
                           // pool to bite through, however aggressively it's equipped.
@@ -805,37 +805,37 @@ enum class ModEffect : uint8_t {
     // Both amplify a LINE PASSIVE rather than a stat, which is why both are hard-gated
     // (ModDef::requiresLine) the way Phishing Rod is: the passive is the thing they
     // multiply, so off-line they would be inert rows rather than weak ones.
-    ExecOverridePct,      // Ring-0 Shim — +magnitude percentage POINTS on the Trojan's
+    ExecOverridePct,      // Ring-0 Shim: +magnitude percentage POINTS on the Trojan's
                           // Execution-Override hijack chance (Combat::execOverrideChance,
                           // which is kExecOverrideBasePct + the armed traps' bonuses).
                           // Adds to the same sum the traps do, so it stacks with a trap
                           // build instead of replacing the reason to hold one.
-    ReplicaSpawnPct,      // Replication Bus — +magnitude percentage POINTS on every
+    ReplicaSpawnPct,      // Replication Bus: +magnitude percentage POINTS on every
                           // replica-spawn roll a Worm makes (Combat::rollWormSpawn reads
                           // MoveDef::replicaSpawnPct). Raises the RATE, never the CAP:
                           // kWormReplicaSlots still bounds the board, so this fills the
                           // slots sooner rather than making more of them.
-    ExtortionLedger,      // Extortion Ledger — `magnitude` DEF rating standing,
+    ExtortionLedger,      // Extortion Ledger: `magnitude` DEF rating standing,
                           // and `magnitude2`% ATTACK POWER on top while the pet is holding
                           // an unsettled ransom pool (Combatant::ransomPool).
                           //
                           // Both halves serve the same reading, which is the family's own:
                           // Ransomware is BRUTE FORCE with one gimmick, strong from the
                           // first turn rather than ramping into it. The cut is the brute
-                          // half — it just keeps standing — and the pool is the gimmick,
+                          // half (it just keeps standing), and the pool is the gimmick,
                           // paying for as long as the pet is carrying damage it has not
                           // answered for. Gated on the POOL and not on a seizure: a
                           // seizure needs a full Cipher stack under a live window and is a
                           // payoff most fights never reach, so a bonus hung there averages
                           // to nothing however large the number is made.
-    ReplicaWorthPct,      // Replication Bus — every copy a Worm puts on the board is worth
+    ReplicaWorthPct,      // Replication Bus: every copy a Worm puts on the board is worth
                           // `magnitude`% more, on whichever currency that copy deals in
                           // (an attacker's banked damage, a defender's Health). It raises
                           // what a copy IS rather than how often one arrives: the spawn
                           // roll is already certain on half the line's rows, and a full
                           // board does not roll at all, so rate was never the binding
-                          // constraint — kWormReplicaSlots is, and this pays inside it.
-    PolymorphEffectPct,   // Mutation Engine — an EFFECT KIND this fighter has not reached
+                          // constraint; kWormReplicaSlots is, and this pays inside it.
+    PolymorphEffectPct,   // Mutation Engine: an EFFECT KIND this fighter has not reached
                           // for yet (moveEffectMask, combat.h) pays `magnitude` of
                           // Polymorph's own stat points, in the casting move's currency
                           // (polymorphPay). An amplifier of the passive rather than a
@@ -843,7 +843,7 @@ enum class ModEffect : uint8_t {
                           // A deliberately DIFFERENT axis from what it feeds: Polymorph
                           // counts distinct MOVES, so a kit of plain swings ramps the pet
                           // and pays this nothing. What it rewards is rolling into rows
-                          // that DO something — a stun, a pierce, a pool, a trap — which
+                          // that DO something (a stun, a pierce, a pool, a trap), which
                           // is the reason to want the two lines a wildcard row draws from
                           // rather than the shared roster it mostly hits.
 };
@@ -855,11 +855,11 @@ enum class ModEffect : uint8_t {
 // drops in; `equipLevel` is the pet level the mod needs, authored per row.
 // `effectKind`/`magnitude` are the structured combat effect (applied data-driven, not
 // via a hardcoded per-mod `if`). `line`/`affinityBonus` give a few signature mods a
-// bonus for a matching line (still equippable by anyone — line-agnostic).
+// bonus for a matching line (still equippable by anyone: line-agnostic).
 struct ModDef {
     // Stable SAVE identity, and the reason it comes first: the owned-mod pool is stored
     // as a count per wire number, not as a list of ids (save.h), so this number is what
-    // a blob means by "two Firewall Patches". Never reused, never renumbered — a row may
+    // a blob means by "two Firewall Patches". Never reused, never renumbered: a row may
     // be reordered, regrouped by area or retired freely, but its number is spent
     // forever. Exactly the contract kAchievements has carried since v1; the native gate
     // enforces uniqueness the same way.
@@ -868,19 +868,19 @@ struct ModDef {
     const char* displayName; // e.g. "Firewall Patch"
     const char* effectTag;   // short tag shown on the slot row, e.g. "+DEF" / "1-SHOT"
     const char* effect;      // concrete effect text for the picker (not a hint);
-                             // a template over this row — {mag}/{mag2}/{bonus}/
+                             // a template over this row: {mag}/{mag2}/{bonus}/
                              // {magBonus} (effect_text.h)
     bool oneShot;            // consumed when it triggers in play (UI just flags it)
     // mods-into-combat pass ---
     ItemDef::Rarity rarity = ItemDef::Rarity::Common;  // drop WEIGHT in an area table
     int powerTier = 1;                 // 1..N ladder depth → which area's pool drops it
-    // The pet level this mod needs before it can be EQUIPPED — authored here, one level
+    // The pet level this mod needs before it can be EQUIPPED: authored here, one level
     // per mod, the same for every copy the player holds (the picker lists mods by TYPE
     // and has never had a way to offer one copy over another). Legal range is
     // [0, kModEquipLevelMax]. Deliberately NOT derived from `powerTier`: a rank is a
     // ladder DEPTH, and a ladder has only as many rungs as there are areas, which is too
     // few gates to spread mods across a level range that keeps growing. What does hold is
-    // that the two agree in ORDER — a deeper tier never gates lower than a shallower one
+    // that the two agree in ORDER: a deeper tier never gates lower than a shallower one
     // (test_mod_equip_ladder_is_ordered_and_dense).
     int equipLevel = 0;
     ModEffect effectKind = ModEffect::None;  // structured combat effect (data-driven)
@@ -890,19 +890,19 @@ struct ModDef {
     int affinityBonus = 0;             // +magnitude added when the pet's line == `line`
     // A HARD equip gate (niche-flavour pass), distinct from `line`/`affinityBonus` above:
     // when set, the mod can only be EQUIPPED by a pet whose CreatureDef::line matches this
-    // exactly — checked at equip time (Game::commitModEquip / onModPicker), not a drop-time
+    // exactly. Checked at equip time (Game::commitModEquip / onModPicker), not a drop-time
     // filter, so it can still drop for anyone and sit in inventory until they raise the
     // matching line. nullptr = no hard gate (every existing/line-agnostic mod).
     const char* requiresLine = nullptr;
 };
 
-// The pet level `m` needs before it can be equipped — the mod's OWN gate, identical for
+// The pet level `m` needs before it can be equipped: the mod's OWN gate, identical for
 // every copy the player holds. A function rather than the raw field at each call site
 // because every screen that shows a gate must show the same one, and this is the seam to
 // change if the gate ever stops being a plain read of the row.
 inline int modEquipLevel(const ModDef& m) { return m.equipLevel; }
 
-// A combat move — a collectible roster like creatures/items/mods.
+// A combat move: a collectible roster like creatures/items/mods.
 // The autonomous combat engine rolls a pet's equipped moves off its attack/defend
 // lean; the player's agency is which moves they slot (MOVES) + the A+C
 // override. Effects beyond power/kind/channel are a later content pass; this
@@ -916,16 +916,16 @@ struct MoveDef {
 
     const char* id;          // stable id, e.g. "packet_storm"
     const char* displayName; // e.g. "Packet Storm"
-    Kind kind;               // attack or defend — drives the loadout lean
+    Kind kind;               // attack or defend: drives the loadout lean
     int power;               // attack: damage dealt · defend: damage mitigated
     int channelTurns;        // 1 = single-turn; >1 = multi-turn wind-up
     const char* effect;      // concrete effect text for the picker (not a hint);
-                             // a template over this row's own fields — {power},
+                             // a template over this row's own fields: {power},
                              // {pierce}, {evade}, {dot}, ... (effect_text.h)
     Stage minStage = Stage::BootSector;  // evolution stage a move UNLOCKS at.
                                          // A move may be OWNED earlier but can't be
                                          // equipped/used until the pet reaches minStage
-                                         // (mirrors slotsForStage gating SLOTS — this
+                                         // (mirrors slotsForStage gating SLOTS: this
                                          // gates the MOVES). Default = always available.
 
     // Line + mechanical effects (see LINE_MOVE_IDENTITIES.md) ---
@@ -939,7 +939,7 @@ struct MoveDef {
     int stackDefensePct = 0;      // Cipher track: +DEF rating to the CASTER
     int stackDefenseCap = 0;      //   on casting this brace, up to this total (0 = off)
     int armorPiercePct = 0;       // this hit ignores this % of the target's guard +
-                                  //   DEF rating (MBR Wipe — the wall doesn't matter)
+                                  //   DEF rating (MBR Wipe: the wall doesn't matter)
 
     // --- Deferred-mod pass · the two THREATS the last two mods counter ------------
     // Both ride on a landed Attack (a rider on the hit, not a standalone move kind), so
@@ -949,15 +949,15 @@ struct MoveDef {
     int dotDamage = 0;            // DoT: on a landed hit, apply this much damage per turn...
     int dotTurns = 0;             //   ...for this many of the target's upcoming turn-starts
 
-    // --- Steal track (generic — any line's Attack move may set these) -------------
+    // --- Steal track (generic. Any line's Attack move may set these) -------------
     // On a landed Attack hit, each non-zero field below steals that % of the TARGET's
-    // CURRENT stat — added to the caster, subtracted from the target, permanent for
+    // CURRENT stat. Added to the caster, subtracted from the target, permanent for
     // the rest of the fight (Combat::applyEffect). A move can set more than one; every
     // non-zero field fires on the same hit (deterministic, no random pick). 0 = no
     // steal on that stat (every non-Phishing move today, the only line using the
     // track). stealPowerPct/stealDefensePct fire unconditionally; stealSpeedPct/
     // stealCurrentHpPct additionally require the caster's Obfuscation shield to be up
-    // (shieldHp > 0) — see the "Perfect Bite" bonus in Combat::applyEffect and
+    // (shieldHp > 0): see the "Perfect Bite" bonus in Combat::applyEffect and
     // content_passives.h's Phishing section.
     int stealPowerPct = 0;       // target's powerMultPct (floored, kStealPowerFloorPct)
     int stealDefensePct = 0;     // target's DEF rating (only a positive one gives)
@@ -966,7 +966,7 @@ struct MoveDef {
     int stealCurrentHpPct = 0;   // target's CURRENT health, a lifesteal-style drain;
                                   // bubble-gated (see above)
     int stealMaxHpPct = 0;       // target's maxHealth ceiling, permanently for the
-                                  // fight — the pool MOVES, so the caster gains the
+                                  // fight: the pool MOVES, so the caster gains the
                                   // ceiling AND the Health in it, and the target's
                                   // current Health clamps down to its new ceiling
 
@@ -980,10 +980,10 @@ struct MoveDef {
     // --- Trojan trap track (Trojan defensive line) -------------------------------
     // A Trojan Defend move ARMS a trap instead of bracing: casting stacks it onto the
     // caster's trap pile (cap kTrojanTrapCap) where it stays until an incoming enemy
-    // attack TRIGGERS one — which deletes trapEvasionPct% of that hit's final damage,
+    // attack TRIGGERS one, which deletes trapEvasionPct% of that hit's final damage,
     // reflects trapReboundPct% of the damage the trap mitigated back through the
     // attacker's (now-rotting) defense, and strips trapArmorRot flat DEF off the
-    // attacker for the rest of the fight — unfloored, so it drives a rating negative. Armed traps also feed the Execution-Override
+    // attacker for the rest of the fight. Unfloored, so it drives a rating negative. Armed traps also feed the Execution-Override
     // passive: each contributes trapPassiveBonusPct to its trigger chance, so holding
     // all three traps makes the hijack likely (Combat::execOverrideChance). trapArm=1
     // marks the row a trap (like shieldPool=1 marks a pool); 0 = every non-Trojan Defend.
@@ -1002,8 +1002,8 @@ struct MoveDef {
     //
     // The two magnitudes below are each read by ONE kind, and each is a percentage of
     // the PARENT, so a replica is always a fraction of the worm that made it:
-    //   replicaPowerPct  — an ATTACKER's base damage, as % of this move's own power.
-    //   replicaHealthPct — a DEFENDER's base Health, as % of the parent's maxHealth.
+    //   replicaPowerPct:  an ATTACKER's base damage, as % of this move's own power.
+    //   replicaHealthPct: a DEFENDER's base Health, as % of the parent's maxHealth.
     // Their multipliers (the live count of the OTHER kind) are the passive's half and
     // live in content_passives.h, not here.
     int replicaSpawnPct = 0;
@@ -1014,14 +1014,14 @@ struct MoveDef {
     // A move that hands its slot to a FOLLOW-UP step: casting this row resolves it
     // normally and commits the caster's next turn to the step named here
     // (Combat::resolveTurn, via Combatant::chainFollow). So one slot alternates between
-    // two rows — the pattern a wind-up wanted and could not express, because a wind-up
+    // two rows: the pattern a wind-up wanted and could not express, because a wind-up
     // spends its first turn doing nothing at all while both halves of a chain are real
     // casts. Which is the whole point: the action-economy tax a channel pays is the
     // turn it wastes, and a chain wastes none.
     //
     // The step is resolved against the registry when the Combatant is BUILT (never
     // mid-fight, so Combat stays registry-free) and is looked up in the chain-step table
-    // rather than the move roster — a follow-up is reached only by casting its entry, so
+    // rather than the move roster: a follow-up is reached only by casting its entry, so
     // it is deliberately not something a pet can own, equip, be taught or be rolled.
     // nullptr = an ordinary move. See content_chain_steps.cpp.
     const char* chainNextId = nullptr;
@@ -1031,21 +1031,21 @@ struct MoveDef {
     // move resolves (kSpeedActionThreshold, Combat::resolveTurn). It exists because a
     // brace's real cost was never its magnitude: bracing spends a turn NOT swinging, and
     // measured against attacks competing for the same slot every pure brace in the roster
-    // came out behind — while brace magnitude itself turned out to be worth almost nothing
+    // came out behind, while brace magnitude itself turned out to be worth almost nothing
     // per point, so no amount of bigger numbers could have closed it.
     //
     // A refund shortens the wait for the next action; it can never GRANT one outright. Per
     // ROW rather than a blanket rule on the kind, so it doubles as the lever that tells a
     // cheap quick block apart from a heavy wall: the small braces hand back most of the
     // tempo, the big ones stay a real commitment. 0 on every Attack, and on every Defend
-    // that already does something besides brace (a pool, a trap, a spawn, a Cipher stack)
-    // — those were never the rows paying this cost.
+    // that already does something besides brace (a pool, a trap, a spawn, a Cipher stack):
+    // those were never the rows paying this cost.
     int speedRefundPct = 0;
 
     // --- Poisoned data (Obfuscation pool rows) -----------------------------------
     // A pool row may also POISON whoever strikes it: an enemy attack landing on the live
     // bubble plants this DoT on the attacker (Combat::applyEffect). It is the Obfuscation
-    // track's conversion from defence into damage, and it sits on the POOL rows on purpose —
+    // track's conversion from defence into damage, and it sits on the POOL rows on purpose:
     // the line's steals ride its ATTACK moves, which a defend-heavy pet with a single attack
     // slot almost never equips, so a conversion routed through those never reaches the pets
     // that need one. 0 on a pool row that only banks Health.
@@ -1056,19 +1056,19 @@ struct MoveDef {
     int poolRetaliateTurns = 0;
 
     // --- Metamorphic wildcard rows ------------------------------------------------
-    // A row that does not cast ITSELF: it rolls one of the moves its pet could have been —
-    // the generic roster of this row's own `kind`, plus the two lines named here — and
+    // A row that does not cast ITSELF: it rolls one of the moves its pet could have been
+    // (the generic roster of this row's own `kind`, plus the two lines named here), and
     // casts that instead (Combat::resolveTurn). Naming two of the four other lines rather
     // than all of them is what keeps a wildcard a CHOICE, since which pair a row reaches is
     // the only thing an operator tailors about it.
     //
     // Both null = an ordinary move, which is every row but the metamorphic track. The ids
     // resolve against the registry once, when the Combatant is built (buildWildPools),
-    // never mid-fight — the rule `chainNextId` answers to as well. A wildcard row still
+    // never mid-fight: the rule `chainNextId` answers to as well. A wildcard row still
     // needs a real `power`, `kind` and `effect`: the kind decides which half of the roster
     // it draws from, and the rest is what the loadout and picker read off it.
     //
-    // Appended at the END of the struct, like every field before it — the rows are
+    // Appended at the END of the struct, like every field before it: the rows are
     // positional initializers, so a field inserted mid-struct re-aims every magnitude after it.
     const char* drawLineA = nullptr;
     const char* drawLineB = nullptr;
@@ -1078,33 +1078,33 @@ struct MoveDef {
     // turns: the row order is permuted and every label is drawn in the Cant, so a row
     // the pet cannot read is a row it cannot pick (Game::overrideScramble).
     //
-    // What it takes is the player's HAND, not the pet's turn — the auto-battle carries
+    // What it takes is the player's HAND, not the pet's turn: the auto-battle carries
     // on regardless, so this is the one rider that costs interventions instead of
     // actions. A pet with no sigils loses the override outright while it holds, which is
     // the intended floor and not an oversight: fluency is the counterplay, and
     // ModEffect::ScrambleWard is the other half of it.
     //
-    // Appended at the END, like every field before it — the rows are positional
+    // Appended at the END, like every field before it: the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
     int scrambleTurns = 0;
 
     // --- Ransom arming (Ransomware Cipher track) -----------------------------------
     // Casting this row ARMS the caster's ransom window outright, where Ransom Note would
-    // otherwise roll for it at turn start — so the next hit is a promise to be held, and
+    // otherwise roll for it at turn start, so the next hit is a promise to be held, and
     // the pool it feeds is what works the pet up. Inert without the passive. Read on both
     // branches: a Cipher brace and Screen Locker's freeze each carry it.
     //
-    // Appended at the END, like every field before it — the rows are positional
+    // Appended at the END, like every field before it: the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
     bool armsRansom = false;
 
     // --- Cashing the ransom (Ransomware Lockout track) ------------------------------
     // This % of the caster's live ransom pool, turned on the opponent. On an Attack it rides
     // the swing on top of its power; on a Defend it is the DEMAND, dealt straight to the
-    // opponent as the brace goes up — what gives a defend-heavy Ransomware body damage on
+    // opponent as the brace goes up: what gives a defend-heavy Ransomware body damage on
     // the turns it spends bracing. Read, never spent: the bill still lands whole.
     //
-    // Appended at the END, like every field before it — the rows are positional
+    // Appended at the END, like every field before it: the rows are positional
     // initializers, so a field inserted mid-struct re-aims every magnitude after it.
     int ransomCashPct = 0;
 };
@@ -1115,7 +1115,7 @@ inline bool moveIsWildcard(const MoveDef& m) { return m.drawLineA || m.drawLineB
 // A PURE BRACE row: it mitigates and does nothing else, so the only fields that vary
 // across the eleven of them are power, the stage they unlock at, and the tempo they hand
 // back. Spelled out positionally each row would carry twenty-three zeros between minStage
-// and speedRefundPct — a shape where the one number that matters is the hardest to see, and
+// and speedRefundPct: a shape where the one number that matters is the hardest to see, and
 // where a miscount silently assigns a magnitude to the wrong mechanic. The shape gets a
 // name instead. Every other Defend row does something besides brace and stays positional,
 // because for those the intermediate fields are the point.
@@ -1134,7 +1134,7 @@ constexpr MoveDef braceRow(const char* id, const char* displayName, int power,
 }
 
 // An Obfuscation POOL row (Phishing): it banks a second Health bar and, from the second
-// rung up, poisons whoever reads the decoy. Same reason braceRow exists — the fields that
+// rung up, poisons whoever reads the decoy. Same reason braceRow exists: the fields that
 // vary sit at opposite ends of a long positional tail, and a miscount there arms the wrong
 // mechanic silently.
 constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
@@ -1157,7 +1157,7 @@ constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
 
 // A SEVERANCE row: an ordinary attack whose whole point is the scramble rider, which
 // sits at the very end of the positional tail with thirty-odd fields between it and
-// `power`. Same reason braceRow exists — spelled out positionally the one number that
+// `power`. Same reason braceRow exists: spelled out positionally the one number that
 // matters would be the hardest one to see, and a miscount would arm a different mechanic
 // in silence.
 constexpr MoveDef severRow(const char* id, const char* displayName, int power,
@@ -1224,7 +1224,7 @@ constexpr MoveDef cipherRow(const char* id, const char* displayName, int power,
 // A PURE RIDER row: an attack that deals no damage and spends the whole turn on its effect,
 // so no defence has anything to absorb and the effect lands on the pet directly (the PURE
 // RIDER rule, combat.h). `power` is 0 on every one of them because that is what the rule
-// keys on — a number here would quietly turn the row back into a hit a shield can eat.
+// keys on: a number here would quietly turn the row back into a hit a shield can eat.
 constexpr MoveDef riderRow(const char* id, const char* displayName, const char* effect,
                            Stage minStage, const char* line, int lockTurns, int dotDamage,
                            int dotTurns, bool armsRansom = false) {
@@ -1252,7 +1252,7 @@ inline bool moveIsPureRider(const MoveDef& m) {
 // A METAMORPHIC WILDCARD row: it casts nothing of its own, so the fields that would carry
 // a mechanic are exactly the ones it leaves empty, and the two that matter (the lines it
 // reaches) sit at the very end of the positional tail. Same reason braceRow and poolRow
-// exist. `power` stays 0 on every one of them — a wildcard becomes whatever it rolls, so a
+// exist. `power` stays 0 on every one of them: a wildcard becomes whatever it rolls, so a
 // number here would be a figure no cast ever uses.
 constexpr MoveDef wildRow(const char* id, const char* displayName, MoveKind kind,
                           const char* effect, Stage minStage, const char* drawA,
@@ -1281,19 +1281,19 @@ inline const char* moveKindTag(MoveDef::Kind k) {
 // never acquire a Phishing-line move (and vice-versa), while the generic pool stays
 // open to all. A null petLine (a lineless creature) can still take generic moves.
 inline bool moveAllowedForLine(const MoveDef& m, const char* petLine) {
-    if (m.line == nullptr) return true;                       // generic — anyone
+    if (m.line == nullptr) return true;                       // generic: anyone
     return petLine != nullptr && std::strcmp(m.line, petLine) == 0;
 }
 
 // has the pet at `petStage` reached the stage a move unlocks at? Owning a
-// move isn't enough — a locked move can't be equipped (picker) nor fielded (combat).
+// move isn't enough: a locked move can't be equipped (picker) nor fielded (combat).
 inline bool moveUnlockedAtStage(const MoveDef& m, Stage petStage) {
     return stageIndex(petStage) >= stageIndex(m.minStage);
 }
 
 // Which side of the care branch a DAEMON row was authored as. The multiplier pair the row
 // already carries IS the branch (see CreatureDef's powerMultPct/fragMultPct above and the
-// kBranch* block in tunables.h) — this reads that encoding rather than adding a fourth
+// kBranch* block in tunables.h): this reads that encoding rather than adding a fourth
 // field restating it, so a row cannot claim one branch and be priced as the other. Only
 // Daemon rows branch: every earlier stage is a linear hop and answers None, as does a
 // Daemon authored neutral. Consumed by makePlayerCombatant, for the max-Health lean that

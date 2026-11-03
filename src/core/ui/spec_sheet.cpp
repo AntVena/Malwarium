@@ -1,4 +1,4 @@
-// spec_sheet.cpp — the shared name / readout / prose panel (see spec_sheet.h).
+// spec_sheet.cpp: the shared name / readout / prose panel (see spec_sheet.h).
 #include "core/ui/spec_sheet.h"
 
 #include "core/render/font.h"
@@ -28,7 +28,7 @@ SpecSheetLayout drawSpecSheet(Framebuffer& fb, int x, int y, int w, int maxY,
         cy += kLineH;
     }
 
-    // The readout takes exactly the height it needs — reserved, never clipped, so a
+    // The readout takes exactly the height it needs: reserved, never clipped, so a
     // magnitude can't be the thing that falls off the bottom.
     if (s.rowCount > 0) {
         cy = drawSpecGrid(fb, x, cy, w, s.rows, s.rowCount, kLineH,
@@ -37,7 +37,7 @@ SpecSheetLayout drawSpecSheet(Framebuffer& fb, int x, int y, int w, int maxY,
     }
 
     // Prose gets whatever is left. If that isn't all of it, say so via the layout
-    // rather than quietly dropping the tail — the caller turns that into a scroll.
+    // rather than quietly dropping the tail: the caller turns that into a scroll.
     const int total = proseLineCount(w, s.prose);
     if (total > 0) {
         const int room = (maxY - cy) / kLineH;

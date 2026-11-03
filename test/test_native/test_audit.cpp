@@ -1,4 +1,4 @@
-// test_audit.cpp — native gates for Hacker Rank, the ledgers and the audit/pcap capture path.
+// test_audit.cpp: native gates for Hacker Rank, the ledgers and the audit/pcap capture path.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -15,7 +15,7 @@ void test_hacker_rank_xp_model() {
     CHECK(hackerRankXp(0) == 0);
     CHECK(hackerRankXpIntoRank(0) == 0);
 
-    // The XP math holds over many networks — walk a big range and check the
+    // The XP math holds over many networks: walk a big range and check the
     // rank/xp identities exactly (the "XP bounds test").
     for (int n = 0; n <= 5000; ++n) {
         CHECK(hackerRankXp(n) == n * kHackerRankXpPerNetwork);
@@ -30,7 +30,7 @@ void test_hacker_rank_xp_model() {
     // Unbounded: far past the named-tier count still climbs.
     CHECK(hackerRankForNetworksSeen(1000 * perRank) == 1000);
 
-    // Titles: a growable, threshold-keyed ladder — hackerRankTitle(rank) is the
+    // Titles: a growable, threshold-keyed ladder; hackerRankTitle(rank) is the
     // nearest tier at or beneath the numeric rank. The count is DERIVED (no fixed
     // constant), so appending a title just extends the ladder.
     const int tiers = hackerRankTierCount();
@@ -47,7 +47,7 @@ void test_hacker_rank_xp_model() {
             CHECK(std::strcmp(hackerRankTitle(hackerRankTierUnlock(i + 1) - 1),
                               hackerRankTitle(at)) == 0);
     }
-    // A rank far past the top tier keeps the top (highest) title — the numeric rank
+    // A rank far past the top tier keeps the top (highest) title: the numeric rank
     // keeps climbing while the title caps at the end of the ladder.
     const char* top = hackerRankTitle(hackerRankTierUnlock(tiers - 1));
     CHECK(std::strcmp(hackerRankTitle(9999), top) == 0);
@@ -55,7 +55,7 @@ void test_hacker_rank_xp_model() {
 
 // registerNetwork is the scan-time seam: dedup a sighting against the pending
 // queue ONLY (never the full ledger, never a credit) and hold it for the EXPL
-// Wi-Fi event to resolve — networksSeen stays 0 through all of this; crediting
+// Wi-Fi event to resolve; networksSeen stays 0 through all of this; crediting
 // is resolveNetworkDiscovery's job, exercised via walkAndCreditNetwork in the
 // tests below.
 void test_register_network_queue_dedup() {
@@ -71,7 +71,7 @@ void test_register_network_queue_dedup() {
     CHECK(g.networksSeen() == 0);
 
     // The pending queue is capped, and a FULL queue makes room by evicting its
-    // OLDEST unresolved sighting rather than refusing the new one — a backlog the
+    // OLDEST unresolved sighting rather than refusing the new one: a backlog the
     // player hasn't walked off must never stop fresh sightings being recorded.
     for (int i = 0; i < kPendingNetworkQueueCap - 2; ++i) {   // 2 already queued above
         uint8_t m[6] = {0x02, 0x03, 0x04, 0x05,
@@ -90,7 +90,7 @@ void test_register_network_queue_dedup() {
 // Crossing a rank via a real credited network (XP model): a flat Bits lump PER
 // rank gained, no Hacker-Log entry for the celebration itself (rank-up excluded
 // from the closed log vocabulary). Reward-ONLY: rank gates nothing anymore (all
-// EXPL sectors open regardless of rank — sector gating is sectorCleared[]).
+// EXPL sectors open regardless of rank. Sector gating is sectorCleared[]).
 void test_hacker_rank_up_grants_reward() {
     const int perRank = kHackerRankXpPerRank / kHackerRankXpPerNetwork;
     Game g{StartMode::Hatched};
@@ -99,12 +99,12 @@ void test_hacker_rank_up_grants_reward() {
     // Credit exactly one rank's worth of distinct networks -> one rank up.
     // Each walkToWifiEvent search can pass through OTHER incidental bits-
     // granting explore events on the way to landing on Wifi (loot/cache steps,
-    // sinkholed wild encounters) — noise unrelated to the rank-up reward, and it
+    // sinkholed wild encounters): noise unrelated to the rank-up reward, and it
     // accumulates across iterations, so comparing a running total against a
     // pre-loop baseline would be unreliable. Instead isolate the reward at its
     // source: track the Bits delta across ONLY the specific credit call where
     // hackerRank() actually changes (before vs. right when that event is
-    // reached — resolveNetworkDiscovery's own effects only, still before the
+    // reached: resolveNetworkDiscovery's own effects only, still before the
     // unrelated guardian/cache/friendly roll that always follows resolves).
     int rankUpBitsGrant = 0;
     int prevRank = g.hackerRank();
@@ -120,17 +120,17 @@ void test_hacker_rank_up_grants_reward() {
     }
     CHECK(g.networksSeen() == perRank);
     CHECK(g.hackerRank() == 1);
-    // Reward-only: climbing rank does NOT unlock sectors — sector[1] stays LOCKED
+    // Reward-only: climbing rank does NOT unlock sectors; sector[1] stays LOCKED
     // (gating is sectorCleared[], not rank). Only sector 0 is open.
     { bool fl[kExplSectors] = {g.sectorCleared(0), g.sectorCleared(1)};
       CHECK(explSectorOpen(0, fl));
       CHECK(!explSectorOpen(1, fl)); }
     // >= not == : the isolated delta above still spans this ONE credit call's own
     // walkToWifiEvent search, which (rarely) may ALSO pass through an unrelated
-    // bits-granting step (a loot cache) before landing on Wifi — noise can only
+    // bits-granting step (a loot cache) before landing on Wifi. Noise can only
     // ADD, so a lower bound still proves the reward itself fires.
     CHECK(rankUpBitsGrant >= kHackerRankUpBitsReward);
-    // The rank-up celebration ITSELF still isn't logged — but each of the
+    // The rank-up celebration ITSELF still isn't logged, but each of the
     // `perRank` new-network credits now also grants + logs a discovery Sealed
     // Cache (the pcap-blowup follow-on reward), so log size DOES grow (capped
     // at EventLog::kCapacity). Assert the property directly: no entry mentions
@@ -139,7 +139,7 @@ void test_hacker_rank_up_grants_reward() {
     for (int i = 0; i < g.log().size(); ++i)
         CHECK(std::strstr(g.log().at(i).text, "RANK") == nullptr);
 
-    // A batch that crosses several ranks at once pays per rank gained — same
+    // A batch that crosses several ranks at once pays per rank gained: same
     // per-credit isolation, summed across every iteration that actually crosses.
     const int rank1 = g.hackerRank();
     int totalRankUpBits = 0;
@@ -160,7 +160,7 @@ void test_hacker_rank_up_grants_reward() {
     CHECK(totalRankUpBits >= kHackerRankUpBitsReward * gained);   // see the >= note above
 }
 
-// NetworkLedger (core/net/network_ledger.h) — pure logic, no file I/O exercised
+// NetworkLedger (core/net/network_ledger.h): pure logic, no file I/O exercised
 // here (native tests don't touch real SD/file access, matching net_capture.h's
 // own documented host/device testing boundary). recordNew seeds count 1;
 // recordSeenAgain bumps it and can upgrade a name from empty (e.g. a hidden
@@ -187,7 +187,7 @@ void test_network_ledger_new_and_repeat() {
     CHECK(std::strcmp(e.name, "NowKnown") == 0);
 }
 
-// HandshakeLedger (core/net/handshake_ledger.h) — pure logic, no file I/O here
+// HandshakeLedger (core/net/handshake_ledger.h): pure logic, no file I/O here
 // (native tests don't touch real SD, matching the NetworkLedger tests above).
 // Dedups SHAKES credit by BSSID, and at the cap ROTATES (evicts the oldest) rather
 // than refusing new captures, so a long-lived device keeps crediting.
@@ -230,7 +230,7 @@ void test_handshake_ledger_seed_clamps_to_cap() {
     CHECK(led.contains(0x2000 + kHandshakeDedupCap + 4));   // newest kept
 }
 
-// PeerHello codec (core/net/peer_link.h) — the pet-to-pet beacon's wire format.
+// PeerHello codec (core/net/peer_link.h): the pet-to-pet beacon's wire format.
 // A round-trip must preserve every field, and the encoded frame must be exactly
 // one fixed size so the device tier can send it as a single ESP-NOW payload.
 void test_peer_hello_round_trip() {
@@ -260,7 +260,7 @@ void test_peer_hello_round_trip() {
     CHECK(decodePeerHello(frame, kPeerHelloSize, &in));
     CHECK(in.crewRed);
 
-    // An unenlisted operator broadcasts an empty crew — that's the "no crew"
+    // An unenlisted operator broadcasts an empty crew: that's the "no crew"
     // signal the PEERS screen reads, not a separate flag.
     PeerHello solo;
     std::strncpy(solo.tag, "LONEWOLF", sizeof(solo.tag) - 1);
@@ -303,7 +303,7 @@ void test_peer_hello_rejects_malformed() {
 
 // A HELLO's strings are attacker-controlled and land in the framebuffer and the
 // roster file, so decode keeps printable ASCII only. Offending bytes are dropped
-// (not frame-rejected), so a mangled name still yields a usable shorter row — and
+// (not frame-rejected), so a mangled name still yields a usable shorter row, and
 // an unterminated wire field can never escape as an unterminated C string.
 void test_peer_hello_sanitizes_hostile_fields() {
     uint8_t frame[kPeerHelloSize];
@@ -312,7 +312,7 @@ void test_peer_hello_sanitizes_hostile_fields() {
     CHECK(encodePeerHello(src, frame, sizeof(frame)) == kPeerHelloSize);
 
     // Overwrite the pet-name slot with control bytes, a high-bit byte, and no
-    // terminator at all — the worst a sender could put on the wire.
+    // terminator at all: the worst a sender could put on the wire.
     const size_t petOff = 9 + kPeerTagCap;
     for (size_t i = 0; i < kPeerPetCap; ++i) frame[petOff + i] = 0xFF;
     frame[petOff + 0] = 'A';
@@ -326,7 +326,7 @@ void test_peer_hello_sanitizes_hostile_fields() {
     CHECK(out.petName[kPeerPetCap - 1] == '\0');  // terminated regardless of the wire
 }
 
-// PeerLedger (core/net/peer_ledger.h) — pure logic, no file I/O exercised here
+// PeerLedger (core/net/peer_ledger.h): pure logic, no file I/O exercised here
 // (native tests don't touch real SD, matching the NetworkLedger tests above). The
 // distinction from that ledger is the point: an operator's pet/crew/rank CHANGE
 // between meetings, so a repeat sighting refreshes them while the tally accrues.
@@ -367,7 +367,7 @@ void test_peer_ledger_new_and_refresh() {
     CHECK(e.stage == static_cast<uint8_t>(Stage::Script));
     CHECK(e.rank == 5);
 
-    // A different radio MAC is a different operator even with an identical tag —
+    // A different radio MAC is a different operator even with an identical tag:
     // the key is the identity, the tag is just what they call themselves.
     CHECK(ledger.record(0x112233445566ull, later));
     CHECK(ledger.size() == 2);
@@ -375,7 +375,7 @@ void test_peer_ledger_new_and_refresh() {
 
 // inTopN backs the "home turf vs. occasional" split resolveNetworkDiscovery
 // uses: fewer than N OTHER entries with a strictly higher count qualifies
-// (ties all qualify — with few entries total, everything reads as "top N"
+// (ties all qualify. With few entries total, everything reads as "top N"
 // until enough variety exists to actually rank below others).
 void test_network_ledger_in_top_n() {
     NetworkLedger ledger;
@@ -389,10 +389,10 @@ void test_network_ledger_in_top_n() {
     CHECK(!ledger.inTopN(999, 8));    // unknown key -> false
 }
 
-// A repeat sighting outside the top-8 by count (an "occasional" network — your
+// A repeat sighting outside the top-8 by count (an "occasional" network. Your
 // town, not your daily-driver routers) still feeds the pet: pet combat XP + the
 // same small Happiness bump a new network gets, no Hacker Rank XP. A repeat
-// INSIDE the top-8 ("home turf") stays flat — no XP, no Happiness change.
+// INSIDE the top-8 ("home turf") stays flat: no XP, no Happiness change.
 void test_network_discovery_repeat_familiar_vs_home_turf() {
     Game g{StartMode::Hatched};
     uint8_t common[8][6];
@@ -405,21 +405,21 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
     walkAndCreditNetwork(g, rare, "Rare");                  // count 1, new -> credited
     CHECK(g.networksSeen() == 9);
 
-    // Bump each of the 8 "common" networks to count 2 — a repeat while every
+    // Bump each of the 8 "common" networks to count 2: a repeat while every
     // count is still tied at 1 reads as home-turf (see test_network_ledger_in_top_n's
     // comment), so this loop itself grants nothing; it's just setup.
     for (int i = 0; i < 8; ++i) walkAndCreditNetwork(g, common[i], "Common");
-    CHECK(g.networksSeen() == 9);   // still just the 9 originals — no new credit
+    CHECK(g.networksSeen() == 9);   // still just the 9 originals: no new credit
 
-    // Now `rare` (count 1) sits strictly below all 8 "common" networks (count 2) —
-    // a repeat resolves it as familiar-but-occasional: pet XP + Happiness, no
+    // Now `rare` (count 1) sits strictly below all 8 "common" networks (count 2).
+    // A repeat resolves it as familiar-but-occasional: pet XP + Happiness, no
     // Hacker Rank XP. Verified via netDiscoveryFlavor_ (set exclusively by
-    // resolveNetworkDiscovery) rather than combatXp/combatLevel deltas — a
+    // resolveNetworkDiscovery) rather than combatXp/combatLevel deltas: a
     // walkToWifiEvent search can incidentally pass through an UNRELATED sinkholed
     // wild encounter (walkToWifiEvent stocks Sinkhole Traps so any Wild roll
     // along the way auto-resolves via resolveSinkhole, which grants its OWN
     // combat XP), so a raw XP delta can't reliably isolate MY grant across a
-    // real walk. Same reasoning for hackerRank/networksSeen — those two ARE
+    // real walk. Same reasoning for hackerRank/networksSeen: those two ARE
     // exclusively mine (nothing else touches them), so they stay precise checks.
     const int rank0 = g.hackerRank();
     queueAndReachWifiEvent(g, rare, "Rare");
@@ -429,7 +429,7 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
     resolveWifiEventToIdle(g);
 
     // A repeat of one of the "common" (home-turf) networks stays flat: the
-    // flavor reads "TIRED OF", not "FONDLY REMEMBERS" — no pet-XP branch taken,
+    // flavor reads "TIRED OF", not "FONDLY REMEMBERS". No pet-XP branch taken,
     // no further Hacker Rank movement.
     queueAndReachWifiEvent(g, common[0], "Common");
     CHECK(std::strstr(g.netDiscoveryFlavor(), "TIRED OF") != nullptr);
@@ -443,14 +443,14 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
 // Taxing a dead zone would be the inverse of this seam, and is what it exists to avoid:
 // a Happiness penalty on the 1st miss and every Nth after grinds a ten-minute unmonitored
 // walk down by ~30 on a ~37s Wi-Fi cadence, for the crime of being somewhere with no new
-// networks. The streak is counted on exactly that rhythm — it is what paces the guardian
-// — so the beat that could sting is the beat that puts something in front of the pet.
+// networks. The streak is counted on exactly that rhythm (it is what paces the guardian),
+// so the beat that could sting is the beat that puts something in front of the pet.
 void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     Game g{StartMode::Hatched};
     g.model().setHappiness(80);   // headroom: a penalty would be visible rather than
                                    // clamped, so its ABSENCE is a real observation
     g.inventory().add("sinkhole_trap", 20);   // bypass any Wild roll along the way, free
-    enterWalk(g);   // ONCE — walkToWifiEvent re-enters via enterWalk on every call, which
+    enterWalk(g);   // ONCE: walkToWifiEvent re-enters via enterWalk on every call, which
                      // re-arms the sub-area and resets emptyQueueStreak_
                      // (game_explore.cpp's startExplore), defeating the whole point of
                      // this test (observing the streak persist ACROSS misses).
@@ -461,7 +461,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     for (int i = 0; i < 400; ++i) {
         if (g.nav() == Game::Nav::Shiboleet) {
             // The guardian, standing there because nothing was queued. Answer it and
-            // move on — which of the three replies is right is not this test's business.
+            // move on, which of the three replies is right is not this test's business.
             sawGuardian = true;
             g.onButton(press(Button::B));
         } else if (g.nav() == Game::Nav::Wifi) {
@@ -484,7 +484,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
         } else if (g.nav() == Game::Nav::PostEncounter) {
             g.onButton(press(Button::B));
         } else if (g.nav() == Game::Nav::Idle) {
-            if (!g.exploreActive()) break;   // a lost fight ended the walk — done looking
+            if (!g.exploreActive()) break;   // a lost fight ended the walk: done looking
             pingExplore(g);
         } else {
             g.onButton(press(Button::B));
@@ -496,7 +496,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
 }
 
 // The runtime Audit-scan toggle persists across a reboot (save
-// v5) — an authorized-use choice must survive, and default OFF must be honored.
+// v5): an authorized-use choice must survive, and default OFF must be honored.
 void test_audit_scan_toggle_persists() {
     MemSaveStore store;
     {
@@ -511,7 +511,7 @@ void test_audit_scan_toggle_persists() {
     }
 }
 
-// Audit handshake capture —.pcap writer + capture policy SM -------
+// Audit handshake capture: .pcap writer + capture policy SM -------
 
 // A memory PcapSink: the native seam standing in for the device's SD FILE. Every
 // byte the writer emits accumulates here so a gate can assert the exact stream.
@@ -718,7 +718,7 @@ void test_audit_mode_enforces_scan_dependency() {
 
 // A legacy save from before the single control could hold capture-ON with
 // scan-OFF (the two toggles were independent). On load, scan is pulled up so the
-// invariant holds — capture never runs without its discovery feed.
+// invariant holds: capture never runs without its discovery feed.
 void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");
@@ -732,9 +732,9 @@ void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     CHECK(g.auditMode() == Game::AuditMode::ScanCapture);
 }
 
-// RF half — pure EAPOL classifier + handshake tracker -------------
+// RF half: pure EAPOL classifier + handshake tracker -------------
 
-// Build a raw 802.11 EAPOL-Key MPDU (no radiotap — the DLT_IEEE802_11 bytes the
+// Build a raw 802.11 EAPOL-Key MPDU (no radiotap: the DLT_IEEE802_11 bytes the
 // promiscuous callback hands us). fromDs=true models an AP->STA message (M1/M3,
 // BSSID in addr2); fromDs=false a STA->AP message (M2/M4, ToDS, BSSID in addr1).
 // Returns the frame length. Layout: 24B MAC hdr + 8B LLC/SNAP + 4B 802.1X hdr +
@@ -946,10 +946,10 @@ void test_register_handshake_rotates_at_cap() {
 // The core "leave the house and come home" requirement, for SHAKES: the
 // handshake dedup ledger PERSISTS (save v7), so a reboot never re-credits a
 // handshake already captured. (NETS/registerNetwork no longer has an equivalent
-// save-blob guarantee — real-network dedup/history moved to the SD-backed
+// save-blob guarantee: real-network dedup/history moved to the SD-backed
 // NetworkLedger, which is file-backed, not save-blob-backed; registerNetwork's
 // pending queue is deliberately ephemeral, see game.h's comment on it. Native
-// tests don't exercise real SD file I/O — see forgeLegacyNetworkBytes's sibling
+// tests don't exercise real SD file I/O: see forgeLegacyNetworkBytes's sibling
 // note and net_capture.h's own documented host/device testing boundary.)
 void test_audit_ledgers_persist_no_recredit() {
     MemSaveStore store;
@@ -994,7 +994,7 @@ void test_save_v7_ledger_roundtrip() {
 // counter (the counter scheme is what minted a fresh file every arm/seal radio
 // cycle regardless of whether anything new was heard). A sanitized SSID is
 // preferred; the promiscuous EAPOL-only capture path never actually sees one
-// (DATA frames only, no beacons), so v1 always falls back to the BSSID hex —
+// (DATA frames only, no beacons), so v1 always falls back to the BSSID hex:
 // exercise both paths since the helper supports both.
 void test_pcap_naming_sanitizes_and_falls_back_to_bssid() {
     char name[24];
@@ -1039,7 +1039,7 @@ void test_pcap_naming_sanitizes_and_falls_back_to_bssid() {
 }
 
 // Game::handshakeAlreadyCaptured is the read-only query net_capture.h checks
-// BEFORE opening a file for a BSSID — it must mirror registerHandshake's dedup
+// BEFORE opening a file for a BSSID: it must mirror registerHandshake's dedup
 // ledger exactly (same networks report captured/not-captured) and never mutate
 // state (repeated queries don't grant credit or rewards on their own).
 void test_handshake_already_captured_query() {
@@ -1073,12 +1073,12 @@ void test_handshake_already_captured_query() {
 // sighting. Verified via netDiscoveryFlavor_ (set ONLY by resolveNetworkDiscovery,
 // so it's immune to a confound every other numeric signal here has: a
 // walkToWifiEvent search can incidentally pass through OTHER explore steps
-// that grant the SAME item ids — a "Sealed Cache find" EXPL event
+// that grant the SAME item ids. A "Sealed Cache find" EXPL event
 // (resolveCacheEvent, unrelated to network discovery) also drops
 // sealed_cache_common/uncommon via its own weighted roll, so a raw inventory
 // count can't reliably isolate MY reward across a real walk. The cache-count
 // check below is intentionally a lower bound (>=), not exact, for the same
-// reason — it still catches a reward that never fires at all.
+// reason: it still catches a reward that never fires at all.
 void test_network_discovery_reward_fires_once_per_network() {
     Game g{StartMode::Hatched};
     auto cacheTotal = [&]() {
@@ -1095,8 +1095,8 @@ void test_network_discovery_reward_fires_once_per_network() {
     resolveWifiEventToIdle(g);
 
     // Repeat sightings of the same BSSID resolve as familiar/home-turf (only
-    // one entry exists so far, so it trivially reads as "top favorites" —
-    // see test_network_ledger_in_top_n's comment) — never a second NEW-network
+    // one entry exists so far, so it trivially reads as "top favorites".
+    // See test_network_ledger_in_top_n's comment), never a second NEW-network
     // reward, confirmed by the flavor never reading as genuinely-new again.
     for (int i = 0; i < 3; ++i) {
         queueAndReachWifiEvent(g, a, "A");
@@ -1114,7 +1114,7 @@ void test_network_discovery_reward_fires_once_per_network() {
 }
 
 // The network-discovery reward rolls 70% common / 30% uncommon
-// (kNetDiscoveryCacheCommonPct/…UncommonPct) — both tiers must actually be
+// (kNetDiscoveryCacheCommonPct/…UncommonPct): both tiers must actually be
 // reachable (catches a wiring bug that always picks one tier). A precise
 // percentage check isn't reliable here: a walkToWifiEvent search can
 // incidentally pass through the unrelated "Sealed Cache find" EXPL event
@@ -1122,7 +1122,7 @@ void test_network_discovery_reward_fires_once_per_network() {
 // via its own weighted roll, skewing any raw inventory-count ratio measured
 // across many real walks (see test_network_discovery_reward_fires_once_per_network's
 // comment for the same confound). Classify each sample by its flavor line
-// instead — set exclusively by resolveNetworkDiscovery, immune to that noise.
+// instead: set exclusively by resolveNetworkDiscovery, immune to that noise.
 void test_network_discovery_reward_rarity_ratio() {
     Game g{StartMode::Hatched};
     const int kSamples = 60;
@@ -1164,7 +1164,7 @@ void test_handshake_capture_reward_fires_once_per_handshake() {
     CHECK(g.registerHandshake(b));
     CHECK(cacheTotal() == 2);
 
-    // Never grants the plain Common tier — a captured handshake is the rarer,
+    // Never grants the plain Common tier: a captured handshake is the rarer,
     // harder-earned event than a bare network sighting.
     CHECK(g.inventory().count("sealed_cache_common") == 0);
 }

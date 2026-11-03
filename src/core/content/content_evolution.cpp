@@ -1,4 +1,4 @@
-// content_evolution.cpp — egg lines + evolution routing (EggLineDef/DaemonPoolDef).
+// content_evolution.cpp: egg lines + evolution routing (EggLineDef/DaemonPoolDef).
 //
 // One content table (see content_tables.h). Edit rows here; the registry picks
 // them up unchanged via embedded_content.cpp.
@@ -10,7 +10,7 @@ namespace mal {
 const EggLineDef kEggLines[] = {
     {"ransomware", "Ransomware", "cryptoshell", HatchGame::Decrypt},
     // A second line with its own Boot-Sector egg, so line-select offers Ransomware
-    // vs Phishing — but only once it is EARNED: Game::eggLineUnlocked hides it until
+    // vs Phishing, but only once it is EARNED: Game::eggLineUnlocked hides it until
     // the first DeepWeb-depth milestone, so a fresh save sees one line and the modal
     // auto-skips straight into CryptoShell. Its egg is laid into a clutch of decoys,
     // so the hatch is a Clutch Pick played once at lay-time rather than a decrypt
@@ -19,12 +19,12 @@ const EggLineDef kEggLines[] = {
     // The third egg line, and the one that has to be EARNED by replicating rather than
     // by diving: Game::eggLineUnlocked hides it until the archive holds two of the same
     // species at once (ach::kSecondInstance). Its hatch is the Isolation Protocol, played
-    // once at lay-time like the Clutch — a worm loose in a quarantine buffer, eating the
+    // once at lay-time like the Clutch: a worm loose in a quarantine buffer, eating the
     // incubation clock a minute at a time.
     {"worm", "Worm", "vermicell", HatchGame::Isolation, ach::kSecondInstance},
     // The fourth egg line, earned by the MIRROR: the operator's pet facing its own
     // species, over the LINK or in the arena (ach::kHashCollision). Every earned line
-    // asks for the kind of play it is about, and this is the sharpest of the four — a
+    // asks for the kind of play it is about, and this is the sharpest of the four: a
     // roster of distinct silhouettes exists so you can tell one creature from another,
     // and the one moment that fails is the one that earns the line about being
     // indistinguishable. Leaving it ungated is not a free choice: an ungated fourth row
@@ -33,7 +33,7 @@ const EggLineDef kEggLines[] = {
     //
     // Its hatch is the CHROMATOPHORE (game_chroma.cpp): the bell rehearses wearing three
     // other colours against a sweep, one skin per button. The line's own argument as a
-    // board — every other hatch game asks the player to FIND something, and this one
+    // board: every other hatch game asks the player to FIND something, and this one
     // asks them to become something in time, which is the one thing this family does
     // that no other does.
     {"metamorphic", "Metamorphic", "polystaria", HatchGame::Chroma, ach::kHashCollision},

@@ -1,7 +1,7 @@
-// content_tournament.h — ROCK THE DOCK: the operator bracket held in The Pirate Bayou.
+// content_tournament.h (ROCK THE DOCK): the operator bracket held in The Pirate Bayou.
 //
 // Everything else the ladder offers is a malbeast: a name, a sprite and a handful of
-// moves keyed to depth. The Dock is the one place the pet fights PETWARE — a rolled
+// moves keyed to depth. The Dock is the one place the pet fights PETWARE: a rolled
 // creature off the same roster the player hatches from, carrying a real kit, real
 // mods, real per-level stat points and an Exploit of its own. It is the arena for
 // tactics rather than for progress, which is why nothing in it drops and only the
@@ -15,7 +15,7 @@
 //
 // The arena sits in the Bayou because the Bayou is the warez water
 // (areas/AREA_NAMING.md), and a dock is where that water's traffic actually changes
-// hands — so a season fought on one is the scene settling something in the open
+// hands, so a season fought on one is the scene settling something in the open
 // instead of over a wire. Its entrants are named to match; see kTourneyHandles.
 #pragma once
 
@@ -29,7 +29,7 @@ namespace mal {
 // the bracket is a fixed binary tree and every round halves it, which is what lets a
 // run persist as a survivor BITMASK over these slots rather than as a match list.
 constexpr int kTourneySlots = 8;
-constexpr int kTourneyRounds = 3;   // log2(kTourneySlots) — quarter, semi, final
+constexpr int kTourneyRounds = 3;   // log2(kTourneySlots): quarter, semi, final
 static_assert((1 << kTourneyRounds) == kTourneySlots,
               "the bracket is a binary tree: kTourneySlots must be 2^kTourneyRounds");
 
@@ -50,11 +50,11 @@ constexpr int kTourneyMaxLevel = 60;
 constexpr int kTourneyScriptLevel = 12;
 constexpr int kTourneyDaemonLevel = 30;
 
-// When an entrant fires its own Exploit — fixed by WHAT the Exploit is, because each has a
+// When an entrant fires its own Exploit: fixed by WHAT the Exploit is, because each has a
 // moment it is for and an opponent that fired it at any other one would be a weaker
 // opponent than the ability allows. A ramp opens with it; a swing that changes the
 // shape of the fight goes when either side is at half; a save or a sustain waits for its
-// own last stand. 100 opens with it, which spends the first turn arming — a real cost and
+// own last stand. 100 opens with it, which spends the first turn arming: a real cost and
 // a readable tell.
 struct ExploitTrigger {
     int atHealthPct;
@@ -75,20 +75,20 @@ constexpr ExploitTrigger exploitTrigger(CrewExploitKind k) {
 
 // How many turns a headless AI-vs-AI match is stepped before it is called on Health
 // (core/model/tournament.h). Two brace-heavy kits can genuinely stalemate, and the
-// bracket has to produce a winner for the operator to face either way — so this is a
+// bracket has to produce a winner for the operator to face either way, so this is a
 // termination guarantee, not a balance number, and it is set far above any fight the
 // engine actually resolves.
 constexpr int kTourneyMatchTurnCap = 400;
 
 // --- The purse ---------------------------------------------------------------
 // Nothing pays until the whole bracket is taken. A won match is worth the next match,
-// and the arena's whole reward is the title plus one lump — which is what keeps it a
+// and the arena's whole reward is the title plus one lump, which is what keeps it a
 // place to practise tactics rather than the fastest Bits in the game.
 constexpr int kTourneyWinBits = 2048;
 constexpr int kTourneyWinXp = 400;
 
 // The kAreaList rung the arena is held on: The Pirate Bayou. It answers two questions
-// at once, and deliberately with one number — REACHING that area is what opens the
+// at once, and deliberately with one number: REACHING that area is what opens the
 // arena, and that area's own mod pool is what the purse rolls its prize mod from. An
 // arena held in one water that gated on another, or paid out of another's table, would
 // be two facts pretending to be one.
@@ -99,7 +99,7 @@ constexpr int kTourneyAreaIndex = 1;
 // the log lines a run writes all read it from here rather than each spelling it out.
 extern const char* const kTourneyName;
 
-// One section of the BRIEFING — the paged explainer the bracket screen opens on the
+// One section of the BRIEFING: the paged explainer the bracket screen opens on the
 // A+C chord. A heading and its prose, which is the same NAME + PROSE shape STAT's
 // LOADOUT page flows (core/ui/prose_page.h), so the briefing needs no layout of its own.
 //
@@ -117,7 +117,7 @@ extern const int kTourneyBriefCount;
 
 // --- The entrants' handles ---------------------------------------------------
 // Operator handles, scene-flavoured (an entrant is another operator, not a creature,
-// so these follow no creature or area standard — they are nicknames). Each fits
+// so these follow no creature or area standard: they are nicknames). Each fits
 // kHackerTagMax, so one drops into a PvpFighter::tag unchanged.
 //
 // Drawn WITHOUT replacement across a bracket, so eight entrants are eight names; the

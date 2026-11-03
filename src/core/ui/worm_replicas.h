@@ -1,8 +1,8 @@
-// worm_replicas.h — the two glyphs the Worm line's copies are drawn with, and how
+// worm_replicas.h: the two glyphs the Worm line's copies are drawn with, and how
 // one of them is seated on a shelf.
 //
 // The line shares ONE pair of glyphs (SPR_WORM_REPLICA_ATTACK/_DEFEND) across every
-// worm, rather than every worm sprite carrying a shrunken self — see
+// worm, rather than every worm sprite carrying a shrunken self: see
 // assets/CREATURE_VISUAL_RULES.md for why. Each is a 6-frame strip in idle/attack/
 // death pairs; the base frame says which pair, and `+ (beat & 1)` flips within it.
 //
@@ -13,7 +13,7 @@
 // stop reading as the same creature.
 #pragma once
 
-#include "core/render/canvas.h"   // kScaleNum, kScaleDen — the habitat's sprite scale
+#include "core/render/canvas.h"   // kScaleNum, kScaleDen: the habitat's sprite scale
 #include "core/render/sprite.h"   // SpriteData, drawSpriteUpscaled
 
 namespace mal {

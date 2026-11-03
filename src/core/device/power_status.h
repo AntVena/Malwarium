@@ -1,4 +1,4 @@
-// power_status.h — portable power/battery status the platform tier feeds in.
+// power_status.h: portable power/battery status the platform tier feeds in.
 //
 // Reading the battery ADC and charge-status pin is device-tier work (only the
 // ESP32 layer can touch GPIO), but the *shape* of the reading and the SoC math
@@ -23,7 +23,7 @@ struct PowerStatus {
 };
 
 // Rough 1S Li-ion state-of-charge from pack millivolts: 3.30 V ≈ empty,
-// 4.20 V ≈ full, linear + clamped. Deliberately simple for v1 — a proper
+// 4.20 V ≈ full, linear + clamped. Deliberately simple for v1: a proper
 // non-linear discharge curve is a later refinement; this is monotonic and
 // good enough to read "how full" at a glance. Pure + portable so it's tested
 // natively (test_battery_percent_from_mv), then reused by the device reader.
@@ -38,7 +38,7 @@ inline int batteryPercentFromMilliVolts(int packMilliVolts) {
 
 // The reading at or below which a battery is worth doing something about. Shared so
 // the CFG "BATT" line and the Hacker face's glyph raise the alarm at the same number
-// rather than each picking one — the emphasis is decoration either way, repeating what
+// rather than each picking one: the emphasis is decoration either way, repeating what
 // the empty shell and the printed percentage already say.
 inline constexpr int kBatteryLowPct = 15;
 
@@ -46,8 +46,8 @@ inline constexpr int kBatteryLowPct = 15;
 //
 // ICON_SYS_BATTERY is a sheet of this many frames, frame index == fill level:
 // 0 is an empty shell and kBatteryLevels-1 is a full one. The level IS the
-// non-colour channel the dual-coding gate asks for — a grayscale shot still
-// counts the bars — so the tint a screen picks may only repeat what the fill and
+// non-colour channel the dual-coding gate asks for (a grayscale shot still
+// counts the bars), so the tint a screen picks may only repeat what the fill and
 // the printed percentage already say.
 inline constexpr int kBatteryLevels = 5;
 
@@ -72,7 +72,7 @@ inline int batteryLevel(int percent) {
 }
 
 // Which fill to DRAW, given what is drawn now. `shown` is the level currently on
-// screen, or -1 when nothing is (first reading, or the glyph was absent) — then the
+// screen, or -1 when nothing is (first reading, or the glyph was absent), then the
 // fresh level lands as-is, since there is nothing to flicker against. Otherwise a
 // move only happens once the percentage clears the edge it would cross by the
 // hysteresis margin, so a reading hovering on a band edge holds the fill it has.
@@ -88,14 +88,14 @@ inline int batteryLevelStable(int percent, int shown) {
                ? fresh : shown;
 }
 
-// Fold a fresh sample into the running reading — a quarter-weight EMA, so a lone
+// Fold a fresh sample into the running reading: a quarter-weight EMA, so a lone
 // noisy sample moves the displayed percentage by a few points rather than all the
 // way, and a real change still settles within a handful of samples. `prev` is the
 // last smoothed value, or -1 for no history (the first sample after a boot or a
 // wake lands as-is, because there is nothing yet for it to be noise against).
 //
 // The rounding guard is load-bearing, not a nicety: a plain integer EMA cannot
-// close the last point of a gap — (50*3 + 51)/4 truncates back to 50 forever — so
+// close the last point of a gap. (50*3 + 51)/4 truncates back to 50 forever, so
 // a reading one point away from the truth would never arrive at it.
 inline int smoothBatteryPercent(int prev, int sample) {
     if (prev < 0 || prev > 100) return sample;

@@ -1,10 +1,10 @@
-// carousel.h — the 8-slot L1 carousel: slot table + native-chrome renderer.
+// carousel.h (the 8-slot L1 carousel): slot table + native-chrome renderer.
 //
 // The slot table is the registration seam: each category is a data row,
 // so new modes drop in without
 // rewiring nav. Cursor order is the canonical slot assignment 1..8 (STAT, ITEMS,
 // GAMES, EXPL, MAINT, MODS, ARCH, CFG); top track = cursor 0..3, bottom = 4..7.
-// Book-wrap is then just (cursor±1) mod 8 — the 4->5 / 8->1 cross-screen jumps
+// Book-wrap is then just (cursor±1) mod 8: the 4->5 / 8->1 cross-screen jumps
 // fall out of the linear index.
 #pragma once
 
@@ -27,7 +27,7 @@ constexpr int kCarouselSlots = 8;
 
 // The longest a slot LABEL may be, on either face. In IconsLabel (the default) and
 // TextOnly the focused slot draws its word where its icon was, inside a focus box that
-// is sized to the word — so the budget is what leaves room for that box inside one
+// is sized to the word, so the budget is what leaves room for that box inside one
 // 56px column: 6 glyphs at kFontAdvance, plus the box's padding and stroke.
 //
 // It is a hard bound rather than a guideline, because overrunning it fails silently:

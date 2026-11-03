@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// TRACE CITY — a board read as a skyline, and the prize a hundred thousand steps pays
+// TRACE CITY: a board read as a skyline, and the prize a hundred thousand steps pays
 // out. Chip packages and capacitor towers standing on a horizon, their pin rows lit
 // like windows, and copper routed across the ground in front of them.
 //
@@ -21,7 +21,7 @@ namespace {
 // Pure value, and it has to be: a board's own copper is a colour the palette has no
 // token for, and faking one with `warn` is exactly what sceneTint refuses.
 constexpr uint8_t kToneHaze = 28;        // the lift off the city, such as it is
-constexpr uint8_t kToneDust = 74;        // specks — a board's flux haze, not stars
+constexpr uint8_t kToneDust = 74;        // specks: a board's flux haze, not stars
 constexpr uint8_t kToneFar = 42;         // the back rank of packages
 constexpr uint8_t kToneNear = 62;        // the front rank
 constexpr uint8_t kTonePin = 88;         // the pin rows down a package's side
@@ -46,7 +46,7 @@ constexpr uint8_t kFrontRank[] = {0, 0, 34, 34, 34, 34, 0, 0, 0, 22, 22, 22, 0, 
                                   40, 40, 0, 0};
 
 // The lit pin rows. A package's windows are its pins, so they come in EVEN PAIRS down
-// the two sides of a body rather than scattered across its face — which is the one
+// the two sides of a body rather than scattered across its face, which is the one
 // thing that tells a chip from an office block at this size.
 struct Package { uint8_t x, w, h, pins; };
 constexpr Package kLit[] = {{16, 24, 34, 5}, {64, 20, 22, 3}, {128, 32, 28, 4},
@@ -60,7 +60,7 @@ constexpr int kPinDrop = 5;              // rows below a package's top the first
 struct Cap { uint8_t x, w, h; };
 constexpr Cap kCaps[] = {{100, 9, 52}, {168, 7, 44}};
 
-// The flux haze. Thin, and hugging the horizon rather than filling the sky — the band
+// The flux haze. Thin, and hugging the horizon rather than filling the sky: the band
 // above a board is empty, which is what leaves this scene's upper rows to a screen.
 constexpr uint8_t kDust[][2] = {
     {28, 44}, {49, 88}, {70, 30}, {96, 66}, {121, 40},
@@ -69,7 +69,7 @@ constexpr uint8_t kDust[][2] = {
 
 // The routing on the near ground: a run goes out from the FOOT of the canvas, turns
 // once, and ends in a via. Each entry is where it starts, how far up it goes before the
-// corner, and how far across it then runs — a positive width turning right, a negative
+// corner, and how far across it then runs: a positive width turning right, a negative
 // one left. Measured from the foot rather than from the floor line so the runs stay in
 // the near band on both grounds, where 40 rows of floor is the tighter of the two.
 // Authored, because routing is authored.
@@ -104,7 +104,7 @@ void drawTraceCityScene(Framebuffer& fb, int beat, const SceneGround& g) {
     }
 
     // The pins. Two columns per package, and one pin in each column is LIT on a slow
-    // walk down the row — the same blink the rack lamps keep, and the scene's only
+    // walk down the row: the same blink the rack lamps keep, and the scene's only
     // motion above the ground.
     const Rgb565 pin = sceneTone(kTonePin);
     const Rgb565 win = sceneTone(kToneWindow);
@@ -124,7 +124,7 @@ void drawTraceCityScene(Framebuffer& fb, int beat, const SceneGround& g) {
     sceneMiddle(fb, g, kToneFar);
     sceneFloor(fb, g, /*seamPitch=*/64, kToneMask, kToneSeam, kToneKerb);
 
-    // The routing. Up, chamfer, across, via — in that order, because that is the order
+    // The routing. Up, chamfer, across, via: in that order, because that is the order
     // a run is drawn on a board and the chamfer is the join between the two legs.
     const Rgb565 copper = sceneTone(kToneTrace);
     const Rgb565 via = sceneTone(kToneVia);

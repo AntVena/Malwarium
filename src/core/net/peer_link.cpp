@@ -13,7 +13,7 @@ namespace {
 constexpr uint8_t kMagic[4] = {'M', 'L', 'W', 'M'};
 
 // Field offsets. Written out rather than derived from a packed struct so host and
-// device compilers can never disagree about padding — the same reason
+// device compilers can never disagree about padding: the same reason
 // NetworkLedger writes its records field by field.
 constexpr size_t kOffMagic = 0;
 constexpr size_t kOffVersion = 4;
@@ -55,7 +55,7 @@ bool decodePeerHello(const uint8_t* in, size_t len, PeerHello* out) {
     if (len != kPeerHelloSize) return false;
     if (std::memcmp(in + kOffMagic, kMagic, sizeof(kMagic)) != 0) return false;
     // Unknown version: the field map below is only valid for layouts this build
-    // knows. Refusing beats guessing — a newer peer is invisible, not garbled.
+    // knows. Refusing beats guessing: a newer peer is invisible, not garbled.
     if (in[kOffVersion] != kPeerProtoVersion) return false;
 
     PeerHello h;

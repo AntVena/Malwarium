@@ -1,4 +1,4 @@
-// palette.h — engine-facing access to the PAL_CORE role tokens.
+// palette.h: engine-facing access to the PAL_CORE role tokens.
 #pragma once
 
 #include "core/render/color.h"
@@ -6,19 +6,19 @@
 
 namespace mal {
 
-// The active theme — one index into the generated [theme][token] tables.
+// The active theme: one index into the generated [theme][token] tables.
 //
 // Every colour on the device is fetched through palColor() below, so this single
 // int is the whole theme switch: point it at another row and the entire interface
 // restyles on the next repaint, with no drawing call anywhere aware it happened.
 // That is the property to protect. A new theme (a colourblind-friendly set, a
 // high-contrast set) is a block in assets/PAL_CORE.json naming only the tokens it
-// changes, plus whatever chooses this index — never a sweep through the screens.
+// changes, plus whatever chooses this index, never a sweep through the screens.
 //
 // What chooses it is CFG · DEVICE · THEME, which stores the pick by NAME (save
 // v64) rather than by this index: the index is the JSON's row order, so a theme
 // inserted above another would silently restyle every device that had chosen the
-// one below it. Game::setThemePick is the only caller — nothing else moves the
+// one below it. Game::setThemePick is the only caller: nothing else moves the
 // index, so the applied theme and the saved one cannot drift apart.
 inline int& palThemeIndex() {
     static int idx = 0;
@@ -31,7 +31,7 @@ inline void setPalTheme(int i) {
 
 inline const char* palThemeName() { return kPalThemeNames[palThemeIndex()]; }
 
-// A named theme's index, or 0 (base) for a name no set answers to — which is what
+// A named theme's index, or 0 (base) for a name no set answers to, which is what
 // a save written by a firmware that shipped a theme this one doesn't have carries.
 // Falling back to base is the honest read of it: the device knows the pick is not
 // available, and base is the set every build has.
@@ -53,7 +53,7 @@ inline float palLum(Pal p) { return kPalLum[palThemeIndex()][static_cast<int>(p)
 // caller want this and both are about themes themselves: the CFG picker, which paints
 // a row of swatches in the set it is offering rather than describing it in words, and
 // the gate that walks every theme asserting the ladders hold in all of them. Drawing a
-// screen still goes through palColor() above — a screen that reached for a theme index
+// screen still goes through palColor() above: a screen that reached for a theme index
 // would be a screen with a colour opinion, which is the thing this file exists to stop.
 inline Rgb565 palColorIn(int theme, Pal p) {
     if (theme < 0 || theme >= kPalThemeCount) theme = 0;

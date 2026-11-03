@@ -1,4 +1,4 @@
-// test_camo.cpp — native gates for FX_CAMO, the sweep that repaints the pet in another
+// test_camo.cpp: native gates for FX_CAMO, the sweep that repaints the pet in another
 // line's colours while it swings a move borrowed from that line (core/render/camo.h).
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -14,7 +14,7 @@
 
 namespace {
 
-// A 4x1 strip of four known greys on transparent — four distinct luminances in a known
+// A 4x1 strip of four known greys on transparent: four distinct luminances in a known
 // order, which is the only property the ramp and the remap actually care about.
 struct Steps {
     uint16_t rgb[4];
@@ -40,7 +40,7 @@ struct Steps {
 void test_camo_ramp_is_a_value_scale() {
     Steps g;
     // Four unique colours is too plain to lend a palette, so the ramp is DERIVED from
-    // the sprite's main colour instead — a full ladder either way, which is the whole
+    // the sprite's main colour instead. A full ladder either way, which is the whole
     // rule: the pet is never left half-painted.
     const CamoRamp r = camoRampFrom(g.s);
     CHECK(r.count == kCamoRampMax);
@@ -48,7 +48,7 @@ void test_camo_ramp_is_a_value_scale() {
         CHECK(luminance(r.tone[i - 1]) <= luminance(r.tone[i]));
 
     // A 1-bit mask has one colour by construction. That ink is the main colour, and the
-    // ladder built from it is what turns a pet camouflaged as a Worm GREYSCALE — the
+    // ladder built from it is what turns a pet camouflaged as a Worm GREYSCALE: the
     // line is drawn in one white ink, so wearing it keeps every bit of the pet's own
     // shading and drains the hue out of it, rather than flattening it or flecking it.
     uint8_t bits[1] = {0x80};
@@ -81,7 +81,7 @@ void test_camo_ramp_is_a_value_scale() {
 // never uses. So a well-drawn opponent is genuinely that opponent's palette, not an
 // approximation of it.
 void test_camo_rich_palette_is_mostly_the_real_thing() {
-    // Ten tones spread across the value range — more than the ladder has rungs, and
+    // Ten tones spread across the value range: more than the ladder has rungs, and
     // deliberately not evenly spaced, which is what real pixel art looks like.
     uint16_t rgb[10];
     uint8_t alpha[10];
@@ -111,7 +111,7 @@ void test_camo_rich_palette_is_mostly_the_real_thing() {
 // --- Gate: the level arrives, HOLDS, and releases only when told to ---
 //
 // The promise the whole effect rests on. A colour that says "this pet is channelling
-// another line" has to stay put for as long as that is true — a level that drifted back
+// another line" has to stay put for as long as that is true: a level that drifted back
 // on its own would be describing a swing that finished rather than a move the pet is
 // still holding. So both ends are fixed points, and the only thing that moves the level
 // is the answer to `worn` changing.
@@ -135,7 +135,7 @@ void test_camo_level_holds_and_releases() {
 // --- Gate: at rest the effect is exactly the ordinary draw ---
 //
 // progress 0 and an empty ramp are both "not camouflaged", and both must put the
-// creature's OWN pixels on the canvas — otherwise every fighter not currently borrowing
+// creature's OWN pixels on the canvas, otherwise every fighter not currently borrowing
 // would be paying for this effect in colour accuracy.
 void test_camo_zero_is_the_plain_draw() {
     Steps g;
@@ -152,7 +152,7 @@ void test_camo_zero_is_the_plain_draw() {
         CHECK(empty.get(x, 0) == plain.get(x, 0));
     }
 
-    // Fully worn, every pixel is a tone from the ramp — the creature is entirely in
+    // Fully worn, every pixel is a tone from the ramp: the creature is entirely in
     // somebody else's colours rather than partly in its own.
     Framebuffer worn(kActiveW, kActiveH);
     worn.clear(0);
@@ -170,7 +170,7 @@ void test_camo_zero_is_the_plain_draw() {
 // --- Gate: a hit taken in borrowed colours flashes the CAMOUFLAGED pet ---
 //
 // The impact flash and the camouflage are both whole-body recolours, and drawn as
-// alternatives the flash won every frame the pet was struck — which read exactly like
+// alternatives the flash won every frame the pet was struck, which read exactly like
 // getting hit cancelled the disguise. Composed, the hit is still legible (it has its own
 // release gate) and the colours underneath it are still the borrowed ones.
 void test_camo_flash_composes_over_it() {
@@ -197,7 +197,7 @@ void test_camo_flash_composes_over_it() {
     CHECK(flashSeen);
     CHECK(camoKept);
 
-    // With no camouflage on, the same call is exactly the ordinary flash — the effect
+    // With no camouflage on, the same call is exactly the ordinary flash: the effect
     // costs a fighter that is not wearing anything nothing at all.
     Framebuffer bare(kActiveW, kActiveH);
     bare.clear(0);
@@ -207,8 +207,8 @@ void test_camo_flash_composes_over_it() {
 
 // --- Gate: the colours hold on the beat the RIVAL is the one striking ---
 //
-// The bug this stands on. Derived from `hitBeat` — the most recent strike by EITHER
-// fighter — the camouflage was taken off the pet the instant the rival hit back, which
+// The bug this stands on. Derived from `hitBeat` (the most recent strike by EITHER
+// fighter) the camouflage was taken off the pet the instant the rival hit back, which
 // is the commonest thing that can happen next. The screen now reads a standing level, so
 // this frame, in which the pet is mid-recoil from a hit it just took, is still a
 // camouflaged pet.
@@ -251,7 +251,7 @@ void test_camo_holds_through_a_counter_strike() {
 // The input to everything above, asserted in the fight rather than at the draw. What the
 // pet is wearing is a reading of ITS OWN last cast (`Combatant::lastMoveIdx`,
 // `WildPool::lastRolled`), and both are per-fighter and rewritten only when that fighter
-// acts — so a borrowed move is still what the pet is holding while the rival takes its
+// acts, so a borrowed move is still what the pet is holding while the rival takes its
 // turn, hits it, and hits it again. An effect derived from anything the rival's turn
 // moves comes off the pet at the commonest thing that can happen next.
 void test_borrowed_colours_outlive_the_rivals_turn() {
@@ -275,8 +275,8 @@ void test_borrowed_colours_outlive_the_rivals_turn() {
         c.begin(p, e, Combat::Stakes::Safe, seed);
 
         // Walk the fight. After each of the PET's own casts, whose colours it is in is
-        // that cast's answer; after everything else — every blow the rival lands in
-        // between — it has to still be the same answer, because none of that is the
+        // that cast's answer; after everything else (every blow the rival lands in
+        // between) it has to still be the same answer, because none of that is the
         // pet's cast.
         CamoTarget worn;
         for (int i = 0; i < 120 && c.outcome() == Combat::Outcome::Ongoing; ++i) {
@@ -336,7 +336,7 @@ void test_borrowed_line_is_worn_against_a_rival_that_has_nothing_to_do_with_it()
 // --- Gate: copying the fighter opposite outranks wearing the line ------------
 //
 // Two ways a cast can be somebody else's, and the pet takes the more specific one. A move
-// sitting in the rival's own kit — or belonging to the rival's line — makes the pet a copy
+// sitting in the rival's own kit (or belonging to the rival's line) makes the pet a copy
 // of THAT creature, down to whatever accent it alone carries; a move from a line the
 // rival has nothing to do with makes it the line. The rank matters because both are true
 // at once whenever the rival is on the line the roll came from.
@@ -358,7 +358,7 @@ void test_camo_copies_the_rival_before_the_line() {
                 borrowed = row;
                 slot = static_cast<int>(i);
             }
-            // Any generic row the stranger below is not itself holding — the innate jab
+            // Any generic row the stranger below is not itself holding: the innate jab
             // is in every kit in the game, so it cannot separate the two cases.
             if (row && !row->line && !generic && std::strcmp(row->id, "quick_jab") != 0)
                 generic = row;
@@ -383,7 +383,7 @@ void test_camo_copies_the_rival_before_the_line() {
     carrier.moves.push_back(borrowed);
     CHECK(camoTarget(p, carrier).source == CamoTarget::Source::Rival);
 
-    // A GENERIC roll is nobody's line, so only the rival's kit can claim it — which is
+    // A GENERIC roll is nobody's line, so only the rival's kit can claim it, which is
     // what puts the pet in a wild malbeast's colours for a move they both know.
     p.wildPools[slot].lastRolled = generic;
     Combatant stranger = mkCombatant(reg, "S", 4000, 25, {"quick_jab"});
@@ -396,7 +396,7 @@ void test_camo_copies_the_rival_before_the_line() {
 // --- Gate: a colour whose rung is taken moves over rather than being lost --------
 //
 // The ladder is indexed by the value of the pixel being replaced, so two hues a creature
-// wears at the SAME lightness — the ordinary shape of a two-tone design — both want one
+// wears at the SAME lightness (the ordinary shape of a two-tone design) both want one
 // rung. Keeping only the commonest of them spends a rung on an invented shade while a
 // real colour the creature actually has goes unworn, which is the one thing the baseline
 // exists to avoid rather than to cause.
@@ -434,7 +434,7 @@ void test_camo_ramp_keeps_a_colour_whose_rung_is_taken() {
 //
 // The dissolve says the pet is changing what it is copying, so it may only run when that
 // is true. A metamorphic pet rolls a fresh move every turn, and a run of them can keep
-// landing on the same creature — the fighter opposite, or the line it belongs to. What
+// landing on the same creature: the fighter opposite, or the line it belongs to. What
 // the pet is wearing has to sit there across all of them.
 void test_camo_same_creature_across_casts_is_not_a_change() {
     ContentRegistry reg = ContentRegistry::embedded();
@@ -524,7 +524,7 @@ void test_idle_camo_reaches_for_another_family() {
     const std::vector<const CreatureLine*> lines = reg.allCreatureLines();
     CHECK(lines.size() > 1);                            // there is somebody else to be
 
-    // Every family is reachable, and the pet's own never is — swept over the roster,
+    // Every family is reachable, and the pet's own never is: swept over the roster,
     // since which families exist is content and the rule has to hold for all of them.
     for (const CreatureLine* own : lines) {
         std::vector<const char*> seen;

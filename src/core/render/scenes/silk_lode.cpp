@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// THE SILK LODE — a crypt somebody built down here, and the silk that has had it since.
+// THE SILK LODE: a crypt somebody built down here, and the silk that has had it since.
 // The arcade is masonry: bays, piers, courses, an altar off to one side. Everything
 // hanging off it is web, and the webs are what the place is now for.
 constexpr uint8_t kToneWall = 38;

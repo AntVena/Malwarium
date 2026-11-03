@@ -1,4 +1,4 @@
-// sprite.h — sprite descriptor + blit, used by generated assets and the engine.
+// sprite.h: sprite descriptor + blit, used by generated assets and the engine.
 #pragma once
 
 #include <cstdint>
@@ -17,7 +17,7 @@ class Framebuffer;
 //
 // `None` is the three-quarter, turned-to-the-viewer standing pose that
 // assets/CREATURE_VISUAL_RULES.md §2 asks every creature for, plus every icon and
-// panel — a drawing with no side to it, or one carrying a detail that must not read
+// panel: a drawing with no side to it, or one carrying a detail that must not read
 // backwards. It is also the floor for a sheet that has not been looked at yet, and it
 // never mirrors, so an undeclared asset draws exactly as it is stored.
 //
@@ -29,43 +29,43 @@ enum class Facing : uint8_t { None = 0, Right, Left };
 // A sprite sheet: a grid of `rows` rows stacked vertically, each row a
 // horizontal strip of `frames` cells sized `frameW` x `h`. `rgb`/`a` are
 // sheetW(=frameW*frames) x (h*rows), row-major top-to-bottom; `a` is 0..255.
-// A single-row sheet (rows=1, the common case) behaves exactly as before —
+// A single-row sheet (rows=1, the common case) behaves exactly as before:
 // `h` has always meant one cell's height, so existing callers that never
 // pass `row` are unaffected. `rows` defaults to 1 so a zero-initialized
 // SpriteData (tests, placeholders) still addresses row 0 validly.
 //
 // THREE STORAGE FORMS, distinguished by `bits` and `pal`:
 //
-//   FULL COLOUR (`bits == nullptr`) — `rgb` + `a`, one entry each per pixel. The floor,
+//   FULL COLOUR (`bits == nullptr`): `rgb` + `a`, one entry each per pixel. The floor,
 //   and the only form that can hold more distinct pixel values than an 8-bit index
 //   addresses.
 //
-//   1-BIT MASK (`bits != nullptr`, `pal == nullptr`) — a packed bitmap plus the one
+//   1-BIT MASK (`bits != nullptr`, `pal == nullptr`): a packed bitmap plus the one
 //   colour `ink` that every set bit takes; `rgb`/`a` are null. Most of the ICON_*/UI_*
 //   family is a single flat fill on transparent with no partial-alpha pixel anywhere,
 //   because dim/bright is engine brightness and colour is applied at draw time
 //   (drawSpriteTinted). Stored as RGB565 + alpha, such a glyph spends 24 bits per
 //   pixel-bit of real information; as a mask it is exactly its own shape. This form
 //   also states "this drawing has no colour of its own", which is what lets camo/shred/
-//   absorb substitute a tint for it — ask spriteIsMask(), never `bits`.
+//   absorb substitute a tint for it: ask spriteIsMask(), never `bits`.
 //
-//   TILED (`tiles != nullptr`) — the same palette, but the sheet is cut into a grid of
+//   TILED (`tiles != nullptr`): the same palette, but the sheet is cut into a grid of
 //   square tiles whose edge is `1 << tileShift`, identical tiles are stored once, and each
 //   tile carries its OWN bit width. Two redundancies the flat forms cannot see: an
 //   animation row redraws most of its body every frame (`SPR_PET_KEYLOGGERHEAD` is 40
 //   distinct tiles across 672 positions), and the empty margin around a drawing collapses
 //   to a single one-byte tile however much of the cell it covers. A tile of one colour
 //   costs its width byte and nothing else. `tmap` holds each grid position's byte offset
-//   into `tiles`, so sharing and addressing are the same act — two positions with the same
-//   pixels simply hold the same offset — and a lookup stays O(1), which is what every
+//   into `tiles`, so sharing and addressing are the same act (two positions with the same
+//   pixels simply hold the same offset), and a lookup stays O(1), which is what every
 //   blitter needs: they walk DESTINATION pixels and source through spriteSrcX, so nothing
 //   reads a sheet in storage order.
 //
-//   INDEXED (`bits != nullptr`, `pal != nullptr`) — `bpp` bits per pixel into a palette
+//   INDEXED (`bits != nullptr`, `pal != nullptr`): `bpp` bits per pixel into a palette
 //   of RGB565 + coverage pairs (`pal`/`palA`). What a creature sheet needs: a sheet's
 //   distinct (colour, alpha) pairs number in the single or low double digits against
 //   43,008 pixels, so the pixels cost 3-6 bits each instead of 24 and the separate alpha
-//   plane stops being stored at all — transparent is simply an entry. Lossless: the
+//   plane stops being stored at all. Transparent is simply an entry. Lossless: the
 //   palette is DERIVED from the sheet's own pixels, so nothing is quantised and a sheet
 //   that gains a colour widens its palette (and, at a power of two, its `bpp`) by
 //   itself. A sheet needing more than 256 entries falls back to full colour. This is what
@@ -78,7 +78,7 @@ enum class Facing : uint8_t { None = 0, Right, Left };
 // window spriteIndexAt reads is always in bounds. Read it through spriteAlphaAt/
 // spriteColorAt below rather than by hand.
 // `contentX0`/`contentX1` are the horizontal band the DRAWING actually occupies inside
-// one frame cell — the union across every frame and row, so it is a fixed property of
+// one frame cell: the union across every frame and row, so it is a fixed property of
 // the sheet and a pose can never shift it. A cell is usually wider than what is drawn
 // in it (a 56-wide cell holding a 24-wide Cachemutt), and a screen that seats two
 // sprites against each other has to seat the drawings, not the cells: seating by the
@@ -108,7 +108,7 @@ struct SpriteData {
 
 // Which bitmap form `bits` holds. A mask is the one that carries no colour of its own, so
 // a pass that substitutes a tint for the stored colour (camo, shred, absorb) keys off
-// this rather than off `bits` — an indexed sheet has a palette and must keep it.
+// this rather than off `bits`: an indexed sheet has a palette and must keep it.
 inline bool spriteIsMask(const SpriteData& s) { return s.bits && !s.pal; }
 
 // Bytes per sheet row, in the 1-bit and the indexed form.
@@ -128,7 +128,7 @@ inline uint8_t spriteIndexAt(const SpriteData& s, int px, int py) {
 
 // The same, through the tile grid: find the tile, read the width it stored for itself,
 // then the pixel's field inside it. A width of zero is a tile that is one palette entry
-// all through — the empty margin, a flat backdrop — and stores no body at all.
+// all through (the empty margin, a flat backdrop), and stores no body at all.
 inline uint8_t spriteTileIndexAt(const SpriteData& s, int px, int py) {
     const int edge = 1 << s.tileShift;
     const int cols = (s.sheetW + edge - 1) >> s.tileShift;
@@ -142,8 +142,8 @@ inline uint8_t spriteTileIndexAt(const SpriteData& s, int px, int py) {
 }
 
 // The drawn band inside one frame cell (SpriteData::contentX0/contentX1), as a half-open
-// [x0, x1) column range. A sheet that never had the span measured — a zero-initialized
-// placeholder in a test — answers with the whole frame, which is what every caller
+// [x0, x1) column range. A sheet that never had the span measured (a zero-initialized
+// placeholder in a test) answers with the whole frame, which is what every caller
 // assumed before the span existed. Read both through these, never the fields: a caller
 // that took one with the fallback and the other without would measure a nonsense band.
 // `mirror` asks for the band a MIRRORED draw occupies, which is the same band measured
@@ -171,16 +171,16 @@ inline bool spriteMirrorToFace(const SpriteData& s, bool faceRight) {
 
 // The SHEET column a frame's own column `col` reads from. This is the whole of what a
 // mirror is: every blitter walks its DESTINATION unchanged and only sources from the
-// far side of the cell, so nothing that is keyed to a screen position — a dissolve's
-// scatter, a shred row's slide — has to know a sprite turned round.
+// far side of the cell, so nothing that is keyed to a screen position (a dissolve's
+// scatter, a shred row's slide) has to know a sprite turned round.
 inline int spriteSrcX(const SpriteData& s, int frame, int col, bool mirror) {
     return frame * s.frameW + (mirror ? s.frameW - 1 - col : col);
 }
 
 // One source pixel's coverage and colour, at sheet coordinates. Every form answers the
-// same two values the full-colour form would have stored — a mask has no partial coverage
+// same two values the full-colour form would have stored. A mask has no partial coverage
 // and no per-pixel colour by construction, and an indexed palette is derived from the
-// pixels themselves — which is why neither saving costs anything at the caller.
+// pixels themselves, which is why neither saving costs anything at the caller.
 inline uint8_t spriteAlphaAt(const SpriteData& s, int px, int py) {
     if (s.tiles) return s.palA[spriteTileIndexAt(s, px, py)];
     if (s.pal) return s.palA[spriteIndexAt(s, px, py)];
@@ -195,11 +195,11 @@ inline Rgb565 spriteColorAt(const SpriteData& s, int px, int py) {
 }
 
 // Alpha-composite frame `frame` of row `row` of `s` into `fb` with top-left
-// at (x, y), 1:1 (native resolution — used for UI chrome / icons).
+// at (x, y), 1:1 (native resolution: used for UI chrome / icons).
 void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
                 int row = 0);
 
-// Same, but every pixel takes `tint` instead of its stored colour — the sprite
+// Same, but every pixel takes `tint` instead of its stored colour: the sprite
 // supplies only the shape, through its alpha.
 //
 // Exact for the ICON_*/UI_* masters, which are a single flat `ink` fill on
@@ -207,7 +207,7 @@ void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
 // one. On a multi-colour sprite this flattens it to a silhouette, which is a
 // legitimate effect but not what this is for.
 //
-// Callers pass a colour from core/ui/theme.h, never a literal — and only where the
+// Callers pass a colour from core/ui/theme.h, never a literal, and only where the
 // screen already states the same meaning some other way. See that file's rule.
 //
 // `mirror` turns the glyph (spriteSrcX below) and `alpha` scales the coverage it is
@@ -220,7 +220,7 @@ void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, in
 
 // Same, but nearest-neighbour upscaled by num/den (the creature/pixel-art
 // path of the hybrid model). (destX, destY) is the top-left in active space.
-// `mirror` flips it horizontally inside its own cell — see spriteSrcX above, and
+// `mirror` flips it horizontally inside its own cell: see spriteSrcX above, and
 // spriteContentX0 for seating one.
 void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
                         int destX, int destY, int num, int den, int row = 0,
@@ -228,7 +228,7 @@ void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
 
 // Same as drawSpriteUpscaled, but each visible pixel is lerped toward
 // `flashColor` by `flashAmt` (0 = unchanged, 255 = solid flashColor) before
-// blending — the sprite's own alpha mask still carries the silhouette, so
+// blending: the sprite's own alpha mask still carries the silhouette, so
 // this reads as a "hit shader" flash of the creature's shape rather than a
 // new animation frame. flashAmt=0 is just drawSpriteUpscaled.
 void drawSpriteFlash(Framebuffer& fb, const SpriteData& s, int frame,
@@ -238,11 +238,11 @@ void drawSpriteFlash(Framebuffer& fb, const SpriteData& s, int frame,
 
 // Idle-loop frame for a creature sprite, clamped to what the sheet actually has:
 // the breathe alt-frame (1) only with a 2nd frame, an occasional blink (2) only
-// with a 3rd. A single-frame creature resolves to a static frame 0 — callers
+// with a 3rd. A single-frame creature resolves to a static frame 0: callers
 // still apply the positional idle bob, so it animates without extra frames. This
 // decouples "add a creature" from "animate a creature": a richer sheet animates
 // automatically as data (no code change), and a 1-frame placeholder never indexes
-// a missing frame (which the blitters skip — that would flicker the pet on/off).
+// a missing frame (which the blitters skip. That would flicker the pet on/off).
 inline int idleFrame(const SpriteData& s, int beat) {
     int f = (s.frames > 1 && (beat & 1)) ? 1 : 0;
     if (s.frames > 2 && beat % 12 == 6) f = 2;   // occasional blink

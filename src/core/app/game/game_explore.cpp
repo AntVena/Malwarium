@@ -15,7 +15,7 @@ namespace mal {
 // EXPL / Explore-mode --------------------------------------------
 
 // The durable flag blocks flattened for the shared expl_screen row helpers
-// (row-major [area*kExplSubAreas+sub]). Small stack copies — the caller reads them
+// (row-major [area*kExplSubAreas+sub]). Small stack copies: the caller reads them
 // once per press/frame, never holds the pointer.
 namespace {
 constexpr int kSubFlags = kExplSectors * kExplSubAreas;
@@ -25,7 +25,7 @@ constexpr int kSubFlags = kExplSectors * kExplSubAreas;
 // area's own AreaDef under src/core/content/areas/); a milestone drop (sub/area
 // boss clear, DeepWeb win, Epic cache) rolls one id from it, weighted by each
 // mod's RARITY (kModRarityWeight). The mod ids' powerTier (defs.h) mirrors the
-// area tier (1/2/3/4) — a calibration test asserts nothing early out-powers a
+// area tier (1/2/3/4): a calibration test asserts nothing early out-powers a
 // late mod.
 struct AreaModTable { const char* const* ids; int count; };
 
@@ -66,7 +66,7 @@ bool Game::areaBossReady(int area) const {
 
 // THREE-level EXPL navigation. explCat_ == None is the ACTIVITY PICKER (ui_state.h's
 // ExplCat) and `listRow_` indexes its four rows; inside a category `listRow_` indexes
-// the ladder's row space and explNavArea_ picks the level — -1 for the category's own
+// the ladder's row space and explNavArea_ picks the level: -1 for the category's own
 // rows, N for inside area N. `explRowLandable` centralises which LADDER rows a level
 // stops on, and explCatLandable does the same job for the picker.
 bool Game::explRowLandable(int row) const {
@@ -92,7 +92,7 @@ bool Game::explCatLandable(int catRow) const {
 }
 
 // The view struct the picker's lock/detail rules are answered from. Built here rather
-// than only in the renderer because the NAV asks the same questions the screen draws —
+// than only in the renderer because the NAV asks the same questions the screen draws:
 // a category the cursor skips and a category drawn as "??????" must be the same set,
 // and two copies of that rule would eventually disagree.
 ExplListView Game::explView() const {
@@ -118,10 +118,10 @@ int Game::areaHeaderRow(int area) const {
 
 void Game::openExplList() {
     // Entering EXPL. An explore-mode already running is almost always why the list is
-    // being opened mid-walk — to check the streak, or to move on — so a running walk
+    // being opened mid-walk (to check the streak, or to move on), so a running walk
     // RESUMES where the pet is, at the level it is standing on: a ladder area drills
     // straight to the armed sub-area, an endless zone parks on its own row. That is
-    // what keeps the ACTIVITY PICKER from costing the common case a press — the walk
+    // what keeps the ACTIVITY PICKER from costing the common case a press: the walk
     // you are already on is never more than the presses it was before.
     if (exploreActive_) {
         if (exploreSector_ >= 0 && exploreSector_ < kExplSectors) {
@@ -136,7 +136,7 @@ void Game::openExplList() {
             if (explRowLandable(listRow_)) return;
         }
     }
-    // Otherwise the picker, parked on its first open category — which is always STORY,
+    // Otherwise the picker, parked on its first open category, which is always STORY,
     // the one category that can never be locked.
     explCat_ = ExplCat::None;
     explNavArea_ = -1;
@@ -240,7 +240,7 @@ void Game::onExplList(const ButtonEvent& ev) {
 
 void Game::startExplore(int sector, int sub) {
     // Arm a sub-area: explore-mode starts and we return to the IDLE
-    // habitat — there is no walk screen. The badge appears; the tick auto-steps from
+    // habitat. There is no walk screen. The badge appears; the tick auto-steps from
     // Idle. The streak resets on a fresh arm (per-sub-area); durable sub-area
     // clear/boss-unlock persist.
     exploreActive_ = true;
@@ -251,7 +251,7 @@ void Game::startExplore(int sector, int sub) {
     exploreStepBeat_ = 0;
     exploreFlavor_[0] = '\0';
     // A fresh walk starts with a clean slate for the empty-queue Happiness-penalty
-    // throttle too — a drought from a much earlier walk should never suppress this
+    // throttle too: a drought from a much earlier walk should never suppress this
     // walk's first miss (see game.h's comment on emptyQueueStreak_).
     emptyQueueStreak_ = 0;
     nav_ = Nav::Idle;
@@ -261,7 +261,7 @@ void Game::startExplore(int sector, int sub) {
 
 void Game::startDeepWebDive() {
     // arm the endless terminal zone (unlocked once every area is cleared).
-    // Same idle-background model as startExplore, but on the virtual kDeepWebSector —
+    // Same idle-background model as startExplore, but on the virtual kDeepWebSector:
     // doExploreStep()/startEncounter() special-case it to scale enemies to the pet and
     // never reach the (nonexistent) boss ladder. A loss ends the dive like any wild.
     if (!deepWebUnlocked()) return;
@@ -271,7 +271,7 @@ void Game::startDeepWebDive() {
     exploreStreak_ = 0;
     // NB: deepWebDepthMultiplier_ is deliberately NOT reset here. A Deep-Learning
     // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) precisely so it
-    // applies to this dive — clearing it on the way in would consume the buff in the
+    // applies to this dive: clearing it on the way in would consume the buff in the
     // one mode it exists for. It is cleared where a dive ENDS instead.
     // A Backdoor/Rootkit/Kernel/Checkpoint Bell arms a start depth ahead of time
     // (Game::applyItemEffects); consume it here so a fresh dive begins there instead
@@ -299,8 +299,8 @@ void Game::startDeepWebDive() {
 
 void Game::startDarkWebCrawl() {
     // The terminal endless zone, reached through the portal at THE SILK LODE's ZERO DAY
-    // SHRINE. Everything about the walk is startDeepWebDive's — the same idle background,
-    // the same depth-as-streak, the same "a loss ends it" — on its own virtual sector, so
+    // SHRINE. Everything about the walk is startDeepWebDive's (the same idle background,
+    // the same depth-as-streak, the same "a loss ends it") on its own virtual sector, so
     // doExploreStep/startEncounter route to the crawl's roll instead of the dive's.
     //
     // What it does NOT share is the dive's start-depth items: a Bell buys a head start in
@@ -324,7 +324,7 @@ void Game::exploreBadgeLabel(char* out, size_t n) const {
     if (inDeepWebDive()) { std::snprintf(out, n, "%s", kDeepWebBadge); return; }
     if (inDarkWebCrawl()) { std::snprintf(out, n, "%s", kDarkWebBadge); return; }
     // The area's own short name (AreaDef::badge) + the 1-based sub number, e.g.
-    // "CITRUS 3" — sized to clear the right-anchored status field, and measured against it
+    // "CITRUS 3": sized to clear the right-anchored status field, and measured against it
     // by a native gate. A row that names none falls back to the first word of its display
     // name, which fits only by luck; the same gate is what says whether it did.
     const char* badge = explSectorBadge(exploreSector_);
@@ -339,7 +339,7 @@ void Game::doExploreStep() {
     // One explore step: re-arm the pacer, then resolve a GUARANTEED event
     // from the sector's weighted table. Wild encounters DOMINATE (the streak
     // needs wins); loot / Wi-Fi / shop / cache / key are the breather + reward beats.
-    // The boss is NOT on this table — it's a manual trigger. No "quiet" rolls.
+    // The boss is NOT on this table: it's a manual trigger. No "quiet" rolls.
     exploreStepBeat_ = 0;
     ++exploreSteps_;
     // The lifetime tally the STEPS ladder is measured against (AchSeries::StepsWalked)
@@ -369,14 +369,14 @@ void Game::returnToExplore() {
     nav_ = Nav::Idle;
     exploreStepBeat_ = 0;
     applyPendingRankUp();
-    autoArmBackupShield(kRigRowContinuousBackup);   // Rig Shop h — mid-run re-arm
-    maybeAutoDefrag();                              // Rig Shop i — hands-off upkeep
+    autoArmBackupShield(kRigRowContinuousBackup);   // Rig Shop h: mid-run re-arm
+    maybeAutoDefrag();                              // Rig Shop i: hands-off upkeep
     autoProgressStep();                             // may take over and re-aim the walk
 }
 
 void Game::autoProgressStep() {
     // The one place auto-progress acts. Every hand-back to the walk runs it, so the
-    // condition — not the call site — decides when a step happens: the armed sub-area
+    // condition (not the call site) decides when a step happens: the armed sub-area
     // has to have met its win target. Below that, nothing (the player is still grinding
     // it), which is why an unrelated hand-back like a resolved shop is harmless.
     if (!autoProgress_ || !exploreActive_) return;
@@ -386,20 +386,20 @@ void Game::autoProgressStep() {
     if (exploreStreak_ < kExploreStreakToBoss) return;
     // A boss unlocked by that streak and still standing is the step. A sub-area that's
     // already cleared never unlocks one again (game_combat.cpp), so on a re-run of a
-    // done area this falls straight through to the positional advance below — which is
+    // done area this falls straight through to the positional advance below, which is
     // what keeps the loop turning instead of parking on a fight that can't happen.
     if (subBossUnlocked_[a][s] && !subCleared_[a][s]) { startSubAreaBoss(a, s); return; }
     autoProgressAdvance(a, s);
 }
 
 void Game::autoProgressAdvance(int area, int sub) {
-    // The step rule: the NEXT rung by index, never "the next unfinished one" — that
+    // The step rule: the NEXT rung by index, never "the next unfinished one". That
     // would strand auto-progress the moment the ladder was complete, which is exactly
     // when a hands-off farm loop is worth having. Everything here is derived from the
     // area/sub indices, so an area spliced into the middle of kAreaList takes its place
     // in the rotation with no rule to update.
     if (sub < kExplSubAreas - 1) { startExplore(area, sub + 1); return; }
-    // Past the last sub-area the area's own gauntlet is the next rung — when it's
+    // Past the last sub-area the area's own gauntlet is the next rung, when it's
     // actually standing. Arming auto-progress midway through an area leaves earlier
     // sub-areas unbeaten, so there the rotation wraps to the first one and comes back
     // round to the gauntlet once they all are.
@@ -408,7 +408,7 @@ void Game::autoProgressAdvance(int area, int sub) {
 }
 
 int Game::wildWinXpBase(int sector) {
-    // The zone's own base, before wildWinXp's level-difference curve — see the contract
+    // The zone's own base, before wildWinXp's level-difference curve: see the contract
     // in game.h. Everything but the crawl pays the flat one.
     return sector == kDarkWebSector ? kWildWinXpReward * kDarkWebXpPct / 100
                                     : kWildWinXpReward;
@@ -463,7 +463,7 @@ int Game::exploreXpEfficiencyPct() const {
 
 int Game::nextOpenArea(int area) const {
     // The rung after `area`, wrapping past any still-locked area to the front of the
-    // ladder. `area` itself is the fallback and is always valid — you cannot be standing
+    // ladder. `area` itself is the fallback and is always valid: you cannot be standing
     // in a locked one.
     for (int i = 1; i <= kExplSectors; ++i) {
         const int a = (area + i) % kExplSectors;
@@ -474,14 +474,14 @@ int Game::nextOpenArea(int area) const {
 
 void Game::autoArmBackupShield(int gateRow) {
     if (!rigFeatureActive(gateRow)) return;   // not owned, or stopped on SHOP > SERVICES
-    if (backupShieldArmed()) return;          // already live — never doubles up
+    if (backupShieldArmed()) return;          // already live, never doubles up
     // applyItemEffects, not useItem: the upgrade grants the effect outright and never
     // reaches into the Vault, so owning it doesn't quietly eat the player's drives.
     if (const ItemDef* d = registry_.item(kBackupDriveId)) applyItemEffects(*d);
 }
 
 void Game::dismissPostEncounter() {
-    // Any button press, or the kPostEncounterMs timer (tick()), calls this — the
+    // Any button press, or the kPostEncounterMs timer (tick()), calls this: the
     // readout is informational only, nothing to confirm/cancel. Hands straight
     // back to the explore habitat, same as any other resolved event.
     returnToExplore();
@@ -491,13 +491,13 @@ void Game::onExploreControl(const ButtonEvent& ev) {
     // The A+C control overlay is a CURSOR LIST, exactly like combat's Exploit picker:
     // the chord opens it, and inside it A cycles the row, B does the focused thing and
     // C backs out to the habitat with the walk still running. The chord is the way in
-    // and nothing else — using it to drive a screen it opened is both against what the
+    // and nothing else: using it to drive a screen it opened is both against what the
     // Exploit chord means and awkward to press, since A registers on its own first.
     if (ev.button == Button::A) {
         exploreCtlRow_ = (exploreCtlRow_ + 1) % kExploreControlRows;
         return;
     }
-    if (ev.button == Button::C) { nav_ = Nav::Idle; return; }   // back — walk continues
+    if (ev.button == Button::C) { nav_ = Nav::Idle; return; }   // back: walk continues
     if (ev.button != Button::B) return;
     switch (static_cast<ExploreControlRow>(exploreCtlRow_)) {
         case ExploreControlRow::Ping:
@@ -506,7 +506,7 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             doExploreStep();                        // may re-enter a full-screen event
             break;
         case ExploreControlRow::Warp:
-            // Inert with no key to spend — the row stays, and says so.
+            // Inert with no key to spend: the row stays, and says so.
             if (!heldWarpKeys().empty()) { warpRow_ = 0; nav_ = Nav::WarpPicker; }
             break;
         case ExploreControlRow::AutoProgress:
@@ -515,10 +515,10 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             autoProgress_ = !autoProgress_;
             break;
         case ExploreControlRow::Sound:
-            setExploreSound(!exploreSound_);      // a mode too — the overlay stays open
+            setExploreSound(!exploreSound_);      // a mode too: the overlay stays open
             break;
         case ExploreControlRow::Stop:
-            // Read the dive flag BEFORE clearing exploreActive_ — inDeepWebDive() is
+            // Read the dive flag BEFORE clearing exploreActive_: inDeepWebDive() is
             // derived from it. Only a DIVE ending spends the depth multiplier; stopping
             // a sector walk leaves an armed Module/Core armed for the dive it was for.
             if (inDeepWebDive()) clearDiveDepthBuffs();
@@ -576,7 +576,7 @@ void Game::useWarpKey(const ItemDef& d) {
 }
 
 void Game::resolveSafeRestEvent(const ItemDef& d) {
-    // A guaranteed-safe rest: no combat, no roll — the pet rests and the Safe-Mode
+    // A guaranteed-safe rest: no combat, no roll. The pet rests and the Safe-Mode
     // boot lowers Fragmentation (rest de-frags). HOW MUCH is the key's own negative
     // Frag effect, so it applies through applyItemEffects like any other item and a
     // second, deeper rest key is a row rather than a branch here. The flavor line
@@ -597,16 +597,16 @@ void Game::debugSetExploreFlavor(const char* s) {
 
 void Game::resolveCacheEvent() {
     // A Sealed Cache find is NON-INTERRUPTING: it drops a locked
-    // container into the inventory and explore-mode keeps stepping — no sub-screen.
+    // container into the inventory and explore-mode keeps stepping. No sub-screen.
     // Roll a weighted container so different caches carry different pools (drawn on
     // Open, openSealedCache). The candidates are every item whose row declares a
-    // findWeight — so a cache that is only ever GRANTED (an achievement's Commendation
+    // findWeight, so a cache that is only ever GRANTED (an achievement's Commendation
     // Cache, weight 0) can never turn up here, and adding a findable one is a row.
     // The player opens whatever drops later, from the VAULT.
     int total = 0;
     for (const ItemDef* it : registry_.allItems())
         if (it->use == ItemDef::Use::OpenContainer) total += it->cache.findWeight;
-    if (total <= 0) return;                       // nothing findable — no cache event
+    if (total <= 0) return;                       // nothing findable: no cache event
     rng_ = rng_ * 1664525u + 1013904223u;
     int roll = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(total));
     const ItemDef* d = nullptr;
@@ -649,13 +649,13 @@ void Game::resolveKeyItemEvent() {
 }
 
 void Game::resolveLootEvent() {
-    // A loot-cache event resolves IN PLACE — no sub-activity — then
+    // A loot-cache event resolves IN PLACE (no sub-activity), then
     // explore-mode keeps stepping.
     grantLootReward(exploreFlavor_, sizeof(exploreFlavor_));
 }
 
 void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
-    // The shared reward-pool draw — flat Bits + a chance of one item.
+    // The shared reward-pool draw: flat Bits + a chance of one item.
     // Full drop tables are a later content pass; this seeds the mechanic.
     // Reused by the loot-cache event and the Wi-Fi sleeping-guardian/open-cache
     // sub-outcomes ("no new ones," same pool, same log path).
@@ -664,7 +664,7 @@ void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
     const bool dropItem =
         static_cast<int>((rng_ >> 16) % 100) < kLootItemChancePct;
     if (dropItem) {
-        // kLootPool is content (content_items.cpp, declared in content_tables.h) — it
+        // kLootPool is content (content_items.cpp, declared in content_tables.h): it
         // travels with its own count, since sizeof only works in the defining unit.
         // Weighted through the same draw a container uses (Game::drawCacheItem), so a
         // staple that is common in the caches is common on the walk too.
@@ -700,7 +700,7 @@ const char* Game::rollAreaModId(int area) {
 }
 
 const char* Game::rollAnyModId() {
-    // Global rarity-weighted draw across EVERY mod — the Epic sealed-cache jackpot (it
+    // Global rarity-weighted draw across EVERY mod: the Epic sealed-cache jackpot (it
     // can surface even a tier-4 mod, gated only by the rolled equip level).
     const std::vector<const ModDef*> all = registry_.allMods();
     int total = 0;
@@ -727,7 +727,7 @@ void Game::grantMod(const char* id) {
     char buf[kSaveTextCap];
     // A pool already holding modStorageCap() of this mod takes no more. The drop is
     // reported rather than swallowed, because a milestone reward that silently evaporates
-    // reads as a bug — and the line names the thing that would have caught it, which is
+    // reads as a bug, and the line names the thing that would have caught it, which is
     // the Rig Shop row that exists precisely to be wanted here.
     if (!loadout_.grant(id, modStorageCap())) {
         std::snprintf(buf, sizeof(buf), "%s: NO ROOM", m->displayName);
@@ -777,8 +777,8 @@ int Game::darkWebMovesToLearn() const { return movesToLearnIn(darkWebMovePool())
 
 bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // You learn a move by BEATING something that knows it. The pool is the defeated
-    // enemy's whole KIT — every move it could have used, not the ones it happened to
-    // roll — so a win teaches the same set however the fight actually went, and a short
+    // enemy's whole KIT (every move it could have used, not the ones it happened to
+    // roll), so a win teaches the same set however the fight actually went, and a short
     // fight is never a worse teacher than a long one. What a given enemy is worth
     // farming is therefore a property of the enemy, legible before the first swing.
     //
@@ -797,7 +797,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
         candidates.push_back(m->id);
     };
     for (const MoveDef* m : from.moves) consider(m);
-    // Own-line catch-up — a FALLBACK rather than a peer of the main pool: a pet raised
+    // Own-line catch-up. A FALLBACK rather than a peer of the main pool: a pet raised
     // before one of its line moves existed still fills the gap in, on a win the enemy
     // taught nothing new. A fresh hatch owns its whole line kit already
     // (MoveLoadout::startingForLine), so this is normally a no-op.
@@ -867,7 +867,7 @@ void Game::startBossRound(int carryHealth) {
 }
 
 void Game::finishBossRound() {
-    // Whether THIS call was the one that cleared the whole area — the only thing the
+    // Whether THIS call was the one that cleared the whole area: the only thing the
     // tail needs from the branches below, and the only beat with two chapters behind it
     // (game_story.cpp's fireStoryPair). A re-run of a cleared gauntlet is not a first
     // clear and reads nothing, which the read-set already enforces; this is what keeps
@@ -897,7 +897,7 @@ void Game::finishBossRound() {
         ++bossRound_;
         ++bossWins_;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten
         if (bossRound_ < static_cast<int>(bossGauntlet_.rounds.size())) {
-            startBossRound(surviving);              // next round, no heal — stays in Combat
+            startBossRound(surviving);              // next round, no heal: stays in Combat
             return;
         }
         // Boss beaten: pay the lump, record the clear. A SUB-AREA boss
@@ -910,7 +910,7 @@ void Game::finishBossRound() {
             subCleared_[bossSector_][bossSub_] = true;
             log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
             // a sub-area boss's FIRST clear has a chance to drop one of the
-            // area's mods (rarity-weighted). Re-clears never re-roll — permanent items
+            // area's mods (rarity-weighted). Re-clears never re-roll: permanent items
             // aren't farmable. The rolled equip-level gate decides when it's fieldable.
             if (firstClear) {
                 rng_ = rng_ * 1664525u + 1013904223u;
@@ -929,16 +929,16 @@ void Game::finishBossRound() {
             // in. The Title says where they have been; this is a piece of it to keep.
             if (!hadPlace) announceBackground(placeWon);
             log_.push(LogEventType::CombatWon, "AREA CLEARED");
-            // the AREA boss's first clear GUARANTEES a mod from the area table —
+            // the AREA boss's first clear GUARANTEES a mod from the area table:
             // the marquee reward for beating the 5-stage gauntlet. A re-run is not a
-            // first clear, so it pays its Bits lump and XP (above) and no mod — the same
+            // first clear, so it pays its Bits lump and XP (above) and no mod: the same
             // rule a re-farmed sub-area follows.
             if (firstClear)
                 if (const char* id = rollAreaModId(bossSector_))
                     grantMod(id);
             // Auto-progress moves off the gauntlet HERE rather than in autoProgressStep,
             // which cannot tell "the gauntlet is the next rung" from "the gauntlet is
-            // the rung just finished" — the armed sub-area is the area's last either
+            // the rung just finished": the armed sub-area is the area's last either
             // way. Re-aiming at the next area resets the streak, so the shared hook
             // finds nothing to do and the rotation carries on.
             if (autoProgress_) startExplore(nextOpenArea(bossSector_), 0);
@@ -947,7 +947,7 @@ void Game::finishBossRound() {
         // Any non-win loses the whole gauntlet. A loss takes the standard
         // live-stakes Frag hit once (×Bad-branch multiplier); a flee just
         // bails (no penalty, same as a wild flee). A draw is a loss. No sector clear either way. A boss
-        // loss ALSO cancels explore-mode + resets the streak — but the
+        // loss ALSO cancels explore-mode + resets the streak, but the
         // boss-unlock PERSISTS, so the player re-triggers it rather than re-grinding.
         if (combat_.lostOrDrawn()) {
             const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
@@ -960,7 +960,7 @@ void Game::finishBossRound() {
     // A cleared area's two OUTRO chapters, read back to back: what was just beaten,
     // then the place closing behind the pet. They fire AFTER the clear bookkeeping (and
     // after auto-progress has re-aimed the walk at the next area), so the reader hands
-    // back to a walk that is already pointed where it is going — StoryThen::Walk is the
+    // back to a walk that is already pointed where it is going: StoryThen::Walk is the
     // returnToExplore below, deferred until the chapters are done.
     if (!(clearedArea && fireStoryPair(bossSector_, StoryBeat::BossOutro,
                                        StoryBeat::AreaOutro, StoryThen::Walk)))

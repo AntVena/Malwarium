@@ -55,7 +55,7 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
 }
 
 // The two pages' own row tops. The flow itself (row heights, the fit count, the
-// scrollbar) is shared — core/ui/prose_page.h — because LOADOUT, BUFFS and the arena's
+// scrollbar) is shared; core/ui/prose_page.h, because LOADOUT, BUFFS and the arena's
 // opponent sheet are one page wearing three headers.
 constexpr int kLoadoutRowTop = 26;
 constexpr int kBuffRowTop = 28;
@@ -67,7 +67,7 @@ constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as L
 // the reader's map at once as it can, and a row here is a name and a number rather than
 // the icon-plus-label a carousel row carries.
 //
-// It still WINDOWS rather than shrinking to fit — the roster grows with the page count
+// It still WINDOWS rather than shrinking to fit: the roster grows with the page count
 // and with each page's sections, and a pitch chased down to hold all of it would end up
 // unreadable to buy an ability the list contract already provides (the cursor drives the
 // window, listScrollTop, and A/hold-C walk it).
@@ -78,7 +78,7 @@ constexpr int kIndexSubX = 32;     // a section INSIDE a page, indented under it
 constexpr int kIndexVisible = (kProseBottom - kIndexRowTop) / kIndexRowH;
 
 // BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
-// than a name plus a tag — the timer is live state, re-read every repaint, where a
+// than a name plus a tag: the timer is live state, re-read every repaint, where a
 // ProseRow's tag is set once when the row is built. Its headings are measured the same
 // way the shared flow measures its own (prose_page.cpp): the lead-in above one is part
 // of its height, and the heading that opens a window takes none.
@@ -101,7 +101,7 @@ std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows, int top) {
     return h;
 }
 
-// BUFFS' own fit count, over its own heights — the shared proseRowsFitting takes
+// BUFFS' own fit count, over its own heights: the shared proseRowsFitting takes
 // ProseRows, and this page's rows are not those. Same section rule as the shared flow,
 // including the half-full threshold that keeps a section break from spending a whole
 // screen on a one-row tail.
@@ -146,7 +146,7 @@ int buffWindowIndex(const std::vector<BuffRow>& rows, int scrollTop) {
 // The band every STAT page ends with. Two things belong on it and they are not the
 // same kind of fact: what the key under the reader's thumb does right now, and that
 // the INDEX exists at all. The second is the whole reason the band is drawn even on a
-// page with nothing to scroll — a hold gesture nothing names is a gesture nobody finds.
+// page with nothing to scroll: a hold gesture nothing names is a gesture nobody finds.
 //
 // `windows`/`window` are the page's own window count and which one is open, 1-based
 // for the reader: a scrollbar thumb says roughly how far down the page a reader is,
@@ -175,14 +175,14 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const Loadout& modLoad,
                                        Stage stage, bool isEgg) {
     std::vector<ProseRow> out;
-    // An egg can't train or mod (Game::slotLocked) — nothing to show.
+    // An egg can't train or mod (Game::slotLocked): nothing to show.
     if (isEgg) {
         out.push_back({false, "- NO LOADOUT -", {}, {}});
         return out;
     }
 
     out.push_back({true, "MOVES", {}, {}});
-    // One row per unlocked slot: the equipped move, or — when the slot is empty — the
+    // One row per unlocked slot: the equipped move, or (when the slot is empty) the
     // innate Quick Jab fallback marked (DEFAULT). Quick Jab is NOT a standalone row;
     // it surfaces only in a slot that has no move (mirrors the combat per-slot fallback,
     // ), so it never reads as a dedicated "default slot".
@@ -216,7 +216,7 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
 std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
     std::vector<ProseRow> out;
     if (!statPoints) return out;
-    // Stat order, then rung order — the same order the shared table is written in, and
+    // Stat order, then rung order: the same order the shared table is written in, and
     // the same order every other stat-indexed readout on the device uses (0 power ·
     // 1 defense · 2 speed · 3 max-Health).
     static const char* kStatNames[kLevelStatCount] = {"POWER", "DEFENSE", "SPEED",
@@ -227,7 +227,7 @@ std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
         ProseRow head{};
         head.header = true;
         head.label = kStatNames[i];
-        // The stat's own point total rides its heading — it is the one number on the page
+        // The stat's own point total rides its heading: it is the one number on the page
         // that is about the STAT rather than about a rung, and every "N TO GO" below is
         // measured from it, so the two have to be readable together.
         setProseTag(head, "%d PTS", points);
@@ -311,7 +311,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     // The two DeepWeb Dive depth buffs: which ITEM armed them isn't tracked
     // directly (Game only keeps the raw multiplier/depth), so find the item whose
     // effect matches the current state instead of hardcoding an id here.
-    // `heading` is which section the found row lands under — every arming lands under
+    // `heading` is which section the found row lands under: every arming lands under
     // ARMED, and an Epic dish's standing grant under PERMANENT.
     auto addByEffect = [&](ItemEffect::Kind kind, int magnitude, bool matchAnyMagnitude,
                            const char* heading = "ARMED") {
@@ -342,7 +342,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         addByEffect(ItemEffect::Kind::ForceEvolveBranchBad, 0, true);
     if (evolveSoakFactor > 1) {
         // Either soak Kind can be the one armed and Game keeps only the factor, so ask
-        // for the plain one first and fall back to the late one — the magnitude is what
+        // for the plain one first and fall back to the late one: the magnitude is what
         // tells a Sandbox-USB from a Hypervisor-USB, and only one row carries each.
         const std::size_t before = out.size();
         addByEffect(ItemEffect::Kind::ArmEvolveSoak, evolveSoakFactor, false);
@@ -352,7 +352,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     if (evolveHoldArmed) addByEffect(ItemEffect::Kind::ArmEvolveHold, 0, true);
     // Last, because these are the rows that never lapse: everything an Epic dish has
     // permanently given this pet. Found by effect like the dive buffs above rather than
-    // by id, so a dish that grants one can be renamed without touching this file — and
+    // by id, so a dish that grants one can be renamed without touching this file, and
     // in stat order, so a pet carrying several reads as one block rather than in
     // whichever order it happened to be fed.
     if (upgrades.bandwidthRegenMin > 0)
@@ -436,13 +436,13 @@ void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
 
     // Name and line tag are both content, and the widest pair of them wants more than
     // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
-    // The tag owns the right end — it is the fact this header adds that the rest of the
-    // page doesn't — and the name yields to it and scrolls.
+    // The tag owns the right end (it is the fact this header adds that the rest of the
+    // page doesn't), and the name yields to it and scrolls.
     char tag[24];
     tag[0] = '\0';
     if (line && line[0]) {
         // The line, not "<line> LINE": on a page headed SPECIES the word adds nothing
-        // and cost 40px that several creatures need — a twelve-letter name beside
+        // and cost 40px that several creatures need. A twelve-letter name beside
         // "METAMORPHIC LINE" overran the row, and the name is what the page is about.
         std::snprintf(tag, sizeof(tag), "%s", line);
         for (char* p = tag; *p; ++p)
@@ -456,13 +456,13 @@ void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
     constexpr int kSpeciesLineH = kFontH + 3;
     constexpr int kSpeciesTop = 50;
     // A paragraph break, not a section: the second block carries no heading of its
-    // own, so the gap and the dimmer ink are the whole of what separates them —
+    // own, so the gap and the dimmer ink are the whole of what separates them,
     // which is enough, because it reads as a footnote to the block above rather than
     // as a different KIND of thing. It also leaves the foot of the page free for
     // whatever the page grows next.
     constexpr int kBlockGap = 14;
     // The two blocks are a creature's own authored lore, and the roster's are not
-    // the same length — a Daemon's read runs to nine wrapped lines where a
+    // the same length: a Daemon's read runs to nine wrapped lines where a
     // Boot-Sector's takes three. So the first block is given the room that is
     // actually LEFT rather than a fixed allowance: measure the second, hold that
     // back, and the read takes the rest. Still capped by what remains, but the cap
@@ -602,7 +602,7 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
     const int shown = log.size() < EventLog::kCapacity ? log.size() : EventLog::kCapacity;
     if (shown == 0) {
         // A full page's worth of empty space read as an unfinished screen rather
-        // than an empty list — every other empty-state in the app ("- NO PETS -",
+        // than an empty list: every other empty-state in the app ("- NO PETS -",
         // "- SYSTEM CLEAN -") sits inside a page with other content around it, but
         // this page has nothing else on it. Centered in the space a populated log
         // would fill, with a second line saying what fills it, instead of pinned
@@ -642,7 +642,7 @@ StatIndexRow indexRow(const char* label, bool sub, int page, int anchor,
     return r;
 }
 
-// Rungs held in `rows[from..to)` — the TIERS page's own HELD tag counted back, so the
+// Rungs held in `rows[from..to)`: the TIERS page's own HELD tag counted back, so the
 // index reports exactly what the page under it shows and cannot drift from it.
 int rungsHeld(const std::vector<ProseRow>& rows, int from, int to) {
     int n = 0;
@@ -689,8 +689,8 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
 
     out.push_back(indexRow("LOADOUT", false, 2, 0, "%d/%d", movesOn + modsOn,
                            moveSlots + modSlots));
-    // The loadout's sections come off its own rows too, so an egg — whose page
-    // collapses to a single row and carries no headings — offers none of them.
+    // The loadout's sections come off its own rows too, so an egg (whose page
+    // collapses to a single row and carries no headings) offers none of them.
     for (int i = 0; i < static_cast<int>(loadoutRows.size()); ++i) {
         if (!loadoutRows[i].header) continue;
         const bool moves = std::strcmp(loadoutRows[i].label, "MOVES") == 0;
@@ -708,7 +708,7 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
     out.push_back(buffs > 0 ? indexRow("BUFFS", false, 5, 0, "%d", buffs)
                             : indexRow("BUFFS", false, 5, 0, "NONE"));
 
-    // The line, upper-cased — the same tag the SPECIES page heads itself with.
+    // The line, upper-cased: the same tag the SPECIES page heads itself with.
     char tag[14] = "";
     if (line && line[0]) {
         std::snprintf(tag, sizeof(tag), "%s", line);
@@ -729,7 +729,7 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
 
     const int n = static_cast<int>(rows.size());
     // One window, derived from the cursor the way every scrolling list on the device
-    // derives its own (layout.h) — so the rows drawn and the thumb below can never
+    // derives its own (layout.h), so the rows drawn and the thumb below can never
     // disagree about where the list is.
     const int top = listScrollTop(cursor, n, kIndexVisible);
     for (int v = 0; v < kIndexVisible && top + v < n; ++v) {
@@ -741,7 +741,7 @@ void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int c
             drawRowCursor(fb, 6, y, palColor(Pal::ACCENT));
         }
         // A section reads as part of the page above it: dimmer, and indented under it.
-        // The indent is the grayscale channel for that nesting — the dimming alone
+        // The indent is the grayscale channel for that nesting: the dimming alone
         // would not survive the gate.
         const Rgb565 ink = r.sub ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
         const int x = r.sub ? kIndexSubX : kIndexLabelX;

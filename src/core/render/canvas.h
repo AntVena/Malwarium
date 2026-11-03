@@ -1,4 +1,4 @@
-// canvas.h — fixed logical-canvas geometry for the render pipeline.
+// canvas.h: fixed logical-canvas geometry for the render pipeline.
 //
 // The engine always draws at the logical resolution and upscales the whole
 // canvas by kScaleNum/kScaleDen. Board-specific physical values live in
@@ -19,12 +19,12 @@ constexpr int kBezel = 8;        // hardware-ignored guard band per edge
 
 constexpr int kHeartbeatMs = 250;  // ~4fps event-driven repaint budget
 // Combat sprite motion (game_core.cpp) ticks on this faster, LOCAL cadence instead of
-// kHeartbeatMs while a fight is on screen — precedented by CORRUPTION ticking faster
+// kHeartbeatMs while a fight is on screen: precedented by CORRUPTION ticking faster
 // only while active. Doesn't touch kHeartbeatMs itself, so turn pacing / idle / battery
 // cost everywhere else is unaffected; only combat's own redraw rate doubles.
 constexpr int kCombatAnimMs = kHeartbeatMs / 2;        // ~8fps while Nav::Combat is up
 // A procedural dissolve (FX_ABSORB / FX_SHRED) ticks faster still, and only for the ~2s
-// it is actually sweeping — the same "may tick faster while active" allowance the
+// it is actually sweeping: the same "may tick faster while active" allowance the
 // corruption glitch takes, at the next step up. Nothing is stored per frame: the effect
 // is a pure function of the source pixel and the sweep position, so a smoother sweep
 // costs frames of CPU and SPI, never flash. A full 240x240 RGB565 blit is ~115KB, or
@@ -35,7 +35,7 @@ constexpr int kFxAnimMs = kHeartbeatMs / 4;            // ~16fps while a dissolv
 // Idle-canvas vertical zones, in active (224) space.
 constexpr int kTrackH = 40;                       // top / bottom carousel tracks
 constexpr int kLivingTop = kTrackH;               // 40
-constexpr int kLivingBottom = kActiveH - kTrackH; // 184 — the "shelf" pet feet rest on
+constexpr int kLivingBottom = kActiveH - kTrackH; // 184: the "shelf" pet feet rest on
 constexpr int kSlotCols = 4;
 constexpr int kSlotW = kActiveW / kSlotCols;      // 56
 

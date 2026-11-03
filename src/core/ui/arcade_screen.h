@@ -1,8 +1,8 @@
-// arcade_screen.h — GAMES: the cabinet list (L2), one cabinet's own page (L3), and
+// arcade_screen.h (GAMES): the cabinet list (L2), one cabinet's own page (L3), and
 // the payout that closes a run.
 //
 // Deliberately thin. The arcade draws the MENU around a minigame and nothing of the
-// game itself — every run hands off to the screen that already owns it (the Stacker
+// game itself: every run hands off to the screen that already owns it (the Stacker
 // board, the clutch panel, the quarantine buffer), so there is no second copy of any
 // game's rendering here to drift from the first. What comes back is a score, and this
 // file's last screen is what turns that into a number of Bits.

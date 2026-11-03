@@ -8,14 +8,14 @@ namespace mal {
 
 namespace {
 
-// UNDER THE PIER — the Phishing line's own place, and the reason a line gets to override
+// UNDER THE PIER: the Phishing line's own place, and the reason a line gets to override
 // how its creatures move. Half this line walks and half swims, so "a swimmer's water"
 // would have been the wrong fact about it. What is true of all of it is the OTHER END OF
 // THE LINE: something up there is fishing, and the whole scene is drawn from the point
 // of view of the thing being fished for.
 //
-// It shares the underwater inversion with the open water beside it — the column darkens
-// downward, so up is where the light is — and then puts a ceiling on it. The pier deck
+// It shares the underwater inversion with the open water beside it (the column darkens
+// downward, so up is where the light is), and then puts a ceiling on it. The pier deck
 // is the horizon, seen from beneath, and the pilings come down through the frame.
 // As with the open water beside it, the deep never reaches `paper`: the pet stands at
 // the bed, and a creature silhouetted against the darkest band on the panel has lost
@@ -33,7 +33,7 @@ constexpr uint8_t kToneBedLip = 106;
 
 constexpr int kWaterBands = 4;
 
-// How far down the frame the deck's underside reaches — a share of the water column, so
+// How far down the frame the deck's underside reaches: a share of the water column, so
 // the pier is overhead on every screen rather than only on the tall one.
 constexpr uint8_t kDeckUp = 224;
 // The planks, read from underneath: gaps of light between them, which is the one detail
@@ -41,16 +41,16 @@ constexpr uint8_t kDeckUp = 224;
 constexpr int kPlankPitch = 13, kPlankGap = 2;
 
 // The pilings, coming down through the whole frame and stopping in the bed. Pushed to
-// the margins — a pier's legs are the frame of this picture, and the middle is where a
+// the margins: a pier's legs are the frame of this picture, and the middle is where a
 // screen puts everything it has to say.
 struct Piling { int x, w; };
 constexpr Piling kPilings[] = {{10, 13}, {32, 9}, {186, 9}, {202, 13}};
-// Weed skirting each one at the waterline of its own growth — the fouled band that says
+// Weed skirting each one at the waterline of its own growth: the fouled band that says
 // how long the thing has been standing there.
 constexpr int kWeedTop = 44, kWeedH = 26;
 
 // THE LURE. Off-centre, hanging on a line that goes up out of the frame, and the
-// brightest thing in the scene by a wide margin — because it is meant to be, and because
+// brightest thing in the scene by a wide margin, because it is meant to be, and because
 // the joke only lands if the eye goes there first.
 constexpr int kLureX = 150;
 constexpr uint8_t kLureUp = 96;

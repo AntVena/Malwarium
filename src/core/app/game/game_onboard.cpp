@@ -1,9 +1,9 @@
-// game_onboard.cpp — what the device teaches a first-time player, and how it knows it
+// game_onboard.cpp: what the device teaches a first-time player, and how it knows it
 // already has.
 //
 // Nobody is standing beside a new operator, so the device has to say the things the
 // hint bands cannot: what an egg's first minigame is staking, which button opens the
-// menu, which part of the menu the pet needs right now — and, the first time each need
+// menu, which part of the menu the pet needs right now, and, the first time each need
 // comes up and the first time a walk is armed, WHY. Everything but the "!" marks is a
 // one-time TIP, a player-level persisted set (save v66) so a new egg does not re-teach
 // the buttons; the marks are a standing readout and are never "seen".
@@ -130,7 +130,7 @@ constexpr TipRowText kCareHappyRows[] = {
      "Its mood drifts down over time. Play anything in GAMES to cheer it up - every "
      "game pays Bits as well. Answering a guardian on the walk helps, as do some foods."},
 };
-// Errors happen while nobody is looking — a Lockout expires on an empty room — so these
+// Errors happen while nobody is looking (a Lockout expires on an empty room), so these
 // two wait for the next time the menu is opened, like every other card.
 constexpr TipRowText kFirstErrorRows[] = {
     {"AN ERROR",
@@ -163,7 +163,7 @@ constexpr TipRowText kShieldSpentRow = {
     "This pet has used its one Restore Point, so nothing blocks the next error. Keep FED "
     "up above all - an empty stomach is the usual fifth."};
 // The first sealed cache (or Decryptogram) is the first thing in the bag that only the
-// Hacker face can use — and that face is reached by a chord nothing else teaches.
+// Hacker face can use, and that face is reached by a chord nothing else teaches.
 constexpr TipRowText kFirstCacheRows[] = {
     {"YOUR SIDE",
      "A+C on the home screen flips to your side of the device: your profile, the "
@@ -398,7 +398,7 @@ bool Game::yubiReady() const {
 
 // --- WHILE YOU WERE AWAY ----------------------------------------------------------
 //
-// Lockouts expire, errors land, fights are won and lost, caches turn up — mostly while
+// Lockouts expire, errors land, fights are won and lost, caches turn up, mostly while
 // nobody is holding the device. The log records all of it, but a log is somewhere a
 // player has to think to go. So the first press after a long quiet is spent on a short
 // summary of exactly what changed, and only when something did.

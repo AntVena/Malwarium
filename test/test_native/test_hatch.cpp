@@ -1,4 +1,4 @@
-// test_hatch.cpp — native gates for the egg's hatch, its menu gates and the evolution
+// test_hatch.cpp: native gates for the egg's hatch, its menu gates and the evolution
 // boundary. DISK DECRYPTION's own rules live in test_decryption.cpp.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -22,8 +22,8 @@ void test_hatch_lays_egg_at_idle() {
     CHECK(g.generation() == 1);               // the egg is laid = generation 1
 }
 
-// The Ransomware egg opens straight onto its DISK DECRYPTION board — the same lay-time
-// deal every other line already had — and a board that runs out of attempts costs the
+// The Ransomware egg opens straight onto its DISK DECRYPTION board (the same lay-time
+// deal every other line already had), and a board that runs out of attempts costs the
 // egg nothing but the bonus.
 void test_hatch_opens_the_decryption_board() {
     Game g;
@@ -40,7 +40,7 @@ void test_hatch_opens_the_decryption_board() {
 }
 
 // The first egg of a line lays onto its board PAUSED under that board's RULES page, led
-// by what the egg stakes — the device's first screen has nobody beside it to explain
+// by what the egg stakes: the device's first screen has nobody beside it to explain
 // it. B walks the briefing forward and off its last page into play; it is spent once per
 // DEVICE, persisted, so the next egg of the line lays straight onto the board.
 void test_hatch_briefing_opens_once_per_line() {
@@ -110,7 +110,7 @@ void test_hatch_briefing_skips_and_stays_off_the_arcade() {
 }
 
 // Waiting out the full incubation (never opening the minigame) auto-hatches on its
-// own — straight to Process, no soft-lock.
+// own: straight to Process, no soft-lock.
 void test_hatch_waits_out() {
     Game g;
     pickFirstEggLine(g);
@@ -124,7 +124,7 @@ void test_hatch_waits_out() {
 
 // The device's first pet hatches half-fragmented, so MAINT's "!" invites a defrag at
 // once: that hatch hands over one Defrag Tool so the first defrag need not be a gamble.
-// Only the FIRST — every later egg is raised by someone who has met MAINT already. And
+// Only the FIRST: every later egg is raised by someone who has met MAINT already. And
 // the gamble it replaces is priced where it is taken: maintFailPct is what the roll uses.
 void test_first_hatch_grants_a_defrag_tool() {
     Game g;
@@ -204,7 +204,7 @@ void test_hatch_egg_vitals_frozen() {
     const int h0 = g.model().hunger();
     g.tick(t += kBootHatchMs / 4);            // well within the first half
     CHECK(g.inEggPhase());
-    CHECK(g.model().hunger() == h0);          // frozen — no decay while an egg
+    CHECK(g.model().hunger() == h0);          // frozen: no decay while an egg
 }
 
 // Grayscale gate: the egg-at-idle reads without colour (egg silhouette + the
@@ -237,7 +237,7 @@ static void cursorToSlot(Game& g, SubmenuId id) {
 }
 
 // Egg-phase menu lock: GAMES/MAINT/MODS/EXPL are inert while the
-// pet is an egg (B on them does not open the submenu) — an egg can't explore. Only
+// pet is an egg (B on them does not open the submenu). An egg can't explore. Only
 // STAT/ITEMS stay reachable. Once hatched, every slot enters normally.
 void test_egg_menu_locks() {
     Game g;                                       // FreshHatch -> egg at idle
@@ -266,7 +266,7 @@ void test_egg_menu_locks() {
     CHECK(h.nav() == Game::Nav::Submenu);
 }
 
-// Egg-phase items: only quest items are usable — a Food item's Use is inert (no
+// Egg-phase items: only quest items are usable. A Food item's Use is inert (no
 // feeding, count unchanged) while an egg, but works once hatched.
 void test_egg_items_quest_only() {
     { Game g;                                     // egg
@@ -287,7 +287,7 @@ void test_egg_items_quest_only() {
       CHECK(h.inventory().count("dyno_nuggets") == n0 - 1); }
 }
 
-// The A+C Exploit chord cracks the shell — but only in the home stretch of the clock
+// The A+C Exploit chord cracks the shell, but only in the home stretch of the clock
 // (the exploit symbol's window). Inert before that, on every line.
 void test_egg_exploit_chord_hatches() {
     Game g;

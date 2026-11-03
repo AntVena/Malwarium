@@ -1,11 +1,11 @@
-// The Trojan family — NOT hatched from an egg (it has no EggLineDef), reached only
+// The Trojan family, NOT hatched from an egg (it has no EggLineDef), reached only
 // by the cross-line infiltration divert: a pet whose `evolvesToTrojanId` is set has a
 // ~kTrojanDivertPct chance of landing here instead of its own successor
 // (Game::fireEvolution). The first divert unlocks the family.
 //
 // The family has no chain of its own, and that is the shape rather than a gap. Every row
 // here is a substitution for one row of some OTHER line, so a Trojan is always read
-// against the creature the player was expecting — which is the only way a disguise can
+// against the creature the player was expecting, which is the only way a disguise can
 // be a disguise. What it inherits is decided by WHERE it was substituted in:
 //
 //   Phishlet (Phishing, Process)   -> Keyloggerhead, a Script, blue like its origin
@@ -18,7 +18,7 @@
 //
 // Keyloggerhead is the first Trojan Script: a Phishlet that "went wrong". It keeps a
 // Phishing-blue read but is now line = "trojan", so on divert it drops the Phishing
-// kit for the Trojan moves (pierce attacks + trap defends) — hence the Defend-leaning
+// kit for the Trojan moves (pierce attacks + trap defends), hence the Defend-leaning
 // slotKinds, which make the trap strategy available.
 #pragma once
 
@@ -56,7 +56,7 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
     // still gets the durable Daemon, it is simply wearing a connector now.
     //
     // Both CRAWL, and they are the only Daemons of that shape in the roster. Leaving the
-    // floor is the Worm line's one payoff — the whole family crawls up to and including
+    // floor is the Worm line's one payoff: the whole family crawls up to and including
     // its Script, and both its real Daemons earn a mover (Swim, Fly) at the last hop.
     // A Trojan is what happens when that hop is spent on a disguise instead, so it does
     // not get the payoff: the divert is the trade, and the locomotion is where the

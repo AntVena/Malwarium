@@ -13,7 +13,7 @@ namespace {
 // Watchdog Timer can never loosen the ceiling the first one bought, and the STRONGEST
 // cut wins (HighestMag) so a weaker Faraday Cage or Canary Trap can never dilute a
 // better one. `mag2` rides along with whichever copy won, because a threshold and its
-// payload are one setting — pairing Meltdown Core's 30% threshold with another copy's
+// payload are one setting: pairing Meltdown Core's 30% threshold with another copy's
 // 40% power bonus would invent a mod neither row declares.
 constexpr ModRule kModRules[] = {
     {ModEffect::RaidMirror,           ModCombine::Arm,         0,   true},
@@ -36,7 +36,7 @@ constexpr ModRule kModRules[] = {
     {ModEffect::FirstStrikeRankMult,  ModCombine::Arm,         0,   true},
     {ModEffect::FirstHitCutPct,       ModCombine::HighestMag,  0,   true},
     {ModEffect::LowHealthPowerPct,    ModCombine::HighestMag,  0,   false},
-    // Race Condition is a gamble, not a guarantee — there is no "better" chance/payout pair
+    // Race Condition is a gamble, not a guarantee: there is no "better" chance/payout pair
     // to pick between (a higher chance may pay less), so the last slot walked defines
     // it rather than a comparison inventing a preference.
     {ModEffect::GambleBattlePowerPct, ModCombine::Replace,     0,   false},
@@ -48,7 +48,7 @@ constexpr ModRule kModRules[] = {
     {ModEffect::ScrambleWard,         ModCombine::HighestMag,  0,   false},
     {ModEffect::StealAmplifyPct,      ModCombine::Sum,         0,   false},
     // Both line build-arounds add percentage POINTS to a passive's own roll, so they sum
-    // the way any other bonus to the same roll would, and both cap at 100 — the roll they
+    // the way any other bonus to the same roll would, and both cap at 100: the roll they
     // feed is a percent chance, and a mod that could push one past certainty would turn a
     // passive the whole line is balanced around into a guarantee.
     {ModEffect::ExecOverridePct,      ModCombine::Sum,         100, false},
@@ -58,10 +58,10 @@ constexpr ModRule kModRules[] = {
     // that is already bounded by the vocabulary moveEffectMask can report.
     {ModEffect::PolymorphEffectPct,   ModCombine::Sum,         0,   false},
     // Both scale a quantity rather than feeding a percent roll, so neither takes the 100
-    // cap its two neighbours above do — there is no certainty for them to push past.
+    // cap its two neighbours above do: there is no certainty for them to push past.
     //
     // The ledger carries TWO magnitudes (standing, and again while holding a seizure), and
-    // Sum only ever accumulates the first — so it takes HighestMag, which is what every
+    // Sum only ever accumulates the first, so it takes HighestMag, which is what every
     // other two-magnitude row here uses (LowHealthPowerPct is the shape).
     {ModEffect::ExtortionLedger,       ModCombine::HighestMag,  0,   false},
     {ModEffect::ReplicaWorthPct,      ModCombine::Sum,         0,   false},
@@ -130,7 +130,7 @@ void ModStateSet::apply(ModEffect kind, int magnitude, int magnitude2) {
     const ModRule* r = modRule(kind);
     if (!r) return;
     // Comparison rules only ever record a winner, so a copy that loses (or declares
-    // nothing) leaves the set untouched — an absent entry reads as 0 at every hook.
+    // nothing) leaves the set untouched: an absent entry reads as 0 at every hook.
     const ModState* cur = find(kind);
     switch (r->combine) {
         case ModCombine::Arm:

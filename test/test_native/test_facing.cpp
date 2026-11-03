@@ -1,8 +1,8 @@
-// test_facing.cpp — native gates for how a fighter is POSED on the combat stage: which
+// test_facing.cpp. Native gates for how a fighter is POSED on the combat stage: which
 // way its drawing is turned (the sheet's declared Facing, core/render/sprite.h, and the
 // mirror every blitter takes off it), and when it wears its authored flinch rather than
 // its idle (hurtPoseEarned, core/ui/combat_screen.h). Both answer the same question from
-// opposite ends — what a fighter looks like it is doing on any given beat.
+// opposite ends: what a fighter looks like it is doing on any given beat.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these.
@@ -20,7 +20,7 @@
 namespace {
 
 // An asymmetric 4x2 cell: every pixel a different colour, and the left half opaque
-// against a transparent right. Asymmetry is the whole point — a symmetric fixture
+// against a transparent right. Asymmetry is the whole point: a symmetric fixture
 // cannot tell a mirror from a no-op, which is exactly the bug these gates exist to
 // catch.
 struct Lopsided {
@@ -51,7 +51,7 @@ bool mirrorsAcross(const Framebuffer& a, const Framebuffer& b, int x0, int y0,
 //
 // The one property everything else here leans on. Both draws walk the same destination
 // and differ only in which source column they read (spriteSrcX), so the result has to
-// be an exact reflection — not merely "different", which a sampling bug would also be.
+// be an exact reflection, not merely "different", which a sampling bug would also be.
 void test_facing_mirror_reverses_the_draw() {
     Lopsided g;
     Framebuffer plain(kActiveW, kActiveH), flipped(kActiveW, kActiveH);
@@ -95,7 +95,7 @@ void test_facing_mirror_reaches_every_creature_blit() {
     drawSpriteCamo(camoFlipped, g.s, 0, 0, 0, 1, 1, ramp, 255, /*flashColor=*/0,
                    /*flashAmt=*/0, /*row=*/0, /*from=*/nullptr, /*mirror=*/true);
     // The camo grain is hashed on the SOURCE pixel, so it mirrors WITH the creature
-    // rather than staying put underneath it — which is what makes this an exact
+    // rather than staying put underneath it, which is what makes this an exact
     // reflection and not merely a different speckle.
     CHECK(mirrorsAcross(camoPlain, camoFlipped, 0, 0, g.s.frameW, g.s.h));
 
@@ -121,7 +121,7 @@ void test_facing_mirror_reaches_every_creature_blit() {
 //
 // Seating is by CONTENT, not by cell (see spriteContentX0), and a sprite padded to one
 // side of its cell moves that padding's width when it turns. Reading the un-mirrored
-// span for a mirrored draw is therefore not a rounding error — it stands the creature
+// span for a mirrored draw is therefore not a rounding error: it stands the creature
 // visibly off its own seat.
 void test_facing_content_span_follows_the_mirror() {
     Lopsided g;                                   // drawn band [0, 2) of a 4-wide cell
@@ -165,7 +165,7 @@ void test_facing_undeclared_is_never_mirrored() {
 // --- Gate: the roster's declared facings survive a regeneration ---
 //
 // FACING lives in tools/gen_assets.py, so it is one table away from being silently
-// dropped — and a dropped table is invisible: every sheet still renders, and half the
+// dropped, and a dropped table is invisible: every sheet still renders, and half the
 // roster quietly goes back to showing its opponent its tail. These four are the corners
 // of the table: a pet drawn each way, a wild, and one of the many with no side at all.
 void test_facing_roster_declarations_hold() {
@@ -191,7 +191,7 @@ void test_facing_roster_declarations_hold() {
 // --- Gate: the body's answer to a hit is reserved for hits that earned it ---
 //
 // The reason this file's other gates matter: a fight the player can read. Fighters
-// alternate, so "was damaged" is true of somebody on nearly every resolved turn — the
+// alternate, so "was damaged" is true of somebody on nearly every resolved turn: the
 // pose, and the shove that goes with it, have to answer a narrower question than that
 // or they are on screen permanently.
 void test_hurt_pose_is_reserved_for_real_hits() {
@@ -217,7 +217,7 @@ void test_hurt_pose_is_reserved_for_real_hits() {
     CHECK(hurtPoseEarned(c, 1));
 
     // ...for the POSE only. The knock-back that carries it asks about the BLOW, and a
-    // chip is still a chip whatever state the fighter it lands on is in — otherwise a
+    // chip is still a chip whatever state the fighter it lands on is in, otherwise a
     // locked fighter is shoved across the stage by every tick of the thing holding it.
     CHECK(!heavyHit(c, 1));
     CHECK(heavyHit(c, kHeavyHitPctOfMax));
@@ -284,7 +284,7 @@ void test_strike_mark_follows_a_wildcard_to_its_roll() {
 // The property the pair exists for, stated the way the player sees it: a sequence of
 // attacks, whoever threw them, in which each differs from the one before. Counting per
 // FIGHTER instead satisfies a different and weaker property and breaks this one outright
-// for two same-line fighters trading blows — see strikeMark's declaration.
+// for two same-line fighters trading blows: see strikeMark's declaration.
 void test_strike_mark_never_repeats_between_blows() {
     MoveDef m{}; m.id = "payload_drop"; m.line = "ransomware";
     Combatant a{}, b{};
@@ -327,7 +327,7 @@ void test_strike_mark_walks_whatever_the_sheet_ships() {
 //
 // A source quietly drawn with one frame would hold still while the rest of the set
 // alternated, and one drawn facing left would turn the wrong way in both seats. Neither
-// shows up as an error anywhere else — the mark still renders.
+// shows up as an error anywhere else: the mark still renders.
 void test_strike_sheets_are_pairs_facing_right() {
     for (const SpriteData* s : {&ASSET_UI_STRIKE_COMMON, &ASSET_UI_STRIKE_RANSOMWARE,
                                 &ASSET_UI_STRIKE_PHISHING, &ASSET_UI_STRIKE_TROJAN,

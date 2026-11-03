@@ -1,9 +1,9 @@
-// test_gates.h — what every native gate unit shares: the includes, the CHECK
+// test_gates.h (what every native gate unit shares): the includes, the CHECK
 // macro in both its harness flavours, and the fixtures more than one unit drives.
 //
 // The gates themselves live in test_<subject>.cpp beside this file; test_main.cpp
 // holds the roster and main(). A helper belongs HERE only once a second unit needs
-// it — one that drives a single subject stays private to that unit, where a reader
+// it: one that drives a single subject stays private to that unit, where a reader
 // looking at the test can see what it does without leaving the file.
 #pragma once
 #include <cmath>
@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "core/app/game.h"
-#include "core/app/game_internal.h"   // kMergeRecipes — item earn-path coverage guard
+#include "core/app/game_internal.h"   // kMergeRecipes: item earn-path coverage guard
 #include "core/app/pedia_state.h"
 #include "core/content/areas/darkweb_crawl/area.h"
 #include "core/content/areas/deepweb_dive/area.h"
@@ -48,7 +48,7 @@
 #include "core/render/absorb.h"
 #include "core/render/canvas.h"
 #include "core/render/color.h"
-#include "core/render/font.h"      // textWidth — mirroring a screen's own layout maths
+#include "core/render/font.h"      // textWidth: mirroring a screen's own layout maths
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
@@ -60,9 +60,9 @@
 #include "core/ui/expl_screen.h"
 #include "core/ui/modals.h"
 #include "core/ui/train_screen.h"
-#include "core/app/game_rig_shop.h"  // rigSpec — the Rig Shop shares the readout rails
-#include "core/app/game_internal.h"  // kRigRowPitch — the SHOP row geometry
-#include "core/ui/widgets.h"      // gridLines — the readout grid's own packing rule
+#include "core/app/game_rig_shop.h"  // rigSpec: the Rig Shop shares the readout rails
+#include "core/app/game_internal.h"  // kRigRowPitch: the SHOP row geometry
+#include "core/ui/widgets.h"      // gridLines: the readout grid's own packing rule
 #include "core/ui/items_screen.h"
 #include "core/ui/maint_screen.h"
 #include "core/ui/mods_screen.h"
@@ -89,7 +89,7 @@ inline mal::CombatView fightView(const mal::SpriteData* player, const mal::Sprit
 }
 inline mal::ButtonEvent lift(mal::Button b) { return {b, false, false}; }
 
-// A COMPLETE C press — down and up. On a list C is a tap/hold pair (a tap cancels, a
+// A COMPLETE C press: down and up. On a list C is a tap/hold pair (a tap cancels, a
 // hold walks the cursor backward, Game::listBackStep), so the press edge alone is only
 // half of one and settles nothing. Off a list the release is inert and this is just the
 // press. Every gate that means "back out of here" wants this rather than press(C).
@@ -98,10 +98,10 @@ inline void tapC(mal::Game& g) {
     g.onButton(lift(mal::Button::C));
 }
 
-// A COMPLETE B press. Five screens read B as a tap/hold pair — the ITEMS list once
+// A COMPLETE B press. Five screens read B as a tap/hold pair. The ITEMS list once
 // Type-Tabs is owned, the MOVES picker, the Hacker VAULT once Bulk-Open is owned, the
 // CFG Factory Reset, and ROCK THE DOCK's bracket (tap starts the bout, hold opens the
-// focused entrant's scout sheet) — and on those the press edge only ARMS. Elsewhere the
+// focused entrant's scout sheet), and on those the press edge only ARMS. Elsewhere the
 // release is inert. Use this wherever a gate means "accept this row"; use a bare
 // press(B) followed by a tick only when the gate is deliberately driving a hold.
 inline void tapB(mal::Game& g) {
@@ -123,7 +123,7 @@ private:
 };
 
 // A store that can be told to refuse a write. The heap guard's refusal is already
-// drivable (setHeapProbe); this is the other half — the save was built and handed over,
+// drivable (setHeapProbe); this is the other half: the save was built and handed over,
 // and the MEDIUM said no, which on device is a short NVS write.
 class RefusingSaveStore : public ISaveStore {
 public:
@@ -157,8 +157,8 @@ inline int achBitsReward(const char* id) {
 // Dual-mode gate runner. The gate bodies in the units beside this header are the
 // single source of truth; they run under two harnesses depending on how the file is
 // compiled:
-//   * ctest (CMake `mal_tests`)  — the counting CHECK + hand-rolled main().
-//   * `pio test -e native`       — PlatformIO's runner, on the Unity C test framework
+//   * ctest (CMake `mal_tests`):  the counting CHECK + hand-rolled main().
+//   * `pio test -e native`:       PlatformIO's runner, on the Unity C test framework
 //                                  it bundles (not the game engine): CHECK maps to a
 //                                  Unity assertion and each gate is a RUN_TEST
 //                                  (PlatformIO defines PIO_UNIT_TESTING for test builds).
@@ -185,7 +185,7 @@ extern int g_failures;   // defined in test_main.cpp
 // exercises the same code the device does on the way there.
 
 // A region has a grayscale-bright pixel (the white glyph reads against the dark
-// #14171c paper without colour) — the non-colour channel these icons live on.
+// #14171c paper without colour): the non-colour channel these icons live on.
 inline bool anyLitGray(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
     for (int y = y0; y < y1; ++y)
         for (int x = x0; x < x1; ++x)
@@ -197,7 +197,7 @@ inline bool anyLitGray(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
 //
 // This is what "the slot is clear" has to mean now that a screen stands in a PLACE
 // (Game::habitatScene). A gate asserting a region was `paper` was really asserting that
-// no ICON was drawn there, and the panel behind it is no longer blank — so the claim is
+// no ICON was drawn there, and the panel behind it is no longer blank, so the claim is
 // made against a frame that differs only in the thing under test, which says it about
 // the icon rather than about the whole screen.
 inline bool regionDiffers(const Framebuffer& a, const Framebuffer& b,
@@ -229,7 +229,7 @@ inline int litCellsGray(const Framebuffer& fb, int gx, int gw, int rowY) {
     return lit;
 }
 
-// Walk the HACKER carousel to `slot` and enter it — the A+C chord flips the face
+// Walk the HACKER carousel to `slot` and enter it: the A+C chord flips the face
 // first, so a caller mid-submenu is backed out to idle before the chord is spent.
 inline void enterHackerSlot(Game& g, HackerSlotId slot) {
     while (g.nav() != Game::Nav::Idle) tapC(g);
@@ -251,7 +251,7 @@ inline void enterSlot(Game& g, SubmenuId id) {
 // (Ransomware + Phishing). These gates predate line-select, so pick the first line
 // (Ransomware) to lay its egg and match the historical straight-to-egg behaviour. A
 // no-op when the modal isn't up (e.g. a save-store boot that loaded a live pet).
-// Play out a DISK DECRYPTION board without cracking it, and dismiss the verdict — the
+// Play out a DISK DECRYPTION board without cracking it, and dismiss the verdict: the
 // egg keeps its full clock and the run costs nothing. Deterministic by construction:
 // B alone never cycles a colour, so every row is locked in as GGG, and the hatch board
 // bars duplicate colours in the key, so GGG is a code it cannot have drawn.
@@ -271,7 +271,7 @@ inline void settleDecryption(Game& g) {
 }
 
 // Play a DISK DECRYPTION board out on the FIRST guess, by reading the key straight off
-// the model — the one thing a player can't do, and the only way a test gets a
+// the model: the one thing a player can't do, and the only way a test gets a
 // deterministic crack out of a seeded code.
 inline void crackDecryption(Game& g) {
     skipHatchBrief(g);
@@ -303,7 +303,7 @@ inline void advanceToReveal(Game& g, uint32_t& t) {
         g.tick(t += kHeartbeatMs);
 }
 
-// A chord press edge (both A+C held) — the pet-side Exploit gesture.
+// A chord press edge (both A+C held): the pet-side Exploit gesture.
 inline mal::ButtonEvent chordAC() { return {Button::C, true, true}; }
 
 // Walk the cursor from idle to a given submenu and enter it (mirrors the
@@ -321,7 +321,7 @@ inline void enterSubmenuId(Game& g, SubmenuId id) {
 // (kCreatureLines) and the rack's contents are content that moves. Leaves the game in
 // that pet's L3 record with its action set open.
 // Back out of wherever the menu was left, so an ARCH walk always starts from the
-// carousel — the same guard enterArcadeCabinet keeps, and for the same reason: these
+// carousel. The same guard enterArcadeCabinet keeps, and for the same reason: these
 // helpers are called in sequence and each one's commit lands somewhere different.
 inline void archBackToIdle(Game& g) {
     for (int i = 0; i < 4 && (g.nav() == Game::Nav::Detail ||
@@ -330,14 +330,14 @@ inline void archBackToIdle(Game& g) {
         tapC(g);
 }
 
-// Walk the ARCH picker — ALREADY OPEN — to a stored pet's record. Split from the entry
+// Walk the ARCH picker (ALREADY OPEN) to a stored pet's record. Split from the entry
 // walk below because the two-room state (a pet on the rack and none active) cannot be
 // backed out of to the carousel: C from the picker returns to line-select there, so a
 // gate already standing on ARCH has to stay on it.
 inline void archOpenStoredPet(Game& g, const char* creatureId) {
     const int groups = g.archPickRowCount();
     // From row 1, past NEW EGG: that row is an ACTION, and B on it opens a hatch
-    // confirm rather than a shelf — walking it by accident would lay an egg.
+    // confirm rather than a shelf. Walking it by accident would lay an egg.
     for (int i = 1; i < groups; ++i) {
         // Bounded, never `while`: a helper that walks the UI must fail its gate when the
         // UI stops agreeing with it, not spin forever with no output.
@@ -364,7 +364,7 @@ inline void enterArchStoredPet(Game& g, const char* creatureId) {
     archOpenStoredPet(g, creatureId);
 }
 
-// Walk ARCH to the ACTIVE pet's record — the Store action.
+// Walk ARCH to the ACTIVE pet's record: the Store action.
 inline void enterArchActivePet(Game& g) {
     archBackToIdle(g);
     enterSubmenuId(g, SubmenuId::Arch);
@@ -406,7 +406,7 @@ inline void enterArchSale(Game& g, const char* creatureId) {
 }
 
 // Commit ARCH's NEW EGG row: the top row of the picker, its confirm, and Confirm.
-// Leaves the game wherever the hatch put it — line-select, or straight at a laid egg.
+// Leaves the game wherever the hatch put it: line-select, or straight at a laid egg.
 inline void enterArchNewEgg(Game& g) {
     archBackToIdle(g);
     enterSubmenuId(g, SubmenuId::Arch);
@@ -452,8 +452,8 @@ inline bool fbEqual(const Framebuffer& a, const Framebuffer& b) {
     return !regionDiffers(a, b, 0, 0, kActiveW, kActiveH);
 }
 
-// True if any pixel in the region survives desaturation as ink (dark on paper)
-// — the non-colour channel every screen must carry (release gate 1).
+// True if any pixel in the region survives desaturation as ink (dark on paper):
+// the non-colour channel every screen must carry (release gate 1).
 inline bool hasDarkInk(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
     for (int y = y0; y < y1; ++y)
         for (int x = x0; x < x1; ++x)
@@ -481,7 +481,7 @@ inline constexpr uint32_t kStackerGateSeed = 1;
 
 // Locks a line-holding hand makes before standing back, and the walls they build: one
 // course each on the ground (calling one intruder apiece), then three more each on top,
-// four high — two more blocks under every column than its intruders can take.
+// four high. Two more blocks under every column than its intruders can take.
 inline constexpr int kStackerHoldLocks = 8;
 
 // That hand for the gate seed: the first two locks on the ground, the rest alternating
@@ -535,7 +535,7 @@ inline void startPlayedMaint(Game& g, MaintKind k, ArcadeGameKind engine) {
 // Open the GAMES cabinet on roster `row` and cycle its dial to `difficulty`. Leaves the
 // player on the cabinet page (L3), one B away from starting the run.
 inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
-    // Back out of wherever the last run left the menu — enterSubmenuId starts from the
+    // Back out of wherever the last run left the menu: enterSubmenuId starts from the
     // carousel, and a second cabinet in one session starts from the list it just used.
     for (int i = 0; i < 4 && (g.nav() == Game::Nav::Detail ||
                               g.nav() == Game::Nav::Submenu); ++i)
@@ -550,7 +550,7 @@ inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
     while (g.arcadeDifficulty() != difficulty) g.onButton(press(Button::A));
 }
 
-// Open the LOADOUT hub (MODS) on `row` — 0 MODS · 1 MOVES · 2 PRACTISE — and enter it.
+// Open the LOADOUT hub (MODS) on `row` (0 MODS · 1 MOVES · 2 PRACTISE), and enter it.
 inline void enterLoadoutTab(Game& g, int row) {
     enterSubmenuId(g, SubmenuId::Mods);
     for (int i = 0; i < row; ++i) g.onButton(press(Button::A));
@@ -574,7 +574,7 @@ inline void enterWalk(Game& g) {
     g.onButton(press(Button::B));                    // drill into the focused area
     g.onButton(press(Button::B));                    // arm its first open sub-area
     // Auto-progress now defaults ON (production), but this is the shared entry point
-    // for tests that drive the walk fight-by-fight by hand — a streak/clear crossing
+    // for tests that drive the walk fight-by-fight by hand: a streak/clear crossing
     // its threshold mid-test would otherwise auto-launch a boss (or re-arm the next
     // sub-area, resetting exploreSteps_) out from under whatever the test is mid-
     // asserting. Tests exercising auto-progress itself opt back in explicitly
@@ -589,7 +589,7 @@ inline void enterWalk(Game& g) {
 
 // Walk EXPL's ACTIVITY PICKER to `cat`'s row, from wherever the cursor is parked. The
 // picker is EXPL's top level (ui_state.h's ExplCat), so a gate reaching the arena or an
-// endless zone comes through here rather than counting A presses of its own — which row
+// endless zone comes through here rather than counting A presses of its own, which row
 // a category sits on is the enum's business, not each gate's.
 inline void explPickCategory(Game& g, ExplCat cat) {
     const int want = explCatRow(cat);
@@ -616,7 +616,7 @@ inline void pingExplore(Game& g) {
 
 // Cancel explore-mode through the real UI. STOP EXPLORE is the control overlay's LAST
 // row, so this is: chord in (landing on PING), A to the bottom, B. A shared helper
-// because a running walk claims the A+C chord — any test that needs the Hacker face
+// because a running walk claims the A+C chord: any test that needs the Hacker face
 // has to put the walk down first, and would otherwise open the overlay instead.
 inline void stopExplore(Game& g) {
     g.onButton(chordAC());
@@ -626,9 +626,9 @@ inline void stopExplore(Game& g) {
 
 // Steps explore-mode until a guaranteed step types a WILD encounter. In the
 // hands-off auto mode a wild encounter AUTO-STARTS the fight (no Fight/Flee intro,
-// ) — so this lands the game IN live wild combat, bounded-searching past any other
+// ), so this lands the game IN live wild combat, bounded-searching past any other
 // typed event (Wi-Fi / shop) along the way. (An awakened-guardian Wi-Fi outcome also
-// enters live wild combat, — either is a valid stop for callers.)
+// enters live wild combat,: either is a valid stop for callers.)
 inline void walkToEncounter(Game& g) {
     enterWalk(g);
     for (int i = 0; i < 400 && g.nav() != Game::Nav::Combat; ++i) {
@@ -645,8 +645,8 @@ inline void walkToEncounter(Game& g) {
 // Walks with a stack of Sinkhole Traps in hand (so any Wild encounter rolled
 // along the way bypasses for free, no rng/steps cost) until the periodic roll
 // types a Wi-Fi network event. A bounded search rather than hand-tracing the
-// fixed-seed roll sequence — robust to any later rebalance of the event-type
-// weights — mirroring dump_frame's own "wifi" flag.
+// fixed-seed roll sequence (robust to any later rebalance of the event-type
+// weights) mirroring dump_frame's own "wifi" flag.
 inline void walkToWifiEvent(Game& g) {
     g.inventory().add("sinkhole_trap", 20);
     enterWalk(g);
@@ -659,7 +659,7 @@ inline void walkToWifiEvent(Game& g) {
         } else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) {
             tapC(g);   // leave the shop -> back to idle
         } else if (g.nav() == Game::Nav::Combat) {
-            // An awakened-guardian fight — ride it out + dismiss so the Wi-Fi
+            // An awakened-guardian fight: ride it out + dismiss so the Wi-Fi
             // search keeps going.
             for (int j = 0; j < 800 &&
                             g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -671,7 +671,7 @@ inline void walkToWifiEvent(Game& g) {
                    g.nav() == Game::Nav::Shiboleet ||
                    g.nav() == Game::Nav::ShiboleetVerdict) {
             // A guardian, which is what a DRY sighting queue routes to on its cadence
-            // beat (game_net.cpp) — and a native run's queue is always dry, so every
+            // beat (game_net.cpp), and a native run's queue is always dry, so every
             // walk helper meets one. It is THREE screens (game_shiboleet.cpp): the hail,
             // the riddle, then the verdict. B steps each of them, and whichever way the
             // last one lands (back to Idle, or into the guardian's fight) the loop above
@@ -710,7 +710,7 @@ inline void resolveWifiEventToIdle(Game& g) {
     }
 }
 
-// Queues + walks + resolves in one step — for tests that don't need to isolate
+// Queues + walks + resolves in one step: for tests that don't need to isolate
 // the moment between resolveNetworkDiscovery's own effects and the guardian/
 // cache/friendly roll's (see queueAndReachWifiEvent's comment for why that
 // moment sometimes matters).
@@ -721,7 +721,7 @@ inline void walkAndCreditNetwork(Game& g, const uint8_t* bssid, const char* ssid
 
 // Loops the Walk, auto-resolving whatever the periodic roll types (Fight on
 // any Wild encounter, continue through any Wi-Fi event), until it lands in
-// real combat — either path (a Fight or an awakened Wi-Fi guardian) goes
+// real combat: either path (a Fight or an awakened Wi-Fi guardian) goes
 // through buildPlayerCombatant, so this is the shared way to reach a REAL
 // battle entry (as opposed to the debugStartCombat dev/test hook, which
 // deliberately stays raw/unbuffed).

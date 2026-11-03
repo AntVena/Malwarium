@@ -1,4 +1,4 @@
-// test_persistence.cpp — native gates for the save format, its migrations and ARCH.
+// test_persistence.cpp: native gates for the save format, its migrations and ARCH.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -9,7 +9,7 @@
 void test_loadout_expl_nav() {
     Framebuffer fb(kActiveW, kActiveH);
     // MODS opens on the hub; MOVES is one row in, and its move picker one more. C
-    // walks all three back out in order — picker -> slot list -> hub -> carousel —
+    // walks all three back out in order (picker -> slot list -> hub -> carousel),
     // so the hub costs exactly one press and never swallows the one that leaves.
     { Game g{StartMode::Hatched}; enterLoadoutTab(g, 1);
       CHECK(g.nav() == Game::Nav::Submenu);
@@ -19,7 +19,7 @@ void test_loadout_expl_nav() {
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
       tapC(g);                  // back to the slot list
       CHECK(g.nav() == Game::Nav::Submenu);
-      tapC(g);                  // back to the hub — still L2
+      tapC(g);                  // back to the hub: still L2
       CHECK(g.nav() == Game::Nav::Submenu);
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
       tapC(g);
@@ -40,7 +40,7 @@ void test_loadout_expl_nav() {
     // Three-level nav: entering parks on the ACTIVITY PICKER's STORY row; B opens it
     // onto the area-0 header, B DRILLS into the area, then B arms its first open
     // sub-area 1 → the IDLE habitat. Re-open and A cycles to sub-area 2. Area 1's subs
-    // stay LOCKED until area 0 clears (its header still isn't enterable-to-arm — a
+    // stay LOCKED until area 0 clears (its header still isn't enterable-to-arm: a
     // locked area is inert).
     { Game g{StartMode::Hatched}; enterSubmenuId(g, SubmenuId::Expl);
       CHECK(g.nav() == Game::Nav::Submenu);
@@ -230,7 +230,7 @@ void test_save_version_and_empty() {
 // A blob from a NEWER build still loads. This is the OTA rollback: an image boots on
 // trial, rewrites the save at its own version, and the bootloader can then put the
 // previous firmware back underneath it. Rejecting that blob would deserialize as empty
-// — a fresh hatch with the pet, the rack and the records gone — so the reader takes the
+// (a fresh hatch with the pet, the rack and the records gone), so the reader takes the
 // prefix it understands and drops only the tail it doesn't.
 void test_save_from_a_newer_build_still_loads() {
     SaveData a;
@@ -238,7 +238,7 @@ void test_save_from_a_newer_build_still_loads() {
     a.hunger = 61; a.happy = 43; a.bits = 777;
     auto blob = serializeSave(a);
 
-    // Stamp it a version ahead and append a tail this build knows nothing about — the
+    // Stamp it a version ahead and append a tail this build knows nothing about: the
     // exact shape every version bump here adds.
     const uint16_t future = kSaveVersion + 1;
     blob[4] = static_cast<uint8_t>(future);
@@ -286,7 +286,7 @@ void test_boot_from_save_vs_hatch() {
     }
 }
 
-// A plain reboot (a fresh Game over the same store — the ARCH rack never enters
+// A plain reboot (a fresh Game over the same store: the ARCH rack never enters
 // it) round-trips the ACTIVE pet's creature level, not just its care stats.
 // test_arch_store_deploy_preserves_creature_level covers the rack path; this
 // covers the simpler power-cycle/reflash path, since NVS survives both.
@@ -319,7 +319,7 @@ void test_persistence_reset_clears_store() {
       CHECK(g.nav() == Game::Nav::Idle);                   // loaded from save
       g.resetToHatch();
       pickFirstEggLine(g);                       // reset re-enters line-select; pick Ransomware
-      // The wipe replaced the raised pet with a freshly-laid egg (persisted, v9) —
+      // The wipe replaced the raised pet with a freshly-laid egg (persisted, v9):
       // the store is rewritten, not emptied (a laid egg is durable).
       CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0 && g.inEggPhase()); }
     { Game g(StartMode::FreshHatch, "paypup", &store);
@@ -379,12 +379,12 @@ void test_arch_picker_groups_the_rack_by_line() {
     CHECK(g.archScreen() == Game::ArchScreen::Picker);
     const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(),
                                            g.rack(), g.records());
-    // NEW EGG leads, ACTIVE follows, SELL and RECORDS trail — the families sit between.
+    // NEW EGG leads, ACTIVE follows, SELL and RECORDS trail: the families sit between.
     CHECK(tiles.size() == static_cast<size_t>(4 + kCreatureLineCount));
     CHECK(tiles.front().group.kind == ArchGroup::Kind::NewEgg);
     CHECK(tiles[1].group.kind == ArchGroup::Kind::Active && tiles[1].count == 1);
     CHECK(tiles.back().group.kind == ArchGroup::Kind::Records);
-    // Two ransomware pets are on the shelf but only ONE of them is stored — the active
+    // Two ransomware pets are on the shelf but only ONE of them is stored: the active
     // one belongs to ACTIVE, which is the split the whole picker is for.
     int ransom = 0, phish = 0;
     for (const ArchPickRow& t : tiles) {
@@ -402,7 +402,7 @@ void test_arch_picker_groups_the_rack_by_line() {
 }
 
 // NEW EGG is a ROW on the picker, not an action buried in the active pet's record. It
-// still costs the same thing it always did — the pet you are raising goes to the rack —
+// still costs the same thing it always did (the pet you are raising goes to the rack),
 // which is what its own L3 says before anything is committed.
 void test_arch_new_egg_row_stores_then_hatches() {
     Game g{StartMode::Hatched, "paypup"};
@@ -416,7 +416,7 @@ void test_arch_new_egg_row_stores_then_hatches() {
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // it reads in grayscale
 
-    // Cancel keeps the pet exactly where it was — a confirm that defaults to Cancel is
+    // Cancel keeps the pet exactly where it was: a confirm that defaults to Cancel is
     // the whole reason this is a screen and not a button.
     g.onButton(press(Button::B));                 // -> confirm prompt (default Cancel)
     g.onButton(press(Button::B));                 // commit Cancel
@@ -431,7 +431,7 @@ void test_arch_new_egg_row_stores_then_hatches() {
 }
 
 // A Daemon's sale price: flat to par, so no level gates a sale, then the Rig Shop's
-// kLogStep shape over the levels past it — and never lower for a higher level.
+// kLogStep shape over the levels past it, and never lower for a higher level.
 void test_daemon_sale_bits_flat_to_par_then_log_steps() {
     CHECK(daemonSaleBits(0) == kDaemonSaleBits);
     CHECK(daemonSaleBits(kDaemonSaleParLevel) == kDaemonSaleBits);
@@ -444,7 +444,7 @@ void test_daemon_sale_bits_flat_to_par_then_log_steps() {
 }
 
 // SELL is its own row on the picker, just above the RECORDS it feeds, and it lists every
-// STORED Daemon whatever its family — not the earlier stages, and not the active pet.
+// STORED Daemon whatever its family, not the earlier stages, and not the active pet.
 void test_arch_sell_counter_lists_only_stored_daemons() {
     Game g{StartMode::Hatched, "extorgi"};
     g.debugSeedRack("paypup");
@@ -559,23 +559,23 @@ void test_arch_reimage_sends_a_diverted_daemon_home() {
 }
 
 // Laying an egg used to LOCK YOU IN: line-select disabled C because "an empty save has no
-// pet to return to". Reaching it from an ARCH Store makes that false — the pet is on the
-// shelf — so C now backs out to ARCH, where deploying it back is one confirm away.
+// pet to return to". Reaching it from an ARCH Store makes that false (the pet is on the
+// shelf), so C now backs out to ARCH, where deploying it back is one confirm away.
 void test_line_select_backs_out_to_arch_when_the_rack_has_a_pet() {
     Game g{StartMode::Hatched, "paypup"};
-    // Two unlocked lines, so the hatch actually STOPS on the choice — with one line
+    // Two unlocked lines, so the hatch actually STOPS on the choice: with one line
     // startHatch skips the modal outright and there is nothing to cancel out of.
     g.unlockAchievement(ach::kDeepWebDepth8);     // unlocks Phishing
     enterArchNewEgg(g);
     CHECK(g.inLineSelect() && g.rackCount() == 1 && !g.pet());
 
-    tapC(g);                                      // back out — no egg laid
+    tapC(g);                                      // back out: no egg laid
     CHECK(!g.inLineSelect());
     CHECK(g.nav() == Game::Nav::Submenu && g.archScreen() == Game::ArchScreen::Picker);
     CHECK(g.rackCount() == 1 && !g.pet());        // still parked between the two rooms
 
     // C from the picker returns to the choice rather than dropping the player into a
-    // habitat with nothing living in it — the two rooms are the only two rooms.
+    // habitat with nothing living in it: the two rooms are the only two rooms.
     tapC(g);
     CHECK(g.inLineSelect());
     tapC(g);
@@ -583,7 +583,7 @@ void test_line_select_backs_out_to_arch_when_the_rack_has_a_pet() {
 
     // Deploying with no active pet is a plain thaw: the pet comes back and the slot is
     // freed, rather than the swap a Deploy normally is. Walked from the picker the gate
-    // is already standing on — backing out to the carousel is exactly what this state
+    // is already standing on: backing out to the carousel is exactly what this state
     // does not offer.
     archOpenStoredPet(g, "paypup");
     archConfirmAction(g);
@@ -709,12 +709,12 @@ void test_idle_wander_stays_inside_the_living_box() {
 
 // The three read as three different creatures, which is the point of the field:
 // a walker is a floor animal that ambles and then stands still, a flier is almost
-// always in the air, and a swimmer is neither pulled down nor holding a height —
-// it drifts on both axes at once, and then holds station.
+// always in the air, and a swimmer is neither pulled down nor holding a height.
+// It drifts on both axes at once, and then holds station.
 //
 // That last clause is load-bearing rather than descriptive. The habitat swaps a
 // creature's "walk" clip in for as long as the wander is travelling, so a mover that
-// retargets the beat it arrives never shows its idle at all — whatever is authored on
+// retargets the beat it arrives never shows its idle at all, whatever is authored on
 // row 0 is simply never reached. A swimmer's rest is therefore sized against the clip
 // it has to make room for, which is why longestStill is asserted and not just the
 // moving share: the question is not "does it pause" but "does it pause for long
@@ -747,7 +747,7 @@ void test_idle_wander_reads_differently_per_locomotion() {
 }
 
 // A crawler is the floor-mover a walker only nearly is. It shares the shelf, but it
-// also gives up the 2px shelf bob the habitat draws on top of the drift — which is
+// also gives up the 2px shelf bob the habitat draws on top of the drift, which is
 // the whole of the difference, and the reason the Worm line needed its own row.
 void test_idle_wander_crawler_never_leaves_the_floor() {
     const int beats = 4000;
@@ -761,7 +761,7 @@ void test_idle_wander_crawler_never_leaves_the_floor() {
 }
 
 // The habitat has ONE call site and no reset hook, so the component has to notice a
-// new occupant itself — otherwise a walker that evolved into a swimmer would keep
+// new occupant itself, otherwise a walker that evolved into a swimmer would keep
 // its feet glued to the shelf until a reboot.
 void test_idle_wander_rehomes_when_the_mover_changes() {
     IdleWander w;
@@ -779,7 +779,7 @@ void test_idle_wander_rehomes_when_the_mover_changes() {
 }
 
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
-// runs, and an egg does not — an egg sits where it was laid, with its incubation
+// runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.
 void test_habitat_moves_a_pet_and_parks_an_egg() {
     Game g{StartMode::Hatched};

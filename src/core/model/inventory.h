@@ -1,4 +1,4 @@
-// inventory.h — the player's consumable stacks, keyed by item id.
+// inventory.h: the player's consumable stacks, keyed by item id.
 //
 // Runtime state (quantities), distinct from the static ItemDef content. The
 // ITEMS submenu reads this against the ContentRegistry to build its grouped

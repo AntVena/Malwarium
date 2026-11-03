@@ -1,4 +1,4 @@
-// content_recipes.cpp — the MERGE HUB recipe rows.
+// content_recipes.cpp: the MERGE HUB recipe rows.
 //
 // One content table (see content_recipes.h for the shape, the wire discipline, and who
 // reads it). Edit rows here; adding one is this row plus its output dish on
@@ -81,14 +81,14 @@ const MergeRecipe kMergeRecipes[] = {
      {{"cronstarch", 2}, {"grepsed_oil", 1}, {"breadcrumbs", 2}, {"c_salt", 1}},
      "forkaccia", 1, /*wire=*/16, "MERGED FORKACCIA"},
     // The first recipe whose lead ingredient is another DISH. Nothing new was needed
-    // to express it — an input id is an item id, and a cooked dish is an item — which
+    // to express it (an input id is an item id, and a cooked dish is an item), which
     // is the point: the pantry can now stack without a second mechanism.
     {"Cacherole",
      {{"hashed_browns", 1}, {"spam", 2}, {"boolean_cubes", 1}, {"grepsed_oil", 1}},
      "cacherole", 1, /*wire=*/17, "MERGED CACHEROLE"},
     // The third service, which spends the last of kMergeRecipeWireCap. Two rows are
     // the method itself rather than an upgrade: Portridge cooks one Bootmeal into the
-    // same bowl at the same tier, and Recursive Turducken is three of one bird — an
+    // same bowl at the same tier, and Recursive Turducken is three of one bird. An
     // input QUANTITY, not three ingredients, so the base case is the ingredient.
     {"Portridge", {{"bootmeal", 1}},
      "portridge", 1, /*wire=*/18, "MERGED PORTRIDGE"},
@@ -105,7 +105,7 @@ const MergeRecipe kMergeRecipes[] = {
      {{"bytesteak_tomatoes", 2}, {"gherkins", 1}, {"breadcrumbs", 2},
       {"grepsed_oil", 1}},
      "gzipacho", 1, /*wire=*/22, "MERGED GZIPACHO"},
-    // Honeypot Yogurt is deliberately absent — a lassi's one missing ingredient, which
+    // Honeypot Yogurt is deliberately absent: a lassi's one missing ingredient, which
     // is the whole of what "lossy" means here.
     {"Lossy Lassi",
      {{"papaya", 2}, {"syntactic_sugar", 1}, {"c_salt", 1}},
@@ -135,7 +135,7 @@ const MergeRecipe kMergeRecipes[] = {
     {"Quicksortbet",
      {{"grepefruit", 2}, {"honeypot_yogurt", 1}, {"syntactic_sugar", 1}},
      "quicksortbet", 1, /*wire=*/31, "MERGED QUICKSORTBET"},
-    // The fourth service — the rest of the kitchen, grouped the way the item table
+    // The fourth service: the rest of the kitchen, grouped the way the item table
     // groups it. Every staple on the pantry's three shelves is named by at least one
     // row here, so nothing is only ever eaten raw. Four rows are second-order (their
     // lead ingredient is another dish): BruSSHetta and Kernel Panini want a Buguette,
@@ -209,7 +209,7 @@ const MergeRecipe kMergeRecipes[] = {
     {"Kernel Panini",
      {{"buguette", 1}, {"mozillarella", 2}, {"bytesteak_tomatoes", 1}},
      "kernel_panini", 1, /*wire=*/52, "MERGED KERNEL PANINI"},
-    // EPIC — a second cheese takes the potatoes' slot, which is the joke as well as the
+    // EPIC. A second cheese takes the potatoes' slot, which is the joke as well as the
     // gate: two of them scraping at the same pan. The Kaliflower stays because this is
     // the only row that cooks one, and the pantry keeps no shelf that is eaten raw only.
     {"Racelette",
@@ -240,14 +240,14 @@ const MergeRecipe kMergeRecipes[] = {
     {"SHAshimi", {{"red_herring", 2}, {"romaine", 1}, {"natto", 1}},
      "shashimi", 1, /*wire=*/62, "MERGED SHASHIMI"},
     // The plates.
-    // EPIC — the salt gives up its slot to a rack of Lambda Chops.
+    // EPIC: the salt gives up its slot to a rack of Lambda Chops.
     {"Spare RIBs",
      {{"saasage", 2}, {"lambda_chops", 1}, {"imaple_syrup", 1}, {"capsicum", 1}},
      "spare_ribs", 1, /*wire=*/63, "MERGED SPARE RIBS"},
     {"RESTed Steak",
      {{"file_mignon", 2}, {"churned_butter", 1}, {"peppermint", 1}},
      "rested_steak", 1, /*wire=*/64, "MERGED RESTED STEAK"},
-    // EPIC. The only one of the six that needed no new ingredient — File Mignon was
+    // EPIC. The only one of the six that needed no new ingredient: File Mignon was
     // always the premium cut, and it wants TWO, which makes this the dearest of them.
     {"Privilege Escalope",
      {{"file_mignon", 2}, {"breadcrumbs", 2}, {"regeggs", 1}},
@@ -290,7 +290,7 @@ const MergeRecipe kMergeRecipes[] = {
      {{"self_signed_flour", 2}, {"double_precision_cream", 1}, {"cocoa", 1},
       {"regeggs", 1}},
      "declair", 1, /*wire=*/78, "MERGED DECLAIR"},
-    // EPIC — a Silicon Wafer on the side, which is what you measure a thing with.
+    // EPIC: a Silicon Wafer on the side, which is what you measure a thing with.
     {"Profilerole",
      {{"self_signed_flour", 2}, {"double_precision_cream", 2}, {"cocoa", 1},
       {"silicon_wafers", 1}},
@@ -343,7 +343,7 @@ const MergeRecipe kMergeRecipes[] = {
      {{"double_precision_cream", 2}, {"syntactic_sugar", 1},
       {"honeypot_yogurt", 1}},
      "syn_ack_shake", 1, /*wire=*/94, "MERGED SYN-ACK SHAKE"},
-    // EPIC — a float needs something floating on it, and Marshalled Mallows are what
+    // EPIC: a float needs something floating on it, and Marshalled Mallows are what
     // goes over the top of a glass that was already full.
     {"Buffer Overfloat",
      {{"r007_b33r", 1}, {"double_precision_cream", 2}, {"syntactic_sugar", 1},
@@ -361,7 +361,7 @@ const MergeRecipe kMergeRecipes[] = {
      "punchcard_punch", 1, /*wire=*/99, "MERGED PUNCHCARD PUNCH"},
     // The ghost cure, and the only way to hold one: no pool, shop or drop table stocks
     // Unlinkguine, so a Replication Ghost is cured by something you learned to cook.
-    // The row IS the pun — Linkguine is "every strand joined to the last one", a
+    // The row IS the pun: Linkguine is "every strand joined to the last one", a
     // Jailapeno is what isolates a process, and unlink() is what severs the reference
     // the ghost is. Ungated: a ghost can be raised long before a prize ladder would
     // have handed the method over, and a cure you cannot make yet is a dead mechanic.

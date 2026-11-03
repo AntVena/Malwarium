@@ -1,4 +1,4 @@
-// content_quotes.cpp — the DECRYPTOGRAM quote pool. One row per quote; see
+// content_quotes.cpp: the DECRYPTOGRAM quote pool. One row per quote; see
 // content_quotes.h for the field schema, the two rules a row must pass, and the wire
 // number discipline.
 
@@ -351,7 +351,7 @@ int quoteIndexByWire(int wire) {
     return -1;
 }
 
-// The prize ladder — the dish each solve teaches, in payout order. See the banner in
+// The prize ladder: the dish each solve teaches, in payout order. See the banner in
 // the header for why these are all recipes and why the order is the one it is.
 namespace {
 const char* const kQuotePrizeLadder[] = {
@@ -366,8 +366,8 @@ const char* const kQuotePrizeLadder[] = {
     // skipped and come back around later without holding the rest of the ladder up.
     "hashed_browns",
     "salted_hashed_browns",
-    // The three that heal in combat, and the roast that strips the most Fragmentation
-    // — the dishes worth walking a long pool of quotes for.
+    // The three that heal in combat, and the roast that strips the most Fragmentation:
+    // the dishes worth walking a long pool of quotes for.
     "macrol_fry_up",
     "vanilla_java_roast",
     "gnulash",
@@ -386,7 +386,7 @@ const char* const kQuotePrizeLadder[] = {
     "lansagne",
     "cacherole",
     // The third service. Portridge leads it because it is the cheapest method in the
-    // kitchen — one Bootmeal, one bowl — and Halloumi, World is the one anybody can
+    // kitchen (one Bootmeal, one bowl), and Halloumi, World is the one anybody can
     // cook the moment they own it. The two that want a dish already cooked (Chrootons)
     // or the scarcest shelf (Semaphreddo) sit at the back, and the last three are the
     // biggest plates the pantry can make.
@@ -398,7 +398,7 @@ const char* const kQuotePrizeLadder[] = {
     "emacsaroni",
     "cod_review",
     "spaghetti_code",
-    // EPIC. The XP rate is the grant worth winning EARLY — it pays off over every hour
+    // EPIC. The XP rate is the grant worth winning EARLY: it pays off over every hour
     // the pet is raised after it, where a stat point is worth the same whenever it lands.
     "profilerole",
     "chrootons",
@@ -410,7 +410,7 @@ const char* const kQuotePrizeLadder[] = {
     // The fourth service, ordered the same way: the cheap methods a new kitchen can
     // actually use first, the plates that want another dish already cooked last. The
     // ladder is now far longer than the quote pool, so its tail is what the pool grows
-    // INTO — a solve never pays nothing, because the Bandwidth fallback is uncapped.
+    // INTO: a solve never pays nothing, because the Bandwidth fallback is uncapped.
     "scrambled_regeggs",
     "bashed_potatoes",
     "onion_rings",
@@ -419,7 +419,7 @@ const char* const kQuotePrizeLadder[] = {
     "pickle_jar",
     "flash_fried_chips",
     "twisted_pairetzels",
-    // EPIC — the first of the four off-level stat points, and the one whose ingredients
+    // EPIC: the first of the four off-level stat points, and the one whose ingredients
     // are all first-shelf.
     "racelette",
     "corrumpets",
@@ -436,7 +436,7 @@ const char* const kQuotePrizeLadder[] = {
     "vinaigrette",
     "char_grilled_array",
     "config_rolls",
-    // EPIC — the second stat point.
+    // EPIC: the second stat point.
     "spare_ribs",
     "current_buns",
     "hot_swapped_buns",
@@ -452,7 +452,7 @@ const char* const kQuotePrizeLadder[] = {
     "declair",
     "candied_yamls",
     "raspberry_pie",
-    // EPIC — the third. It wants an R007_B33R, which is the only input in the six that
+    // EPIC: the third. It wants an R007_B33R, which is the only input in the six that
     // is a finished drink rather than a staple.
     "buffer_overfloat",
     "cherry_picked_tart",
@@ -469,7 +469,7 @@ const char* const kQuotePrizeLadder[] = {
     "force_pulled_pork",
     "rubber_duck_confit",
     "packettone",
-    // EPIC — the last of them, and the one an operator is likeliest to have been
+    // EPIC. The last of them, and the one an operator is likeliest to have been
     // waiting for: Power is the stat every build wants.
     "privilege_escalope",
     "bashlava",
@@ -482,7 +482,7 @@ const char* const kQuotePrizeLadder[] = {
     "serverless_platter",
     // Last of the first-order dishes, and the only one that is a CURE rather than a
     // meal: both its inputs are raw staples, so it sits here rather than in the tail
-    // below. Late within this run on purpose — a Replication Ghost needs a Worm-line
+    // below. Late within this run on purpose: a Replication Ghost needs a Worm-line
     // pet and a defrag failed on an already-Critical disk, so it is not a first-week
     // problem, and teaching it ahead of the everyday dishes would spend an early solve
     // on a dish most operators cannot yet raise the condition for.

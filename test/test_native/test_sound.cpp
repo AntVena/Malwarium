@@ -215,7 +215,7 @@ void test_cfg_sound_and_volume_persist() {
 }
 
 // Every fight opens on a cue, each swing sounds by who it hurt, and the turn that ends
-// it is the knockout alone — the jingle waits for the result to be dismissed.
+// it is the knockout alone: the jingle waits for the result to be dismissed.
 void test_sound_combat_cues() {
     RecordingSound out;
     Game g{StartMode::Hatched, "paypup"};
@@ -295,7 +295,7 @@ void test_sound_arcade_stacker_cues() {
 }
 
 // FRAGGER sounds each of its three outcomes apart: a fragment shot, a shot stopped by a
-// file, and a file caught — the coin, because a catch is Bits arriving. A file landing
+// file, and a file caught. The coin, because a catch is Bits arriving. A file landing
 // away from the head is silent: nothing was earned.
 void test_sound_fragger_catch_is_a_coin() {
     RecordingSound out;

@@ -1,4 +1,4 @@
-// framebuffer.h — the logical RGB565 canvas the engine draws into (128x128).
+// framebuffer.h: the logical RGB565 canvas the engine draws into (128x128).
 #pragma once
 
 #include <cstdint>
@@ -23,7 +23,7 @@ public:
 
     // The clip window: while one is set, every WRITE outside it is dropped, so a
     // primitive that would overrun the column it was given stops at the edge
-    // instead. Reads are unaffected — get() reports what is on the canvas, which
+    // instead. Reads are unaffected: get() reports what is on the canvas, which
     // is what the grayscale gates inspect.
     //
     // It exists for text that is longer than its column (widgets.h's

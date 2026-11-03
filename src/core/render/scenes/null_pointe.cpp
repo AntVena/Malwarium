@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// NULL POINTE — a headland at sunset, seen from the water.
+// NULL POINTE: a headland at sunset, seen from the water.
 //
 // The middle band is ten rows on both screens (sceneGround) and a scene cannot widen its
 // own, so the sea is the NEAR band and the land is the far strip: the sun's road needs
@@ -22,7 +22,7 @@ constexpr Pal kFoam = Pal::NEON_HI;
 constexpr uint8_t kToneHaze = 32;
 constexpr uint8_t kToneStar = 48;
 constexpr uint8_t kToneSun = 132;
-constexpr uint8_t kToneHead = 48;       // the headland — a landform, not a smudge
+constexpr uint8_t kToneHead = 48;       // the headland: a landform, not a smudge
 constexpr uint8_t kToneWater = 34;
 constexpr uint8_t kToneSwell = 58;
 constexpr uint8_t kTonePath = 118;      // the sun's road down the water

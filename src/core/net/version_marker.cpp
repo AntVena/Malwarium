@@ -57,7 +57,7 @@ bool parseVersionMarker(const char* text, size_t len, VersionMarker* out) {
 
         const char* eq = b;
         while (eq < e && *eq != '=') ++eq;
-        if (eq == e) continue;              // not key=value — not a line of ours
+        if (eq == e) continue;              // not key=value, not a line of ours
 
         const char* kb = b;
         const char* ke = eq;
@@ -79,7 +79,7 @@ bool parseVersionMarker(const char* text, size_t len, VersionMarker* out) {
                 out->version[n] = '\0';
             }
         }
-        // Any other key belongs to a publish this firmware predates — skip it.
+        // Any other key belongs to a publish this firmware predates: skip it.
     }
 
     if (!haveCode) {

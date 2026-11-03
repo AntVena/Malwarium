@@ -1,8 +1,8 @@
-// peer_ledger.h — persistent roster of the operators this device has met.
+// peer_ledger.h: persistent roster of the operators this device has met.
 //
 // PURE + HOST-TESTABLE, and file-backed the same way NetworkLedger is: plain POSIX
 // stdio, which is the real filesystem on host and the mounted /sdcard VFS on-device.
-// A missing file is not an error — the index starts empty and every mutator still
+// A missing file is not an error: the index starts empty and every mutator still
 // works, so a device with no SD card degrades to a session-only roster instead of
 // failing. Fed by decoded HELLO beacons (peer_link.h) via Game::registerPeer; read
 // by the Hacker-face PEERS screen (game_peers.cpp).
@@ -15,7 +15,7 @@
 // The mutable/immutable split is the interesting part, and it is the opposite of
 // NetworkLedger's. A network's name is essentially fixed, so that ledger only ever
 // upgrades an empty one. An operator's PET, CREW and RANK all change between
-// meetings — that churn IS the content of the roster — so record() refreshes them
+// meetings (that churn IS the content of the roster), so record() refreshes them
 // to the latest broadcast every time, while the key, the first-met marker, and the
 // meeting tally accumulate.
 //
@@ -46,14 +46,14 @@ public:
     };
 
     // Read an existing roster file into the in-RAM index, remembering `path` for
-    // later write-throughs. Returns false for a missing/unset file — not an error;
+    // later write-throughs. Returns false for a missing/unset file, not an error;
     // the mutators below work in-RAM regardless of whether this ever succeeds.
     bool load(const char* path);
 
     bool lookup(uint64_t key, Entry* out) const;
 
     // Record a sighting. A key that is new is appended at timesMet 1; a known key
-    // has its tally bumped and its pet/crew/rank/tag overwritten from `hello` —
+    // has its tally bumped and its pet/crew/rank/tag overwritten from `hello`:
     // the roster always shows who someone is NOW, not who they were the first time.
     // Returns true only for a genuinely new operator, which is what the caller
     // turns into the "new peer" log line and reward.

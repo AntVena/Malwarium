@@ -8,14 +8,14 @@ namespace mal {
 
 namespace {
 
-// THE VAPORWAVE PRIMARY — a prize backdrop, and the one scene here that is not painted
+// THE VAPORWAVE PRIMARY: a prize backdrop, and the one scene here that is not painted
 // in pure value. Magenta, cyan and sunset are what the look is made of and the palette
 // law forbids all three as authored hues, so the place is built the only legal way: the
 // same ramp every other scene uses, anchored on a PAL_CORE token instead of `ink-dim`.
 //
 // TWO ANCHORS, WHICH IS THE RAMP. `frag-lo` to `frag-hi` is already a purple-to-pink
 // spectrum in the palette and no interface state has claimed it, so the far half of the
-// picture takes the violet end and the near half the pink — the gradient is expressed
+// picture takes the violet end and the near half the pink: the gradient is expressed
 // by WHICH element gets which token rather than by a second colour being invented for
 // it. Neither is `accent`, which means focus, and neither is a status hue.
 constexpr Pal kFar = Pal::FRAG_LO;
@@ -30,7 +30,7 @@ constexpr uint8_t kToneGrid = 120;
 
 // The slit sun, sitting ON the horizon so half of it is already below the world. The
 // bites are horizontal and WIDEN downward, which is the whole of the venetian-blind
-// read — even bites would be a striped circle, and a striped circle is a beach ball.
+// read, even bites would be a striped circle, and a striped circle is a beach ball.
 constexpr int kSunR = 34;
 constexpr int kSunBites = 4;
 constexpr int kSunBiteTop = 1;     // rows cut out of the highest bite
@@ -61,7 +61,7 @@ void drawGridHorizonScene(Framebuffer& fb, int beat, const SceneGround& g) {
 
     // The sun, sitting ON the horizon: drawn whole, then everything below the world cut
     // back to `paper`, so what is left is the half a sun at dusk actually shows. The
-    // bites are horizontal and WIDEN downward — even bites would be a striped circle,
+    // bites are horizontal and WIDEN downward, even bites would be a striped circle,
     // and a striped circle is a beach ball.
     const Rgb565 cut = palColor(Pal::PAPER);
     sceneDisc(fb, kActiveW / 2, g.horizonY, kSunR, kToneSun, kNear);
@@ -76,7 +76,7 @@ void drawGridHorizonScene(Framebuffer& fb, int beat, const SceneGround& g) {
 
     // The palms, standing on the horizon in the far token. Each frond is walked out one
     // pixel at a time and allowed to fall as it goes, three to a side at different
-    // lengths — which is what makes a crown rather than a cross.
+    // lengths, which is what makes a crown rather than a cross.
     const Rgb565 palm = sceneTint(kTonePalm, kFar);
     for (const Palm& p : kPalms) {
         const int top = g.horizonY - p.h;
@@ -88,7 +88,7 @@ void drawGridHorizonScene(Framebuffer& fb, int beat, const SceneGround& g) {
             int was = 0;
             for (int k = 1; k <= len; ++k) {
                 // The drop is quadratic in the distance out, and each step fills down
-                // to the last one — a frond that skipped rows would be a dotted line,
+                // to the last one: a frond that skipped rows would be a dotted line,
                 // which at this size reads as spray rather than as a leaf.
                 const int drop = fall * k * k / (len * len);
                 fb.fillRect(p.x + (dir < 0 ? -k : 1 + k), top + was, 1,

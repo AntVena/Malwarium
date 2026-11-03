@@ -1,4 +1,4 @@
-// test_model.cpp — native gates for the pet model, the content registry seam and the L1 carousel.
+// test_model.cpp: native gates for the pet model, the content registry seam and the L1 carousel.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -104,14 +104,14 @@ void test_carousel_bookwrap() {
 }
 
 // Focus is dual-coded: the UI_CURSOR_BOX (shape) reads in grayscale, and (in
-// IconsLabel mode) the focused slot's own icon swaps for its text label —
-// in place, not a caption floated over the living area.
+// IconsLabel mode) the focused slot's own icon swaps for its text label.
+// In place, not a caption floated over the living area.
 void test_carousel_focus_grayscale() {
     Game g{StartMode::Hatched};
     g.onButton(press(Button::A));   // carousel @ slot 0 (top-left)
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
-    // The focused slot's box stroke against the SAME pixel with nothing focused —
+    // The focused slot's box stroke against the SAME pixel with nothing focused:
     // separable without colour. Found by scanning rather than by a fixed coordinate:
     // the box sits where the thing it marks sits, so an icon box and a label box are
     // at different heights and a hardcoded sample only ever checks one of them.
@@ -173,7 +173,7 @@ void test_carousel_enter_back() {
 
     // Enter another slot from a different cursor; back restores THAT slot.
     g.onButton(press(Button::A));   // -> slot 2 (ITEMS)
-    g.onButton(press(Button::A));   // -> slot 3 (TRAIN — a real list shell now)
+    g.onButton(press(Button::A));   // -> slot 3 (TRAIN: a real list shell now)
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu);
     Framebuffer ph(kActiveW, kActiveH);
@@ -218,7 +218,7 @@ void test_carousel_autodefocus() {
 // Every carousel label fits INSIDE the focus box that marks it, on both faces.
 //
 // The box is the focus cue's shape channel, so a label wider than it does not merely
-// look tight — the box's side strokes draw straight through the glyphs, and a label
+// look tight: the box's side strokes draw straight through the glyphs, and a label
 // wider than the 56px column runs into its neighbour. This is the first screen a player
 // sees, in the default UI mode, so it is a gate rather than a looking-tool finding.
 //
@@ -269,7 +269,7 @@ void test_idle_menu_nudge_until_first_summon() {
 }
 
 // The first time the player reaches for the menu while a need's "!" is up, a card says
-// WHY and what fixes it — once per need, one per summon, and dismissing it lands on the
+// WHY and what fixes it: once per need, one per summon, and dismissing it lands on the
 // carousel the player asked for. The very first care card also explains the "!".
 void test_care_cards_show_once_each() {
     const auto hasRow = [](const std::vector<ProseRow>& rows, const char* label) {
@@ -324,8 +324,8 @@ void test_care_cards_show_once_each() {
 }
 
 // Errors land while nobody is looking, so they are explained at the next menu summon:
-// the first one says what an error is and where the path goes, and the fourth — one
-// short of failing — says so, lights STAT, and names the Restore Point. Failing itself
+// the first one says what an error is and where the path goes, and the fourth (one
+// short of failing) says so, lights STAT, and names the Restore Point. Failing itself
 // counts down on the habitat and names the one rescue there is.
 void test_error_warnings_before_failing() {
     const auto bitOf = [](SubmenuId id) {
@@ -406,7 +406,7 @@ void test_error_warnings_before_failing() {
     for (const ProseRow& r : armed.tipCardRows()) CHECK(!r.body.atCap());
 }
 
-// Arming the first walk from EXPL explains the walk before it runs hands-off — and the
+// Arming the first walk from EXPL explains the walk before it runs hands-off, and the
 // walk does not step while the card is up, so a player reading it misses nothing.
 void test_first_walk_card() {
     Game g{StartMode::Hatched};
@@ -477,7 +477,7 @@ void test_carousel_marks_what_the_pet_needs() {
     CHECK(att == 0 && urg == 0);
 
     // Drawn, the mark is a SHAPE in the slot's right gutter that clears the track by
-    // more than colour alone — and an urgent one blinks, so it is off on an odd beat.
+    // more than colour alone, and an urgent one blinks, so it is off on an odd beat.
     int slot = 0;
     while (!((maint >> slot) & 1u)) ++slot;
     const int x0 = (slot % kSlotCols) * kSlotW + kSlotW - 9, x1 = x0 + 9;
@@ -509,14 +509,14 @@ void test_carousel_labels_fit_their_box() {
     }
 
     // ...and the drawn proof. Focus each slot in turn and confirm that every accent
-    // pixel in that slot's own column — box stroke and glyph alike — sits within the
+    // pixel in that slot's own column (box stroke and glyph alike) sits within the
     // horizontal span of the box's top stroke. A label poking out of the box, or over
     // the column edge, puts an accent pixel outside that span.
     for (int face = 0; face < 2; ++face) {
         for (int slot = 0; slot < kCarouselSlots; ++slot) {
             Framebuffer fb(kActiveW, kActiveH);
             // An inaccessible slot still draws a box so the cursor stays visible, but
-            // in INK_DIM — so the ink to look for is whichever colour this slot wears.
+            // in INK_DIM, so the ink to look for is whichever colour this slot wears.
             bool live = true;
             if (face == 0) {
                 drawCarousel(fb, slot, UiMode::IconsLabel, 0);

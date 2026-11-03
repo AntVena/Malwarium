@@ -1,8 +1,8 @@
-// event_log.h — the rolling Hacker-Log (STAT page 2).
+// event_log.h: the rolling Hacker-Log (STAT page 2).
 //
 // A small ring buffer of recent events. v1 is the closed 5-type vocabulary;
 // the renderer maps each type to one of three glyphs (item / warn / combat).
-// Rows carry pre-formatted terse text (fixed buffers — embedded-friendly, no
+// Rows carry pre-formatted terse text (fixed buffers: embedded-friendly, no
 // std::string / heap per entry).
 #pragma once
 

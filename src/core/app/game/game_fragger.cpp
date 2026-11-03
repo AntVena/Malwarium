@@ -3,16 +3,16 @@
 #include "tunables.h"
 #include "core/ui/maint_screen.h"
 
-// game_fragger.cpp — FRAGGER, a played MAINT run and a GAMES cabinet.
+// game_fragger.cpp: FRAGGER, a played MAINT run and a GAMES cabinet.
 //
 // The rules are core/model/fragger.h, with no framebuffer and no Game in them; the
 // board is maint_screen's drawFraggerBoard. This file is the buttons, the cadence's
-// sound and the run's PlayOutcome — what that buys is game_played.cpp's business.
+// sound and the run's PlayOutcome: what that buys is game_played.cpp's business.
 
 namespace mal {
 
 void Game::beginFraggerRun() {
-    // The run, with no opinion about who is paying for it — MAINT has already charged
+    // The run, with no opinion about who is paying for it: MAINT has already charged
     // its Bits, the arcade charges nothing.
     // The dial is the LANE count, one more per step up from EASY's minimum.
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the fall
@@ -31,7 +31,7 @@ void Game::onFragger(const ButtonEvent& ev) {
         finishFragger();
         return;
     }
-    // A and C MOVE the head — the outer two buttons, left to left and right to right,
+    // A and C MOVE the head: the outer two buttons, left to left and right to right,
     // the Isolation Protocol's deviation from the standard contract. B fires. There is
     // no stop: the run ends when a fragment lands, and everything shot before that is
     // already banked, so a quit button would only be a slower way to the same toast.
@@ -55,7 +55,7 @@ void Game::stepFragger() {
     const int caught = fragger_.caught();
     fragger_.step();
     fraggerShotLane_ = -1;                      // the beam lasts one row of fall
-    // A catch is money arriving, so it sounds like it — unless the same row ended the
+    // A catch is money arriving, so it sounds like it, unless the same row ended the
     // run, which is the news that matters.
     if (!fragger_.running()) playSound(Sound::Crash);
     else if (fragger_.caught() > caught) playSound(Sound::Coin);

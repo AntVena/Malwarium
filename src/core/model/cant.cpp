@@ -59,7 +59,7 @@ void CantCipher::build(SigilSet learned, uint32_t seed) {
     int n = 0;
     for (int i = 0; i < kCantSigils; ++i)
         if (!(learned & (1u << i))) unlearned[n++] = i;
-    if (n < 2) return;   // nothing to shuffle — see the header's single-letter note
+    if (n < 2) return;   // nothing to shuffle: see the header's single-letter note
 
     // Fisher-Yates over the unlearned letters only, so the shuffle can never disturb a
     // sigil the player earned.
@@ -73,7 +73,7 @@ void CantCipher::build(SigilSet learned, uint32_t seed) {
 
     // Derange: a letter that landed on itself is swapped with its neighbour. One sweep
     // is enough because a swap can only introduce a fixed point at the index it came
-    // FROM, which the sweep has already passed — except at the last index, which is
+    // FROM, which the sweep has already passed, except at the last index, which is
     // why that one swaps backward instead.
     for (int i = 0; i < n; ++i) {
         if (perm[i] != unlearned[i]) continue;

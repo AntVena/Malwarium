@@ -1,4 +1,4 @@
-// test_chroma.cpp — native gates for the CHROMATOPHORE, the Metamorphic egg's hatch
+// test_chroma.cpp: native gates for the CHROMATOPHORE, the Metamorphic egg's hatch
 // minigame, and the egg-locomotion rule its jellyfish egg is the reason for.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -83,7 +83,7 @@ void test_chroma_wrong_skin_is_spotted() {
     CHECK(c.state() == Chromatophore::State::Spotted);
 }
 
-// A nervous second press on the skin already worn is inert — it must not restart a
+// A nervous second press on the skin already worn is inert: it must not restart a
 // repaint that had already finished, which would turn a safe pass into a caught one.
 void test_chroma_pressing_the_worn_skin_is_inert() {
     Chromatophore c;
@@ -208,7 +208,7 @@ void test_chroma_runs_on_real_time_with_the_clock_frozen() {
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);
 }
 
-// A pass is worth kChromaPassMs off the incubation clock, banked on the way out — and
+// A pass is worth kChromaPassMs off the incubation clock, banked on the way out, and
 // banked ONCE, however many times the verdict screen is pressed.
 void test_chroma_passes_pay_the_incubation_clock() {
     Game g = metaEgg();
@@ -273,7 +273,7 @@ void test_chroma_three_buttons_are_three_skins() {
 }
 
 // The subject is the pet when the pet's family wears borrowed colours, which is every
-// route in from a hatch, and the Metamorphic egg otherwise — so an arcade cabinet
+// route in from a hatch, and the Metamorphic egg otherwise, so an arcade cabinet
 // played by anybody's pet still has something on the board.
 void test_chroma_subject_falls_back_to_the_egg() {
     Game g = metaEgg();
@@ -285,8 +285,8 @@ void test_chroma_subject_falls_back_to_the_egg() {
     CHECK(r.chromaSubject() && std::strcmp(r.chromaSubject()->id, "polystaria") == 0);
 }
 
-// GRAYSCALE. The three skins are a luminance ladder, so which skin the water is — and
-// which one the creature is wearing — survives the colour being taken away. The board
+// GRAYSCALE. The three skins are a luminance ladder, so which skin the water is (and
+// which one the creature is wearing) survives the colour being taken away. The board
 // backs that up with per-skin texture and named chips, but the ladder is the part a
 // retune can silently break.
 void test_chroma_grayscale() {
@@ -302,7 +302,7 @@ void test_chroma_grayscale() {
     CHECK(prev < luminance(palColor(Pal::INK)) - 0.15f); // ...and the top clears INK
 
     // The water is drawn, the creature is drawn on it, and the chips are drawn under
-    // it — all three in a frame with no colour decision of their own to make.
+    // it: all three in a frame with no colour decision of their own to make.
     Framebuffer fb(kActiveW, kActiveH);
     Game g = metaEgg();
     g.render(fb);
@@ -339,7 +339,7 @@ void test_chroma_egg_drifts_because_its_row_says_so() {
 // --- The colour source (core/render/camo.h) --------------------------------
 
 // camoRampFromTone is the seam a caller with no sprite to sample uses. It has to hand
-// back the same KIND of thing camoRampFrom does — a darkest-first value scale — or the
+// back the same KIND of thing camoRampFrom does (a darkest-first value scale), or the
 // draw path would be able to tell where a ramp came from.
 void test_camo_ramp_from_a_named_tone_is_a_value_scale() {
     for (Pal p : {Pal::CAMO_KELP, Pal::CAMO_SILT, Pal::CAMO_BLOOM}) {
@@ -363,7 +363,7 @@ void test_camo_ramp_from_a_named_tone_is_a_value_scale() {
 
 // A cabinet run has no round it finishes on: the board keeps dealing water until the
 // sweep finds the player, which is what makes the score worth chasing rather than a box
-// to tick. The window ramp still runs — it just settles at the floor and stays there.
+// to tick. The window ramp still runs: it just settles at the floor and stays there.
 void test_chroma_endless_run_has_no_finish() {
     Chromatophore c;
     c.reset(31u, /*rounds=*/0, 4000, 250, /*switching=*/false);

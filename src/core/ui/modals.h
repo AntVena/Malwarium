@@ -1,4 +1,4 @@
-// modals.h — event overlays: full-screen modals
+// modals.h (event overlays): full-screen modals
 // that preempt the carousel tree: Feeding, Lockout, Hatch, Line-select,
 // Evolution, and Critical System Failure.
 #pragma once
@@ -44,7 +44,7 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int be
 // touched. The rows are derived from `food`'s own ItemEffect list
 // (core/content/defs.h), so a morsel that only lifts Happiness never shows a
 // Hunger bar it never touched, and the arrow comes from `before` vs. the live
-// model — a stat the food had no room left to move says so by having no arrow.
+// model: a stat the food had no room left to move says so by having no arrow.
 // `food` may be null (nothing to report).
 //
 struct FeedingView {

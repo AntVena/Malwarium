@@ -20,7 +20,7 @@ constexpr int kGradientShare = 3;   // of 4
 // late-departing block would teleport, and at ~4fps a teleport is the whole flight.
 constexpr int kDepartSpan = 176;    // of 255
 
-// Blocks fan out before they converge — the swell peaks mid-flight and closes to
+// Blocks fan out before they converge: the swell peaks mid-flight and closes to
 // nothing on arrival, so the stream reads as a spray being inhaled rather than as
 // pixels sliding down a wire.
 constexpr int kFanPx = 16;
@@ -61,7 +61,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
     if (cellW <= 0 || cellH <= 0) return;
 
     // The pull direction, as the raw vector from the glyph's centre to the mouth. It
-    // only ever orders the departures, so it needs no normalising — the projection is
+    // only ever orders the departures, so it needs no normalising: the projection is
     // scaled by its own span below.
     const int glyphCx = srcX + cellW * num / den / 2;
     const int glyphCy = srcY + cellH * num / den / 2;
@@ -93,7 +93,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
                 if (grad > 255) grad = 255;
             }
             // The block's RANK in the queue to leave: its place along the pull blended
-            // with its own scatter. `bite` cuts that queue — a block ranked past it is
+            // with its own scatter. `bite` cuts that queue: a block ranked past it is
             // simply not part of this mouthful and never moves.
             const int scatter = static_cast<int>(h & 0xFFu);
             const int rank = (grad * kGradientShare + scatter) / (kGradientShare + 1);
@@ -105,7 +105,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
 
             if (rank >= bite || progress < depart) {
                 // Still part of the glyph. A block that IS going shivers a pixel in the
-                // stretch before its turn — the only warning the effect gives that the
+                // stretch before its turn: the only warning the effect gives that the
                 // glyph is coming apart. One staying put holds perfectly still, which
                 // is what makes a declined glyph read as declined.
                 int jx = 0, jy = 0;
@@ -118,7 +118,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
             }
 
             // In flight. Normalising against the block's own remaining sweep lands the
-            // whole stream together at progress 255 — the glyph comes apart raggedly
+            // whole stream together at progress 255: the glyph comes apart raggedly
             // and is swallowed in one beat, which is the shape of a bite.
             const int room = 255 - depart;
             const int q = room > 0 ? (progress - depart) * 255 / room : 255;
@@ -164,7 +164,7 @@ void drawPetAbsorbing(Framebuffer& fb, const SpriteData* pet, int petCx, int pet
         const int mouthX = (bodyX0 + bodyX1) / 2;
         const int mouthY = petCy;
 
-        // Seated off the drawn left edge, and never past the canvas edge — a glyph
+        // Seated off the drawn left edge, and never past the canvas edge: a glyph
         // pushed off-screen by a wide creature would take its first departures with it.
         const int glyphW = glyph->frameW * kScaleNum / kScaleDen;
         const int glyphH = glyph->h * kScaleNum / kScaleDen;

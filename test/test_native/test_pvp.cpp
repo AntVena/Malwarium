@@ -1,4 +1,4 @@
-// test_pvp.cpp — native gates for 1v1 duels over LINK.
+// test_pvp.cpp: native gates for 1v1 duels over LINK.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -68,7 +68,7 @@ void test_pvp_frame_round_trip() {
     bad[5] = 99;                                      // unknown frame type
     CHECK(!decodePvpFrame(bad, kPvpStartSize, &out));
 
-    // A HELLO beacon must never be mistaken for a duel frame, or the reverse — they
+    // A HELLO beacon must never be mistaken for a duel frame, or the reverse: they
     // share one receive path on the device (platform/esp32/net_link.h).
     PeerHello hello;
     std::strncpy(hello.tag, "SOMEONE", sizeof(hello.tag) - 1);
@@ -81,7 +81,7 @@ void test_pvp_frame_round_trip() {
 }
 
 // Both devices must independently reach the SAME answer about who hosts, from
-// information they both already have. Lower MAC wins, and it is a total order — no
+// information they both already have. Lower MAC wins, and it is a total order: no
 // tie is possible because two devices cannot share a MAC.
 void test_pvp_host_election_agrees_on_both_sides() {
     const uint8_t lowMac[6] = {0x02, 0, 0, 0, 0, 0x01};
@@ -118,7 +118,7 @@ void test_pvp_commit_hash_catches_divergence() {
 
 // The heart of the feature: two devices, no turn-by-turn traffic, one fight. Feeding
 // the same two specs and the same seed to two independent Combats must produce the
-// same fight hit for hit — that is the entire reason a duel can play out on both
+// same fight hit for hit: that is the entire reason a duel can play out on both
 // screens at once without broadcasting anything.
 void test_pvp_same_seed_plays_the_same_fight() {
     ContentRegistry reg;
@@ -155,7 +155,7 @@ void test_pvp_same_seed_plays_the_same_fight() {
     CHECK(left.outcome() == right.outcome());
     CHECK(left.outcome() != Combat::Outcome::Ongoing);
 
-    // A different seed is a different fight — otherwise the agreement above would be
+    // A different seed is a different fight, otherwise the agreement above would be
     // proving nothing about the seed at all.
     Combat other;
     beginPvpBattle(other, reg, host, guest, 0xBADBAD);
@@ -188,7 +188,7 @@ void test_pvp_seating_order_is_load_bearing() {
     // No Exploit is offered on either side: the A+C picker pauses the fight for a
     // human, and there is no way to pause the other device's copy of it.
     CHECK(forward.overrideUsesTotal() == 0 && !forward.overrideReady());
-    // And no stakes — a loss must not reach Fragmentation.
+    // And no stakes: a loss must not reach Fragmentation.
     CHECK(forward.stakes() == Combat::Stakes::Safe);
 }
 
@@ -221,8 +221,8 @@ static void hearBeacon(Game& listener, const uint8_t* senderMac, const char* tag
 }
 
 // The whole handshake, end to end, between two engines: challenge, human consent,
-// seed agreement, and then both devices playing the same fight to the same verdict —
-// stated from each operator's own point of view.
+// seed agreement, and then both devices playing the same fight to the same verdict.
+// Stated from each operator's own point of view.
 void test_pvp_two_devices_duel_end_to_end() {
     const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};   // lower -> hosts
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
@@ -235,7 +235,7 @@ void test_pvp_two_devices_duel_end_to_end() {
     a.tick(t += 1000);
     b.tick(t);
 
-    // Both operators are on the LINK screen — that IS the consent to be challenged.
+    // Both operators are on the LINK screen: that IS the consent to be challenged.
     enterHackerSlot(a, HackerSlotId::Link);
     enterHackerSlot(b, HackerSlotId::Link);
     CHECK(a.linkScreenOpen() && b.linkScreenOpen());
@@ -307,7 +307,7 @@ void test_pvp_two_devices_duel_end_to_end() {
     CHECK(a.model().fragmentation() == fragBefore);
     CHECK(a.combatLevel() == levelBefore);
 
-    // A verdict left on screen must not pin the radio awake — only a session that
+    // A verdict left on screen must not pin the radio awake, only a session that
     // still needs the air does that.
     CHECK(a.pvpActive() && !a.pvpSessionLive());
 
@@ -320,7 +320,7 @@ void test_pvp_two_devices_duel_end_to_end() {
 // A duel is the only fight whose opponent is a real species rather than a name-only
 // malbeast/boss/dummy spec, so it is the only thing that can move a creature from
 // "locked" to "seen". Both devices record the other's species, and neither records
-// its own — you raised that one.
+// its own: you raised that one.
 void test_pvp_duel_marks_the_opponent_species_seen() {
     const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
@@ -349,7 +349,7 @@ void test_pvp_duel_marks_the_opponent_species_seen() {
     CHECK(relayPvp(a, macA, b, macB) >= 1);        // START -> the guest starts
     CHECK(b.pvpFighting());
 
-    // Recorded at the START, before either fight resolves — facing the species is
+    // Recorded at the START, before either fight resolves: facing the species is
     // the glimpse, not beating it.
     CHECK(a.creatureSeen("pingcub"));
     CHECK(b.creatureSeen("paypup"));
@@ -369,7 +369,7 @@ void test_pvp_duel_marks_the_opponent_species_seen() {
 // declines the very challenge it is displaying, and the challenger gives up before its
 // opponent can possibly say yes.
 //
-// This is the case the end-to-end test missed by relaying each frame exactly once —
+// This is the case the end-to-end test missed by relaying each frame exactly once:
 // on hardware it failed 100% of the time.
 void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
     const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};
@@ -411,7 +411,7 @@ void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
     CHECK(a.pvpFighting() && b.pvpFighting());
     CHECK(std::strcmp(a.combat().player().name, b.combat().player().name) == 0);
 
-    // A genuinely DIFFERENT session from a device already in a duel still gets BUSY —
+    // A genuinely DIFFERENT session from a device already in a duel still gets BUSY:
     // ignoring retries must not have made the busy answer unreachable.
     const uint8_t macC[6] = {0x02, 0, 0, 0, 0, 0x03};
     Game c{StartMode::Hatched, "paypup"};
@@ -431,7 +431,7 @@ void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
 
 // A challenge is only ever considered by a human looking at the LINK screen. Anywhere
 // else the device answers BUSY rather than interrupting someone who isn't looking for
-// a fight — and the challenger is told which, so a refusal never reads as a hang.
+// a fight, and the challenger is told which, so a refusal never reads as a hang.
 void test_pvp_challenge_needs_a_human_on_the_link_screen() {
     const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};
     const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
@@ -492,8 +492,8 @@ void test_pvp_unanswered_challenge_times_out() {
     CHECK(std::strcmp(a.pvpStatusText(), "NO ANSWER") == 0);
 }
 
-// The bottom row owns the zoned Health gauge with its Critical pulse — the "my pet is
-// in trouble" read — so each duellist must see their OWN pet there. The guest holds
+// The bottom row owns the zoned Health gauge with its Critical pulse (the "my pet is
+// in trouble" read), so each duellist must see their OWN pet there. The guest holds
 // Combat's enemy_ slot, so its screen swaps the rows for display. Rendering one shared
 // fight from both sides and diffing proves the swap is actually wired: without it the
 // two screens would be pixel-identical and the guest would be watching its rival's
@@ -541,7 +541,7 @@ void test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge() {
     CHECK(grayDiff > 0);
 }
 
-// The local pet fights from the LEFT stage seat, its rival from the RIGHT — in every
+// The local pet fights from the LEFT stage seat, its rival from the RIGHT: in every
 // fight, PVE and duel alike. The seat follows the local/rival ROLE, not Combat's
 // player_/enemy_ slot, so a duel guest (which holds enemy_) still finds its own pet on
 // the left. Rendering with ONE sprite supplied at a time pins each seat to a role:
@@ -592,7 +592,7 @@ void test_combat_seats_local_pet_on_the_left() {
 
 // Release gate: NO two creatures in the roster may overlap on the combat stage, the
 // clash lane between them is always on canvas and never narrower than the strike mark
-// drawn in it, and — since the stage gained a second SHOT to fall back on — no pairing
+// drawn in it, and (since the stage gained a second SHOT to fall back on) no pairing
 // in the roster is cropped at all. Swept over every pairing rather than a sample,
 // because the pairs that break it are exactly the rare ones: two Daemon cells whose art
 // runs to both edges, which together want 336 of the 224 px there are.
@@ -634,7 +634,7 @@ void test_combat_stage_seats_never_overlap() {
 
 // Release gate: A STRUCK FIGHTER STAYS ON THE STAGE. The attacker's lunge steps its
 // target away and a heavy hit's recoil shoves it further the same way, so both of the
-// fight's motion cues push their target toward its OWN screen edge — and the pairings
+// fight's motion cues push their target toward its OWN screen edge, and the pairings
 // with the most body to move are exactly the ones seated hard against that edge. A flat
 // shove walks a Daemon half out of frame on the beat the fight most wants it looked at;
 // heldOnStage (ui/combat_screen.h) is what spends only the room a seat actually has.
@@ -668,13 +668,13 @@ void test_combat_stage_holds_a_struck_fighter_on_canvas() {
     }
     // ...and the hold is a CEILING, not a brake. Most pairings leave room for the whole
     // travel, and a clamp that quietly took it from all of them would leave a fight that
-    // never moves — which no gate above would notice.
+    // never moves, which no gate above would notice.
     CHECK(full > 0);
 }
 
 // Release gate: the stage draws AUTHORED PIXELS. It is framed at 1/1 (CombatStage), so
 // every creature lands on the panel as the exact pixels its sheet carries and its seat is
-// its own content width — one panel pixel per authored pixel, no resampling anywhere.
+// its own content width: one panel pixel per authored pixel, no resampling anywhere.
 //
 // Swept over the roster rather than sampled, because the value of one scale is that it
 // holds for ALL of them: it is what keeps a Daemon reading bigger than a Process in
@@ -696,7 +696,7 @@ void test_combat_stage_draws_authored_pixels() {
 
 // Release gate: A CREATURE'S DRAWN SIZE IS ITS OWN. The stage holds one scale, so how
 // big a creature looks says what the creature IS and never who it happened to draw as an
-// opponent — which is the property a camera that changed scale per pairing gave up, and
+// opponent, which is the property a camera that changed scale per pairing gave up, and
 // gave up expensively: it drew a Daemon at 73px and a Process at 70.
 //
 // Stated as invariance rather than as "a Daemon is wider than a Process", which the art
@@ -721,7 +721,7 @@ void test_combat_stage_size_is_intrinsic() {
 }
 
 // Release gate: the strike mark answers WHO IS HITTING WHOM without colour. It lives in
-// the lane for the swing window only, and it TRAVELS toward the fighter being hit — so
+// the lane for the swing window only, and it TRAVELS toward the fighter being hit, so
 // the two directions are different pictures, and a single frozen frame still carries the
 // answer through the mark's taper.
 void test_combat_strike_mark_travels_toward_its_target() {
@@ -782,7 +782,7 @@ void test_combat_strike_mark_travels_toward_its_target() {
 }
 
 // Release gate: a wind-up must not read as a hit landing. The two cues are separated on
-// three channels at once — the wind-up BUILDS where an impact DECAYS, it carries a
+// three channels at once: the wind-up BUILDS where an impact DECAYS, it carries a
 // countdown meter over the charging fighter's head that an impact has no equivalent of,
 // and both survive grayscale, which is where a hue difference alone would not.
 void test_combat_windup_reads_apart_from_impact() {
@@ -791,7 +791,7 @@ void test_combat_windup_reads_apart_from_impact() {
     const SpriteData* es = reg.sprite("SPR_PET_PINGCUB");
     const CombatStage st = combatStage(ps, es);
 
-    // Total grayscale brightness over one fighter's seat — the flash's own channel.
+    // Total grayscale brightness over one fighter's seat: the flash's own channel.
     auto seatGray = [&](const Framebuffer& fb, int x0, int w) {
         float sum = 0;
         for (int y = kCombatSpriteShelf - kCombatMaxBodyH; y < kCombatSpriteShelf; ++y)
@@ -834,7 +834,7 @@ void test_combat_windup_reads_apart_from_impact() {
     render(/*channel=*/false, 0, 0, hitEarly);
     render(/*channel=*/false, 0, 3, hitLate);
     // Widened by the motion budget, because the beat this flash is brightest is also the
-    // beat the fighter is furthest from its seat — a window drawn tight to the seat
+    // beat the fighter is furthest from its seat: a window drawn tight to the seat
     // measures how far the creature has been shoved out of it, not how bright it is.
     CHECK(seatGray(hitEarly, st.localX - kCombatMaxMotionPx,
                    st.localW + 2 * kCombatMaxMotionPx) >
@@ -847,7 +847,7 @@ void test_combat_windup_reads_apart_from_impact() {
     render(/*channel=*/false, 0, -1, none);
     const int markX0 = std::max(0, st.localX), markW = st.localW;
     // The meter rides ITS OWNER'S head, so the band is the strip just above this pet's
-    // own drawn height — not above the tallest cell that could stand there, which for a
+    // own drawn height, not above the tallest cell that could stand there, which for a
     // short creature is empty stage the meter never reaches.
     const int headY = kCombatSpriteShelf - ps->h * kCombatStageNum / kCombatStageDen;
     const int meterY0 = std::max(kHeaderRule + 8, headY - 20), meterY1 = headY;
@@ -856,8 +856,8 @@ void test_combat_windup_reads_apart_from_impact() {
 }
 
 // Release gate: the ransom pool (combat.h ransomPool) must stay readable in grayscale.
-// Both of its meanings ride on a non-colour channel — HOW MUCH is the green gauge's fill
-// width, HOW LONG is the count of lit blips beside it — so throwing the hue away has to
+// Both of its meanings ride on a non-colour channel (HOW MUCH is the green gauge's fill
+// width, HOW LONG is the count of lit blips beside it), so throwing the hue away has to
 // leave a bigger pool wider and a longer countdown brighter.
 void test_combat_ransom_pool_grayscale() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -868,7 +868,7 @@ void test_combat_ransom_pool_grayscale() {
     const int rowY = kCombatLocalGaugeY - 7, rowH = 5;
     const int blipX = phX + phW + 6, blipW = kRansomHoldTurns * 7;
     // Summed LUMINANCE, not a lit-pixel count: the blips code their state as calm-green
-    // (0.67) against ink-dim (0.47), both of which read as "lit" — brightness is the
+    // (0.67) against ink-dim (0.47), both of which read as "lit". Brightness is the
     // channel that separates them once the hue is gone.
     auto grayIn = [&](const Framebuffer& fb, int x0, int w) {
         float sum = 0;
@@ -899,7 +899,7 @@ void test_combat_ransom_pool_grayscale() {
 }
 
 // Release gate: a grayscale screenshot of LINK must stay fully readable. The verdict
-// is the one status meaning on this screen, and it is carried by a WORD — so a win and
+// is the one status meaning on this screen, and it is carried by a WORD, so a win and
 // a loss must differ in lit pixels with the hue thrown away.
 void test_pvp_link_screen_verdict_grayscale() {
     const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};
@@ -941,7 +941,7 @@ void test_pvp_link_screen_verdict_grayscale() {
     renderVerdict(true, won);
     renderVerdict(false, lost);
 
-    // Desaturated, the two panels must still be distinguishable — if the only
+    // Desaturated, the two panels must still be distinguishable, if the only
     // difference were hue, these would match.
     int diff = 0;
     for (int y = 0; y < kActiveH; ++y)
@@ -1009,8 +1009,8 @@ void test_save_v36_crew_roundtrip() {
 void test_pedia_state_json_reveal_states() {
     SaveData a; std::strcpy(a.activeId, "pingcub"); a.generation = 1;
     a.seenCreatures.push_back(SaveId{"malbear"});   // glimpsed, not hatched
-    a.malbeastSeen = 1 << 1;                        // Segfault Pup — seen only
-    a.malbeastDefeated = 1 << 0;                    // GlitchHog — defeated
+    a.malbeastSeen = 1 << 1;                        // Segfault Pup: seen only
+    a.malbeastDefeated = 1 << 0;                    // GlitchHog: defeated
     MemSaveStore store; store.save(serializeSave(a));
     Game g(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored: store wins
 
@@ -1030,7 +1030,7 @@ void test_pedia_state_json_reveal_states() {
 
 // The raised tally is what the 'Pedia reveals from, so a species stays revealed
 // after the pet stops being it. Raise a line by real evolutions and every rung
-// behind the live pet must still read "hatched" — the possession-only test this
+// behind the live pet must still read "hatched": the possession-only test this
 // replaced re-encrypted each one the moment its successor stamped over it.
 void test_pedia_raised_tally_survives_evolution() {
     Game g{StartMode::Hatched, "pingcub"};
@@ -1056,7 +1056,7 @@ void test_pedia_raised_tally_survives_evolution() {
     CHECK(json.find("\"malbear\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"bruinforce\":\"hatched\"") != std::string::npos);
     CHECK(json.find("\"species_raised\":3") != std::string::npos);
-    // The not-taken branch sibling was neither raised nor fought, so it stays locked —
+    // The not-taken branch sibling was neither raised nor fought, so it stays locked:
     // walking a line reveals the rungs you walked, not the one you didn't.
     CHECK(!g.creatureRaised("berserkernel"));
     CHECK(json.find("\"berserkernel\":\"locked\"") != std::string::npos);
@@ -1074,7 +1074,7 @@ void test_ladder_inserts_table_invariants() {
         CHECK(rows[i].sinceVersion > kOldestAcceptedVersion);
         CHECK(rows[i].sinceVersion <= kSaveVersion);
         // A splice lands ON the ladder. Past its end it would be an append, which needs
-        // no row at all — so such a row is a mistake, not a no-op.
+        // no row at all, so such a row is a mistake, not a no-op.
         CHECK(rows[i].atIndex >= 0);
         CHECK(rows[i].atIndex < kExplSectors);
         // Oldest-first, which is what lets each atIndex read against the ladder its
@@ -1107,7 +1107,7 @@ void test_area_icons_are_keyed_by_area_id() {
 }
 
 // The Stacker's rules (core/model/stacker.h), driven a press at a time. The model
-// is deterministic on purpose — no RNG anywhere — which is what lets a run be replayed
+// is deterministic on purpose (no RNG anywhere), which is what lets a run be replayed
 // exactly here, and what makes the variant it backs a test of skill rather than luck.
 namespace {
 }  // namespace

@@ -1,4 +1,4 @@
-// test_decryption.cpp — native gates for DISK DECRYPTION: the board's rules, the hatch it
+// test_decryption.cpp (native gates for DISK DECRYPTION): the board's rules, the hatch it
 // pays into, and the arcade dial that is the only thing allowed to move either.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -21,7 +21,7 @@ void guessRow(DiskDecryption& d, const int* want) {
 
 }  // namespace
 
-// Three locks play a row, and the third one is the submit — there is no fourth press.
+// Three locks play a row, and the third one is the submit: there is no fourth press.
 // Until then the working row is editable, and C is what re-opens a settled slot.
 void test_decryption_three_locks_play_a_row() {
     DiskDecryption d;
@@ -35,7 +35,7 @@ void test_decryption_three_locks_play_a_row() {
     CHECK(d.locked(0) && d.cursor() == 1);
     d.cycleColour();                      // the cursor moved, so this is slot 1
     CHECK(d.guess(0) == 1 && d.guess(1) == 1);
-    CHECK(d.played() == 0);               // still building — nothing played yet
+    CHECK(d.played() == 0);               // still building: nothing played yet
 
     // C steps back and re-opens what it lands on, which is the whole undo.
     d.stepBack();
@@ -54,7 +54,7 @@ void test_decryption_three_locks_play_a_row() {
 // colour the key holds once can be credited once, however many times it is guessed.
 void test_decryption_counts_exact_and_elsewhere() {
     DiskDecryption d;
-    // Find a seed whose key is the three distinct colours 0,1,2 in some order — the
+    // Find a seed whose key is the three distinct colours 0,1,2 in some order: the
     // shape that makes every count below unambiguous.
     int key[kDecryptionSlots] = {0};
     bool found = false;
@@ -85,7 +85,7 @@ void test_decryption_counts_exact_and_elsewhere() {
     CHECK(d.row(0).colour == kDecryptionSlots);
 
     // Three copies of one key colour: credited ONCE, in place, and never a second
-    // time as "elsewhere" — the multiplicity rule.
+    // time as "elsewhere". The multiplicity rule.
     d.reset(9001, /*allowDuplicates=*/false);
     const int first = d.codeAt(0);
     int trip[kDecryptionSlots];
@@ -95,7 +95,7 @@ void test_decryption_counts_exact_and_elsewhere() {
     CHECK(d.row(0).colour == 0);
 }
 
-// A crack is worth the attempts it did NOT need — but the two opening PROBES are
+// A crack is worth the attempts it did NOT need, but the two opening PROBES are
 // floored out of that, so cracking on guess one, two or three all pay the ceiling and
 // only the rows past them cost anything. Five wrong attempts lock the board out, and a
 // locked-out board is worth nothing.
@@ -176,7 +176,7 @@ void test_decryption_hatch_pays_the_clock() {
 }
 
 // The hatch board always plays by the standard rules, whatever the arcade was last set
-// to — a dial on a cabinet must never reach the egg.
+// to: a dial on a cabinet must never reach the egg.
 void test_decryption_hatch_ignores_the_arcade_dial() {
     Game g{StartMode::Hatched};
     enterArcadeCabinet(g, arcadeGameIndexById("decryption"), ArcadeDifficulty::Hard);
@@ -193,7 +193,7 @@ void test_decryption_hatch_ignores_the_arcade_dial() {
 }
 
 // The arcade cabinet pays on the SCORE, so a first-guess crack takes the whole bonus
-// and a lost board takes none of it — and neither touches the incubation clock, which
+// and a lost board takes none of it, and neither touches the incubation clock, which
 // a raised pet does not have.
 void test_decryption_arcade_pays_on_score() {
     const int row = arcadeGameIndexById("decryption");
@@ -206,7 +206,7 @@ void test_decryption_arcade_pays_on_score() {
       CHECK(g.nav() == Game::Nav::ArcadeResult);
       CHECK(g.bits() == bits + kArcadePlayBits + kArcadeScoreBits);
       CHECK(g.arcadeWins(row) == 1);
-      // The arcade never fires the hatch's achievement — there was no egg in it.
+      // The arcade never fires the hatch's achievement: there was no egg in it.
       CHECK(!g.hasAchievement(ach::kFirstBruteForce)); }
 
     { Game g{StartMode::Hatched};

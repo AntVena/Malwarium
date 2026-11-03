@@ -13,25 +13,25 @@ namespace mal {
 
 namespace {
 
-// The board's geometry, in ACTIVE pixels and drawn at x1 — the Clutch/Isolation/Disk
+// The board's geometry, in ACTIVE pixels and drawn at x1: the Clutch/Isolation/Disk
 // Decryption precedent. Nothing here is art.
 //
 // The quote grid is the panel: a cell is one font cell wide and sits on the same margin
 // every other screen uses, which is where kCryptogramCols' 26 comes from. Everything
 // below it is placed against the FIXED five-row grid rather than against the quote's
-// own height, so the pool does not move between a two-row quote and a five-row one —
+// own height, so the pool does not move between a two-row quote and a five-row one:
 // the pool is where the player's thumb lives, and it moving would be a worse cost than
 // the whitespace over a short quote.
 constexpr int kGridX = kMargin;
 constexpr int kGridY = 30;
-constexpr int kCellW = kFontAdvance;   // 8 — the grid IS the font's advance
+constexpr int kCellW = kFontAdvance;   // 8: the grid IS the font's advance
 constexpr int kRowPitch = 15;          // glyph (8) + the rule under it + leading
 constexpr int kRuleDY = 10;            // the empty rule's offset below the cell top
 constexpr int kRuleW = 6;              // inset a pixel each side, so cells stay separate
 
 // The verdict/prompt line, then the stake on two lines under it: the Bits, and the
 // account unlock beside them. Two lines rather than one because a Rig Shop row's name
-// is a phrase, and "256 BITS + INCREASE BANDWIDTH" does not fit a 26-cell row — a
+// is a phrase, and "256 BITS + INCREASE BANDWIDTH" does not fit a 26-cell row: a
 // marquee would put the half that matters most in permanent motion.
 constexpr int kStatusY = 116;
 constexpr int kPrizeY = 130;
@@ -70,7 +70,7 @@ void drawChar(Framebuffer& fb, int x, int y, char ch, Rgb565 c) {
 // Three kinds of cell, and the difference between them is the whole read:
 //   * an OPEN letter is ink, and is the answer;
 //   * a CLOSED letter is an empty rule, and is the question;
-//   * everything else — punctuation, digits, the spaces between words — is dim ink and
+//   * everything else (punctuation, digits, the spaces between words) is dim ink and
 //     is neither. It is never hidden: the rhythm of the sentence is what a cryptogram is
 //     solved off, and hiding a comma would only make the board a word count.
 void drawGrid(Framebuffer& fb, const Cryptogram& c, bool failed) {
@@ -88,7 +88,7 @@ void drawGrid(Framebuffer& fb, const Cryptogram& c, bool failed) {
             continue;
         }
         // A lost board shows the misplacement and nothing else. Revealing the answer
-        // would be a kindness that costs the retry everything — the same quote comes
+        // would be a kindness that costs the retry everything: the same quote comes
         // back one rung easier, and it is not a puzzle if it has already been read.
         if (failed && i == c.wrongCell()) {
             fb.fillRect(x, y - 1, kCellW, kFontH + 2, palColor(Pal::HOT));
@@ -114,7 +114,7 @@ void drawCellCursor(Framebuffer& fb, const Cryptogram& c, int beat) {
 
 // --- The pool ---------------------------------------------------------------
 //
-// The letters still owed, and only those — a letter leaves the moment it opens, so the
+// The letters still owed, and only those: a letter leaves the moment it opens, so the
 // pool shrinking IS the progress bar. The focused tile is FILLED while the player is
 // choosing and merely OUTLINED once they have taken it: fill versus outline is a shape
 // channel, so which of the two picks is live survives the grayscale gate.
@@ -154,7 +154,7 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const CryptogramV
     drawGrid(fb, c, failed);
     if (running && c.stage() == Cryptogram::Stage::PickCell) drawCellCursor(fb, c, v.beat);
 
-    // The attribution, under the quote's own last row rather than the grid's — a short
+    // The attribution, under the quote's own last row rather than the grid's: a short
     // quote should not float above a hole. Solved boards only: never guessed, and never
     // given away by a loss either.
     if (solved && v.attribution && v.attribution[0]) {
@@ -215,7 +215,7 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const CryptogramV
     drawPool(fb, c, running);
 
     // A/C are the cursor's two directions in both stages, so the chord is what a cancel
-    // would normally be — and a board with no way off it has to say so where the
+    // would normally be, and a board with no way off it has to say so where the
     // controls are, not in a manual.
     if (!running) drawHintBand(fb, "B DONE");
     else if (c.stage() == Cryptogram::Stage::PickCell)

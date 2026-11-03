@@ -1,4 +1,4 @@
-// items_screen.h — ITEMS submenu: grouped inventory list (L2) + item
+// items_screen.h (ITEMS submenu): grouped inventory list (L2) + item
 // detail (L3). The list is built from the ContentRegistry against the live
 // Inventory, so it stays data-driven (no hardcoded item table here).
 #pragma once
@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "core/content/defs.h"
-#include "core/model/pet_upgrades.h"  // PetLifetimeGates — the once-per-life note
+#include "core/model/pet_upgrades.h"  // PetLifetimeGates: the once-per-life note
 #include "core/ui/ui_state.h"  // ItemFilter
 
 namespace mal {
@@ -31,18 +31,18 @@ struct InvRow {
 // Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
 //   * ITEMS Type-Tabs (hold-B on the list) walks the TYPE axis, ALL/FOOD/BUFFS/QUEST.
 //   * ITEMS Type-Picker (the L2 tile screen) walks the finer CATEGORY axis,
-//     ALL/FOOD/INGREDIENTS/BUFFS/KEYS/TOOLS — QUEST split into the keys you spend
+//     ALL/FOOD/INGREDIENTS/BUFFS/KEYS/TOOLS: QUEST split into the keys you spend
 //     and the tools you carry (ItemDef::Category), and FOOD split into cooked
 //     dishes and the recipe ingredients you almost never eat directly
 //     (itemIsRecipeIngredient, content_recipes.h). Owning it upgrades hold-B to
 //     that axis too, so the picker and the gesture never disagree about what a
 //     tab means.
-// All = the full grouped list, and what every player without an upgrade sees —
+// All = the full grouped list, and what every player without an upgrade sees:
 // FOOD there still groups into a FOOD block and an INGREDIENTS block underneath
 // it (buildInventoryRows), just without a filter to narrow to only one.
 
 // Short chip word for the active filter (ALL/FOOD/BUFFS/QUEST/KEYS/TOOLS/
-// INGREDIENTS) — shown in the ITEMS header once a filter upgrade is owned, and on
+// INGREDIENTS): shown in the ITEMS header once a filter upgrade is owned, and on
 // the picker's tiles.
 const char* itemFilterLabel(ItemFilter f);
 // The hold-B cycle order. `categoryAxis` (the type-picker is owned) walks
@@ -58,7 +58,7 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id);
 // items). Shared by the list sort and the engine's Use handler.
 bool itemResolvesLockout(const ItemDef& d);
 
-// Does the bag hold a MEAL — a Food row that is not a recipe ingredient, i.e. anything
+// Does the bag hold a MEAL: a Food row that is not a recipe ingredient, i.e. anything
 // the list files under FOOD rather than INGREDIENTS? An ingredient feeds a token
 // amount, so a bag of them is, for the purpose of keeping a pet fed, an empty one.
 // Game::careAttention reads this to send a hungry pet's "!" to EXPL instead.
@@ -71,7 +71,7 @@ extern const char* const kNoMealNotice;
 // Build the grouped, sorted inventory: only stacks with qty>0, ordered
 // FOOD -> INGREDIENTS -> BUFFS -> QUEST with a header row per group, and RAREST
 // FIRST inside each group (Epic -> Common, alphabetical between items of equal
-// rarity). FOOD/INGREDIENTS is a split of the same Type::Food, not two types —
+// rarity). FOOD/INGREDIENTS is a split of the same Type::Food, not two types:
 // cooked dishes first, then the recipe ingredients a player rarely eats directly.
 // `order` LockoutFirst floats Lockout-resolving items to the very top.
 // `filter` narrows the set to one type first; All = no narrowing.
@@ -137,7 +137,7 @@ struct ItemsListView {
 };
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v);
 
-// Lines the ITEMS detail panel holds — the name, the readout grid and the prose all
+// Lines the ITEMS detail panel holds: the name, the readout grid and the prose all
 // share this band. Published because the content tests hold every item's readout +
 // description to it, and a copy of the number in the test is a copy that goes stale
 // the first time the band or the line height moves.
@@ -197,7 +197,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v
 // Rollback stat picker: shed one earned combat-stat point (−1 level) to
 // re-roll it. `points` are the 4 earned counts (power/defense/speed/max-Health);
 // `cursor` is the focused row. Rows with 0 points read "can't reduce" and are
-// ineligible (greyed) — the cursor only ever lands on an eligible row. Dual-coded
+// ineligible (greyed): the cursor only ever lands on an eligible row. Dual-coded
 // (cursor + `+n` / `can't reduce` text), grayscale-safe.
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor);
 
@@ -205,7 +205,7 @@ void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor);
 // operator's choosing (same level, same total, a different shape). One screen over the
 // picker's TWO steps, told apart by `from`: -1 is the FROM step and draws exactly like
 // the Rollback picker above (0-point rows read "can't reduce" and are ineligible),
-// while a set `from` is the TO step — the source row is marked with its pending -1, and
+// while a set `from` is the TO step. The source row is marked with its pending -1, and
 // every other row is a legal destination however few points it has. `cursor` is the
 // focused row. Dual-coded (cursor + the signed +1/-1 marks + the step's own purpose
 // line and hint band), grayscale-safe.

@@ -97,7 +97,7 @@ Rgb565 dim(Rgb565 c, int pct) {
                   static_cast<uint8_t>(b8(c) * pct / 100));
 }
 
-// Small inline LCG for the frontier-cell dither — the same one-liner-per-site
+// Small inline LCG for the frontier-cell dither: the same one-liner-per-site
 // convention Combat::rng uses (core/model/combat.cpp).
 uint32_t lcgNext(uint32_t& s) {
     s = s * 1664525u + 1013904223u;
@@ -229,7 +229,7 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
     if (t < 0) t = 0;
     if (t > 1) t = 1;
     const Rgb565 frame = palColor(Pal::INK_DIM);
-    // Outline frame — the empty track stays readable in grayscale.
+    // Outline frame: the empty track stays readable in grayscale.
     fb.fillRect(x, y, w, 1, frame);
     fb.fillRect(x, y + h - 1, w, 1, frame);
     fb.fillRect(x, y, 1, h, frame);
@@ -239,7 +239,7 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
     if (fillW > 0) fb.fillRect(x + 1, y + 1, fillW, h - 2, c);
 
     // Overflow churn: the same "value can't fit past its own cap" cue as the
-    // Fragmentation frontier glitch (drawGauge above) — a seeded dither of ink
+    // Fragmentation frontier glitch (drawGauge above). A seeded dither of ink
     // flecks at the fill's leading edge, reseeded per `beat` so it shimmers in
     // place rather than animating a fill level the bar has no room to show.
     if (edge == BarEdge::Churn && fillW > 0) {
@@ -287,15 +287,15 @@ void drawCancelConfirm(Framebuffer& fb, int y, int choice) {
 void drawHintBand(Framebuffer& fb, const char* hint) {
     fb.fillRect(0, kActiveH - kHintBandH, kActiveW, kHintBandH, palColor(Pal::TRACK));
     // Centred, but never started left of the canvas: a hint wider than 224px would
-    // otherwise be cut at BOTH ends, and the leading character is a button letter —
-    // the one part of the line a player cannot infer. Clamping trades that for a lost
+    // otherwise be cut at BOTH ends, and the leading character is a button letter.
+    // The one part of the line a player cannot infer. Clamping trades that for a lost
     // tail. tools/check_hint_bands.py is what keeps it from coming up.
     const int x = (kActiveW - textWidth(hint)) / 2;
     drawText(fb, x < 0 ? 0 : x, kActiveH - kHintBandH + 4, hint, palColor(Pal::INK));
 }
 
 void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current) {
-    // The current node's label is the stage SPELLED OUT, in the accent — this is where
+    // The current node's label is the stage SPELLED OUT, in the accent: this is where
     // STAT names the stage, so the header row above it doesn't have to and the pet's
     // own name gets that column back. Only the current node is labelled, so the four
     // words never have to fit side by side; the widest of them ("BOOT SECTOR", under
@@ -330,7 +330,7 @@ namespace {
 constexpr int kGridGutter = kFontAdvance;
 
 // True if this row fits a half-width column (label + at least one space + value).
-// A flag row always takes the full width — its label IS the whole statement, so
+// A flag row always takes the full width: its label IS the whole statement, so
 // splitting it across a column boundary would read as a truncation.
 bool fitsHalf(const SpecRow& r, int colW) {
     if (r.flag()) return false;

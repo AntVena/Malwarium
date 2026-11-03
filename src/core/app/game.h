@@ -1,10 +1,10 @@
-// game.h — top-level engine state machine + render entry point.
+// game.h: top-level engine state machine + render entry point.
 //
 // Navigation is a shallow stack: the carousel is
 // always-on furniture framing the living area. A/C summon the *cursor* onto a
 // slot; B enters its submenu (L2). The list/detail layers sit beneath the
 // cursor (ITEMS, MAINT) plus the event-overlay modals (Feeding, Lockout) that
-// preempt the whole tree. The engine renders the full active (224) canvas — UI
+// preempt the whole tree. The engine renders the full active (224) canvas: UI
 // chrome native, creature upscaled.
 #pragma once
 
@@ -29,12 +29,12 @@
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
 #include "core/content/registry.h"
-#include "core/model/cant.h"                // SigilSet / CantCipher — the guardian's tongue
+#include "core/model/cant.h"                // SigilSet / CantCipher: the guardian's tongue
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
-#include "core/model/flock.h"          // the guardian's body — a boids swarm, not a sheet
+#include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
 #include "core/model/idle_wander.h"
@@ -55,12 +55,12 @@
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
 #include "core/render/scene_id.h"
-#include "core/render/camo.h"          // CamoTarget — the FX_CAMO state the tick keeps
+#include "core/render/camo.h"          // CamoTarget: the FX_CAMO state the tick keeps
 #include "core/render/framebuffer.h"
 // ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
 // but draws nothing itself, and this header is included by every TU in the engine.
 // A screen header belongs in the game_*.cpp unit that calls its draw functions.
-#include "core/ui/arch_screen.h"   // ArchRow — the ARCH list's row model
+#include "core/ui/arch_screen.h"   // ArchRow: the ARCH list's row model
 #include "core/ui/ui_state.h"
 #include "core/device/platform.h"
 
@@ -68,12 +68,12 @@ namespace mal {
 
 struct SpriteData;
 // STAT's two flowed prose pages and the index over them (core/ui/stat_screen.h).
-// Named here only as the return type of the row builders below — the screen header
+// Named here only as the return type of the row builders below: the screen header
 // itself stays in game_stat.cpp, per the include note above.
 struct ProseRow;
 struct BuffRow;
 // EXPL's list view (core/ui/expl_screen.h). Named here only as explView()'s return
-// type, per the include note above — the screen header stays in the game_*.cpp units
+// type, per the include note above: the screen header stays in the game_*.cpp units
 // that draw and navigate with it.
 struct ExplListView;
 struct StatIndexRow;
@@ -97,16 +97,16 @@ public:
                   ISaveStore* store = nullptr);
 
     // Navigation layers. The carousel is always drawn at Idle/Cursor.
-    //   Idle/Cursor — resting / a slot focused.
-    //   Submenu     — L2 (STAT viewer · ITEMS/MAINT list · placeholder).
-    //   Detail      — L3 (item detail · MAINT action).
-    //   Process     — a running MAINT process (non-interruptible).
-    //   ModalFeeding / ModalLockout — event overlays.
+    //   Idle/Cursor: resting / a slot focused.
+    //   Submenu:     L2 (STAT viewer · ITEMS/MAINT list · placeholder).
+    //   Detail:      L3 (item detail · MAINT action).
+    //   Process:     a running MAINT process (non-interruptible).
+    //   ModalFeeding / ModalLockout: event overlays.
     enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
 
     // ARCH's two L2 screens, the same shape ITEMS uses: the group picker, then the rows
     // behind whichever group was opened. Unlike ITEMS' the picker is not a purchasable
-    // upgrade — a 64-slot shelf is not navigable without it.
+    // upgrade: a 64-slot shelf is not navigable without it.
     enum class ArchScreen : uint8_t { Picker, List };
 
     // Wi-Fi network event sub-outcomes. Public so tests/dev tools can
@@ -125,9 +125,9 @@ public:
     // (cantFluencyPct, core/model/cant.h). Public so a test can steer/inspect the band a
     // fluency landed in without playing a walk out.
     //
-    //   Affront — it will not hear an illiterate pet out, and attacks.
-    //   Riddle  — the SHIBOLEET proper: a riddle drawn in the Cant, three replies.
-    //   Boon    — fluent enough that the two simply talk; no riddle at all.
+    //   Affront: it will not hear an illiterate pet out, and attacks.
+    //   Riddle:  the SHIBOLEET proper: a riddle drawn in the Cant, three replies.
+    //   Boon:    fluent enough that the two simply talk; no riddle at all.
     enum class ShiboleetWelcome : uint8_t { Affront, Riddle, Boon };
 
     // How a riddle ENDED. Answered is the only one that can buy a sigil; the other two
@@ -142,7 +142,7 @@ public:
     enum class QuotePick : uint8_t { Unsolved, SolvedOnly, Any };
 
     // The per-pet, per-slot Attack/Defend STAMP. Unset until
-    // the slot first unlocks for this pet (stampSlotKinds), then locked forever —
+    // the slot first unlocks for this pet (stampSlotKinds), then locked forever:
     // see slotKinds_'s declaration for the full contract. Public so tests/render
     // can read it without reaching into private state.
     enum class SlotKind : uint8_t { Unset, Attack, Defend };
@@ -167,21 +167,21 @@ public:
         return (slot >= 0 && slot < kMaxMoveSlots) ? slotKinds_[slot] : SlotKind::Unset;
     }
     // The MoveDef::Kind an equip into `slot` must match. Unset defensively reads as
-    // Attack — unreachable in normal play: onTrainList only lets the cursor reach an
+    // Attack. Unreachable in normal play: onTrainList only lets the cursor reach an
     // UNLOCKED slot, and stampSlotKinds() runs on every pet install, so every
     // reachable slot is stamped before the player can ever open its picker.
     MoveDef::Kind slotRequiredKind(int slot) const {
         return slotKind(slot) == SlotKind::Defend ? MoveDef::Kind::Defend
                                                    : MoveDef::Kind::Attack;
     }
-    // Content lookup (creatures/items/mods/moves) — read-only, for anything that
+    // Content lookup (creatures/items/mods/moves): read-only, for anything that
     // needs to enumerate the catalog (e.g. the 'Pedia state export).
     const ContentRegistry& content() const override { return registry_; }
     const Combat& combat() const { return combat_; }
     int combatXp() const { return combatXp_; }        // XP banked toward the next level
     int combatLevel() const { return combatLevel_; }  // 0-based creature level
     int defragCount() const { return defragCount_; }  // this pet's defrags
-    // XP needed to climb from the current level to the next — the geometric curve
+    // XP needed to climb from the current level to the next: the geometric curve
     // round(kLevelXpBase * (kLevelXpGrowthPct/100)^combatLevel_).
     int xpToNextLevel() const;
     // The same curve asked about an ARBITRARY level rather than the one the pet is on.
@@ -193,12 +193,12 @@ public:
     int levelStatPoint(int i) const {
         return (i >= 0 && i < kLevelStatCount) ? statPoints_[i] : 0;
     }
-    // The combat stat the most-recent level-up bumped (0..3), or -1 if never — the
+    // The combat stat the most-recent level-up bumped (0..3), or -1 if never: the
     // "which stat grew" tell (the inline combat-overlay flourish is deferred
     // polish; STAT's LVL n is the shipped feedback). Used by tests to confirm a level-up.
     int lastLevelUpStat() const { return lastLevelUpStat_; }
     int bits() const override { return bits_; }
-    int bandwidth() const { return bandwidth_; }   // farming resource — see below
+    int bandwidth() const { return bandwidth_; }   // farming resource: see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
@@ -223,12 +223,12 @@ public:
     bool linkAggregatorUnlocked() const {
         return rigLevel_[kRigRowLinkAggregator] > 0;
     }
-    // How much ONE regen tick restores — the amount half of regen, where
+    // How much ONE regen tick restores: the amount half of regen, where
     // bandwidthRegenMinutes() is the interval half. Flat +1 by default; with
     // the Link Aggregator owned, kLinkAggregatorPct% of what is currently SPENT
     // (bandwidthMax() - bandwidth()), never below that same +1. So a small pool
     // regenerates exactly as it always did and a deep one climbs out of its hole in
-    // proportion to the hole — recomputed per tick, so the refill decelerates as the
+    // proportion to the hole: recomputed per tick, so the refill decelerates as the
     // pool fills rather than paying the whole way back at the empty-pool rate.
     //
     // Bandwidth is whole points, so the slice ROUNDS UP: a 150-point hole pays 2, and
@@ -239,7 +239,7 @@ public:
         const int slice = (spent * kLinkAggregatorPct + 99) / 100;
         return slice > 1 ? slice : 1;
     }
-    // Everything an Epic dish has permanently handed this pet, as one value — what STAT's
+    // Everything an Epic dish has permanently handed this pet, as one value: what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
     const PetUpgrades& petUpgrades() const { return upgrades_; }
     // ...and those plus the two arming gates, as the one value anything asking "has this
@@ -257,7 +257,7 @@ public:
         return upgrades_.statBonus[i] +
                (upgrades_.favouriteFound ? kFavouriteFoodStatBonus : 0);
     }
-    // The active pet's favourite dish, or nullptr while it is still a secret — the
+    // The active pet's favourite dish, or nullptr while it is still a secret: the
     // FOODS grid and the 'Pedia must not be able to give it away.
     const ItemDef* foundFavouriteFood() const {
         return upgrades_.favouriteFound ? upgrades_.favouriteFood : nullptr;
@@ -269,7 +269,7 @@ public:
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard
     // different things; this is the one place that answers the question generically, so
-    // a reader — the 'Pedia's pet page — never has to know which flag belongs to which
+    // a reader (the 'Pedia's pet page), never has to know which flag belongs to which
     // item. False for any row that has no such effect: nothing to have spent.
     bool lifetimeItemSpent(const ItemDef& d) const;
     // Player-level Fragmentation-amount tier (b, save v21): shaves the battle-fatigue
@@ -280,21 +280,21 @@ public:
     uint8_t fragTriggerTier() const {
         return static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]);
     }
-    // d/e (Rig Shop, save v23): one-time, permanent account unlocks — no
+    // d/e (Rig Shop, save v23): one-time, permanent account unlocks. No
     // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-B filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open.
     bool itemTabsUnlocked() const override { return rigLevel_[kRigRowItemTabs] > 0; }
     bool bulkOpenUnlocked() const { return rigLevel_[kRigRowBulkOpen] > 0; }
-    // ITEMS Type-Picker (Rig Shop): another one-time unlock — the ITEMS submenu
+    // ITEMS Type-Picker (Rig Shop): another one-time unlock. The ITEMS submenu
     // opens on the category tile screen (ItemsView::Picker) instead of straight
     // onto the list, and hold-B's cycle steps up to the finer category axis.
     bool itemPickerUnlocked() const override { return rigLevel_[kRigRowItemPicker] > 0; }
-    // f (Rig Shop, save v31): the Merge Hub one-time unlock — makes the MRG
+    // f (Rig Shop, save v31): the Merge Hub one-time unlock. Makes the MRG
     // carousel slot accessible (game_merge.cpp). Doesn't grant any recipe by
     // itself; each recipe is its own one-time Rig Shop row (rigUpgradeOwned).
     bool mergeHubUnlocked() const { return rigLevel_[kRigRowMergeHub] > 0; }
     // g/h (Rig Shop): one-time unlocks gating the auto-arm hooks in
-    // Game::autoArmBackupShield — Auto Backup fires at explore-start
+    // Game::autoArmBackupShield. Auto Backup fires at explore-start
     // (startExplore/startDeepWebDive), Continuous Auto-Backup at every resolved
     // explore event (returnToExplore).
     bool autoBackupUnlocked() const { return rigLevel_[kRigRowAutoBackup] > 0; }
@@ -310,17 +310,17 @@ public:
     // A SERVICE is a row that acts between events without being asked (the two backup
     // auto-arms, Disk Maintenance's auto-defrag). Owning one is a purchase; RUNNING it
     // is a switch, because a service spends the player's Bits or a decision they might
-    // want back — so every effect site asks rigFeatureActive, never the level.
+    // want back, so every effect site asks rigFeatureActive, never the level.
     //
     // Is `row` a service this player owns, and so a line on the SERVICES screen?
     bool rigServiceOwned(int row) const {
         return row >= 0 && row < kRigUpgradeCount && kRigUpgrades[row].service &&
                rigLevel_[row] > 0;
     }
-    // Is `row`'s effect live right now — owned, and not switched off? The one question
+    // Is `row`'s effect live right now: owned, and not switched off? The one question
     // an effect site asks. A row that is not a service has no switch, so owning it is
     // the whole answer.
-    // An ASK-able service (RigUpgradeDef::askable) set to ASK counts as live here — it
+    // An ASK-able service (RigUpgradeDef::askable) set to ASK counts as live here: it
     // is running, it just hands the decision back; rigServiceMode says which.
     bool rigFeatureActive(int row) const override {
         if (row < 0 || row >= kRigUpgradeCount || rigLevel_[row] <= 0) return false;
@@ -341,7 +341,7 @@ public:
             return ServiceMode::Ask;
         return ServiceMode::On;
     }
-    // The owned services in table order — what the SERVICES screen lists. Returns how
+    // The owned services in table order: what the SERVICES screen lists. Returns how
     // many were written.
     int rigServiceRows(int* out, int max) const override {
         int n = 0;
@@ -350,13 +350,13 @@ public:
         return n;
     }
     // Does the SHOP list carry its SERVICES head slot? Only once there is a service to
-    // switch — a storefront shouldn't advertise a door onto an empty room.
+    // switch: a storefront shouldn't advertise a door onto an empty room.
     bool rigServicesOffered() const override {
         for (int i = 0; i < kRigUpgradeCount; ++i)
             if (rigServiceOwned(i)) return true;
         return false;
     }
-    // How many owned services are running, of how many owned — the SHOP head slot's
+    // How many owned services are running, of how many owned: the SHOP head slot's
     // readout ("2/3 ON").
     int rigServicesRunning() const override {
         int n = 0;
@@ -364,19 +364,19 @@ public:
             if (rigServiceOwned(i) && rigFeatureActive(i)) ++n;
         return n;
     }
-    // Flip one owned service — or, on an askable one, step it YES -> ASK -> NO -> YES.
+    // Flip one owned service, or, on an askable one, step it YES -> ASK -> NO -> YES.
     // A row that isn't an owned service has no switch to throw, so this is inert on it
     // rather than storing a bit nothing reads.
     void toggleRigService(int row) override;
     // The SHOP is three screens behind one slot, the shape CREW's views take: the
     // storefront list, the SERVICES switchboard the head slot opens, and one service's
-    // info page — what it does and what a run of it costs — which a HELD B opens from
+    // info page (what it does and what a run of it costs), which a HELD B opens from
     // the board, since a switch thrown months after the purchase is the one a player
     // no longer remembers the terms of.
     using ShopView = mal::ShopView;
     ShopView shopView() const { return rigShop_.view(); }
     // The SHOP list's cursor: a RigRow, or kRigSlotServices on the head slot. A slot,
-    // not a row POSITION — the two differ by every row the list is filtering out.
+    // not a row POSITION: the two differ by every row the list is filtering out.
     int shopSlot() const { return rigShop_.slot(); }
     int rigServiceRow() const { return rigShop_.serviceRow(); }   // cursor within SERVICES
     // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
@@ -384,11 +384,11 @@ public:
     // bench of a favourite mod buys the room for it rather than accumulating copies
     // nobody counted.
     int modStorageCap() const { return modCopyCap(rigLevel_[kRigRowModStorage]); }
-    // Is `row` on sale right now — anything left to buy on it? The single answer the
+    // Is `row` on sale right now: anything left to buy on it? The single answer the
     // SHOP's A-cycle, its render loop and buyRigUpgrade all defer to, so the list can't
     // show a row the cursor skips.
     bool shopRowOffered(int row) const override;
-    // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h) — every row
+    // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h): every row
     // resolves its own cost from its own costStart/curve/costStep, so this is the one
     // place that math happens; every named *Cost() below is a thin wrapper over it.
     int rigLevel(int row) const override { return rigLevel_[row]; }
@@ -398,7 +398,7 @@ public:
     }
     // Price of the NEXT "Increase Bandwidth" upgrade (climbs per purchase, a).
     int bandwidthUpgradeCost() const { return rigUpgradeCostFor(kRigRowBandwidth); }
-    // rig upgrades — player-level, persisted (save v27), survive lifecycles
+    // rig upgrades: player-level, persisted (save v27), survive lifecycles
     // like bwUpgradeCount(). All three price off rigUpgradeCostFor() so balance is a
     // start-price/max-purchase edit on the row (game_rig_shop.h), not new code.
     int rackSlotUpgradeCount() const { return rigLevel_[kRigRowRackSlot]; }
@@ -417,7 +417,7 @@ public:
     // Applied at every combat/cache Bits payout site so the % bonus is one call, not
     // duplicated arithmetic per site. Integer `bits * pct / 100` truncates to 0 on
     // small grants at low levels (e.g. a 10-Bit Common cache at 2-8% DataMining never
-    // moves — the purchase would look inert on-device even though the tier is live),
+    // moves: the purchase would look inert on-device even though the tier is live),
     // so any ACTIVE bonus (pct > 0, bits > 0) is floored at +1 Bit rather than +0.
     int applyCombatBitsBonus(int bits) const {
         return applyBonusPct(bits, combatBitsBonusPct());
@@ -425,7 +425,7 @@ public:
     int applyCacheBitsBonus(int bits) const {
         return applyBonusPct(bits, cacheBitsBonusPct());
     }
-    // j (Rig Shop): Passive XP Farming level — Game::tick reads this directly
+    // j (Rig Shop): Passive XP Farming level. Game::tick reads this directly
     // whenever Hunger decays (game_core.cpp), granting level XP per hunger point
     // lost while Hunger stayed above hungerXpThreshold().
     int hungerXpRateLevel() const { return rigLevel_[kRigRowHungerXpRate]; }
@@ -435,7 +435,7 @@ public:
         return kHungerXpBaseThreshold - rigLevel_[kRigRowHungerXpWindow] * kHungerXpWindowStepPct;
     }
     // l (Rig Shop): +kCombatXpPctPerLevel%% combat XP per level, active only
-    // while CURRENT Hunger is at or above combatXpWindowThreshold() — a fed and
+    // while CURRENT Hunger is at or above combatXpWindowThreshold(). A fed and
     // happy pet fights sharper. 0 whenever the pet has let Hunger slip below it.
     int combatXpBonusPct() const {
         if (!pet_ || model_.hunger() < combatXpWindowThreshold()) return 0;
@@ -445,7 +445,7 @@ public:
     int combatXpWindowThreshold() const {
         return kCombatXpBaseThreshold - rigLevel_[kRigRowCombatXpWindow] * kCombatXpWindowStepPct;
     }
-    // Applied at real-fight XP payout sites (wild win / boss / Sim-Battle) — the
+    // Applied at real-fight XP payout sites (wild win / boss / Sim-Battle): the
     // Sinkhole bypass and Wi-Fi discovery XP grants are deliberately left
     // unwrapped, since neither is an actual fight. Shares applyBonusPct's
     // floor-at-+1 rounding with applyCombatBitsBonus/applyCacheBitsBonus.
@@ -460,11 +460,11 @@ public:
     int exploreStreak() const { return exploreStreak_; }    // current win-streak
     int exploreSector() const { return exploreSector_; }    // armed area (or last)
     int exploreSub() const { return exploreSub_; }          // armed sub-area
-    // The line under the walk's badge — what the last resolved event left behind
+    // The line under the walk's badge: what the last resolved event left behind
     // (drawExploreScreen). Empty between events.
     const char* exploreFlavor() const { return exploreFlavor_; }
     bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
-    // How many more wins auto-progress needs before it steps off the armed rung —
+    // How many more wins auto-progress needs before it steps off the armed rung:
     // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
     // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
     // meaningless with the mode off, since then nothing steps but the player.
@@ -475,9 +475,9 @@ public:
     // What a WILD WIN on the armed rung pays right now, as a percentage of the flat base
     // (kWildWinXpReward): 100 = a level-matched fight, under it the pet has outgrown the
     // rung, over it the walk is punching up or a bonus is live. Everything that scales a
-    // wild win's XP folds in — the level-difference curve (wildWinXp) against the rung's
+    // wild win's XP folds in. The level-difference curve (wildWinXp) against the rung's
     // own depth level, the Well-Fed window (applyCombatXpBonus), an armed evolution soak,
-    // and Profilerole's permanent rate — so it is the whole payout in one number rather
+    // and Profilerole's permanent rate, so it is the whole payout in one number rather
     // than one term of it. Read by the walk's A+C control overlay (drawExploreControl).
     int exploreXpEfficiencyPct() const;
     // What ONE wild win in `sector` pays before the level-difference curve scales it: the
@@ -488,17 +488,17 @@ public:
     // was aimed at, the same reason exploreXpEfficiencyPct reads the sector directly.
     static int wildWinXpBase(int sector);
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
-    // on the virtual kDeepWebSector — no sub-area/boss, enemies scale to the pet.
+    // on the virtual kDeepWebSector: no sub-area/boss, enemies scale to the pet.
     bool inDeepWebDive() const {
         return exploreActive_ && exploreSector_ == kDeepWebSector;
     }
     // ...and the DARKWEB CRAWL, the terminal one. Same idle-background walk on its own
-    // virtual sector, but every fight in it runs with the A+C picker scrambled — the
+    // virtual sector, but every fight in it runs with the A+C picker scrambled: the
     // Silk Lode's apex rider never lifted (darkweb_crawl/area.h).
     bool inDarkWebCrawl() const {
         return exploreActive_ && exploreSector_ == kDarkWebSector;
     }
-    // Either endless zone — the two share the walk, the depth streak and the "a loss ends
+    // Either endless zone: the two share the walk, the depth streak and the "a loss ends
     // the run" rule, and differ in what they field and what they take from you. Callers
     // that mean "no sub-area ladder here" want this rather than one of the two above.
     bool inEndlessZone() const { return inDeepWebDive() || inDarkWebCrawl(); }
@@ -510,7 +510,7 @@ public:
     int bestDarkWebDepth() const { return bestDarkWebDepth_; }
     // The DeepWeb Dive's unlock: has the ladder reached kDeepWebUnlockAreaId? The SAME
     // linear gate every area answers to (explSectorOpen over sectorCleared_), asked of
-    // one named rung — so the dive needs no unlock flag of its own, exactly as the arena
+    // one named rung, so the dive needs no unlock flag of its own, exactly as the arena
     // does not. An id that resolves to nothing leaves the zone locked rather than opening
     // it by accident, which is the safe direction for a typo to fail in.
     bool deepWebUnlocked() const {
@@ -526,7 +526,7 @@ public:
         return exploreActive_ && model_.fragmentation() >= kBattleFatigueAutoPauseFrag;
     }
     // Has sub-area (`area`,`sub`)'s boss been UNLOCKED by a 10-win streak? A
-    // durable per-sub flag (persisted, save v13) — distinct from the volatile streak.
+    // durable per-sub flag (persisted, save v13): distinct from the volatile streak.
     bool subBossUnlocked(int area, int sub) const {
         return area >= 0 && area < kAreaCount && sub >= 0 &&
                sub < kSubAreasPerArea && subBossUnlocked_[area][sub];
@@ -542,27 +542,27 @@ public:
     // --- ROCK THE DOCK: the operator bracket (game_tourney.cpp) --------------
     // How a run ENDS, which is also what the bracket screen is showing. Ready is a
     // run still being fought (or none at all); the other two are terminal banners the
-    // operator has yet to dismiss, and they persist — a device put down on the verdict
+    // operator has yet to dismiss, and they persist: a device put down on the verdict
     // is still showing it after a reboot.
     enum class TourneyPhase : uint8_t { Ready, Eliminated, Champion };
     // Which of the arena screen's three READS is showing. One Nav, three views,
     // because all three are the same screen answering different questions about the
-    // same run — and a Nav per reader would put the run's lifecycle in three places.
+    // same run, and a Nav per reader would put the run's lifecycle in three places.
     //   Bracket  the field: who is left, at what level, and who is next
     //   Scout    the focused entrant's full kit, on the LOADOUT page's own flow
     //   Brief    the arena explaining itself (content_tournament.h's kTourneyBrief)
     enum class TourneyView : uint8_t { Bracket, Scout, Brief };
 
     // What the STORY reader hands back to when the chapter it is showing runs out
-    // (game_story.cpp). A chapter fires IN FRONT OF something — the encounter that
-    // triggered it, the gauntlet it introduces — so the reader has to remember what it
+    // (game_story.cpp). A chapter fires IN FRONT OF something (the encounter that
+    // triggered it, the gauntlet it introduces), so the reader has to remember what it
     // interrupted rather than guessing from the nav state it will be leaving.
     //
-    //   Walk      — back to the idle habitat, explore-mode still running. What every
+    //   Walk:      back to the idle habitat, explore-mode still running. What every
     //               OUTRO hands back to, since the thing it followed is already over.
-    //   Encounter — the wild encounter whose first-in-this-zone roll opened the chapter.
-    //   AreaBoss  — the area gauntlet the chapter was the threshold of (storyThenArea_).
-    //   Archive   — nothing happened on the walk at all: this chapter was opened from
+    //   Encounter: the wild encounter whose first-in-this-zone roll opened the chapter.
+    //   AreaBoss:  the area gauntlet the chapter was the threshold of (storyThenArea_).
+    //   Archive:   nothing happened on the walk at all: this chapter was opened from
     //               the CHAPTERS list, and C goes back to it.
     enum class StoryThen : uint8_t { Walk, Encounter, AreaBoss, Archive };
     // A bracket is in play. The seed IS the run (core/model/tournament.h), so a zero
@@ -575,7 +575,7 @@ public:
     // The operator's own slot, and the slot they face next (-1 once the run is over).
     int tourneySlot() const;
     int tourneyOpponentSlot() const;
-    // The opponent as a built fighter — resolved once when a round opens, so the
+    // The opponent as a built fighter: resolved once when a round opens, so the
     // bracket screen can name its species and Exploit without walking the content
     // tables every repaint.
     const TourneyFighter& tourneyOpponent() const { return tourneyOpponent_; }
@@ -583,7 +583,7 @@ public:
     int tourneyCursor() const { return tourneyCursor_; }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
     bool gameBriefOpen() const { return gameBriefOpen_; }
-    // Was it opened BY the hatch rather than by the chord — the first time a line's egg
+    // Was it opened BY the hatch rather than by the chord: the first time a line's egg
     // is laid on this device? That reading leads with what the egg stakes, B walks it
     // forward and off its last page into play, and C skips straight to the board.
     bool gameBriefIntro() const { return gameBriefIntro_; }
@@ -595,7 +595,7 @@ public:
     // The things the device teaches exactly once and then never again: the briefing in
     // front of each egg line's hatch game, and the idle nudge that says which button
     // opens the menu. PLAYER-LEVEL and persisted (save v66) like the STORY read-set,
-    // and for its reason — a new egg is not grounds for being taught the buttons again.
+    // and for its reason: a new egg is not grounds for being taught the buttons again.
     // A Tip's value is its bit in that set: append, never renumber or reuse.
     enum class Tip : uint8_t {
         HatchDecrypt = 0,     // the Ransomware egg's DISK DECRYPTION
@@ -629,7 +629,7 @@ public:
     // item that brings a failing pet back below 5/5.
     bool yubiReady() const;
     // Would eating the Yubi-Cookie SAVE this pet right now? Only while it is failing
-    // (5/5 — errors cap there, so the cookie's -1 always brings it back under) and only
+    // (5/5: errors cap there, so the cookie's -1 always brings it back under) and only
     // with one this pet can still eat. Anywhere else the once-per-pet cookie would be
     // spent on an error the pet can live with, so nothing offers it.
     bool yubiWouldSave() const { return failingLeftMs() >= 0 && yubiReady(); }
@@ -641,12 +641,12 @@ public:
     Tip tipCard() const { return tipCard_; }
     std::vector<ProseRow> tipCardRows() const;
     // CFG > DEVICE > TIPS: the cards this device has shown, in a fixed order, to read
-    // again (game_onboard.cpp). A card not yet shown is not listed — it has nothing to
+    // again (game_onboard.cpp). A card not yet shown is not listed: it has nothing to
     // repeat, and listing it would spoil the moment it is written for.
     std::vector<Tip> replayableTips() const;
     static const char* tipTitle(Tip t);
     // WHILE YOU WERE AWAY (game_onboard.cpp): what happened since the last button press,
-    // shown on the first press after kAwayDigestMs of powered-on quiet — but only when
+    // shown on the first press after kAwayDigestMs of powered-on quiet, but only when
     // something did. The tally is runtime-only: a reboot starts a fresh one.
     struct AwayTally {
         int hungry = 0;          // Lockouts fired (FED hit zero)
@@ -668,9 +668,9 @@ public:
     // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
     void debugClearTips() { for (uint8_t& b : tipsSeen_) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
-    // Fragmentation — what rollMaintSuccess rolls against and MAINT prints.
+    // Fragmentation: what rollMaintSuccess rolls against and MAINT prints.
     int maintFailPct() const;
-    // The two readers' row models (core/ui/prose_page.h), built on demand — both walk
+    // The two readers' row models (core/ui/prose_page.h), built on demand: both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
     std::vector<ProseRow> tourneyScoutRows() const;
@@ -681,17 +681,17 @@ public:
     // window pair is what the page's "2/4" is drawn from and what a gate asserts a
     // skip against; the reader's own flow decides both (core/ui/prose_page.h).
     // Named for the state and not for the type, so it does not collide with the
-    // content layer's own storyChapter(sector, beat) lookup (core/content/story.h) —
+    // content layer's own storyChapter(sector, beat) lookup (core/content/story.h):
     // the two answer different questions and reading one as the other is a bug a
     // compiler would never catch.
     const StoryChapterDef* currentStoryChapter() const { return storyChapter_; }
     int storyWindow() const;
     int storyWindows() const;
     // Has this device read `chapter`? The read-set is player-level and persisted, so a
-    // chapter fires once per DEVICE and not once per pet — the journey is the
+    // chapter fires once per DEVICE and not once per pet: the journey is the
     // operator's, and a new egg is not a reason to be told the premise again.
     bool storyRead(const StoryChapterDef* chapter) const;
-    // How many chapters the walk has written so far — the CHAPTERS row's readout, and
+    // How many chapters the walk has written so far: the CHAPTERS row's readout, and
     // what decides whether that category is a place to go at all.
     int storyChapterCount() const;
     // The chapter flowed as prose rows, built on demand like every other reader's
@@ -699,7 +699,7 @@ public:
     // pixels.
     std::vector<ProseRow> storyRows() const;
     WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
-    // WHICH of the rival's moves beating it could teach this pet — one bit per index
+    // WHICH of the rival's moves beating it could teach this pet: one bit per index
     // into its kit, and the single answer to that question anywhere on the screen. The
     // combat STAT panel's KIT page marks each set bit in its gutter (RivalPrizes,
     // core/ui/combat_screen.h) and the outro turns the whole mask into which dissolve
@@ -718,7 +718,7 @@ public:
     // The same question the KIT page's prize gutter answers, asked of a PLACE instead of
     // the thing in front of the pet: how many moves this pet could still learn in a zone
     // of the EXPL ladder. The content half is the zone's move pool (subAreaMovePool and
-    // friends, core/model/combat.h) and the pet half is moveIsTeachable — the drop roll's
+    // friends, core/model/combat.h) and the pet half is moveIsTeachable: the drop roll's
     // own filter, so a count here can never promise a move the roll would refuse.
     //
     // What it buys is the answer to "where do I go next", which nothing on the device
@@ -727,7 +727,7 @@ public:
     // taught everything it knows. The EXPL list draws each as a "+n" lead on its row
     // (core/ui/expl_screen.h's ExplListView).
     //
-    // A zone with no pet (an empty rack) counts nothing — there is nobody to teach.
+    // A zone with no pet (an empty rack) counts nothing: there is nobody to teach.
     int areaMovesToLearn(int area) const;
     // The AREA GAUNTLET row's own count, which is not the area's: the gauntlet is five
     // boss rounds and the area boss's own move, and a player standing on that row is
@@ -737,17 +737,17 @@ public:
     int deepWebMovesToLearn() const;
     int darkWebMovesToLearn() const;
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
-    // (new/familiar/home-turf/empty-queue) — "" if none has resolved yet.
+    // (new/familiar/home-turf/empty-queue): "" if none has resolved yet.
     const char* netDiscoveryFlavor() const { return netDiscoveryFlavor_; }
     // The same beat as a value, for the screen's picture of it (and for a gate to
     // assert against without reading the sentence).
     NetDiscovery netDiscovery() const { return netDiscovery_; }
     int networksSeen() const { return networksSeen_; }         // lifetime, dedup'd
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
-    // NetworkLedger by an EXPL Wi-Fi event — how close the pet is to
+    // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
     // kPendingNetworkQueueCap, past which new sightings are dropped.
     int pendingNetworks() const { return pendingNetworkCount_; }
-    // Storefront (item shop AND mod shop share this accessor set — shopIsModShop()
+    // Storefront (item shop AND mod shop share this accessor set: shopIsModShop()
     // says which registry a row's `id` resolves through). `i` is bounds-clamped to
     // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
     bool shopIsModShop() const { return shopIsModShop_; }       // false = item shop, true = mod shop
@@ -757,7 +757,7 @@ public:
     const char* shopListingId(int i) const;                     // raw content id (tests/debug)
     const char* shopListingName(int i) const;                   // resolved display name
     // Resolved concrete-effect text: the listing's own description with its
-    // magnitudes substituted in (core/content/effect_text.h). Returned by value —
+    // magnitudes substituted in (core/content/effect_text.h). Returned by value:
     // the text is rendered from the row, not borrowed from flash.
     EffectText shopListingDescription(int i) const;
     int shopListingStock(int i) const;                          // remaining THIS visit
@@ -772,14 +772,14 @@ public:
     // pool against modStorageCap(); an ITEM row reads the inventory stack, which has no
     // cap at all. A capped row shows the pair as "HAVE n/cap", so a storefront answers
     // "have I got this already, and can I take another" before the Bits are gone rather
-    // than after — and STORAGE FULL is that same pair as a buy reason.
+    // than after, and STORAGE FULL is that same pair as a buy reason.
     int shopListingHeld(int i) const;
     int shopListingHeldCap(int i) const;
     // Is this row's buy available right now? The single answer the till (buyShopItem)
     // and the sign (shopStatusLine) both defer to, so a shop can never refuse a
     // purchase it drew as available, or take Bits for one it drew as refused.
     bool shopRowBuyable(int i) const;
-    // ...and the same answer in WORDS for the SELECTED row — "SOLD OUT" /
+    // ...and the same answer in WORDS for the SELECTED row: "SOLD OUT" /
     // "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY". Spelled
     // out rather than coloured so the buy reason survives grayscale (the dual-coding
     // rule); the shop screen prints it verbatim.
@@ -797,7 +797,7 @@ public:
     // The percentage is smoothed and the glyph's fill level resolved HERE rather than
     // by each screen, so the two readouts can never disagree about the same battery,
     // and a platform that samples more often than a screen repaints pays for it once.
-    // A repaint is requested only when something a screen would actually DRAW moved —
+    // A repaint is requested only when something a screen would actually DRAW moved:
     // a sample that lands on the same number is not a frame (the redraw is ~4fps and
     // event-driven, so a free-running sampler must not be able to drive it).
     void setPowerStatus(const PowerStatus& p) {
@@ -825,10 +825,10 @@ public:
     // card + round-trips it; host leaves it absent). Surfaced on the CFG "SD" line
     // so it reflects the real card instead of a hardcoded "ABSENT".
     // The largest single allocation the platform could satisfy right now. 0 means
-    // "nobody told us" — a host build never sets one, so it never blocks a save there.
+    // "nobody told us": a host build never sets one, so it never blocks a save there.
     //
     // A save is the biggest allocation the engine makes (~16KB in one piece) and it
-    // fires off a timer, so it lands at moments nothing chose — the audit capture
+    // fires off a timer, so it lands at moments nothing chose: the audit capture
     // claims ~70KB as it arms, and a save in that window finds no block big enough.
     // The Arduino build has exceptions off, so that is not a failed save: bad_alloc
     // goes to std::terminate and RESETS THE DEVICE. It can only be avoided.
@@ -865,7 +865,7 @@ public:
     // apart from a device that happened to have room.
     int savesDeferred() const { return savesDeferred_; }
     uint32_t savesDeferredLowMark() const { return savesDeferredLow_; }
-    // How many writes in a row the STORE has refused — a save that was built, handed
+    // How many writes in a row the STORE has refused: a save that was built, handed
     // over, and turned down by the medium rather than held back by the heap. Non-zero
     // means the blob on flash is older than what is in RAM right now, which is the one
     // state that survives a reboot as lost progress.
@@ -895,9 +895,9 @@ public:
 
     // Idle-screen Audit capture-phase badge (top-right). Writes a short tag into
     // `out` and returns true when a badge should show; returns false + empties
-    // `out` when Disarmed (capture idle/off). Surfaces the AuditCapture SM phase —
+    // `out` when Disarmed (capture idle/off). Surfaces the AuditCapture SM phase.
     // "ARM" (armed, listening), "HOT <s>s" (broadcast window), "COOL <m>m" (the
-    // ~30-min re-arm cooldown, radio OFF — no capture possible) — so the phase is
+    // ~30-min re-arm cooldown, radio OFF. No capture possible), so the phase is
     // visible instead of inferred from serial. The word carries the meaning, so it
     // reads in grayscale. Host-tested (test_capture_badge_phases).
     bool captureBadge(char* out, unsigned n) const;
@@ -946,7 +946,7 @@ public:
     // of three routes: rebased against nowMs_ on load (stageEnteredMs_, lastModelMs_),
     // stored as a REMAINING count rather than a deadline (bootHatchRemainMs_), or
     // anchored on lifetimeUptimeMs(), which is awake time (backupShieldUntilMs_,
-    // dyingElapsedMs_). Nothing observes wall time — the board carries no RTC — so the
+    // dyingElapsedMs_). Nothing observes wall time (the board carries no RTC), so the
     // sleep gap is uncreditable by construction.
     //
     // Latched rather than pulsed: the device tier may have to hold it for a moment (an
@@ -956,7 +956,7 @@ public:
     bool travelSleepRequested() const { return travelSleepRequested_; }
     void clearTravelSleep() { travelSleepRequested_ = false; dirty_ = true; }
 
-    // Write the current state now, reporting whether it landed. Unconditional — it
+    // Write the current state now, reporting whether it landed. Unconditional: it
     // does not ask whether anything is dirty, because passive decay moves the model
     // without marking itself and this is called when the state is about to stop
     // existing in RAM. Travel sleep is the caller that needs that guarantee: a deep
@@ -979,9 +979,9 @@ public:
     int hackerRank() const { return hackerRank_; }              // (unbounded)
 
     // Audit-mode passive Wi-Fi discovery scan. Runtime opt-in,
-    // persisted (save v5), default OFF — an authorized-use affirmative choice.
+    // persisted (save v5), default OFF: an authorized-use affirmative choice.
     //
-    // True while the CREW screen is the open L2 — the home-network picker's live half
+    // True while the CREW screen is the open L2: the home-network picker's live half
     // depends on the scan actually running, so radioScanWanted() below reads this.
     // Derived from nav state rather than a latch, so it can never be left stuck on.
     bool crewScreenOpen() const {
@@ -991,32 +991,32 @@ public:
     // What the RADIO should do right now, as opposed to netScanEnabled()'s persisted
     // player opt-in: the passive discovery scan also runs, unconditionally, while the
     // CREW screen is open, so picking a home network never requires a detour into CFG
-    // to arm the scan (and never leaves it armed afterwards — closing the screen
+    // to arm the scan (and never leaves it armed afterwards. Closing the screen
     // returns the radio to the config-dictated mode). This raises the SCAN only; the
     // handshake CAPTURE opt-in is untouched and stays strictly explicit. The
     // RadioArbiter still decides who actually owns the radio, so a live AP or capture
     // owner continues to stand this down.
     bool radioScanWanted() const { return netScanEnabled_ || crewScreenOpen(); }
-    // The persisted CFG opt-in itself — what the AUDIT row shows and the save stores,
+    // The persisted CFG opt-in itself: what the AUDIT row shows and the save stores,
     // and the baseline radioScanWanted() reads. registerNetwork() is how a heard AP
     // feeds back in from the device tier's WiFi.scanNetworks().
     bool netScanEnabled() const { return netScanEnabled_; }
     void setNetScanEnabled(bool on);
 
     // Pet-to-pet LINK (game_peers.cpp, core/net/peer_link.h). Runtime opt-in,
-    // persisted (save v37), default OFF — and deliberately NOT implied by the audit
+    // persisted (save v37), default OFF, and deliberately NOT implied by the audit
     // scan: that toggle consents to LISTENING, this one consents to BROADCASTING the
     // operator's HackerTag, pet and crew to anything in range.
     //
-    // True while the PEERS screen is the open L2. Discovery there must be immediate —
-    // two people holding their devices together shouldn't wait on a duty cycle — so
+    // True while the PEERS screen is the open L2. Discovery there must be immediate
+    // (two people holding their devices together shouldn't wait on a duty cycle), so
     // the screen arms the radio itself, the same way the CREW picker arms the scan.
     // Derived from nav state rather than a latch, so it can never be left stuck on.
     bool peersScreenOpen() const {
         return face_ == Face::Hacker && nav_ == Nav::Submenu &&
                enteredHackerId() == HackerSlotId::Peers;
     }
-    // True while the LINK screen is the open L2 — the duel surface (game_pvp.cpp).
+    // True while the LINK screen is the open L2: the duel surface (game_pvp.cpp).
     // Arms the radio for the same reason PEERS does, and more sharply: two people are
     // standing next to each other trying to start a fight.
     bool linkScreenOpen() const {
@@ -1025,7 +1025,7 @@ public:
     }
     // What the LINK RADIO should do right now, as opposed to linkEnabled()'s persisted
     // opt-in: announcing also runs while PEERS or LINK is open, then stops on exit, and
-    // for as long as a duel session is in flight — the handshake and the finished
+    // for as long as a duel session is in flight. The handshake and the finished
     // fight's BYE both need the air. The RadioArbiter still decides who actually owns
     // the radio.
     bool linkWanted() const {
@@ -1042,9 +1042,9 @@ public:
     // hands-off while it fills in. Both the menu's idle collapse (kRadioScreenDefocusMs)
     // and the device tier's panel sleep read this ONE predicate: on these screens the
     // usual timers would power down the radio the operator is waiting on, so the
-    // screen would starve itself. A live duel counts for the same reason — the fight
+    // screen would starve itself. A live duel counts for the same reason: the fight
     // is playing out on two screens and neither may sleep mid-round. Derived per-frame
-    // from nav, never a sticky flag — the normal timeouts resume on exit.
+    // from nav, never a sticky flag: the normal timeouts resume on exit.
     // A running update job counts too, and is the one entry here NOT derived from a
     // screen: it holds the association itself, so the panel must stay up to report a
     // download the operator is watching.
@@ -1058,7 +1058,7 @@ public:
     // Whether a home network is STORED, pushed from the platform tier at boot and
     // again whenever the setup page writes one (platform/esp32/net_credentials.h).
     // Runtime-only and deliberately just a bool: the engine must never hold, render
-    // or serialise the credentials themselves. This is CAPABILITY, not permission —
+    // or serialise the credentials themselves. This is CAPABILITY, not permission:
     // a stored network is somewhere the device COULD go, and only a job the operator
     // started ever takes it there (see netConnectWanted).
     void setNetProvisioned(bool on) {
@@ -1099,7 +1099,7 @@ public:
 
     // Whether this device knows WHERE to check, pushed from the platform tier at
     // boot (platform/esp32/update_source.h). Runtime-only and just a bool, like
-    // netProvisioned() — the URL itself never enters the engine. A device with no
+    // netProvisioned(): the URL itself never enters the engine. A device with no
     // source doesn't get offered a check it cannot perform.
     void setUpdateSourceKnown(bool on) {
         if (updateSourceKnown_ == on) return;
@@ -1110,7 +1110,7 @@ public:
 
     // The manifest address itself, pushed from the platform tier
     // (platform/esp32/update_source.h) at boot and again whenever the 'Pedia's
-    // user section rewrites it. Display only — the engine never fetches — but it
+    // user section rewrites it. Display only (the engine never fetches), but it
     // has to be readable so that field can show what it is about to replace.
     // Empty means this device has no source at all.
     void setUpdateManifestUrl(const char* url) {
@@ -1125,7 +1125,7 @@ public:
 
     // What web 'Pedia bundle is on the card, read off its marker by the platform
     // tier (platform/esp32/web_bundle.h) and refreshed after an install. Display
-    // only — every "is it newer" comparison is made device-side against the packed
+    // only: every "is it newer" comparison is made device-side against the packed
     // code, which never enters the engine. Empty means no card, or no marker.
     void setWebBundleVersion(const char* v) {
         const char* src = (v && v[0]) ? v : "UNKNOWN";
@@ -1137,7 +1137,7 @@ public:
     const char* webBundleVersion() const { return webBundleVersion_; }
 
     // Everything a check needs before it can even start: a network to reach through
-    // and somewhere to look. Both are SETUP, not permission — there is no consent
+    // and somewhere to look. Both are SETUP, not permission: there is no consent
     // bit to pre-arm, because pressing the button is the permission. The UPDATES
     // screen reads this to say which piece is missing instead of offering a button
     // that would silently do nothing.
@@ -1145,7 +1145,7 @@ public:
 
     // Ask what is published. Raises the connection itself and seeds the CONNECTING
     // step the screen reports, because the job is the reason the radio comes up at
-    // all — there is nothing to switch on beforehand and nothing left switched on
+    // all: there is nothing to switch on beforehand and nothing left switched on
     // afterwards.
     void requestUpdateCheck() {
         if (!updateCheckReady()) return;
@@ -1183,7 +1183,7 @@ public:
     }
 
     // End a running job without an answer (consent withdrawn, or the operator
-    // cancelled). Leaves a completed job's RESULT alone — a finished check's
+    // cancelled). Leaves a completed job's RESULT alone: a finished check's
     // verdict is what the screen is showing, and clearing it on the way past would
     // wipe the very thing the operator asked for.
     void cancelUpdateJob() {
@@ -1197,7 +1197,7 @@ public:
 
     // True while a check OR an install is actually in flight. This is what holds
     // the radio (see netConnectWanted) and what platform/esp32/net_update.h
-    // services, so it must be latched rather than nav-derived — and must always
+    // services, so it must be latched rather than nav-derived, and must always
     // reach a terminal outcome, since nothing else will take the radio back off it.
     bool updateJobLive() const { return updateJob_; }
     // What the live job is doing. None means a check; anything else is an install,
@@ -1232,14 +1232,14 @@ public:
     // didn't give. The LINK and PEERS screens say so instead.
     bool linkAmbientStarved() const { return linkEnabled_ && !netScanEnabled_; }
 
-    // What this device broadcasts about itself — filled from the live pet/crew/tag.
+    // What this device broadcasts about itself: filled from the live pet/crew/tag.
     // The device tier encodes it (encodePeerHello) and beacons it; nothing here
     // touches the radio.
     void buildPeerHello(PeerHello* out) const;
 
     // Note a HELLO frame heard from `mac`. Decodes and validates it (a malformed or
-    // foreign frame is dropped), refreshes the in-range snapshot, and — only on the
-    // edge where a peer ARRIVES rather than merely keeps beaconing — counts a meeting
+    // foreign frame is dropped), refreshes the in-range snapshot, and (only on the
+    // edge where a peer ARRIVES rather than merely keeps beaconing) counts a meeting
     // in the SD-backed roster. That edge is what stops a device sitting next to you
     // for an hour from logging 3600 meetings. Returns true when a genuinely NEW
     // operator was met, which is what the caller turns into the log line.
@@ -1257,7 +1257,7 @@ public:
         bool live = false;      // in range right now (vs. remembered from before)
         uint32_t timesMet = 0;
     };
-    // Fill `rows` with every known operator — the live snapshot merged over the
+    // Fill `rows` with every known operator: the live snapshot merged over the
     // roster, live ones first. Returns how many were written (capped at `max`).
     int peerRows(PeerRow* rows, int max) const;
     // How many operators are in range right now. 0 on host and whenever LINK is idle.
@@ -1269,7 +1269,7 @@ public:
     // Seed a peer without a radio, for tests and the host build. The two halves the
     // screens read from are separate on purpose, so each has its own seam: the LEDGER
     // is everyone ever met (an absent peer is a ledger-only row), while the LIVE
-    // snapshot is who is in range this second — and LINK will only duel the latter.
+    // snapshot is who is in range this second, and LINK will only duel the latter.
     void debugSeedPeer(uint64_t key, const PeerHello& hello);
     void debugSeedLivePeer(uint64_t key, const PeerHello& hello);
 
@@ -1298,7 +1298,7 @@ public:
     PvpPhase pvpPhase() const { return pvpPhase_; }
     bool pvpActive() const { return pvpPhase_ != PvpPhase::Idle; }
     // A session that still NEEDS the air: mid-handshake, or a fight whose host is still
-    // repeating its START. Result is deliberately excluded — a verdict left on screen
+    // repeating its START. Result is deliberately excluded: a verdict left on screen
     // must not pin the radio (and, through radioScreenOpen, the panel) awake for as
     // long as nobody presses a button.
     bool pvpSessionLive() const {
@@ -1325,13 +1325,13 @@ public:
     // LINK screen so a refusal never reads as a hang.
     const char* pvpStatusText() const { return pvpStatus_; }
 
-    // What this device offers as its fighter — species, equipped moves/mods, level and
+    // What this device offers as its fighter: species, equipped moves/mods, level and
     // stat points. Also what it feeds its OWN side of the fight through, so the two
     // devices cannot diverge via a local shortcut. False when there is no pet to fight
     // with (an unhatched egg).
     bool buildPvpFighter(PvpFighter* out) const;
 
-    // The keys of every operator in range right now, in snapshot order — what the LINK
+    // The keys of every operator in range right now, in snapshot order: what the LINK
     // screen lists and what B challenges. Live only: a remembered operator is a memory,
     // not an opponent, since a duel needs both devices powered and present. Returns how
     // many were written (capped at `max`).
@@ -1367,7 +1367,7 @@ public:
     // 'Pedia local Access Point. Runtime opt-in, persisted
     // (save v20), default OFF. The device tier reads apEnabled() each loop; when
     // on it is the radio's TOP owner (SoftAP + the HTTP 'Pedia server), standing
-    // the audit scan/capture down — and handing the radio back to whichever of
+    // the audit scan/capture down, and handing the radio back to whichever of
     // those is still toggled on the moment the AP is switched off.
     bool apEnabled() const { return apEnabled_; }
     void setApEnabled(bool on);
@@ -1385,9 +1385,9 @@ public:
     // The escalating audit control (single CFG setting). One ordered dial instead
     // of two independent toggles, so the radio-cost ladder is explicit and the
     // "capture needs scan" dependency is structural, not a state you can violate:
-    //   Off         — radio idle (best battery)
-    //   Scan        — passive discovery only (feeds NETS / Hacker Rank)
-    //   ScanCapture — scan + passive handshake->pcap (most battery, authorized use)
+    //   Off:         radio idle (best battery)
+    //   Scan:        passive discovery only (feeds NETS / Hacker Rank)
+    //   ScanCapture. Scan + passive handshake->pcap (most battery, authorized use)
     // Derived from the two persisted opt-ins; setAuditMode() sets them consistently
     // (and the low-level setters above enforce the same invariant on their own).
     enum class AuditMode : uint8_t { Off = 0, Scan = 1, ScanCapture = 2 };
@@ -1401,13 +1401,13 @@ public:
     // once per heard AP per sweep, dups included). Feeds two independent structures:
     // visibleNetworks_, the in-range snapshot the CREW picker reads, and
     // pendingNetworks_, the reward queue the EXPL Wi-Fi event drains one at a time.
-    // Nothing is credited here — uniqueness against the ledger, XP and rewards all
+    // Nothing is credited here: uniqueness against the ledger, XP and rewards all
     // happen when resolveNetworkDiscovery() pops it.
     //
     // A network newly ARRIVING in range nudges the egg-hatch clock
     // (accelerateEggHatch); an incubating egg cannot explore, so this is its only
     // accelerator. Returns true if the sighting was newly queued, false if it was
-    // already pending — the snapshot updates either way. `bssid` is 6 bytes; an empty
+    // already pending: the snapshot updates either way. `bssid` is 6 bytes; an empty
     // `ssid` (hidden network) falls back to a BSSID-derived label.
     bool registerNetwork(const uint8_t* bssid, const char* ssid);
     // How many networks the radio can currently hear (snapshot entries still inside
@@ -1416,7 +1416,7 @@ public:
     // Load the SD-backed network ledger (real-network history + sighting counts)
     // from `path`. Called once at boot by the platform tier after the SD card
     // mounts; a missing/unavailable path just leaves the ledger empty (works as a
-    // session-only RAM tracker for that boot — see NetworkLedger's own comment).
+    // session-only RAM tracker for that boot: see NetworkLedger's own comment).
     void loadNetworkLedger(const char* path);
     // Load the SD-backed SHAKES handshake-dedup ledger from `path`. Called once at
     // boot by the platform tier after the SD card mounts, the same shape as
@@ -1428,7 +1428,7 @@ public:
     int handshakesSeen() const { return handshakesSeen_; }
     // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
     // a guardian's answer (game_shiboleet.cpp), so the lifetime tally above is the
-    // brag and this is the purse — the two are shown together as "unspent/lifetime".
+    // brag and this is the purse: the two are shown together as "unspent/lifetime".
     // Never negative: spending is the only thing that moves it, and it checks first.
     int shakesUnspent() const {
         const int n = handshakesSeen_ - shakesSpent_;
@@ -1448,14 +1448,14 @@ public:
     void shiboleetRiddleText(char* out, int cap) const;
     // The two halves of what the guardian is doing. `shiboleetGreeting` is what it SAYS,
     // already drawn in the Cant like the riddle; `guardianDemeanour` is what the pet can
-    // SEE, always plain — the pair is the whole reason a pet with no sigils still comes
+    // SEE, always plain: the pair is the whole reason a pet with no sigils still comes
     // away with something (GuardianLine, area_defs.h).
     void shiboleetGreeting(char* out, int cap) const;
     const char* guardianDemeanour() const;
     void shiboleetReplyText(int row, char* out, int cap) const;
     // The two beats that BRACKET the riddle (Nav::ShiboleetHail, Nav::ShiboleetVerdict).
     // A guardian is not a puzzle prompt: it arrives, it is met, and it makes something of
-    // what the pet said — so the riddle sits between a hail and a verdict rather than
+    // what the pet said, so the riddle sits between a hail and a verdict rather than
     // being the whole encounter.
     //
     // `shiboleetOutcome` is how this meeting came out, folded from the fluency band and
@@ -1474,25 +1474,25 @@ public:
     // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
     // meant a boss.
     bool shiboleetVerdictFights() const;
-    // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite — it is a
+    // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite. It is a
     // flock, and this is the live one: reset when a guardian speaks and stepped on the
     // fast FX clock for as long as the pet is looking at it (game_core.cpp).
     //
     // `guardianFlockMood` is what it is DOING, folded from where the meeting has got to
-    // and how it came out — a standing disposition and never a beat, which is what
+    // and how it came out: a standing disposition and never a beat, which is what
     // RENDER_PIPELINE.md requires of an effect that describes a state.
     const Flock& guardianFlock() const { return guardianFlock_; }
     FlockMood guardianFlockMood() const;
-    // Which shown row carries the true reply. Exposed for the gates — the screen never
+    // Which shown row carries the true reply. Exposed for the gates: the screen never
     // asks, and neither does anything on the press path.
     int shiboleetTrueRow() const;
     // Register a handshake the device-tier promiscuous capture just observed +
     // wrote to the .pcap. Always drives the AuditCapture SM hot (a capture DID
     // happen), but only counts + persists once per distinct BSSID. Returns true if
-    // newly-credited. `bssid` is 6 bytes. PASSIVE capture only — no deauth/inject.
+    // newly-credited. `bssid` is 6 bytes. PASSIVE capture only: no deauth/inject.
     bool registerHandshake(const uint8_t* bssid);
     // Read-only query (no mutation, no SM drive) of the same ledger
-    // registerHandshake() dedups against — a network already fully captured in a
+    // registerHandshake() dedups against: a network already fully captured in a
     // prior session. The device-tier capture sniffer (net_capture.h) checks this
     // BEFORE opening a .pcap file for a BSSID, so a repeat walk past a known AP
     // never mints another file (the fix for the pcap-blowup: a file used to
@@ -1504,11 +1504,11 @@ public:
     Nav nav() const { return nav_; }
     CfgScreen cfgScreen() const { return cfgScreen_; }  // active CFG L3 (tests/inspection)
     // Which QR step is showing. The steps run in the order they happen: join the
-    // AP, set up the home network (only while none is stored), open the 'Pedia —
+    // AP, set up the home network (only while none is stored), open the 'Pedia,
     // so the index of the last one depends on netProvisioned() (pediaQrPages).
     int pediaQrPage() const { return pediaQrPage_; }
 
-    // True while either QR page is showing — the 'Pedia AP steps or the USB
+    // True while either QR page is showing: the 'Pedia AP steps or the USB
     // flasher's address. The device tier reads this to keep the panel AWAKE (a code
     // is read by a phone, which takes longer than the idle sleep window); the engine
     // likewise suspends its 5s menu auto-defocus here. Both resume normally the
@@ -1526,7 +1526,7 @@ public:
     // gates that drive those cadences, so a screen that animates faster than the heartbeat
     // is covered by construction, with no separate list to keep in sync.
     bool highFrameRate() const { return fastCadenceActive_; }
-    // True while the UPDATES screen is showing — its row list, the install confirm,
+    // True while the UPDATES screen is showing: its row list, the install confirm,
     // or a job's progress. The screen is a WAIT: a check associates and fetches on
     // the network's clock, and the verdict it leaves behind is the whole reason the
     // operator opened it. On the standard 5s budget the menu collapses out from under
@@ -1534,14 +1534,14 @@ public:
     // the long hands-off budget (kRadioScreenDefocusMs) instead.
     //
     // Deliberately NOT part of radioScreenOpen(): that predicate also ARMS a radio,
-    // and opening a screen must never put this device on a network — only a job the
+    // and opening a screen must never put this device on a network, only a job the
     // operator started does that (netConnectWanted).
     bool updateScreenOpen() const {
         return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::Update;
     }
     // True while the HackerTag arcade editor is open. Composing a tag one A-press
     // per letter has real pauses in it, and the 5s auto-defocus would throw the
-    // half-typed buffer away mid-thought — so the editor holds the menu open the
+    // half-typed buffer away mid-thought, so the editor holds the menu open the
     // same way the QR page does, and releases it on save or back-out.
     bool tagEditorActive() const {
         return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::HackerTag;
@@ -1562,7 +1562,7 @@ public:
     // exposed so the resting motion can be inspected without a framebuffer.
     const IdleWander& petWander() const { return petWander_; }
     // How many ambient copies walk the habitat beside the pet right now. Purely
-    // presentational and entirely derived — Combatant::wormReplicas is combat state,
+    // presentational and entirely derived: Combatant::wormReplicas is combat state,
     // wiped at the end of every fight, so a worm at home has no replicas to draw and
     // needs its own idle notion of "there is never just the one".
     //
@@ -1573,13 +1573,13 @@ public:
     // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
     // petWander(). Each keeps its own stream so the group never marches in step.
     const IdleWander& companionWander(int i) const { return companionWander_[i]; }
-    // DISK DECRYPTION (the Ransomware line's hatch minigame) — the code-breaking board,
+    // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
     // played once the instant the egg is laid, exactly as the Clutch and the Isolation
     // Protocol are. Cracking the key halves what is left of the incubation clock;
     // running out of attempts costs only that bonus. Rules: core/model/disk_decryption.h.
     bool inDecryption() const { return nav_ == Nav::Decryption; }
     const DiskDecryption& decryption() const { return decryption_; }
-    // THE DECRYPTOGRAM (game_cryptogram.cpp) — the quote board, launched by cashing a
+    // THE DECRYPTOGRAM (game_cryptogram.cpp): the quote board, launched by cashing a
     // Decryptogram in at the Hacker VAULT and, once kQuoteArcadeUnlockWins quotes are
     // solved, from its own arcade cabinet. Rules: core/model/cryptogram.h; the pool:
     // core/content/content_quotes.h.
@@ -1588,7 +1588,7 @@ public:
     // The roster row (content_quotes.h index) the board is playing, or -1.
     int cryptogramQuote() const { return cryptogramQuote_; }
     // This device's standing with the quote on roster row `i`. Out-of-range, and any
-    // row whose wire is past kQuoteWireCap, read Hard — never played.
+    // row whose wire is past kQuoteWireCap, read Hard, never played.
     CryptogramTier quoteTier(int i) const;
     // Quotes SOLVED, which is what gates the arcade cabinet and what decides whether
     // the VAULT still has a first-solve prize to offer.
@@ -1596,7 +1596,7 @@ public:
     // Whether the pool has an unsolved, gate-passing quote left. False means a cashed
     // Decryptogram replays a solved one for Bits only.
     bool quotesLeftToWin() const;
-    // Is this quote offerable at all — its achievement gate earned, and its solved
+    // Is this quote offerable at all: its achievement gate earned, and its solved
     // standing matching what the caller is after. The one place both eligibility axes
     // are answered, so the VAULT and the cabinet can never disagree about the pool.
     bool quoteEligible(int i, QuotePick pick) const;
@@ -1613,7 +1613,7 @@ public:
     bool eggLineUnlocked(const EggLineDef* line) const;
     // Per-Process deep-dive gate on the egg's random hatch pool (rollHatchProcess).
     // Most Process pets are always in their line's pool; a few are DeepWeb-depth
-    // rewards — Phishlet only joins the Phishing pool once DEEPWEB_DEPTH_64 is earned.
+    // rewards: Phishlet only joins the Phishing pool once DEEPWEB_DEPTH_64 is earned.
     bool hatchProcessUnlocked(const CreatureDef* proc) const;
     // Boot-Sector incubation (redesign): the freshly laid egg sits at idle as
     // the Boot-Sector creature, decrypting over kBootHatchMs. `inEggPhase()` is true
@@ -1622,7 +1622,7 @@ public:
     bool inEggPhase() const {
         return pet_ && pet_->stage == Stage::BootSector && bootHatchRemainMs_ > 0;
     }
-    // Can the hatch REVEAL be played on demand? The home stretch of ANY incubation —
+    // Can the hatch REVEAL be played on demand? The home stretch of ANY incubation:
     // every line's minigame is played at lay-time now, so the last stretch of the clock
     // is the one thing they all share, and the chord cracks the shell there and then so
     // the 8-frame hatch one-shot is something the player watches rather than something
@@ -1630,7 +1630,7 @@ public:
     bool hatchRevealReady() const {
         return inEggPhase() && bootHatchRemainMs_ <= kHatchRevealMs;
     }
-    // "The egg can be cracked open now" — what the idle prompt advertises with the
+    // "The egg can be cracked open now": what the idle prompt advertises with the
     // flashing Exploit pip, and what the chord acts on.
     bool eggCrackable() const { return hatchRevealReady(); }
     int hatchRevealFrame() const;   // the one-shot's current frame (tests/render)
@@ -1642,7 +1642,7 @@ public:
 
     // --- Clutch Pick (the Phishing line's hatch minigame) ------------------
     // A Phishing egg is laid into a raft of identical decoys, and only the live
-    // one's swimmer animates — motion is the whole tell, so the puzzle survives
+    // one's swimmer animates: motion is the whole tell, so the puzzle survives
     // grayscale. The player halves the clutch kEggPickRounds times (A = left/top,
     // C = right/bottom, B = commit); finishing with the live egg still inside
     // halves the incubation clock, missing it costs nothing but the bonus.
@@ -1655,7 +1655,7 @@ public:
     int eggPickTargetSlot() const { return eggPickTarget_; }  // the live egg's slot (tests)
     bool eggPickResolved() const { return eggPickResolved_; } // all rounds in -> the reveal is up
     bool eggPickWon() const { return eggPickWon_; }
-    // True once the live egg's slot is outside the surviving span — i.e. the run is
+    // True once the live egg's slot is outside the surviving span: i.e. the run is
     // already lost, even though the remaining rounds still play out.
     bool eggPickTargetInSpan() const;
 
@@ -1663,7 +1663,7 @@ public:
     // The same minigames the hatches and the Defrag run, off their stakes: a cabinet
     // starts one with nothing riding on it and pays a flat participation reward plus
     // a skill bonus (content_arcade.h; game_arcade.cpp is the whole mechanism). The
-    // arcade never reimplements a game — arcadeRun_ is the only thing that tells a
+    // arcade never reimplements a game: arcadeRun_ is the only thing that tells a
     // running minigame it is being played for fun, and it changes the PAYOUT and the
     // pacing, never the rules.
     bool inArcadeRun() const { return arcadeRun_; }
@@ -1676,17 +1676,17 @@ public:
         return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeWins_[i] : 0;
     }
     // The best score a cabinet has ever been played to. Only meaningful where a run
-    // HAS a score — a win-or-lose cabinet (the Clutch) reports 0 forever, which is why
+    // HAS a score: a win-or-lose cabinet (the Clutch) reports 0 forever, which is why
     // the cabinet page shows this only when the roster row scores incrementally.
     int arcadeBest(int i) const {
         return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeBest_[i] : 0;
     }
     // ...by cabinet id, which is what an achievement row keys on (AchSeries::
-    // ArcadeCabinetBest) — the roster is free to reorder, so a wire-stable question has
+    // ArcadeCabinetBest). The roster is free to reorder, so a wire-stable question has
     // to be asked by id rather than by index.
     int arcadeBestById(const char* id) const;
     ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
-    // The MAINT action screen's own dial for its played row — reset to EASY each time the
+    // The MAINT action screen's own dial for its played row: reset to EASY each time the
     // screen opens, and separate from the cabinets' so neither moves the other.
     ArcadeDifficulty maintDifficulty() const { return maintDifficulty_; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
@@ -1694,7 +1694,7 @@ public:
         return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
     }
     // The cabinet list's cursor, as a ROSTER index (content_arcade.h's order) rather
-    // than a row position — the two differ whenever a cabinet is locked out of the list.
+    // than a row position: the two differ whenever a cabinet is locked out of the list.
     int arcadeRow() const { return arcadeRow_; }
     // Is cabinet `i` in the GAMES list right now (ArcadeUnlock)? A locked cabinet is
     // absent, not greyed. Shared by the A-cycle, the render loop and B, so the list can
@@ -1715,15 +1715,15 @@ public:
     // --- CHROMATOPHORE (the Metamorphic line's hatch minigame) -------------
     // A Polystaria egg rehearses the only defence its line has: the water under it
     // takes one of kChromaSkins colours, A/B/C wear one skin each, and a sweep crosses
-    // on a shrinking clock. Every pass made in the right skin — and settled, since a
-    // repaint takes kChromaSettleMs — is kChromaPassMs off the incubation clock; being
+    // on a shrinking clock. Every pass made in the right skin (and settled, since a
+    // repaint takes kChromaSettleMs) is kChromaPassMs off the incubation clock; being
     // caught in the wrong one ends the run with what it already earned. The rules are
     // core/model/chromatophore.h; the screen and the payout are game_chroma.cpp.
     bool inChroma() const { return nav_ == Nav::Chroma; }
     const Chromatophore& chroma() const { return chroma_; }
     // Who the board is actually painting. The pet if its family wears borrowed colours
-    // (CreatureLine::wearsBorrowedColours) — which is every route in from a hatch,
-    // since the egg on the shelf IS that pet — and otherwise the Metamorphic egg, so
+    // (CreatureLine::wearsBorrowedColours) (which is every route in from a hatch,
+    // since the egg on the shelf IS that pet), and otherwise the Metamorphic egg, so
     // an arcade cabinet played by a Ransomware pet still has a plausible subject
     // rehearsing on it. nullptr only if the roster somehow holds neither.
     const CreatureDef* chromaSubject() const;
@@ -1736,7 +1736,7 @@ public:
     void cycleUiMode();
     // CFG > DEVICE > CARE ALERTS: whether the carousel draws its "!" needs-attention
     // marks (Game::careAttention). Persisted beside UI MODE (save v67). Off hides the
-    // marks only — the vitals, the lockout and the care cards are unchanged.
+    // marks only: the vitals, the lockout and the care cards are unchanged.
     bool careAlerts() const { return careAlerts_; }
     void setCareAlerts(bool on);
     // Screen-brightness level: a 0-based backlight index (0..kBrightnessLevels-1),
@@ -1755,7 +1755,7 @@ public:
     void playSound(Sound s);
     // Ignores the SOUND mode on purpose: the VOLUME picker's sample.
     void previewVolume(int level);
-    // The PAL_CORE colour set the interface is drawn in — an index into the generated
+    // The PAL_CORE colour set the interface is drawn in: an index into the generated
     // theme table (0 = base), persisted by NAME (save v64). setThemePick is the ONLY
     // caller of setPalTheme (core/render/palette.h): the applied theme and the stored
     // one move together, so a repaint can never be in a set the save does not name.
@@ -1765,10 +1765,10 @@ public:
     const char* themeName() const;
     bool setThemePick(int index);
     // Whether row `i` of kThemes (content_themes.h) is unlocked: Start rows always, a
-    // Chip row once this device has EVER held its chip. Derived, never stored — see the
+    // Chip row once this device has EVER held its chip. Derived, never stored: see the
     // banner on that header.
     bool themeRowUnlocked(int row) const;
-    // Which kThemes row the applied set is — the picker's ACTIVE tag and its opening
+    // Which kThemes row the applied set is: the picker's ACTIVE tag and its opening
     // focus. A lookup, not a cast: the table and the palette are ordered separately.
     int themeRow() const;
     // One bit per kThemes row, for the picker. Built on demand for the same reason the
@@ -1798,7 +1798,7 @@ public:
     uint32_t lifetimeUptimeMs() const { return uptimeBase_ + nowMs_; }
     uint32_t lifetimeSteps() const { return lifetimeSteps_; }  // exploration
     const char* hackerTag() const { return hackerTag_; }
-    // The CURRENT serialized save size — what a persistSave() right now would
+    // The CURRENT serialized save size: what a persistSave() right now would
     // actually write. Diagnostic-only (the boot-line print, main.cpp): lets a
     // dev watch it against the save partition's known capacity as content
     // grows, rather than finding out via a silent NOT_ENOUGH_SPACE write failure.
@@ -1812,7 +1812,7 @@ public:
     int rackCount() const { return static_cast<int>(rack_.size()); }
     // Where the ARCH cursor is, for the screens that draw it and the gates that drive
     // it. The same read-only surface ITEMS and GAMES already expose (itemsScreen,
-    // arcadeRow) — enough to say WHICH shelf is open and WHAT is focused on it,
+    // arcadeRow): enough to say WHICH shelf is open and WHAT is focused on it,
     // without handing out the rack.
     ArchScreen archScreen() const { return archScreen_; }
     ArchGroup archGroup() const { return archGroup_; }
@@ -1828,7 +1828,7 @@ public:
         const ArchRow r = archFocusedRow();
         return r.def ? r.def->id : nullptr;
     }
-    // The SELL sheet for the focused row, in one piece — what the L3 draws, and what a
+    // The SELL sheet for the focused row, in one piece: what the L3 draws, and what a
     // gate reads to see which offers are open without driving the screen.
     ArchSaleSheet archSaleSheet() const;
 
@@ -1854,7 +1854,7 @@ public:
     // IDENTITY this device asks you to author, so the screen gives it room rather than
     // stacking a roster into one list: the Hub states who you are and offers the two
     // sides, a side opens its own roster, and a crew opens a page of its own. `Picker`
-    // is the home-network chooser — a modal over the Hub rather than a step past it,
+    // is the home-network chooser: a modal over the Hub rather than a step past it,
     // because designating turf is a precondition for all of this and not part of the
     // browse. Public so the render path and the gates can name a view; the transitions
     // are Game::onHackerCrew's alone.
@@ -1867,13 +1867,13 @@ public:
     // as the home network. An explicit pick, replacing any earlier inference from
     // sighting counts. key 0 clears it (and any crew that depended on it).
     void setHomeNetwork(uint64_t key, const char* name);
-    // Enlist in kCrews row `index`. Returns false — changing nothing — without a home
+    // Enlist in kCrews row `index`. Returns false (changing nothing) without a home
     // network, or for an out-of-range row.
     bool joinCrew(int index);
     void leaveCrew();
 
     // One offer in the home-network picker: a network the operator can claim. Every
-    // row is a network the radio can hear RIGHT NOW (visibleNetworks_) — you designate
+    // row is a network the radio can hear RIGHT NOW (visibleNetworks_): you designate
     // the turf you're standing on, so a network you can't currently see is not an
     // offer. The SD-backed ledger contributes no rows; it only supplies `count`, the
     // evidence that says which of the networks in front of you is the familiar one.
@@ -1883,7 +1883,7 @@ public:
         uint32_t count = 0;   // ledger sighting tally; 0 = never resolved by a walk yet
     };
     // Fills `rows` with the in-range offers, most-sighted first, capped at `max`.
-    // Returns the count written. Read-only — the picker's render + input and tests all
+    // Returns the count written. Read-only: the picker's render + input and tests all
     // walk the same list.
     int crewNetworkRows(CrewNetRow* rows, int max) const;
 
@@ -1892,7 +1892,7 @@ public:
     // (content_achievements.cpp) and most rows need no code here: a per-tick sweep
     // compares each row's `series` progress (achValue) against its goal. Only
     // AchSeries::Event rows, whose event leaves no counter behind, are fired by hand
-    // from the site where they happen — by the `ach::` id constants, so a typo is a
+    // from the site where they happen: by the `ach::` id constants, so a typo is a
     // compile error rather than a silent no-op.
     //
     // Idempotent, so a trigger site and the sweep can both call freely. Unlocking pays
@@ -1900,7 +1900,7 @@ public:
     // unlock reaches the player.
     void unlockAchievement(const char* id);
     // The MIRROR: the pet facing its own species. Called from every seam that can seat a
-    // real species opposite the player — the LINK duel and the arena — so the rule for
+    // real species opposite the player (the LINK duel and the arena), so the rule for
     // what counts as a mirror lives in one place rather than once per screen.
     void noteMirrorMatch(const char* opponentCreatureId);
     bool hasAchievement(const char* id) const;
@@ -1910,7 +1910,7 @@ public:
     int achValue(const AchievementDef& d) const;
 
     // The row whose banner is on screen right now, or nullptr. Set only while the pet
-    // face is idle — the player has to actually be looking at the home screen for the
+    // face is idle: the player has to actually be looking at the home screen for the
     // announcement to count as seen, so nothing is missed by being elsewhere.
     const AchievementDef* achBanner() const;
     // How many unlocks the CURRENT banner is speaking for. 1 = the named row above; >1 =
@@ -1929,8 +1929,8 @@ public:
     // timed banner retires itself on the heartbeat; this one cannot, so input has to.
     bool achBannerHeld() const;
     // The three lines the banner shows, composed once. Both the DRAW and the DWELL need
-    // them — how long an announcement has to stay up is a question about the copy it is
-    // carrying — and a second copy of this composition would be two answers to that.
+    // them (how long an announcement has to stay up is a question about the copy it is
+    // carrying), and a second copy of this composition would be two answers to that.
     struct AchBannerCopy {
         const char* kicker = "";
         bool held = false;
@@ -1940,8 +1940,8 @@ public:
     AchBannerCopy achBannerCopy() const;
     // How long the banner now being armed must stay up: long enough for its longest
     // line to finish one marquee pass, floored at kAchBannerMs. Derived rather than
-    // constant, because the failure it prevents — a name that leaves the screen
-    // mid-travel — only ever happens to the long names nobody tests with.
+    // constant, because the failure it prevents (a name that leaves the screen
+    // mid-travel), only ever happens to the long names nobody tests with.
     uint32_t achBannerDwellMs() const;
     // Clear a held banner (marking it announced). Any button does this on the home
     // screen, and the press is spent doing it.
@@ -1951,15 +1951,15 @@ public:
     int achPendingNotify() const;
     // A creature FACED IN COMBAT but never raised. Seeing is a fight, not a
     // glimpse: nothing a menu, hint or cinematic shows counts. Today the only
-    // combatant resolved from a real species is a duel opponent (startPvpBattle) —
+    // combatant resolved from a real species is a duel opponent (startPvpBattle):
     // wild malbeasts, sub/area bosses and Sim dummies are name-only CombatEnemy
     // specs from pools disjoint from the roster, and the wild half has its own
     // roster-keyed masks (malbeastSeen below) written on this same fight rule.
-    // Idempotent; a creature already RAISED is never added — "hatched" always wins
+    // Idempotent; a creature already RAISED is never added: "hatched" always wins
     // over "seen" (pedia_state.cpp's pets{} map).
     void markCreatureSeen(const char* id);
     bool creatureSeen(const char* id) const;
-    // The device's running tally of species the operator has RAISED — recorded at
+    // The device's running tally of species the operator has RAISED: recorded at
     // every point a creature becomes this device's pet (hatch, evolution, an ARCH
     // Deploy) and never removed, so it outlives the pet itself. This is what the
     // 'Pedia's "hatched" reveal and FULL_PEDIA_L1 read: what's currently HELD is a
@@ -1970,7 +1970,7 @@ public:
     int speciesRaised() const { return static_cast<int>(raisedCreatures_.size()); }
     // The fixed wild-malbeast roster's (combat.h kWildMalbeastIds) seen/defeated
     // state, set by a real wild encounter roll (seen) / a won live wild fight
-    // (defeated) — see Game::startEncounter / Game::finishCombat.
+    // (defeated): see Game::startEncounter / Game::finishCombat.
     bool malbeastSeen(int idx) const {
         return idx >= 0 && idx < kWildMalbeastCount &&
                (malbeastSeenMask_ & (1u << idx)) != 0;
@@ -1980,17 +1980,17 @@ public:
                (malbeastDefeatedMask_ & (1u << idx)) != 0;
     }
 
-    // Lifetime boss rounds won (save v40). Each round of a gauntlet counts — beating a
+    // Lifetime boss rounds won (save v40). Each round of a gauntlet counts: beating a
     // three-boss gauntlet is three bosses defeated, which is what it felt like.
     int bossWins() const { return bossWins_; }
     // Lifetime Stacker boards cleared by hand in MAINT (save v44), whichever process
-    // they were played for — a Quick or Tool run is rolled or bought, not played.
+    // they were played for: a Quick or Tool run is rolled or bought, not played.
     int stackerWins() const { return stackerWins_; }
     // The three v56 lifetime tallies, on the same footing as the two above.
     int tourneyWins() const { return tourneyWins_; }   // ROCK THE DOCK brackets taken
     int pvpWins() const { return pvpWins_; }           // LINK duels won
     int mergesCooked() const { return mergesCooked_; } // dishes cooked at the MERGE HUB
-    // Has this item EVER been in the bag? (save v40) — the collection tally behind the
+    // Has this item EVER been in the bag? (save v40): the collection tally behind the
     // cuisine/rarity achievements, and a truer answer than "is it in the bag now" for
     // anything asking what the player has seen. Written by a sweep over the live
     // inventory, so every path that grants an item is covered by construction.
@@ -1998,11 +1998,11 @@ public:
     int itemsCollected() const { return static_cast<int>(collectedItems_.size()); }
     // The PET's palate, beside the operator's collection above: has this pet been fed
     // `id`, and how many distinct dishes has it tasted. Cleared with the pet, so a fresh
-    // egg starts the plate empty however much its predecessor got through — which is
+    // egg starts the plate empty however much its predecessor got through, which is
     // what makes the FOODS grid a thing to fill in rather than a shelf you inherit.
     bool petAteFood(const char* id) const;
     int petFoodsEaten() const { return static_cast<int>(petFoodsEaten_.size()); }
-    // Has the METHOD for `outputId` been won? (save v31) — the kitchen's other axis:
+    // Has the METHOD for `outputId` been won? (save v31). The kitchen's other axis:
     // meeting a dish and knowing how to cook it are independent, and a recipe is only
     // ever won off a Decryptogram, never bought. Keyed by the dish because that is the
     // recipe table's own key (content_recipes.h recipeIndexByOutput). Out-of-line
@@ -2012,14 +2012,14 @@ public:
     // 0 if it never dived. Per-species rather than per-pet, so the record outlives the
     // individual: the pet's own in-progress best is bestDeepWebDepth() above.
     int speciesDeepestDive(const char* creatureId) const;
-    // The deepest dive on the device, by anyone — the max over every species record.
+    // The deepest dive on the device, by anyone: the max over every species record.
     int deepestDiveEver() const;
 
     // --- Dev shortcuts (host key / device dev gesture / tests) --------------
     // Wipe back to a fresh empty save and re-enter the Decryption Hatch, so the
     // hatch + raising loop can be retested without reflashing / relaunching.
     void resetToHatch();
-    // Clear the player-level state a pet reset deliberately leaves standing — the
+    // Clear the player-level state a pet reset deliberately leaves standing: the
     // 'Pedia reveal tiers, rank/discovery, Titles, world progress, Rig Shop
     // upgrades, crew, and the radio consents. Paired with resetToHatch() by the
     // Factory Reset's WIPE EVERYTHING scope; nothing else calls it, because every
@@ -2028,11 +2028,11 @@ public:
     // Force the Evolution boundary now, bypassing the time/care gate (the stub
     // trigger is /TBD). No-op unless the pet has a defined successor.
     void debugTriggerEvolution();
-    // Seed the shared LCG (rng_) so rng-driven draws — the hatch pool, the Trojan
-    // cross-line divert roll — are deterministic in a test / headless run.
+    // Seed the shared LCG (rng_) so rng-driven draws (the hatch pool, the Trojan
+    // cross-line divert roll) are deterministic in a test / headless run.
     void debugSeedRng(uint32_t seed) { rng_ = seed; }
     // Inject a frozen pet into the ARCH rack (tests / headless screenshots of a
-    // populated rack — the real path is the Store action). No-op if the rack is
+    // populated rack: the real path is the Store action). No-op if the rack is
     // full or the id is unknown. `combatLevel` lands as that many Power points, which
     // keeps the level == earned-points invariant a thawed pet is held to.
     void debugSeedRack(const char* creatureId, int combatLevel = 0);
@@ -2040,28 +2040,28 @@ public:
     // the stakes; the Sim-Battle path is the in-game one (startSimBattle, safe).
     // `lethal` builds an unbeatable enemy so a loss is deterministic (stakes test).
     void debugStartCombat(bool live, bool lethal = false);
-    // The same, against a chosen enemy spec (e.g. wildMalbeastAt(i)) — what a
+    // The same, against a chosen enemy spec (e.g. wildMalbeastAt(i)): what a
     // headless preview of one particular wild needs, since a walk rolls whichever one.
     void debugStartCombatVs(const CombatEnemy& spec, bool live = false);
     // Preset the lifetime networks-seen counter + its v1 dedup pool (tests /
     // dump_frame): marks the first `n` pool slots seen and recomputes Hacker
-    // Rank silently — scaffolding to reach a rank/sector-unlock state without
+    // Rank silently. Scaffolding to reach a rank/sector-unlock state without
     // grinding real Wi-Fi events, NOT a real rank-up (no celebration/reward).
     void debugSetNetworksSeen(int n);
     // Compose the explore-mode flavor line directly (tests / dump_frame). The real path
     // is a walk event resolving one, and which event a step rolls is not something a
-    // scene can ask for — so a frame that wants to LOOK at the longest line the walk can
+    // scene can ask for, so a frame that wants to LOOK at the longest line the walk can
     // produce sets it. Explore mode still has to be armed for anything to draw.
     void debugSetExploreFlavor(const char* s);
     // Put a guardian in front of the pet NOW (tests / dump_frame), skipping the walk
-    // that would eventually route to one. The welcome is still ROLLED — this is the
-    // encounter's real entry point, not a way to force a band — so a caller that wants a
+    // that would eventually route to one. The welcome is still ROLLED (this is the
+    // encounter's real entry point, not a way to force a band), so a caller that wants a
     // riddle specifically seeds the RNG rather than asking for one. Explore mode has to
     // be armed, exactly as it does for the walk path.
     void debugStartShiboleet() { startShiboleet(); }
     // Credit captured handshakes without a radio (tests / headless runs). SHAKES is what
     // buys a sigil of the Cant, and the honest path to one is a real WPA capture on real
-    // hardware with capture armed — which no native run has.
+    // hardware with capture armed, which no native run has.
     void debugAddHandshakes(int n) {
         handshakesSeen_ += n;
         markSaveDirty();
@@ -2073,7 +2073,7 @@ public:
         for (int i = 0; i < n; ++i) cantSigils_ = learnSigil(cantSigils_);
         markSaveDirty();
     }
-    // Credit boss rounds without fighting them (tests / headless runs) — reaching the
+    // Credit boss rounds without fighting them (tests / headless runs): reaching the
     // deeper boss rungs honestly would mean walking a whole gauntlet ladder per rung.
     void debugAddBossWins(int n) { bossWins_ += n; markSaveDirty(); }
     // Credit cleared DEFRAG boards without playing them (tests / headless runs). The
@@ -2085,11 +2085,11 @@ public:
         recordSpeciesDive(registry_.creature(creatureId), depth);
     }
     // Seed the network ledger directly, bypassing the scan → EXPL-Wi-Fi-event resolve
-    // path — the only way a tool or test can populate the CREW home-network picker
+    // path: the only way a tool or test can populate the CREW home-network picker
     // without walking. `count` is the sighting tally the picker sorts on.
     void debugSeedNetworkLedger(uint64_t key, const char* name, int count);
     // Put a move in the pet's OWNED set (tests / dump_frame): the real earn path is
-    // whatever eventually grants one, and there is none yet — this is how a scene puts
+    // whatever eventually grants one, and there is none yet. This is how a scene puts
     // a kit in a known state, e.g. to show the outro a rival with no new move gets.
     void debugGrantMove(const char* id) { moveLoadout_.grant(id); }
     void debugUnequipMove(int slot) { moveLoadout_.unequip(slot); }
@@ -2124,9 +2124,9 @@ public:
     // Buy the ITEMS type-picker upgrade via the real buy path (tests).
     void debugBuyItemPicker() { buyRigUpgrade(kRigRowItemPicker); }
     // Buy the MERGE HUB slot via the real buy path (tests / dump_frame). The recipes
-    // cooked in it are won, not bought — debugWinRecipe below.
+    // cooked in it are won, not bought: debugWinRecipe below.
     void debugBuyMergeHub() { buyRigUpgrade(kRigRowMergeHub); }
-    // Any rig row by index, through the real buy path — for a test that sweeps the
+    // Any rig row by index, through the real buy path: for a test that sweeps the
     // whole storefront rather than naming one row.
     void debugBuyRigRow(int row) { buyRigUpgrade(row); }
     // Draw the Bandwidth pool down without staging a fight to spend it, so a test can
@@ -2136,21 +2136,21 @@ public:
         if (bandwidth_ < 0) bandwidth_ = 0;
     }
     // Buy the g/h Auto Backup / Continuous Auto-Backup unlocks via the real buy path
-    // (tests) — the two rows that arm the Backup Drive death-save for free.
+    // (tests): the two rows that arm the Backup Drive death-save for free.
     void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
     void debugBuyContinuousBackup() { buyRigUpgrade(kRigRowContinuousBackup); }
-    // Buy the next MOD STORAGE tier via the real buy path (tests) — what raises how many
+    // Buy the next MOD STORAGE tier via the real buy path (tests): what raises how many
     // spare copies of one mod the pool will hold (modStorageCap).
     void debugBuyModStorage() { buyRigUpgrade(kRigRowModStorage); }
-    // Buy the LINK AGGREGATOR via the real buy path (tests) — the row that turns a
+    // Buy the LINK AGGREGATOR via the real buy path (tests): the row that turns a
     // regen tick from a flat +1 into a percentage of the spent pool.
     void debugBuyLinkAggregator() { buyRigUpgrade(kRigRowLinkAggregator); }
-    // Hand back to the idle habitat exactly as a resolved explore event does (tests) —
+    // Hand back to the idle habitat exactly as a resolved explore event does (tests):
     // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
     // event to reach it.
     void debugReturnToExplore() { returnToExplore(); }
     // `i` indexes kMergeRecipes; the row it GRANTS is that recipe's own rigRow, so this
-    // keeps working when either table grows. A grant, not a purchase — no Bits path
+    // keeps working when either table grows. A grant, not a purchase: no Bits path
     // reaches a recipe; the Decryptogram's prize ladder is the only one.
     // Out-of-line (game_merge.cpp) because the recipe table is engine-private.
     void debugWinRecipe(int i);
@@ -2166,7 +2166,7 @@ public:
     void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
     ItemFilter itemFilter() const { return items_.filter(); }
     // Where the STAT reader stands: which of the six pages, which row of it the window
-    // opens on, whether the INDEX is up, and its cursor. Read by the gates — the page a
+    // opens on, whether the INDEX is up, and its cursor. Read by the gates: the page a
     // jump landed on and the row it anchored to are assertions about state, which a
     // rendered frame states least directly.
     int statPage() const { return statPage_; }
@@ -2174,7 +2174,7 @@ public:
     StatScreen statScreen() const { return statScreen_; }
     int statIndexRow() const { return statIndexRow_; }
     // The INDEX's rows, marshalled from the two flowed pages' own rows plus the counts
-    // the LOADOUT hub already counts — so a readout on the index and the page it opens
+    // the LOADOUT hub already counts, so a readout on the index and the page it opens
     // are one answer, not two. Public because the gates read the roster to find the row
     // a jump should land on, the same way they read the pages' own row models.
     std::vector<StatIndexRow> statIndexRows() const;
@@ -2204,7 +2204,7 @@ public:
     // since what this stages is the display and not the economy.
     void debugFillLoadout();
     // Put `n` dishes on the active pet's palate (tests / tools/dump_frame.cpp), in
-    // roster order. The real path is a meal — Game::startFeeding — which needs a bag,
+    // roster order. The real path is a meal. Game::startFeeding, which needs a bag,
     // a modal and a tick each; this is the same mark that path makes, so a rendered
     // FOODS grid shows what a fed pet's would.
     void debugTasteFoods(int n);
@@ -2229,11 +2229,11 @@ public:
                    ? bulkYieldTally_[i].count : 0;
     }
     // Resolve a Defrag with a forced success/failure via the real resolveMaint() path
-    // (tests) — a deterministic maint outcome (rollMaintSuccess is otherwise RNG-gated),
+    // (tests): a deterministic maint outcome (rollMaintSuccess is otherwise RNG-gated),
     // so a failed defrag's shielded +1 care mistake is assertable. `success=false` =
     // a failure (frag penalty + the shielded mistake).
     void debugResolveDefrag(bool success);
-    // Advance the Stacker's run one beat without waiting out its real cadence — the seam
+    // Advance the Stacker's run one beat without waiting out its real cadence: the seam
     // tests and dump_frame use to place the run deliberately instead of by stopwatch.
     void debugStepStacker() { stepStacker(); }
     // Re-deal the board from `seed` (Stacker::reset) at the dial's ground calls, so a
@@ -2250,7 +2250,7 @@ public:
     // real paths are Game::settleCryptogram's win and its loss ratchet.
     void debugSetQuoteTier(int i, CryptogramTier t) { setQuoteTier(i, t); }
     // Open a SPECIFIC quote's board (tests / dump_frame). Skips only the ticket and the
-    // roll — from here onButton drives the real board and the real settle, which is
+    // roll: from here onButton drives the real board and the real settle, which is
     // where the ratchet and the prize are decided. Real path: the VAULT cash-in.
     void debugStartCryptogram(int quote, int extraReveals) {
         startCryptogram(quote, extraReveals);
@@ -2262,7 +2262,7 @@ public:
         maintKind_ = k;
         beginPlayedGame(maintPlayedGame(k));
     }
-    // Point a process's played variant at a different engine — the seam that proves the
+    // Point a process's played variant at a different engine: the seam that proves the
     // two are interchangeable without a rebuild of the content table.
     void debugSetMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
         (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
@@ -2292,23 +2292,23 @@ public:
     }
     // The level stamped on the last rolled wild encounter (DeepWeb scaling test).
     int debugEncounterEnemyLevel() const { return encounterEnemy_.level; }
-    // Arm the DeepWeb Dive directly (tests) — keeps its own all-areas-cleared guard.
+    // Arm the DeepWeb Dive directly (tests): keeps its own all-areas-cleared guard.
     // Real path: EXPL → B on the "> DIVE" row.
     void debugStartDeepWebDive() { startDeepWebDive(); }
     void debugOfferThenDive() { offerThenDive(); }
     void debugDeclineEggOffer() { eggOfferMade_ = true; }
     int debugDiveRewardBonusPct() const { return diveRewardBonusPct(); }
     // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
-    // reader outside the engine — the habitat draws it via game_render.cpp — so tests
+    // reader outside the engine (the habitat draws it via game_render.cpp), so tests
     // read it here to assert the buff survives the dive it was armed for.
     int debugDepthMultiplier() const { return deepWebDepthMultiplier_; }
     // The depth the next dive would START at (-1 = no bell armed), with the Checkpoint
-    // sentinel already resolved — armedDeepWebStartDepth(), which is what the bells'
+    // sentinel already resolved: armedDeepWebStartDepth(), which is what the bells'
     // own inert check compares against, so a gate asserts the number the engine acts on
     // rather than the raw field's sentinel.
     int debugArmedStartDepth() const { return armedDeepWebStartDepth(); }
     // Set this pet's best-ever dive depth, the frontier a Checkpoint Bell targets. Real
-    // path: winning at that depth (game_combat.cpp) — a gate that needs a pet with a
+    // path: winning at that depth (game_combat.cpp). A gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
     void debugSetBestDeepWebDepth(int depth) { bestDeepWebDepth_ = depth < 0 ? 0 : depth; }
     void debugStartDarkWebCrawl() { startDarkWebCrawl(); }
@@ -2323,7 +2323,7 @@ public:
         if (!tourneyRunning()) return;
         tourneyPhase_ = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
         if (!champion) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
-        // A champion run pays, exactly as the real third win does — including the two
+        // A champion run pays, exactly as the real third win does, including the two
         // shape achievements, which read the final's opponent BEFORE it is cleared
         // below. A hook that ended a run in the title but skipped the purse would be a
         // hook the purse could not be tested through.
@@ -2337,7 +2337,7 @@ public:
     }
     // Arm AUTO-PROGRESS, and set the armed sub-area's win streak (tests). Real path:
     // the A+C chord on the explore-control overlay, and ten wild wins. A test of the
-    // STEP rule shouldn't have to grind the streak that triggers it — that grind is
+    // STEP rule shouldn't have to grind the streak that triggers it: that grind is
     // covered on its own by test_explore_streak_unlocks_boss_then_clears.
     void debugSetAutoProgress(bool v) { autoProgress_ = v; }
     // TEST/DEV: mark every STORY chapter already read, so a gate driving the walk is
@@ -2364,7 +2364,7 @@ public:
     // has to read the real one rather than re-derive it and measure its own guess.
     void debugExploreBadgeLabel(char* out, size_t n) const { exploreBadgeLabel(out, n); }
     // Launch a specific sub-area boss directly (tests): same rationale as
-    // debugArmExplore — the EXPL "first-selectable" row is ambiguous once cleared subs
+    // debugArmExplore. The EXPL "first-selectable" row is ambiguous once cleared subs
     // are re-farmable, so a test reaching the boss of an as-yet-uncleared sub triggers
     // it here. Real path: EXPL → B on a "> FIGHT BOSS" row.
     void debugFightSubBoss(int area, int sub) {
@@ -2388,7 +2388,7 @@ public:
     void debugAddTourneyWin() { ++tourneyWins_; markSaveDirty(); }
     // MODS earn path (tests): roll an id from an area's mod loot table, and
     // grant a mod through the real earn path (rolls its per-instance equip-level gate).
-    // Real path: boss clears / DeepWeb wins / Epic caches — same helpers, gated there.
+    // Real path: boss clears / DeepWeb wins / Epic caches. Same helpers, gated there.
     const char* debugRollAreaModId(int area) { return rollAreaModId(area); }
     void debugGrantMod(const char* id) { grantMod(id); }
     // Set the Bandwidth farming pool directly (tests): reach the depleted state
@@ -2406,7 +2406,7 @@ public:
     void debugBuyHungerXpWindow() { buyRigUpgrade(kRigRowHungerXpWindow); }
     void debugBuyCombatXpPct() { buyRigUpgrade(kRigRowCombatXpPct); }
     void debugBuyCombatXpWindow() { buyRigUpgrade(kRigRowCombatXpWindow); }
-    // Advance the pet clock directly through the real model (tests) — the same
+    // Advance the pet clock directly through the real model (tests): the same
     // path Game::tick() uses for Hunger decay + Passive XP Farming, without
     // needing a full tick() (nav/lockout/autosave etc).
     void debugTickHunger(uint32_t elapsedMs) { tickHungerAndAwardXp(elapsedMs); }
@@ -2428,7 +2428,7 @@ public:
 
     // Is the Backup Drive death-save currently armed (used and not yet spent in a
     // fight, nor lapsed)? Lazily checked against the deadline, like
-    // Game::buildPlayerCombatant() itself — nothing actively clears it on expiry.
+    // Game::buildPlayerCombatant() itself: nothing actively clears it on expiry.
     // Read by the STAT BUFFS page and the idle-habitat buff badge (game_render.cpp).
     bool backupShieldArmed() const {
         return backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_;
@@ -2444,7 +2444,7 @@ public:
     // Is a LOCKING device in the port (defs.h's isLockingUsbEffect)? A soak owns the
     // boundary by stretching it and a hold owns it by refusing to reach it, so while
     // either is armed the port takes nothing but an Eject-USB. The swappable half of the
-    // family — the divert and the branch overrides — never locks anything.
+    // family (the divert and the branch overrides), never locks anything.
     bool usbPortLocked() const { return evolveSoakFactor_ > 1 || evolveHold_; }
 
     // Is ANYTHING in the port? What the Eject-USB asks before spending itself, so it is
@@ -2454,7 +2454,7 @@ public:
                evolveBranchOverride_ != BranchOverride::None;
     }
 
-    // Pull everything out of the port and drop its effect — the Eject-USB's whole job,
+    // Pull everything out of the port and drop its effect: the Eject-USB's whole job,
     // and the one place every slot is listed together, so a device added to the family
     // is undone by naming it here rather than by a second table somewhere else.
     void clearUsbPort() {
@@ -2464,7 +2464,7 @@ public:
         evolveHold_ = false;
     }
 
-    // The care branch the pet's next BRANCHING evolution actually reads — the care
+    // The care branch the pet's next BRANCHING evolution actually reads: the care
     // budget, unless a Bad-USB or Signed-USB is in the port to overrule it. The one
     // place the override is applied, so evolutionTargetId, the Trojan divert's own
     // Good/Bad pick and the post-evolution achievements can never disagree about which
@@ -2480,31 +2480,31 @@ public:
     uint32_t evolveDwellMs() const;
 
     // the non-Bits drop-chance scale (%) for a sub-area with `refarmCount`
-    // post-clear wild wins — 100 decaying to a floor. Pure/static so it's unit-tested
+    // post-clear wild wins: 100 decaying to a floor. Pure/static so it's unit-tested
     // directly and reused wherever a re-farm reward is rolled.
     static int refarmDropScalePct(int refarmCount);
 
     // WHERE THE PET IS. Two questions, because the two screens that ask are asking
-    // different things — the habitat asks where its occupant lives, and the stage asks
+    // different things: the habitat asks where its occupant lives, and the stage asks
     // where this particular fight is happening. Both answer with a SceneId
     // (core/render/scenes.h), and SceneId::None is a real answer: a plain `paper` field,
     // which is what every one of these screens showed before any place existed.
     //
     // Public because they are the honest way for anything else to ask what a screen is
-    // standing on — a gate checking that an icon slot is CLEAR now has to compare it
+    // standing on: a gate checking that an icon slot is CLEAR now has to compare it
     // against the backdrop rather than against an empty panel.
     SceneId habitatScene() const;
     SceneId stageScene() const;
 
     // THE BACKGROUND AN OPERATOR OWNS AND CHOOSES. The rows are content
     // (content/content_backgrounds.h); what is here is the rule that decides whether one
-    // is theirs yet, and it is DERIVED rather than stored — every background is earned by
+    // is theirs yet, and it is DERIVED rather than stored: every background is earned by
     // something the save already records, so a parallel bitmask would be a second copy of
     // facts already on the blob and the failure mode of a second copy is disagreement.
     bool backgroundOwned(SceneId s) const;
     // AUTO is SceneId::None: the pet decides, which is what the habitat did before any
     // of this could be chosen. A pick the operator does not own is refused rather than
-    // clamped — nothing should be able to put them somewhere they have not been.
+    // clamped: nothing should be able to put them somewhere they have not been.
     SceneId backgroundPick() const { return backgroundPick_; }
     bool setBackgroundPick(SceneId s);
     // How many of the arena's backgrounds the brackets taken so far have paid out. The
@@ -2527,7 +2527,7 @@ private:
     // Say that a background has just been come into. The three moments that can grant
     // one call it after the state that grants it has moved.
     void announceBackground(SceneId s);
-    // The unlock announcement over the habitat — a no-op unless a banner is up.
+    // The unlock announcement over the habitat: a no-op unless a banner is up.
     void drawAchievementBanner(Framebuffer& fb) const;
     void drawSubmenu(Framebuffer& fb) const;
     void drawDetail(Framebuffer& fb) const;
@@ -2541,14 +2541,14 @@ private:
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
-    // own tier rather than like that line's hatchling. Registry lookups only — the tick
+    // own tier rather than like that line's hatchling. Registry lookups only: the tick
     // calls this every beat, and the pixel scan that turns the answer into a ramp waits
     // for the draw.
     const SpriteData* camoSpriteForTarget(const CamoTarget& t, const char* rivalSprite,
                                           Stage wearer) const;
     // The family the resting pet's `slot`-th drift reaches for, as art (core/model/
     // idle_camo.h). The rule is simply the families the pet IS NOT, in roster order and
-    // wrapping — so a pet rehearses the whole 'net over time and never the same colours
+    // wrapping, so a pet rehearses the whole 'net over time and never the same colours
     // twice running, and a family added to the roster joins the rotation for free.
     // Resolved once per drift by the tick, never per repaint.
     const SpriteData* idleCamoSprite(int slot) const;
@@ -2579,7 +2579,7 @@ private:
     // A steps forward (held, it repeats), C steps BACKWARD (held, it backs out of the
     // list), and the row set each one walks is whatever the focused screen draws.
     //
-    // listFocus reports which list — if any — is under the cursor right now, and is
+    // listFocus reports which list (if any) is under the cursor right now, and is
     // the single gate all three gestures ask. A screen absent from it keeps the plain
     // A/B/C contract untouched: an inline confirm, a detail page, a modal and a
     // minigame all answer None, so C stays the instant tap-to-cancel there.
@@ -2604,7 +2604,7 @@ private:
     // Resolve that press on the release edge: a tap cancels, a hold that already walked
     // the cursor backward does not.
     void listBackRelease();
-    // The focused list's own C case, replayed — what a tap of C on it means.
+    // The focused list's own C case, replayed: what a tap of C on it means.
     void leaveFocusedList();
 
     // Per-state input handlers.
@@ -2613,8 +2613,8 @@ private:
     // anchor, C returns to the page it was opened from.
     void onStatPage(const ButtonEvent& ev);
     // Back to the reader's front door: VITALS, unscrolled, no index open. Every route
-    // that puts the player somewhere else — entering the slot, the tree collapsing, a
-    // Lockout resolving out from under the screen — goes through this, so "where STAT
+    // that puts the player somewhere else (entering the slot, the tree collapsing, a
+    // Lockout resolving out from under the screen) goes through this, so "where STAT
     // opens" is one answer rather than one per caller.
     void resetStatReader();
     void onStatIndex(const ButtonEvent& ev);
@@ -2647,7 +2647,7 @@ private:
     void archReleaseStored(int storedIdx);         // stored pet → gone (frees a slot, no reward)
     // The SELL counter (game_arch_sale.cpp). A stored Daemon is traded for ONE offer and
     // leaves a RETIRED record. archSaleBlocker is the single answer to "can this offer be
-    // taken for this pet" — nullptr when it can, else the short reason its row shows —
+    // taken for this pet" (nullptr when it can, else the short reason its row shows),
     // so the sheet and the commit can never disagree about it.
     void onArchSale(const ButtonEvent& ev);
     const char* archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) const;
@@ -2662,7 +2662,7 @@ private:
     // no longer exists.
     std::vector<ArchRow> archRows() const;
     // The focused row, or a default-constructed one (kind Active, index -1, no def) when
-    // the group is empty — every caller checks `def` before using it, so an empty group
+    // the group is empty: every caller checks `def` before using it, so an empty group
     // reads as "nothing to act on" without a second null check at each site.
     ArchRow archFocusedRow() const;
     bool archRowIsActive() const { return archFocusedRow().kind == ArchRow::Kind::Active; }
@@ -2675,7 +2675,7 @@ private:
     // by its care branch, its Daemon pool or a Trojan divert. Null for anything else.
     const CreatureDef* reimageScript(const CreatureDef* daemon) const;
     // Leave the line-select modal for the ARCH picker, without laying an egg. Only ever
-    // reachable with something on the rack to go back TO — see the modal's own comment.
+    // reachable with something on the rack to go back TO: see the modal's own comment.
     void archReturnFromLineSelect();
     // GAMES: the cabinet list (L2) -> one cabinet (L3) -> a real minigame -> payout.
     void onArcadeList(const ButtonEvent& ev);
@@ -2687,7 +2687,7 @@ private:
     // Bank a finished run and open the payout screen. `scoreMax` 0 means the cabinet
     // scores win-or-lose, which is what decides how the bonus half is worked out.
     void finishArcadeRun(bool won, int score, int scoreMax);
-    // A paced minigame's step cadence under the dial — in a cabinet or a played MAINT
+    // A paced minigame's step cadence under the dial: in a cabinet or a played MAINT
     // run alike. A hatch game runs at `baseMs` untouched: it has no dial to read.
     int playStepMs(int baseMs) const;
     // The dial the run on screen was started under: the cabinet's, or MAINT's.
@@ -2701,7 +2701,7 @@ private:
     // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
     // A+C on any of the game engines (Stacker/Fragger/Isolation/Decryption/Cryptogram/
     // Clutch/Chroma) opens a paged explainer of THAT engine's own rules and pauses it
-    // underneath — the only route to one for the three that launch straight out of an
+    // underneath. The only route to one for the three that launch straight out of an
     // egg with no menu stop along the way at all (startHatchGame: Decrypt/Clutch/
     // Isolation land on their Nav directly). One flag rather than five: nav_ can only
     // be one of the five at a time, so nothing can ever have two open together, and
@@ -2720,7 +2720,7 @@ private:
     Nav tipCardReturn_ = Nav::Idle;
     bool tipCardMarkRow_ = false;
     void openTipCard(Tip t, Nav returnTo);
-    // On a carousel summon: open the one-time card that is due, most urgent first — one
+    // On a carousel summon: open the one-time card that is due, most urgent first. One
     // error short of failing, then the first error, then each need's CARE card, then
     // the first cache. Returns whether it opened one.
     bool openCareTipIfDue();
@@ -2774,7 +2774,7 @@ private:
     void moveFilterReleaseB();
     void trainListReleaseB();
     void onMoveDetail(const ButtonEvent& ev);      // A pages prose, B equips, C backs
-    // The move the picker's cursor is on, or nullptr on the unequip row — shared by
+    // The move the picker's cursor is on, or nullptr on the unequip row: shared by
     // the drill-down, its input handler and the MoveDetail render.
     const MoveDef* focusedPickerMove() const;
     void onSimTier(const ButtonEvent& ev);
@@ -2816,7 +2816,7 @@ private:
     void consumeCombatItem(const char* id);         // decrement + out-of-combat effect
 
     // EXPL / Explore-mode: the sector list arms explore-mode, which runs as
-    // a background mode on the IDLE habitat — auto-stepping guaranteed events (each
+    // a background mode on the IDLE habitat; auto-stepping guaranteed events (each
     // resolving via the shared event/combat plumbing) with a win-streak that unlocks
     // the sector's boss. onExploreControl drives the A+C control overlay
     // (Nav::ExploreControl → A ping / B warp / C stop).
@@ -2845,13 +2845,13 @@ private:
     // different sets. The renderer fills in the per-row blocks it also needs.
     ExplListView explView() const;
     int areaHeaderRow(int area) const;
-    // Compose the idle badge label — the armed area's short (first-word) name + the
+    // Compose the idle badge label: the armed area's short (first-word) name + the
     // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
     void exploreBadgeLabel(char* out, size_t n) const;
     // AUTO-PROGRESS. `autoProgressStep` is the hook every hand-back to the walk runs
     // (returnToExplore): it fires only once the armed sub-area has met its win target,
     // and then either fights the boss standing there or steps on. `autoProgressAdvance`
-    // is the step rule itself — POSITIONAL, so it keeps cycling instead of stopping at
+    // is the step rule itself: POSITIONAL, so it keeps cycling instead of stopping at
     // the frontier. `nextOpenArea` wraps to the next unlocked rung.
     void autoProgressStep();
     void autoProgressAdvance(int area, int sub);
@@ -2884,7 +2884,7 @@ private:
     const char* rollAreaModId(int area);
     const char* rollAnyModId();
     void grantMod(const char* id);
-    // MOVES earn path — you learn a move by BEATING something that knows it. Rolls
+    // MOVES earn path: you learn a move by BEATING something that knows it. Rolls
     // `dropPct` and, on a hit, teaches one move off `from`'s KIT (everything it could
     // have used, not what it happened to cast) that this pet lacks and could actually
     // field. The one implementation both earn sites share (wild wins in
@@ -2896,13 +2896,13 @@ private:
     // absorb (rivalFieldsUnknownMove) is a PROMISE that the roll has something to give:
     // if the two ever disagreed the screen would advertise a drop that cannot happen.
     bool moveIsTeachable(const MoveDef* m) const;
-    // How many of `pool`'s move ids this pet could still learn — moveIsTeachable counted
+    // How many of `pool`'s move ids this pet could still learn: moveIsTeachable counted
     // over a zone's list. The one body every movesToLearn accessor above shares, so the
     // ladder cannot start answering the question differently from the dive.
     int movesToLearnIn(const std::vector<const char*>& pool) const;
     // Is the fight on screen one the WORLD lets a pet learn from at all? A duel and an
     // arena bout are another operator's pet and a Sim dummy is a prop, so none of them
-    // rolls a move drop — and nothing on screen may offer one. Read by the outro (which
+    // rolls a move drop, and nothing on screen may offer one. Read by the outro (which
     // adds "and won") and by the mask the KIT page marks its prizes from.
     bool combatCanTeach() const;
     void startEncounter();                          // roll the malbeast, open the intro
@@ -2918,9 +2918,9 @@ private:
 
     // Boss ladder. Two confrontations share the carried-Health round plumbing
     // (build a gauntlet, run its rounds back-to-back with no heal between):
-    //   • startSubAreaBoss(area,sub) — a single strong malbeast unlocked by a 10-win
+    //   • startSubAreaBoss(area,sub). A single strong malbeast unlocked by a 10-win
     // streak (subBossUnlocked_); a full clear marks the SUB-AREA cleared.
-    //   • startAreaBoss(area) — a 5-stage gauntlet of the area's sub-area bosses,
+    //   • startAreaBoss(area): a 5-stage gauntlet of the area's sub-area bosses,
     //     reachable once all 5 sub-areas are cleared; a full clear marks the AREA
     // cleared (sectorCleared_ → next area) + grants the Title.
     // bossSub_ (>=0 = a sub-area boss for that sub · -1 = the area boss) tells
@@ -2935,8 +2935,8 @@ private:
     // and is readable forever after from EXPL's CHAPTERS list.
     //
     // fireStory/fireStoryPair are the gate every beat goes through: they answer false
-    // when the beat is unauthored or already read — in which case the caller carries
-    // straight on as though no story existed — and true when they have taken the
+    // when the beat is unauthored or already read (in which case the caller carries
+    // straight on as though no story existed), and true when they have taken the
     // screen, in which case the caller returns and `then` is what happens once the
     // reader is done. That is what lets a fire point be one line at the top of the
     // thing it interrupts.
@@ -2951,7 +2951,7 @@ private:
     void drawStoryScreen(Framebuffer& fb) const;
     // The CHAPTERS list. `storyArchiveRows` resolves the unlocked chapters into the row
     // models the screen draws and is the ONE place the archive's order and membership
-    // are decided — the list, its cursor and the B that opens a row all read it.
+    // are decided: the list, its cursor and the B that opens a row all read it.
     void openStoryArchive();
     void onStoryArchive(const ButtonEvent& ev);
     void drawStoryArchiveScreen(Framebuffer& fb) const;
@@ -2959,7 +2959,7 @@ private:
 
     // THE SHIBOLEET (game_shiboleet.cpp). startShiboleet() is reached from the Wi-Fi
     // event when the sighting queue came up empty and the dry-streak cadence is due
-    // (game_net.cpp) — it grades the pet's fluency, and either resolves in place (an
+    // (game_net.cpp): it grades the pet's fluency, and either resolves in place (an
     // AFFRONT into the guardian's fight, a BOON straight back to the walk) or opens
     // Nav::Shiboleet with a riddle to answer. onShiboleet() is the press path;
     // answerShiboleet() commits the focused reply and is also what the ~15s hold calls
@@ -2976,13 +2976,13 @@ private:
     void grantBoon();
     void startGuardianCombat();
     // Pay one unspent SHAKE for the next sigil of the Cant. Returns whether it bought
-    // one — false when the purse is empty (the riddle's other rewards are paid anyway,
+    // one: false when the purse is empty (the riddle's other rewards are paid anyway,
     // which is the whole point of the gate sitting HERE and not on the win) or when the
     // Cant is already complete.
     bool buySigil();
 
     // Wi-Fi network event: a self-contained typed event. First resolves real-
-    // network discovery (resolveNetworkDiscovery — pops the pending sighting
+    // network discovery (resolveNetworkDiscovery: pops the pending sighting
     // queue against the NetworkLedger; sets netDiscoveryFlavor_), independent of
     // and always followed by the Sleeping/Awakened-Guardian / Open-Cache /
     // Friendly-Visit roll (sets wifiFlavor_; unrelated flavor/combat system), then
@@ -2990,22 +2990,22 @@ private:
     void startWifiEvent();
     void onWifi(const ButtonEvent& ev);
     void resolveWifiOutcome();
-    // Real-network discovery resolution — the sole place a real network is
+    // Real-network discovery resolution: the sole place a real network is
     // credited (Hacker Rank XP + Sealed Cache) or an occasional-repeat pet-XP is
     // granted. See game_net.cpp for the four-outcome breakdown (new / familiar
     // repeat / home-turf repeat / empty queue).
     void resolveNetworkDiscovery();
 
     // Shop event: a storefront explore event, either the current sector's item shop
-    // (startShopEvent, Nav::Shop) or its mod shop (startModShopEvent, Nav::ModShop) —
-    // both resolve to shopFront_, an AreaStorefrontDef (src/core/content/areas/) whose
+    // (startShopEvent, Nav::Shop) or its mod shop (startModShopEvent, Nav::ModShop).
+    // Both resolve to shopFront_, an AreaStorefrontDef (src/core/content/areas/) whose
     // arbitrary-length `listings` is the ONE place a row's stock/Bits price/item
     // costs live (the area's own price, distinct from an item's own Pedia-facing
     // bitsPrice). A cycles shopCursor_ through every listing (wraps); B buys the
     // SELECTED row (Bits + every item cost -> inventory add / mod grant) while its
     // stock + wallet + item costs allow; C leaves back to the Walk. Stock is
     // per-visit (shopStockLeft_, refilled from each row's own ShopListingDef::stock
-    // on entry — not persisted). shopStatusLine() derives the grayscale-safe reason a
+    // on entry, not persisted). shopStatusLine() derives the grayscale-safe reason a
     // buy is/isn't available for the selected row.
     void startShopEvent();
     void startModShopEvent();
@@ -3013,14 +3013,14 @@ private:
     void buyShopItem();
     // Why row `i` cannot be bought, as the spelled-out WORDS the sign shows, or nullptr
     // when it can. One function so the till and the sign are the same answer rather than
-    // two lists of conditions that have to be kept in step — shopRowBuyable() is this
+    // two lists of conditions that have to be kept in step: shopRowBuyable() is this
     // asked as a yes/no, and shopStatusLine() is it asked about the selected row.
     const char* shopRowRefusal(int i) const;
 
     // Key warp items. A "Key-item find" walk event drops a
     // random warp key into the inventory (non-interrupting, like the Sealed Cache);
     // then, on the walk, B opens a picker of held warp keys and using one jumps
-    // straight to its target event — Access Token → the nearest shop
+    // straight to its target event: Access Token → the nearest shop
     // (startShopEvent), Safe-Mode Key → a safe rest (resolveSafeRestEvent). The keys
     // are inert from the ITEMS use path ("USE ON THE WALK") so they can only be spent
     // on a walk. heldWarpKeys() enumerates the currently-held keys (for the picker +
@@ -3084,26 +3084,26 @@ private:
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
     // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
-    // RigEffectKind (only Bandwidth has one — the live-pool grant), logs, persists. One
-    // function for every row — adding a row is a table entry, not a new buyX().
+    // RigEffectKind (only Bandwidth has one. The live-pool grant), logs, persists. One
+    // function for every row: adding a row is a table entry, not a new buyX().
     void buyRigUpgrade(int row) override;
     // The OWNING half of that, with no till in it: bump the row `levels` times, apply
     // its RigEffectKind each time, log and persist. Split out because a rig level can
-    // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp) — a granted
+    // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp): a granted
     // level and a bought one must land identically, and this is the one place either
     // lands. Out-of-range rows and non-positive counts are inert.
     void grantRigLevel(int row, int levels);
     bool rigUpgradeOwned(int row) const { return rigLevel_[row] > 0; }  // level > 0
 
-    // MERGE HUB (game_merge.cpp) — the f Rig Shop unlock combines owned ingredient
+    // MERGE HUB (game_merge.cpp): the f Rig Shop unlock combines owned ingredient
     // items into a rarer one. Owning the Hub makes the MRG slot accessible; each
     // RECIPE is won separately off a Decryptogram (recipeOwned, below) and gates
-    // whether it can be cooked — knowing the recipe is necessary but not sufficient,
+    // whether it can be cooked: knowing the recipe is necessary but not sufficient,
     // the raw ingredients still have to be in the bag.
     void onHackerMerge(const ButtonEvent& ev);     // MERGE HUB list: A cycle · B craft · C back
     void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen, header band included
 
-    // CREW (game_crew.cpp) — enlist in a crew (content_crews.h) and designate the
+    // CREW (game_crew.cpp): enlist in a crew (content_crews.h) and designate the
     // HOME NETWORK membership hangs off. Four views (CrewView, above); this pair is
     // the whole screen, and unlike its sibling Hacker sub-screens it draws its OWN
     // header band, because the title changes with the view (CREW / RED / the crew's
@@ -3118,7 +3118,7 @@ private:
     void drawCrewTeam(Framebuffer& fb) const;
     void drawCrewDetail(Framebuffer& fb) const;
     // Rows on the Hub: HOME NET, then one per side. The sides are the fixed pair, not
-    // a count over the roster — an empty side still has to be visitable, or a crew
+    // a count over the roster: an empty side still has to be visitable, or a crew
     // added to it would have nowhere to appear.
     static constexpr int kCrewHubRows = 3;
     // The crew Exploit row the A+C picker should offer, or a default-constructed
@@ -3126,7 +3126,7 @@ private:
     CrewExploit crewExploitOption() const;
     // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
     // recipe wire in recipesOwned_, and this trio is the only code that knows that.
-    bool recipeOwned(int recipeIndex) const;       // won off a Decryptogram — never bought
+    bool recipeOwned(int recipeIndex) const;       // won off a Decryptogram, never bought
     void grantRecipe(int recipeIndex);             // the win: light the bit, persist
     // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
     // and any dish the recipe wants MET has been held at least once.
@@ -3149,11 +3149,11 @@ private:
     // VAULT's owned-openable row list (shared by input + render + the bulk-open
     // trigger), capped at `max`. Returns the count written into `rows`.
     int vaultOwnedRows(const ItemDef** rows, int max) const;
-    // Spend the focused VAULT row on whatever it is for — a cache opens for a reward
+    // Spend the focused VAULT row on whatever it is for: a cache opens for a reward
     // draw, a Decryptogram rolls a quote and starts a board. The one place a VAULT B
     // resolves, so the tap path and the bulk-hold's release path cannot diverge.
     void cashVaultRow(const ItemDef& d);
-    // e: resolves the VAULT hold-B gesture's SHORT-press half — called from
+    // e: resolves the VAULT hold-B gesture's SHORT-press half. Called from
     // onButton on every B release. No-op unless the hold was armed here (not by the
     // unrelated CFG Factory-Reset hold, which also uses bHeld_/bDownMs_) AND never
     // crossed kBulkOpenHoldMs (that fires the bulk-open itself via tick()).
@@ -3220,13 +3220,13 @@ private:
     // rarity tier's pool, then surface the yield (Nav::CacheYield).
     void openSealedCache(const ItemDef& d);
     // The shared per-cache reward roll (Bits + up to `maxItems` drawn items, plus the
-    // Epic-cache bonus-mod roll) — factored out of openSealedCache so e's bulk
+    // Epic-cache bonus-mod roll): factored out of openSealedCache so e's bulk
     // path can call it once per cache opened without duplicating the reward logic.
-    // Does NOT consume the container or touch nav_/log_'s per-open "OPENED" line —
+    // Does NOT consume the container or touch nav_/log_'s per-open "OPENED" line:
     // callers own both (openSealedCache logs+navigates once; the bulk path batches).
     void grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** itemsOut,
                           int& itemCountOut, int maxItems);
-    // Pick one item from a weighted loot pool — the shared draw every reward pool
+    // Pick one item from a weighted loot pool: the shared draw every reward pool
     // resolves through (LootEntry::weight, else the item's own itemDropWeight).
     // Advances rng_; grants nothing on its own.
     const ItemDef* rollLootEntry(const LootEntry* pool, int poolSize);
@@ -3240,7 +3240,7 @@ private:
     // reveal (Nav::BulkYield). `focused` is the VAULT row the hold-B fired on.
     void openAllCachesOfRarity(const ItemDef& focused);
     // The bulk-yield reveal: A scrolls the tally if it overflows the window, B/C
-    // dismisses back to the VAULT list (Nav::Submenu — mirrors onCacheYield).
+    // dismisses back to the VAULT list (Nav::Submenu. Mirrors onCacheYield).
     void onBulkYield(const ButtonEvent& ev);
     void drawBulkYieldScreen(Framebuffer& fb) const;
     // Boot Accelerator: consume it + apply its CutIncubationMin to the incubation.
@@ -3260,7 +3260,7 @@ private:
     // (Nav::RepartitionPicker) over TWO steps, because the two questions are the same
     // question asked twice and a second Nav row would only make the A/B/C contract
     // harder to read: repartitionFrom_ < 0 is step one (pick the stat to take FROM,
-    // rollbackEligible again — a point can only be moved off a stat that has one), and
+    // rollbackEligible again. A point can only be moved off a stat that has one), and
     // once it is set the cursor is picking the stat to move it TO. B advances the step
     // then commits; C walks it back one step rather than straight out, so a mis-picked
     // source costs one press. Nothing is spent until the commit.
@@ -3273,7 +3273,7 @@ private:
     void startMaint();
     // What every played game reports when it ends, whoever was paying for it. `units`
     // and `bitsUnits` are what a MAINT process prices (ArcadeGameDef::unitName /
-    // bitsUnitName — cleaning, and Bits); `score` / `scoreMax` are what the arcade till
+    // bitsUnitName: cleaning, and Bits); `score` / `scoreMax` are what the arcade till
     // prices. One shape for every engine is what lets any of
     // them stand behind either MAINT process.
     struct PlayOutcome {
@@ -3294,7 +3294,7 @@ private:
     int playedFragWorth(int units) const;
     int playedBitsWorth(int bitsUnits) const;
     // The footer a played board shows for a run worth this much so far, in whichever
-    // context is armed — the one place a board learns what it is for.
+    // context is armed: the one place a board learns what it is for.
     PlayHud playHud(const PlayOutcome& sofar) const;
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
     void finishStacker();
@@ -3319,7 +3319,7 @@ private:
 
     // --- The six halves of Game::tick, in the order it runs them ------------------
     // Each returns whether it changed anything the screen would show, and tick() runs
-    // all six unconditionally — the order between them is load-bearing, so none of
+    // all six unconditionally: the order between them is load-bearing, so none of
     // them may be skipped on an early answer. They are separate because they run on
     // separate CLOCKS, not because tick() was long: the heartbeat, four independent
     // sub-cadences, real-ms deadlines and held-button dwells all land in one function
@@ -3337,7 +3337,7 @@ private:
     void fireLockout();
     void expireLockout();
     void resolveLockout();
-    // Carousel index of the slot routing to `id` — for the paths that park the
+    // Carousel index of the slot routing to `id`: for the paths that park the
     // cursor on a submenu they weren't navigated into (a Lockout opening ITEMS, a
     // Sim-Battle returning to the LOADOUT hub). Falls back to 0 if `id` has no slot.
     int carouselSlotOf(SubmenuId id) const;
@@ -3346,7 +3346,7 @@ private:
     void startHatch();       // empty save -> line-select (>1 line) or lay the egg
     void layEgg(const EggLineDef* line);  // commit a chosen line: lay its Boot-Sector egg
     const CreatureDef* rollHatchProcess(const EggLineDef* line);  // random Process draw (advances rng_)
-    // DISK DECRYPTION lifecycle (game_decryption.cpp) — see inDecryption() above.
+    // DISK DECRYPTION lifecycle (game_decryption.cpp): see inDecryption() above.
     // `allowDuplicates` lets the key repeat a colour and `easyHints` outlines the cells
     // a played row got exactly right; the hatch passes false to both, and only the
     // arcade's dial moves either.
@@ -3355,7 +3355,7 @@ private:
     void finishDecryption();   // bank the crack against the clock (or the till) and leave
     void drawDecryption(Framebuffer& fb) const;
 
-    // DECRYPTOGRAM lifecycle (game_cryptogram.cpp) — see inCryptogram() above.
+    // DECRYPTOGRAM lifecycle (game_cryptogram.cpp): see inCryptogram() above.
     // `quote` is a content_quotes.h roster row and `extraReveals` the opening gift; the
     // VAULT reads both off the quote's own tier, and the arcade's dial supplies the
     // second. Nothing here rolls the quote: pickQuote does that, once, at the cash-in.
@@ -3365,7 +3365,7 @@ private:
     // and the prize both have to have LANDED before the verdict screen can name them.
     // A no-op on an arcade run, which never touches a quote's standing.
     void settleCryptogram();
-    void finishCryptogram();   // leave the board — to the arcade's till, or to the VAULT
+    void finishCryptogram();   // leave the board: to the arcade's till, or to the VAULT
     void drawCryptogram(Framebuffer& fb) const;
     // A roster row to play, drawn off the shared LCG from whatever is eligible, or -1
     // when nothing is. Advances rng_.
@@ -3377,7 +3377,7 @@ private:
     // while the player is still deciding to place a letter.
     QuoteReward quoteFirstSolvePrize() const;
     void applyQuoteReward();   // the win: Bits + the one account unlock
-    // The unlock's display name for the board's prize line, or nullptr — resolved off
+    // The unlock's display name for the board's prize line, or nullptr: resolved off
     // whichever content table the reward kind names.
     const char* cryptogramPrizeLabel() const;
     void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
@@ -3385,7 +3385,7 @@ private:
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
     void drawLineSelect(Framebuffer& fb) const;  // the line-select modal
 
-    // Clutch Pick lifecycle (game_eggpick.cpp) — see kEggPickRounds above. `rounds` is
+    // Clutch Pick lifecycle (game_eggpick.cpp): see kEggPickRounds above. `rounds` is
     // how many halvings this run asks for: the hatch always passes kEggPickRounds, and
     // the arcade passes its difficulty.
     void startEggPick(int rounds);       // hide the live egg in the clutch, open the modal
@@ -3393,12 +3393,12 @@ private:
     void eggPickCommit();                // B: halve, or dismiss the reveal
     void drawEggPick(Framebuffer& fb) const;
 
-    // Hatch reveal cinematic (game_eggpick.cpp) — the on-demand crack, see
+    // Hatch reveal cinematic (game_eggpick.cpp): the on-demand crack, see
     // hatchRevealReady(). Non-interactive: it runs on the heartbeat and hatches itself.
     void openHatchReveal();
     void drawHatchReveal(Framebuffer& fb) const;
 
-    // Isolation Protocol lifecycle (game_isolation.cpp) — see inIsolation() above.
+    // Isolation Protocol lifecycle (game_isolation.cpp): see inIsolation() above.
     // `goalDots` is how many bytes make a CLEAN run: the hatch prices it off whatever
     // is left of the incubation clock, the arcade off a flat target.
     void startIsolation(int goalDots);   // turn the worm loose in the buffer, open the screen
@@ -3406,7 +3406,7 @@ private:
     void finishIsolation();              // spend the bytes on the clock and leave
     void drawIsolation(Framebuffer& fb) const;
 
-    // CHROMATOPHORE lifecycle (game_chroma.cpp) — see inChroma() above. `windowMs` is
+    // CHROMATOPHORE lifecycle (game_chroma.cpp): see inChroma() above. `windowMs` is
     // the opening window before the sweep arrives (the pace dial, scaled by the arcade)
     // and `switching` lets a round change the water mid-window, which only the hardest
     // cabinet setting turns on.
@@ -3425,23 +3425,23 @@ private:
 
     // Stamp the Attack/Defend kind of every UNLOCKED slot
     // that's still Unset from the CURRENT pet_'s CreatureDef::slotKinds, then never
-    // touch that slot again — so which creature occupies the evolution path at the
+    // touch that slot again, so which creature occupies the evolution path at the
     // moment a slot unlocks decides that slot's kind for the rest of the raise.
     // Also backfills: any unlocked slot still empty gets the strongest owned+
     // unlocked move of its stamped kind not already sitting in another slot, so a
     // pet is never idling a slot on Quick Jab when it's earned something real to
-    // put there — including a move unlocked at an earlier stage than the slot
+    // put there, including a move unlocked at an earlier stage than the slot
     // itself. Called after every pet install: completeHatch, completeEvolution,
     // applySave, and an ARCH Deploy swap. A no-op if pet_ is null.
     void stampSlotKinds();
     // Defensive invariant: unequip any move whose kind no longer matches its
     // slot's stamped kind (a pre-v24 save migration, or any other drift). Called
     // right after stampSlotKinds() wherever a pet is (re)installed from stored
-    // state (applySave, Deploy) — a fresh hatch/evolve never needs it (a
+    // state (applySave, Deploy): a fresh hatch/evolve never needs it (a
     // newly-unlocked slot starts empty).
     void enforceSlotKindInvariant();
 
-    // Critical System Failure — the ONLY death path. The 5/5 dying state,
+    // Critical System Failure: the ONLY death path. The 5/5 dying state,
     // once its ageing/recovery window expires, is terminal: the pet becomes a
     // [CORRUPTED] ARCH record and the active save vacates -> the Decryption Hatch.
     bool csfRevealed() const;      // crash FX held long enough that B acknowledges
@@ -3456,7 +3456,7 @@ private:
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
     // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
-    // the art it is currently sampling. Same split as the fight's combatCamoWorn_ pair —
+    // the art it is currently sampling. Same split as the fight's combatCamoWorn_ pair:
     // the tick holds a level and a sprite, the draw ranks that sprite into a ladder.
     // Null between drifts, which is also what says nothing is worn.
     IdleCamo petCamo_;
@@ -3467,7 +3467,7 @@ private:
     IdleWander companionWander_[kWormReplicaSlots];
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
-    // (hatch / evolution). Runtime-only scaffold: not persisted yet — a reboot
+    // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot
     // mid-stage restarts the tally, behaviour-neutral while every signal routes
     // to the same successor. Weighting (1 per action) is a first cut (tunable).
     int signalTally_[kNumDominantSignals] = {0};
@@ -3491,17 +3491,17 @@ private:
     // itself, EXPL's own top level); `explNavArea_` is the level INSIDE one: -1 = the
     // category's own rows, >= 0 = inside that area (its sub-areas). `listRow_` indexes
     // the picker's four rows while explCat_ is None and the ladder's row space
-    // otherwise — the same field either way, because only one of the two levels is ever
+    // otherwise: the same field either way, because only one of the two levels is ever
     // on screen. Runtime-only; openExplList re-derives both every time EXPL is opened.
     ExplCat explCat_ = ExplCat::None;
     int explNavArea_ = -1;
     // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Toggled
     // with the A+C chord from inside the explore-control overlay, which is only
-    // reachable while explore-mode is running — so the mode is scoped to exploring by
+    // reachable while explore-mode is running, so the mode is scoped to exploring by
     // construction. Runtime-only, and deliberately NOT persisted: explore-mode itself
     // doesn't survive a reboot, so a restored flag would arm a mode with nothing to act
     // on. It DOES outlive one walk, so cancelling and re-arming explore keeps it set.
-    // Defaults ON — hands-off ladder stepping is the expected experience; the chord
+    // Defaults ON: hands-off ladder stepping is the expected experience; the chord
     // opts OUT rather than in.
     bool autoProgress_ = true;
     // Focused row of the explore-control overlay (0..kExploreControlRows-1). Reset to
@@ -3546,13 +3546,13 @@ private:
     int fraggerShotLane_ = -1;
     int fraggerShotRow_ = -1;
     // What the last played run took off the disk and paid (settleMaintPlay). Held only so the outcome toast can print what the run earned,
-    // which — unlike the fixed reduction a rolled or bought run reports — isn't
+    // which (unlike the fixed reduction a rolled or bought run reports) isn't
     // knowable from the variant.
     int playedFragRemoved_ = 0;
     int playedBitsEarned_ = 0;
-    int defragCount_ = 0;                  // this pet's successful defrags —
+    int defragCount_ = 0;                  // this pet's successful defrags:
                                            // persists through ARCH freeze/thaw (save v16)
-    // Care-mistake SHIELD (save v21) — per-pet, reset on a new egg (startHatch). A
+    // Care-mistake SHIELD (save v21): per-pet, reset on a new egg (startHatch). A
     // Restore-Point buff arms mistakeShieldActive_, which blocks the NEXT positive care
     // mistake (consumed on interception, addCareMistake). shieldItemConsumed_ and
     // yubiConsumed_ are once-per-lifetime gates on the Restore Point and the Yubi-Cookie.
@@ -3561,17 +3561,17 @@ private:
     bool yubiConsumed_ = false;
     // Everything an Epic dish has permanently given THIS pet (core/model/pet_upgrades.h):
     // Tiramisudo's Bandwidth-regen shave, the off-level stat points, the XP rate. Each is
-    // granted once — the first helping roots the pet, every one after it is just food.
+    // granted once: the first helping roots the pet, every one after it is just food.
     // Unlike the two once-per-lifetime gates above these FREEZE WITH THE PET
-    // (SaveStoredPet), because they are properties of the creature rather than of the run
-    // — storing a pet in the rack must not cost it an upgrade it earned.
+    // (SaveStoredPet), because they are properties of the creature rather than of the run:
+    // storing a pet in the rack must not cost it an upgrade it earned.
     PetUpgrades upgrades_;
-    // Ambig-USB's armed effect (save v28) — per-pet, reset on a new egg (layEgg).
+    // Ambig-USB's armed effect (save v28): per-pet, reset on a new egg (layEgg).
     // Guarantees the pet's next Process->Script Trojan divert (Game::fireEvolution)
     // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless
     // of whether the pet actually has a Trojan divert target.
     bool forceTrojanDivert_ = false;
-    // The branch-override slot (save v60) — per-pet, reset on a new egg like the flag
+    // The branch-override slot (save v60): per-pet, reset on a new egg like the flag
     // above. Bad-USB and Signed-USB write the SAME field, so the port holds one
     // direction at a time and the most recently plugged in is the one that fires; it is
     // read through effectiveCareBranch() everywhere the care budget would have decided a
@@ -3579,38 +3579,38 @@ private:
     // beat later than the Ambig-USB's own consumption so the 'Pedia achievements can
     // still see which branch actually fired).
     BranchOverride evolveBranchOverride_ = BranchOverride::None;
-    // The Sandbox/Hypervisor-USB's armed soak (save v60) — per-pet, reset on a new egg.
+    // The Sandbox/Hypervisor-USB's armed soak (save v60): per-pet, reset on a new egg.
     // 1 = nothing plugged in; 2 or 4 = this stage's evolution dwell runs that many times
     // longer (evolveDwellMs) and every XP award pays that many times more (addCombatXp).
     // Armable at Process only, spent at the evolution it stretched, and while it is
-    // above 1 no USB item at all is usable (itemUsable) — the port is full.
+    // above 1 no USB item at all is usable (itemUsable): the port is full.
     // Neither slot is frozen with the pet on an ARCH Store (SaveStoredPet carries the
-    // pet's own properties — its upgrades, its level, its dive record — and a plugged-in
+    // pet's own properties (its upgrades, its level, its dive record), and a plugged-in
     // device is not one). Both are emptied on a DEPLOY instead (archDeployStored), so a
     // rack swap can neither carry a soak into a stage its gate forbids nor hand the
     // incoming pet an ending the outgoing one paid for.
     int evolveSoakFactor_ = 1;
-    // The Halt-USB's hold (save v60) — per-pet, and the one device in the family that is
+    // The Halt-USB's hold (save v60); per-pet, and the one device in the family that is
     // NEVER consumed at a boundary, because no boundary arrives while it is in: it makes
     // evolveEligible() false outright. It comes out through an Eject-USB, a rack swap
     // (archDeployStored) or a new egg (layEgg), and nothing else.
     bool evolveHold_ = false;
-    // Backup Drive's timed death-save (save v30) — per-pet, reset on a new egg.
+    // Backup Drive's timed death-save (save v30): per-pet, reset on a new egg.
     // The lifetimeUptimeMs() deadline the save is armed until; 0 = inactive.
     // Game::buildPlayerCombatant() arms Combatant::itemShield while lifetimeUptimeMs()
     // is under this deadline; a fight that spends it (Combatant::itemShieldFired)
     // clears this back to 0 early, regardless of time remaining. Re-using the item
     // just overwrites the deadline (a fresh 1h window). A Sim Battle deliberately
-    // fights without it (Game::startSimBattle) — no stakes, so nothing to save.
+    // fights without it (Game::startSimBattle): no stakes, so nothing to save.
     uint32_t backupShieldUntilMs_ = 0;
-    // DeepWeb Dive depth state — see area_defs' area.h for the depth ramp itself.
+    // DeepWeb Dive depth state: see area_defs' area.h for the depth ramp itself.
     // bestDeepWebDepth_ (save v35) is per-pet, reset on a new egg like the fields
     // above: the highest exploreStreak_ this pet has ever reached in the dive,
     // read back by the Checkpoint Bell (SetDeepWebStartDepthToBest) so it targets
     // THIS pet's own frontier, never a device-wide max. deepWebDepthMultiplier_ and
     // pendingDeepWebStartDepth_ are session-volatile like exploreStreak_ itself (not
     // persisted): the multiplier (Deep-Learning Module/Core, x2/x4) is reset to 1 at every
-    // site that resets exploreStreak_ to 0, and doesn't stack — arming a new one just
+    // site that resets exploreStreak_ to 0, and doesn't stack. Arming a new one just
     // overwrites it. pendingDeepWebStartDepth_ is armed by a Backdoor/Rootkit/Kernel/
     // Checkpoint Bell and consumed the next time startDeepWebDive() begins a fresh dive;
     // -1 = none armed (starts at depth 0 as normal).
@@ -3647,13 +3647,13 @@ private:
     // Checkpoint sentinel resolved through bestDeepWebDepth_ exactly as startDeepWebDive()
     // resolves it. Anything COMPARING bells reads this rather than the raw field: the
     // sentinel is a negative number, so a raw compare sorts a live Checkpoint arming below
-    // "nothing armed" and lets a shallower bell overwrite it — the downgrade paid for
+    // "nothing armed" and lets a shallower bell overwrite it. The downgrade paid for
     // with an item that the inert check (itemUseIsInert) exists to refuse.
     int armedDeepWebStartDepth() const {
         if (pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest) return bestDeepWebDepth_;
         return pendingDeepWebStartDepth_;
     }
-    // How many stacking foods (ItemEffect::Kind::HungerStacking — Polltatoes) the pet
+    // How many stacking foods (ItemEffect::Kind::HungerStacking: Polltatoes) the pet
     // has eaten since it last lost a Hunger point to decay. Session-volatile like the
     // dive knobs above: the run it measures is a sitting at the bag, and the next
     // decay tick (tickHungerAndAwardXp) ends it anyway, so a reboot mid-run costing
@@ -3663,18 +3663,18 @@ private:
     // STAT: 0 vitals · 1 tiers · 2 loadout · 3 buffs · 4 species · 5 audit log
     int statPage_ = 0;
     // Which STAT screen is on: one of those six, or the INDEX over them. STAT still
-    // OPENS on the page (VITALS), never on the index — hunger and frag are what the
+    // OPENS on the page (VITALS), never on the index: hunger and frag are what the
     // slot is entered for, and a menu in front of them would be a press charged to
     // every visit to pay for the occasional long jump.
     StatScreen statScreen_ = StatScreen::Page;
     int statIndexRow_ = 0;
     // Row-window scroll offset for whichever of STAT's three flowed prose pages is
-    // open (TIERS, LOADOUT and BUFFS) — B advances it, wrapping, when that page's rows
+    // open (TIERS, LOADOUT and BUFFS): B advances it, wrapping, when that page's rows
     // outrun one screen. ONE offset serves all three because a page change resets it
     // anyway, alongside C backing out and every other statPage_ reset site.
     int statScroll_ = 0;
     // The rows those pages show. Game owns the state they report, stat_screen.h
-    // owns the shape, and these are the marshalling between the two — shared by the
+    // owns the shape, and these are the marshalling between the two: shared by the
     // page draw (game_render.cpp) and the B-scroll, which has to advance by the same
     // window the page drew or it skips and repeats rows.
     std::vector<ProseRow> statTierRows() const;
@@ -3682,7 +3682,7 @@ private:
     std::vector<BuffRow> statBuffRows() const;
     // The two COLLECTION pages' rows (core/ui/collect_screen.h): every dish laid out in
     // rarity groups against this pet's palate, and every move it could learn against
-    // what it has. Marshalled here for the same reason the three above are — Game owns
+    // what it has. Marshalled here for the same reason the three above are: Game owns
     // the state, the screen owns the shape.
     std::vector<FoodRow> statFoodRows() const;
     std::vector<ProseRow> statMoveDexRows() const;
@@ -3725,7 +3725,7 @@ private:
     bool bHeld_ = false;
     uint32_t bDownMs_ = 0;
     // A's list-step repeat (game_listnav.cpp), plus the DECRYPTOGRAM's own faster one.
-    // Its OWN flag, distinct from bHeld_ — A and B are independent physical buttons
+    // Its OWN flag, distinct from bHeld_: A and B are independent physical buttons
     // that could in principle both be mid-hold at once (a step repeating while the
     // other thumb starts a screen gesture).
     bool aHeld_ = false;
@@ -3772,7 +3772,7 @@ private:
     // MODS submenu. loadout_ is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline
     // overwrite confirm is a picker sub-state (modConfirm_ + the choice +
-    // the pending mod id). Mod EFFECTS apply in combat — equip is real.
+    // the pending mod id). Mod EFFECTS apply in combat: equip is real.
     Loadout loadout_;
     int modSlot_ = 0;
     int modPick_ = 0;
@@ -3786,7 +3786,7 @@ private:
 
     // Which half of the LOADOUT hub is open (ui_state.h). Hub is the three-row menu
     // itself; the other three route the SAME Nav::Submenu/Nav::Detail pair to the
-    // mod slots, the move slots, or the Sim-Battle tier pick — so C from any of them
+    // mod slots, the move slots, or the Sim-Battle tier pick, so C from any of them
     // returns here rather than to the carousel. loadoutHubRow_ is the hub's own
     // cursor, kept across an entry so leaving a page lands back on the row that
     // opened it.
@@ -3807,7 +3807,7 @@ private:
     // that also resets statPoints_/combatLevel_/moveLoadout_); restored verbatim on
     // an ARCH Deploy swap alongside the rest of the incoming pet's creature-level
     // state (combatLevel_/statPoints_, save v26) and its own move+mod loadout
-    // (save v29) — a Deploy backfills any still-Unset slot for the newly active
+    // (save v29): a Deploy backfills any still-Unset slot for the newly active
     // pet. Persisted (save v24).
     SlotKind slotKinds_[kMaxMoveSlots] = {SlotKind::Unset, SlotKind::Unset,
                                           SlotKind::Unset, SlotKind::Unset};
@@ -3818,7 +3818,7 @@ private:
     TrainScreen trainScreen_ = TrainScreen::MovePicker;
     int moveSlot_ = 0;
     int movePick_ = 0;
-    // First prose line drawn on MoveDetail — B advances it, wrapping past the end
+    // First prose line drawn on MoveDetail: B advances it, wrapping past the end
     // (drawMoveDetail / moveProseLines, train_screen.h). Reset on every entry.
     int moveProseScroll_ = 0;
     // Move picker default view: only moves the pet can actually equip into
@@ -3836,7 +3836,7 @@ private:
     int combatBeat_ = 0;
     int combatTurnBeat_ = 0;   // heartbeats since the last autonomous turn (paces auto-battle)
     // Combat sprite motion runs on its own faster tick (kCombatAnimMs) instead of the
-    // shared beat_ (which paces turn timing/idle/everything else) — see game_core.cpp's
+    // shared beat_ (which paces turn timing/idle/everything else): see game_core.cpp's
     // Nav::Combat branch. combatHitBeat_ counts animBeat ticks since the last
     // combat_.step() and drives drawCombat's post-hit impact punch/flash.
     int combatAnimBeat_ = 0;
@@ -3848,7 +3848,7 @@ private:
     // (camoAdvance), so the colours hold while the pet holds the move.
     //
     // The SPRITE is what is held rather than the target that named it, because the
-    // sprite decides whether the palette is actually changing — a cast onto a fighter
+    // sprite decides whether the palette is actually changing: a cast onto a fighter
     // whose line the pet already wears must sit still rather than dissolve into itself.
     // `combatCamoLeaving_` is the art a swap is coming off, held until the dissolve
     // finishes. All three clear on leaving the fight.
@@ -3856,7 +3856,7 @@ private:
     const SpriteData* combatCamoLeaving_ = nullptr;
     uint8_t combatCamoLevel_ = 0;
     // Which page of the mid-combat panel is showing: 0 closed, else 1..kCombatStatPages
-    // (combat_screen.h). B CYCLES it — the panel grew a second page when opponents
+    // (combat_screen.h). B CYCLES it: the panel grew a second page when opponents
     // started arriving with real loadouts, and a second key to reach it would have had
     // to come out of the three combat already spends.
     int combatStatsPage_ = 0;
@@ -3868,24 +3868,24 @@ private:
     // the player Combatant in buildPlayerCombatant. Persists across evolution; a new
     // egg resets to all-0 (save v11).
     int statPoints_[kLevelStatCount] = {0};
-    // The stat index (0..3) of the most-recent level-up, or -1 if none yet — the
+    // The stat index (0..3) of the most-recent level-up, or -1 if none yet: the
     // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
     int lastLevelUpStat_ = -1;
     int rollbackRow_ = 0;       // Rollback picker cursor (RollbackPicker nav state)
     // Repartition picker (RepartitionPicker nav state): the row the cursor is on, and
-    // the stat the point is being taken from — -1 while that is still the question.
+    // the stat the point is being taken from; -1 while that is still the question.
     int repartitionRow_ = 0;
     int repartitionFrom_ = -1;
 
     // Explore-mode, a background mode on the IDLE habitat: exploreActive_ arms it,
     // exploreSector_ is the armed sector, exploreStreak_ the win-streak, exploreSteps_
-    // a run step counter, exploreStepBeat_ the auto-step pacer. Runtime-only — a reboot
+    // a run step counter, exploreStepBeat_ the auto-step pacer. Runtime-only: a reboot
     // stops it and resets the streak. The wild-encounter intro / event screens are
     // their own Nav states, past the 3-deep menu budget, and suspend the global
     // auto-defocus. combatCaller_ tells finishCombat() where to return: the LOADOUT hub
     // (Sim-Battle) or the explore habitat (a wild encounter), never the carousel.
     //
-    // Bandwidth is the FARMING resource — spent 1 per re-farm win to keep cleared-sub
+    // Bandwidth is the FARMING resource: spent 1 per re-farm win to keep cleared-sub
     // loot full; when empty the decay curve applies until it regenerates on the
     // heartbeat over real time. Session-level, not per-pet, and not persisted.
     // bandwidthAccumMs_ carries the sub-step regen remainder.
@@ -3900,14 +3900,14 @@ private:
     int exploreEventBeat_ = 0; // heartbeats a full-screen explore event (Wi-Fi/Shop) has
                                // been held hands-off; auto-continues past its hold
     // THE dissolve clock (FX_ABSORB / FX_SHRED), on the fast kFxAnimMs tick rather than
-    // the heartbeat — a sweep is redrawn every frame it is up, and stepping it at 4fps
+    // the heartbeat: a sweep is redrawn every frame it is up, and stepping it at 4fps
     // is what made it read as jumping rather than moving. One counter serves all three
     // hosts because only one dissolve is ever on screen: the feeding modal, the Wi-Fi
     // event, and the beaten rival's combat outro. Each resets it as its own sweep opens
     // and gates its advance (game_core.cpp), so it always means beats-since-THIS-sweep.
     //
     // Deliberately NOT exploreEventBeat_ / combatBeat_: a press restarts those, and a
-    // dissolve animates something already resolved — replaying it under a player leaning
+    // dissolve animates something already resolved. Replaying it under a player leaning
     // on A would be a second helping that never happened.
     int fxBeat_ = 0;
     uint32_t lastFxMs_ = 0;
@@ -3915,7 +3915,7 @@ private:
     // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
     // the fast frames, not a parallel list, so the two cannot drift.
     bool fastCadenceActive_ = false;
-    // Wide enough for the longest line any resolver composes — "<item> - DECRYPT IN
+    // Wide enough for the longest line any resolver composes: "<item> - DECRYPT IN
     // VAULT" with the widest cache name in it. Transient (never saved), so the size is
     // a rendering question only. Wrapped to two lines on screen (exploreStatusLines).
     char exploreFlavor_[48] = "";
@@ -3929,7 +3929,7 @@ private:
     // by applyCombatResult() at the moment a WILD (non-boss, non-Sim) fight resolves:
     // the bandwidth/fragmentation values just BEFORE and just AFTER this fight's
     // rewards/tax were applied, plus whether 's corruption shield covered it.
-    // Runtime-only (never persisted — it describes one just-finished fight, not
+    // Runtime-only (never persisted: it describes one just-finished fight, not
     // durable state); postEncounterDeadlineMs_ is the kPostEncounterMs auto-dismiss
     // deadline (a real-ms window, the kSdIconRevealMs pattern, not a beat count).
     int postEncBwBefore_ = 0;
@@ -3946,10 +3946,10 @@ private:
     int postEncLevelAfter_ = 0;
 
     // Boss ladder state. Durable + persisted (save v8/v13):
-    //   sectorCleared_[area]        — the AREA's 5-stage gauntlet beaten (gates the
+    //   sectorCleared_[area]:        the AREA's 5-stage gauntlet beaten (gates the
     // linear area ladder + the Title, v8).
-    //   subCleared_[area][sub]      — that SUB-AREA's boss beaten (v13).
-    //   subBossUnlocked_[area][sub] — a 10-win streak unlocked that sub-area's manual
+    //   subCleared_[area][sub]:      that SUB-AREA's boss beaten (v13).
+    //   subBossUnlocked_[area][sub]: a 10-win streak unlocked that sub-area's manual
     //                                 boss trigger (v13; distinct from exploreStreak_).
     // The rest is transient run state: bossGauntlet_ is the active gauntlet's rounds,
     // bossRound_ the current round, bossSector_ which area it belongs to, bossSub_ the
@@ -3958,11 +3958,11 @@ private:
     bool sectorCleared_[kAreaCount] = {};
     bool subCleared_[kAreaCount][kSubAreasPerArea] = {};
     bool subBossUnlocked_[kAreaCount][kSubAreasPerArea] = {};
-    // post-clear wild-win count per sub-area — the decay input for its
+    // post-clear wild-win count per sub-area: the decay input for its
     // diminishing non-Bits drop chances (refarmDropScalePct). PER-PET: it
     // persists across a reboot for the active pet (save v15) but RESETS on a new egg
     // (startHatch) and on a pet-swap (archDeployStored), so every pet finds a cleared
-    // area an undepleted training ground — the point of re-farm (not per-device).
+    // area an undepleted training ground. The point of re-farm (not per-device).
     uint16_t subRefarmCount_[kAreaCount][kSubAreasPerArea] = {};
     BossGauntlet bossGauntlet_{"", 0, {}};
     int bossRound_ = 0;
@@ -3978,22 +3978,22 @@ private:
     int equippedTitle_ = -1;
     void unlockTitle(int sector);
     // The next selectable Title after `cur` (wraps): NONE (-1) plus each UNLOCKED
-    // sector, in order — locked sectors are skipped. Drives the CFG picker's A-cycle.
+    // sector, in order. Locked sectors are skipped. Drives the CFG picker's A-cycle.
     int nextSelectableTitle(int cur) const;
 
     // Web-'Pedia reveal state (save v25, game_pedia.cpp). seenCreatures_ holds
-    // glimpsed-but-not-hatched creature pointers — borrowed, stable registry
+    // glimpsed-but-not-hatched creature pointers: borrowed, stable registry
     // pointers (same pattern rack_/records_ use, resolved through the registry on
     // load). The two malbeast masks are plain bitfields.
     std::vector<const CreatureDef*> seenCreatures_;
-    // The raised tally (save v39) — same borrowed-registry-pointer shape as
+    // The raised tally (save v39). Same borrowed-registry-pointer shape as
     // seenCreatures_ above, and player-level in the same way: nothing clears it.
     std::vector<const CreatureDef*> raisedCreatures_;
     uint16_t malbeastSeenMask_ = 0;
     uint16_t malbeastDefeatedMask_ = 0;
 
     // --- Achievement state (save v40, game_pedia.cpp) -------------------------------
-    // Two bitsets indexed by AchievementDef::wire, NOT by table position — that is what
+    // Two bitsets indexed by AchievementDef::wire, NOT by table position: that is what
     // lets content_achievements.cpp group its rows by theme and still load an old save.
     // `earned` is the achievement; `notified` is whether its banner has been shown, kept
     // separate so a firmware update that retro-awards a back catalogue announces every
@@ -4011,10 +4011,10 @@ private:
     // Compare every unearned countable row against its goal and unlock what has landed.
     // Cheap by construction (an earned row is skipped before its progress is resolved,
     // and adjacent rungs of one ladder share a memoised progress value), but still rate-
-    // limited to kAchSweepIntervalMs — nothing here is latency-critical.
+    // limited to kAchSweepIntervalMs: nothing here is latency-critical.
     void sweepAchievements();
     uint32_t lastAchSweepMs_ = 0;
-    // Pay a freshly-unlocked row's `rewards`. One switch over AchievementReward::Kind —
+    // Pay a freshly-unlocked row's `rewards`. One switch over AchievementReward::Kind:
     // a new kind of reward lands here, never as a new field on the row.
     void applyAchievementRewards(const AchievementDef& d);
     // Advance the home-screen announcement: retire an expired banner (marking it
@@ -4023,20 +4023,20 @@ private:
     int achBannerWire_ = -1;        // the row on screen, by wire number; -1 = none
     int achBannerCount_ = 0;        // 1 = named row · >1 = a collapsed burst of N
     uint32_t achBannerUntilMs_ = 0; // when it retires
-    int achBannerOpenBeat_ = 0;     // the beat it arrived on — drives the wipe-open and
+    int achBannerOpenBeat_ = 0;     // the beat it arrived on: drives the wipe-open and
                                     // starts its marquee at the head of the line rather
                                     // than wherever the free-running beat happens to be
 
-    // Every item id that has ever been in the bag (save v40) — borrowed registry
+    // Every item id that has ever been in the bag (save v40): borrowed registry
     // pointers, like seenCreatures_. Player-level: spending an item never un-collects it.
     std::vector<const ItemDef*> collectedItems_;
-    // Every distinct FOOD the active pet has been fed (save v62) — the same borrowed
+    // Every distinct FOOD the active pet has been fed (save v62): the same borrowed
     // pointers, kept per-pet. Written at the one place a dish is actually eaten
     // (Game::startFeeding, via markFoodEaten) rather than swept out of the bag, because
     // holding a dish is not tasting it and the whole point of the set is the difference.
     std::vector<const ItemDef*> petFoodsEaten_;
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
-    // that is not a Food — a Buff drunk from the bag is not a meal. Also where a
+    // that is not a Food: a Buff drunk from the bag is not a meal. Also where a
     // favourite dish is found.
     void markFoodEaten(const ItemDef& d);
     // Roll the active pet's favourite dish if it has none yet. Lazy, at the first meal
@@ -4046,10 +4046,10 @@ private:
     void ensureFavouriteFood();
     // Fold the live inventory into collectedItems_. Called from the sweep rather than
     // wired into each grant site: every path that adds an item necessarily leaves it in
-    // the bag for a tick, so one pass over the stacks catches all of them — including
+    // the bag for a tick, so one pass over the stacks catches all of them, including
     // the items an upgraded save was already holding.
     void sweepCollectedItems();
-    // Lifetime boss rounds won (save v40) — counted in Game::finishBossRound.
+    // Lifetime boss rounds won (save v40): counted in Game::finishBossRound.
     int bossWins_ = 0;
     // Lifetime Stacker boards cleared in MAINT (save v44), counted in
     // Game::finishStacker. Player-level, unlike the active pet's own
@@ -4058,9 +4058,9 @@ private:
     int stackerWins_ = 0;
     // --- v56: three more lifetime tallies, all player-level like the two above ------
     // ROCK THE DOCK brackets TAKEN (Game::awardTourneyPurse). Brackets, not matches:
-    // the arena is single elimination, so the run is the unit — see AchSeries::TourneyWins.
+    // the arena is single elimination, so the run is the unit. See AchSeries::TourneyWins.
     int tourneyWins_ = 0;
-    // The operator's chosen background, or SceneId::None for AUTO — the only part of
+    // The operator's chosen background, or SceneId::None for AUTO: the only part of
     // this feature a save carries, and it carries it as a wire number
     // (content/content_backgrounds.h) rather than as an ordinal.
     SceneId backgroundPick_ = SceneId::None;
@@ -4084,7 +4084,7 @@ private:
     // Record `depth` against the species if it beats that species' standing record.
     void recordSpeciesDive(const CreatureDef* c, int depth);
     // Seat `c` as the active pet. THE one place pet_ is assigned, so that becoming
-    // this device's pet and being tallied as raised cannot come apart — every path
+    // this device's pet and being tallied as raised cannot come apart: every path
     // that installs a pet (a laid egg, a hatch, an evolution, an ARCH Deploy, a save
     // load) goes through here. nullptr clears the pet and tallies nothing.
     void installPet(const CreatureDef* c) {
@@ -4095,7 +4095,7 @@ private:
     // Wi-Fi network event. wifiOutcome_/wifiFlavor_ are set when the
     // guardian/cache/friendly roll happens (startWifiEvent) and consumed on B
     // (resolveWifiOutcome). networksSeen_ is the lifetime unique-REAL-network
-    // counter (persists, save v4) — only resolveNetworkDiscovery() bumps it now.
+    // counter (persists, save v4), only resolveNetworkDiscovery() bumps it now.
     // allyBuffBattlesLeft_ is the friendly-visit buff consumed one per battle in
     // buildPlayerCombatant.
     WifiOutcome wifiOutcome_ = WifiOutcome::SleepingGuardian;
@@ -4108,11 +4108,11 @@ private:
     int batteryLevel_ = -1;
     int allyBuffBattlesLeft_ = 0;
 
-    // THE SHIBOLEET — the guardian encounter (game_shiboleet.cpp, core/model/cant.h).
+    // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp, core/model/cant.h).
     //
     // Only ONE of these is durable. `cantSigils_` is the set of letters of the Cant this
     // device has learned to read (save v59), and `shakesSpent_` is how many of its SHAKES
-    // have been paid out for them — a sigil costs a captured handshake, so the two
+    // have been paid out for them: a sigil costs a captured handshake, so the two
     // together are the whole of what the ladder remembers. Everything below them
     // describes ONE encounter and is rebuilt every time a guardian speaks, which is why
     // the cipher in particular is not persisted: a mapping that survived a reboot would
@@ -4140,20 +4140,20 @@ private:
     char shibFlavor_[40] = "";
     char shibVerdictLine_[40] = "";
     // The swarm the guardian IS. Volatile like everything else about one meeting: a flock
-    // is reset per encounter, so nothing about the body a player watched is persisted —
-    // it is the same creature next time and never the same shape.
+    // is reset per encounter, so nothing about the body a player watched is persisted.
+    // It is the same creature next time and never the same shape.
     Flock guardianFlock_;
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
     // structures answering three questions:
     //
-    //   visibleNetworks_ — what the radio can hear right now: a RAM-only snapshot
+    //   visibleNetworks_. What the radio can hear right now: a RAM-only snapshot
     //     (kNetVisibleCap) aged out by kNetVisibleFreshMs. Feeds the CREW picker and
     //     nothing else, so no reward bookkeeping can shape what the picker offers.
-    //   pendingNetworks_ — what still owes the player a reward: a RAM-only FIFO
+    //   pendingNetworks_. What still owes the player a reward: a RAM-only FIFO
     //     (kPendingNetworkQueueCap) drained one entry per EXPL Wi-Fi event. Evicts
     //     oldest-first when full, so an unwalked backlog goes stale rather than deaf.
-    //   networkLedger_ — what this pet has actually walked past: the SD-backed
+    //   networkLedger_. What this pet has actually walked past: the SD-backed
     //     per-BSSID history deciding new-vs-familiar-vs-home-turf.
     //
     // netDiscoveryFlavor_ is the line resolveNetworkDiscovery() sets, drawn alongside
@@ -4175,7 +4175,7 @@ private:
     }
     // Record/refresh one sighting in the in-range snapshot. Returns true when the
     // network ARRIVED (absent, or present but aged out) rather than merely being
-    // re-heard — registerNetwork keys the egg-hatch nudge off that edge.
+    // re-heard: registerNetwork keys the egg-hatch nudge off that edge.
     bool noteVisibleNetwork(uint64_t key, const char* name);
     VisibleNetwork visibleNetworks_[kNetVisibleCap];
     int visibleNetworkCount_ = 0;
@@ -4186,12 +4186,12 @@ private:
     NetDiscovery netDiscovery_ = NetDiscovery::None;
     int emptyQueueStreak_ = 0;
 
-    // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h) — the same
+    // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h): the same
     // snapshot-vs-history split as the networks above. livePeers_ is a RAM-only
     // snapshot (kPeerVisibleCap) aged out by kPeerVisibleFreshMs, holding the FULL last
     // HELLO so a row shows what someone is raising this second. peerLedger_ is the
     // SD-backed roster, updated only on the ARRIVAL edge, which makes timesMet a count
-    // of meetings rather than of frames — so the freshness window is the boundary
+    // of meetings rather than of frames, so the freshness window is the boundary
     // between one encounter and the next.
     struct LivePeer {
         uint64_t key = 0;
@@ -4214,7 +4214,7 @@ private:
     // how the current job's association went. A credential store is device-tier
     // (platform/esp32/net_credentials.h) and the outcome is worthless after a reboot,
     // so neither belongs in the save blob. There is deliberately no saved bit
-    // alongside them — nothing may persist that lets this device reach the 'net
+    // alongside them: nothing may persist that lets this device reach the 'net
     // without the operator asking again (see netConnectWanted).
     bool netProvisioned_ = false;
     NetStatus netStatus_;
@@ -4224,14 +4224,14 @@ private:
     HeapProbe heapProbe_ = nullptr;
     ISoundOut* soundOut_ = nullptr;
     // The one buffer every save is serialized into. Owning it is what keeps a write off
-    // the allocator: it is sized once, behind the higher floor, and reused for good — so
+    // the allocator: it is sized once, behind the higher floor, and reused for good, so
     // a save landing while the radio holds the heap has nothing large left to ask for,
     // which is why a capture session does not block persistence.
     std::vector<uint8_t> saveBlob_;
     size_t lastBlobSize_ = 0;            // what the last write measured; sizes the buffer
     // How big that buffer has to be for the next save to fit without resizing: the last
     // blob plus the growth state can put on between saves, never below the reservation.
-    // The margin is what keeps the answer stable — a buffer sized to the blob exactly
+    // The margin is what keeps the answer stable: a buffer sized to the blob exactly
     // would put every save back on the allocating path the moment the pet gained a row.
     size_t saveBlobTargetBytes() const {
         const size_t want = lastBlobSize_ + kSaveBlobHeadroomBytes;
@@ -4241,7 +4241,7 @@ private:
     uint32_t savesDeferredLow_ = 0;      // worst headroom seen while refusing
     // Consecutive writes the STORE refused, which is a different failure from the heap
     // guard above: the save was built and handed over, and the medium turned it down.
-    // Counted for the same reason — a retry that works is indistinguishable from one
+    // Counted for the same reason: a retry that works is indistinguishable from one
     // that never had to happen unless something keeps score.
     int saveWritesFailed_ = 0;
     void noteSaveDeferred() {
@@ -4253,9 +4253,9 @@ private:
     // Update checking, same runtime-only reasoning: where to look is device-tier
     // (platform/esp32/update_source.h) and a check's answer is stale the moment
     // the device is off. `updateJob_` is latched rather than derived, because a
-    // job outlives the screen that started it — see netConnectWanted().
+    // job outlives the screen that started it: see netConnectWanted().
     bool updateSourceKnown_ = false;
-    // Sized to match UpdateSource::kUrlCap and UpdateArtifact::url — the manifest's
+    // Sized to match UpdateSource::kUrlCap and UpdateArtifact::url: the manifest's
     // address and the addresses inside it come off the same host, so a URL one can
     // hold and another can't would be a trap.
     char updateManifestUrl_[160] = {0};
@@ -4264,8 +4264,8 @@ private:
     UpdateTarget jobTarget_ = UpdateTarget::None;
     UpdateStatus updateStatus_;
     InstallStatus installStatus_;
-    // UPDATES screen: which row the cursor is on, and — once an install row is
-    // pressed — which target is sitting at its yes/no confirm. Nav state, not job
+    // UPDATES screen: which row the cursor is on, and (once an install row is
+    // pressed), which target is sitting at its yes/no confirm. Nav state, not job
     // state: the confirm clears on the way out, the job doesn't.
     int updateRow_ = 0;
     UpdateTarget updateConfirm_ = UpdateTarget::None;
@@ -4283,14 +4283,14 @@ private:
 
     // 1v1 duels (game_pvp.cpp). One session at a time, held entirely in RAM: a duel is
     // worth nothing and survives nothing, so none of this is saved. pvpSession_ is the
-    // id every frame of one duel carries — it is what makes a stale or foreign frame
+    // id every frame of one duel carries: it is what makes a stale or foreign frame
     // inert, and it is NOT a credential (core/net/pvp_link.h).
     PvpPhase pvpPhase_ = PvpPhase::Idle;
     uint32_t pvpSession_ = 0;
     uint64_t pvpPeerKey_ = 0;            // opponent's packed radio MAC
     uint8_t pvpPeerMac_[6] = {0};        // ...and the raw form, for addressing replies
     char pvpPeerTag_[kPvpTagCap] = {0};  // their HackerTag, for every line the UI draws
-    PvpFighter pvpLocalFighter_;         // our own spec — encoded, then built FROM
+    PvpFighter pvpLocalFighter_;         // our own spec: encoded, then built FROM
     PvpFighter pvpRemoteFighter_;        // theirs, as decoded off the wire
     bool pvpChallenger_ = false;         // we opened the session, so we already sent our
                                           // fighter inside the INVITE and owe no ACCEPT
@@ -4300,8 +4300,8 @@ private:
     char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
 
     // --- ROCK THE DOCK's run state (game_tourney.cpp) -----------------------
-    // Four bytes plus a byte of verdict is the WHOLE bracket: every entrant — handle,
-    // species, level, stat spread, kit, mods, Exploit — is derived from the seed
+    // Four bytes plus a byte of verdict is the WHOLE bracket: every entrant (handle,
+    // species, level, stat spread, kit, mods, Exploit) is derived from the seed
     // (core/model/tournament.h) rather than stored, and `tourneyAlive_` is one bit per
     // original slot. So a run costs almost nothing to persist and reloads identical.
     // Persisted at save v53.
@@ -4310,7 +4310,7 @@ private:
     uint8_t tourneyRound_ = 0;           // 0..kTourneyRounds-1
     TourneyPhase tourneyPhase_ = TourneyPhase::Ready;
     // Runtime only. The bracket screen's read cursor (A steps it, nothing acts on it)
-    // and the built opponent behind the round's match card — rebuilt whenever a round
+    // and the built opponent behind the round's match card: rebuilt whenever a round
     // opens or a run is resumed, never persisted, because both are derivable.
     int tourneyCursor_ = 0;
     TourneyFighter tourneyOpponent_;
@@ -4319,16 +4319,16 @@ private:
     // --- THE STORY (game_story.cpp) -----------------------------------------
     // The read-set: one bit per StoryChapterDef::wire (core/content/story.h), so a
     // chapter fires exactly once on this device however many pets walk past its beat.
-    // PLAYER-LEVEL and persisted (save v65) for that reason — the journey belongs to
+    // PLAYER-LEVEL and persisted (save v65) for that reason: the journey belongs to
     // the operator, and a new egg is not grounds for being told the premise again.
     uint8_t storyRead_[kStoryWireCap / 8] = {};
     // What the reader is showing, and the chapter queued behind it. Two, because a
     // cleared area fires its two outros back to back (fireStoryPair) and nothing else
-    // ever queues more than that — a deeper queue would be a story the walk is telling
+    // ever queues more than that: a deeper queue would be a story the walk is telling
     // instead of one it is punctuating.
     const StoryChapterDef* storyChapter_ = nullptr;
     const StoryChapterDef* storyNext_ = nullptr;
-    // Which window of the chapter is on screen, as the prose row it opens on — the
+    // Which window of the chapter is on screen, as the prose row it opens on: the
     // reader steps by "however many rows were shown", exactly as STAT's pages do, so
     // this is a row index and not a panel number (core/ui/prose_page.h).
     int storyScroll_ = 0;
@@ -4338,7 +4338,7 @@ private:
     StoryThen storyThen_ = StoryThen::Walk;
     int storyThenArea_ = -1;                 // StoryThen::AreaBoss's gauntlet
     int storyArchiveRow_ = 0;                // the CHAPTERS list's cursor
-    // The scroll position of whichever reader is open — one field, because only one
+    // The scroll position of whichever reader is open: one field, because only one
     // ever is, and a per-view scroll would have to be reset on every switch anyway.
     int tourneyScroll_ = 0;
     // The entrant the SCOUT sheet is showing. Held rather than re-derived per repaint:
@@ -4365,7 +4365,7 @@ private:
     int pvpRow_ = 0;
 
     // Queue one encoded frame for `mac`. Drops the frame (rather than blocking or
-    // growing) if the outbox is full — every frame here is repeated on a timer, so a
+    // growing) if the outbox is full: every frame here is repeated on a timer, so a
     // drop costs one retry interval, not the session.
     void queuePvpFrame(const uint8_t* mac, const uint8_t* buf, size_t len);
     // Re-send whatever frame is holding the current phase open, on kPvpRetryMs, and
@@ -4374,7 +4374,7 @@ private:
     // Encode + queue the frame this phase is waiting on an answer to.
     void sendPvpPending();
     // Drop back to Idle, telling the opponent unless `notify` is false (it already
-    // knows — it is the one that ended the session). `why` is what the LINK screen
+    // knows: it is the one that ended the session). `why` is what the LINK screen
     // shows; empty means a clean, unremarkable end.
     void endPvpSession(const char* why, bool notify);
     // Both fighters are known and agreed: build the shared fight and enter Nav::Combat.
@@ -4385,7 +4385,7 @@ private:
     // in play, else resumes the one that is.
     void openTourney();
     void onTourney(const ButtonEvent& ev);         // A read · B bout · C back · A+C brief
-    // The three views (game_tourney_render.cpp — the arena's own screen unit, laid
+    // The three views (game_tourney_render.cpp: the arena's own screen unit, laid
     // out against ui/tourney_screen.h).
     void drawTourney(Framebuffer& fb) const;
     void drawTourneyBracket(Framebuffer& fb) const;
@@ -4398,7 +4398,7 @@ private:
     void finishTourneyMatch();                     // advance the bracket, or end the run
     void abandonTourney();                         // forget the run (seed back to 0)
     void awardTourneyPurse();                      // the title's one lump
-    // The duel finished — record the verdict, log it, and park on the LINK screen.
+    // The duel finished: record the verdict, log it, and park on the LINK screen.
     // Deliberately does NOT go through applyCombatResult: no stakes means no XP, no
     // Bits, no Fragmentation, no care signal.
     void finishPvpBattle();
@@ -4407,7 +4407,7 @@ private:
     void drawHackerLink(Framebuffer& fb) const;    // LINK screen + header (game_pvp.cpp)
 
     // Crew allegiance + the HOME NETWORK it hangs off (game_crew.cpp). Both are
-    // player-level — they survive a pet reset, like the HackerTag and the Titles — and
+    // player-level (they survive a pet reset, like the HackerTag and the Titles), and
     // both persist (save v36). crewIndex_ is a kCrews row (-1 = unaffiliated); the SAVE
     // stores the crew's id string, so the table can be reordered. homeNetworkKey_ is a
     // packed 48-bit BSSID (0 = none designated) with homeNetworkName_ caching the label
@@ -4418,12 +4418,12 @@ private:
     char homeNetworkName_[33] = {0};
 
     // Shop event. shopFront_ points at the CURRENT area's AreaStorefrontDef (its
-    // .shop or .modShop, picked by startShopEvent/startModShopEvent) — a stable
+    // .shop or .modShop, picked by startShopEvent/startModShopEvent): a stable
     // pointer into compiled-in content, valid for the whole visit. shopIsModShop_
     // says which registry resolves a listing's `id` (item vs mod). shopStockLeft_ is
     // the per-visit remaining stock for each listing (index-aligned with
     // shopFront_->listings; refilled from each row's own ShopListingDef::stock on
-    // entry — NOT persisted). shopCursor_ is the A-cycled row selection (wraps
+    // entry, NOT persisted). shopCursor_ is the A-cycled row selection (wraps
     // 0..listingCount-1). All transient run state, like the boss/gauntlet fields
     // above.
     const AreaStorefrontDef* shopFront_ = nullptr;
@@ -4431,18 +4431,18 @@ private:
     int shopStockLeft_[kMaxShopListings] = {};
     int shopCursor_ = 0;
 
-    // Hacker face (07). face_ is the top-level PET/HACKER mode (transient — a
+    // Hacker face (07). face_ is the top-level PET/HACKER mode (transient: a
     // reboot always boots PET; not persisted). It gates the carousel + submenu dispatch
     // and the render path. cursor_/nav_ are SHARED with the pet face (a flip drops to
     // Idle), so the hacker carousel reuses the same cursor cycling.
     Face face_ = Face::Pet;
     RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
     ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
-    int hackerVaultRow_ = 0;  // VAULT list cursor — owned sealed-cache row
-    int hackerMergeRow_ = 0;  // MERGE HUB list cursor — recipe row
+    int hackerVaultRow_ = 0;  // VAULT list cursor: owned sealed-cache row
+    int hackerMergeRow_ = 0;  // MERGE HUB list cursor: recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:
     // Hub (the home network and the two sides), Team (one side's roster), Detail (one
-    // crew's page), plus Picker — the home-network chooser, a modal over the Hub. C
+    // crew's page), plus Picker. The home-network chooser, a modal over the Hub. C
     // walks back up that order and only leaves the screen from the Hub. All transient
     // UI state; the membership + home network below are what persist.
     CrewView crewView_ = CrewView::Hub;
@@ -4452,15 +4452,15 @@ private:
     int crewDetail_ = -1;                  // the kCrews row Detail is showing
     int crewProseScroll_ = 0;              // Detail: first prose line drawn (A pages it)
     int crewNetRow_ = 0;
-    // Rig Shop purchase levels, one int per RigRow (game_rig_shop.h) — 0 = never
+    // Rig Shop purchase levels, one int per RigRow (game_rig_shop.h): 0 = never
     // bought; a tiered row's purchase count, or 0/1 for a one-time unlock. Player-level,
     // survives lifecycles. Persistence (game_persist.cpp) maps rows below
     // kRigRowExtBase onto the legacy per-row SaveGame fields (bwUpgradeCount/
     // fragAmountTier/etc., save v19-v31, unchanged wire format) and every row from
-    // there up into the forward-compatible `rigLevelsExt` vector (save v32) — so a new
+    // there up into the forward-compatible `rigLevelsExt` vector (save v32), so a new
     // row never needs a save.h edit.
     int rigLevel_[kMaxRigUpgrades] = {};
-    // Which owned SERVICE rows are switched OFF — one bit per RigRow, set = off
+    // Which owned SERVICE rows are switched OFF: one bit per RigRow, set = off
     // (rigFeatureActive). Player-level and persisted (save v61). Stored as the OFF
     // half rather than the on half so that zero means what a save written before the
     // screen existed means: every service a player has bought is running.
@@ -4471,11 +4471,11 @@ private:
     // bought before the bit existed keeps doing what it did.
     uint32_t rigServicesAsk_ = 0;
 
-    // Which MERGE HUB recipes are known — one bit per MergeRecipe::wire
+    // Which MERGE HUB recipes are known: one bit per MergeRecipe::wire
     // (game_internal.h), read and written only through recipeOwned/grantRecipe.
     // Player-level, survives lifecycles; persisted whole as SaveData::recipeOwned
     // (save v51), with its first four bytes also riding the legacy u32 a v31..v50
-    // reader understands. A recipe is never bought — the Decryptogram's prize ladder
+    // reader understands. A recipe is never bought: the Decryptogram's prize ladder
     // is the only writer.
     uint8_t recipesOwned_[kMergeRecipeWireBytes] = {};
 
@@ -4492,7 +4492,7 @@ private:
     Nav offerBackNav_ = Nav::Idle;
     bool eggOfferMade_ = false;
 
-    // Hacker Rank — a player/device-level tier derived from
+    // Hacker Rank: a player/device-level tier derived from
     // networksSeen_ (persists across pets, save v4). rankUpPending_/
     // rankUpFlavor_ hold a crossing until the next Walk-screen render (both the
     // direct Wi-Fi-resolve return and the wild-combat-return path check it).
@@ -4576,7 +4576,7 @@ private:
     bool decryptionEasy_ = false;
 
     // THE DECRYPTOGRAM (game_cryptogram.cpp). The BOARD is un-persisted like the three
-    // above — a reboot mid-quote forfeits the Decryptogram, which is the same deal
+    // above: a reboot mid-quote forfeits the Decryptogram, which is the same deal
     // every other minigame offers. What does persist (save v48) is quoteStates_: two
     // bits per QuoteDef::wire holding the tier ladder, which is simultaneously the loss
     // ratchet and the "already won" record. Player-level, so it outlives a pet.
@@ -4591,7 +4591,7 @@ private:
     uint8_t quoteStates_[kQuoteStateBytes] = {0};
 
     // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor,
-    // arcadeGame_ the roster index of what is RUNNING — they part company as soon as a
+    // arcadeGame_ the roster index of what is RUNNING: they part company as soon as a
     // run starts, the list staying where the player left it. arcadeRun_ is what a
     // minigame reads to know it is being played for fun: it redirects the payout and
     // scales the pacing, and is cleared by finishArcadeRun and by every reset that could
@@ -4617,7 +4617,7 @@ private:
     // Clutch Pick modal (the Phishing hatch minigame, game_eggpick.cpp). Runtime-only
     // and deliberately un-persisted: the whole game is played in the seconds after the
     // egg is laid, so a reboot mid-pick simply forfeits the bonus and leaves a normal
-    // egg incubating — no save field, no schema bump.
+    // egg incubating. No save field, no schema bump.
     uint8_t eggPickTarget_ = 0;      // slot 0..kEggPickCols*kEggPickRows-1 holding the live egg
     uint8_t eggPickRound_ = 0;       // halvings committed so far
     uint8_t eggPickCol_ = 0;         // surviving column span [eggPickCol_, +eggPickColSpan_)
@@ -4643,7 +4643,7 @@ private:
     // CHROMATOPHORE (the Metamorphic hatch minigame, game_chroma.cpp). Un-persisted for
     // the reason the two above are: the whole run is over in half a minute after the
     // egg is laid, so a reboot mid-run forfeits the bonus and leaves a normal egg
-    // incubating. Its clock is real-ms and DELTAS rather than a step cadence — the
+    // incubating. Its clock is real-ms and DELTAS rather than a step cadence: the
     // board is a stopwatch, not a board that steps.
     Chromatophore chroma_;
     uint32_t lastChromaMs_ = 0;
@@ -4653,7 +4653,7 @@ private:
     // maps straight onto the shell's hatch frames; completeHatch fires off the end.
     int hatchRevealBeat_ = 0;
     // Line-select modal: the cursor into the unlocked egg lines while
-    // choosing which egg to lay. Runtime-only — an empty save re-prompts on reboot
+    // choosing which egg to lay. Runtime-only: an empty save re-prompts on reboot
     // (the modal precedes laying/persisting an egg, so there's nothing to persist).
     int lineSelectRow_ = 0;
 
@@ -4667,7 +4667,7 @@ private:
     // Critical System Failure. dyingArmed_ latches when the pet enters the
     // 5/5 dying state and dyingEnteredMs_ is the anchor it clocks from; csfBeat_
     // paces the crash-FX hold before B acknowledges. records_ (persisted, v3) is the
-    // ARCH rack of RETIRED/CORRUPTED records — greyed, read-only, no live slot.
+    // ARCH rack of RETIRED/CORRUPTED records: greyed, read-only, no live slot.
     //
     // dyingElapsedMs_ is the total burned so far and the ONLY one of the three that
     // persists (save v42), which is what stops a power cycle from refunding the

@@ -10,7 +10,7 @@
 namespace mal {
 
 // Is this row on sale right now? One way it isn't: it's maxed/owned, with nothing left
-// to buy. Every row in the table is an ordinary purchase — the one Hacker-face unlock
+// to buy. Every row in the table is an ordinary purchase: the one Hacker-face unlock
 // that ISN'T is a MERGE HUB recipe, which is won off a Decryptogram and is not a rig
 // row to gate. The single answer the A-cycle, the render loop and buyRigUpgrade all
 // defer to, so the list can't show a row the cursor skips, or sell one it never drew.
@@ -60,10 +60,10 @@ void Game::toggleRigService(int row) {
 }
 
 void Game::buyRigUpgrade(int row) {
-    if (!shopRowOffered(row)) return;   // MAXED/OWNED, or gated — inert
+    if (!shopRowOffered(row)) return;   // MAXED/OWNED, or gated: inert
     const RigUpgradeDef& def = kRigUpgrades[row];
     const int cost = rigUpgradeCostFor(row);
-    if (bits_ < cost) return;                       // NOT ENOUGH BITS — inert
+    if (bits_ < cost) return;                       // NOT ENOUGH BITS: inert
     bits_ -= cost;
     grantRigLevel(row, 1);
     dirty_ = true;

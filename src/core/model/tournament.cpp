@@ -22,7 +22,7 @@ inline uint32_t lcg(uint32_t& s) {
 }
 
 // A slot's own stream. Mixed from the run seed and the slot index so that two slots of
-// one bracket, and the same slot of two brackets, are uncorrelated — a plain
+// one bracket, and the same slot of two brackets, are uncorrelated: a plain
 // `seed + slot` would roll neighbouring slots into near-identical entrants under an
 // LCG whose low bits move slowly.
 inline uint32_t slotSeed(uint32_t seed, int slot) {
@@ -38,7 +38,7 @@ inline int rollRange(uint32_t& s, int lo, int hi) {
     return lo + static_cast<int>(lcg(s) % static_cast<uint32_t>(hi - lo + 1));
 }
 
-// The stage an entrant of `level` is fielded at. Bands, not a roll — see
+// The stage an entrant of `level` is fielded at. Bands, not a roll: see
 // content_tournament.h.
 Stage tourneyStage(int level) {
     if (level < kTourneyScriptLevel) return Stage::Process;
@@ -63,7 +63,7 @@ const T* reservoirPick(const std::vector<const T*>& all, uint32_t& s, Pred keep)
 }
 
 // The handle permutation for a run: Fisher-Yates over the whole pool, seeded by the
-// run seed alone. Drawing WITHOUT replacement is the point — eight entrants must be
+// run seed alone. Drawing WITHOUT replacement is the point: eight entrants must be
 // eight names, and a per-slot roll would collide often enough to be noticed.
 int handleIndexFor(uint32_t seed, int slot) {
     if (slot < 0 || slot >= kTourneySlots || kTourneyHandleCount <= 0) return -1;
@@ -80,7 +80,7 @@ int handleIndexFor(uint32_t seed, int slot) {
     return order[slot % n];
 }
 
-// Whether `id` already sits in the first `count` cells of a fixed id table — the
+// Whether `id` already sits in the first `count` cells of a fixed id table: the
 // no-duplicates check for the move and mod rolls.
 bool alreadyPicked(const char (*cells)[kPvpIdCap], int count, const char* id) {
     for (int i = 0; i < count; ++i)
@@ -134,7 +134,7 @@ TourneyFighter tourneyEntrant(const ContentRegistry& reg, uint32_t seed, int slo
     if (!pet) return f;                       // an empty creatureId reads as "unbuildable"
     std::strncpy(f.spec.creatureId, pet->id, sizeof(f.spec.creatureId) - 1);
 
-    // Stat points, one per level into a random stat — the SAME grant the player's own
+    // Stat points, one per level into a random stat: the SAME grant the player's own
     // level-ups make (Game::addCombatXp), so an entrant's stat line is one a raised pet
     // could actually have. Clamped per stat to the wire cell, which only bites at a
     // level far above kTourneyMaxLevel.
@@ -145,7 +145,7 @@ TourneyFighter tourneyEntrant(const ContentRegistry& reg, uint32_t seed, int slo
 
     // Moves: one per slot this stage has unlocked, each matching that slot's stamped
     // Attack/Defend kind on THIS creature. LINE-exclusive moves stay inside the line
-    // for free — moveAllowedForLine is the same predicate the player's own picker
+    // for free: moveAllowedForLine is the same predicate the player's own picker
     // filters on, so a Worm entrant can no more field a Phishing move than a raised
     // Worm could.
     const auto moves = reg.allMoves();

@@ -7,7 +7,7 @@ namespace mal {
 namespace {
 
 // One record, written field by field (never a raw struct dump) so host/device
-// padding never matters — the same shape NetworkLedger uses. Strings are written
+// padding never matters: the same shape NetworkLedger uses. Strings are written
 // at their full field capacity rather than length-prefixed, because those caps are
 // already the wire's fixed slots: a record is one constant size, so a truncated
 // tail is detectable as a short read instead of silently reinterpreting bytes.
@@ -111,7 +111,7 @@ bool PeerLedger::record(uint64_t key, const PeerHello& hello) {
 }
 
 void PeerLedger::writeThrough() const {
-    if (path_[0] == '\0') return;  // no backing file (SD absent) — RAM-only is fine
+    if (path_[0] == '\0') return;  // no backing file (SD absent): RAM-only is fine
 
     // Write-and-rename, so a power cut mid-write leaves the previous roster intact
     // rather than a half-file that reads as a truncated record.

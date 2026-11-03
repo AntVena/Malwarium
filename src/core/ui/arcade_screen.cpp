@@ -18,7 +18,7 @@ namespace mal {
 namespace {
 
 // The cabinet page's bands, top to bottom: the game's own copy, then the dial, then
-// what a run pays, then START. Fixed rather than flowed — every cabinet carries the
+// what a run pays, then START. Fixed rather than flowed: every cabinet carries the
 // same four things, so the page reads identically whichever one is open, and a longer
 // blurb wraps inside its band instead of pushing the payout around.
 constexpr int kCabIconY = 28;
@@ -46,7 +46,7 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const ArcadeLis
         }
         if (const SpriteData* ic = reg.sprite(d.iconName))
             drawSprite(fb, *ic, 0, 16, y + (kRowH - kRowIcon) / 2);
-        // The play tally owns the right end — it is the row's one changing fact. Kept
+        // The play tally owns the right end: it is the row's one changing fact. Kept
         // to three glyphs because the NAME is what the row is for, and an untouched
         // cabinet says so in a word rather than with a zero the eye slides off.
         char tally[16];
@@ -66,7 +66,7 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
     const int plays = tally.plays, wins = tally.wins, best = tally.best;
     drawHeaderBand(fb, def.displayName);
 
-    // The record sits up in the header's own row, right-aligned — it belongs to the
+    // The record sits up in the header's own row, right-aligned: it belongs to the
     // cabinet's identity rather than to any of the four bands below. A cabinet that
     // keeps a SCORE puts its best beside the record, because on a run with no finish
     // line that number is the only thing there is to come back for.
@@ -92,8 +92,8 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
     drawText(fb, kMargin, kCabDialY, "DIFFICULTY:", palColor(Pal::INK_DIM));
     drawText(fb, kMargin + textWidth("DIFFICULTY:") + 8, kCabDialY, dial,
              palColor(Pal::ACCENT));
-    // WRAPPED, not clipped. The field invites a sentence — it is the only line on the
-    // page that has to explain what a dial does in this particular game's terms — and a
+    // WRAPPED, not clipped. The field invites a sentence (it is the only line on the
+    // page that has to explain what a dial does in this particular game's terms), and a
     // plain drawText silently cut the longer ones mid-word at the right margin. Two
     // lines is what the gap to the payout block below can spare, and every cabinet's
     // copy fits inside it.
@@ -101,7 +101,7 @@ void drawArcadeCabinet(Framebuffer& fb, const ContentRegistry& reg,
                     def.difficultyBlurb, palColor(Pal::INK_DIM), kLineH,
                     /*maxLines=*/kCabDialBlurbLines);
 
-    // What a run is worth, stated before it starts — the arcade's whole pitch is that
+    // What a run is worth, stated before it starts: the arcade's whole pitch is that
     // finishing pays whatever happens, so the flat half leads and the skill half
     // qualifies itself.
     char pays[36];
@@ -127,7 +127,7 @@ void drawArcadeResult(Framebuffer& fb, const ArcadeGameDef& def, const ArcadeRes
     fb.clear(palColor(Pal::PAPER));
     drawHeaderBand(fb, def.displayName);
 
-    // The verdict is a WORD, and the payout below it is the number — so the outcome
+    // The verdict is a WORD, and the payout below it is the number, so the outcome
     // and the reward are two channels rather than one, and a losing run still has
     // something to read that isn't zero.
     const char* verdict = won ? "CLEARED" : "RUN ENDED";

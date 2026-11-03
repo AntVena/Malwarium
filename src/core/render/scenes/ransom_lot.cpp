@@ -8,7 +8,7 @@ namespace mal {
 
 namespace {
 
-// THE LOCKED LOT — the Ransomware line's own place. Its creatures mostly walk, so the
+// THE LOCKED LOT: the Ransomware line's own place. Its creatures mostly walk, so the
 // yard would have answered; what the yard cannot say is the only thing this line is
 // about, which is that everything worth having is behind a shutter and somebody else
 // has the key.
@@ -31,7 +31,7 @@ constexpr uint8_t kToneLine = 118;
 
 // How far up the sky the facade reaches, and how far down the doors run from it. The
 // facade is a band rather than a silhouette: this place has no distance in it, the same
-// way the keep has none, and for the same reason — you are standing right in front of it.
+// way the keep has none, and for the same reason. You are standing right in front of it.
 constexpr uint8_t kFacadeUp = 168;
 constexpr int kLintel = 9;             // the header course above every door
 
@@ -42,14 +42,14 @@ constexpr int kOpenDoor = 1;
 constexpr int kSlatPitch = 6;
 constexpr int kJambW = 3;
 
-// The chain and padlock on one of the SHUT doors — the accent, and the whole joke. On
+// The chain and padlock on one of the SHUT doors: the accent, and the whole joke. On
 // the door beside the open one, so the eye reads "this one is shut, that one is not" in
 // one movement rather than hunting.
 constexpr int kLockDoor = 2;
 constexpr int kLockDrop = 26;
 
 // Bay markings on the tarmac: one line per door, running back to it. The floor is
-// covered on the pet face and half-covered in a fight, so it carries no identity — but
+// covered on the pet face and half-covered in a fight, so it carries no identity, but
 // it does have to stop the doors looking like they are floating.
 constexpr int kBayLineH = 12;
 
@@ -73,7 +73,7 @@ void drawRansomLotScene(Framebuffer& fb, int beat, const SceneGround& g) {
         fb.fillRect(x0 - kJambW, facadeY, kJambW, g.floorY - facadeY, jamb);
         if (d == kOpenDoor) {
             // The one that is up. Its shutter is rolled into the head of the opening,
-            // which is the four rows of slats left across the top — a door standing
+            // which is the four rows of slats left across the top: a door standing
             // open with nothing above it would read as a doorway somebody built.
             fb.fillRect(x0, doorTop, x1 - x0, g.floorY - doorTop, open);
             fb.fillRect(x0, doorTop, x1 - x0, 4, shutter);
@@ -85,7 +85,7 @@ void drawRansomLotScene(Framebuffer& fb, int beat, const SceneGround& g) {
     }
 
     // The chain across one shut door, and the lock hanging in it. The lock swings a
-    // column either way on the beat, which is the only thing moving in the whole scene —
+    // column either way on the beat, which is the only thing moving in the whole scene,
     // and a padlock is exactly the right amount of motion for a place like this.
     const int lockX = (kLockDoor * kActiveW / kDoors + (kLockDoor + 1) * kActiveW / kDoors) / 2;
     const int lockY = doorTop + kLockDrop;

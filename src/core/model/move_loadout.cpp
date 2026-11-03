@@ -40,10 +40,10 @@ void MoveLoadout::grant(const char* id) {
 
 void MoveLoadout::equip(int slot, const char* id) {
     ensureSlots();
-    // The innate is owned but never occupies a slot — it is what an EMPTY slot falls
+    // The innate is owned but never occupies a slot: it is what an EMPTY slot falls
     // back to, so slotting it would spend a slot on what that slot already does.
     if (slot < 0 || slot >= kMaxMoveSlots || !id || !owns(id) || isInnate(id)) return;
-    const int prev = slotOf(id);            // a move lives in only one slot — move it
+    const int prev = slotOf(id);            // a move lives in only one slot: move it
     if (prev >= 0) slots_[prev] = nullptr;
     slots_[slot] = id;
 }
@@ -74,7 +74,7 @@ MoveLoadout MoveLoadout::starting() {
     l.ensureSlots();
     // Equip the one Attack move into slot 0; slot 1 is left to the Quick Jab per-slot
     // fallback. The Paypup line is Attack/Attack at Process (slotKinds), so the owned
-    // DEFEND move (checksum_guard) can't sit in either Process slot — it stays OWNED
+    // DEFEND move (checksum_guard) can't sit in either Process slot: it stays OWNED
     // and equips into the first Defend slot the pet earns (slot 2 at Script); fork_bomb
     // stays owned for the player to field in the second Attack slot when they want more
     // punch than the jab.

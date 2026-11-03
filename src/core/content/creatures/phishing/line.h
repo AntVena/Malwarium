@@ -1,10 +1,10 @@
-// The Phishing family — two chains off one egg, both about bait.
+// The Phishing family: two chains off one egg, both about bait.
 //
 // The FROG chain (Phrogspawn -> Tadpoll -> Croaken -> Goliauth) is linear the whole
 // way. The ANGLERFISH chain (Phishlet -> ClickBait -> { Spamwhale | Baitracuda })
 // is a SECOND hatch outcome for the same Phrogspawn egg: Phishlet is a Process pet
 // on this line, so it joins Tadpoll in the egg's random hatch pool
-// (rollHatchProcess draws by line) — BUT it is DEEP-DIVE-GATED, entering the pool
+// (rollHatchProcess draws by line), BUT it is DEEP-DIVE-GATED, entering the pool
 // only once the 2nd DeepWeb-depth achievement milestone is earned.
 //
 // Phishlet is also the one row in this family with an `evolvesToTrojanId`: the
@@ -12,7 +12,7 @@
 // ClickBait (see creatures/trojan/line.h).
 //
 // WHAT THE TWO CHAINS ARGUE, and why they cannot be drawn alike. Both halves of this family
-// are bait, and bait works by making the victim come to it — so nothing here reaches, and
+// are bait, and bait works by making the victim come to it, so nothing here reaches, and
 // every row is a planted mass with its weight on the floor. What separates the chains is the
 // SENSE the bait is aimed at: the anglerfish chain SHOWS you something, the frog chain TELLS
 // you something. That is why the anglers carry a lure and the frogs carry a throat, and it is
@@ -21,7 +21,7 @@
 // Each chain inherits ONE organ down its whole length, and that organ is the slot the pun gets
 // drawn in. ASSET_MANIFEST's rule is that a punned creature has to draw BOTH halves of its pun;
 // an organ is where the interface half goes. The anglers spend theirs on the widget they bait
-// with — a notification panel, a popup, a dialog. The frogs spend theirs on the credential the
+// with: a notification panel, a popup, a dialog. The frogs spend theirs on the credential the
 // row is named for, and the frog names are a ladder up that credential: Tad-POLL is a survey,
 // Croa-KEN is a token, Goli-AUTH is the whole authentication. So the throat carries a
 // one-time-passcode display on the Script and a permission prompt on the Daemon.
@@ -34,7 +34,7 @@
 // Nothing on this chain is a cephalopod, and that is a rule rather than a preference: a teal
 // octopus standing beside the Metamorphic line's coral one fails CREATURE_VISUAL_RULES §5,
 // whose silhouette test is run against the rest of the roster rather than on its own. A frog's
-// eyes break the TOP of its outline and a cephalopod's do not — that one difference survives
+// eyes break the TOP of its outline and a cephalopod's do not: that one difference survives
 // being filled black, and it is the cheapest thing holding the two lines apart.
 #pragma once
 
@@ -71,7 +71,7 @@ inline constexpr CreatureDef kPhishingCreatures[] = {
     // Its sheet is 96x64, which is ONE oversized Daemon frame rather than a row of 56px cells:
     // gen_assets cuts a SPR_PET_ sheet into 56px frames only when the width divides by 56, so a
     // width that does not is the larger Daemon box (up to 128x64). The extra room is the stage
-    // read — a Daemon held to the Script cell cannot pay off CREATURE_VISUAL_RULES §0's arrival.
+    // read: a Daemon held to the Script cell cannot pay off CREATURE_VISUAL_RULES §0's arrival.
     {"goliauth", "Goliauth", Stage::Daemon, "SPR_PET_GOLIAUTH", nullptr,
      nullptr, nullptr, 100, 100, "phishing",
      "It has not moved in years and has never needed to. The throat does the work: a croak pitched exactly like the helpdesk, over a prompt everyone has approved a hundred times without reading. It only has to be believed once.",

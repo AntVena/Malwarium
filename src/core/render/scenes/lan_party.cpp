@@ -45,7 +45,7 @@ constexpr Strand kStrands[] = {{196, 14, 0}, {150, 10, 7}};
 constexpr int kPennantPitch = 14, kPennantW = 7, kPennantH = 7;
 
 // The table along the back wall, `kTableUp` rows above the floor, and the screens on
-// it — one every `kSeatPitch` columns, each a monitor with a lit face.
+// it: one every `kSeatPitch` columns, each a monitor with a lit face.
 constexpr int kTableUp = 16, kTableH = 3;
 constexpr int kSeatPitch = 28;
 constexpr int kMonW = 18, kMonH = 13, kStandH = 3;

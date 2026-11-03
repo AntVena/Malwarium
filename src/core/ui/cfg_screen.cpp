@@ -1,7 +1,7 @@
-// cfg_screen.cpp — the CFG settings list and its L3 viewers/toggles/groups.
+// cfg_screen.cpp: the CFG settings list and its L3 viewers/toggles/groups.
 //
 // The UPDATES screens and the QR pages are the same CFG surface but a different
-// kind of screen — they run a job rather than read and write local state — and
+// kind of screen (they run a job rather than read and write local state), and
 // live in update_screen.cpp. Both units are declared by cfg_screen.h.
 #include "core/content/content_backgrounds.h"   // the rows the BACKGROUND picker lists
 #include "core/content/content_themes.h"        // ...and the rows the THEME picker does
@@ -36,7 +36,7 @@ void infoLine(Framebuffer& fb, int y, const char* key, const char* val,
     drawTextMarquee(fb, kValX, y, kActiveW - kMargin - kValX, val, valColor, 0, Overflow::Clip);
 }
 
-// One settings row — icon, label, and an optional right-aligned value preview.
+// One settings row: icon, label, and an optional right-aligned value preview.
 // Shared by the top-level list and both group screens so a row looks the same
 // wherever it is drawn. `valColor` is the caller's, because what a value's
 // emphasis MEANS is the screen's business, not the row's.
@@ -59,7 +59,7 @@ void settingsRow(Framebuffer& fb, int y, const CfgRow& row, bool focused,
 enum class RadioRowState : uint8_t { Off, Waiting, OnAir };
 
 // A 7x7 radio button. Filled = this one is on the air; hollow = switched on and
-// waiting behind something above it. Two shapes, not two colours — the pair has to
+// waiting behind something above it. Two shapes, not two colours: the pair has to
 // read apart in a grayscale screenshot, which a filled/unfilled disc does and an
 // accent/ink disc would not.
 void drawRadioMark(Framebuffer& fb, int x, int y, RadioRowState state, Rgb565 c) {
@@ -80,7 +80,7 @@ void drawRadioMark(Framebuffer& fb, int x, int y, RadioRowState state, Rgb565 c)
 // One RADIO row. A row that is switched ON is INDENTED under a radio mark, so the
 // rows in contention read as one group and the filled mark inside that group says
 // which of them actually has the radio. A row that is off sits flush left with no
-// mark — it is outside the group, not a member of it that happens to be losing.
+// mark: it is outside the group, not a member of it that happens to be losing.
 // `val` is what the operator set the row to; the mark is what the arbiter did with
 // it, and the two never restate each other.
 //
@@ -120,7 +120,7 @@ int cfgRows(const CfgRow*& out) {
     // Six rows = exactly kVisibleRows, so the release list never scrolls: anything
     // that would be a seventh belongs in one of the two group screens below. The
     // DEV reset row is appended only in dev builds (and is the one thing that does
-    // push the list into scrolling — a dev build, deliberately).
+    // push the list into scrolling: a dev build, deliberately).
     static const CfgRow kRows[] = {
         {"SYSTEM INFO", &ASSET_ICON_CFG_SYSINFO, CfgScreen::SysInfo},
         {"HACKERTAG", &ASSET_ICON_CFG_TAG, CfgScreen::HackerTag},
@@ -129,7 +129,7 @@ int cfgRows(const CfgRow*& out) {
         {"RADIO", &ASSET_ICON_CFG_RADIO, CfgScreen::Radio},
         {"UPDATES", &ASSET_ICON_CFG_UPDATE, CfgScreen::Update},
         // SD RECHECK is not a row: it acts on the SD line it reports through, so it
-        // is the A press on System Info. PEDIA QR isn't one either — it's reached
+        // is the A press on System Info. PEDIA QR isn't one either: it's reached
         // from PEDIA AP (turning the AP ON opens the QR to connect).
 #ifdef DEV_CFG_RESET_ROW
         {"RESET TO HATCH", &ASSET_ICON_CFG, CfgScreen::ResetHatch},
@@ -142,29 +142,29 @@ int cfgRows(const CfgRow*& out) {
 int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     // The device itself, rather than the world in it: how it presents, whether it
     // is running at all, and the card in its slot. None of them is worth a top-level row, and
-    // BRIGHTNESS reads as neighbour to both — it is the panel's setting and the
+    // BRIGHTNESS reads as neighbour to both: it is the panel's setting and the
     // largest battery lever short of switching the device off, which is the row
     // under it.
     static const CfgRow kDevice[] = {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         // CARE ALERTS beside it: the "!" marks are drawn on the same shelf UI MODE
-        // styles. It is a switch rather than a screen — B flips it in place (onCfgGroup).
+        // styles. It is a switch rather than a screen: B flips it in place (onCfgGroup).
         {"CARE ALERTS", &ASSET_ICON_CFG_UIMODE, CfgScreen::CareAlerts},
         {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
         {"SOUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Sound},
         {"VOLUME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Volume},
-        // THEME sits with them for the same reason BACKGROUND does — it is what the
-        // device LOOKS like — and above it, because it is the wider of the two: the
+        // THEME sits with them for the same reason BACKGROUND does (it is what the
+        // device LOOKS like), and above it, because it is the wider of the two: the
         // background repaints one band of one screen, a theme repaints all of them.
         {"THEME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Theme},
         // BACKGROUND belongs beside them and not on the top-level list: the release list
         // is exactly six rows so it never scrolls, and this is a presentation setting
-        // like the two above it — what the device shows, not what it does. Its glyph
+        // like the two above it. What the device shows, not what it does. Its glyph
         // is a framed scene, the place the pet stands rather than the panel it stands in.
         {"BACKGROUND", &ASSET_ICON_CFG_BACKGROUND, CfgScreen::Background},
         // TIPS: every one-time card the device has shown, to read again. Not a device
         // setting, but the top-level list is held at six rows, and this is the group
-        // about how the device presents itself — which includes how it explains itself.
+        // about how the device presents itself, which includes how it explains itself.
         {"TIPS", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Tips},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
         // FORMAT SD is the group's other action, and last because it is the one row
@@ -175,7 +175,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         {"FORMAT SD", &ASSET_ICON_CFG_FORMATSD, CfgScreen::FormatSd},
     };
     // The three radio TOGGLES, listed in the arbiter's own priority order, highest
-    // first — so "the one nearest the top wins" is a rule the reader can check
+    // first, so "the one nearest the top wins" is a rule the reader can check
     // against the screen instead of being told. PEDIA AP hosts, LINK transmits,
     // AUDIT listens. PASSIVE LINK is named for the half it is: consent to be heard,
     // against the Hacker face's LINK slot, which is the duel that consent enables.
@@ -184,7 +184,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
     // switches another.
     //
     // A running update job outranks all three and is NOT here, because it is not a
-    // toggle — nothing about it is set in advance. drawCfgRadio draws it in above
+    // toggle: nothing about it is set in advance. drawCfgRadio draws it in above
     // them for exactly as long as it holds the radio.
     static const CfgRow kRadio[] = {
         {"PEDIA AP", &ASSET_ICON_SYS_WIFI, CfgScreen::PediaAp},
@@ -221,7 +221,7 @@ CfgScreen cfgParentGroup(CfgScreen s) {
         case CfgScreen::PediaAp:
         case CfgScreen::PediaQr:
             return CfgScreen::Radio;
-        // Not a group child — UPDATES is a plain L3 screen — but backing out to it
+        // Not a group child (UPDATES is a plain L3 screen), but backing out to it
         // is what leaves the cursor on the row that opened the code.
         case CfgScreen::UpdateQr:
             return CfgScreen::Update;
@@ -300,7 +300,7 @@ void drawCfgDevice(Framebuffer& fb, const CfgDeviceView& v) {
 void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedMask) {
     drawHeaderBand(fb, "THEME");
     if (pick < 0 || pick >= kThemeCount) pick = 0;
-    // One line of copy, belonging to whichever row is FOCUSED — the same shape the
+    // One line of copy, belonging to whichever row is FOCUSED: the same shape the
     // BACKGROUND picker uses, and what makes walking the locked rows worth doing.
     drawText(fb, kMargin, 30, kThemes[pick].earnedBy, palColor(Pal::INK_DIM));
 
@@ -329,7 +329,7 @@ void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedM
             drawText(fb, kActiveW - kMargin - textWidth(tag), y + 3, tag, nameColor);
 
         // The set, painted in itself: its own paper as the plate, then the five values
-        // that decide what a screen looks like on top of it — ink, the focus accent,
+        // that decide what a screen looks like on top of it. Ink, the focus accent,
         // and the calm/warn/hot ladder in its order. The plate is ruled in the LIVE
         // theme's ink-dim so its edge reads even when the row being offered is the one
         // already applied and its paper matches the screen it is drawn on.
@@ -345,7 +345,7 @@ void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedM
         for (int i = 0; i < kSwatches; ++i)
             fb.fillRect(px + kPad + i * (kSwatchW + kSwatchGap), py + 2, kSwatchW, 6,
                         palColorIn(t, kSwatch[i]));
-        // A locked row is struck through its own swatches — a shape, not a shade, so a
+        // A locked row is struck through its own swatches: a shape, not a shade, so a
         // grayscale screenshot still says which sets are out of reach.
         if (locked)
             for (int x = px; x < px + kPlateW; x += 2)
@@ -360,7 +360,7 @@ void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped
                      int beat) {
     drawHeaderBand(fb, "BACKGROUND");
 
-    // One line of copy, and it belongs to whichever row is FOCUSED — which is what lets
+    // One line of copy, and it belongs to whichever row is FOCUSED, which is what lets
     // the list carry a table's worth of rows without a hint per row, and what makes
     // walking the locked ones worth doing. AUTO's line says what AUTO does; every other
     // row's is its own `earnedBy`.
@@ -434,7 +434,7 @@ void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUs
     const bool blocked = use == SdCardUse::Busy;
     drawHeaderBand(fb, "FORMAT SD?");
 
-    // What is lost leads, then what is gained, then what to do next — the reason
+    // What is lost leads, then what is gained, then what to do next: the reason
     // anyone formats a card here is to get the 'Pedia onto it.
     drawText(fb, kMargin, 30, "ERASES EVERYTHING ON THE", palColor(Pal::WARN));
     drawText(fb, kMargin, 42, "CARD AND MAKES IT FAT32.", palColor(Pal::WARN));
@@ -504,7 +504,7 @@ void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v) {
 
     // The line the group exists for. Several rows can be switched on at once while
     // exactly one of them is on the air, so the screen names that one in words
-    // before any mark has to be decoded — and names it even when it is nobody,
+    // before any mark has to be decoded, and names it even when it is nobody,
     // because "the radio is doing nothing" is a state the operator asked for too.
     char now[40];
     std::snprintf(now, sizeof(now), "ON AIR: %s",
@@ -514,7 +514,7 @@ void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v) {
 
     // A running update job outranks every toggle below, so it is drawn where its
     // priority puts it: above them, in the group, marked like them. It appears only
-    // while it holds the radio and it is not a row the cursor can reach — there is
+    // while it holds the radio and it is not a row the cursor can reach: there is
     // nothing to open, because nothing about it was set in advance. Without it the
     // screen would show three rows waiting on a winner it never named.
     int top = 44;
@@ -554,7 +554,7 @@ void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v) {
     }
 
     // What the indent and the two marks mean. An operator who switched two rows on
-    // is not looking at a bug, and this is where the screen says so — once, rather
+    // is not looking at a bug, and this is where the screen says so: once, rather
     // than on each of the three screens the rows open.
     drawRadioMark(fb, kMargin, 158, RadioRowState::OnAir, palColor(Pal::ACCENT));
     drawText(fb, kMargin + 11, 158, "ON AIR", palColor(Pal::INK_DIM));
@@ -811,7 +811,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
 void drawAuditMode(Framebuffer& fb, int pick, int current) {
     drawHeaderBand(fb, "AUDIT");
 
-    // The escalating ladder is the whole point of the screen — each step spells out
+    // The escalating ladder is the whole point of the screen: each step spells out
     // what it does + its battery cost, so raising it is an informed, affirmative
     // choice. PASSIVE only (no deauth/injection); the top step writes to SD.
     drawText(fb, kMargin, 30, "MORE = MORE BATTERY.", palColor(Pal::INK_DIM));
@@ -865,7 +865,7 @@ void drawApToggle(Framebuffer& fb, int pick, OnOff current) {
     drawHeaderBand(fb, "PEDIA AP");
 
     // The 'Pedia local Access Point: hosts a small Wi-Fi network + web page (no
-    // internet). Naming the SSID + URL here is the whole affordance — connect,
+    // internet). Naming the SSID + URL here is the whole affordance: connect,
     // then browse. The SSID is a device value (config.h), so kept generic here.
     drawText(fb, kMargin, 30, "HOSTS A LOCAL WI-FI + PAGE.", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 42, "JOIN 'MALWARIUM' NETWORK.", palColor(Pal::INK_DIM));
@@ -880,7 +880,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
 
     // The consent this row asks for is the whole affordance, so it is spelled out
     // rather than implied: it TRANSMITS. It is deliberately not folded into the
-    // AUDIT ladder, whose escalation is about how hard the radio LISTENS — this one
+    // AUDIT ladder, whose escalation is about how hard the radio LISTENS: this one
     // is about what the device says out loud, which is a different question.
     drawText(fb, kMargin, 30, "MEET NEARBY MALWARIUMS.", palColor(Pal::INK_DIM));
     drawText(fb, kMargin, 42, "BROADCASTS YOUR TAG,", palColor(Pal::WARN));
@@ -892,7 +892,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
     drawText(fb, kMargin, 134, "ON COSTS BATTERY.", palColor(Pal::INK_DIM));
     // Ambient discovery borrows the audit scan's radio window, so with the scan off
     // this toggle only does anything while PEERS is open. Say so rather than let the
-    // setting look dead — and rather than arming the scan on the player's behalf,
+    // setting look dead, and rather than arming the scan on the player's behalf,
     // which would take a listening consent they didn't give.
     if (reach == LinkReach::PeersOnly) {
         drawText(fb, kMargin, 146, "AUDIT SCAN IS OFF:", palColor(Pal::WARN));

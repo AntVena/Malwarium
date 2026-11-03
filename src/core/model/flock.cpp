@@ -4,7 +4,7 @@ namespace mal {
 namespace {
 
 // The three rules' weights, plus what a mood does to the box the flock is kept in. All
-// weights are numerators over kW — integers, so one step is sums and shifts.
+// weights are numerators over kW: integers, so one step is sums and shifts.
 //
 // Only the flock spends these, so the magnitudes sit here rather than in tunables.h,
 // exactly as IdleWander's paces sit with the wander. What a row IS is a disposition:
@@ -16,7 +16,7 @@ namespace {
 //   ali   how far it turns toward what its neighbours are doing. High is a shoal moving
 //         as one sheet; low is a cloud of individuals.
 //   coh   how hard it pulls toward the local centre. What makes a BODY out of marks.
-//   lure  how hard the whole flock is pulled at the point it is trying to occupy — the
+//   lure  how hard the whole flock is pulled at the point it is trying to occupy: the
 //         rule that is not Reynolds', and the one that keeps a swarm inside a cell that
 //         has text either side of it.
 //   speed the cap, in 1/16 px per step. THE mood tell: a flock that is upset is fast
@@ -27,7 +27,7 @@ namespace {
 //   sepR  the room each mark insists on, in whole px, and so the SIZE of the body: the
 //         flock settles where separation balances cohesion, which is roughly this
 //         spacing. It is on the row rather than shared because how much space a thing
-//         takes up IS a disposition — something withdrawn draws into a knot and something
+//         takes up IS a disposition: something withdrawn draws into a knot and something
 //         at ease spreads out, and that is the same creature both times.
 // SCATTERING is the row with no cohesion and no lure at all, and it is the exception the
 // others prove: with nothing pulling it together the flock stops being a body and leaves,
@@ -37,7 +37,7 @@ namespace {
 //
 //   churn a random shove on every mark every step, in 1/16 px. THE reason the swarm looks
 //         alive rather than manufactured: separation and alignment together have a stable
-//         solution — an evenly spaced lattice all pointing one way — and a flock that
+//         solution (an evenly spaced lattice all pointing one way), and a flock that
 //         reaches it stops being a creature and becomes a dot grid. Churn is what it
 //         never quite settles out of, so no row may set it to zero.
 constexpr int kW = 64;
@@ -50,7 +50,7 @@ struct MoodRow {
 //
 // SPEED is the column to read first. A mark has to cover more than a pixel a step before
 // it draws a streak at all (core/render/swarm.h), so a row under ~24 is a body that hangs
-// in the air and one over ~50 is all strokes — which is the difference between something
+// in the air and one over ~50 is all strokes, which is the difference between something
 // watching you and something that has decided about you.
 constexpr MoodRow kMoods[] = {
     /* Watching  */ {30,  8,  7,  5, 40,  84, 13,  8},
@@ -82,7 +82,7 @@ int clampTo(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
 int absv(int v) { return v < 0 ? -v : v; }
 
-// Chebyshev distance — max(|dx|,|dy|). A true length wants a square root per pair, which
+// Chebyshev distance: max(|dx|,|dy|). A true length wants a square root per pair, which
 // is the one thing an O(n^2) inner loop on this device must not spend; at boid scale the
 // difference between a circle and a square of influence is a pixel, and it is a pixel
 // nobody can see in a cloud that is moving.
@@ -114,7 +114,7 @@ void Flock::reset(int n, int w, int h) {
     lureY_ = h_ / 2;
     for (int i = 0; i < n_; ++i) {
         // Scattered over the middle of the cell rather than the whole of it, so a swarm
-        // ARRIVES as a body and spreads into its shape under the rules — starting it
+        // ARRIVES as a body and spreads into its shape under the rules: starting it
         // filling the box means the first thing the player sees is the sim contracting.
         px_[i] = w_ / 4 + static_cast<int>(roll(static_cast<uint32_t>(w_ / 2)));
         py_[i] = h_ / 4 + static_cast<int>(roll(static_cast<uint32_t>(h_ / 2)));
@@ -134,7 +134,7 @@ void Flock::step(FlockMood mood) {
     // that sat still makes a swarm that hovers, and a swarm that hovers reads as a
     // particle emitter rather than as something with somewhere to be.
     //
-    // Integer sine by way of a triangle wave — the shape is a drift, and nothing about it
+    // Integer sine by way of a triangle wave: the shape is a drift, and nothing about it
     // is improved by being round.
     auto tri = [](int t, int period) {
         const int p = period > 0 ? period : 1;
@@ -145,7 +145,7 @@ void Flock::step(FlockMood mood) {
     // The roam is measured against the room the BODY leaves, not against the cell: a
     // flock is about sepR*2 across at equilibrium, so swaying by a fraction of the half
     // cell walks a wide creature into the wall and pins it there. Against the remainder,
-    // a tight swarm gets the run of the box and a wide one barely moves — which is also
+    // a tight swarm gets the run of the box and a wide one barely moves, which is also
     // the right reading, since the wide ones are the moods that are not going anywhere.
     const int body = 2 * m.sepR * kFlockOne;
     const int roomX = w_ / 2 > body ? w_ / 2 - body : 0;
@@ -188,13 +188,13 @@ void Flock::step(FlockMood mood) {
             ay += ((cohY / neighbours) - py_[i]) * m.coh / kW / 8;
         }
         // The lure. Divided down hard because it acts over the whole cell rather than
-        // over a neighbourhood — undivided it out-pulls the three rules and the flock
+        // over a neighbourhood: undivided it out-pulls the three rules and the flock
         // becomes a ball on a string.
         ax += (lureX_ - px_[i]) * m.lure / kW / 32;
         ay += (lureY_ - py_[i]) * m.lure / kW / 32;
 
         // The churn (see the table). Sized per mood rather than fixed, because how
-        // UNSETTLED a thing is is most of what a mood looks like from outside — and
+        // UNSETTLED a thing is is most of what a mood looks like from outside, and
         // because without it the three rules have a stable solution and the swarm walks
         // straight into it and stops being a creature.
         const int churn = 2 * m.churn + 1;
@@ -209,7 +209,7 @@ void Flock::step(FlockMood mood) {
 
         // The cell wall. A BOUNCE and not a wrap: a boid crossing the edge to reappear
         // opposite tears the body in half, and the body is the only reason the marks read
-        // as a creature. The lure keeps this rare — it is the floor, not the shape.
+        // as a creature. The lure keeps this rare: it is the floor, not the shape.
         if (px_[i] < 0)   { px_[i] = 0;   vx_[i] = -vx_[i] / 2; }
         if (px_[i] > w_)  { px_[i] = w_;  vx_[i] = -vx_[i] / 2; }
         if (py_[i] < 0)   { py_[i] = 0;   vy_[i] = -vy_[i] / 2; }

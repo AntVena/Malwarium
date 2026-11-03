@@ -3,7 +3,7 @@
 #include "tunables.h"
 #include "core/ui/maint_screen.h"
 
-// game_played.cpp — the seam between a played minigame and whoever is paying for it.
+// game_played.cpp: the seam between a played minigame and whoever is paying for it.
 //
 // A game that can be played outside its own context (a MAINT process or a GAMES cabinet)
 // starts here and ends here. In between it knows nothing about either: it reports one

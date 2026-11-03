@@ -27,7 +27,7 @@ void buildPcapFilename(char* out, size_t outCap, const char* prefix,
     const size_t n = sanitizeForFilename(ssid, name, sizeof(name), 16);
     if (n == 0) {
         // No usable SSID (hidden/empty/never scanned): fall back to the full
-        // BSSID hex — always available, deterministic, collision-free per network.
+        // BSSID hex. Always available, deterministic, collision-free per network.
         std::snprintf(name, sizeof(name), "%02x%02x%02x%02x%02x%02x", bssid[0],
                       bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
     } else {

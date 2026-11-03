@@ -1,17 +1,17 @@
-// chromatophore.h — the rules of the CHROMATOPHORE, with no rendering and no Game.
+// chromatophore.h: the rules of the CHROMATOPHORE, with no rendering and no Game.
 //
 // The Metamorphic egg's hatch minigame. The bell is a translucent bag with nothing of
 // its own to hide behind, so before it hatches it rehearses the only defence the line
 // has: wearing somebody else's colours. The water it is drifting over takes one of
 // kChromaSkins colours, one button per skin repaints the pet, and a sweep crosses the
 // panel on a clock. Be wearing the water when the sweep arrives and the pass is
-// HIDDEN; be wearing anything else — or be caught halfway through the change — and the
+// HIDDEN; be wearing anything else (or be caught halfway through the change), and the
 // run is SPOTTED and over, keeping whatever it already earned. That last-clause deal is
 // the same one the Isolation buffer and the Defrag board offer: a bad run costs the
 // bonus, never the pet.
 //
 // A CHANGE TAKES TIME, and that is the whole game. Pressing the right button is not the
-// skill — kChromaSettleMs later is when the pet is actually wearing it, so the question
+// skill: kChromaSettleMs later is when the pet is actually wearing it, so the question
 // each round asks is whether you committed early enough, and a late press is caught
 // visibly mid-repaint rather than by an invisible rule. The settle is therefore a rule
 // of the board and lives here, not a render magnitude: the screen draws the same number
@@ -20,7 +20,7 @@
 //
 // The plate never repeats what the pet is already wearing, so no round is free.
 //
-// SEEDED, not deterministic — the Isolation precedent. A fixed sequence of skins would
+// SEEDED, not deterministic: the Isolation precedent. A fixed sequence of skins would
 // be memorised into a rhythm by the second egg, so the caller passes a seed (Game hands
 // it one off the shared LCG) and a test can still pin a run exactly.
 //
@@ -34,7 +34,7 @@
 
 namespace mal {
 
-// Three skins, three buttons — the board's size is the device's. A fourth would have
+// Three skins, three buttons: the board's size is the device's. A fourth would have
 // nowhere to live: A/B/C is the whole input surface, and a game whose choices outnumber
 // the buttons has to add a cursor, which is exactly the deliberation this game exists
 // not to allow time for.
@@ -51,7 +51,7 @@ constexpr uint32_t kChromaSettleMs = 1000;
 // choosing early and becomes one about reflexes.
 constexpr uint32_t kChromaWindowFloorMs = 1800;
 
-// Where in the window a SWITCHING round changes the water under the pet — late enough
+// Where in the window a SWITCHING round changes the water under the pet: late enough
 // that the first disguise had to be real, early enough that the second one can still be
 // finished inside kChromaSettleMs.
 constexpr int kChromaSwitchAtPct = 40;
@@ -60,7 +60,7 @@ class Chromatophore {
   public:
     enum class State : uint8_t {
         Running,
-        Spotted,   // the sweep found it — banks the passes already made
+        Spotted,   // the sweep found it: banks the passes already made
         Clean,     // every round survived: the whole run
     };
 
@@ -68,13 +68,13 @@ class Chromatophore {
 
     // Start a fresh run. `windowMs` is how long the first round gives between the water
     // changing and the sweep arriving, and `windowStepMs` is how much of that each
-    // later round takes away — the pace dial, and the only difference between the hatch
+    // later round takes away: the pace dial, and the only difference between the hatch
     // and an arcade cabinet's EASY. `switching` lets a round change the water once
     // mid-window, which is the HARD setting and off everywhere else.
     //
     // `rounds` of 0 or less is ENDLESS: there is no round the run finishes on, so it
     // ends the only other way it can, by being spotted. That is the arcade's shape and
-    // not the hatch's — an egg is buying a fixed number of minutes and wants a finish
+    // not the hatch's: an egg is buying a fixed number of minutes and wants a finish
     // line, while a cabinet is a high score and a finish line would be a ceiling on it.
     // An endless run has no clean(), which is the honest answer: nothing was completed.
     void reset(uint32_t seed, int rounds, uint32_t windowMs, uint32_t windowStepMs,
@@ -88,7 +88,7 @@ class Chromatophore {
         round_ = 0;
         state_ = State::Running;
         // The pet opens already wearing skin 0, settled. A run has to start from a
-        // KNOWN skin — that is what lets the first plate be something else, so the
+        // KNOWN skin: that is what lets the first plate be something else, so the
         // opening round is a real change like every other one.
         worn_ = 0;
         leaving_ = 0;
@@ -97,7 +97,7 @@ class Chromatophore {
     }
 
     // A button press: wear skin `s`. Pressing what the pet already wears is inert
-    // rather than a re-start — a nervous double-press must not undo a settled disguise.
+    // rather than a re-start: a nervous double-press must not undo a settled disguise.
     void wear(int s) {
         if (state_ != State::Running) return;
         if (s < 0 || s >= kChromaSkins || s == worn_) return;
@@ -130,11 +130,11 @@ class Chromatophore {
 
     int plate() const { return plate_; }
     int worn() const { return worn_; }
-    // The skin being left behind. Meaningless once wearPct() reaches 100 — nothing is
-    // being left any more — and there only so the screen can draw the repaint as a
+    // The skin being left behind. Meaningless once wearPct() reaches 100 (nothing is
+    // being left any more), and there only so the screen can draw the repaint as a
     // dissolve between two skins rather than through the creature's own colours.
     int leaving() const { return leaving_; }
-    // How far the repaint has settled, 0..100 — the screen's FX_CAMO level, and the
+    // How far the repaint has settled, 0..100: the screen's FX_CAMO level, and the
     // half of `hidden` the player can actually watch.
     int wearPct() const {
         return static_cast<int>(wearMs_ * 100u / kChromaSettleMs);
@@ -147,7 +147,7 @@ class Chromatophore {
     bool hidden() const { return worn_ == plate_ && wearMs_ >= kChromaSettleMs; }
 
     int passes() const { return passes_; }
-    // Passes that would finish the run, or 0 for an endless one — so a caller printing a
+    // Passes that would finish the run, or 0 for an endless one, so a caller printing a
     // "3 / 10" has to ask whether there is a denominator at all.
     int goal() const { return goal_; }
     bool endless() const { return goal_ <= 0; }
@@ -163,7 +163,7 @@ class Chromatophore {
         // Every round is a real change: the water never takes the colour the pet is
         // already standing in, so there is no round that plays itself.
         plate_ = pickSkin(worn_);
-        // The ramp keeps shedding on an endless run too — it just runs out of window to
+        // The ramp keeps shedding on an endless run too: it just runs out of window to
         // shed and settles at the floor, which is where a high score is actually played.
         const uint32_t shed = windowStep_ * static_cast<uint32_t>(round_);
         window_ = window0_ > shed + kChromaWindowFloorMs ? window0_ - shed

@@ -1,7 +1,7 @@
-// shred.h — FX_SHRED: a sprite coming apart into sliding scanlines.
+// shred.h (FX_SHRED): a sprite coming apart into sliding scanlines.
 //
 // The other half of the dissolve vocabulary. Where FX_ABSORB (absorb.h) carries a
-// glyph SOMEWHERE — into the pet — this one carries it nowhere: the subject shears
+// glyph SOMEWHERE (into the pet) this one carries it nowhere: the subject shears
 // into horizontal slivers that slide apart, stretch into streaks and thin out where
 // they stood. Same scatter (dissolve.h), same stateless contract, opposite meaning.
 //

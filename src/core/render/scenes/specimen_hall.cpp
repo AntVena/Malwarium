@@ -10,7 +10,7 @@ namespace {
 
 // THE SPECIMEN HALL. The prize for a full bestiary: a natural-history hall after
 // closing, where everything the operator has beaten ends up. The landmark is the one
-// every such hall has — a great skeleton hung from the ceiling by wires — and here it
+// every such hall has (a great skeleton hung from the ceiling by wires), and here it
 // is a WORM's, a long serpent of vertebrae and ribs, since the oldest thing on the 'net
 // is a worm. Display cases stand in the two margins with their specimens in them,
 // which is where nothing ever stands in front of them; the floor is the hall's own
@@ -37,7 +37,7 @@ constexpr int kBayW = 44, kPilasterW = 4;
 
 // The skeleton's spine, as (x, rows below its hanging line) every few columns from
 // tail to skull, and how far that line hangs down the sky. A table rather than a sine
-// so the curve can be shaped by eye — a hung skeleton is posed, not a waveform.
+// so the curve can be shaped by eye: a hung skeleton is posed, not a waveform.
 constexpr uint8_t kHangUp = 168;
 constexpr uint8_t kSpine[][2] = {{28, 9},  {40, 6},  {52, 3},  {64, 2},  {76, 4},
                                  {88, 8},  {100, 11}, {112, 12}, {124, 10}, {136, 6},
@@ -46,7 +46,7 @@ constexpr int kSpineN = static_cast<int>(sizeof(kSpine) / sizeof(kSpine[0]));
 constexpr int kWires[] = {3, 7, 11};   // which spine points hang from the ceiling
 
 // The display cases, one in each margin: (x, width, height above the floor), and the
-// specimen standing in each, as a 7-wide mask — a stooped malbeast in the left case and
+// specimen standing in each, as a 7-wide mask. A stooped malbeast in the left case and
 // a creature with a crest in the right one, both dark against their glass.
 struct Case { int x, w, h; };
 constexpr Case kCases[] = {{4, 30, 58}, {kActiveW - 34, 30, 58}};

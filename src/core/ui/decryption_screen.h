@@ -1,4 +1,4 @@
-// decryption_screen.h — DISK DECRYPTION, the Ransomware line's hatch minigame.
+// decryption_screen.h: DISK DECRYPTION, the Ransomware line's hatch minigame.
 //
 // One screen for the whole game: the history, the row being built, and the verdict.
 // Every played row stays on it, because the deduction is the game and nothing here is

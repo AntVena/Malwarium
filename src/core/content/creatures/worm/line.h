@@ -1,10 +1,10 @@
-// The Worm family — the line that fights with a BOARD instead of a swing.
+// The Worm family: the line that fights with a BOARD instead of a swing.
 //
 // Every row here is weak on its own, and that is the design rather than a tuning gap:
 // a worm's damage comes from the copies it puts on the screen (content_moves.cpp's
 // "worm" track, resolved in Combat::applyEffect), and its survival comes from those
-// copies being what an attack usually hits. Its two passives are Shared Resources —
-// speed matched to the opponent's forever, and a fixed pile of replication slots — and
+// copies being what an attack usually hits. Its two passives are Shared Resources
+// (speed matched to the opponent's forever, and a fixed pile of replication slots), and
 // both live in content_passives.h.
 //
 // The line hatches from the Vermicell egg (content_evolution.cpp's "worm" EggLineDef),
@@ -19,7 +19,7 @@
 // come out of tools/gen_worm_art.py, which holds that style as code.
 //
 // Everything that can move at all, up to and including the Script row, CRAWLS
-// (Locomotion::Ground) — the line's identity rather than a per-row tuning choice, which
+// (Locomotion::Ground): the line's identity rather than a per-row tuning choice, which
 // is why it is stated the same way. Both Daemons then leave the floor, and that is the
 // payoff: the one line whose creatures have never once been off the ground earns it
 // last. The egg is Static like every egg that isn't adrift in water: a capsule waiting
@@ -33,7 +33,7 @@ namespace mal {
 
 inline constexpr CreatureDef kWormCreatures[] = {
     // The egg. Its 8-frame sheet is both the resting loop and the hatch one-shot (0-7,
-    // walked by Game::hatchRevealFrame on the HATCHING modal) — the same shape
+    // walked by Game::hatchRevealFrame on the HATCHING modal): the same shape
     // SPR_PET_EGG_PHISH_HATCH uses, including that frames 0-2 must all read as sealed,
     // since idleFrame() blinks to frame 2 while the egg is merely resting. Drawn 1-bit, like the
     // replica glyphs the line fights with: a shell with one worm coiled inside it and
@@ -45,24 +45,24 @@ inline constexpr CreatureDef kWormCreatures[] = {
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Attack, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Static,
      // Declared only to slow the resting breathe below the shared idleFrame()
-     // default (sprite.h) — frames 0-1 of the same 8-frame sheet the hatch
+     // default (sprite.h): frames 0-1 of the same 8-frame sheet the hatch
      // one-shot walks, at half that heuristic's cadence (holdBeats 1 -> 2).
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/2, /*holdBeats=*/2}}},
     // Nodeatode is the family's Process pet, and the only row with real character so
     // far. Its own 1-bit sheet is five rows of four 56x48 frames, and the worm occupies
-    // barely 30x24 of each cell — the draw-small rule kept literally. The idle row is
+    // barely 30x24 of each cell: the draw-small rule kept literally. The idle row is
     // an S-wave travelling down the spine rather than a rocking of the whole body,
     // which is what stops a crawler's squiggle reading as a bob it no longer takes.
     // "idle" and "walk" split the habitat on whether the wander is moving it, and
     // "attack" plays in combat; droop/weak become reachable the moment a mood pose is
-    // wired. The walk is a peristaltic crawl — rungs bunching and spreading down a body
-    // carried low — because a Ground mover is the one thing that may not arch off the
+    // wired. The walk is a peristaltic crawl (rungs bunching and spreading down a body
+    // carried low), because a Ground mover is the one thing that may not arch off the
     // floor to get anywhere.
     //
     // Its slot typing alternates Attack/Defend from the first slot, unlike the other
     // lines' attack-leaning Process rows. A worm whose kit is all attacks spawns only
     // attacking copies, and an attacking copy with no defender behind it multiplies by
-    // the floor — so the alternation is what makes the line's own arithmetic reachable
+    // the floor, so the alternation is what makes the line's own arithmetic reachable
     // as the slots unlock, not a flavour choice.
     {"nodeatode", "Nodeatode", Stage::Process, "SPR_PET_NODEATODE", "rootgrub",
      nullptr, nullptr, 100, 100, "worm",
@@ -77,14 +77,14 @@ inline constexpr CreatureDef kWormCreatures[] = {
                 {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
     // Rootgrub is the fork in the road, which is why the line has ONE Script row: the
     // care branch resolves a stage later, at the Daemon, the way every other line's
-    // does — and this row is what the branch is about: a
+    // does, and this row is what the branch is about: a
     // body that has run out of ways to get longer and has to choose a direction to
     // spend its mass in.
     //
     // Its sheet is the same 4x4 shape as Nodeatode's, and its drawing says the
     // opposite thing with the same vocabulary: short and thick where the Process row
     // is thin and long, and led by a mouth rather than by a head. It is also the one
-    // row of the line whose single solid mass is not an eye but a THROAT — see
+    // row of the line whose single solid mass is not an eye but a THROAT: see
     // tools/gen_worm_art.py, where both are the same `Cell.solid`.
     //
     // It is also the line's infiltration point, and the only row in the roster that
@@ -92,7 +92,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
     // the same mechanism Phishlet uses, spent one stage later, and it is spent there
     // because of what this row's evolution IS: everything below it crawls, and the hop
     // out of it is where the family finally leaves the floor. A Trojan is what happens
-    // when that hop goes somewhere else instead — so the divert here costs the payoff the
+    // when that hop goes somewhere else instead, so the divert here costs the payoff the
     // whole line has been climbing towards, which is a price a divert at the Process row
     // could not have charged. Both targets are Daemons and the pair is a care BRANCH
     // (creatures/trojan/line.h): the raise still decides which one, the divert only
@@ -110,7 +110,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
                 {"weak", /*row=*/3, /*frames=*/2, /*holdBeats=*/3},
                 {"walk", /*row=*/4, /*frames=*/4, /*holdBeats=*/2}}},
     // The two Daemons are the answer to Rootgrub's question, and they are the first
-    // rows of the line to leave the floor — which is why the family's Crawl stops
+    // rows of the line to leave the floor, which is why the family's Crawl stops
     // here. Both are drawn, in the same tool and the same vocabulary as the two rows
     // above, and neither carries a ground plant: every crawling row of the line ends
     // with a bar on the shelf and these two deliberately have nothing near the bottom
@@ -118,7 +118,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
     // habitat to sell it.
     //
     // Shenloop grew UP. An eastern dragon with no talons, so there is nothing on it
-    // for gripping — it does not take a host, it stays connected to one. Swim rather
+    // for gripping: it does not take a host, it stays connected to one. Swim rather
     // than Fly because that is the mover with no altitude to hold: a serpent in air
     // drifts on both axes, which is the whole read.
     //
@@ -144,7 +144,7 @@ inline constexpr CreatureDef kWormCreatures[] = {
     // Daemons is meant to be legible from the resting motion alone.
     //
     // It keeps the THROAT its parent spends its one solid mass on, where its sibling
-    // goes back to an eye — both Daemons inherit exactly one thing from Rootgrub, and
+    // goes back to an eye: both Daemons inherit exactly one thing from Rootgrub, and
     // which one they inherit is the branch. Its wings are the only form the line's
     // drawing vocabulary had to grow to draw: a bare limb out from the body, then a
     // membrane fanned off the wrist in panels, which is a general form in the tool

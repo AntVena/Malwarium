@@ -1,4 +1,4 @@
-// swarm.h — FX_SWARM: a guardian, drawn as the flock it is.
+// swarm.h (FX_SWARM): a guardian, drawn as the flock it is.
 //
 // The SPRITE_BASE pass of RENDER_PIPELINE.md for one subject only: an area's GUARDIAN,
 // which has no sheet and is not going to get one. Every other creature on the device is
@@ -21,8 +21,8 @@
 //     entire state is a disposition (assets/VISUAL_LANGUAGE.md).
 //
 // A STATE, not a moment (RENDER_PIPELINE.md's rule). What it is a function of is the
-// guardian's DISPOSITION — FlockMood, set from where the meeting has got to and how it
-// came out — and never a beat: a swarm does not run out, it is doing something until the
+// guardian's DISPOSITION (FlockMood, set from where the meeting has got to and how it
+// came out), and never a beat: a swarm does not run out, it is doing something until the
 // guardian is doing something else. The motion is the model integrating under that mood,
 // which is why the one thing remembered lives on the caller (Game::guardianFlock_), the
 // same way FX_CAMO's level does.
@@ -40,14 +40,14 @@ namespace mal {
 
 class Framebuffer;
 
-// One mark, in CELL px — the draw is told where the cell is and never asks the model.
+// One mark, in CELL px: the draw is told where the cell is and never asks the model.
 struct SwarmMark {
     int16_t x = 0, y = 0;
     int16_t vx = 0, vy = 0;   // heading, in 1/16 px per step (kFlockShift)
 };
 
 // A flock as the draw path sees it, and it OWNS its marks rather than pointing at the
-// model's — the same call CamoRamp makes, and for the same reason: this is a value passed
+// model's. The same call CamoRamp makes, and for the same reason: this is a value passed
 // every frame by a renderer that must not reach into core/model.
 //
 // `cx`/`cy` is the body's centre of mass and `spread` the mean distance from it, both in
@@ -62,7 +62,7 @@ struct SwarmView {
     int spread = 0;
 };
 
-// Draw `v` into the cell at (x, y, w, h) in active px, clipped to it — a swarm sitting
+// Draw `v` into the cell at (x, y, w, h) in active px, clipped to it: a swarm sitting
 // beside text must not be able to put a pixel on the text, whatever the model does.
 //
 // `core` is what the dense middle is drawn in and `fringe` the outer marks; a caller

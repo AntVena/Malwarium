@@ -36,7 +36,7 @@ bool Loadout::grant(const char* id, int cap) {
     if (!id || cap < 1) return false;
     for (OwnedMod& m : owned_)
         if (std::strcmp(m.id, id) == 0) {
-            if (m.count >= cap) return false;   // full — the caller decides what that's worth
+            if (m.count >= cap) return false;   // full: the caller decides what that's worth
             ++m.count;
             return true;
         }
@@ -47,12 +47,12 @@ bool Loadout::grant(const char* id, int cap) {
 void Loadout::equip(int slot, const char* id) {
     ensureSlots();
     if (slot < 0 || slot >= kModSlots || !id) return;
-    // One slot per id per pet — refuse rather than let the same passive stack.
+    // One slot per id per pet: refuse rather than let the same passive stack.
     for (int i = 0; i < kModSlots; ++i)
         if (i != slot && slots_[i] && std::strcmp(slots_[i], id) == 0) return;
     // Consume one copy (D3: consume-on-equip). Inert if none is held. A mod spent down
     // to nothing leaves the pool rather than sitting in it at zero, so `owned_` stays a
-    // list of what the player actually has — which is what the picker draws from.
+    // list of what the player actually has, which is what the picker draws from.
     for (auto it = owned_.begin(); it != owned_.end(); ++it) {
         if (std::strcmp(it->id, id) != 0) continue;
         if (--it->count <= 0) owned_.erase(it);
@@ -75,11 +75,11 @@ void Loadout::resetSlots() {
 Loadout Loadout::starting() {
     Loadout l;
     // sample: one spare each. Both are tier-1/5 rows whose own equip level is what
-    // gates them — the seed grants copies, never a gate of its own. Packet Sniffer is
+    // gates them: the seed grants copies, never a gate of its own. Packet Sniffer is
     // deliberately the one mod authored at equipLevel 0 (content_mods.cpp): a fresh pet
     // has to be able to install SOMETHING the moment it hatches, so retuning that row's
     // gate upward breaks the first thing a player does with this screen. RAID Mirror is
-    // the opposite on purpose — a deep row shown early, to be grown into.
+    // the opposite on purpose: a deep row shown early, to be grown into.
     l.owned_ = {{"packet_sniffer", 1}, {"raid_mirror", 1}};
     l.ensureSlots();
     l.setEquipped(0, "firewall_patch");             // two installed permanently

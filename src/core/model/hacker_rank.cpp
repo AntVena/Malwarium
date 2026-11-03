@@ -19,7 +19,7 @@ int hackerRankXpIntoRank(int networksSeen) {
 
 namespace {
 // The growable rank-title ladder. {unlockRank, title}, ordered by unlockRank
-// ASCENDING. APPEND freely at the end to add higher titles — the count is derived
+// ASCENDING. APPEND freely at the end to add higher titles: the count is derived
 // (kRankTierCount) and hackerRankTitle() returns the highest tier at or beneath the
 // numeric rank, so a longer list just raises the ceiling. The unlock ranks ARE the
 // tunable spacing: sequential today (one new title per rank), but widen them (e.g.
@@ -27,7 +27,7 @@ namespace {
 // any logic. Nothing outside this table assumes a fixed length.
 //
 // The ladder is a genuine SKILL/POWER progression,
-// not a set of horizontal "hat" roles — grey/white/black hats describe the
+// not a set of horizontal "hat" roles: grey/white/black hats describe the
 // *stance* a hacker takes, not their level, so they no longer appear here as tiers.
 // SCRIPT KIDDIE also left the ladder (it becomes an achievement). PACKET RAT anchors
 // rank 0; DEEPWEB DEITY caps the climb (ties to the endless DeepWeb Dive endgame).
@@ -81,7 +81,7 @@ const char* hackerRankTitle(int rank) {
     // whose unlockRank ≤ rank. Tiers are ascending, so the last qualifying one wins;
     // stop early once a threshold overshoots. Below the first tier → the first title;
     // above the last → the last (the numeric rank keeps climbing, the title caps at
-    // the top of the ladder — a title is "unlocked" once its rank is reached).
+    // the top of the ladder: a title is "unlocked" once its rank is reached).
     const char* title = kRankTiers[0].title;
     for (int i = 0; i < kRankTierCount; ++i) {
         if (rank >= kRankTiers[i].unlockRank) title = kRankTiers[i].title;

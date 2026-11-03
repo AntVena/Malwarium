@@ -3,13 +3,13 @@
 #include <array>
 #include <cstring>
 
-#include "core/content/areas/area_defs.h"   // kSubAreasPerArea — subRefarm's row width
+#include "core/content/areas/area_defs.h"   // kSubAreasPerArea: subRefarm's row width
 
 namespace mal {
 
 namespace {
 
-// 4-byte magic ('M','A','L','1') — identifies a Malwarium save blob.
+// 4-byte magic ('M','A','L','1'): identifies a Malwarium save blob.
 constexpr uint8_t kMagic[4] = {'M', 'A', 'L', '1'};
 
 // --- Little-endian stream writer -------------------------------------------
@@ -86,14 +86,14 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 constexpr std::array<RenamedId, 2> kRenamedIds{{
     // v54: the everyday snack lost the ghost cure to Unlinkguine and was renamed with
     // it, so the id stopped describing the row (content_items.cpp). The FIRST item id
-    // to be renamed — every row before this one was a creature.
+    // to be renamed: every row before this one was a creature.
     {"airgap_snack", "dyno_nuggets", 54},
     // v70: the dish is a bruschetta (a Buguette under oil, garlic and tomato), and its
     // old name's tech half, ChromeOS's Linux container, was too obscure to land.
     {"crostini", "brusshetta", 70},
 }};
 
-// The newest version any row still rewrites — a blob at or above it needs no pass.
+// The newest version any row still rewrites: a blob at or above it needs no pass.
 constexpr uint16_t newestRenameVersion() {
     uint16_t v = 0;
     for (const RenamedId& r : kRenamedIds)
@@ -116,7 +116,7 @@ void renameId(char* id, uint16_t version) {
 // holding, and `collectedItems` is the ever-held set the earn-path achievements read,
 // so missing it would quietly un-collect an item the player had already met.
 //
-// Mod and move ids ride their own fields and stay untouched — nothing has renamed one.
+// Mod and move ids ride their own fields and stay untouched: nothing has renamed one.
 // The table is flattened (no `to` is ever a `from`), so one pass over each is enough.
 void renameRetiredIds(SaveData& d, uint16_t version) {
     renameId(d.activeId, version);
@@ -136,7 +136,7 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
 // than a plain C array so a zero-row table is still well-formed.
 constexpr std::array<LadderInsert, 0> kLadderInserts{};
 
-// The newest version any row still shifts — a blob at or above it needs no pass.
+// The newest version any row still shifts: a blob at or above it needs no pass.
 constexpr uint16_t newestLadderInsertVersion() {
     uint16_t v = 0;
     for (const LadderInsert& l : kLadderInserts)
@@ -156,7 +156,7 @@ void openLadderRung(SaveData& d, int at) {
     openByte(d.bossUnlocked);
     openByte(d.subCleared);        // one bitmask byte per area, so still one cell
     openByte(d.subBossUnlocked);
-    // subRefarm is row-major with kSubAreasPerArea counts per area — a whole ROW opens.
+    // subRefarm is row-major with kSubAreasPerArea counts per area: a whole ROW opens.
     const size_t row = static_cast<size_t>(at) * kSubAreasPerArea;
     if (row <= d.subRefarm.size())
         d.subRefarm.insert(d.subRefarm.begin() + row, kSubAreasPerArea, 0);
@@ -179,7 +179,7 @@ void applyLadderInserts(SaveData& d, uint16_t version) {
 
 // migrateRecipeRows (the v49 cooking-leaves-the-Rig-Shop migration, folding the two
 // mid-table Browns rig rows into the recipe bitset) retired along with
-// kOldestAcceptedVersion passing 49 — see save.h's v49 note for what it used to do.
+// kOldestAcceptedVersion passing 49: see save.h's v49 note for what it used to do.
 
 }  // namespace
 
@@ -198,13 +198,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // buffer to every save (Game::persistSave) then writes each one into an allocation
     // it already holds. Reserve the whole blob up front for a caller that doesn't. A
     // 256-byte start reaches a real ~15KB save by doubling seven times, and every step
-    // allocates the new block while the old one is still live — so the peak demand is
+    // allocates the new block while the old one is still live, so the peak demand is
     // ~1.5x the blob in ONE contiguous piece, paid at whatever moment the autosave
     // timer happens to fire. On the device that moment can land while the radio is
     // handing ownership over (the audit capture claims ~95KB as it arms), and an
     // allocation that fails there does not fail softly: the Arduino build has
     // exceptions off, so operator new's bad_alloc goes straight to std::terminate and
-    // resets the device. Growth past the reservation still works — floor, not cap.
+    // resets the device. Growth past the reservation still works: floor, not cap.
     out.clear();
     if (out.capacity() < kSaveReserveBytes) out.reserve(kSaveReserveBytes);
     Writer w{out};
@@ -228,7 +228,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (const auto& s : d.items) writeStack(w, s);
     // The pre-v45 spare pool: one id cell per COPY. captureSave stopped filling it at
     // v45 (the pool ships as ownedModCounts in the v45 tail), so from here it always
-    // writes a count of zero — but it still WRITES, because this format is append-only
+    // writes a count of zero, but it still WRITES, because this format is append-only
     // and every position in it is load-bearing. Deleting a field mid-stream would
     // desync a v45 blob from the layout every older version's reader expects, which is
     // exactly what the migration tests forge by stamping the version word down.
@@ -257,8 +257,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
         w.i32(rec.generation);
     }
 
-    // v4: Hacker Rank — networks-seen + the rank. The dedup pool byte this slot used
-    // to carry was removed as of v33 (see save.h) — a v33+ writer never emits it.
+    // v4: Hacker Rank; networks-seen + the rank. The dedup pool byte this slot used
+    // to carry was removed as of v33 (see save.h): a v33+ writer never emits it.
     w.i32(d.networksSeen);
     w.i32(d.hackerRank);
 
@@ -270,7 +270,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v7: the real-radio Audit SHAKES ledger + the lifetime handshake count. Each
     // BSSID is a 48-bit key (low u32 + mid u16). (The sibling NETS/seenBssids vector
-    // this tail used to carry was removed as of v33 — see save.h.)
+    // this tail used to carry was removed as of v33: see save.h.)
     w.i32(d.handshakesSeen);
     w.u16(static_cast<uint16_t>(d.seenHandshakeBssids.size()));
     for (uint64_t k : d.seenHandshakeBssids) {
@@ -285,7 +285,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v9: the Boot-Sector incubation timer (remaining decrypt clock).
     w.u32(d.bootHatchRemainMs);
 
-    // v10: the zone-completion Titles — unlocked bitmask + equipped index.
+    // v10: the zone-completion Titles. Unlocked bitmask + equipped index.
     w.u32(d.titlesUnlocked);
     w.i32(d.equippedTitle);
 
@@ -298,7 +298,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.bossUnlocked.size()));
     for (uint8_t b : d.bossUnlocked) w.u8(b);
 
-    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks — one byte per
+    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks. One byte per
     // area (bit s = sub-area s), each length-prefixed.
     w.u16(static_cast<uint16_t>(d.subCleared.size()));
     for (uint8_t b : d.subCleared) w.u8(b);
@@ -326,7 +326,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.ownedModReqLevels.size()));
     for (int32_t lvl : d.ownedModReqLevels) w.i32(lvl);
 
-    // v19: the Hacker SHOP account upgrades. One i32 for now — the
+    // v19: the Hacker SHOP account upgrades. One i32 for now: the
     // "Increase Bandwidth" purchase count. Appended, so a v18 reader ignores it.
     w.i32(d.bwUpgradeCount);
 
@@ -336,7 +336,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v21: the per-pet care-mistake shield + once-per-lifetime item gates, and the
     // shop-pre-alloc fragAmountTier. Appended, so a v20 reader ignores it. (The full
-    // 64-bit dedup mask this tail used to carry was removed as of v33 — see save.h.)
+    // 64-bit dedup mask this tail used to carry was removed as of v33: see save.h.)
     w.u8(d.mistakeShieldActive);
     w.u8(d.shieldItemConsumed);
     w.u8(d.yubiConsumed);
@@ -356,7 +356,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.slotKinds.size()));
     for (uint8_t k : d.slotKinds) w.u8(k);
 
-    // v25: the web-'Pedia reveal-state bookkeeping — seenCreatures (length-prefixed,
+    // v25: the web-'Pedia reveal-state bookkeeping; seenCreatures (length-prefixed,
     // like ownedMods) and the malbeast seen/defeated bitmasks. Appended, so a v24 reader
     // ignores it.
     w.u16(static_cast<uint16_t>(d.seenCreatures.size()));
@@ -364,7 +364,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(d.malbeastSeen);
     w.u16(d.malbeastDefeated);
     // The v25 achievements u32, SUPERSEDED as of v40 by the wire-indexed bitset in the
-    // v40 tail. The four bytes stay on the wire deliberately — this field sits
+    // v40 tail. The four bytes stay on the wire deliberately: this field sits
     // MID-STREAM, and dropping it would shift every later field, so a blob could no
     // longer be read as any earlier version. Nothing mid-stream is ever removed. The
     // codec still round-trips whatever it is handed (a faithful codec is the easier
@@ -435,10 +435,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.bytes(d.homeNetworkName, kSaveNetNameCap);
 
     // v37: the pet-to-pet LINK opt-in. The met operators ride the SD-backed
-    // PeerLedger, not this blob — only the consent bit belongs here.
+    // PeerLedger, not this blob, only the consent bit belongs here.
     w.u8(d.linkEnabled ? 1 : 0);
 
-    // v38: reserved. Always 0 — the standing internet opt-in it held is gone, and
+    // v38: reserved. Always 0: the standing internet opt-in it held is gone, and
     // the byte only survives to keep the v39+ tail aligned (see save.h).
     w.u8(0);
 
@@ -456,14 +456,14 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.i32(d.bossWins);
     w.u16(static_cast<uint16_t>(d.collectedItems.size()));
     for (const auto& s : d.collectedItems) writeId(w, s);
-    // Parallel id/depth lists — same shape the rack's parallel tails use, so the ids stay
+    // Parallel id/depth lists: same shape the rack's parallel tails use, so the ids stay
     // a plain SaveId run and the depths a plain i32 run.
     w.u16(static_cast<uint16_t>(d.speciesDiveIds.size()));
     for (const auto& s : d.speciesDiveIds) writeId(w, s);
     for (int32_t v : d.speciesDiveDepths) w.i32(v);
 
     // v42: time already burned in the 5/5 recovery window, so neither a power cycle
-    // nor an ARCH freeze can refund it. Awake-ms only — see the version note in save.h
+    // nor an ARCH freeze can refund it. Awake-ms only: see the version note in save.h
     // for why that is the honest measure on a board with no RTC. The active pet's
     // value, then a parallel list mapped onto d.rack by index.
     w.u32(d.dyingElapsedMs);
@@ -489,12 +489,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (int32_t v : d.arcadeWins) w.i32(v);
 
     // v48: the DECRYPTOGRAM per-quote state, two bits per QuoteDef::wire. Length-
-    // prefixed at its full in-memory width, like the v40 achievement bitsets — a pool
+    // prefixed at its full in-memory width, like the v40 achievement bitsets: a pool
     // that grows into spare capacity needs no save change at all.
     w.u16(static_cast<uint16_t>(d.quoteStates.size()));
     for (uint8_t b : d.quoteStates) w.u8(b);
 
-    // v50: the per-pet Bandwidth-regen upgrade — the active pet's minutes, then a
+    // v50: the per-pet Bandwidth-regen upgrade. The active pet's minutes, then a
     // parallel list mapped onto the rack by index (the v42 dying-window shape).
     w.i32(d.bandwidthRegenBonusMin);
     w.u16(static_cast<uint16_t>(d.rack.size()));
@@ -506,7 +506,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.recipeOwned.size()));
     for (uint8_t b : d.recipeOwned) w.u8(b);
 
-    // v53: ROCK THE DOCK's run in play — the seed the whole bracket is derived from, plus
+    // v53: ROCK THE DOCK's run in play. The seed the whole bracket is derived from, plus
     // the three bytes of state that seed cannot express (who is still standing, which
     // round, and the verdict of a finished run the operator has yet to dismiss).
     w.u32(d.tourneySeed);
@@ -521,14 +521,14 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.arcadeBest.size()));
     for (int32_t v : d.arcadeBest) w.i32(v);
 
-    // v56: the three lifetime tallies the achievement board's newest ladders read —
-    // brackets taken, duels won, dishes cooked. Its own tail after v55's, so the two
+    // v56: the three lifetime tallies the achievement board's newest ladders read.
+    // Brackets taken, duels won, dishes cooked. Its own tail after v55's, so the two
     // stay independently skippable by a build that predates either.
     w.i32(d.tourneyWins);
     w.i32(d.pvpWins);
     w.i32(d.mergesCooked);
 
-    // v57: the rest of the per-pet Epic-dish grants — the active pet's off-level stat
+    // v57: the rest of the per-pet Epic-dish grants. The active pet's off-level stat
     // points and XP rate, then the same pair per rack pet, mapped by index. The v50 tail
     // above carries the first of these grants and is left exactly as it was, so a build
     // that stops at v56 still reads every field it knows.
@@ -540,17 +540,17 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
         w.i32(p.xpRateBonusPct);
     }
 
-    // v58: the chosen background, as its own wire number. One byte, and its own tail —
+    // v58: the chosen background, as its own wire number. One byte, and its own tail,
     // which backgrounds are OWNED is derived from the rest of this blob rather than
     // written beside it.
     w.u8(d.backgroundPick);
 
-    // v59: the CANT — the learned-sigil mask and the shakes paid for it. Its own tail
+    // v59: the CANT. The learned-sigil mask and the shakes paid for it. Its own tail
     // after v58's, so a build that stops at either still reads every field it knows.
     w.u32(d.cantSigils);
     w.i32(d.shakesSpent);
 
-    // v60: the USB port's three per-pet slots — the forced evolution branch, the armed
+    // v60: the USB port's three per-pet slots. The forced evolution branch, the armed
     // soak factor and the evolution hold. Its own tail after v59's, so a build that stops
     // at either still reads every field it knows.
     w.u8(d.evolveBranchOverride);
@@ -598,7 +598,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v71
     w.u8(d.exploreSound);
 
-    // v72: the favourite dish — the active pet's, then the rack's in rack order — and
+    // v72: the favourite dish (the active pet's, then the rack's in rack order), and
     // the rack's palates as a food-id dictionary plus a bitset per pet over it.
     w.bytes(d.favouriteFood, kSaveIdCap);
     w.u8(d.favouriteFound);
@@ -650,7 +650,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // appended tails, which load with defaults.
     //
     // NEWER is the half that matters on a device. An OTA image boots once on trial and
-    // the bootloader reverts it if the device resets before it commits — so the previous
+    // the bootloader reverts it if the device resets before it commits, so the previous
     // firmware can find itself underneath a save the newer one already rewrote. Refusing
     // that blob does not fail safe: it deserializes as empty, and an empty save is a
     // fresh hatch with the pet, the rack and the records gone. Reading the prefix we
@@ -661,7 +661,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // goes on the end behind its own `version >= N` gate, and a field that retires keeps
     // being consumed behind a `version < N` gate (see the v33 and v45 tails). A version
     // that inserts or drops a field mid-stream breaks this and must raise
-    // kOldestAcceptedVersion instead. `r.ok` is the backstop either way — a stream that
+    // kOldestAcceptedVersion instead. `r.ok` is the backstop either way: a stream that
     // desyncs runs short and is rejected below.
     if (version < kOldestAcceptedVersion) {
         out = SaveData{};
@@ -748,27 +748,27 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v4 tail: Hacker Rank. Absent in a v1/v2/v3 blob (starts at rank 0, no
-    // networks seen — the honest default for a save that predates the system).
+    // networks seen: the honest default for a save that predates the system).
     if (version >= 4) {
         d.networksSeen = r.i32();
         d.hackerRank = r.i32();
     }
 
-    // v5 tail: the Audit-mode passive-scan toggle. Absent in a v1..v4 blob — it
+    // v5 tail: the Audit-mode passive-scan toggle. Absent in a v1..v4 blob. It
     // stays OFF (the authorized-use default: a migrated save never silently
     // enables the radio).
     if (version >= 5) {
         d.netScanEnabled = r.u8();
     }
 
-    // v6 tail: the Audit-CAPTURE toggle. Absent in a v1..v5 blob — it stays OFF
+    // v6 tail: the Audit-CAPTURE toggle. Absent in a v1..v5 blob. It stays OFF
     // (authorized-use default: a migrated save never silently arms capture).
     if (version >= 6) {
         d.auditCaptureEnabled = r.u8();
     }
 
     // v7 tail: the real-radio Audit SHAKES ledger + lifetime handshake count.
-    // Absent in a v1..v6 blob — the ledger stays empty (the pre-v7 behaviour: a
+    // Absent in a v1..v6 blob. The ledger stays empty (the pre-v7 behaviour: a
     // reboot re-builds the dedup set from scratch, which could re-count).
     if (version >= 7) {
         d.handshakesSeen = r.i32();
@@ -780,7 +780,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v8 tail: the EXPL sector-clear flags. Absent in a v1..v7 blob — the vector
+    // v8 tail: the EXPL sector-clear flags. Absent in a v1..v7 blob: the vector
     // stays empty, which the loader reads as "nothing cleared" (only sector 0 is
     // open, the correct default for a save that predates linear gating).
     if (version >= 8) {
@@ -789,20 +789,20 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             d.sectorCleared.push_back(r.u8());
     }
 
-    // v9 tail: the Boot-Sector incubation timer. Absent in a v1..v8 blob — it stays
+    // v9 tail: the Boot-Sector incubation timer. Absent in a v1..v8 blob. It stays
     // 0 (the migrated pet is treated as already hatched: no in-flight egg to resume).
     if (version >= 9) {
         d.bootHatchRemainMs = r.u32();
     }
 
-    // v10 tail: the zone-completion Titles. Absent in a v1..v9 blob — nothing
+    // v10 tail: the zone-completion Titles. Absent in a v1..v9 blob: nothing
     // unlocked, none equipped (a save that predates Titles has earned none).
     if (version >= 10) {
         d.titlesUnlocked = r.u32();
         d.equippedTitle = r.i32();
     }
 
-    // v11 tail: the creature-level stat points. Absent in a v1..v10 blob —
+    // v11 tail: the creature-level stat points. Absent in a v1..v10 blob:
     // statPoints stays empty and hasLevelData false, so the loader migrates the pet
     // to a fresh level 0 (the pre-v11 combatLevel was never applied to combat).
     if (version >= 11) {
@@ -813,7 +813,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v12 tail: the EXPL per-sector boss-unlock flags. Absent in a
-    // v1..v11 blob — bossUnlocked stays empty, so the loader migrates each flag from
+    // v1..v11 blob: bossUnlocked stays empty, so the loader migrates each flag from
     // sectorCleared[] (a cleared sector's boss was obviously already beaten).
     if (version >= 12) {
         const uint16_t nBoss = r.u16();
@@ -822,7 +822,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v13 tail: the EXPL per-sub-area clear + boss-unlock bitmasks. Absent in
-    // a v1..v12 blob — both vectors stay empty, so the loader migrates a cleared area
+    // a v1..v12 blob: both vectors stay empty, so the loader migrates a cleared area
     // to all 5 sub-areas cleared + unlocked (a beaten area had every sub-area beaten).
     if (version >= 13) {
         const uint16_t nSubC = r.u16();
@@ -833,7 +833,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             d.subBossUnlocked.push_back(r.u8());
     }
 
-    // v14 tail: the CFG screen-brightness level. Absent in a v1..v13 blob —
+    // v14 tail: the CFG screen-brightness level. Absent in a v1..v13 blob:
     // d.brightness keeps its kBrightnessDefault (brightest) default from SaveData.
     if (version >= 14) {
         const int32_t b = r.i32();
@@ -841,7 +841,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v15 tail: the EXPL per-sub-area re-farm win counts. Absent in a
-    // v1..v14 blob — subRefarm stays empty, which the loader reads as "nothing
+    // v1..v14 blob: subRefarm stays empty, which the loader reads as "nothing
     // depleted yet" (every count 0 → full drops until re-farmed).
     if (version >= 15) {
         const uint16_t nRf = r.u16();
@@ -849,8 +849,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             d.subRefarm.push_back(r.u16());
     }
 
-    // v16 tail: the per-pet defrag counts — the active pet's tally + a
-    // parallel list mapped back onto the rack pets by index. Absent in a v1..v15 blob —
+    // v16 tail: the per-pet defrag counts. The active pet's tally + a
+    // parallel list mapped back onto the rack pets by index. Absent in a v1..v15 blob:
     // every tally stays 0 (a migrated save's pets read as never-defragged).
     if (version >= 16) {
         d.defragCount = r.i32();
@@ -861,7 +861,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v17: no wire tail — the version alone flags the permanent-mod semantics, so
+    // v17: no wire tail. The version alone flags the permanent-mod semantics, so
     // the loader knows `ownedMods` already excludes the equipped mods (no migration).
     if (version >= 17) d.hasPermanentModData = true;
 
@@ -875,7 +875,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.hasModEquipLevelData = r.ok;
     }
 
-    // v19 tail: the Hacker SHOP account upgrades. Absent in a v1..v18 blob —
+    // v19 tail: the Hacker SHOP account upgrades. Absent in a v1..v18 blob:
     // bwUpgradeCount stays 0 (a migrated save has bought no upgrades).
     if (version >= 19) d.bwUpgradeCount = r.i32();
 
@@ -904,7 +904,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing.
-    // Absent in a v1..v23 blob — slotKinds stays empty and hasSlotKindData false,
+    // Absent in a v1..v23 blob: slotKinds stays empty and hasSlotKindData false,
     // so the loader leaves every slot Unset and Game::stampSlotKinds() re-derives
     // it from the loaded pet's CreatureDef::slotKinds (a deterministic migration).
     if (version >= 24) {
@@ -914,7 +914,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.hasSlotKindData = r.ok;
     }
 
-    // v25 tail: the web-'Pedia reveal-state bookkeeping. Absent in a v1..v24 blob —
+    // v25 tail: the web-'Pedia reveal-state bookkeeping. Absent in a v1..v24 blob:
     // seenCreatures stays empty and both masks stay 0 (nothing glimpsed/achieved yet,
     // the honest default for a save that predates this system).
     if (version >= 25) {
@@ -932,7 +932,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v26 tail: per-stored-pet creature-level state, parallel to d.rack. Absent in a
-    // v1..v25 blob — every rack pet keeps its SaveStoredPet default (level 0, all-Unset
+    // v1..v25 blob. Every rack pet keeps its SaveStoredPet default (level 0, all-Unset
     // slots): no level history was ever recorded for a stored pet before this version.
     if (version >= 26) {
         const uint16_t nLv = r.u16();
@@ -965,7 +965,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 28) d.forceTrojanDivert = r.u8();
 
     // v29 tail: per-stored-pet move + mod loadout, parallel to d.rack. Absent in a
-    // v1..v28 blob — every rack pet keeps its SaveStoredPet default (empty
+    // v1..v28 blob: every rack pet keeps its SaveStoredPet default (empty
     // ownedMoves/equippedMoves/equippedMods), which Game::archDeployStored reads as
     // "no data" and re-seeds from the pet's line, same as a pre-v2 active pet did.
     if (version >= 29) {
@@ -1026,7 +1026,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v35 tail: this pet's own best-ever DeepWeb Dive depth — the active pet's
+    // v35 tail: this pet's own best-ever DeepWeb Dive depth. The active pet's
     // tally + a parallel list mapped back onto the rack pets by index. Absent in a
     // v1..v34 blob → every pet reads back as 0 (never dived).
     if (version >= 35) {
@@ -1047,15 +1047,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v37 tail: the LINK opt-in. Absent in a v1..v36 blob → off, which is both the
-    // default and the only honest reading of a save that predates the choice — a
+    // default and the only honest reading of a save that predates the choice: a
     // migrated device must never start announcing itself because it was upgraded.
     if (version >= 37) d.linkEnabled = r.u8() != 0;
 
-    // v38 tail: reserved. Read to advance the cursor, never acted on — a save that
+    // v38 tail: reserved. Read to advance the cursor, never acted on: a save that
     // still carries the old opt-in must not put this device back on the 'net.
     if (version >= 38) r.u8();
 
-    // v39 tail: the raised-species tally. Absent in a v1..v38 blob — it reads back
+    // v39 tail: the raised-species tally. Absent in a v1..v38 blob: it reads back
     // empty here, and Game::applySave rebuilds what it can by unioning in every
     // species the save still points at. That recovery lives there rather than in this
     // codec because it is the same union a NATIVE v39 save needs (anything in the
@@ -1068,7 +1068,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v40 tail: the achievement bitsets + their counters. Absent in a v1..v39 blob — all
+    // v40 tail: the achievement bitsets + their counters. Absent in a v1..v39 blob. All
     // four read back empty here, and Game::applySave does the migration: the legacy u32
     // mask becomes the first bytes of `achievementEarned` (the original 14 rows hold wire
     // numbers 0-13), nothing is marked notified, and the counters are seeded from what
@@ -1095,7 +1095,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             d.speciesDiveDepths.push_back(r.i32());
     }
 
-    // v42 tail: the 5/5 recovery window already burned — the active pet's, then a
+    // v42 tail: the 5/5 recovery window already burned. The active pet's, then a
     // parallel list mapped back onto the rack pets by index. Absent in a v1..v41 blob
     // → 0 for every pet, so a migrating save enters its next dying window with the
     // full grace period. That is the forgiving reading, and the only one a save that
@@ -1112,7 +1112,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v44 tail: the played-defrag tally. Absent in a v1..v43 blob → 0, which starts the
     // ladder fresh. Deliberately NOT seeded from `defragCount`: that counts defrags of
     // every variant, so seeding from it would credit bought and rolled cleans as boards
-    // played by hand — over-crediting, the direction a migration must never take.
+    // played by hand; over-crediting, the direction a migration must never take.
     if (version >= 44) d.stackerWins = r.i32();
 
     // v45 tail: the counted mod pool. Absent in a v1..v44 blob → the array stays empty
@@ -1138,14 +1138,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v48 tail: the per-quote board state. Absent in a v1..v47 blob → empty, and every
-    // quote reads as never played. There is nothing older to seed it from — the board
+    // quote reads as never played. There is nothing older to seed it from: the board
     // did not exist, so no quote can honestly be called solved.
     if (version >= 48) {
         const uint16_t nQuote = r.u16();
         for (uint16_t i = 0; i < nQuote && r.ok; ++i) d.quoteStates.push_back(r.u8());
     }
 
-    // v50 tail: the Bandwidth-regen upgrade — the active pet's, then a parallel list
+    // v50 tail: the Bandwidth-regen upgrade. The active pet's, then a parallel list
     // mapped back onto the rack pets by index. Absent in a v1..v49 blob → 0 for every
     // pet, which is the truth rather than a compromise: no dish granted it before v50.
     if (version >= 50) {
@@ -1164,7 +1164,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, which is
-    // exactly "no bracket in play" — no migration, because a run that never existed
+    // exactly "no bracket in play": no migration, because a run that never existed
     // cannot be reconstructed from anything else in the save.
     if (version >= 53) {
         d.tourneySeed = r.u32();
@@ -1192,7 +1192,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.mergesCooked = r.i32();
     }
 
-    // v57 tail: the off-level stat points and the XP rate — the active pet's, then a
+    // v57 tail: the off-level stat points and the XP rate. The active pet's, then a
     // parallel list mapped back onto the rack pets by index (the v50 shape). Absent in a
     // v1..v56 blob → 0 for every pet, which is the truth rather than a compromise: no
     // dish granted one before this version.
@@ -1211,12 +1211,12 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         }
     }
 
-    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO —
+    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO:
     // the pet decides, which is what every device did before there was a choice to make.
     if (version >= 58) d.backgroundPick = r.u8();
 
     // v59 tail: the CANT. Absent in a v1..v58 blob → no sigils learned and nothing
-    // spent, which is the truth and not a compromise — every shake such a save
+    // spent, which is the truth and not a compromise: every shake such a save
     // captured is still in the purse, waiting for the first guardian.
     if (version >= 59) {
         d.cantSigils = r.u32();
@@ -1235,11 +1235,11 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, which is every
-    // service the save has bought running — what a device did before the switchboard.
+    // service the save has bought running: what a device did before the switchboard.
     if (version >= 61) d.rigServicesOff = r.u32();
 
     // v62 tail: what this pet has tasted. Absent in an older blob -> empty, a pet with
-    // nothing recorded rather than one that ate nothing — the grid says so honestly and
+    // nothing recorded rather than one that ate nothing: the grid says so honestly and
     // the next few meals fill it in.
     if (version >= 62) {
         const uint16_t n = r.u16();
@@ -1250,7 +1250,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v63 tail: the crawl's depth record. Absent in an older blob -> 0, a pet that has
-    // never been down there — which is every pet written before the zone existed.
+    // never been down there, which is every pet written before the zone existed.
     if (version >= 63) d.bestDarkWebDepth = r.i32();
 
     // v64 tail: the chosen theme's name. Absent in an older blob -> empty, which reads
@@ -1262,7 +1262,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v65 tail: which STORY chapters this device has been shown. Absent in an older blob
-    // -> empty, a device that has seen none — true of every save written before there
+    // -> empty, a device that has seen none: true of every save written before there
     // was anything to see, and corrected by the first walk.
     if (version >= 65) {
         const uint16_t n = r.u16();
@@ -1277,7 +1277,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v67 tail: UI MODE and CARE ALERTS. Absent in an older blob -> the SaveData
-    // defaults, ICONS+LABEL and ON — what every device drew before they were stored.
+    // defaults, ICONS+LABEL and ON: what every device drew before they were stored.
     if (version >= 67) {
         d.uiMode = r.u8();
         d.careAlerts = r.u8();

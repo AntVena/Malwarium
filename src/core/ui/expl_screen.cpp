@@ -22,10 +22,10 @@ namespace mal {
 namespace {
 
 // EXPL's list starts below the top carousel track (kTrackH), not under a plain
-// header band — hence its own name rather than layout.h's kRowTop.
+// header band, hence its own name rather than layout.h's kRowTop.
 constexpr int kTrackRowTop = 40;
 
-// Difficulty pips: `filled` of `total` (UI_DIFFICULTY_PIPS stub — small filled/empty
+// Difficulty pips: `filled` of `total` (UI_DIFFICULTY_PIPS stub. Small filled/empty
 // squares so the tier reads in grayscale by count + fill). `total` is the scale the
 // count is read against: 3 for an encounter's difficulty, kAreaCount for a ladder
 // depth, so the same widget answers "how deep" and "how hard" without either
@@ -43,7 +43,7 @@ void drawDifficulty(Framebuffer& fb, int x, int y, int filled, int total = 3) {
 
 } // namespace
 
-// Area/storefront identity itself is owned per-area (src/core/content/areas/) —
+// Area/storefront identity itself is owned per-area (src/core/content/areas/):
 // these accessors just resolve a sector INDEX to that area's own AreaDef; out-of-
 // range clamps to area 0 (mal::area's own fallback), matching every caller's
 // existing expectation.
@@ -60,7 +60,7 @@ bool explSectorOpen(int idx, const bool* sectorCleared) {
     return sectorCleared && sectorCleared[idx - 1];
 }
 // explSectorTier/explSectorName/sectorTitle/explSubAreaName all return an EMPTY
-// default ("" / tier 1) for an out-of-range index — distinct from the shop
+// default ("" / tier 1) for an out-of-range index: distinct from the shop
 // accessors above, which intentionally fall back to area 0's storefront. So these
 // bounds-check explicitly rather than relying on mal::area()'s clamp.
 int explSectorTier(int idx) {
@@ -123,7 +123,7 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
     if (explRowIsDarkWeb(row)) {                          // the terminal zone
         // Opened by CLEARING the area whose shrine holds the portal, not by reaching it:
         // the door is behind that area's own boss. Keyed by id for the same reason the
-        // dive's gate is — see kDarkWebUnlockAreaId.
+        // dive's gate is: see kDarkWebUnlockAreaId.
         const int gate = areaIndexById(kDarkWebUnlockAreaId);
         if (gate < 0 || !(areaCleared && areaCleared[gate]))
             return ExplRowState::DarkWebLocked;
@@ -185,7 +185,7 @@ namespace {
 // The right-anchored tag + its emphasis colour for a row state (the WORD carries the
 // meaning; colour is only emphasis, so a grayscale screenshot stays readable).
 struct RowTag { const char* text; Rgb565 col; };
-// `learn` is the row's "?n" count — 0 when this zone has nothing left to teach THIS pet.
+// `learn` is the row's "?n" count: 0 when this zone has nothing left to teach THIS pet.
 // A BEATEN zone is only DONE when that holds. Putting the boss down is BEAT, which
 // claims the fight and nothing else; DONE is reserved for the row that owes the pet
 // nothing at all, which is the only reading under which the word is true and the only
@@ -193,7 +193,7 @@ struct RowTag { const char* text; Rgb565 col; };
 // the save, on purpose: a fresh hatch walks back into a ladder of BEAT rows, and that is
 // the honest answer to where to take it.
 //
-// BEAT is dim and DONE is CALM for the same reason — on a beaten row the bright thing
+// BEAT is dim and DONE is CALM for the same reason: on a beaten row the bright thing
 // should be the "?n" still standing beside it, not the fight that is already over.
 RowTag rowTag(ExplRowState s, int learn) {
     switch (s) {
@@ -221,8 +221,8 @@ RowTag rowTag(ExplRowState s, int learn) {
     return {"", palColor(Pal::INK_DIM)};
 }
 
-// List geometry. A row is two lines — a TITLE (name + right-anchored state tag) over a
-// dim DETAIL line (depth, progress, the boss waiting at the end) — with a 20x20 glyph
+// List geometry. A row is two lines. A TITLE (name + right-anchored state tag) over a
+// dim DETAIL line (depth, progress, the boss waiting at the end). With a 20x20 glyph
 // column to its left. The title's x and the tag's right margin are the budget every
 // area/sub-area/boss name is held to (test_expl_names_fit_their_rows).
 constexpr int kListTop = 26;
@@ -238,7 +238,7 @@ constexpr int kLevelRowsMax = kExplLeadRows + kExplTailRows +
 
 // The 20x20 glyph column, for a zone the player can actually see. A zone whose
 // ICON_SECTOR_<AREA_ID> hasn't been drawn yet gets an empty frame rather than nothing,
-// so the frame means exactly one thing — art pending — and the text beside it sits at
+// so the frame means exactly one thing (art pending), and the text beside it sits at
 // the same x either way. A LOCKED row draws no glyph at all: it has nothing to show
 // yet, and a column of identical frames would drown the one zone that does.
 void drawIconSlot(Framebuffer& fb, const SpriteData* icon, int x, int y, Rgb565 tint) {
@@ -255,8 +255,8 @@ int learnAt(const int* block, int i) { return block ? block[i] : 0; }
 //
 // Two states answer 0 whatever their zone holds. A LOCKED row is drawn as "??????", and
 // a count beside that would be spoiling a zone the player cannot reach. The ARENA never
-// teaches at all — a bracket is fought against other operators' pets, which
-// Game::combatCanTeach refuses a drop roll — so a mark there would be the one thing this
+// teaches at all (a bracket is fought against other operators' pets, which
+// Game::combatCanTeach refuses a drop roll), so a mark there would be the one thing this
 // lead must never be, a promise the roll does not keep.
 int rowMovesToLearn(int row, ExplRowState st, const ExplListView& v) {
     switch (st) {
@@ -288,7 +288,7 @@ int rowMovesToLearn(int row, ExplRowState st, const ExplListView& v) {
 }
 
 // An area's sector glyph, by the ICON_SECTOR_<AREA_ID> convention (the same
-// name-IS-the-lookup rule as itemIcon, items_screen.cpp) — the id is already on the
+// name-IS-the-lookup rule as itemIcon, items_screen.cpp): the id is already on the
 // AreaDef row, so nothing here maps an area to a picture.
 const SpriteData* sectorIcon(const ContentRegistry& reg, int areaIdx) {
     if (areaIdx < 0 || areaIdx >= kExplSectors) return nullptr;
@@ -318,7 +318,7 @@ const char* explCatName(ExplCat c) {
 }
 
 const char* explCatBlurb(ExplCat c) {
-    // What the category IS, in one line under its name — the answer to "why would I go
+    // What the category IS, in one line under its name: the answer to "why would I go
     // in here" for a player who has never pressed it. Static, unlike the detail line
     // beside it, because what an activity is does not change with how far into it you
     // are.
@@ -334,7 +334,7 @@ const char* explCatBlurb(ExplCat c) {
 
 namespace {
 // A category row's state, read off the same flag blocks a zone row's is. Split out
-// because the picker asks it twice — once to decide whether the cursor stops here, and
+// because the picker asks it twice: once to decide whether the cursor stops here, and
 // once to decide whether to draw the name or the "??????".
 ExplRowState catZoneState(int row, const ExplListView& v) {
     return explRowState(row, v.areaCleared, v.subCleared, v.subBossUnlocked,
@@ -345,7 +345,7 @@ ExplRowState catZoneState(int row, const ExplListView& v) {
 bool explCatOpen(ExplCat c, const ExplListView& v) {
     switch (c) {
         // Area 0 is always open, so the ladder always is. The one category that can
-        // never be a "??????" — a device with nothing unlocked still has somewhere to go.
+        // never be a "??????": a device with nothing unlocked still has somewhere to go.
         case ExplCat::Story: return true;
         // Open the moment EITHER endless zone is: the Dive opens mid-game and the Crawl
         // at the end of the map, and a category locked until both were would hide the
@@ -367,7 +367,7 @@ namespace {
 
 // The glyph a category row carries. STORY shows the DEEPEST OPEN area, which is a
 // picture of where the operator is on the ladder rather than of the ladder's first
-// rung — it moves as they do, and it says the same thing the "n/N CLEARED" beside it
+// rung: it moves as they do, and it says the same thing the "n/N CLEARED" beside it
 // says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS has no art
 // yet and draws the empty frame, which on this screen means exactly that.
 const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListView& v) {
@@ -385,7 +385,7 @@ const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListV
 }
 
 // The category row's second line: where the operator is up to in THIS activity. The
-// counterpart to explCatBlurb — that says what the thing is, this says how far in they
+// counterpart to explCatBlurb: that says what the thing is, this says how far in they
 // are, and a locked category gets neither.
 void catDetail(char* out, size_t n, ExplCat c, const ExplListView& v) {
     out[0] = '\0';
@@ -416,7 +416,7 @@ void catDetail(char* out, size_t n, ExplCat c, const ExplListView& v) {
     }
 }
 
-// The ACTIVITY PICKER — EXPL's own top level. Four fixed rows at the two-line pitch the
+// The ACTIVITY PICKER: EXPL's own top level. Four fixed rows at the two-line pitch the
 // zone list uses, so a category reads like the zones behind it rather than like a
 // different screen. Nothing scrolls: the list is four rows by construction and the
 // whole point of it is that every activity is one press from here.
@@ -479,7 +479,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
     // indexes its four rows rather than the ladder's row space.
     if (v.cat == ExplCat::None) { drawExplCategories(fb, reg, v); return; }
 
-    // Breadcrumb header — the nav level, spelled out on the band's title. ONE crumb,
+    // Breadcrumb header: the nav level, spelled out on the band's title. ONE crumb,
     // always: the open category, or, once inside an area, that area's NAME (which is
     // why the row beneath it is the area's boss and not its name again). The font has
     // no '>', so the row cursor's triangle is the separator.
@@ -536,7 +536,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         }
         // A focused ZONE title (an area, the area-boss row, the DeepWeb row) pulses
         // INK <-> ACCENT at the ~1Hz care-pip cadence. A zone title reads like a heading,
-        // not a thing you can press — most of the ladder is "??????" early on, so the
+        // not a thing you can press: most of the ladder is "??????" early on, so the
         // band alone doesn't say "this one is armed and B enters it". The steady cursor
         // caret is still the non-colour channel; the pulse only draws the eye to it.
         const Rgb565 zoneInk = (focused && ((v.beat / 2) & 1) == 0)
@@ -568,7 +568,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             else if (!locked)
                 std::snprintf(detail, sizeof(detail), "ENDLESS - NO DIVE YET");
         } else if (explRowIsDarkWeb(row)) {
-            // The TERMINAL zone, under the dive — the second and last of ENDLESS's rows,
+            // The TERMINAL zone, under the dive: the second and last of ENDLESS's rows,
             // so nothing is fenced off from anything and it needs no divider of its own.
             const bool locked = (st == ExplRowState::DarkWebLocked);
             if (!locked)
@@ -583,7 +583,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                 std::snprintf(detail, sizeof(detail), "NOTHING DOWN HERE IS NAMED");
         } else if (sub < 0 && v.navArea < 0) {
             // TOP level: the area itself, as a zone to pick. Its tier is the ladder depth
-            // (areaTier) — how hard, before you commit — over its clear count.
+            // (areaTier) (how hard, before you commit) over its clear count.
             const bool locked = (st == ExplRowState::AreaLocked);
             if (!locked)
                 drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX,
@@ -600,7 +600,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             }
         } else if (sub < 0) {
             // INSIDE an area: the header row IS the area gauntlet. The breadcrumb already
-            // names the area, so this row spends its title on the BOSS — named only once
+            // names the area, so this row spends its title on the BOSS: named only once
             // it's reachable, so the marquee fight stays a reveal rather than a spoiler
             // on a row you can't press yet.
             drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX, y + (pitch - kRowIcon) / 2,
@@ -612,7 +612,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
             fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
             if (st == ExplRowState::AreaCleared) {
                 // A cleared gauntlet stays RE-RUNNABLE, the same way a cleared sub-area
-                // stays re-farmable — so inside the area this row is an action, not a
+                // stays re-farmable, so inside the area this row is an action, not a
                 // verdict, and its tag has to say so. At the TOP level the identical
                 // state means "this zone is done" and keeps rowTag's plain CLEARED.
                 tag = {"> RERUN", palColor(Pal::ACCENT)};
@@ -625,7 +625,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                 std::snprintf(detail, sizeof(detail), "%d/%d SUB-AREAS CLEARED",
                               clearedSubCount(v.subCleared, areaIdx), kExplSubAreas);
         } else {
-            // SUB-AREA — the number takes the glyph column, and the detail line answers
+            // SUB-AREA: the number takes the glyph column, and the detail line answers
             // "what do I get / how far off is it" for whichever state the row is in.
             const bool locked = (st == ExplRowState::SubLocked);
             char num[4];
@@ -650,15 +650,15 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
                     std::snprintf(detail, sizeof(detail), "BOSS AT %d WINS",
                                   v.winsToBoss);
                     break;
-                default: break;                      // locked — the tag says it all
+                default: break;                      // locked: the tag says it all
             }
         }
 
         // The "?n" LEAD, between the name and the state tag: how many moves this zone can
-        // still teach THIS pet — n things down there it has not seen. The QUESTION MARK
+        // still teach THIS pet. N things down there it has not seen. The QUESTION MARK
         // is the list's own word for that, since "??????" is what it draws a zone the
         // player has not reached as; a plus would read as a modifier, which is what a
-        // signed number means everywhere else on the device. CALM is only emphasis — it
+        // signed number means everywhere else on the device. CALM is only emphasis: it
         // says the unknown is a prize rather than a lock, the way the combat KIT page's
         // prize gutter does (RivalPrizes, core/ui/combat_screen.h). The number is the
         // non-colour channel: a zone with nothing left draws no lead at all, which is
@@ -667,7 +667,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
         lead[0] = '\0';
         if (learn) std::snprintf(lead, sizeof(lead), "?%d", learn);
 
-        // Title and detail are both held to the room their row actually leaves — the
+        // Title and detail are both held to the room their row actually leaves: the
         // tag's and the lead's widths both vary by state, so the budget is computed here
         // rather than assumed. The focused row scrolls what doesn't fit; the rest clip
         // (widgets.h).
@@ -690,7 +690,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
     // the packed pitch ever draws it.
     drawScrollbar(fb, kListTop, visible * pitch, rows, top, visible);
 
-    // Footer hint — context-sensitive B on the focused row (grayscale-safe).
+    // Footer hint: context-sensitive B on the focused row (grayscale-safe).
     const ExplRowState focus =
         (v.cursor >= 0 && v.cursor < explRowCount())
             ? explRowState(v.cursor, v.areaCleared, v.subCleared, v.subBossUnlocked,
@@ -718,7 +718,7 @@ void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListVie
     drawHintBand(fb, hint);
 }
 
-// Explore-mode idle badge: a thin status line under the top track — a
+// Explore-mode idle badge: a thin status line under the top track. A
 // pulsing cursor + "EXPL <label>" (the armed sub-area) on the left, and on the right the
 // mode's own field: "WINS n/N" or "NEXT IN n" (fractions/counts), "BOSS READY" (a tag).
 // Dual-coded (glyph + text + fraction), so the running state, which sub-area, and the
@@ -754,7 +754,7 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
             // count = the streak, countMax = the target auto-progress steps at, so the
             // field counts DOWN to the next rung instead of up toward a boss this
             // cleared sub-area no longer has. Zero is drawn as a word rather than
-            // "NEXT IN 0" — the step happens on the next hand-back to the walk, so the
+            // "NEXT IN 0": the step happens on the next hand-back to the walk, so the
             // number is already spent by the time it would read.
             const int remain = countMax - count;
             if (remain > 0) std::snprintf(right, sizeof(right), "NEXT IN %d", remain);
@@ -772,7 +772,7 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
     drawText(fb, kActiveW - kMargin - textWidth(right), y, right, rc);
 }
 
-// Explore-control overlay: the A+C chord opens this short list over the habitat —
+// Explore-control overlay: the A+C chord opens this short list over the habitat.
 // Network Ping (force the next step) · Warp (if a key is held) · the AUTO-PROGRESS and
 // SOUND switches · Stop. Standard A/B/C returns, spelled out (grayscale-safe). A bordered
 // PAPER panel (TRACK outline via a 2px inset) centered over the living area.
@@ -784,7 +784,7 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
     drawText(fb, bx + 10, by + 8, "EXPLORE", palColor(Pal::INK));
     fb.fillRect(bx + 8, by + 22, boxW - 16, 1, palColor(Pal::TRACK));
 
-    // One row per action, cursor-highlighted — the same filled-track + caret idiom every
+    // One row per action, cursor-highlighted: the same filled-track + caret idiom every
     // other list uses, so it reads in grayscale. WARP with no key held stays on the list
     // rather than being skipped: the row is what says the action exists at all, and its
     // reason is spelled out beside it.
@@ -802,7 +802,7 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
         drawText(fb, bx + 20, y, kLabels[i],
                  inert ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
         // Right field: the mode's ON/OFF, or WARP's reason for being inert. Both are
-        // WORDS — nothing here is carried by colour alone.
+        // WORDS: nothing here is carried by colour alone.
         const char* right = nullptr;
         Rgb565 rc = palColor(Pal::INK_DIM);
         if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
@@ -821,10 +821,10 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
     }
 
     // FOOTER, under a rule: what this rung is actually paying. Below the rows and
-    // outside the cursor's reach, because it is a reading and not a thing to press —
+    // outside the cursor's reach, because it is a reading and not a thing to press:
     // the same separation the panel's title keeps above them. 100% is the flat base a
     // level-matched wild pays; under it the pet has outgrown the rung (WARN), over it
-    // the walk is punching up or a bonus is live (CALM). Dual-coded — the percentage is
+    // the walk is punching up or a bonus is live (CALM). Dual-coded: the percentage is
     // the channel, colour only the emphasis.
     const int footY = by + boxH - 32;
     fb.fillRect(bx + 8, footY - 8, boxW - 16, 1, palColor(Pal::TRACK));
@@ -914,7 +914,7 @@ void drawWifiEvent(Framebuffer& fb, const WifiEventView& v) {
     // independent line from the guardian/cache/friendly one, drawn only when
     // resolveNetworkDiscovery() actually set it.
     // The discovery line carries a real SSID, so it is the one that can outrun the
-    // canvas — it scrolls inside the margins rather than being centred off both edges.
+    // canvas: it scrolls inside the margins rather than being centred off both edges.
     if (v.discoveryLine && v.discoveryLine[0])
         drawTextMarquee(fb, kMargin, 32, kActiveW - 2 * kMargin, v.discoveryLine,
                         palColor(Pal::INK_DIM), v.beat, Overflow::Scroll);
@@ -927,7 +927,7 @@ void drawWifiEvent(Framebuffer& fb, const WifiEventView& v) {
                  palColor(Pal::INK_DIM));
 
     // The pet, and the network going into it. WifiAbsorb::None had nothing queued to
-    // find, so there is no glyph to draw at all — the pet just stands there, which is
+    // find, so there is no glyph to draw at all: the pet just stands there, which is
     // exactly what "WANTS NEW NETWORKS..." means.
     const AbsorbPhase phase = absorbPhase(v.fxBeat, kAbsorbLeadBeats, kAbsorbBeats,
                                           wifiAbsorbBite(v.absorb));
@@ -942,12 +942,12 @@ void drawWifiEvent(Framebuffer& fb, const WifiEventView& v) {
 namespace {
 constexpr int kShopRowTop = 34;
 constexpr int kShopRowPitch = 40;
-// Ceiling on the storefront list, not its fixed height — see drawShop's adaptive
+// Ceiling on the storefront list, not its fixed height: see drawShop's adaptive
 // window.
 constexpr int kShopMaxRows = 3;
 
-// The row's full price as one line — Bits plus every extra item cost it carries
-// (an arbitrary-length list, not just Bits alone — docs/CONTENT_STANDARD.md).
+// The row's full price as one line. Bits plus every extra item cost it carries
+// (an arbitrary-length list, not just Bits alone; docs/CONTENT_STANDARD.md).
 void formatShopPrice(char* buf, size_t n, const ShopRowView& row) {
     int off = std::snprintf(buf, n, "%dB", row.bitsPrice);
     for (int i = 0; i < row.costCount && off > 0 && static_cast<size_t>(off) < n; ++i)
@@ -956,13 +956,13 @@ void formatShopPrice(char* buf, size_t n, const ShopRowView& row) {
 
 // The buy reason's own line, pinned just above the hint band. It is the VERDICT on the
 // focused listing, not a tail of the description, so it sits in one place whatever the
-// prose ran to and lets the description's unfilled reserve be the gap between the two —
+// prose ran to and lets the description's unfilled reserve be the gap between the two:
 // the same footer grouping drawItemDetail uses for its HAVE/action pair. Set flowing at
 // a few px under the prose it read as the description's last line instead.
 constexpr int kShopStatusY = kActiveH - 16 - (kFontH + 6);
 
 // Lines the description gets for a list of `visibleRows`: the band between the last
-// listing and kShopStatusY. At the row cap this is kShopDescLines (expl_screen.h — the
+// listing and kShopStatusY. At the row cap this is kShopDescLines (expl_screen.h: the
 // worst case a stocked row has to clear); a one-listing storefront gets several times
 // that.
 int shopDescLines(int visibleRows) {
@@ -971,14 +971,14 @@ int shopDescLines(int visibleRows) {
 }
 
 // One storefront row: name, the full price (Bits + any item costs), and remaining
-// stock as a count (so it reads in grayscale — sold out shows STOCK 0, not just a
+// stock as a count (so it reads in grayscale. Sold out shows STOCK 0, not just a
 // greyed row). `selected` draws the row cursor.
 //
 // A CAPPED row (a mod, bounded by MOD STORAGE) also carries "HAVE n/cap" opposite the
 // name, above STOCK: the two counts share a right-hand column, what is on the shelf
 // under what is already in the pool. It is the same fraction the mod detail panel
 // prints (mods_screen.h) and the number STORAGE FULL is read off, and it turns WARN at
-// the ceiling. An UNCAPPED row (an item — an inventory stack has no ceiling) leaves the
+// the ceiling. An UNCAPPED row (an item: an inventory stack has no ceiling) leaves the
 // column empty and keeps the full row width for its name, which is the half a shopper
 // cannot lose.
 void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selected,
@@ -1006,7 +1006,7 @@ void drawShopRow(Framebuffer& fb, int rowY, const ShopRowView& row, bool selecte
 
 void drawShop(Framebuffer& fb, const StorefrontView& v) {
     // Storefront banner + wallet header (dual-coded: the numbers carry meaning,
-    // colour is only emphasis). The banner scrolls when the wallet crowds it —
+    // colour is only emphasis). The banner scrolls when the wallet crowds it:
     // a store name is the screen's whole identity, so it is not the half that gives.
     char wallet[16];
     std::snprintf(wallet, sizeof(wallet), "%dB", v.walletBits);
@@ -1015,7 +1015,7 @@ void drawShop(Framebuffer& fb, const StorefrontView& v) {
                     kActiveW - 2 * kMargin - textWidth(wallet) - kMargin, v.storeName,
                     palColor(Pal::INK), v.beat, Overflow::Scroll);
 
-    // Windowed list — an arbitrary listing count scrolls past kShopMaxRows instead of
+    // Windowed list: an arbitrary listing count scrolls past kShopMaxRows instead of
     // growing the screen.
     // ADAPTIVE window: a storefront stocks one or two listings, so drawing only the
     // rows it has hands 40-80px back to the description below instead of reserving the
@@ -1030,7 +1030,7 @@ void drawShop(Framebuffer& fb, const StorefrontView& v) {
     drawScrollbar(fb, kShopRowTop, kShopMaxRows * kShopRowPitch, v.rowCount, scrollTop, kShopMaxRows);
 
     // Selected row's description + the buy-availability reason, spelled out so
-    // both survive grayscale — "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /
+    // both survive grayscale: "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /
     // "B TO BUY".
     // The description is a content row's own prose (core/content/content_*.cpp), far
     // wider than the 208px here, so it wraps into the band above kShopStatusY; the buy
@@ -1054,7 +1054,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
     drawHeaderBand(fb, "WARP KEY");
     drawText(fb, kMargin, 28, "JUMP TO...", palColor(Pal::INK_DIM));
 
-    // One row per held key, cursor-highlighted (a filled track + the row cursor —
+    // One row per held key, cursor-highlighted (a filled track + the row cursor:
     // the same idiom as the sector list / shop row, so it reads in grayscale).
     for (int i = 0; i < keyCount; ++i) {
         const int y = kTrackRowTop + i * kRowH;
@@ -1071,13 +1071,13 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
 }
 
 // Post-encounter status readout: a brief, informational-only
-// overlay — no decision, so the hint band spells out the one break from the
+// overlay. No decision, so the hint band spells out the one break from the
 // standard A/B/C contract (ANY button dismisses, not just B/C).
 void drawPostEncounter(Framebuffer& fb, const PostEncounterView& v) {
     drawHeaderBand(fb, "STATUS");
 
     // Bandwidth line: current/max + this encounter's delta, dual-coded by the
-    // explicit signed number — except when there was nothing left to spend
+    // explicit signed number, except when there was nothing left to spend
     // (bwBefore == 0), where a "+0"/"-0" delta would misleadingly read as "no
     // change happened" instead of "nothing to spend" (feedback intent).
     char bwLine[32];
@@ -1091,7 +1091,7 @@ void drawPostEncounter(Framebuffer& fb, const PostEncounterView& v) {
     }
 
     // Fragmentation line: omitted entirely when frag wasn't in play this
-    // encounter (None) — a distinct WORD (not colour alone) carries SHIELDED vs
+    // encounter (None). A distinct WORD (not colour alone) carries SHIELDED vs
     // the rise amount.
     if (v.fragState != PostEncounterFragState::None) {
         char fragLine[24];

@@ -7,7 +7,7 @@ namespace mal {
 
 namespace {
 
-// GROUND STATION — a ridge of dishes under a night sky, and the prize the radio's
+// GROUND STATION: a ridge of dishes under a night sky, and the prize the radio's
 // wardriving ladder pays out. The one place in the set that is genuinely OUTDOORS and
 // genuinely EMPTY: no skyline, no corridor, no room. A mast, three dishes, a fence of
 // guy wires, and a lot of sky.
@@ -24,7 +24,7 @@ constexpr uint8_t kToneSky = 16;         // the lift toward the horizon
 constexpr uint8_t kToneStar = 92;
 constexpr uint8_t kToneRidge = 34;       // the far ground behind the station
 constexpr uint8_t kToneMast = 58;
-constexpr uint8_t kToneGuy = 46;         // its guy wires — dim, so they read THROUGH
+constexpr uint8_t kToneGuy = 46;         // its guy wires: dim, so they read THROUGH
 constexpr uint8_t kToneBeaconOn = 198;   // the one bright thing for miles
 constexpr uint8_t kToneBeaconOff = 46;
 constexpr uint8_t kToneDish = 62;
@@ -46,16 +46,16 @@ constexpr uint8_t kStars[][2] = {
 
 // The ridge the station stands on: low, even, and only as far as the dishes reach. A
 // part-width silhouette is the whole reason SceneSpan exists, and this is what it is
-// for — the left half of the horizon is open ground.
+// for: the left half of the horizon is open ground.
 constexpr uint8_t kRidge[] = {0, 0, 3, 5, 6, 6, 7, 8, 8, 9, 9, 8, 8, 7, 6, 5, 4, 3, 2, 0};
 constexpr int kRidgeX = 96, kRidgeW = 128;
 
 // The mast: a tall thin thing with a beacon on it, standing well off-centre. `kMastX`
-// is deliberately in the right third — the middle of the panel is where a fighter
+// is deliberately in the right third: the middle of the panel is where a fighter
 // stands, and a mast up the middle of it would be a pole growing out of a pet's head.
 constexpr int kMastX = 176;
 constexpr int kMastRise = 92;            // rows above the horizon, at the taller ground
-constexpr int kBeaconPeriod = 6;         // slow — an aircraft warning light, not a strobe
+constexpr int kBeaconPeriod = 6;         // slow: an aircraft warning light, not a strobe
 
 // The dishes, as (x, radius, how far above the horizon their centre sits). Three, in
 // descending size going left, which is the cheapest way to make a flat ridge read as
@@ -93,7 +93,7 @@ void drawGroundStationScene(Framebuffer& fb, int beat, const SceneGround& g) {
     // The dishes. TWO DISCS, not one: the body, and a second one offset up and left
     // drawn in the mouth's tone. What is left of the body is a crescent along the lower
     // right, and a crescent is the only thing that reads as "a bowl turned toward you"
-    // at nine pixels across — a flat disc is the moon, and this scene already has a sky
+    // at nine pixels across: a flat disc is the moon, and this scene already has a sky
     // for that to be mistaken in.
     const Rgb565 dish = sceneTone(kToneDish);
     for (const Dish& d : kDishes) {

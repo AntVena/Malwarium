@@ -1,4 +1,4 @@
-// sd_status.h — portable microSD presence the platform tier feeds in.
+// sd_status.h: portable microSD presence the platform tier feeds in.
 //
 // Mounting the card is device-tier work (SD_MMC/SDIO GPIO, sd_esp32.h), but the
 // *shape* of the reading lives here so the CFG "SD" line and any tests can read it

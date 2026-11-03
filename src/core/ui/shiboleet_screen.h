@@ -1,14 +1,14 @@
-// shiboleet_screen.h — the guardian encounter, in three screens.
+// shiboleet_screen.h: the guardian encounter, in three screens.
 //
-// A meeting is a HAIL, then (in the middle band) the RIDDLE, then a VERDICT — the same
+// A meeting is a HAIL, then (in the middle band) the RIDDLE, then a VERDICT. The same
 // three beats a conversation has, and the reason the riddle is not the whole encounter:
 // something has to arrive before it can ask, and it has to make something of the answer
 // afterwards or a lost riddle is just a boss that appeared out of nothing.
 //
-//   drawShiboleetHail    — the thing is here, this is what it looks like, this is what
+//   drawShiboleetHail:    the thing is here, this is what it looks like, this is what
 //                           it says, and this is how much of that the pet can read.
-//   drawShiboleet        — what it asked and the three replies to pick between.
-//   drawShiboleetVerdict — what it made of the answer, and what that paid or cost.
+//   drawShiboleet:        what it asked and the three replies to pick between.
+//   drawShiboleetVerdict: what it made of the answer, and what that paid or cost.
 //
 // All three share a header band, the Cant strip along the foot, and the rule that
 // everything SPOKEN arrives already enciphered (Game::shiboleetGreeting /
@@ -20,22 +20,22 @@
 // wall of nonsense needs to see that the nonsense is FINITE and that they are eating
 // into it: the lit letters are the sigils earned, and every one of them is a letter that
 // now reads plainly in the riddle above. It is also the screens' second, non-colour
-// channel — a grayscale shot still separates a learned letter from an unlearned one by
+// channel: a grayscale shot still separates a learned letter from an unlearned one by
 // its box, not its hue, which is the dual-coding gate.
 #pragma once
 
 #include <cstdint>
 
-#include "core/content/content_riddles.h"   // kRiddleReplies — the row count is content's
-#include "core/render/swarm.h"              // SwarmView — the guardian's body is a flock
+#include "core/content/content_riddles.h"   // kRiddleReplies: the row count is content's
+#include "core/render/swarm.h"              // SwarmView: the guardian's body is a flock
 
 namespace mal {
 
 class Framebuffer;
 
 // THE GUARDIAN'S CELL: the box its swarm occupies on the two screens that draw the body,
-// in active px. Public because the ENGINE resets the flock into it (Game::startShiboleet)
-// — a flock is told how big its box is and never where it is, so this is the one number
+// in active px. Public because the ENGINE resets the flock into it (Game::startShiboleet):
+// a flock is told how big its box is and never where it is, so this is the one number
 // the two layers have to agree on, and it is stated here because the screen is what owns
 // a layout.
 //
@@ -46,7 +46,7 @@ constexpr int kGuardianCellW = 132;
 constexpr int kGuardianCellH = 58;
 
 // How many marks one guardian is made of. Under kSwarmMarksMax, which is the ceiling the
-// O(n^2) step can afford — this is the number that fills the cell above at a density that
+// O(n^2) step can afford: this is the number that fills the cell above at a density that
 // still has a middle, and a bigger flock in the same box is a blob.
 constexpr int kGuardianSwarmMarks = 26;
 

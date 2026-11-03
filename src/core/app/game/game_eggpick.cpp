@@ -10,7 +10,7 @@
 #include "core/render/sprite.h"
 #include "generated/assets.h"
 
-// game_eggpick.cpp — the Clutch Pick, the Phishing line's hatch minigame.
+// game_eggpick.cpp: the Clutch Pick, the Phishing line's hatch minigame.
 //
 // A Phishing or Metamorphic egg is laid into a raft of identical decoys (BG_EGG_CLUTCH), one of which
 // is quietly swapped for the live egg (SPR_EGG_PHISH_MICRO). Every decoy is baked into
@@ -21,11 +21,11 @@
 // (left / top), C at the second (right / bottom), B commits. The split alternates axis
 // each round, so 8x4 slots narrow 8x4 -> 4x4 -> 4x2 -> 2x2. Finish with the live egg
 // still inside and the incubation clock halves (Game::startEggPick's caller keeps the
-// full clock otherwise) — a miss costs only the bonus, never the pet.
+// full clock otherwise): a miss costs only the bonus, never the pet.
 //
 // Entered from Game::startHatchGame the instant the egg is laid; leaves to idle.
 //
-// The unit also owns the HATCH REVEAL (bottom of the file) — the on-demand crack that
+// The unit also owns the HATCH REVEAL (bottom of the file): the on-demand crack that
 // gives a line without a decrypt somewhere to actually watch its shell open, rather
 // than having the egg quietly become a pet while nobody is looking.
 
@@ -36,7 +36,7 @@ namespace {
 // The clutch panel's own geometry, baked into BG_EGG_CLUTCH: a 112x56 field of 14px
 // cells, 8 across and 4 down, with odd rows shifted half a cell so the raft doesn't
 // read as a grid. That shift pushes the last odd-row cell off the right edge, where it
-// wraps around to the left — see kSlotWraps below.
+// wraps around to the left: see kSlotWraps below.
 constexpr int kClutchW = 112;
 constexpr int kClutchH = 56;
 constexpr int kCell = 14;
@@ -53,7 +53,7 @@ constexpr int kPanelY = (kActiveH - kClutchH * kZoom) / 2;
 
 // Scrim strengths over an eliminated / not-currently-aimed-at cell, giving three
 // luminance steps (aimed > in play > eliminated) that survive grayscale. Pitched for a
-// DIM panel, where a subtle wash closes up to nothing — the aimed half has to separate
+// DIM panel, where a subtle wash closes up to nothing: the aimed half has to separate
 // at a glance in bad light, not just measurably.
 // kScrimIdle is still the restrained one, because an unaimed cell is exactly where the
 // player has to keep hunting for the animated tell before committing; it reads as "not
@@ -76,7 +76,7 @@ int slotY(int slot) { return slotRow(slot) * kCell; }
 
 // A wrapped cell straddles both edges of the panel, so it can't be honestly said to be
 // in the left half or the right half. Decoys there are fine (they're wallpaper), but the
-// LIVE egg never hides in one — hence the target draw is single-position, and a player
+// LIVE egg never hides in one, hence the target draw is single-position, and a player
 // is never asked to pick a side for an egg that's on both.
 bool slotWraps(int slot) { return slotX(slot) + kCell > kClutchW; }
 
@@ -136,7 +136,7 @@ void Game::eggPickAim(bool secondHalf) {
 
 void Game::eggPickCommit() {
     if (eggPickResolved_) {
-        // An arcade raft has no egg behind it, so there is no clock to halve — the
+        // An arcade raft has no egg behind it, so there is no clock to halve: the
         // till takes the verdict instead. Win-or-lose: a halving either kept the live
         // egg or it didn't, and there is no partial credit to award.
         if (arcadeRun_) {
@@ -166,7 +166,7 @@ void Game::eggPickCommit() {
     eggPickSecondHalf_ = false;   // every round re-opens aimed at its first half
 
     // The moment the live egg falls out of the surviving span, the run is already
-    // decided — playing out the rounds that are left would just be asking the player
+    // decided: playing out the rounds that are left would just be asking the player
     // to keep halving a raft that can no longer contain the answer. Resolve here,
     // on the turn that actually lost it, rather than at the scheduled last round.
     if (!eggPickTargetInSpan()) {
@@ -186,7 +186,7 @@ namespace {
 
 // A solid triangle on the 5x7 text grid, so an arrow can sit inline with a button
 // letter. The built-in font has no arrow glyphs (the same gap drawRowCursor fills for
-// the focused-row marker), and the direction here IS the information — it names which
+// the focused-row marker), and the direction here IS the information: it names which
 // way the half this button claims lies.
 enum class Arrow { Left, Right, Up, Down };
 
@@ -221,7 +221,7 @@ int cropZoom(int colSpan, int rowSpan) {
 }
 
 // Blit a SHEET-space rectangle of the clutch backdrop, upscaled by `zoom`. The x axis
-// samples modulo the sheet width, the same wrap slotX() itself uses — a crop that
+// samples modulo the sheet width, the same wrap slotX() itself uses: a crop that
 // includes an odd row's half-cell shift needs it (see kOddRowShift), and it costs
 // nothing when the crop never reaches the wrap.
 void drawClutchCrop(Framebuffer& fb, int srcX0, int srcY0, int srcW, int srcH,
@@ -246,11 +246,11 @@ void Game::drawEggPick(Framebuffer& fb) const {
     const char* title = "SPOT THE PHISH";
     drawText(fb, (kActiveW - textWidth(title)) / 2, 14, title, palColor(Pal::INK));
 
-    // Crop to the batch the player can still actually pick — eliminated cells aren't
+    // Crop to the batch the player can still actually pick: eliminated cells aren't
     // drawn at all, so "the buttons' effect" is never left ambiguous by a wash over a
     // raft that's still fully on screen. Running, that's the surviving span (both row
     // parities' half-shift included, since that's the real shape of those cells, not
-    // neighbour bleed — see kOddRowShift). Resolved, it narrows to the live egg's own
+    // neighbour bleed: see kOddRowShift). Resolved, it narrows to the live egg's own
     // cell alone, blown up as large as the panel allows, so a miss shows the actual
     // tile that got away rather than asking the player to spot it in the full raft.
     int srcX0, srcY0, srcW, srcH, zoom;
@@ -274,9 +274,9 @@ void Game::drawEggPick(Framebuffer& fb) const {
     const int destY = kActiveH / 2 - (srcH * zoom) / 2;
     drawClutchCrop(fb, srcX0, srcY0, srcW, srcH, destX, destY, zoom);
 
-    // The live egg, in that same cropped/zoomed space. It's always inside the crop —
-    // running, because eggPickCommit resolves the run the instant it isn't; resolved,
-    // because the crop IS its cell — so its offset from the crop's own origin is what
+    // The live egg, in that same cropped/zoomed space. It's always inside the crop.
+    // Running, because eggPickCommit resolves the run the instant it isn't; resolved,
+    // because the crop IS its cell, so its offset from the crop's own origin is what
     // places it, wrapping the same way slotX() does.
     {
         const int tx = slotX(eggPickTarget_), ty = slotY(eggPickTarget_);
@@ -312,7 +312,7 @@ void Game::drawEggPick(Framebuffer& fb) const {
     const bool byColumn = splitsColumns(eggPickRound_, eggPickColSpan_, eggPickRowSpan_);
 
     // A solid bar down the outer edge of the aimed half, hugging the crop itself now
-    // that the eliminated cells aren't drawn at all — the aim reads as pure shape and
+    // that the eliminated cells aren't drawn at all: the aim reads as pure shape and
     // position against the batch that's actually still in play.
     constexpr int kEdge = 4;
     const Rgb565 aim = palColor(Pal::ACCENT);
@@ -330,7 +330,7 @@ void Game::drawEggPick(Framebuffer& fb) const {
     drawText(fb, (kActiveW - textWidth(aimed)) / 2, 186, aimed, palColor(Pal::INK));
 
     // UI_HINT_BAND. A and C aim rather than step/cancel here, so the deviation from the
-    // standard A/B/C contract is spelled out — and laid out the way the buttons are, A
+    // standard A/B/C contract is spelled out, and laid out the way the buttons are, A
     // left, B middle, C right, each arrow pointing at the half that button claims. The
     // aimed one is lit and the other dim, so the band shows the choice a second way.
     constexpr int kHintY = 204;
@@ -376,7 +376,7 @@ void Game::drawHatchReveal(Framebuffer& fb) const {
     drawText(fb, (kActiveW - textWidth(title)) / 2, 20, title, palColor(Pal::INK));
 
     // The shell's own one-shot, played big and centred with nothing competing for the
-    // eye — this screen exists purely so the animation gets watched.
+    // eye: this screen exists purely so the animation gets watched.
     if (const SpriteData* egg = hatchEggSprite()) {
         const int w = egg->frameW * kScaleNum / kScaleDen;
         const int h = egg->h * kScaleNum / kScaleDen;

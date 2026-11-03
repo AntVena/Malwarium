@@ -1,15 +1,15 @@
-// tournament.h — ROCK THE DOCK, the pure half: a seed in, a bracket out.
+// tournament.h: ROCK THE DOCK, the pure half: a seed in, a bracket out.
 //
-// An arena run is ONE 32-BIT SEED plus a survivor bitmask. Every entrant — its handle,
-// species, level, stat spread, move kit, mods and the Exploit it will fire — is
+// An arena run is ONE 32-BIT SEED plus a survivor bitmask. Every entrant (its handle,
+// species, level, stat spread, move kit, mods and the Exploit it will fire) is
 // DERIVED from (seed, slot) rather than stored, so a whole bracket costs four bytes to
 // persist and a run reloads byte-identical after a reboot. That is the same trick a
 // linked duel uses to avoid broadcasting turns (core/model/pvp_battle.h), pointed at
 // storage instead of at the radio.
 //
 // It also decides the matches the operator never watches. The other first-round
-// pairings are resolved by STEPPING THE REAL ENGINE headlessly (tourneyResolveMatch) —
-// not by comparing stat totals — so the bracket the operator climbs was genuinely won
+// pairings are resolved by STEPPING THE REAL ENGINE headlessly (tourneyResolveMatch)
+// (not by comparing stat totals), so the bracket the operator climbs was genuinely won
 // by the fighters in it, Exploits and all. Determinism is what makes that safe to do
 // lazily: re-resolving the same round from the same seed always names the same winner.
 //
@@ -20,7 +20,7 @@
 
 #include "core/content/content_tournament.h"
 #include "core/model/combat.h"
-#include "core/net/pvp_link.h"   // PvpFighter — the fighter RECIPE both this and a duel build from
+#include "core/net/pvp_link.h"   // PvpFighter: the fighter RECIPE both this and a duel build from
 
 namespace mal {
 
@@ -28,7 +28,7 @@ class ContentRegistry;
 
 // What the bracket list can show without touching the registry: an entrant's handle
 // and the level it was rolled at. Derived from the same stream the full fighter is, so
-// the two can never disagree about who slot 3 is — the builder below calls this for
+// the two can never disagree about who slot 3 is: the builder below calls this for
 // its own first two fields rather than re-rolling them.
 struct TourneyCard {
     const char* handle = "";
@@ -49,11 +49,11 @@ struct TourneyFighter {
 
 // --- Deriving the bracket ----------------------------------------------------
 
-// Which slot the OPERATOR occupies, derived from the seed like everything else — so
+// Which slot the OPERATOR occupies, derived from the seed like everything else, so
 // the draw is a fact about the bracket rather than a separate thing to persist.
 int tourneyPlayerSlot(uint32_t seed);
 
-// Entrant `slot`'s handle + level. Cheap (no registry, no allocation) — this is what
+// Entrant `slot`'s handle + level. Cheap (no registry, no allocation): this is what
 // the bracket screen walks every repaint.
 TourneyCard tourneyCard(uint32_t seed, int slot);
 
@@ -64,7 +64,7 @@ TourneyFighter tourneyEntrant(const ContentRegistry& reg, uint32_t seed, int slo
 // Build the fighting form of an entrant: the shared duel build, plus the Exploit it
 // will arm itself with (Combatant::autoExploit). The one place those two halves are
 // joined, so the operator's live opponent and a headless AI-vs-AI winner are the same
-// fighter — an opponent that only used its Exploit when somebody was watching would be
+// fighter: an opponent that only used its Exploit when somebody was watching would be
 // a different opponent from the one that won its way up the bracket.
 Combatant makeTourneyCombatant(const ContentRegistry& reg, const TourneyFighter& f);
 
@@ -76,7 +76,7 @@ Combatant makeTourneyCombatant(const ContentRegistry& reg, const TourneyFighter&
 //
 // A match that has not resolved by kTourneyMatchTurnCap is CALLED on the Health
 // fraction, and a dead tie goes to `a`. Two brace-heavy kits can genuinely stalemate
-// and the bracket owes the operator an opponent either way — so this terminates by
+// and the bracket owes the operator an opponent either way, so this terminates by
 // construction rather than by trusting every kit pairing to be decisive.
 bool tourneyResolveMatch(const ContentRegistry& reg, const TourneyFighter& a,
                          const TourneyFighter& b, uint32_t seed);
@@ -105,7 +105,7 @@ int tourneyOpponentSlot(uint8_t alive, int slot, int round);
 uint32_t tourneyMatchSeed(uint32_t seed, int round, int blockStart);
 
 // Resolve every match of `round` EXCEPT the operator's own, clearing each loser's bit
-// from `alive`. The block holding `playerSlot` is left untouched — that one is fought
+// from `alive`. The block holding `playerSlot` is left untouched: that one is fought
 // on the screen. Called once as a round opens, so the list the operator reads is the
 // list of who is actually still standing.
 void tourneyResolveRound(const ContentRegistry& reg, uint32_t seed, int round,

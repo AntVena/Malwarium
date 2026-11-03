@@ -1,4 +1,4 @@
-// test_progression.cpp — native gates for creature level, move slots, evolution branching and Critical System Failure.
+// test_progression.cpp: native gates for creature level, move slots, evolution branching and Critical System Failure.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -36,14 +36,14 @@ void test_backup_drive_save_not_spent_in_sim_battle() {
     g.debugUseItem("backup_drive");
     CHECK(g.backupShieldArmed());
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
-    // "item left the list" case) — back out to the carousel before enterSimBattle's
+    // "item left the list" case): back out to the carousel before enterSimBattle's
     // TRAIN walk, which assumes it's starting from the carousel/idle layer.
     tapC(g);
     enterSimBattle(g);
     // A Sim Battle deliberately fights WITHOUT the save: no stakes means no death to be
     // saved from, so a training bout must never burn a Rare item (Game::startSimBattle).
     CHECK(!g.combat().player().itemShield);
-    CHECK(g.backupShieldArmed());   // untouched — still there for a fight that counts
+    CHECK(g.backupShieldArmed());   // untouched: still there for a fight that counts
 }
 
 // Creature levels: XP banks into levels on a geometric curve, each level
@@ -111,7 +111,7 @@ void test_defense_curve_never_caps() {
     CHECK(defendedDamage(100, 100) == 50);           // 100 DEF = half
     CHECK(defendedDamage(100, 300) == 25);
     CHECK(defendedDamage(1000, 900) == 100);
-    // Strictly down as the rating climbs, and never all the way — a hit big enough to
+    // Strictly down as the rating climbs, and never all the way: a hit big enough to
     // read at this resolution is still arriving at a rating no pet will ever reach.
     int prev = defendedDamage(1000000, 0);
     for (int d = 1; d <= 5000; ++d) {
@@ -155,7 +155,7 @@ void test_defense_curve_never_caps() {
 // --- Gate: a bonus the brace cap refuses is paid, not dropped ---
 //
 // A clamp is a promise about the ceiling. A pet at the brace cap would get nothing from its
-// next Defence point's brace half and no screen would say so — so the discard converts to
+// next Defence point's brace half and no screen would say so, so the discard converts to
 // max-Health at the level table's own exchange (capOverflowHealth), and the cap does not
 // move. The rating itself has no cap, so it never overflows.
 void test_brace_cap_overflows_into_health() {
@@ -170,7 +170,7 @@ void test_brace_cap_overflows_into_health() {
                             body) == 2 * body * kLevelHealthPctPerPoint / 100);
 
     // End to end, on a built fighter. A pet buried in Defence points keeps buying rating
-    // — there is no ceiling for it to meet — while its brace sits at the cap and carries
+    // (there is no ceiling for it to meet), while its brace sits at the cap and carries
     // the difference as body instead.
     auto build = [](int defensePoints) {
         Combatant c;
@@ -202,7 +202,7 @@ void test_brace_cap_overflows_into_health() {
 // stat, −1 level), carries the banked XP down onto the shorter rung, and consumes the
 // item. Inert at level 0 (nothing to shed).
 void test_rollback_item() {
-    // Level-0 gate: Rollback is inert with no earned points — no picker, item kept.
+    // Level-0 gate: Rollback is inert with no earned points. No picker, item kept.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("rollback", 1);
       g.debugUseItem("rollback");
@@ -239,7 +239,7 @@ void test_rollback_item() {
 // The bill for a Rollback is ONE level, and the XP banked toward the next one is not
 // part of it: a pet most of the way up its rung lands the same fraction up the rung
 // below rather than back at zero, so the shed costs exactly the level it sheds. Carried
-// as the fraction because the lower rung is SHORTER — banking the raw count could leave
+// as the fraction because the lower rung is SHORTER: banking the raw count could leave
 // the pet over that rung's need and hand the level straight back.
 void test_rollback_carries_level_progress_down() {
     Game g{StartMode::Hatched, "paypup"};
@@ -263,7 +263,7 @@ void test_rollback_carries_level_progress_down() {
     CHECK(g.combatLevel() == 1);
     const int lowerNeed = g.xpToNextLevel();
     CHECK(lowerNeed < need);                            // the rung below really is shorter
-    // The same fraction of the way up, floored — and strictly under the new need, so
+    // The same fraction of the way up, floored, and strictly under the new need, so
     // the next XP award cannot instantly undo the shed.
     CHECK(g.combatXp() ==
           static_cast<int>(static_cast<long long>(banked) * lowerNeed / need));
@@ -273,7 +273,7 @@ void test_rollback_carries_level_progress_down() {
 
 // Repartition: Rollback's sibling. Opens a TWO-step picker (which stat pays, then which
 // stat grows); a confirm moves one earned point across and consumes the item. The level,
-// the total points and the XP bucket are all untouched — nothing was un-earned, so there
+// the total points and the XP bucket are all untouched: nothing was un-earned, so there
 // is no grind to re-pay. Inert at level 0 (no earned point to move).
 void test_repartition_item() {
     // Level-0 gate: nothing earned, so no picker and the item is kept.
@@ -297,7 +297,7 @@ void test_repartition_item() {
       g.debugUseItem("repartition");
       CHECK(g.nav() == Game::Nav::RepartitionPicker);
       g.onButton(press(Button::B));                     // FROM = the only eligible stat
-      CHECK(g.nav() == Game::Nav::RepartitionPicker);   // still here — the TO step
+      CHECK(g.nav() == Game::Nav::RepartitionPicker);   // still here: the TO step
       g.onButton(press(Button::A));                     // (from+1) -> (from+2), skipping from
       g.onButton(press(Button::B));                     // commit the move
       CHECK(g.levelStatPoint(from) == 0);               // the point left...
@@ -449,7 +449,7 @@ void test_combat_auto_pacing() {
 // exchanges (an exchange = both actors act ≈ 2 resolved turns). The per-stage
 // offensive scale (kStagePowerScalePct) keeps player output pacing tier-scaled
 // enemy Health so higher stages don't drag. We sample many seeded fights per
-// representative matchup and assert the MEDIAN exchange count lands in-band —
+// representative matchup and assert the MEDIAN exchange count lands in-band:
 // individual seeds spread wider (that variance is intended), so the median is the
 // contract, not any single fight.
 static int medianExchanges(const Combatant& player, const CombatEnemy& enemySpec,
@@ -473,7 +473,7 @@ void test_combat_length_in_band() {
     Loadout mods = Loadout::starting();
     // Process / Script / Daemon each vs their sector-tier wild malbeast (both
     // variants), and the two sector bosses. Wilds carry the challenge buff
-    // (kWildEnemy*Pct — +Health lengthens the fight), so their median sits in the
+    // (kWildEnemy*Pct: +Health lengthens the fight), so their median sits in the
     // wider [4, 10] band; bosses are unbuffed and hold the tighter [4, 8].
     struct Case { const char* pet; int tier; };
     const Case wilds[] = {{"paypup", 1}, {"malbear", 2}, {"bruinforce", 3}};
@@ -482,7 +482,7 @@ void test_combat_length_in_band() {
         for (int v = 0; v < 2; ++v) {
             int m = medianExchanges(p, wildMalbeast(c.tier, v), r);
             // Speed-weighted turns let a faster pet land more actions per exchange, so an
-            // early fast pet can close a fight a touch quicker — floor drops to 3.
+            // early fast pet can close a fight a touch quicker: floor drops to 3.
             CHECK(m >= 3 && m <= 10);
         }
     }
@@ -497,9 +497,9 @@ void test_combat_length_in_band() {
 }
 
 // Wild-encounter challenge buff (kWildEnemy*Pct). Two contracts: (1) the buff is
-// wild-only — a wild spec builds with boosted Health + a >100 damage mult, an
+// wild-only. A wild spec builds with boosted Health + a >100 damage mult, an
 // otherwise-identical non-wild spec (bosses/Sim reuse the shape) stays neutral;
-// (2) it bites — a Process pet still wins the sector-0 wild, but ends visibly
+// (2) it bites. A Process pet still wins the sector-0 wild, but ends visibly
 // wounded (well under the near-untouched ~86% the flat base stats produced).
 void test_wild_encounter_challenge_buff() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -533,7 +533,7 @@ void test_wild_encounter_challenge_buff() {
     const int medEnd = endPct[endPct.size() / 2];
     // A real dent, not a scratch. A fully-equipped Process pet (both slots filled)
     // doesn't dilute its pool with the weak Quick Jab default, so its attack/defend
-    // split is an even 1/1 (50% atk) — enough defend weight that it ends measurably
+    // split is an even 1/1 (50% atk): enough defend weight that it ends measurably
     // tankier (=80 at the median).
     CHECK(medEnd <= 82);
 }
@@ -562,7 +562,7 @@ static int wildWinPct(const Combatant& player, const CombatEnemy& spec,
 //   (2) a fresh Paypup's win-rate is monotonic non-increasing across sub 0..4;
 //   (3) it clears sub 0 near-certainly, and the apex is a GATE rather than a wall: a
 //       coin-flip-ish fight the pet mostly wins by levelling or gearing, not a formality.
-// The pet is built from the kit a hatch actually owns (MoveLoadout::startingForLine) —
+// The pet is built from the kit a hatch actually owns (MoveLoadout::startingForLine):
 // a pet with no line moves measures a pet nobody plays, and read the apex as a wall
 // while a real starter walked through it.
 // Does this spec's kit name `id`? Compares by VALUE, unlike the whole-kit checks below
@@ -577,7 +577,7 @@ static bool holdsMove(const CombatEnemy& e, const char* id) {
 // --- Gate: a malbeast is its own creature at every depth ---
 //
 // Two bodies sharing a tier used to carry identical kits, so no two wilds were worth
-// farming differently — a win teaches out of the beaten enemy's own kit
+// farming differently: a win teaches out of the beaten enemy's own kit
 // (rollEnemyMoveDrop), and there was nothing on one that was not on the other. The
 // signature is what a creature says about itself; this holds it to the three things that
 // makes true.
@@ -605,8 +605,8 @@ void test_wild_signature_is_the_creatures_own() {
         sigs.push_back(e.signatureMoveId);
     }
 
-    // ...AND NO TWO CARRY THE SAME SET OF RIDERS. The set — which riders, not their
-    // magnitudes — is what distinguishes one wild's signature from another's in a fight,
+    // ...AND NO TWO CARRY THE SAME SET OF RIDERS. The set (which riders, not their
+    // magnitudes) is what distinguishes one wild's signature from another's in a fight,
     // so it is unique across the roster; a signature may combine riders to get there.
     std::vector<unsigned> riderSets;
     for (const char* id : sigs) {
@@ -626,7 +626,7 @@ void test_wild_signature_is_the_creatures_own() {
         riderSets.push_back(set);
     }
 
-    // IT SURVIVES THE DEPTH LADDER, which replaces moveIds outright — the whole reason it
+    // IT SURVIVES THE DEPTH LADDER, which replaces moveIds outright: the whole reason it
     // is carried beside that list rather than in it. Every creature, every area, every
     // rung: a signature that died at sub 1 would leave the identity where it started.
     for (int i = 0; i < kWildMalbeastCount; ++i)
@@ -638,7 +638,7 @@ void test_wild_signature_is_the_creatures_own() {
             }
 
     // ...AND THE RUNG ORDER IS INTACT. The ladder is sorted by EFFECTIVE per-turn damage,
-    // and a rider appended to every rung alike cannot reorder them — this is what says so
+    // and a rider appended to every rung alike cannot reorder them: this is what says so
     // for every creature in every area rather than for the one pairing checked by hand.
     // Attacks only, and a channelled move at its per-turn rate: a brace mitigates rather
     // than swings, and a wind-up spreads its printed power over the turns it costs.
@@ -670,7 +670,7 @@ void test_explore_subarea_ramp() {
     // (1) Shape: sub 0 keeps the roster moves; each later sub swaps in a distinct,
     // heavier kit. Compare against the untouched baseline spec. The area's own wild
     // Attack rides at EVERY rung including this one, because the pair states where the
-    // player is rather than how deep — so the sub-0 kit is the baseline plus that one id,
+    // player is rather than how deep, so the sub-0 kit is the baseline plus that one id,
     // and the Defend (kWildAreaDefendSub) is the half depth actually gates.
     CombatEnemy base = wildMalbeast(1, 0);
     CombatEnemy s0 = base; applyWildSubAreaRamp(s0, 0, 0);
@@ -711,7 +711,7 @@ void test_explore_subarea_ramp() {
 // Line-identity combat -------------------------
 
 // Line-gating: a move is learnable/equippable iff generic (no line) or same line.
-// This is what makes a Ransomware move exclusive to Ransomware pets — the whole point
+// This is what makes a Ransomware move exclusive to Ransomware pets: the whole point
 // of adding Phishing moves no current pet can touch.
 void test_line_move_gating() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -797,7 +797,7 @@ void test_ransom_note() {
     };
 
     // (1) The window itself, scripted. Boot's 0% arm chance means the roll never fires on
-    //     its own (and draws no rng), so an armed window handed in is the only one — and
+    //     its own (and draws no rng), so an armed window handed in is the only one, and
     //     begin() must preserve rather than re-roll it. A speed-1 pet against a speed-20
     //     enemy takes a run of hits before it ever acts: the FIRST is caught and closes
     //     the window, the rest land normally.
@@ -839,7 +839,7 @@ void test_ransom_note() {
     CHECK(cb.player().ransomPool == 0);
     CHECK(cb.player().ransomTurnsLeft == 0);
 
-    // (2) Riders are NOT ransomed — only the damage number is. A stun move landing inside
+    // (2) Riders are NOT ransomed, only the damage number is. A stun move landing inside
     //     an armed window still freezes the ransomer even though its damage was held.
     Combatant s = makeRansomer("ransomware", Stage::BootSector, 1);
     s.ransomArmed = true;
@@ -849,7 +849,7 @@ void test_ransom_note() {
     CHECK(cs.player().ransomPool > 0);                  // damage held...
     CHECK(cs.player().lockedTurnsLeft > 0);             // ...stun applied anyway
 
-    // (3) Deferred, never erased — the invariant, across a real fight at a real arm rate.
+    // (3) Deferred, never erased: the invariant, across a real fight at a real arm rate.
     //     At every point: Health lost == damage dealt to the ransomer minus what the pool
     //     is still holding. Also asserts the passive actually fires at Daemon's rate.
     int fightsWithHold = 0, fightsWithBill = 0;
@@ -871,7 +871,7 @@ void test_ransom_note() {
     CHECK(fightsWithHold >= 50);        // fires reliably at 55%/turn over many turns
     CHECK(fightsWithBill >= 50);        // and the bill actually comes due
 
-    // (4) SIDE-AGNOSTIC — the property a linked duel needs. The same ransomer seated in
+    // (4) SIDE-AGNOSTIC: the property a linked duel needs. The same ransomer seated in
     //     Combat's ENEMY slot (where a duel guest's pet sits, core/model/pvp_battle.h)
     //     gets the identical passive: its pool fills and its Health holds.
     bool enemySideHeld = false;
@@ -890,7 +890,7 @@ void test_ransom_note() {
     CHECK(enemySideHeld);
 
     // (5) A non-Ransomware pet never holds anything, and the line check short-circuits
-    //     before any rng draw — so a fight without the line replays identically.
+    //     before any rng draw, so a fight without the line replays identically.
     Combatant q = makeRansomer(nullptr, Stage::Daemon, 10);
     Combatant e1 = mkCombatant(r, "E", 200, 8, {"buffer_overflow"});
     Combat a; a.begin(q, e1, Combat::Stakes::Safe, 777);
@@ -957,7 +957,7 @@ void test_wild_subarea_level_and_xp_scaling() {
     // enough that the base's integer division can't be what the gate is reading).
     CHECK(kWildXpOverLevelPct > kWildXpUnderLevelPct);
     CHECK(wildWinXp(100, 3, 0) - 100 > 100 - wildWinXp(100, 0, 3));
-    // The under side floors EARLY — deep enough under the rung and every further level
+    // The under side floors EARLY: deep enough under the rung and every further level
     // is free, which is what keeps a cleared area a training ground rather than a
     // rounding error.
     CHECK(wildWinXp(100, 0, 20) == wildWinXp(100, 0, 40));
@@ -978,13 +978,13 @@ void test_wild_subarea_level_and_xp_scaling() {
 //   (1) creatureBranch reads the branch off the multiplier pair the row already carries,
 //       and only a DAEMON row branches at all;
 //   (2) a Good Daemon fields a bigger body than a Bad one, off the same stage base;
-//   (3) they trade evenly — the damage ratio Bad wins by is the health ratio Good wins by,
+//   (3) they trade evenly. The damage ratio Bad wins by is the health ratio Good wins by,
 //       so a mirror comes down to turns rather than to which branch was rolled.
 void test_care_branch_trades_power_for_body() {
     const ContentRegistry reg = ContentRegistry::embedded();
     MoveLoadout moves; Loadout mods;
     // (1) Every shipped Daemon is one branch or the other (or authored neutral), and
-    //     nothing below Daemon claims a branch — walked over the whole roster rather than
+    //     nothing below Daemon claims a branch: walked over the whole roster rather than
     //     spot-checked, so a new line has to answer this too.
     const CreatureDef* good = nullptr;
     const CreatureDef* bad = nullptr;
@@ -1014,7 +1014,7 @@ void test_care_branch_trades_power_for_body() {
     //     / 100 on the Defence curve. Measured as the two cross-products rather than as
     //     a ratio, so no integer division sits between the gate and the thing it is
     //     claiming; a tenth of tolerance either way, since the leans round to whole units.
-    //     Priced on the STARTING loadout (Loadout::starting — Firewall Patch installed from
+    //     Priced on the STARTING loadout (Loadout::starting: Firewall Patch installed from
     //     hatch), because that rating is under every pet the armour half stacks onto.
     CHECK(cg.defense == cb.defense + kBranchGoodDefense);
     const Loadout start = Loadout::starting();
@@ -1031,7 +1031,7 @@ void test_care_branch_trades_power_for_body() {
 //   (2) makePlayerCombatant fields an equipped-but-locked move ONLY once evolved
 //       (always keeps the innate default);
 //   (3) the equip picker refuses a locked move (a Boot cryptoshell owns its whole
-//       ransomware kit from hatch, all Process+ gated — it can't slot any of it).
+//       ransomware kit from hatch, all Process+ gated. It can't slot any of it).
 void test_move_evolution_gating() {
     ContentRegistry r = ContentRegistry::embedded();
     // (1) The pure stage gate.
@@ -1060,7 +1060,7 @@ void test_move_evolution_gating() {
     CHECK(hasMove(scr, "buffer_overflow"));       // unlocked at Script → fielded
     CHECK(hasMove(proc, "quick_jab") && hasMove(scr, "quick_jab"));  // default always
     // (3) The picker refuses a locked move. cryptoshell (Boot) owns its whole
-    // ransomware-line kit from hatch (its nature) — every row gates at Process+,
+    // ransomware-line kit from hatch (its nature). Every row gates at Process+,
     // so even the auto-equipped payload_drop is locked at Boot: the default
     // (filtered) view has nothing to offer for slot 0, and showAll reveals
     // payload_drop as a locked, unselectable row.
@@ -1078,12 +1078,12 @@ void test_move_evolution_gating() {
     tapB(g);                                      // re-open slot 0 picker (resets moveShowAll_)
     g.debugSetMoveShowAll(true);                  // reveal the locked row for this check
     g.onButton(press(Button::A));                 // pick row 1 = payload_drop (locked at Boot)
-    tapB(g);                                      // drill in — the page states the gate
+    tapB(g);                                      // drill in: the page states the gate
     g.onButton(press(Button::B));                 // attempt equip → blocked (no-op)
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 }
 
-// Holding B on a MOVES slot READS the move already in it — a page with nothing to equip, so
+// Holding B on a MOVES slot READS the move already in it: a page with nothing to equip, so
 // B is inert and C goes straight back to the slot list. A tap still opens the picker.
 void test_move_slot_hold_b_reads_the_equipped_move() {
     Game g{StartMode::Hatched, "malbear"};
@@ -1131,7 +1131,7 @@ void test_move_swap_readout_versus() {
 
 // A hatched pet fills EVERY unlocked slot from its own kit. The innate Quick Jab is the
 // first Attack in the registry and is not slottable, so a fill that tried it and stopped
-// left every second Attack slot empty — Pingcub fought on Quick Jab in the slot its Screen
+// left every second Attack slot empty: Pingcub fought on Quick Jab in the slot its Screen
 // Locker belonged in.
 void test_hatch_fills_every_unlocked_slot() {
     for (const char* id : {"paypup", "pingcub", "phishlet", "nodeatode", "cuttlefork"}) {
@@ -1144,7 +1144,7 @@ void test_hatch_fills_every_unlocked_slot() {
 // --- Move slots: the per-slot pool, and the Attack/Defend type-lock --------
 
 // The combat pool is exactly one entry per UNLOCKED slot: that slot's
-// equipped move if present, else the innate default FILLING that slot — not an
+// equipped move if present, else the innate default FILLING that slot, not an
 // always-additive extra. Unequipped -> default x N; one equipped -> [move] +
 // default x (N-1); fully equipped -> zero default entries in the pool.
 void test_move_pool_per_slot_fallback() {
@@ -1171,7 +1171,7 @@ void test_move_pool_per_slot_fallback() {
         for (int i = 1; i < slots; ++i)
             CHECK(std::strcmp(c.moves[i]->id, ml.defaultMove()) == 0);
     }
-    { // Fully equipped: zero default entries — a well-kitted pet never rolls
+    { // Fully equipped: zero default entries. A well-kitted pet never rolls
       // Quick Jab.
         MoveLoadout ml;
         ml.grant("packet_storm");
@@ -1186,11 +1186,11 @@ void test_move_pool_per_slot_fallback() {
 }
 
 // Type-lock: each move slot is permanently typed Attack/Defend (stamped by
-// Game::stampSlotKinds from CreatureDef::slotKinds); ownedMoveList — exactly what
-// onMovePicker/drawMovePicker read — is filtered to that kind, so a mismatched
+// Game::stampSlotKinds from CreatureDef::slotKinds); ownedMoveList (exactly what
+// onMovePicker/drawMovePicker read) is filtered to that kind, so a mismatched
 // move is structurally UNREACHABLE through the UI (not merely dimmed), while a
 // matching one equips normally. Malbear's seed stamps slot0/1 Attack and slot2
-// Defend — asserted as literals here because the scenario NEEDS one slot of each
+// Defend: asserted as literals here because the scenario NEEDS one slot of each
 // kind on the same pet; if that stops holding, this test has nothing left to
 // exercise and should fail rather than quietly test one kind twice. (Contrast
 // test_move_slot_stamping_locks_at_unlock, which reads seeds from the row so a
@@ -1214,14 +1214,14 @@ void test_move_slot_type_lock() {
     bool atkListHasDefend = false;
     for (const MoveDef* m : atkList)
         if (std::strcmp(m->id, "aes_lockbox") == 0) atkListHasDefend = true;
-    CHECK(!atkListHasDefend);                        // rejected — never even listed
+    CHECK(!atkListHasDefend);                        // rejected, never even listed
     auto defList = ownedMoveList(r, g.moveLoadout(), g.slotRequiredKind(2),
                                  g.pet()->stage, g.pet()->line, 2, /*showAll=*/true);
     CHECK(defList.size() == 3);
     for (const MoveDef* m : defList) CHECK(m->kind == MoveDef::Kind::Defend);
 
     // Drive the real picker for slot 2 (Defend): B on its first candidate row
-    // (aes_lockbox — Process-gated, already unlocked at Script) equips it — a
+    // (aes_lockbox. Process-gated, already unlocked at Script) equips it. A
     // matching kind succeeds through the actual UI, not just the data layer.
     enterLoadoutTab(g, 1);
     g.onButton(press(Button::A));                    // slot0 -> slot1
@@ -1230,11 +1230,11 @@ void test_move_slot_type_lock() {
     CHECK(g.nav() == Game::Nav::Detail);
     g.onButton(press(Button::A));                     // row0 -> row1 (aes_lockbox)
     tapB(g);                                          // drill into its detail page
-    g.onButton(press(Button::B));                      // equip — no confirm (slot was empty)
+    g.onButton(press(Button::B));                      // equip: no confirm (slot was empty)
     CHECK(std::strcmp(g.moveLoadout().equipped(2), "aes_lockbox") == 0);
 }
 
-// A creature's declared seed for one slot, as Game::SlotKind — what
+// A creature's declared seed for one slot, as Game::SlotKind: what
 // Game::stampSlotKinds is expected to copy onto the pet when that slot unlocks.
 static Game::SlotKind seedKind(const ContentRegistry& r, const char* id, int slot) {
     const CreatureDef* c = r.creature(id);
@@ -1244,13 +1244,13 @@ static Game::SlotKind seedKind(const ContentRegistry& r, const char* id, int slo
 }
 
 // Stamping: a slot's kind is fixed the instant it first unlocks, from
-// whichever creature is installed at that moment, and never changes again —
-// evolving further never rewrites an already-stamped slot.
+// whichever creature is installed at that moment, and never changes again.
+// Evolving further never rewrites an already-stamped slot.
 //
 // Expectations are read from each creature's OWN slotKinds seed rather than
 // written out as Attack/Defend literals. The mechanism under test is "slot N
 // takes the kind of whoever is installed when N unlocks, and earlier slots are
-// immutable" — WHICH kind any shipped creature seeds is a balance number
+// immutable", WHICH kind any shipped creature seeds is a balance number
 // (defs.h calls the current layout a placeholder), and a test that pins it turns
 // every balance tweak into a false failure.
 void test_move_slot_stamping_locks_at_unlock() {
@@ -1289,8 +1289,8 @@ void test_move_slot_stamping_locks_at_unlock() {
             g.slotKind(2) == slot2);                    // slots 0-2 STILL unchanged
       CHECK(g.slotKind(3) == seedKind(r, "wire_heir", 3));
     }
-    // Bad branch: same chain, but slot 3 stamps from the OTHER Daemon's seed —
-    // proving the branch taken (not just the terminal stage) decides the newly-
+    // Bad branch: same chain, but slot 3 stamps from the OTHER Daemon's seed.
+    // Proving the branch taken (not just the terminal stage) decides the newly-
     // unlocked slot. The two branch seeds must differ for that to be observable,
     // so assert it: if a balance pass ever flattens them this scenario has gone
     // vacuous and should say so rather than pass silently.
@@ -1341,7 +1341,7 @@ void test_save_v24_slot_kinds_roundtrip() {
 // The A+C override is live in combat (the one pet-side place): the chord opens the
 // picker (without spending); committing spends the once-per-battle pip. A starting bag
 // holds a combat item, so the picker opens on its BAND list and B descends once before
-// it commits — neither press spends until the second one lands on a row.
+// it commits: neither press spends until the second one lands on a row.
 void test_combat_override_in_game() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugStartCombat(/*live=*/false);
@@ -1402,7 +1402,7 @@ void test_combat_screen_grayscale() {
 // TRAIN picker, autosave, and confirm a fresh Game over the store restores it.
 // Uses malbear (Script) rather than Paypup (Process): a pet now owns its whole
 // line's kit from hatch AND auto-fills every unlocked slot with the strongest
-// owned+unlocked move it can hold (the backfill) — both Attack slots are already
+// owned+unlocked move it can hold (the backfill). Both Attack slots are already
 // spoken for (payload_drop/double_extortion) the instant the pet is installed, so
 // slot 2 (Defend) is the one with a real second option to switch to: it opens on
 // aes_lockbox (Process-tier, unlocked before the slot itself existed) and Script
@@ -1468,7 +1468,7 @@ void test_evolution_branch_mechanics() {
     CHECK(good->powerMultPct < 100 && bad->powerMultPct > 100);
     // The per-stage offensive scale multiplies both equally, so it lifts the
     // absolute values (Daemon ×230) but PRESERVES the branch ordering in the built
-    // combatants — Bad still out-hits Good.
+    // combatants: Bad still out-hits Good.
     CHECK(cb.powerMultPct > cg.powerMultPct);
     CHECK(cb.fragMultPct > cg.fragMultPct);
 
@@ -1513,7 +1513,7 @@ void test_combat_loss_never_kills() {
     CHECK(g.recordCount() == 0);                              // not archived
 }
 
-// Critical System Failure — the ONLY death path. The 5/5 dying state, once
+// Critical System Failure: the ONLY death path. The 5/5 dying state, once
 // its ageing window expires, fires the terminal modal; B (gated behind the crash
 // hold; C disabled) archives the pet as a [CORRUPTED] record + a new-egg Hatch.
 void test_csf_fires_and_archives() {
@@ -1539,7 +1539,7 @@ void test_csf_fires_and_archives() {
 }
 
 // Recoverable up to the deadline: dropping below 5/5 (Backup Drive / Yubi-Cookie)
-// before the window expires disarms the ageing timer — no death.
+// before the window expires disarms the ageing timer. No death.
 void test_csf_recovery_disarms() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.model().setCareMistakes(kCareDying);
@@ -1575,7 +1575,7 @@ void test_csf_record_persists() {
 
 // The 5/5 window is the ONE timed window that survives a reboot (save v42). Every
 // other one resets on boot by the rule in core/net/audit_capture.h, but those are
-// penalties — refunding THIS one makes the game's only death path opt-out for anyone
+// penalties: refunding THIS one makes the game's only death path opt-out for anyone
 // who notices the pulse and power-cycles. What persists is time AWAKE at 5/5, so a
 // device that is off neither kills the pet nor buys it a reprieve.
 void test_csf_window_survives_reboot() {
@@ -1592,20 +1592,20 @@ void test_csf_window_survives_reboot() {
         CHECK(g.nav() == Game::Nav::Idle);            // alive, with the window nearly gone
     }
     Game g2(StartMode::Hatched, "bruinforce", &store);   // power cycle
-    CHECK(g2.model().careMistakes() == kCareDying);      // still 5/5 — the state persisted
+    CHECK(g2.model().careMistakes() == kCareDying);      // still 5/5: the state persisted
     uint32_t t = 0;
     g2.tick(t += kHeartbeatMs);                          // re-anchor against the fresh clock
     CHECK(g2.nav() == Game::Nav::Idle);                  // a beat is not the whole remainder
     // At most one autosave interval comes back: the window is written on the periodic
     // autosave rather than every tick (flash wear over a half-hour window), so a reboot
-    // can refund up to kSaveAutosaveMs of it — and no more. Had the reboot refunded the
+    // can refund up to kSaveAutosaveMs of it, and no more. Had the reboot refunded the
     // whole window, this would be well inside a fresh half hour and the pet still idle.
     g2.tick(t += kSaveAutosaveMs + 3 * kSaveDebounceMs);
     CHECK(g2.nav() == Game::Nav::ModalCSF);              // the burned time was NOT refunded
 }
 
 // The window is per-brush-with-death, not per-lifetime: a pet pulled back below 5/5
-// gets the whole grace period again, and that reset survives a reboot too — otherwise
+// gets the whole grace period again, and that reset survives a reboot too, otherwise
 // a rescued pet would carry a shortened window for the rest of its life.
 void test_csf_recovery_clears_burned_window() {
     MemSaveStore store;
@@ -1686,7 +1686,7 @@ void test_arch_record_readonly() {
 
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.nav() == Game::Nav::Submenu);
-    // RECORDS is its own group on the picker now — the last row, after the families.
+    // RECORDS is its own group on the picker now: the last row, after the families.
     for (int k = 0; k < g.archPickRowCount() &&
                     g.archPickRow() != g.archPickRowCount() - 1; ++k)
         g.onButton(press(Button::A));
@@ -1704,7 +1704,7 @@ void test_arch_record_readonly() {
 }
 
 // ===========================================================================
-// THE INVESTMENT LADDER — the tiers every combat stat unlocks, and the rungs
+// THE INVESTMENT LADDER: the tiers every combat stat unlocks, and the rungs
 // they sit on. The point of the feature is that the rungs are the SAME on all
 // four stats, so most of what is gated here is that uniformity rather than any
 // one magnitude: a table that drifted would still compile, still fight and
@@ -1712,7 +1712,7 @@ void test_arch_record_readonly() {
 // ===========================================================================
 
 // One ladder, four stats. Every column carries the identical thresholds, in ascending
-// order, and statTierPoints() reads them off column 0 on exactly that assumption — so
+// order, and statTierPoints() reads them off column 0 on exactly that assumption, so
 // this is the gate that keeps that shortcut honest rather than a restatement of it.
 void test_stat_tier_ladder_is_uniform() {
     for (int t = 0; t < kStatTierCount; ++t) {
@@ -1741,7 +1741,7 @@ void test_stat_tier_ladder_is_uniform() {
 
 // The two questions the STAT page asks of a point count, over the whole range including
 // the edges nobody plays at. "Reached" and "to go" are one fact seen from two sides and
-// must never disagree — a page reading "HELD" beside "3 TO GO" is the failure.
+// must never disagree: a page reading "HELD" beside "3 TO GO" is the failure.
 void test_stat_tier_progress_readout() {
     CHECK(statTiersReached(0) == 0);
     CHECK(statTiersReached(-5) == 0);                       // negatives are not a rung
@@ -1792,7 +1792,7 @@ void test_stat_tier_appliers_gate_on_their_rung() {
     CHECK(levelDefenseBackscatterPct(t3 - 1) == 0);
     CHECK(levelDefenseBackscatterPct(t3) == kLevelDefenseBackscatterPct);
 
-    // SPEED. T1's inert value is 1, not 0 — it is a MULTIPLIER, and a fighter without
+    // SPEED. T1's inert value is 1, not 0: it is a MULTIPLIER, and a fighter without
     // the rung has to leave the hit alone rather than delete it.
     CHECK(levelSpeedFirstStrikeMult(t1 - 1) == 1);
     CHECK(levelSpeedFirstStrikeMult(t1) == kLevelSpeedFirstStrikeMult);
@@ -1857,7 +1857,7 @@ void test_stat_tiers_reach_the_combatant() {
     CHECK(built.adrenalinePerStep == kLevelSpeedAdrenalinePerStep);
     CHECK(built.scrubPct == kLevelHealthScrubPct);
     CHECK(built.ownHealthDamagePct == kLevelHealthOwnDamagePct);
-    // Speed T2 is banked as its INPUT here — whether it pays needs an opponent, and
+    // Speed T2 is banked as its INPUT here, whether it pays needs an opponent, and
     // there isn't one until applySpeedRivalry.
     CHECK(bare.speedPoints == 0);
     CHECK(built.speedPoints == kStatTier3Points);
@@ -1866,7 +1866,7 @@ void test_stat_tiers_reach_the_combatant() {
 // Speed T2 (the catch-up rung) is the one tier that reads BOTH fighters, so it is the one
 // that cannot be resolved while a Combatant is built alone. applySpeedRivalry is where it
 // lands: it pays the fighter that is behind, pays nothing to a matched pair, and is a
-// no-op — an exactly zero delta — for anyone who has not earned it.
+// no-op (an exactly zero delta) for anyone who has not earned it.
 void test_speed_underdog_rung_needs_both_fighters() {
     auto build = [](int speedPoints) {
         const int pts[kLevelStatCount] = {0, 0, speedPoints, 0};
@@ -1938,7 +1938,7 @@ void test_adrenaline_tracks_live_health() {
 }
 
 // ===========================================================================
-// EXPL wild-encounter wiring — the Walk activity, the
+// EXPL wild-encounter wiring: the Walk activity, the
 // periodic step-roll, the Fight/Flee/Sinkhole encounter intro, and the shared
 // combat core wired with LIVE stakes (replacing debugStartCombat as the real
 // entry point; the dev hook stays for TRAIN/combat-core-only tests).

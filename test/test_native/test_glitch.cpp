@@ -1,4 +1,4 @@
-// test_glitch.cpp — native gates for FX_GLITCH, the wild-malbeast corruption shader
+// test_glitch.cpp: native gates for FX_GLITCH, the wild-malbeast corruption shader
 // (core/render/glitch.h), and the burst schedule the combat screen drives it on.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
@@ -10,7 +10,7 @@
 // --- Gate: the glitch comes in bursts, a fixed length each window ---
 //
 // The schedule is what keeps a wild READABLE: mostly whole, torn for a moment. So every
-// window holds exactly kGlitchBurstLen torn beats in one unbroken run — never none (the
+// window holds exactly kGlitchBurstLen torn beats in one unbroken run, never none (the
 // corruption would vanish for good), never two runs (a stutter), never more (the body
 // stops reading). Before the clock starts there is nothing to tear.
 void test_glitch_bursts_once_per_window() {
@@ -34,7 +34,7 @@ void test_glitch_bursts_once_per_window() {
 // `base` is for a one-ink mask; a malbeast sheet carries a line ink and a body fill of its
 // own, and flattening them to `base` would undo the filled body exactly when it tears. So
 // over a whole burst, every pixel the shader lays is one of the sheet's own colours or the
-// `hot` accent — never `base`.
+// `hot` accent, never `base`.
 void test_glitch_keeps_a_two_tone_sheet_s_colours() {
     const SpriteData& s = ASSET_SPR_MALBEAST_GLITCHHOG;
     CHECK(!spriteIsMask(s));

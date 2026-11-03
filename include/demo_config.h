@@ -1,11 +1,11 @@
-// demo_config.h — what the public web demo hides, and why.
+// demo_config.h: what the public web demo hides, and why.
 //
 // The demo is the firmware engine compiled to wasm (src/platform/web/) and handed a
 // pre-raised pet, so a visitor lands on the systems rather than on a 30-minute
 // incubation clock. Two kinds of slot are wrong to offer there:
 //
 //   * Settings that configure a DEVICE. CFG is Wi-Fi join, update install, SD mount
-//     and Factory Reset — three of those have nothing to act on in a browser and the
+//     and Factory Reset: three of those have nothing to act on in a browser and the
 //     fourth would wipe the demo out from under the visitor.
 //   * Anything that needs the RADIO. The hacker face's SCAN/LINK/PEERS are a Wi-Fi
 //     sniff and a peer link; a browser has neither, so they would open onto a screen
@@ -16,7 +16,7 @@
 // VAULT is where a seeded Decryptogram is cashed for a quote board.
 //
 // A locked slot is DIMMED AND INERT rather than removed, which is the same treatment
-// an egg's care slots get (Game::slotLocked) — the shelf still says the feature
+// an egg's care slots get (Game::slotLocked): the shelf still says the feature
 // exists, which is the honest thing to show someone deciding whether to buy the
 // hardware that has it.
 //

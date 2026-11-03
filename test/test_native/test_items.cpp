@@ -1,4 +1,4 @@
-// test_items.cpp — native gates for ITEMS, feeding, MAINT/defrag and the Lockout.
+// test_items.cpp: native gates for ITEMS, feeding, MAINT/defrag and the Lockout.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -21,7 +21,7 @@ void test_inventory() {
     Inventory s = Inventory::starting();
     CHECK(s.count("dyno_nuggets") == 3 && s.count("backup_drive") == 1);
     CHECK(s.count("boot_accelerator") == 1);         // egg accelerator
-    // The Decryptogram is FOUND, never issued — it buys a quote board, and the starting
+    // The Decryptogram is FOUND, never issued: it buys a quote board, and the starting
     // kit does not hand one over.
     CHECK(s.count("decryptogram") == 0);
 }
@@ -69,7 +69,7 @@ void test_inventory_rows_grouped() {
 // The BUFF band holds its rule: a Buff acts on the PET, a Tool is a lever over a
 // system the pet is in (the rule is on ItemDef::Type). Asserted as a property of the
 // table rather than as a row count, because the failure it guards is a new row parked
-// in Buffs for want of somewhere better — which is how the band filled up before.
+// in Buffs for want of somewhere better, which is how the band filled up before.
 //
 // The mechanical proxy for "acts on the pet" is effects[]: a Buff reaches the pet
 // through ItemEffect, which is the vocabulary of things that can be done TO one. A
@@ -96,7 +96,7 @@ void test_buff_band_acts_on_the_pet() {
             for (ItemEffect::Kind k : kLevers)
                 if (e.kind == k) steers = true;
         // Rollback and Repartition steer the STAT TABLE, and do it through their own Use
-        // flows rather than through effects[] — so the picker is their tell.
+        // flows rather than through effects[], so the picker is their tell.
         if (d->use == ItemDef::Use::Rollback ||
             d->use == ItemDef::Use::Repartition) steers = true;
 
@@ -119,7 +119,7 @@ void test_buff_band_acts_on_the_pet() {
     CHECK(itemTypeOrder(ItemDef::Type::Tool) > itemTypeOrder(ItemDef::Type::Buff));
     CHECK(itemTypeOrder(ItemDef::Type::Tool) < itemTypeOrder(ItemDef::Type::Quest));
     // The TOOLS filter is the reach-for-it question, so it spans both bands that hold
-    // one — a Type::Tool row and a Quest row that is really a tool.
+    // one: a Type::Tool row and a Quest row that is really a tool.
     const ItemDef* rollback = r.item("rollback");
     const ItemDef* repartition = r.item("repartition");
     const ItemDef* defrag = r.item("defrag_tool");
@@ -174,7 +174,7 @@ void test_feed_and_maint_model() {
     CHECK(m.hunger() == 100 && m.happiness() == kStartHappiness + 5);  // clamps
 
     // NOTE: the +1 care mistake on a maint FAILURE now lands Game-side (via the shielded
-    // path — see test_restore_shield_covers_maint_fail); PetModel only reports the failure
+    // path. See test_restore_shield_covers_maint_fail); PetModel only reports the failure
     // (returns true) and applies the frag penalty. So these model-level checks assert frag
     // + the returned failure flag, NOT the mistake counter.
     PetModel d;
@@ -279,7 +279,7 @@ void test_defrag_costs_scale_with_the_tally() {
     CHECK(rigUpgradeCost(kDefragCostStart, 128, RigCostCurve::kLogStep) == kDefragCostStart * 128);
 }
 
-// an empty (or too-thin) wallet makes Defrag inert — RUN doesn't launch
+// an empty (or too-thin) wallet makes Defrag inert: RUN doesn't launch
 // and no Bits move, even with Fragmentation to clear.
 void test_defrag_gated_when_broke() {
     Game g{StartMode::Hatched};
@@ -327,7 +327,7 @@ void test_defrag_variants() {
 }
 
 // the Defrag Tool can't be Used from the ITEMS path (a stray Use would burn
-// it) — it's gated with a "use in MAINT" message.
+// it): it's gated with a "use in MAINT" message.
 void test_defrag_tool_gated_in_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("disk_scrubber", 1);
@@ -335,7 +335,7 @@ void test_defrag_tool_gated_in_items() {
     CHECK(g.inventory().count("disk_scrubber") == 1); // not consumed (inert)
 }
 
-// the per-pet defrag tally stays consistent through ARCH freeze/thaw — a
+// the per-pet defrag tally stays consistent through ARCH freeze/thaw: a
 // stored pet keeps its own count, and the original's count returns when redeployed.
 void test_defrag_count_freeze_thaw() {
     Game g{StartMode::Hatched};                       // active Paypup
@@ -365,7 +365,7 @@ void test_defrag_count_freeze_thaw() {
     CHECK(g.defragCount() == 1);                       // thawed Paypup's tally intact
 }
 
-// ARCH Release valve: a stored pet can be RELEASED — no reward, frees a rack
+// ARCH Release valve: a stored pet can be RELEASED. No reward, frees a rack
 // slot. Cycle a stored record's actions Deploy -> Release, then confirm.
 void test_arch_release_stored_frees_slot() {
     Game g{StartMode::Hatched};
@@ -428,7 +428,7 @@ void test_restore_point_once_per_lifetime() {
     // Spend the shield on a went-hungry mistake (blocked; net 0 from this half).
     g.model().setHunger(0);
     g.tick(kHeartbeatMs);
-    CHECK(g.model().careMistakes() == 0);            // shielded — the went-hungry blocked
+    CHECK(g.model().careMistakes() == 0);            // shielded: the went-hungry blocked
     g.tick(kLockoutDurationMs + 2 * kHeartbeatMs);   // let the Lockout expire cleanly
     const int after = g.model().careMistakes();      // expiry mistake stands (shield gone)
 
@@ -480,7 +480,7 @@ void test_backup_drive_arms_and_lapses() {
     CHECK(g.inventory().count("backup_drive") == 0);       // consumed on Use
     CHECK(g.backupShieldArmed());
     // Ticking less than the 1h window leaves it armed; crossing it lapses it unused
-    // (the item row's magnitude — content_items.cpp's ArmCombatShieldBuff — is 60 min).
+    // (the item row's magnitude (content_items.cpp's ArmCombatShieldBuff) is 60 min).
     // Game::tick(nowMs) takes an ABSOLUTE clock reading, not a delta.
     const uint32_t oneHourMs = 60u * 60u * 1000u;
     g.tick(oneHourMs / 2);
@@ -492,7 +492,7 @@ void test_backup_drive_arms_and_lapses() {
 
 // A use that can achieve literally nothing is refused and KEEPS the item, rather
 // than spending it on a state the pet already holds. itemUsable gates on
-// Game::itemUseIsInert, which reads the ItemEffect vocabulary — so every arming
+// Game::itemUseIsInert, which reads the ItemEffect vocabulary, so every arming
 // effect gets the same protection without a per-id branch.
 void test_inert_use_keeps_the_item() {
     Game g{StartMode::Hatched};
@@ -532,7 +532,7 @@ void test_inert_use_keeps_the_item() {
 }
 
 // The diving bells arm ONE start depth for the next dive, and the deeper arming always
-// wins — a shallower bell over it would be a downgrade paid for with an item, which is
+// wins: a shallower bell over it would be a downgrade paid for with an item, which is
 // what the inert gate refuses. The Checkpoint Bell is the case that has to be read
 // carefully: it arms "wherever this pet's record is" as a SENTINEL rather than a number,
 // so every comparison goes through the depth a dive would actually start at
@@ -557,7 +557,7 @@ void test_diving_bells_refuse_a_shallower_start() {
     // ...and neither does a fixed bell that starts SHALLOWER than the live arming.
     g.inventory().add("backdoor_bell", 1);            // depth 16
     g.debugUseItem("backdoor_bell");
-    CHECK(g.inventory().count("backdoor_bell") == 1); // kept — 16 is not deeper than 80
+    CHECK(g.inventory().count("backdoor_bell") == 1); // kept: 16 is not deeper than 80
     CHECK(g.debugArmedStartDepth() == 80);
 
     // A genuinely deeper arming still lands: the rule is "deeper wins", not "first wins".
@@ -568,7 +568,7 @@ void test_diving_bells_refuse_a_shallower_start() {
     CHECK(h.debugArmedStartDepth() == 8);
     h.inventory().add("kernel_bell", 1);              // depth 64
     h.debugUseItem("kernel_bell");
-    CHECK(h.inventory().count("kernel_bell") == 0);   // spent — 64 beats a record of 8
+    CHECK(h.inventory().count("kernel_bell") == 0);   // spent: 64 beats a record of 8
     CHECK(h.debugArmedStartDepth() == 64);
     // ...and now the Checkpoint is the shallower of the two, so it is the one refused.
     h.inventory().add("zeroday_bell", 1);
@@ -584,12 +584,12 @@ void test_diving_bells_refuse_a_shallower_start() {
 // locks the port against the whole family until the boundary it stretched arrives.
 
 // Bad-USB overrules a spotless care record; Signed-USB overrules a ruined one. The
-// branch is what the item says, not what the raise earned — which is the whole item.
+// branch is what the item says, not what the raise earned, which is the whole item.
 void test_branch_override_usbs_overrule_the_care_record() {
     // Perfect care, Bad-USB in the port -> the BAD daemon.
     { Game g{StartMode::Hatched, "malbear"};
       CHECK(g.model().careBranch() == CareBranch::Good);
-      // Two, so that spending one leaves the ITEMS list standing and the pet at idle —
+      // Two, so that spending one leaves the ITEMS list standing and the pet at idle:
       // debugUseItem drives the real Use path, which walks back out of an emptied row.
       g.inventory().add("bad_usb", 2);
       g.debugUseItem("bad_usb");
@@ -627,8 +627,8 @@ void test_branch_override_usbs_overrule_the_care_record() {
       CHECK(g.effectiveCareBranch() == CareBranch::Dying); }
 }
 
-// ONE slot. Plugging the opposite device in replaces what was there — the most recently
-// used is the one that fires — and plugging in the SAME direction twice buys nothing, so
+// ONE slot. Plugging the opposite device in replaces what was there (the most recently
+// used is the one that fires), and plugging in the SAME direction twice buys nothing, so
 // the second is refused and stays in the bag (Game::itemUseIsInert).
 void test_branch_override_holds_one_device_at_a_time() {
     Game g{StartMode::Hatched, "malbear"};
@@ -640,7 +640,7 @@ void test_branch_override_holds_one_device_at_a_time() {
     // A second Bad-USB over a slot already pointing Bad: nothing to achieve, kept.
     g.debugUseItem("bad_usb");
     CHECK(g.inventory().count("bad_usb") == 1);
-    // The opposite device always does something — it takes the slot.
+    // The opposite device always does something: it takes the slot.
     g.debugUseItem("signed_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Good);
     CHECK(g.inventory().count("signed_usb") == 0);
@@ -671,7 +671,7 @@ void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
 
     // The Epic device is the same mechanic deeper, and the ladder is asserted off the ROWS
     // rather than off two names here: whatever carries a soak is a USB, the shallow rung is
-    // a doubling, and the deep one is a strictly bigger power of two — the shape the family
+    // a doubling, and the deep one is a strictly bigger power of two. The shape the family
     // is authored in, which a retune of either rung has to keep.
     int shallow = 0, deep = 0;
     for (const ItemDef* d : ContentRegistry::embedded().allItems()) {
@@ -687,7 +687,7 @@ void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
 }
 
 // A soak holds the port SHUT. Nothing else in the family goes in until it is spent at
-// the boundary it stretched — not a divert, not a branch override, not a second soak.
+// the boundary it stretched, not a divert, not a branch override, not a second soak.
 void test_soak_usb_locks_the_port_until_the_boundary() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("sandbox_usb", 2);   // two, so the ITEMS list survives the spend
@@ -696,7 +696,7 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
     g.debugUseItem("sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
 
-    // Every other USB is refused and KEPT — including the deeper soak, which is what
+    // Every other USB is refused and KEPT, including the deeper soak, which is what
     // makes the choice of factor a decision about the stage rather than a shopping list.
     for (const char* id : {"hypervisor_usb", "ambig_usb", "bad_usb", "signed_usb"}) {
         g.debugUseItem(id);
@@ -721,7 +721,7 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
 // at, so stretching the last stage before an ending is the expensive thing to do.
 //
 // Every figure below is read off the ITEM ROW rather than typed, so retuning the soak
-// retunes the gate with it — the contract here is the SHAPE (clock and XP move together
+// retunes the gate with it: the contract here is the SHAPE (clock and XP move together
 // on a Process, the clock alone doubles on a Script), which is what a retune must not
 // break, and a hand-typed 4 would fail the moment the magnitude moved.
 void test_late_soak_reaches_script_at_double_the_clock() {
@@ -758,7 +758,7 @@ void test_late_soak_reaches_script_at_double_the_clock() {
       CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs * static_cast<uint32_t>(2 * soak));
       const int xp0 = g.combatXp();
       g.debugAddCombatXp(10);
-      CHECK(g.combatXp() - xp0 == 10 * soak); }  // the BENEFIT is the row's — only the wait grew
+      CHECK(g.combatXp() - xp0 == 10 * soak); }  // the BENEFIT is the row's, only the wait grew
 
     // The deepest arm still fits the fields that carry it: the soak is persisted in a u8
     // (SaveData::evolveSoakFactor) and the stretched dwell in a u32 of milliseconds, and
@@ -777,7 +777,7 @@ void test_halt_usb_stops_evolution_outright() {
     g.debugUseItem("halt_usb");
     CHECK(g.evolveHoldArmed());
     // STAT's own EVOLVE readout says MAX, the same thing it says at a terminus and true
-    // in the same sense — the BUFFS page and the habitat badge carry the WHY.
+    // in the same sense: the BUFFS page and the habitat badge carry the WHY.
     CHECK(!g.hasNextEvolution());
     CHECK(g.evolveRemainMs() == 0);
 
@@ -825,7 +825,7 @@ void test_eject_usb_pulls_whatever_is_armed() {
     CHECK(g.evolveBranchOverride() == BranchOverride::None);
     CHECK(g.inventory().count("eject_usb") == 3);
 
-    // Over a LOCKING device — the case that makes it more than a convenience, since a
+    // Over a LOCKING device: the case that makes it more than a convenience, since a
     // soak refuses every other USB in the family while it runs.
     g.inventory().add("sandbox_usb", 2);
     g.debugUseItem("sandbox_usb");
@@ -841,7 +841,7 @@ void test_eject_usb_pulls_whatever_is_armed() {
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
 }
 
-// A device is plugged into the RIG, not frozen into the creature — so a rack swap empties
+// A device is plugged into the RIG, not frozen into the creature, so a rack swap empties
 // the port rather than handing the incoming pet an ending the outgoing one paid for, or
 // carrying a Process-only soak into a stage its own gate forbids.
 void test_usb_port_empties_on_a_rack_swap() {
@@ -850,7 +850,7 @@ void test_usb_port_empties_on_a_rack_swap() {
     g.debugUseItem("sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
 
-    // Store the soaked Paypup (a fresh egg lands), then deploy it straight back out —
+    // Store the soaked Paypup (a fresh egg lands), then deploy it straight back out:
     // driven through ARCH the way a player would, since that is the seam being tested.
     enterArchNewEgg(g);                                    // ARCH's NEW EGG row
     pickFirstEggLine(g);
@@ -863,7 +863,7 @@ void test_usb_port_empties_on_a_rack_swap() {
     CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs);
 }
 
-// A soak is a decision about the PROCESS stage, so it only goes in there — an egg has no
+// A soak is a decision about the PROCESS stage, so it only goes in there: an egg has no
 // evolution clock to stretch, and a Script's next boundary is the branch itself.
 void test_soak_usb_is_process_stage_only() {
     { Game g{StartMode::Hatched, "malbear"};          // a Script pet
@@ -882,7 +882,7 @@ void test_soak_usb_is_process_stage_only() {
 }
 
 // Both slots are per-pet state that rides the save, and both come back clamped: an
-// unknown branch number reads as no override, and the factor is floored at 1 — it
+// unknown branch number reads as no override, and the factor is floored at 1. It
 // multiplies the evolution clock AND every XP award, so a 0 on the wire would otherwise
 // hand back a pet that can neither evolve nor learn.
 void test_save_v60_usb_port_roundtrip() {
@@ -904,7 +904,7 @@ void test_save_v60_usb_port_roundtrip() {
     // ...and the round trip through the live game, over a real store: an armed port
     // survives a power cycle, because a soak the player is halfway through paying for
     // must not be handed back by a reboot. The factor is read off the ITEM ROW, unlike
-    // the wire value above — that one is an arbitrary number chosen to prove the field
+    // the wire value above: that one is an arbitrary number chosen to prove the field
     // survives serialisation, this one is whatever the device actually arms.
     const int deepSoak = itemEvolveSoakFactor(*ContentRegistry::embedded().item("hypervisor_usb"));
     CHECK(deepSoak > 1);
@@ -927,7 +927,7 @@ void test_save_v60_usb_port_roundtrip() {
 }
 
 // No Bits path reaches a recipe. The SHOP sells the MERGE HUB and nothing that
-// happens inside it — a recipe is won off a Decryptogram, so the only thing a full
+// happens inside it: a recipe is won off a Decryptogram, so the only thing a full
 // wallet can do about cooking is buy the kitchen.
 void test_recipes_are_not_for_sale_at_any_price() {
     Game g{StartMode::Hatched};
@@ -954,9 +954,9 @@ void test_recipes_wait_on_the_merge_hub() {
 }
 
 // The second gate (MergeRecipe::requiresItems): the Browns recipes want the operator
-// to have HELD both dishes, not just to own the hub — Moor-to-Moor stocks them, so the
+// to have HELD both dishes, not just to own the hub. Moor-to-Moor stocks them, so the
 // ladder won't teach the method for a dish nobody has met. It's an ever-held record
-// (Game::itemCollected), so meeting a dish and then eating it still counts — which is
+// (Game::itemCollected), so meeting a dish and then eating it still counts, which is
 // the whole reason the gate reads that and not the current bag.
 void test_browns_recipes_wait_on_meeting_both_dishes() {
     Game g{StartMode::Hatched};
@@ -969,7 +969,7 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
     CHECK(brownsRecipe >= 0);
 
     // The collected-items record is folded in by the achievement sweep, which is
-    // throttled — walk the clock past its interval rather than by a millisecond.
+    // throttled: walk the clock past its interval rather than by a millisecond.
     // Game::tick takes an ABSOLUTE timestamp, so the cursor has to advance.
     uint32_t now = 0;
     auto settle = [&] { now += kAchSweepIntervalMs + 1; g.tick(now); };
@@ -985,13 +985,13 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
     g.inventory().add("salted_hashed_browns", 1);
     settle();
     CHECK(g.itemCollected("salted_hashed_browns"));
-    // Eat the evidence — a met dish stays met.
+    // Eat the evidence: a met dish stays met.
     g.inventory().remove("hashed_browns", 1);
     g.inventory().remove("salted_hashed_browns", 1);
     CHECK(g.debugRecipeGrantable(brownsRecipe));
 }
 
-// The recipes a device knows survive a power cycle — they are player-level, like the
+// The recipes a device knows survive a power cycle: they are player-level, like the
 // rig levels beside them, and a lifecycle doesn't cost the operator their cooking.
 void test_recipes_persist() {
     MemSaveStore store;
@@ -1008,7 +1008,7 @@ void test_recipes_persist() {
     CHECK(!g2.debugRecipeOwned(2));
 }
 
-// v51 — the owned-recipe set outgrew the u32 it used to be. A recipe whose wire is at
+// v51: the owned-recipe set outgrew the u32 it used to be. A recipe whose wire is at
 // or past 32 is exactly the case the old field could not express, so it is the one worth
 // round-tripping; and the u32 still has to carry the low wires, because a device that
 // rolls back to a v31..v50 build must keep the recipes that build can name.
@@ -1093,7 +1093,7 @@ void test_stacking_food_run_climbs_then_resets_on_decay() {
         last = g.model().hunger();
     }
 
-    // A Hunger point lost to passive decay ends the run — the next one is worth 1
+    // A Hunger point lost to passive decay ends the run: the next one is worth 1
     // again, not 5. Long enough for at least one decay step, and we re-level Hunger
     // afterwards so the assertion measures the bite alone.
     g.tick(kHungerMinutesPerPoint * 60u * 1000u);
@@ -1103,8 +1103,8 @@ void test_stacking_food_run_climbs_then_resets_on_decay() {
 }
 
 // Every id named in a loot/reward pool has to resolve to a real item with a positive
-// draw weight. A typo'd id would otherwise cost that entry silently — the pool would
-// still draw, just never that row — which is exactly the kind of failure a weighted
+// draw weight. A typo'd id would otherwise cost that entry silently (the pool would
+// still draw, just never that row), which is exactly the kind of failure a weighted
 // table makes invisible.
 void test_loot_pools_resolve_and_carry_weight() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1135,7 +1135,7 @@ void test_lockout_resolve_pay() {
     g.onButton(press(Button::A));                    // toggle to Pay Bits
     g.onButton(press(Button::B));                    // pay
     CHECK(!g.lockoutActive() && g.nav() == Game::Nav::Idle);
-    // Resolving also EARNS SURVIVED_LOCKOUT, which pays its own Bits — read the amount
+    // Resolving also EARNS SURVIVED_LOCKOUT, which pays its own Bits: read the amount
     // off the achievement row rather than restating it, so retuning the reward doesn't
     // break this gate.
     CHECK(g.bits() == kStartBits - kLockoutBitsCost + achBitsReward(ach::kSurvivedLockout));
@@ -1156,7 +1156,7 @@ void test_lockout_resolve_feed() {
     CHECK(g.nav() == Game::Nav::ModalFeeding);
     CHECK(!g.lockoutActive());                        // the crisis is already off
     // The deadline is disarmed: ticking well past it adds NO further mistake. The one
-    // "went hungry" +1 (charged when Hunger hit 0) stands — the intended new cost.
+    // "went hungry" +1 (charged when Hunger hit 0) stands: the intended new cost.
     g.tick(kLockoutDurationMs + 10000);
     CHECK(g.model().careMistakes() == kWentHungryMistakes);
     g.onButton(press(Button::B));                    // dismiss -> resolves lockout
@@ -1166,8 +1166,8 @@ void test_lockout_resolve_feed() {
 
 // A fifth error that lands as the Lockout fires leaves a pet the Lockout cannot save:
 // feeding clears the crisis, not the failing. The screen leads with the failing clock
-// instead of FEED IT NOW, and its feed row says which feeding would help — the
-// Yubi-Cookie — or that none will.
+// instead of FEED IT NOW, and its feed row says which feeding would help (the
+// Yubi-Cookie), or that none will.
 void test_lockout_tells_the_truth_when_failing() {
     Game g{StartMode::Hatched};
     g.model().setCareMistakes(kCareDying - 1);
@@ -1227,7 +1227,7 @@ void test_lockout_tells_the_truth_when_failing() {
 }
 
 // WHILE YOU WERE AWAY: a Lockout that fired and expired with nobody there is reported
-// on the first press after a long quiet — that press is spent on the summary — and only
+// on the first press after a long quiet (that press is spent on the summary), and only
 // then. A short quiet, or a long one in which nothing happened, opens nothing.
 void test_away_summary_reports_what_was_missed() {
     const auto hasRow = [](const std::vector<Game::AwayRow>& rows, const char* label) {
@@ -1342,7 +1342,7 @@ void test_food_signpost_when_the_bag_has_no_meal() {
 // A sealed cache opens only in the Hacker VAULT, but the bag no longer hides it: ALL
 // lists it in a CACHES group that names where it goes, every narrower filter leaves it
 // out, and the first one held earns a card on the next summon that teaches the chord to
-// the Hacker face — the one screen that can use it — and the walk's catch on that chord.
+// the Hacker face (the one screen that can use it), and the walk's catch on that chord.
 void test_caches_listed_and_first_cache_card() {
     const ContentRegistry& reg = ContentRegistry::embedded();
     const ItemDef* cache = nullptr;
@@ -1389,7 +1389,7 @@ void test_items_grayscale() {
     // The claim is that the MARKER reads against the selection band it sits on, with
     // no colour: probe the cursor triangle at x=9 against the bare band two columns
     // left of it, on the same row. Comparing against a different ROW is what a probe
-    // must not do — a group header draws its label from the left margin too, so the
+    // must not do: a group header draws its label from the left margin too, so the
     // "empty" row is only empty until the inventory shifts under it.
     int drawnRow = 0;
     for (int i = 0, v = 0; i < static_cast<int>(rows.size()); ++i) {
@@ -1423,7 +1423,7 @@ void test_tiramisudo_upgrades_once_then_feeds() {
     CHECK(shave > 0);
     CHECK(g.bandwidthRegenMinutes() == kBandwidthRegenMinutesPerPoint - shave);
 
-    // A second helping doesn't stack the upgrade — the pet already has root.
+    // A second helping doesn't stack the upgrade: the pet already has root.
     const uint32_t after = g.bandwidthRegenMinutes();
     g.debugUseItem("tiramisudo");
     CHECK(g.bandwidthRegenMinutes() == after);
@@ -1474,7 +1474,7 @@ void test_tiramisudo_upgrade_survives_the_rack() {
     CHECK(g.bandwidthRegenUpgraded());
 }
 
-// v50 — the upgrade round-trips for the active pet AND for a pet on the shelf.
+// v50: the upgrade round-trips for the active pet AND for a pet on the shelf.
 void test_save_v50_bandwidth_regen_upgrade() {
     SaveData a;
     std::strcpy(a.activeId, "paypup");
@@ -1494,12 +1494,12 @@ void test_save_v50_bandwidth_regen_upgrade() {
     CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
 }
 
-// THE EPIC TIER — the five dishes beyond Tiramisudo that permanently upgrade the pet
+// THE EPIC TIER: the five dishes beyond Tiramisudo that permanently upgrade the pet
 // eating them (core/model/pet_upgrades.h). What is asserted here is the shape they all
 // share: the grant lands OFF the level, it lands once, and a second helping is a meal.
 //
 // The dishes are found BY EFFECT rather than named, so retiring or renaming one is a
-// content edit and not a test edit — what the gate is protecting is the mechanic.
+// content edit and not a test edit: what the gate is protecting is the mechanic.
 namespace {
 
 // The item whose row carries `k`, or nullptr. Every Epic grant is on exactly one row,
@@ -1525,7 +1525,7 @@ const ItemEffect::Kind kStatGrantKinds[kLevelStatCount] = {
 }  // namespace
 
 // A granted point is NOT a level. It shows up in the pet's total, it does not move
-// combatLevel, and it never appears in statPoints_ — which is the whole reason a
+// combatLevel, and it never appears in statPoints_, which is the whole reason a
 // Rollback cannot reach it (test_rollback_cannot_shed_a_granted_point below).
 void test_epic_dish_grants_an_off_level_stat_point() {
     for (int stat = 0; stat < kLevelStatCount; ++stat) {
@@ -1533,7 +1533,7 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         CHECK(d);
         if (!d) continue;
         // Epic is the tier the permanent grants are reserved to, and the dish has to be
-        // COOKED — nothing sells one, which is what makes the recipe the payoff.
+        // COOKED: nothing sells one, which is what makes the recipe the payoff.
         CHECK(d->rarity == ItemDef::Rarity::Epic);
         CHECK(d->type == ItemDef::Type::Food);
 
@@ -1542,14 +1542,14 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         g.inventory().add(d->id, 2);
         g.debugUseItem(d->id);
         CHECK(g.statBonusPoint(stat) == 1);
-        // The moment is written down — a once-per-pet upgrade the operator can scroll
+        // The moment is written down: a once-per-pet upgrade the operator can scroll
         // back to, not just a "FED <dish>" line like every other plate.
         const int loggedGrants = countLogLinesContaining(g, "FOR LIFE");
         CHECK(loggedGrants == 1);
         CHECK(g.totalStatPoint(stat) == 1);
         CHECK(g.levelStatPoint(stat) == 0);        // not an EARNED point...
         CHECK(g.combatLevel() == 0);               // ...so the level has not moved
-        // A second plate does not stack the grant — the pet already has the point —
+        // A second plate does not stack the grant (the pet already has the point),
         // but it is still EATEN rather than refused, which is what stops the dish from
         // becoming a dead row the moment it has paid out (Game::itemUseIsInert).
         CHECK(g.inventory().count(d->id) == 1);
@@ -1581,8 +1581,8 @@ void test_granted_stat_point_reaches_combat() {
 }
 
 // THE PROTECTION. A Rollback sheds an EARNED point and takes the level down with it;
-// the granted point is on neither axis, so the pet keeps it all the way down to level 0
-// — which is the floor the picker itself refuses to go under.
+// the granted point is on neither axis, so the pet keeps it all the way down to level 0,
+// which is the floor the picker itself refuses to go under.
 void test_rollback_cannot_shed_a_granted_point() {
     const ItemDef* d = dishGranting(ItemEffect::Kind::StatPointPower);
     CHECK(d);
@@ -1644,7 +1644,7 @@ void test_epic_dish_grants_a_permanent_xp_rate() {
 }
 
 // The grants belong to the CREATURE, so the rack keeps them and a new egg does not
-// inherit them — the same deal Tiramisudo's regen shave gets, asserted over the pair
+// inherit them: the same deal Tiramisudo's regen shave gets, asserted over the pair
 // that share a save tail with it.
 void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     const ItemDef* pw = dishGranting(ItemEffect::Kind::StatPointPower);
@@ -1678,7 +1678,7 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     CHECK(g.xpRateBonusPct() == 0);
 }
 
-// v57 — the off-level points and the XP rate round-trip for the active pet AND for a
+// v57: the off-level points and the XP rate round-trip for the active pet AND for a
 // pet on the shelf, positionally matched the way the v50 tail beside them is.
 // v72: the favourite dishes and the rack's palates round-trip, and two stored pets that
 // ate the same dish share one dictionary entry rather than each writing the id.
@@ -1741,9 +1741,9 @@ void test_save_v57_permanent_grants() {
     CHECK(out.rack[1].xpRateBonusPct == 0);
 }
 
-// One grant, one dish, one Epic row. The mechanic's scarcity IS the design — a second
-// row carrying the same grant would give a player two chances at a once-per-pet upgrade
-// — so the roster is held to it here rather than by everyone remembering.
+// One grant, one dish, one Epic row. The mechanic's scarcity IS the design (a second
+// row carrying the same grant would give a player two chances at a once-per-pet upgrade),
+// so the roster is held to it here rather than by everyone remembering.
 void test_every_permanent_grant_is_one_epic_dish() {
     const ItemEffect::Kind kGrants[] = {
         ItemEffect::Kind::BandwidthRegenBonusMin, ItemEffect::Kind::StatPointPower,
@@ -1768,7 +1768,7 @@ void test_every_permanent_grant_is_one_epic_dish() {
             // only thing limiting how many permanent upgrades a player can hand out is
             // what the dish is made OF. Every Epic method must therefore want at least
             // one ingredient off the scarce shelf (content_items.cpp's
-            // kRareStapleWalkWeight) — without this a six-Common recipe would make the
+            // kRareStapleWalkWeight): without this a six-Common recipe would make the
             // whole tier farmable in an afternoon.
             int scarce = 0;
             for (const RecipeInput& in : kMergeRecipes[r].inputs) {
@@ -1783,7 +1783,7 @@ void test_every_permanent_grant_is_one_epic_dish() {
     }
 }
 
-// A row that grants something once per pet has to SAY whether this pet has had it —
+// A row that grants something once per pet has to SAY whether this pet has had it:
 // nothing else on the ITEMS screens does. The Epic dishes stay perfectly usable once
 // spent (they are still food), so there is no gate message to read it off, and the BUFFS
 // page only lists what a pet HAS, never what a plate in the bag would still give it.
@@ -1831,7 +1831,7 @@ void test_lifetime_mark_says_whether_this_pet_has_had_it() {
     CHECK(lifetimeMark(*dish, g.petLifetimeGates()) == LifetimeMark::Unspent);
 }
 
-// v54 — the first ITEM id the rename table ever carried (`renamedIds`, save.cpp).
+// v54: the first ITEM id the rename table ever carried (`renamedIds`, save.cpp).
 // Both id-bearing item fields are swept, and they fail differently if one is missed:
 // `items` is the stack the operator is holding, so a miss there loses the food; and
 // `collectedItems` is the ever-held set the earn-path achievements read, so a miss
@@ -1847,7 +1847,7 @@ void test_save_v54_renames_the_snack_item_id() {
     a.collectedItems.push_back(collected);
 
     // Stamp it back to the last version that still WROTE the old id. The row only
-    // applies below its sinceVersion, so a v54 blob must be left alone — which the
+    // applies below its sinceVersion, so a v54 blob must be left alone, which the
     // second half of this test is for.
     auto blob = serializeSave(a);
     const uint16_t before = 53;
@@ -1863,7 +1863,7 @@ void test_save_v54_renames_the_snack_item_id() {
     CHECK(out.collectedItems.size() == 1);
     CHECK(std::strcmp(out.collectedItems[0].id, "dyno_nuggets") == 0);
 
-    // A CURRENT blob carries the new id already and must round-trip untouched — a
+    // A CURRENT blob carries the new id already and must round-trip untouched: a
     // rename row that also fires at or above its own version would be rewriting
     // history it already wrote.
     SaveData b;
@@ -1874,7 +1874,7 @@ void test_save_v54_renames_the_snack_item_id() {
     CHECK(std::strcmp(back.items[0].id, "dyno_nuggets") == 0);
 }
 
-// v70 — the second item rename, the same sweep as v54's: a v69 blob's stack and its
+// v70. The second item rename, the same sweep as v54's: a v69 blob's stack and its
 // ever-collected set both come back under the new id, and a current blob is untouched.
 void test_save_v70_renames_crostini() {
     SaveData a;

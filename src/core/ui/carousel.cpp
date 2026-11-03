@@ -13,8 +13,8 @@ namespace mal {
 namespace {
 
 constexpr int kIcon = 28;                       // ASSET_ICON_* are 28x28
-constexpr int kIconInset = (kSlotW - kIcon) / 2; // 14 — centre in the 56px column
-constexpr int kIconTop = (kTrackH - kIcon) / 2;  // 6  — centre in the 40px track
+constexpr int kIconInset = (kSlotW - kIcon) / 2; // 14: centre in the 56px column
+constexpr int kIconTop = (kTrackH - kIcon) / 2;  // 6:  centre in the 40px track
 constexpr int kBoxPad = 3;                       // UI_CURSOR_BOX padding round icon
 constexpr int kLabelBoxPad = 2;                  // ...and round a WORD, which needs the
                                                   // 2px back to fit the column (see
@@ -22,7 +22,7 @@ constexpr int kLabelBoxPad = 2;                  // ...and round a WORD, which n
 constexpr int kBoxThick = 2;
 constexpr uint8_t kDimAlpha = 140;               // ~50% wash over unfocused icons
 // The needs-attention "!" (drawCarousel): 3px wide, 12px tall, its left edge this far
-// in from the column's right edge — inside the 14px gutter beside the icon and past
+// in from the column's right edge. Inside the 14px gutter beside the icon and past
 // the focus box's outer stroke (kIconInset - kBoxPad - kBoxThick = 9px of clearance).
 constexpr int kAttnMarkW = 3;
 constexpr int kAttnMarkH = 12;
@@ -35,7 +35,7 @@ int slotTrackTop(int cursor) { return slotIsTop(cursor) ? 0 : kLivingBottom; }
 int slotIconX(int cursor) { return slotCol(cursor) * kSlotW + kIconInset; }
 int slotIconY(int cursor) { return slotTrackTop(cursor) + kIconTop; }
 
-// Stroke a rectangle outline (kBoxThick px) — the focus box / shape channel.
+// Stroke a rectangle outline (kBoxThick px): the focus box / shape channel.
 void strokeRect(Framebuffer& fb, int x, int y, int w, int h, Rgb565 c) {
     fb.fillRect(x, y, w, kBoxThick, c);
     fb.fillRect(x, y + h - kBoxThick, w, kBoxThick, c);
@@ -52,7 +52,7 @@ void drawTextCentered(Framebuffer& fb, int x0, int w, int y, const char* s,
 
 // A slot rendered as its WORD instead of its icon, centred in the slot's column.
 // Both faces draw it through here so the two rosters cannot drift apart on where a
-// label sits — which is how one of them came to be measured against a box the other
+// label sits, which is how one of them came to be measured against a box the other
 // had already outgrown.
 void drawSlotLabel(Framebuffer& fb, int cursor, const char* label, Rgb565 c) {
     drawTextCentered(fb, slotCol(cursor) * kSlotW, kSlotW,
@@ -100,7 +100,7 @@ const CarouselSlot* carouselSlots() {
 const HackerCarouselSlot* hackerCarouselSlots() {
     // roster. PROFILE leads (slot 0) so it maps to the pet face's STAT slot at
     // the same position; CREW/SHOP/VAULT/MERGE follow. SCAN has no icon drawn yet
-    // and renders its marker/label alone — a null icon is a legal slot, not a
+    // and renders its marker/label alone: a null icon is a legal slot, not a
     // broken one. PROFILE, CREW (enlist + home network), SHOP, and VAULT
     // (sealed-cache decrypt, off pet ITEMS), PEERS (met operators) and LINK (1v1
     // duels) are statically live; SCAN is statically
@@ -137,7 +137,7 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, unsigned acces
 
         // IconsLabel swaps the focused slot's own icon for its text label instead
         // of floating a caption over the living area (which collided with
-        // whatever draws there — pet sprite, event overlays, …). TextOnly does
+        // whatever draws there: pet sprite, event overlays, …). TextOnly does
         // this for every slot, not just the focused one.
         const bool asText = mode == UiMode::TextOnly ||
             (mode == UiMode::IconsLabel && i == cursor);
@@ -157,7 +157,7 @@ void drawHackerCarousel(Framebuffer& fb, int cursor, UiMode mode, unsigned acces
                             fb.blendPixel(xx, yy, paper, kDimAlpha);
             }
             // inaccessible marker: composited centred over the (dimmed) slot icon,
-            // or drawn alone for an undesigned slot with no base icon. Dual-coded — a
+            // or drawn alone for an undesigned slot with no base icon. Dual-coded: a
             // distinct glyph, not just a dim, so the lock survives the grayscale test.
             if (!accessible) {
                 const SpriteData& mk = ASSET_ICON_SLOT_INACCESSIBLE;
@@ -195,7 +195,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
 
         // IconsLabel swaps the focused slot's own icon for its text label instead
         // of floating a caption over the living area (which collided with
-        // whatever draws there — pet sprite, event overlays, …). TextOnly does
+        // whatever draws there: pet sprite, event overlays, …). TextOnly does
         // this for every slot, not just the focused one.
         const bool asText = mode == UiMode::TextOnly ||
             (mode == UiMode::IconsLabel && i == cursor);
@@ -245,7 +245,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
             drawTextCentered(fb, col, kSlotW, sy, "SOON", palColor(Pal::INK_DIM));
         }
 
-        // Focus box (shape channel — survives grayscale). A cursor parked on a
+        // Focus box (shape channel: survives grayscale). A cursor parked on a
         // locked slot still draws a box so the cursor is visible, but muted
         // (INK_DIM, not ACCENT) so the slot reads unavailable.
         if (i == cursor)
@@ -256,7 +256,7 @@ void drawCarousel(Framebuffer& fb, int cursor, UiMode mode, int beat,
 
 void drawPlaceholderSubmenu(Framebuffer& fb, const char* title) {
     drawHeaderBand(fb, title);
-    // Centered status tag — this category's submenu isn't built yet.
+    // Centered status tag: this category's submenu isn't built yet.
     drawTextCentered(fb, 0, kActiveW, kActiveH / 2 - 7, "SOON", palColor(Pal::INK_DIM), 2);
 }
 

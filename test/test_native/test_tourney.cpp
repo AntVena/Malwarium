@@ -1,4 +1,4 @@
-// test_tourney.cpp — ROCK THE DOCK: the derivation, the headless bracket, and the run.
+// test_tourney.cpp (ROCK THE DOCK): the derivation, the headless bracket, and the run.
 //
 // The arena's whole correctness claim is that a bracket is a SEED: the same seed must
 // build the same eight operators, the matches nobody watches must be really fought and
@@ -19,7 +19,7 @@ using namespace mal;
 
 namespace {
 
-// The shipped content, built once — every entrant roll below walks the whole roster,
+// The shipped content, built once: every entrant roll below walks the whole roster,
 // so a per-gate registry would be the slowest thing in the suite.
 const ContentRegistry& reg() {
     static ContentRegistry r = ContentRegistry::embedded();
@@ -30,7 +30,7 @@ const ContentRegistry& reg() {
 
 // Every entrant handle has to survive being copied into a PvpFighter::tag, which is
 // kHackerTagMax cells plus the terminator. A pool row that overflowed would be
-// silently truncated into a different operator's name — so this is the one property of
+// silently truncated into a different operator's name, so this is the one property of
 // the table a reader cannot check by eye.
 void test_tourney_handles_fit_an_operator_tag() {
     CHECK(kTourneyHandleCount >= kTourneySlots);   // eight names, drawn without replacement
@@ -43,8 +43,8 @@ void test_tourney_handles_fit_an_operator_tag() {
     CHECK(tourneyHandleName(kTourneyHandleCount)[0] == '\0');
 }
 
-// THE SEED IS THE RUN. The same seed rebuilds the identical field — that is what makes
-// four persisted bytes enough — and eight slots of one bracket are eight DISTINCT
+// THE SEED IS THE RUN. The same seed rebuilds the identical field (that is what makes
+// four persisted bytes enough), and eight slots of one bracket are eight DISTINCT
 // operators rather than the same roll wearing different numbers.
 void test_tourney_entrants_are_derived_from_the_seed() {
     const uint32_t seed = 0xC0FFEEu;
@@ -96,7 +96,7 @@ void test_tourney_entrants_are_legal_petware() {
             else if (level < kTourneyDaemonLevel) CHECK(pet->stage == Stage::Script);
             else CHECK(pet->stage == Stage::Daemon);
 
-            // Stat points are the level, spent one at a time — the same grant a raise
+            // Stat points are the level, spent one at a time: the same grant a raise
             // makes, so an entrant's stat line is one a real pet could have reached.
             int sum = 0;
             for (int i = 0; i < 4; ++i) sum += f.spec.statPoints[i];
@@ -144,7 +144,7 @@ void test_tourney_entrants_are_legal_petware() {
     }
 }
 
-// An opponent fires its OWN Exploit — nobody is at the picker for it. A 100% trigger
+// An opponent fires its OWN Exploit: nobody is at the picker for it. A 100% trigger
 // means "opens with it", and firing SPENDS the turn, which is the cost that keeps it
 // from being free. Asserted at the engine, on a fight with no tournament in it, so the
 // mechanic stands on its own.
@@ -169,7 +169,7 @@ void test_a_fighter_can_fire_its_own_exploit() {
     CHECK(c.enemy().crewExploit.charges <= 3);
 
     // A LOW trigger waits. A fighter at full Health with a 20% trigger must not arm on
-    // its opening turn — the tell is the whole reason a trigger exists.
+    // its opening turn: the tell is the whole reason a trigger exists.
     Combatant d = makeEnemyCombatant(r, spec);
     d.autoExploit = {"DENIAL OF SERVICE", CrewExploitKind::NegateNextHits, 3};
     d.autoExploitAtHealthPct = 20;
@@ -233,7 +233,7 @@ void test_tourney_run_from_the_expl_row() {
           ExplRowState::TourneyLocked);
     CHECK(!explRowSelectable(ExplRowState::TourneyLocked));
 
-    // Reaching The Pirate Bayou — clearing the area before it — is the invitation.
+    // Reaching The Pirate Bayou (clearing the area before it) is the invitation.
     g.debugSetSectorCleared(0, true);
     areas[0] = true;
     CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, false) ==
@@ -258,7 +258,7 @@ void test_tourney_run_from_the_expl_row() {
     CHECK(opp >= 0 && opp != g.tourneySlot());
     CHECK(g.tourneyOpponent().spec.creatureId[0]);    // the match card has a species
 
-    // A TAPPED B starts the bout — B is a tap/hold pair here, so the press edge only
+    // A TAPPED B starts the bout: B is a tap/hold pair here, so the press edge only
     // arms it and the tap resolves on the release. There is no running from a bracket,
     // so C is inert mid-bout.
     tapB(g);
@@ -270,7 +270,7 @@ void test_tourney_run_from_the_expl_row() {
     // the match into a grind: no rider bypasses a full pool (the PURE RIDER rule on
     // combat.h), so the only way through is to out-damage the pool's growth, and that is a
     // stat check measured in tens of thousands of beats rather than hundreds. It still
-    // RESOLVES — the assertion below is the difference between slow and stuck, and is why
+    // RESOLVES: the assertion below is the difference between slow and stuck, and is why
     // this is a bound rather than a wait.
     for (int i = 0; i < 200000 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);
@@ -290,7 +290,7 @@ void test_tourney_run_from_the_expl_row() {
     }
 }
 
-// The bracket screen's three ROW states — OUT, NEXT, YOU — and its two terminal
+// The bracket screen's three ROW states (OUT, NEXT, YOU), and its two terminal
 // banners have to survive the dual-coding gate: desaturate the panel and it must still
 // say which entrants are gone and which fight is next. Colour is the emphasis here, and
 // the word is the meaning.
@@ -300,7 +300,7 @@ void test_tourney_run_from_the_expl_row() {
 // feeds the ladder, and that the two shape rows read the final rather than the tally.
 
 // Walk the OPEN EXPL list to the arena row and enter it. Split from openBracket below
-// because a dismissed run hands the operator straight back to this list — re-entering
+// because a dismissed run hands the operator straight back to this list: re-entering
 // the submenu from there would be navigating somewhere it already is.
 static void armBracket(Game& g) {
     explPickCategory(g, ExplCat::Arena);
@@ -328,7 +328,7 @@ void test_dock_ladder_counts_brackets_and_pays() {
     g.debugEndTourneyRun(/*champion=*/true);
     CHECK(g.tourneyWins() == 1);
     // The purse is immediate; the LADDER row is not. DOCK_FIRST is a counted row, so it
-    // is the achievement SWEEP that notices the tally moved — one tick, exactly as the
+    // is the achievement SWEEP that notices the tally moved: one tick, exactly as the
     // boss and arcade ladders are earned.
     CHECK(!g.hasAchievement("DOCK_FIRST"));
     g.tick(t += kHeartbeatMs);
@@ -341,7 +341,7 @@ void test_dock_ladder_counts_brackets_and_pays() {
 
     // An eliminated run is not a bracket taken. This is the whole reason the tally
     // counts brackets rather than matches. The champion banner has to be DISMISSED
-    // first — a finished run still occupies the seed until the operator reads it.
+    // first: a finished run still occupies the seed until the operator reads it.
     tapB(g);
     CHECK(!g.tourneyRunning());
     armBracket(g);                    // the dismissal already parked us on the list
@@ -351,8 +351,8 @@ void test_dock_ladder_counts_brackets_and_pays() {
 }
 
 // The two rows that ask what the bracket was taken WITH. Both are read at the purse off
-// the final's own opponent, so what is asserted here is the MAPPING — which condition
-// lights which row — not that any particular seed rolls a particular rival.
+// the final's own opponent, so what is asserted here is the MAPPING (which condition
+// lights which row), not that any particular seed rolls a particular rival.
 void test_dock_shape_rows_read_the_final() {
     // A Process-stage pet, low-level enough that the arena's uniform 1..60 draw all but
     // certainly outranks it. The STAGE is the point: "bruinforce" is a Daemon, so it is
@@ -449,7 +449,7 @@ void test_tourney_screen_copy_fits_its_panel() {
 // worth making if it always pays: a run reaches the bracket screen with at most five
 // entrants standing (the three pairings the operator is not in resolve the moment a
 // round opens), so every state a player can actually be looking at has to leave room
-// for a fighter — including the tallest cell that may ship, and including the cursor
+// for a fighter, including the tallest cell that may ship, and including the cursor
 // parked on a struck-out row, which stands that row back up.
 void test_dock_field_always_leaves_room_for_the_opponent() {
     for (int mask = 0; mask < (1 << kTourneySlots); ++mask) {
@@ -465,7 +465,7 @@ void test_dock_field_always_leaves_room_for_the_opponent() {
 // Every bracket tie has to attach INSIDE the field it describes. The anchors are
 // derived from row positions that move as rows collapse and as the cursor stands one
 // back up, so this is the one property of the drawn tree that cannot be read off the
-// source — an arm that landed under the last row would point at the harbour.
+// source: an arm that landed under the last row would point at the harbour.
 void test_dock_ties_land_inside_the_field() {
     for (int mask = 0; mask < (1 << kTourneySlots); ++mask) {
         const uint8_t alive = static_cast<uint8_t>(mask);
@@ -485,7 +485,7 @@ void test_dock_ties_land_inside_the_field() {
     }
 }
 
-// The bracket is a screen you STUDY — the field, the levels, and what the next
+// The bracket is a screen you STUDY: the field, the levels, and what the next
 // opponent is carrying. The 5s menu-idle collapse would take it away mid-decision, so
 // it is held open the way the other wait-in-front-of-it screens are.
 void test_tourney_screen_outlives_the_menu_idle_timer() {
@@ -520,7 +520,7 @@ void test_tourney_brief_fits_its_page() {
         CHECK(std::strcmp(rows[i].body.c_str(), kTourneyBrief[i].text) == 0);
         CHECK(!rows[i].body.atCap());        // nothing was clipped on the way in
     }
-    // Every section fits a screen on its own — a section taller than the whole page
+    // Every section fits a screen on its own: a section taller than the whole page
     // would draw clipped and never scroll past.
     for (int top = 0; top < kTourneyBriefCount; ++top)
         CHECK(proseRowsFitting(rows, top, 46) >= 1);
@@ -528,7 +528,7 @@ void test_tourney_brief_fits_its_page() {
 
 // SCOUTING a rival is the answer to "their loadout matters now": the sheet has to name
 // every move and mod they are actually carrying, the stat spread their levels bought,
-// and the Exploit they hold — and it has to say it in the move's OWN words, because it
+// and the Exploit they hold, and it has to say it in the move's OWN words, because it
 // is the same builder STAT's LOADOUT page uses.
 void test_tourney_scout_shows_the_rivals_whole_kit() {
     Game g{StartMode::Hatched, "bruinforce"};
@@ -538,7 +538,7 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
 
-    // Park on a rival, then HOLD B — the tap starts a bout, the hold opens the sheet.
+    // Park on a rival, then HOLD B: the tap starts a bout, the hold opens the sheet.
     while (g.tourneyCursor() == g.tourneySlot()) g.onButton(press(Button::A));
     const int scouted = g.tourneyCursor();
     uint32_t t = 0;
@@ -562,7 +562,7 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     for (int i = 0; i < kModSlots; ++i)
         if (f.spec.modIds[i][0])
             CHECK(namesRow(g.content().mod(f.spec.modIds[i])->displayName));
-    // The stat spread — invisible in a move list, and half of what an opponent is.
+    // The stat spread: invisible in a move list, and half of what an opponent is.
     for (int i = 0; i < kLevelStatCount; ++i) CHECK(namesRow(levelStatName(i)));
     // The Exploit it holds, by name. Its TRIGGER is deliberately absent: which moment a
     // rival commits to is the read the arena exists to teach.
@@ -571,7 +571,7 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     // EXPLOIT row alone, which is the only one that ever could: every other row is a move
     // or mod describing itself out of its own content, and those legitimately quote their
     // own percentages ("ignores 40% of enemy defence"). Scanning all of them made this
-    // assertion a collision test against the roster — it passed until a mod happened to be
+    // assertion a collision test against the roster: it passed until a mod happened to be
     // authored at the same number as a seed's trigger, which is not what it is here to catch.
     char pct[8];
     std::snprintf(pct, sizeof(pct), "%d%%", f.exploitAtHealthPct);
@@ -589,7 +589,7 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     CHECK(g.tourneyView() == Game::TourneyView::Bracket);
 }
 
-// A bracket is four bytes plus a bitmask, so it has to survive a reboot exactly —
+// A bracket is four bytes plus a bitmask, so it has to survive a reboot exactly,
 // otherwise a run resumed after a power cycle would be a different tournament.
 void test_tourney_run_survives_a_reboot() {
     SaveData d;

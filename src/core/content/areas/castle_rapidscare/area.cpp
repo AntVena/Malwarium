@@ -1,9 +1,9 @@
-// Castle Rapidscare — RapidShare's file-locker keep (AREA_NAMING.md), the castle
+// Castle Rapidscare: RapidShare's file-locker keep (AREA_NAMING.md), the castle
 // the Napstorrent Moors' CASTLE CAUSEWAY walks up to. Last in kAreaList, which is
-// what makes it the deepest named area before the endless DeepWeb Dive — and the
+// what makes it the deepest named area before the endless DeepWeb Dive, and the
 // reason its pool is the endgame one. Its five stretches are held by a card/chess
-// court — pawns at the gate, a Red Queen in the mirrors, a Knave selling fixes for
-// problems he invented, a Joker in the decoys, the King in the catacombs — all flying
+// court. Pawns at the gate, a Red Queen in the mirrors, a Knave selling fixes for
+// problems he invented, a Joker in the decoys, the King in the catacombs. All flying
 // COUNT CONFICKER's banner: the keep the copyright war never actually took.
 #include "core/content/areas/area_defs.h"
 
@@ -12,10 +12,10 @@
 namespace mal {
 
 namespace {
-// This area's WILD-win drop table — what a won wild encounter here hands over.
+// This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
 // content_items.cpp). The first four are the staple set every area shares: two
-// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
@@ -38,7 +38,7 @@ const char* const kModPool[] = {"ghost_process",  "deadman_switch", "raid_mirror
                                 // hands over the rest of it (content_mods.cpp).
                                 "clean_room",   "dma_breach"};
 
-// SPAM & SCRAM — the item storefront: the free tier's endless lunch, and the two ways
+// SPAM & SCRAM. The item storefront: the free tier's endless lunch, and the two ways
 // out of a fight you didn't want (skip it, or patch through the middle of it). The
 // Sinkhole Traps are also what the mod counter below charges for Ghost Process.
 const ShopListingDef kShopListings[] = {
@@ -47,12 +47,12 @@ const ShopListingDef kShopListings[] = {
     {"dyno_nuggets", 4, 96},
 };
 
-// THE GHOST IN THE MACHINE — the mod storefront: this area's own tier-4 Epics, priced in
+// THE GHOST IN THE MACHINE. The mod storefront: this area's own tier-4 Epics, priced in
 // Bits plus a stack of whichever consumable the mod is made out of. Ghost Process is paid
 // for in Sinkhole Traps from the item shop above. RAID Mirror is paid for in Backup
 // Drives, which is the trade the keep is really offering: a drawer full of one-shot
 // restores, melted down into a redundancy the pet carries permanently. It costs a serious
-// pile of them because that is the point — the drives are the cheap, repeatable version
+// pile of them because that is the point: the drives are the cheap, repeatable version
 // of surviving, and this is the expensive, permanent one.
 const ShopListingDef kModShopListings[] = {
     {"ghost_process", kShopStock, 1024, {{"sinkhole_trap", 12}}},
@@ -168,7 +168,7 @@ const AreaDef kAreaCastleRapidscare = {
      {{"GIVE ME A NAME. I WILL DECIDE.", "IT WAITS AS A JUDGE DOES."},
       {"I CAN SAY YOU DO NOT EXIST.", "IT IS ENTIRELY UNHURRIED."},
       {"THERE IS NO ONE AFTER ME.", "THERE IS NO APPEAL HERE."}},
-     // How it takes the answer — pleased, displeased, affront, boon. It deals only in
+     // How it takes the answer: pleased, displeased, affront, boon. It deals only in
      // whether a name resolves, so every verdict it passes is that same one answer.
      {{"THEN YOU RESOLVE. GO ON.", "A NAME BECOMES AN ADDRESS."},
       {"I FIND NO SUCH NAME.", "IT UNMAKES YOUR NAME."},

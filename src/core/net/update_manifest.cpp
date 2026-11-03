@@ -7,7 +7,7 @@ namespace mal {
 namespace {
 
 // A cursor over the manifest bytes. Every read is bounds-checked against `end`,
-// because the input may be truncated mid-download — that is a normal outcome on a
+// because the input may be truncated mid-download: that is a normal outcome on a
 // flaky network, not a corrupt-input edge case.
 struct Scan {
     const char* p;
@@ -30,7 +30,7 @@ struct Scan {
 };
 
 // Consume a JSON string. `out` may be null to discard it. Handles the three
-// escapes our own fields can legitimately contain and REJECTS every other one —
+// escapes our own fields can legitimately contain and REJECTS every other one:
 // an unknown escape means this isn't our manifest, and guessing at it is how a
 // login page gets read as an artifact.
 //
@@ -59,7 +59,7 @@ bool readString(Scan& s, char* out, size_t cap) {
         }
         ++n;
     }
-    return false;   // ran off the end inside a string — truncated input
+    return false;   // ran off the end inside a string: truncated input
 }
 
 // Consume a string we don't need to keep. Length-agnostic on purpose: skipping a
@@ -67,7 +67,7 @@ bool readString(Scan& s, char* out, size_t cap) {
 // is long, or a later publish adding a field would strand older devices.
 bool skipString(Scan& s) { return readString(s, nullptr, 0); }
 
-// Read an object KEY. Unlike a value, an over-long key is not an error — it just
+// Read an object KEY. Unlike a value, an over-long key is not an error: it just
 // can't be one of ours (they're all short), so it's kept but marked, and the
 // caller routes it to skipValue like any other unknown field. Failing here
 // instead would mean a later publish adding a long field name strands every
@@ -159,7 +159,7 @@ bool skipValue(Scan& s) {
         }
         return false;
     }
-    // A bare literal (number, true/false/null) — run to the next structural char.
+    // A bare literal (number, true/false/null): run to the next structural char.
     while (!s.done() && *s.p != ',' && *s.p != '}' && *s.p != ']') ++s.p;
     return true;
 }
@@ -251,7 +251,7 @@ ManifestParse UpdateManifest::parse(const char* json, size_t len) {
     }
 
     // The closing brace is REQUIRED, not decoration. Without it a download cut at
-    // its very last byte parses as a complete manifest — the one truncation the
+    // its very last byte parses as a complete manifest: the one truncation the
     // artifact loop can't notice on its own, because every row it did read was
     // whole.
     if (!s.eat('}')) return ManifestParse::Malformed;

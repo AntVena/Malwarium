@@ -17,10 +17,10 @@
 #include "core/model/pvp_battle.h"
 #include "core/app/game_internal.h"
 
-// game_tourney.cpp — ROCK THE DOCK: eight operators, one bracket, in The Pirate Bayou.
+// game_tourney.cpp (ROCK THE DOCK): eight operators, one bracket, in The Pirate Bayou.
 //
 // Everywhere else the ladder points the pet at a malbeast. Here it points it at
-// PETWARE — a rolled creature off the same roster the player hatches from, at a rolled
+// PETWARE: a rolled creature off the same roster the player hatches from, at a rolled
 // level up to the arena's cap, carrying a real move kit, real mods, the per-level stat
 // points a raise would have bought it, and an Exploit it will fire on its own. So the
 // arena is where a loadout is tested against the whole shape of the game rather than
@@ -31,12 +31,12 @@
 // and a verdict. Resuming after a reboot rebuilds the identical field.
 //
 // THE OTHER MATCHES ARE REALLY FOUGHT. When a round opens, the pairings the operator
-// is not in are stepped headlessly through the same Combat the screen drives — same
-// kits, same Exploits, same maths — and only the winner comes back. Nobody watches
+// is not in are stepped headlessly through the same Combat the screen drives (same
+// kits, same Exploits, same maths), and only the winner comes back. Nobody watches
 // them, but the bracket that arrives at the final was climbed rather than sorted.
 //
 // STAKES: none, until the whole thing is taken. A bout is Safe (a loss costs no
-// Fragmentation and spends no Bandwidth — the arena is not the wild), and a won bout
+// Fragmentation and spends no Bandwidth: the arena is not the wild), and a won bout
 // pays nothing but the next bout. Only the TITLE pays, once, in one lump. That is what
 // keeps the Dock a place to practise tactics instead of the fastest Bits in the game,
 // and it is why a loss ends the run outright: the run is the stake.
@@ -44,7 +44,7 @@
 // ONE SCREEN, THREE READS (TourneyView). The BRACKET is the field; hold-B opens the
 // focused entrant's SCOUT sheet, and the chord opens the BRIEFING. Both readers flow
 // through core/ui/prose_page.h, and the scout sheet is literally STAT's LOADOUT page
-// pointed at somebody else's pet — an opponent whose kit was described by a second
+// pointed at somebody else's pet: an opponent whose kit was described by a second
 // renderer would be an opponent the operator has to learn to read twice.
 //
 // This unit is the RUN. What the three reads look like is game_tourney_render.cpp,
@@ -54,7 +54,7 @@
 namespace mal {
 
 namespace {
-// The two READER views (SCOUT, BRIEF) page against ui/tourney_screen.h's tops — the
+// The two READER views (SCOUT, BRIEF) page against ui/tourney_screen.h's tops: the
 // scout sheet's is lower, because it seats a portrait. Everything else about how this
 // screen is laid out lives there too; this unit is the run.
 inline int tourneyReaderTop(Game::TourneyView v) {
@@ -72,7 +72,7 @@ int Game::tourneyOpponentSlot() const {
 
 void Game::openTourney() {
     // A run in play RESUMES exactly as it stood; otherwise draw a fresh bracket. The
-    // seed is the only thing rolled — everything else about the eight entrants falls
+    // seed is the only thing rolled: everything else about the eight entrants falls
     // out of it.
     if (!tourneyRunning()) {
         rng_ = rng_ * 1664525u + 1013904223u;
@@ -120,10 +120,10 @@ void Game::startTourneyMatch() {
     if (opp < 0) return;
     Combatant p = buildPlayerCombatant();
     // No stakes means no death to save the pet from, so a Rare item's shield is not
-    // spent on a drill — the same call PRACTISE makes, for the same reason.
+    // spent on a drill: the same call PRACTISE makes, for the same reason.
     p.itemShield = false;
     Combatant e = makeTourneyCombatant(registry_, tourneyOpponent_);
-    // Facing a real species is the glimpse, exactly as it is in a duel — the arena is
+    // Facing a real species is the glimpse, exactly as it is in a duel: the arena is
     // the other place a creature the operator has never raised walks on screen.
     markCreatureSeen(tourneyOpponent_.spec.creatureId);
     // The arena is the other place the operator's own species can walk on opposite them,
@@ -133,7 +133,7 @@ void Game::startTourneyMatch() {
     // from a linked duel, which grants zero: there, opening the picker would pause a
     // fight the other device is still stepping. Here both fighters are local, so the
     // arena is the one place a full-kit pet-vs-pet fight can be played with Exploits on
-    // both sides — which is the whole tactical point of it.
+    // both sides, which is the whole tactical point of it.
     combat_.begin(p, e, Combat::Stakes::Safe,
                   tourneyMatchSeed(tourneySeed_, tourneyRound_,
                                    tourneyBlockStart(tourneySlot(), tourneyRound_)),
@@ -155,8 +155,8 @@ void Game::finishTourneyMatch() {
     const bool won = combat_.outcome() == Combat::Outcome::Win;
     char line[28];
     if (!won) {
-        // A loss — or walking out of the fight, which is the same thing here: there is
-        // no fleeing a bracket, only forfeiting it — or a draw, which is a loss. The run
+        // A loss, or walking out of the fight, which is the same thing here: there is
+        // no fleeing a bracket, only forfeiting it, or a draw, which is a loss. The run
         // ends and the banner waits.
         tourneyPhase_ = TourneyPhase::Eliminated;
         if (opp >= 0) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
@@ -211,12 +211,12 @@ void Game::awardTourneyPurse() {
     // final's opponent is still seated and its level is still the one the seed rolled,
     // so neither needs a byte of save or a flag carried through the run.
     //
-    // UNDERDOG — the final was won against an entrant rolled ABOVE the operator's own
+    // UNDERDOG: the final was won against an entrant rolled ABOVE the operator's own
     // level. Strictly above: matching the band is the expected fight, and the arena
     // draws levels uniformly, so this is a genuine draw of the short straw rather than
     // a rung that always lands on the third win.
     if (tourneyOpponent_.spec.level > combatLevel_) unlockAchievement(ach::kDockUnderdog);
-    // PUNCHING UP — the whole bracket taken by a pet that never reached Daemon. The
+    // PUNCHING UP: the whole bracket taken by a pet that never reached Daemon. The
     // entrants' stage follows their rolled level (kTourneyScriptLevel /
     // kTourneyDaemonLevel), so the top of a bracket is Daemon country; arriving there
     // as a Process or a Script is the operator's kit doing the work, not their stage.
@@ -231,7 +231,7 @@ void Game::awardTourneyPurse() {
 
 std::vector<ProseRow> Game::tourneyScoutRows() const {
     // An entrant's kit, built through the SAME buildLoadoutRows STAT's LOADOUT page
-    // uses — the opponent's moves and mods are described by their own content rows,
+    // uses: the opponent's moves and mods are described by their own content rows,
     // wrapped whole, exactly as the operator's are. Nothing here re-words a move.
     std::vector<ProseRow> out;
     const CreatureDef* pet = registry_.creature(tourneyScouted_.spec.creatureId);
@@ -244,7 +244,7 @@ std::vector<ProseRow> Game::tourneyScoutRows() const {
     // ...then the two things a loadout page has no column for, as a section of their
     // own: how the levels were SPENT (the stat spread is half of what an opponent is,
     // and it is invisible in a move list), and the Exploit it is carrying. The trigger
-    // is deliberately NOT stated — which moment a rival commits to is the read the
+    // is deliberately NOT stated, which moment a rival commits to is the read the
     // arena exists to teach, and printing it would answer the question for them.
     ProseRow stats;
     stats.header = true;
@@ -264,7 +264,7 @@ std::vector<ProseRow> Game::tourneyScoutRows() const {
         ProseRow r;
         r.label = tourneyScouted_.exploit.label;
         setProseTag(r, "%s", crewExploitTag(tourneyScouted_.exploit.kind));
-        // The crew's own description of the ability, templated off its magnitude — the
+        // The crew's own description of the ability, templated off its magnitude: the
         // same sentence the CREW screen shows, so an operator who has read one has read
         // the other.
         for (int c = 0; c < kCrewCount; ++c)
@@ -301,7 +301,7 @@ void Game::openTourneyScout() {
 // --- Input -------------------------------------------------------------------
 
 void Game::tourneyReleaseB() {
-    // Screen check only — onButton owns bHeld_ (see moveFilterReleaseB). A B that was
+    // Screen check only: onButton owns bHeld_ (see moveFilterReleaseB). A B that was
     // armed on the bracket and released before kTourneyScoutHoldMs is the TAP: start
     // the operator's own bout.
     if (nav_ != Nav::Tourney || tourneyView_ != TourneyView::Bracket) return;
@@ -318,7 +318,7 @@ void Game::onTourney(const ButtonEvent& ev) {
                                                ? tourneyScoutRows()
                                                : tourneyBriefRows();
         const int total = static_cast<int>(rows.size());
-        // B SCROLLS by exactly the window that was on screen and wraps at the end —
+        // B SCROLLS by exactly the window that was on screen and wraps at the end:
         // the STAT reader's contract, and the reason proseRowsFitting is exported.
         if (ev.button == Button::B && total > 0) {
             const int shown = proseRowsFitting(rows, tourneyScroll_, tourneyReaderTop(tourneyView_));
@@ -331,7 +331,7 @@ void Game::onTourney(const ButtonEvent& ev) {
         dirty_ = true;
         return;
     }
-    // The BRIEFING is the chord's job here — see game_core.cpp's chord routing for why
+    // The BRIEFING is the chord's job here: see game_core.cpp's chord routing for why
     // it is the chord and not a fourth key.
     if (ev.chordAC) {
         tourneyView_ = TourneyView::Brief;
@@ -340,7 +340,7 @@ void Game::onTourney(const ButtonEvent& ev) {
         return;
     }
     // A terminal banner is a read, not a menu: any of the three keys clears the run and
-    // returns to EXPL. Answering all three is deliberate — nothing here is destructive
+    // returns to EXPL. Answering all three is deliberate: nothing here is destructive
     // and a verdict the operator has already read should not need the right button.
     if (tourneyPhase_ != TourneyPhase::Ready) {
         abandonTourney();
@@ -350,7 +350,7 @@ void Game::onTourney(const ButtonEvent& ev) {
         return;
     }
     if (ev.button == Button::A) {
-        // A READS the field — it steps the cursor over the eight slots so the operator
+        // A READS the field: it steps the cursor over the eight slots so the operator
         // can see who is left and at what level, and it chooses whose SCOUT sheet a
         // held B opens. It never picks who you fight: the bracket does that.
         tourneyCursor_ = (tourneyCursor_ + 1) % kTourneySlots;

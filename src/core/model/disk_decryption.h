@@ -1,18 +1,18 @@
-// disk_decryption.h — the rules of DISK DECRYPTION, with no rendering and no Game.
+// disk_decryption.h: the rules of DISK DECRYPTION, with no rendering and no Game.
 //
 // The Ransomware line's hatch minigame, and the one that actually looks like getting
 // round a ransomware payload: there is a key, you don't have it, and the only way in is
 // to guess and read what the guess tells you. Five colours, three slots, five attempts.
-// Lock a row and it answers with two numbers — how many cells are the right colour in
-// the right place, and how many are the right colour somewhere else — and nothing about
+// Lock a row and it answers with two numbers (how many cells are the right colour in
+// the right place, and how many are the right colour somewhere else), and nothing about
 // WHICH. The board keeps every row you have played, because the deduction is the game
 // and it has to be done off what is on screen.
 //
 // It is a code-breaking board at a size that fits a 224px panel: 5^3 = 125 codes, or 60
-// with duplicates barred — cracked comfortably inside five attempts by anyone reading
+// with duplicates barred. Cracked comfortably inside five attempts by anyone reading
 // the feedback, and essentially never by anyone guessing.
 //
-// SEEDED, not deterministic — the Isolation precedent rather than the Stacker's. The
+// SEEDED, not deterministic: the Isolation precedent rather than the Stacker's. The
 // code is the whole secret, so a fixed one would be memorised on the second egg; the
 // caller passes a seed (Game hands it one off the shared LCG) so a test can pin a run
 // exactly while a real one stays fresh.
@@ -27,7 +27,7 @@ namespace mal {
 
 // The board. Three slots and five colours fit one row of legible cells across the
 // active canvas with the two feedback numbers beside it; five attempts fill the height
-// without scrolling, which matters more here than anywhere else — a row the player
+// without scrolling, which matters more here than anywhere else: a row the player
 // cannot see is a deduction they cannot make.
 constexpr int kDecryptionSlots = 3;
 constexpr int kDecryptionColours = 5;
@@ -35,7 +35,7 @@ constexpr int kDecryptionAttempts = 5;
 
 // The two opening attempts are PROBES, not play: with three slots and five colours
 // there is no way to know anything before the second answer comes back, so cracking
-// inside them is luck rather than deduction. Scoring therefore starts at the third —
+// inside them is luck rather than deduction. Scoring therefore starts at the third:
 // see score() below.
 constexpr int kDecryptionFreeAttempts = 2;
 
@@ -43,7 +43,7 @@ class DiskDecryption {
   public:
     enum class State : uint8_t {
         Running,
-        Cracked,   // the code was guessed — the run's whole prize
+        Cracked,   // the code was guessed: the run's whole prize
         Locked,    // five attempts spent without it
     };
 
@@ -77,7 +77,7 @@ class DiskDecryption {
         }
     }
 
-    // A: next colour in the focused slot. A locked slot is settled — step off it first.
+    // A: next colour in the focused slot. A locked slot is settled: step off it first.
     void cycleColour() {
         if (state_ != State::Running || locked_[cursor_]) return;
         guess_[cursor_] = static_cast<uint8_t>((guess_[cursor_] + 1) % kDecryptionColours);
@@ -93,7 +93,7 @@ class DiskDecryption {
     }
 
     // B: settle the focused slot and move to the next unsettled one. Locking the LAST
-    // one is what plays the row — there is no separate submit, because three locks and a
+    // one is what plays the row: there is no separate submit, because three locks and a
     // submit is four presses for a decision the third one already made.
     void lockIn() {
         if (state_ != State::Running) return;
@@ -121,8 +121,8 @@ class DiskDecryption {
         return (i >= 0 && i < played_) ? rows_[i] : kEmpty;
     }
 
-    // Was played row `i`'s slot `s` an EXACT hit? Not part of the standard feedback —
-    // the counts are deliberately anonymous — so this is the easy setting's hint and
+    // Was played row `i`'s slot `s` an EXACT hit? Not part of the standard feedback
+    // (the counts are deliberately anonymous), so this is the easy setting's hint and
     // nothing else may read it. Kept on the model rather than recomputed by the screen
     // because it needs the code, which nothing outside here is allowed to see.
     bool exactAt(int i, int s) const {
@@ -130,15 +130,15 @@ class DiskDecryption {
         return rows_[i].slots[s] == code_[s];
     }
 
-    // The code itself — for the reveal after a lost run, and for tests. Never for the
+    // The code itself: for the reveal after a lost run, and for tests. Never for the
     // board while it is running.
     int codeAt(int slot) const { return inSlot(slot) ? code_[slot] : 0; }
 
     // What the run is WORTH: a crack is worth the attempts it did NOT need, counting the
-    // one it landed on — and a locked-out board is worth nothing. The first
+    // one it landed on, and a locked-out board is worth nothing. The first
     // kDecryptionFreeAttempts rows are floored out of that, so cracking on the opening
     // guess scores exactly the same as cracking on the third: both are the ceiling, and
-    // only the rows past the probes cost anything. Same shape as the Stacker's score —
+    // only the rows past the probes cost anything. Same shape as the Stacker's score:
     // a number out of a ceiling the caller can price against.
     int score() const {
         if (state_ != State::Cracked) return 0;
@@ -153,7 +153,7 @@ class DiskDecryption {
     // How CORRUPT a played row was, in the units its fragmentation overlay is drawn in
     // (decryption_screen.cpp): every slot that isn't in the right place, plus every one
     // whose colour isn't in the key at all. A perfect row is 0 and the worst possible
-    // row is 2 * kDecryptionSlots — so the board visibly stabilises as the player closes
+    // row is 2 * kDecryptionSlots, so the board visibly stabilises as the player closes
     // in, which is the read the overlay exists to give.
     int corruption(int i) const {
         if (i < 0 || i >= played_) return 0;

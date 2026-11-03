@@ -10,19 +10,19 @@
 
 namespace mal {
 
-// Logical game buttons — the whole input vocabulary, three buttons and one chord:
+// Logical game buttons. The whole input vocabulary, three buttons and one chord:
 //
 //   A  NEXT     advance / cycle forward (and, in the main menu, summon it at slot 1)
 //   B  ACCEPT   confirm / enter a submenu
 //   C  CANCEL   back / cancel / exit one layer (in the main menu, cycle backward)
-//   A+C         the meta-Exploit chord — a high-priority token that bypasses normal
+//   A+C         the meta-Exploit chord: a high-priority token that bypasses normal
 //               menu state and goes straight to the active screen. On the top-level
 //               carousel it flips between the Pet and Hacker faces; in combat it opens
 //               the once-per-battle override picker; on an egg near hatching it cracks
 //               the shell. A screen with nothing to offer ignores it.
 //
 // A press is held for a short window before it is delivered, so a second button landing
-// a few ms later resolves as the chord rather than misfiring a plain NEXT — mechanical
+// a few ms later resolves as the chord rather than misfiring a plain NEXT: mechanical
 // variance in two fingers is otherwise indistinguishable from intent.
 enum class Button { A, B, C };
 
@@ -44,7 +44,7 @@ struct IClock {
     virtual uint32_t millis() = 0;
 };
 
-// Persistent save store — the storage boundary, mirroring IDisplay/IClock. The
+// Persistent save store: the storage boundary, mirroring IDisplay/IClock. The
 // engine serializes a versioned save blob (see core/model/save.h); each target
 // persists the opaque bytes its own way: ESP32 = NVS (Preferences), host = a
 // file in the cwd, tests = in-memory. The core never names a partition or a path.

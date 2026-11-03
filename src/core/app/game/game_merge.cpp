@@ -10,14 +10,14 @@
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
-// game_merge.cpp — the Hacker-face MERGE HUB (MRG) slot: combines owned ingredient
+// game_merge.cpp. The Hacker-face MERGE HUB (MRG) slot: combines owned ingredient
 // items into a rarer one. The HUB is a one-time Rig Shop purchase (kRigRowMergeHub,
 // game_rig_shop.h) that flips the MRG carousel slot accessible
 // (Game::hackerSlotAccessible, which drawHackerCarousel's accessible mask is built from).
 //
 // The RECIPES cooked in it are not for sale at any price: each is won off a first
 // solve on the DECRYPTOGRAM (game_cryptogram.cpp's prize ladder), and owning one is
-// necessary but not sufficient to craft — the raw ingredients still have to be in the
+// necessary but not sufficient to craft. The raw ingredients still have to be in the
 // bag. Ownership is a bit per recipe wire in recipesOwned_ (save v31's recipesUnlocked
 // bitset, save v51), which this file is the only writer of.
 //
@@ -64,14 +64,14 @@ void Game::grantRecipe(int recipeIndex) {
     if (r.wire < 0 || r.wire >= kMergeRecipeWireCap) return;
     uint8_t& byte = recipesOwned_[r.wire / 8];
     const uint8_t bit = static_cast<uint8_t>(1u << (r.wire % 8));
-    if (byte & bit) return;                          // already known — nothing to write
+    if (byte & bit) return;                          // already known: nothing to write
     byte = static_cast<uint8_t>(byte | bit);
     markSaveDirty();
     dirty_ = true;
 }
 
 // Is this recipe one the operator is ALLOWED to be handed right now? Not owned yet,
-// somewhere to cook it, and — for a dish a storefront stocks — proof they have met the
+// somewhere to cook it, and (for a dish a storefront stocks) proof they have met the
 // dish. The Decryptogram's prize ladder asks this and nothing else does, but it lives
 // here beside the ownership bit rather than in the board's file, because what makes a
 // recipe grantable is a fact about cooking.
@@ -120,7 +120,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
     constexpr int kRowGap = 6;                   // breathing room between recipes
 
     if (!mergeHubUnlocked()) {   // defensive; the carousel already gates entry
-        // The HUB is the part that's for sale — the recipes inside it never are.
+        // The HUB is the part that's for sale: the recipes inside it never are.
         drawText(fb, kMargin, 40, "LOCKED - BUY IN SHOP", palColor(Pal::INK_DIM));
         return;
     }
@@ -156,7 +156,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
 
         // Title. LOCKED (the recipe hasn't been won off a Decryptogram yet) is a
         // genuinely different state from "missing ingredients", and it is the state the
-        // row cannot lose — the dish name yields to it and scrolls when focused.
+        // row cannot lose: the dish name yields to it and scrolls when focused.
         drawLabelValue(fb, kMargin, rowY, r.displayName,
                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
                        owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, scrollWhen(sel));
@@ -164,7 +164,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
 
         if (sel) {
             // One line per ingredient: name + have/need. Craftability reads without
-            // colour too — the fraction itself shows the shortfall (e.g. "0/1").
+            // colour too: the fraction itself shows the shortfall (e.g. "0/1").
             for (const RecipeInput& in : r.inputs) {
                 if (!in.id) continue;
                 const ItemDef* def = registry_.item(in.id);
@@ -178,7 +178,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
                 rowY += kLineH;
             }
         } else if (owned) {
-            // Folded rows still carry a second, dimmer line — a stocked count rather
+            // Folded rows still carry a second, dimmer line: a stocked count rather
             // than the full ingredient breakdown, so the row keeps the shop's
             // bold-title/dim-detail shape without reopening the overflow the
             // accordion exists to avoid.
@@ -200,7 +200,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
     fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
     drawText(fb, kMargin, kActiveH - 20, "A NEXT", palColor(Pal::INK_DIM));
     // B MERGE dims when the selected recipe can't be crafted right now (locked,
-    // or an ingredient line above is reading WARN) — the disabled-button cue.
+    // or an ingredient line above is reading WARN): the disabled-button cue.
     const bool selCraftable = recipeCraftable(hackerMergeRow_);
     drawText(fb, kActiveW - kMargin - textWidth("B MERGE"), kActiveH - 20, "B MERGE",
              selCraftable ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));

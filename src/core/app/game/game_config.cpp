@@ -1,6 +1,6 @@
-#include "core/content/areas/area_defs.h"       // area() — a cleared area pays out its place
+#include "core/content/areas/area_defs.h"       // area(): a cleared area pays out its place
 #include "core/content/content_backgrounds.h"   // the places an operator owns and picks between
-#include "core/content/content_homes.h"         // sceneForCreature — a raised creature brings its own
+#include "core/content/content_homes.h"         // sceneForCreature: a raised creature brings its own
 #include "core/content/content_themes.h"        // the colour sets offered, and what unlocks each
 #include "core/app/game.h"
 
@@ -9,7 +9,7 @@
 
 #include "tunables.h"
 #include "version.h"
-#include "core/render/palette.h"   // setPalTheme — the one place the theme index moves
+#include "core/render/palette.h"   // setPalTheme: the one place the theme index moves
 #include "core/ui/cfg_screen.h"
 
 namespace mal {
@@ -55,7 +55,7 @@ void Game::enterCfgScreen(CfgScreen target) {
     nav_ = Nav::Detail;
 }
 
-// Leave the current L3 — back to its group screen if it has one (a radio toggle
+// Leave the current L3: back to its group screen if it has one (a radio toggle
 // returns to RADIO, not to the top of CFG), otherwise out to the list. Applying a
 // setting exits the same way, so B and C land in the same place.
 void Game::leaveCfgScreen() {
@@ -80,7 +80,7 @@ void Game::onCfgList(const ButtonEvent& ev) {
     } else if (ev.button == Button::B) {
         const CfgScreen target = rows[listRow_].target;
         if (target == CfgScreen::ResetHatch) {
-            resetToHatch();                  // DEV quick reset — one press (dev_config.h)
+            resetToHatch();                  // DEV quick reset: one press (dev_config.h)
             return;
         }
         enterCfgScreen(target);
@@ -125,7 +125,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             dirty_ = true;
             break;
         case CfgScreen::FormatSd:
-            // Working: every button is inert, as travel's are once latched — the
+            // Working: every button is inert, as travel's are once latched. The
             // device tier is mid-format and nothing pressed here could stop it. A
             // result (Done/Failed) is read, then any button leaves. On the question,
             // A cycles NO/YES, B commits the focus, C backs out with nothing asked.
@@ -213,7 +213,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Theme:
-            // A walks EVERY row, locked ones included — the same rule the BACKGROUND
+            // A walks EVERY row, locked ones included. The same rule the BACKGROUND
             // picker follows and for the same reason: the line under the header says
             // where the focused set comes from, so walking the ones you have not got is
             // how an operator finds out there is anything to go and look for. B applies
@@ -221,8 +221,8 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             // screen simply stays, which is the row's own LOCKED tag answering rather
             // than a second modal.
             //
-            // Applying is instant and total — every colour on the next repaint comes
-            // from the new set — so the screen the operator lands back on IS the
+            // Applying is instant and total (every colour on the next repaint comes
+            // from the new set), so the screen the operator lands back on IS the
             // confirmation, and there is nothing for a second yes to describe that they
             // cannot already see.
             if (ev.button == Button::A)
@@ -233,7 +233,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Titles:
-            // A cycles the focus over the selectable choices only — NONE (-1) plus
+            // A cycles the focus over the selectable choices only: NONE (-1) plus
             // each UNLOCKED sector Title, skipping locked ones. B equips the focus;
             // C backs out without changing the equip.
             if (ev.button == Button::A) cfgTitlePick_ = nextSelectableTitle(cfgTitlePick_);
@@ -244,7 +244,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Background:
-            // A walks EVERY row, locked ones included — the line under the header names
+            // A walks EVERY row, locked ones included: the line under the header names
             // what the focused row is earned by, so walking the ones you have not got is
             // the whole way the economy is taught. B uses the focused row and backs out;
             // on a locked row setBackgroundPick refuses and the screen simply stays,
@@ -290,7 +290,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
         case CfgScreen::Update:
             // Three faces on one screen: the row list, the yes/no confirm an
             // install row opens, and a job's progress. Leaving deliberately does
-            // NOT cancel a job — it holds the radio itself, so a download runs to
+            // NOT cancel a job: it holds the radio itself, so a download runs to
             // the end and the outcome is waiting here on the way back.
             if (updateJobLive() || installStatus_.state != InstallState::Idle) {
                 if (ev.button == Button::C) {
@@ -330,7 +330,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                         dirty_ = true;              // ...starting on NO
                         break;
                     case UpdateRowKind::FlashQr:
-                        // Needs no radio and no network — the code is drawn from an
+                        // Needs no radio and no network: the code is drawn from an
                         // address this device already holds, so it opens even when a
                         // check cannot run, which is when it is most wanted.
                         if (updateSourceKnown_) {
@@ -344,14 +344,14 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
         case CfgScreen::UpdateQr:
             // One page, so A does nothing here. C returns to UPDATES with its cursor
             // still on the row that opened this. The 5s auto-defocus and the screen
-            // sleep are both held off while it shows (qrScreenActive) — this code is
+            // sleep are both held off while it shows (qrScreenActive): this code is
             // read by a phone, which takes longer than the usual idle window.
             if (ev.button == Button::C) leaveCfgScreen();
             break;
         case CfgScreen::PediaQr:
             // Two QR pages: A cycles join-network <-> 'Pedia-URL; C exits. The 5s
             // auto-defocus + the device screen-sleep are both suspended here
-            // (qrScreenActive), and resume once C exits — scanning/connecting takes
+            // (qrScreenActive), and resume once C exits: scanning/connecting takes
             // longer than the usual idle window.
             if (ev.button == Button::A) {
                 const HomeNetwork home =
@@ -366,13 +366,13 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             else if (ev.button == Button::C) nav_ = Nav::Submenu;    // safe abort
             break;
         case CfgScreen::ResetHatch:
-            break;  // never an L3 screen — handled inline in onCfgList
+            break;  // never an L3 screen: handled inline in onCfgList
     }
 }
 
 void Game::executeFactoryReset() {
     // The two scopes differ in exactly what the screen promises. RESET PET lays a
-    // fresh egg over the same operator — resetToHatch() leaves every player-level
+    // fresh egg over the same operator: resetToHatch() leaves every player-level
     // tally standing, which IS "keeps 'Pedia progress". WIPE EVERYTHING clears that
     // standing state first, so the reset that follows lands on a device with no
     // history. Order matters: the wipe runs BEFORE resetToHatch, so the fresh egg it
@@ -385,7 +385,7 @@ void Game::setUiMode(UiMode m) {
     if (m == uiMode_) return;
     uiMode_ = m;
     dirty_ = true;
-    markSaveDirty();   // a persisted CFG pref (save v67) — survives a reboot and an update
+    markSaveDirty();   // a persisted CFG pref (save v67): survives a reboot and an update
 }
 
 void Game::cycleUiMode() {
@@ -414,7 +414,7 @@ bool Game::themeRowUnlocked(int row) const {
     if (row < 0 || row >= kThemeCount) return false;
     const ThemeDef& t = kThemes[row];
     if (t.source == ThemeSource::Start) return true;
-    // Held at some point — not held NOW. The chip is a ROM that was read, so selling or
+    // Held at some point, not held NOW. The chip is a ROM that was read, so selling or
     // losing it cannot take the set back; see content_themes.h.
     return t.earnedById && hasCollectedItem(t.earnedById);
 }
@@ -435,7 +435,7 @@ bool Game::hasCollectedItem(const char* id) const {
 
 bool Game::setThemePick(int index) {
     if (index < 0 || index >= kPalThemeCount) index = 0;
-    // A set nobody has unlocked is not applied — and index 0 always is, so a save
+    // A set nobody has unlocked is not applied, and index 0 always is, so a save
     // naming a set this device has not earned (a chip removed from the tables, a blob
     // from another device) lands on base rather than on nothing.
     int row = -1;
@@ -449,7 +449,7 @@ bool Game::setThemePick(int index) {
     if (index == themePick_) return true;
     themePick_ = index;
     dirty_ = true;                 // nothing else changed, but every pixel of it did
-    markSaveDirty();               // a persisted CFG pref (save v64) — survives a reboot
+    markSaveDirty();               // a persisted CFG pref (save v64): survives a reboot
     return true;
 }
 
@@ -459,7 +459,7 @@ void Game::setBrightness(int level) {
     if (level == brightness_) return;
     brightness_ = level;
     dirty_ = true;
-    markSaveDirty();   // a persisted CFG pref (save v14) — survives a reboot
+    markSaveDirty();   // a persisted CFG pref (save v14): survives a reboot
 }
 
 void Game::drawCfg(Framebuffer& fb) const {
@@ -624,7 +624,7 @@ void Game::saveHackerTag() {
     nav_ = Nav::Submenu;
 }
 
-// Web 'Pedia rename ('s "one safe write") — the same charset the on-device
+// Web 'Pedia rename ('s "one safe write"): the same charset the on-device
 // arcade editor cycles through, validated up front so a bad POST never mutates
 // the live tag.
 bool Game::setHackerTag(const char* s) {
@@ -665,7 +665,7 @@ bool Game::backgroundOwned(SceneId s) const {
             return tourneyWins_ >= b->rung;
         case BackgroundSource::Achieve:
             // The achievement bitset is already on the save, so this is the same
-            // derivation the other three are — one more question asked of state that
+            // derivation the other three are: one more question asked of state that
             // was written down for its own reasons.
             return b->earnedById && hasAchievement(b->earnedById);
     }
@@ -684,7 +684,7 @@ bool Game::setBackgroundPick(SceneId s) {
 }
 
 void Game::announceBackground(SceneId s) {
-    // Ownership is DERIVED, so "just earned" is not a state anything holds — it is only
+    // Ownership is DERIVED, so "just earned" is not a state anything holds: it is only
     // knowable by asking before the thing that grants it moves and again after. Each of
     // the three callers does that; this is only the saying-so.
     const BackgroundDef* b = backgroundFor(s);

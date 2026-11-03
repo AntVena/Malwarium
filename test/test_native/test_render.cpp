@@ -1,4 +1,4 @@
-// test_render.cpp — native gates for the render pipeline and the resting habitat.
+// test_render.cpp: native gates for the render pipeline and the resting habitat.
 //
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
@@ -33,7 +33,7 @@ void test_sprite_roundtrip() {
 // --- Gate: an oversized cell can still hold a row STACK --------------------
 //
 // Both halves of a sheet's grid come from override tables in tools/gen_assets.py, so
-// both are one table away from being silently dropped — and dropping the HEIGHT half is
+// both are one table away from being silently dropped, and dropping the HEIGHT half is
 // the invisible one. `frame_rows()` falls back to a single row, so the sheet still
 // decodes, still blits, and still plays its idle; the only symptom is that every clip
 // naming a row past the first quietly draws nothing. This sheet stacks the most rows
@@ -57,7 +57,7 @@ void test_oversized_cell_holds_a_row_stack() {
     CHECK(s.rows == 3);      // ROW_H_OVERRIDES: 192 would otherwise be one 192-tall row
 
     // Taller than gen_assets' PET_ROW_H of 48, which is the whole reason the override
-    // has to exist — if this ever stops being true the table is dead weight. The 48 is
+    // has to exist, if this ever stops being true the table is dead weight. The 48 is
     // a literal because it is the TOOL's constant: nothing in the firmware measures a
     // row, it is told the answer.
     CHECK(s.h > 48);
@@ -66,8 +66,8 @@ void test_oversized_cell_holds_a_row_stack() {
 // --- Gate: indexed storage decodes at every bit width ----------------------
 // The generated round-trip above reads the sheet through the same accessors it blits
 // with, so a packing error would agree with itself. This plants bytes worked out by hand
-// against widths that straddle byte boundaries — 3 bits over a 5px row, 5 bits over a
-// 3px one — which is the case the shift math exists for, and the one a power-of-two-only
+// against widths that straddle byte boundaries (3 bits over a 5px row, 5 bits over a
+// 3px one), which is the case the shift math exists for, and the one a power-of-two-only
 // packer would never reach.
 void test_indexed_sprite_decodes_across_byte_boundaries() {
     static const uint16_t pal[] = {0x0000, 0x1111, 0x2222, 0x3333, 0x4444, 0x5555};
@@ -106,7 +106,7 @@ void test_tiled_sprite_shares_one_tile_between_positions() {
     static const uint16_t pal[] = {0x0000, 0x1111, 0x2222, 0x3333};
     static const uint8_t palA[] = {0, 255, 255, 128};
     // Tile at offset 0: width 2, sixteen 2-bit fields reading 0,1,2,3 across each row.
-    // Tile at offset 5: width 0 — one palette entry all through, so it stores no body.
+    // Tile at offset 5: width 0. One palette entry all through, so it stores no body.
     static const uint8_t tiles[] = {2, 0x1B, 0x1B, 0x1B, 0x1B, 0, 0};
     static const uint16_t tmap[] = {0, 0, 5, 0};   // row 0: the drawing twice; row 1: empty, drawing
     SpriteData s{};
@@ -159,14 +159,14 @@ void test_palette_luminance_ordered() {
 static void renderIdleAtBeat(Framebuffer& fb, int beat, bool hungry) {
     Game game{StartMode::Hatched};
     // The raising loop owns Hunger now; drive the model directly to the Critical
-    // band (not 0 — that would fire the Lockout modal instead of the idle alert).
+    // band (not 0: that would fire the Lockout modal instead of the idle alert).
     if (hungry) game.model().setHunger(10);
     for (int i = 0; i <= beat; ++i)
         game.tick(static_cast<uint32_t>(i) * kHeartbeatMs);
     game.render(fb);
 }
 
-// --- Resting habitat — pet in the living area, carousel always framing it.
+// --- Resting habitat: pet in the living area, carousel always framing it.
 void test_idle_habitat() {
     Framebuffer fb(kActiveW, kActiveH);
     renderIdleAtBeat(fb, 0, /*hungry=*/false);
@@ -176,7 +176,7 @@ void test_idle_habitat() {
     CHECK(anyNonPaper(fb, 0, 0, kActiveW, kTrackH));                  // top track icons
     CHECK(anyNonPaper(fb, 0, kLivingBottom, kActiveW, kActiveH));     // bottom track icons
     // Resting = no cursor: no focused-slot caption in the top edge band, and no
-    // focus box (slot-1 box pixel reads as bare track, not accent — cf.
+    // focus box (slot-1 box pixel reads as bare track, not accent; cf.
     // test_carousel_focus_grayscale which summons the cursor there).
     CHECK(!anyNonPaper(fb, 0, kLivingTop, kActiveW, kLivingTop + 12));
     CHECK(luminance(fb.get(12, 3)) < 0.4f);
@@ -190,7 +190,7 @@ void test_hunger_alert_gated() {
     renderIdleAtBeat(calm, 0, false);
     renderIdleAtBeat(hungry, 0, true);   // beat 0 is an "on" blink phase
     // The two frames differ only in the hunger state, and the backdrop behind them is
-    // the same place at the same beat — so a difference in this slot IS the alert. An
+    // the same place at the same beat, so a difference in this slot IS the alert. An
     // alert drawn unconditionally would leave the slot identical and fail here.
     CHECK(regionDiffers(calm, hungry, x0, y0, kActiveW, y1));
     CHECK(anyLitGray(hungry, x0, y0, kActiveW, y1));
@@ -277,7 +277,7 @@ static void renderIdleStatus(Framebuffer& fb, bool hungry, bool sd, bool hot) {
 }
 
 // THE GATE: the idle status indicators sit in distinct, non-colliding slots so a
-// grayscale screenshot separates them by shape + position — hunger top-right
+// grayscale screenshot separates them by shape + position. Hunger top-right
 // (upper), the capture badge top-right (lower), the SD flash top-left. Each reads
 // in grayscale against the dark paper, and the SD flash is independently gated.
 void test_idle_status_icons_grayscale() {
@@ -293,7 +293,7 @@ void test_idle_status_icons_grayscale() {
     CHECK(anyLitGray(all, bx0, by0, bx1, by1));         // capture badge reads in grayscale
 
     // The SD flash is independently gated (its slot clears when no card) while the
-    // capture badge stays — positions don't collide.
+    // capture badge stays: positions don't collide.
     Framebuffer noSd(kActiveW, kActiveH);
     renderIdleStatus(noSd, true, /*sd=*/false, /*hot=*/true);
     CHECK(regionDiffers(all, noSd, sx0, sy0, sx1, sy1));   // the flash slot follows the card
@@ -320,7 +320,7 @@ void test_sd_recheck_request_seam() {
 // non-colour channel for this widget.
 //
 // Measured over a column strip the width of the glyph, across the whole living area,
-// rather than at a fixed row — every other line on the face is identical between the
+// rather than at a fixed row: every other line on the face is identical between the
 // two renders, so whatever differs in that strip IS the battery. That keeps the gate
 // about the readout instead of about where the layout happens to put it today.
 static int litInStrip(const Framebuffer& fb) {
@@ -333,7 +333,7 @@ static int litInStrip(const Framebuffer& fb) {
 }
 
 // Build the Hacker face carrying `pct`, or carrying no reading at all when `present`
-// is false. A fresh Game each time because setPowerStatus SMOOTHS — feeding one game
+// is false. A fresh Game each time because setPowerStatus SMOOTHS: feeding one game
 // 100 then 5 lands at neither, which is the point of the smoothing and the wrong tool
 // for asking what a given reading draws.
 static void renderHackerFaceAt(Framebuffer& fb, bool present, int pct) {

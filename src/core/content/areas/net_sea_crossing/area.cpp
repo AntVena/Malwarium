@@ -1,8 +1,8 @@
-// Net-Sea Crossing — CNET/Download.com, sounded backwards into open water
+// Net-Sea Crossing: CNET/Download.com, sounded backwards into open water
 // ("see-net" → "net-sea", AREA_NAMING.md §1.1). The stretch of the ladder you SAIL:
 // out past the Pirate Bayou's last dry cache, across the shipping lanes where every
 // download arrived wrapped in three things you didn't ask for, and ashore again at
-// SANDBOX BEACH — which is where the walk inland to the Napstorrent Moors starts.
+// SANDBOX BEACH, which is where the walk inland to the Napstorrent Moors starts.
 // That landfall is why the crossing sits between the two, and why its signature
 // stretch is a beach rather than the trench: the wall here is arriving, not drowning.
 #include "core/content/areas/area_defs.h"
@@ -12,16 +12,16 @@
 namespace mal {
 
 namespace {
-// This area's WILD-win drop table — what a won wild encounter here hands over.
+// This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
 // content_items.cpp). The first four are the staple set every area shares: two
-// snacks, the combat shield, and the cleaner — fighting fragments the pet, so a
+// snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
     {"dyno_nuggets"}, {"tortilla_chip"}, {"backup_drive"}, {"disk_scrubber"},
 };
 
-// The crossing's own pool — seamanship over sabotage: hold the hull, hear what's
+// The crossing's own pool. Seamanship over sabotage: hold the hull, hear what's
 // coming, strip the junk off what you hauled aboard. Plus Watchdog Timer, the counter
 // to this area's own apex rider (decoy_download, below): the same debut-the-threat-
 // and-its-counter-together rule the Bayou and the Moors follow, except the rider here
@@ -42,7 +42,7 @@ const char* const kModPool[] = {"hardened_shell", "bundle_stripper", "ballast_ca
                                 "lookalike_cert", "ransom_locker", "signed_driver",
                                 "mass_mailer", "entropy_seed"};
 
-// FLOATING POINT — the item storefront, tied up where the water is calm enough to
+// FLOATING POINT: the item storefront, tied up where the water is calm enough to
 // trade. Restore Point is the joke and the stock in one: the only thing worth buying
 // from a floating point is a fixed one.
 const ShopListingDef kShopListings[] = {
@@ -51,7 +51,7 @@ const ShopListingDef kShopListings[] = {
     {"fresh_macrol", 6, 18},
 };
 
-// THE HARDENED SHELL — the mod storefront: this area's own two hull mods, priced in
+// THE HARDENED SHELL. The mod storefront: this area's own two hull mods, priced in
 // Bits plus a stack of the Backup Drives the water keeps handing out.
 const ShopListingDef kModShopListings[] = {
     {"hardened_shell", kShopStock, 384, {{"backup_drive", 28}}},
@@ -144,7 +144,7 @@ const AreaDef kAreaNetSeaCrossing = {
     SceneId::NetSeaCrossing,
     {"UNINSTALL UNDERTOW", "POPUP WHIRLPOOL", "TRACKER TRENCH", "CODEC REEF",
      "SANDBOX BEACH"},
-    // Null Route — "reroutes the next hit to nowhere" — rides with the pop-up boss, which
+    // Null Route ("reroutes the next hit to nowhere") rides with the pop-up boss, which
     // is the joke working twice: null-routing the ad domains is how that era actually
     // killed them. It is the second of the two generic braces the roster places by hand,
     // the other being Checksum Guard on Citrus Circuit's fake-file boss.
@@ -172,7 +172,7 @@ const AreaDef kAreaNetSeaCrossing = {
      {{"I HAVE HEARD YOU BEFORE.", "IT DOES NOT MOVE AT ALL."},
       {"SAY IT AGAIN. I AM CERTAIN NOW.", "IT LEANS WITHOUT MOVING."},
       {"I SPEAK SO RARELY. FORGIVE ME.", "SOMETHING OLD IS AWAKE."}},
-     // How it takes the answer — pleased, displeased, affront, boon. It has spent its
+     // How it takes the answer: pleased, displeased, affront, boon. It has spent its
      // whole existence telling signal from noise, so that is the judgement it passes.
      {{"I HEARD THAT CLEARLY.", "SOMETHING FAR OFF AGREES."},
       {"THAT IS NOISE. I KNOW NOISE.", "THE WATER GOES COLD."},

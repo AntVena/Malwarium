@@ -1,4 +1,4 @@
-// content_moves.cpp — the combat-move roster (MoveDef).
+// content_moves.cpp: the combat-move roster (MoveDef).
 //
 // One content table (see content_tables.h). Edit rows here; the registry picks
 // them up unchanged via embedded_content.cpp.
@@ -8,17 +8,17 @@ namespace mal {
 
 // Seed moves. `quick_jab` is the innate DEFAULT: always
 // available, outside the equip slots, never slotted. Single-turn unless
-// channelTurns > 1 (Runaway Fork winds up for 3 — the one row where the wind-up IS the
+// channelTurns > 1 (Runaway Fork winds up for 3: the one row where the wind-up IS the
 // move, and priced for it; the rest of the two-beat kit CHAINS instead, so both of its
 // turns do something. See MoveDef::chainNextId and content_chain_steps.cpp).
 //
 // These seven are the GENERIC roster (line = nullptr): no pet owns them from
-// hatch — a pet's own line moves (below) are its nature and are what it starts
+// hatch. A pet's own line moves (below) are its nature and are what it starts
 // with (MoveLoadout::startingForLine()). The generic pool is instead the rare,
-// desirable kit earned by taming a malbeast — the wild-win move-drop roll in
+// desirable kit earned by taming a malbeast. The wild-win move-drop roll in
 // Game::applyCombatResult (game_combat.cpp) is the only source that grants
 // these.: the trailing `minStage` is the evolution stage each move
-// UNLOCKS at (defs.h) — buffer_overflow (Script) and rootkit_strike (Daemon)
+// UNLOCKS at (defs.h); buffer_overflow (Script) and rootkit_strike (Daemon)
 // are the apex drops, fork_bomb + null_route open at Process.
 //
 // Never type a magnitude into the description text: write `{power}` / `{pierce}` /
@@ -32,7 +32,7 @@ const MoveDef kMoves[] = {
      "Floods the target with packets.", Stage::BootSector},
     // No stun on the fork. Enemy kits field this row (combat_factory), so a lock here
     // spends the PLAYER's turns doing nothing, and a turn where nothing happens is still a
-    // turn — it pushed the measured fight length past its design band from the enemy side.
+    // turn: it pushed the measured fight length past its design band from the enemy side.
     // The ramp is the flavour, and the ramp is damage.
     {"fork_bomb", "Fork Bomb", MoveDef::Kind::Attack, 12, 1,
      "Forks until the table fills, then exhausts what is left.",
@@ -52,7 +52,7 @@ const MoveDef kMoves[] = {
              "{refund}% less.",
              Stage::Process, /*speedRefundPct=*/55),
 
-    // --- Wild SIGNATURES — one per malbeast --------------------------------------
+    // --- Wild SIGNATURES. One per malbeast --------------------------------------
     // Generic on purpose (line == nullptr), because these are what a wild TEACHES: a win
     // drops out of the beaten enemy's own kit (rollEnemyMoveDrop, game_explore.cpp), and
     // a line-exclusive row would be a prize half the roster could never field. Which
@@ -65,11 +65,11 @@ const MoveDef kMoves[] = {
     //
     // POWER is small deliberately. A wild's kit is the depth rung it was met at plus its
     // area's pair plus this, and the rungs are ordered by EFFECTIVE per-turn damage
-    // (applyWildSubAreaRamp) — a signature that out-hit the rung would flatten the ramp
+    // (applyWildSubAreaRamp): a signature that out-hit the rung would flatten the ramp
     // the ladder exists to build. What a signature adds is character, never a tier.
     //
     // minStage climbs with the tier that carries it, so what a creature is worth learning
-    // out of matches how deep you had to go to meet it — the same ladder buffer_overflow
+    // out of matches how deep you had to go to meet it: the same ladder buffer_overflow
     // and rootkit_strike sit on. No lockTurns anywhere here, for the reason fork_bomb's
     // row gives: a stun in an enemy kit spends the PLAYER's turns doing nothing.
     {"screen_tear", "Screen Tear", MoveDef::Kind::Attack, 5, 1,
@@ -166,7 +166,7 @@ const MoveDef kMoves[] = {
     // pair is the only thing an operator tailors about a wildcard, which is what makes
     // nine rows worth owning separately instead of one row worth equipping four times.
     //
-    // Every ATTACK pair appears once — six of them across the four other lines — and the
+    // Every ATTACK pair appears once (six of them across the four other lines), and the
     // DEFEND rows pair only lines that HAVE a defend track. Phishing's defence is its
     // Obfuscation pool, authored on rows the shared roster already reaches, so a Defend
     // wildcard naming it would name a line with nothing of that kind to give and quietly
@@ -215,12 +215,12 @@ const MoveDef kMoves[] = {
     // (attack, single-turn) stacks the caster's Power on landing; Cipher track (defend)
     // stacks the caster's Defense on cast. Fields after minStage: line, stackPowerPct,
     // stackPowerCap, stackDefensePct, stackDefenseCap, armorPiercePct. The line NEVER
-    // heals (a hard identity pillar) — no restore effect appears on any row here.
+    // heals (a hard identity pillar): no restore effect appears on any row here.
     // The track's comparison is the roster's PLAIN swings, since a Lockout row carries no
     // rider but its own ramp: Packet Storm 12 (BootSector), Buffer Overflow 20 (Script),
-    // Rootkit Strike 24 (Daemon). It shipped tying two of them — a line-exclusive Process
+    // Rootkit Strike 24 (Daemon). It shipped tying two of them. A line-exclusive Process
     // row worth exactly the generic every hatchling can field, and a Script row worth
-    // exactly the generic apex drop — so the ramp was the whole of what the line was paid,
+    // exactly the generic apex drop, so the ramp was the whole of what the line was paid,
     // and the ramp is small early. Each row now opens a rung above the generic it is read
     // against and the caps climb with it, so the ramp is a second reason to equip the row
     // rather than the only one.
@@ -228,7 +228,7 @@ const MoveDef kMoves[] = {
     // The Lockout ladder runs INVERTED, like the Cipher one below and for the same kind of
     // reason: the stack is one pile shared by every row, and a row stops adding once the
     // pile reaches ITS cap. So the shallow row climbs in small steps to the highest
-    // ceiling and the deep row gets there fast but stops low — the hatchling's move is the
+    // ceiling and the deep row gets there fast but stops low: the hatchling's move is the
     // one that keeps a Daemon getting angrier, and a kit carrying both pays for it.
     //
     // The shallow rows also CASH the ransom (MoveDef::ransomCashPct): they hit for a share
@@ -254,14 +254,14 @@ const MoveDef kMoves[] = {
     // The Cipher ladder runs INVERTED, and the reason is the seizure (RansomSeizure): a
     // full wall is what lets a brace take the attack that hits it, so where a row's CAP
     // sits decides how soon that row can do the line's real job. The deep row therefore
-    // caps LOW in one big step — it is finished the moment it is cast, and finished is the
+    // caps LOW in one big step: it is finished the moment it is cast, and finished is the
     // point. The shallow row climbs in small steps to a much higher ceiling: slower to
     // arm anything, but the wall it eventually builds is far bigger, and a seized move
     // hits for the wall behind it. So the beginner's row is the long game and the
     // endgame's row is the fast one, which is the opposite of how a ladder usually reads
     // and exactly right here.
     //
-    // A Cipher row's BRACE is read against the generic braces unlocking beside it — Null
+    // A Cipher row's BRACE is read against the generic braces unlocking beside it: Null
     // Route 18 (Process), Cert Spoof 26 / Captcha Gate 38 (Script), Sheet Web 42 / Onion
     // Layer 48 (Daemon). It shipped under every one of them AND without the tempo refund
     // those rows carry (MoveDef::speedRefundPct is 0 on any Defend that also does something
@@ -270,7 +270,7 @@ const MoveDef kMoves[] = {
     // still refund-free, but a real brace with the line's ratchet on top of it.
     //
     // Every Cipher cast also ARMS the ransom (cipherRow): the next hit is held rather than
-    // rolled for. That is the kit's loop — brace, get hit, hold the grudge, and the held
+    // rolled for. That is the kit's loop: brace, get hit, hold the grudge, and the held
     // pool works the pet up on every cast after (kRansomBracePowerPctByStage). Each cast
     // also DEMANDS a share of that pool straight off the opponent, the shallow row the
     // most, so a body built mostly of Cipher slots still hurts on the turns it braces.
@@ -301,17 +301,17 @@ const MoveDef kMoves[] = {
     // stealPowerPct: a landed hit always siphons this of the target's CURRENT attack
     // power. stealSpeedPct/stealCurrentHpPct only fire while THIS move's caster has an
     // Obfuscation bubble up (shieldHp > 0, cast via spoof_bubble/proxy_shell/
-    // bathyspoof) — the "Perfect Bite" passive (content_passives.h, Combat::
+    // bathyspoof). The "Perfect Bite" passive (content_passives.h, Combat::
     // applyEffect) then has a stage-scaled chance to double whichever of the two lands.
     // WHAT A POOL IS WORTH BEYOND THE NUMBER: a hit the pool covers ENTIRELY lands none of
-    // its riders either — no stun, no scramble, no DoT — because the rider rode on damage
-    // the pool ate (Combat::applyOnHitRiders). That is not on the effect line — the budget
-    // will not carry it — so it is a thing a player finds out, and it is most of why a deep
+    // its riders either (no stun, no scramble, no DoT), because the rider rode on damage
+    // the pool ate (Combat::applyOnHitRiders). That is not on the effect line (the budget
+    // will not carry it), so it is a thing a player finds out, and it is most of why a deep
     // pool beats a brace of the same size against a rider kit. The counter is the PURE
     // RIDER band below: a cast with no damage has nothing for a bubble to eat.
     //
     // The Obfuscation ladder is a decoy that learns to bite. The first rung is pure
-    // padding; the second trades depth for POISONED DATA — read the decoy and something in
+    // padding; the second trades depth for POISONED DATA: read the decoy and something in
     // it reads back, which is the line's conversion from defence into damage and the one
     // that sits where a defend-heavy pet will actually hold it; the third does both
     // properly. A retaliation DoT passes no cut, brace, pool or hit cap, so it stays small.
@@ -319,7 +319,7 @@ const MoveDef kMoves[] = {
     // Spoof 26, Onion Layer 48) with one adjustment in the line's favour: a pool STACKS on
     // recast and carries between turns where a brace is spent on one hit, so it is worth
     // more per point and belongs under them. The first rung shipped at 8, which a Process
-    // wild's opening swing popped outright — the bubble that gates Perfect Bite and the
+    // wild's opening swing popped outright: the bubble that gates Perfect Bite and the
     // frenzy was, at that rung, never actually up on the pet's own turn.
     poolRow("spoof_bubble", "Spoof-Bubble", 12,
             "A decoy identity that soaks {power} damage before it pops.",
@@ -334,13 +334,13 @@ const MoveDef kMoves[] = {
             Stage::Daemon, /*retaliateDot=*/8, /*retaliateTurns=*/3),
     // The LURE half of the line's two-beat hunt: it bites small, takes what it came for,
     // and hands the slot to its strike step (content_chain_steps.cpp) for the next turn.
-    // Both turns are real casts — the track used to spend its first turn winding up,
+    // Both turns are real casts: the track used to spend its first turn winding up,
     // which cost it more than every siphon here was worth.
     //
     // stealMaxHpPct is the lure's signature take, and it is the one steal that keeps
     // paying: the pool MOVES (combat.cpp), so a landed lure hands the pet a bigger tank
     // for the rest of the fight, which the frenzy heal is then able to fill. The volatile
-    // pair (speed + current Health) stays bubble-gated as it always was — a separate
+    // pair (speed + current Health) stays bubble-gated as it always was: a separate
     // bargain from the chain, and one that still asks for the shield first.
     {"smish_hook", "Smish-Hook", MoveDef::Kind::Attack, 6, 1,
      "Sprays a lure - takes {stealMaxHp}% of the target's max Health, siphons "
@@ -368,21 +368,21 @@ const MoveDef kMoves[] = {
     // line = "trojan" → only Trojan pets (Keyloggerhead + its Daemon) can learn/equip.
     // Attacks strike from "already inside": armorPiercePct = 100, so they ignore ALL of
     // the target's defense (DEF rating + brace). Defends ARM a trap (trapArm=1) that fires on
-    // the enemy's next hit — evasion + rebound + armor-rot — and feeds the
+    // the enemy's next hit (evasion + rebound + armor-rot), and feeds the
     // Execution-Override passive. Fields after minStage/line: stackPowerPct, stackPowerCap,
     // stackDefensePct, stackDefenseCap, armorPiercePct, lockTurns, dotDamage, dotTurns,
     // stealPowerPct, stealDefensePct, stealSpeedPct, stealCurrentHpPct, stealMaxHpPct,
     // shieldPool, trapArm, trapEvasionPct, trapReboundPct, trapArmorRot, trapPassiveBonusPct.
-    // Magnitudes scale by stage; the line never heals — evasion is its survival tool.
+    // Magnitudes scale by stage; the line never heals: evasion is its survival tool.
     // Pierce is the one rider the GENERIC roster also sells at full strength, so this track
     // is the roster's closest comparison and it shipped losing it. Backdoor Knock (generic,
     // Process) pierces 100% AND freezes a turn for 9 power against Backdoor-Breach's 12;
-    // Crack The Keys (generic, Script) was power 20 at pierce 100 — the same two numbers as
+    // Crack The Keys (generic, Script) was power 20 at pierce 100: the same two numbers as
     // Payload-Puncture, so the line row and the boss drop were the identical move. A row
     // only the line can field has to be worth more than the row anyone can be taught, so
     // each now sits a clear step over the generic that matches it (16 / 26 / 34 against
-    // Backdoor Knock 9, Crack The Keys 20, and — at Daemon, where nothing generic pierces
-    // in full outside the banner's own Legion 30 — Wild Card's 22 at pierce 60).
+    // Backdoor Knock 9, Crack The Keys 20, and (at Daemon, where nothing generic pierces
+    // in full outside the banner's own Legion 30) Wild Card's 22 at pierce 60).
     {"backdoor_breach", "Backdoor-Breach", MoveDef::Kind::Attack, 16, 1,
      "Strikes from inside - ignores {pierce}% of armor.", Stage::Process,
      "trojan", 0, 0, 0, 0, /*armorPiercePct=*/100},
@@ -418,15 +418,15 @@ const MoveDef kMoves[] = {
     // run to replicaSpawnPct, replicaPowerPct, replicaHealthPct (defs.h), with the 19
     // untouched effect fields between zeroed.
     //
-    // The two tracks are deliberately asymmetric. An ATTACK rolls for its copy — the
+    // The two tracks are deliberately asymmetric. An ATTACK rolls for its copy: the
     // swing still lands if the roll misses, so replication is the bonus. A DEFEND is
     // certain, because a defender IS the move; the row keeps a real `power` only so the
     // turn still braces when every replication slot is already full.
     // The floor sits above Quick Jab's 6, the innate default a pet casts out of an empty
     // slot: at or under it, the line's own opening attack would be worth equipping only
-    // for the roll attached to it. The track is still the lowest on any line — 8/11/15
-    // against Ransomware's 14/24/30 — because the damage is meant to arrive from the board.
-    // replicaPowerPct is a share of THIS power, so the copies rise with it — and it runs
+    // for the roll attached to it. The track is still the lowest on any line (8/11/15
+    // against Ransomware's 14/24/30), because the damage is meant to arrive from the board.
+    // replicaPowerPct is a share of THIS power, so the copies rise with it, and it runs
     // INVERTED down the ladder, like the Ransomware tracks: the shallow row's copies are
     // worth the biggest share of its small hit, so a Daemon's early row still puts a copy on
     // the board that keeps pace with the deep one's.
@@ -446,7 +446,7 @@ const MoveDef kMoves[] = {
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/70, /*replicaPowerPct=*/80},
     // The Defend rows' own `power` is the full-slots fallback, so it is what the turn is
-    // worth on the one cast that cannot spawn — it is read against the same-stage generic
+    // worth on the one cast that cannot spawn: it is read against the same-stage generic
     // braces like the Cipher rows are, at the bottom of the band.
     {"host_squat", "Host-Squat", MoveDef::Kind::Defend, 13, 1,
      "Parks a copy in the way - a body worth {replicaHealth}% Health per copy out. "
@@ -464,7 +464,7 @@ const MoveDef kMoves[] = {
      Stage::Daemon, "worm", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      /*replicaSpawnPct=*/100, /*replicaPowerPct=*/0, /*replicaHealthPct=*/30},
 
-    // --- The PURE RIDER band — one per line ----------------------------------------
+    // --- The PURE RIDER band. One per line ----------------------------------------
     // Power 0 on every row (riderRow), which is what lets the effect past a pool, a
     // mirror, a trap or a swarm (the PURE RIDER rule, combat.h): the caster trades the
     // whole turn's damage for an effect no defence can stand in front of. They are the
@@ -472,14 +472,14 @@ const MoveDef kMoves[] = {
     // through its wildcard pairs rather than owning a fifth.
     //
     // A stun's worth is counted in turns, so it keeps its value at every stage and opens
-    // early — except Phishing's, whose Process and Script bodies have one Attack slot, where
+    // early, except Phishing's, whose Process and Script bodies have one Attack slot, where
     // a pure rider would be the pet's only way to deal damage at all. A DoT rider STACKS on
     // recast (stackDot, combat.cpp), so its per-turn number starts low: the row is a ramp
     // the caster builds over the fight, not one big plant.
-    // The Worm's row is only pure on an empty board — attacking copies pile onto every
+    // The Worm's row is only pure on an empty board: attacking copies pile onto every
     // swing (wormReplicaDamage), so with them out it is a hit like any other.
     // Screen Locker also arms the ransom, so the first swing out of the freeze is held, and
-    // spends its turn working the pet up the way a brace does — the line's pure rider
+    // spends its turn working the pet up the way a brace does: the line's pure rider
     // feeds and reads its pool like the rest of the kit.
     riderRow("screen_locker", "Screen Locker",
              "Encrypts nothing and takes nothing - locks the screen for {lock} turns, and "
@@ -499,7 +499,7 @@ const MoveDef kMoves[] = {
     // --- The THREAT moves (Watchdog / Faraday counter these) -----------------------
     // Generic ENEMY-flavoured attacks that carry a rider (lockTurns / dot*). Each is an
     // AreaDef::apexThreatMoveId, debuting on the signature boss of the area whose own loot
-    // table pays out its counter-mod — and, like every move an enemy carries, LEARNABLE by
+    // table pays out its counter-mod, and, like every move an enemy carries, LEARNABLE by
     // beating the thing that swung it (Game::rollEnemyMoveDrop). Fields after
     // armorPiercePct(0): lockTurns, dotDamage, dotTurns.
     {"system_hang", "System Hang", MoveDef::Kind::Attack, 10, 1,
@@ -511,12 +511,12 @@ const MoveDef kMoves[] = {
     // The Net-Sea's apex (THE GREEN BUTTON) wields the STUN rider the Bayou debuted,
     // one turn longer: the fake download button doesn't corrupt anything, it just takes
     // the next few turns away from you. So the Net-Sea's own pool re-stocks Watchdog
-    // Timer rather than paying out a third counter — a longer freeze is still a freeze,
+    // Timer rather than paying out a third counter: a longer freeze is still a freeze,
     // and the mod clamps any of them to one turn.
     {"decoy_download", "Decoy Download", MoveDef::Kind::Attack, 8, 1,
      "The button that wasn't the button - frozen for {lock} turns.", Stage::BootSector,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/3, /*dot=*/0, 0},
-    // Castle Rapidscare's apex carries BOTH riders at once — the keep asks for the two
+    // Castle Rapidscare's apex carries BOTH riders at once: the keep asks for the two
     // counters the earlier areas handed out separately, and re-stocks them in its own
     // mod pool for a player who never rolled one.
     {"nag_screen", "Nag Screen", MoveDef::Kind::Attack, 8, 1,
@@ -524,7 +524,7 @@ const MoveDef kMoves[] = {
      "{dotTurns} turns.", Stage::BootSector,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1, /*dotDamage=*/6, /*dotTurns=*/3},
 
-    // === THE BOSS POOL — one move per boss, learned by beating the boss that swings it ==
+    // === THE BOSS POOL: one move per boss, learned by beating the boss that swings it ==
     //
     // Generic (line = nullptr), so any pet can be taught any of them. Each is named by
     // exactly one boss's AreaDef::subBosses[].teaches (or its area's areaBossMoveId), which
@@ -536,11 +536,11 @@ const MoveDef kMoves[] = {
     // make the extremes real rather than decorative:
     //
     //   * The STUN and DoT riders fire on any landed cast, damage or not (combat.cpp's
-    //     applyEffect) — only the steal track is gated on dmg > 0. So a ~0-power move with
+    //     applyEffect), only the steal track is gated on dmg > 0. So a ~0-power move with
     //     a big rider is a working move, not a wasted turn: pure control, no impact.
     //   * A hit whose PRE-mitigation damage was non-zero is floored at 1 (the minimum
     //     penetration rule in Combat::applyEffect). So a low-power shred lands through any
-    //     wall however braced the target is — the shred is the payload, the damage the
+    //     wall however braced the target is: the shred is the payload, the damage the
     //     delivery.
     //
     // Nothing here goes below power 3: `power * powerMultPct / 100` is what the floor tests,
@@ -550,7 +550,7 @@ const MoveDef kMoves[] = {
     // Fields after minStage: line, stackPowerPct, stackPowerCap, stackDefensePct,
     // stackDefenseCap, armorPiercePct, lockTurns, dotDamage, dotTurns, stealPowerPct,
     // stealDefensePct, ... (defs.h). The stack*/shieldPool/trap*/replica* fields and
-    // stealPowerPct stay ZERO on every row here — each belongs to a LINE's identity, and
+    // stealPowerPct stay ZERO on every row here: each belongs to a LINE's identity, and
     // stealPowerPct additionally feeds the Phishing frenzy combo on any move that carries
     // it, which a generic move must not do.
 
@@ -579,7 +579,7 @@ const MoveDef kMoves[] = {
      Stage::Process, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1, /*dotDamage=*/4,
      /*dotTurns=*/3},
 
-    // --- The Pirate Bayou — the cracking area, so ARMOR PIERCE is its family --------
+    // --- The Pirate Bayou: the cracking area, so ARMOR PIERCE is its family --------
     {"remote_handle", "Remote Handle", MoveDef::Kind::Attack, 10, 1,
      "Drives it from somewhere else - ignores {pierce}% of armor.", Stage::Process,
      nullptr, 0, 0, 0, 0, /*armorPiercePct=*/25},
@@ -603,7 +603,7 @@ const MoveDef kMoves[] = {
      "No wall was ever the problem - ignores ALL {pierce}% of armor.", Stage::Script,
      nullptr, 0, 0, 0, 0, /*armorPiercePct=*/100},
 
-    // --- Net-Sea Crossing — everything here arrives attached to something else ------
+    // --- Net-Sea Crossing: everything here arrives attached to something else ------
     {"bundle_wrap", "Bundle Wrap", MoveDef::Kind::Attack, 7, 1,
      "Three things you didn't ask for - {dot}/turn for {dotTurns} turns and "
      "{stealMaxHp}% of max Health.",
@@ -681,7 +681,7 @@ const MoveDef kMoves[] = {
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/10, /*dotTurns=*/5,
      /*stealPower=*/0, /*stealDefensePct=*/40},
 
-    // --- The Silk Lode — the family is SEVERANCE, so what it takes is your HAND ------
+    // --- The Silk Lode: the family is SEVERANCE, so what it takes is your HAND ------
     // Every other area takes Health, armour or turns. This one takes the player's reach
     // into the fight: the A+C picker is the one place a hand goes in, and `c2_hijack`
     // below is what closes it. The rest of the family are the smaller ways a thread
@@ -713,7 +713,7 @@ const MoveDef kMoves[] = {
     //
     // THREE TURNS is the median number of player turns LEFT once it lands. Measured over
     // 2000 fights against the boss that carries it: the rider connects in 31% of them, on
-    // player turn 2 (p75 turn 3), of a fight that runs 4 player turns (p75 6) — leaving a
+    // player turn 2 (p75 turn 3), of a fight that runs 4 player turns (p75 6). Leaving a
     // median of 3. So it covers the rest of a median fight and no more. Longer and it is
     // the whole fight, which is what the DARKWEB CRAWL's permanent scramble is for and
     // should not be a move; shorter and the one Exploit a battle allows is simply spent
@@ -729,7 +729,7 @@ const MoveDef kMoves[] = {
              "freezes {lock} turn, and scrambles for {scramble}.",
              Stage::Daemon, /*scrambleTurns=*/2, /*armorPiercePct=*/100, /*lockTurns=*/1),
 
-    // === THE GUARDIAN POOL — one move per area guardian, taught nowhere else ========
+    // === THE GUARDIAN POOL: one move per area guardian, taught nowhere else ========
     //
     // Generic (line = nullptr) and reachable exactly as the two pools around it are: a
     // guardian's kit is what a drop is rolled off, and each of these is named by exactly
@@ -737,7 +737,7 @@ const MoveDef kMoves[] = {
     // ladder (game_shiboleet.cpp), so this is the only family in the game whose earn
     // path does not run through the EXPL list at all.
     //
-    // The family is DENIAL. A malbeast hurts you; a guardian ARBITRATES — it decides you
+    // The family is DENIAL. A malbeast hurts you; a guardian ARBITRATES: it decides you
     // may not pass, and the damage is incidental to the ruling. So every row here spends
     // its budget on the rider (a stun, a pierce, a stripped guard) and keeps its raw
     // power modest, which also keeps them from out-classing the boss pool they are
@@ -767,11 +767,11 @@ const MoveDef kMoves[] = {
      "You have been standing on it the whole time - freezes {lock} turns.",
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/2},
 
-    // === THE WILD POOL — one Attack + one Defend per zone, farmed off its own wilds ==
+    // === THE WILD POOL: one Attack + one Defend per zone, farmed off its own wilds ==
     //
     // Generic (line = nullptr), like the boss pool above and reachable the same way: a
     // drop is drawn from the defeated enemy's kit, so a move is findable exactly where
-    // something carries it. What carries these is not a boss but the ORDINARY wild — each
+    // something carries it. What carries these is not a boss but the ORDINARY wild: each
     // zone names its pair (AreaDef::wildAttackMoveId/wildDefendMoveId, and the dive's own
     // kDeepWebWildAttackMoveId/kDeepWebWildDefendMoveId), and combat_factory's
     // applyWildSubAreaRamp/applyDeepWebScale hand it to every malbeast met there.
@@ -785,13 +785,13 @@ const MoveDef kMoves[] = {
     // The ATTACK carries its zone's family rider (the Bayou pierces, the Moors just swings,
     // the crossing freezes) and the DEFEND is a plain brace, because a brace IS its power:
     // every rider fires on the Attack branch only (Combat::applyEffect), and the defensive
-    // tracks — shieldPool, trapArm, replica* — each belong to a LINE. So the six braces are
+    // tracks (shieldPool, trapArm, replica*) each belong to a LINE. So the six braces are
     // a ladder of one number, deepest zone highest.
     //
     // Same field discipline as the boss pool: stack*/shieldPool/trap*/replica* and
     // stealPowerPct stay ZERO on every row here.
 
-    // --- Citrus Circuit — nothing here ever finishes -------------------------------
+    // --- Citrus Circuit: nothing here ever finishes -------------------------------
     {"partial_download", "Partial Download", MoveDef::Kind::Attack, 5, 1,
      "Stops at ninety-nine and stays there - {dot} damage/turn for {dotTurns} turns.",
      Stage::BootSector, nullptr, 0, 0, 0, 0, 0, 0, /*dotDamage=*/2, /*dotTurns=*/3},
@@ -800,7 +800,7 @@ const MoveDef kMoves[] = {
              "waits {refund}% less.",
              Stage::BootSector, /*speedRefundPct=*/60),
 
-    // --- The Pirate Bayou — the cracking water, so its wilds pierce too -------------
+    // --- The Pirate Bayou: the cracking water, so its wilds pierce too -------------
     {"keygen_hum", "Keygen Hum", MoveDef::Kind::Attack, 8, 1,
      "The chiptune plays while the lock opens - ignores {pierce}% of armor.",
      Stage::Process, nullptr, 0, 0, 0, 0, /*armorPiercePct=*/15},
@@ -809,7 +809,7 @@ const MoveDef kMoves[] = {
              "waits {refund}% less.",
              Stage::Process, /*speedRefundPct=*/55),
 
-    // --- Net-Sea Crossing — it takes the turn, not the Health ----------------------
+    // --- Net-Sea Crossing: it takes the turn, not the Health ----------------------
     {"install_wizard", "Install Wizard", MoveDef::Kind::Attack, 7, 1,
      "Next, next, next, finish - frozen for {lock} turn.", Stage::Process,
      nullptr, 0, 0, 0, 0, 0, /*lockTurns=*/1},
@@ -818,7 +818,7 @@ const MoveDef kMoves[] = {
              "waits {refund}% less.",
              Stage::Process, /*speedRefundPct=*/50),
 
-    // --- Napstorrent Moors — the mail area, and mail is just the swing --------------
+    // --- Napstorrent Moors: the mail area, and mail is just the swing --------------
     {"chain_letter", "Reply All", MoveDef::Kind::Attack, 18, 1,
      "Forward it to everyone. No rider, no wind-up - just the swing.", Stage::Script},
     braceRow("private_tracker", "Private Tracker", 30,
@@ -826,13 +826,13 @@ const MoveDef kMoves[] = {
              "waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/45),
 
-    // --- Castle Rapidscare — the keep charges for everything ------------------------
+    // --- Castle Rapidscare: the keep charges for everything ------------------------
     {"bandwidth_cap", "Bandwidth Cap", MoveDef::Kind::Attack, 9, 1,
      "You have used your quota - takes {stealMaxHp}% of the target's max Health for "
      "the fight.",
      Stage::Script, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0, /*stealDef=*/0,
      /*stealSpeed=*/0, /*stealHp=*/0, /*stealMaxHpPct=*/10},
-    // The Silk Lode's pair — the family's cheap version, farmable at every rung. The
+    // The Silk Lode's pair: the family's cheap version, farmable at every rung. The
     // Attack is a thread you walked into rather than one aimed at you; the brace is the
     // flattest and most patient web there is.
     {"snag_line", "Snag Line", MoveDef::Kind::Attack, 12, 1,
@@ -848,7 +848,7 @@ const MoveDef kMoves[] = {
              "waits {refund}% less.",
              Stage::Script, /*speedRefundPct=*/35),
 
-    // --- DeepWeb Dive — the deepest pair there is ------------------------------------
+    // --- DeepWeb Dive: the deepest pair there is ------------------------------------
     {"exit_node", "Exit Node", MoveDef::Kind::Attack, 10, 1,
      "Everything you sent, read on the way out - strips {stealDef}% of the target's armor.",
      Stage::Daemon, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, /*stealPower=*/0,

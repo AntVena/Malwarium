@@ -1,4 +1,4 @@
-// test_story.cpp — the STORY chapters: what they say, when they fire, and where they
+// test_story.cpp (the STORY chapters): what they say, when they fire, and where they
 // go afterwards.
 //
 // Four things are worth holding. That an authored chapter FITS the page it is drawn on
@@ -17,7 +17,7 @@ namespace {
 
 // Step the walk until the zone's ARRIVAL chapter opens, dismissing whatever else the
 // event table rolls on the way. A wild encounter is the majority slot and the chapter
-// sits at the top of it, so this lands on Nav::Story rather than on Nav::Encounter —
+// sits at the top of it, so this lands on Nav::Story rather than on Nav::Encounter,
 // which is the thing being asserted.
 bool walkToStory(Game& g) {
     for (int i = 0; i < 400 && g.nav() != Game::Nav::Story; ++i) {
@@ -36,7 +36,7 @@ bool walkToStory(Game& g) {
 
 // Page ONE chapter to its end with B, however many windows it turns out to hold. It
 // stops when the chapter under the reader changes, because a paired beat opens its
-// second half in place — so "read this one out" and "read everything queued" have to be
+// second half in place, so "read this one out" and "read everything queued" have to be
 // two different things for a gate to tell them apart.
 void readChapterOut(Game& g) {
     const StoryChapterDef* c = g.currentStoryChapter();
@@ -79,7 +79,7 @@ void test_story_chapters_fit_their_page() {
     CHECK(authored > 0);                    // something is written, or this gate is inert
 
     // ...and the built rows are the chapter, in order, with nothing clipped on the way
-    // in — plus every panel fits a window of its own, so the flow can always advance.
+    // in, plus every panel fits a window of its own, so the flow can always advance.
     Game g{StartMode::Hatched, "bruinforce"};
     const StoryChapterDef* first = storyChapter(0, StoryBeat::AreaIntro);
     CHECK(first != nullptr);
@@ -96,7 +96,7 @@ void test_story_chapters_fit_their_page() {
 }
 
 // THE ARRIVAL BEAT fires in front of the first wild encounter in a zone, hands that
-// encounter back when the chapter is done, and never fires again — a chapter is spent
+// encounter back when the chapter is done, and never fires again: a chapter is spent
 // on the walk that opened it whether it was read or skipped, which is what the archive
 // exists to recover.
 void test_story_arrival_fires_once_and_hands_back() {
@@ -113,7 +113,7 @@ void test_story_arrival_fires_once_and_hands_back() {
 
     // B pages it, and the last B hands back the encounter the chapter stood in front of.
     // An encounter met ON A WALK resolves itself (there is nobody at the intro to press
-    // Fight), and a held Sinkhole Trap is what it resolves WITH — so the trap going
+    // Fight), and a held Sinkhole Trap is what it resolves WITH, so the trap going
     // missing is the evidence that the deferred encounter actually ran.
     const int traps = g.inventory().count("sinkhole_trap");
     readChapterOut(g);
@@ -156,7 +156,7 @@ void test_story_panel_turns_on_its_own_clock() {
     g.tick(nearly);                                  // the OLD deadline, now spent
     if (after >= 0) CHECK(g.storyWindow() == after);
 
-    // And the reading screens are held open against the menu idle collapse — fifteen
+    // And the reading screens are held open against the menu idle collapse: fifteen
     // seconds is shorter than a page of prose.
     Game h{StartMode::Hatched, "bruinforce"};
     h.debugOpenStory(ch);
@@ -165,7 +165,7 @@ void test_story_panel_turns_on_its_own_clock() {
     CHECK(h.nav() == Game::Nav::Story);
 }
 
-// C SKIPS — the whole chapter, not one panel — and the thing the chapter stood in front
+// C SKIPS (the whole chapter, not one panel), and the thing the chapter stood in front
 // of still happens. A chapter is not a menu, so "cancel" on one means "I am done being
 // told", and the walk has to carry on either way.
 void test_story_skip_still_runs_what_it_interrupted() {
@@ -178,14 +178,14 @@ void test_story_skip_still_runs_what_it_interrupted() {
     const int traps = g.inventory().count("sinkhole_trap");
     tapC(g);
     CHECK(g.currentStoryChapter() == nullptr);
-    // Skipped from the FIRST window, and the encounter behind it still resolved — the
+    // Skipped from the FIRST window, and the encounter behind it still resolved: the
     // trap it spent is what says so.
     CHECK(g.inventory().count("sinkhole_trap") == traps - 1);
     CHECK(g.nav() == Game::Nav::Idle);
 }
 
 // THE ARCHIVE is the way back to a chapter an auto-progress walk paged through. It
-// lists what has been fired and nothing else — so it can spoil nothing — and the
+// lists what has been fired and nothing else (so it can spoil nothing), and the
 // CHAPTERS category it lives behind is locked until there is something in it.
 void test_story_archive_collects_what_the_walk_fired() {
     MemSaveStore store;
@@ -203,7 +203,7 @@ void test_story_archive_collects_what_the_walk_fired() {
         g.debugArmExplore(0, 0);
         g.debugSetAutoProgress(false);
         CHECK(walkToStory(g));
-        tapC(g);                                     // skipped — and still archived
+        tapC(g);                                     // skipped, and still archived
         CHECK(g.storyChapterCount() == 1);
 
         // The category is a place to go now, and B on it opens the list. The walk is put
@@ -218,14 +218,14 @@ void test_story_archive_collects_what_the_walk_fired() {
         CHECK(g.nav() == Game::Nav::StoryArchive);
 
         // B reads the focused row, and finishing it comes back to the archive rather
-        // than to the walk — nothing on the ladder was interrupted to get here.
+        // than to the walk: nothing on the ladder was interrupted to get here.
         g.onButton(press(Button::B));
         CHECK(g.nav() == Game::Nav::Story);
         CHECK(g.currentStoryChapter() == storyChapter(0, StoryBeat::AreaIntro));
         readChapterOut(g);
         CHECK(g.nav() == Game::Nav::StoryArchive);
         // The archive is a ROW LIST and joins the shared cursor (game_listnav.cpp), so
-        // a held C walks it backward rather than backing out — the same gesture every
+        // a held C walks it backward rather than backing out: the same gesture every
         // other list on the device answers to.
         uint32_t ct = 0;
         g.onButton(press(Button::C));
@@ -251,8 +251,8 @@ void test_story_archive_collects_what_the_walk_fired() {
 }
 
 // THE GAUNTLET'S OWN BEATS, end to end on a real fight: the threshold chapter stands in
-// front of the area boss and hands it back, and the win fires the PAIR — what was just
-// beaten, then the place closing behind the pet — read back to back as one sitting
+// front of the area boss and hands it back, and the win fires the PAIR (what was just
+// beaten, then the place closing behind the pet) read back to back as one sitting
 // before the walk gets its habitat back.
 void test_story_brackets_the_area_gauntlet() {
     Game g{StartMode::Hatched, "bruinforce"};
@@ -260,7 +260,7 @@ void test_story_brackets_the_area_gauntlet() {
     for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
     CHECK(g.areaBossReady(0));
 
-    // Opening the gauntlet opens its chapter instead — and reading that out starts the
+    // Opening the gauntlet opens its chapter instead, and reading that out starts the
     // fight the chapter was the threshold of.
     enterStoryLadder(g);
     g.onButton(press(Button::B));                    // drill into area 0
@@ -287,7 +287,7 @@ void test_story_brackets_the_area_gauntlet() {
     readChapterOut(g);
     CHECK(g.nav() == Game::Nav::Idle);               // ...and only then the habitat
 
-    // Three of the zone's four beats are spent and archived — the ARRIVAL one is not,
+    // Three of the zone's four beats are spent and archived: the ARRIVAL one is not,
     // because this gate never walked the area, it went straight to its gauntlet. The
     // read-set follows what actually happened, not how far into the zone the player is.
     CHECK(g.storyChapterCount() == kStoryBeats - 1);
@@ -330,7 +330,7 @@ void test_expl_categories_are_the_top_level() {
     CHECK(g.listRow() == explCatRow(ExplCat::Chapters));
     explPickCategory(g, ExplCat::Story);
 
-    // B opens STORY onto the AREA list — area 0's header, not its sub-areas.
+    // B opens STORY onto the AREA list: area 0's header, not its sub-areas.
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu);
     CHECK(explRowArea(g.listRow()) == 0 && explRowSub(g.listRow()) < 0);

@@ -15,7 +15,7 @@ constexpr size_t kLenName = 100;
 constexpr size_t kLenSize = 12;
 
 // tar stores sizes as NUL/space-terminated octal. Anything that isn't octal digits
-// is a broken header, not a zero-length file — say so rather than extracting an
+// is a broken header, not a zero-length file: say so rather than extracting an
 // empty file and moving the stream cursor to the wrong place.
 bool readOctal(const uint8_t* p, size_t len, uint32_t* out) {
     uint64_t v = 0;
@@ -48,7 +48,7 @@ bool allZero(const uint8_t* p, size_t len) {
 
 bool tarPathSafe(const char* name) {
     if (!name || name[0] == '\0') return false;
-    if (name[0] == '/') return false;               // absolute — not ours to place
+    if (name[0] == '/') return false;               // absolute, not ours to place
     // Walk components. A ".." anywhere climbs out of the root, whether it leads,
     // trails, or hides in the middle.
     const char* seg = name;
@@ -69,7 +69,7 @@ bool parseTarHeader(const uint8_t* block, size_t len, TarEntry* out) {
     *out = TarEntry{};
 
     // The archive ends in zero blocks. Report that as an outcome, not a parse
-    // failure — it is how a well-formed archive says it is finished.
+    // failure: it is how a well-formed archive says it is finished.
     if (allZero(block, kTarBlock)) {
         out->kind = TarEntryKind::End;
         return true;

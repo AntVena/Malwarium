@@ -1,15 +1,15 @@
 #include "core/app/game.h"
 
 #include "core/content/content_quotes.h"
-#include "core/content/content_recipes.h"   // kMergeRecipes — the prize ladder names a recipe
+#include "core/content/content_recipes.h"   // kMergeRecipes: the prize ladder names a recipe
 #include "core/ui/cryptogram_screen.h"
 
-// game_cryptogram.cpp — THE DECRYPTOGRAM, the quote board.
+// game_cryptogram.cpp: THE DECRYPTOGRAM, the quote board.
 //
 // A Decryptogram is a found item with one use: cash it in at the Hacker VAULT and a
 // quote comes up struck out. Open every letter without a single wrong placement and it
 // pays Bits plus one account unlock; place one letter wrong and the ticket is gone and
-// the quote keeps its secret. There is no partial credit and no walking away — C does
+// the quote keeps its secret. There is no partial credit and no walking away: C does
 // not leave a board any more than it leaves a hatch.
 //
 // What makes losing survivable is that the QUOTE remembers. Every quote starts Hard;
@@ -102,7 +102,7 @@ int Game::pickQuote(QuotePick pick) {
 QuoteReward Game::quoteFirstSolvePrize() const {
     // The ladder in payout order (content_quotes.h): the first dish the operator can't
     // already cook and is ready to be taught. A recipe with no MERGE HUB to cook it in,
-    // or for a dish never met, is stepped over rather than handed out dead — it comes
+    // or for a dish never met, is stepped over rather than handed out dead: it comes
     // back around on a later board once the kitchen has caught up.
     const char* const* ladder = quotePrizeLadder();
     for (int i = 0; i < quotePrizeLadderCount(); ++i) {
@@ -120,13 +120,13 @@ void Game::startCryptogram(int quote, int extraReveals) {
     cryptogramQuote_ = quote;
     // The stake is decided at the START, not at the payout, so the board can state what
     // is riding on the next placement while the player is still deciding to make it.
-    // A cabinet run has no stake of its own — the arcade's till prices it on the way out
-    // — and a quote already solved has no first-solve prize left to win twice.
+    // A cabinet run has no stake of its own (the arcade's till prices it on the way out),
+    // and a quote already solved has no first-solve prize left to win twice.
     const bool firstSolve = !arcadeRun_ && quoteTier(quote) != CryptogramTier::Solved;
     cryptogramPrizeBits_ = arcadeRun_ ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
     cryptogramPrize_ = firstSolve ? quoteFirstSolvePrize() : QuoteReward{};
     // A quote the content gate has passed always fits, so the return is ignored here
-    // and asserted there instead — a board that refused to load at runtime would strand
+    // and asserted there instead: a board that refused to load at runtime would strand
     // a spent ticket with nothing to show for it.
     cryptogram_.reset(quotes()[quote].text, extraReveals);
     closeGameBrief();   // a stale flag from a previous board must not open paused
@@ -138,17 +138,17 @@ void Game::onCryptogram(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
     if (!cryptogram_.running()) {
         // Parked on the verdict, which the settle has already banked. B leaves; C is
-        // DISABLED, like every other board — the ticket is spent either way.
+        // DISABLED, like every other board: the ticket is spent either way.
         if (ev.button == Button::B) finishCryptogram();
         return;
     }
-    // A and C are the live cursor's two DIRECTIONS — forward and back through the pool,
+    // A and C are the live cursor's two DIRECTIONS: forward and back through the pool,
     // or through the closed cells once a letter is in hand. Bidirectional because a
     // board opens with thirty-odd gaps, and overshooting by one on a forward-only
     // cursor costs a full lap of the quote.
     //
-    // That spends both of the buttons a cancel would want, so A+C hands the letter back
-    // — the chord, which this board is routed for. C is therefore not "cancel" here and
+    // That spends both of the buttons a cancel would want, so A+C hands the letter back:
+    // the chord, which this board is routed for. C is therefore not "cancel" here and
     // there is no way off a board at all, which is the deal every ticket is bought on.
     //
     // dropLetter() is inert with nothing held (PickLetter), which is exactly when the
@@ -197,7 +197,7 @@ void Game::settleCryptogram() {
     } else if (before == CryptogramTier::Medium) {
         setQuoteTier(cryptogramQuote_, CryptogramTier::Easy);
     }
-    // Easy is the floor and Solved never moves — both fall through untouched.
+    // Easy is the floor and Solved never moves: both fall through untouched.
     markSaveDirty();
 }
 
@@ -205,7 +205,7 @@ void Game::applyQuoteReward() {
     bits_ += cryptogramPrizeBits_;
     switch (cryptogramPrize_.kind) {
         case QuoteReward::Kind::RigGrant: {
-            // Free, but otherwise exactly a purchase — grantRigLevel is the same call
+            // Free, but otherwise exactly a purchase: grantRigLevel is the same call
             // buyRigUpgrade makes once it has taken the Bits, so a granted Bandwidth
             // level tops the live pool up the way a bought one does.
             const int row = rigRowIndexById(cryptogramPrize_.id);
@@ -232,7 +232,7 @@ void Game::finishCryptogram() {
         finishArcadeRun(cryptogram_.solved(), cryptogram_.score(), cryptogram_.maxScore());
         return;
     }
-    // Back to the VAULT the ticket was cashed at — the one screen that can say whether
+    // Back to the VAULT the ticket was cashed at: the one screen that can say whether
     // there is another Decryptogram to spend.
     nav_ = Nav::Submenu;
     dirty_ = true;
@@ -255,7 +255,7 @@ const char* Game::cryptogramPrizeLabel() const {
             return d ? d->displayName : nullptr;
         }
         case QuoteReward::Kind::Recipe: {
-            // The recipe's own name, not the dish's — what is being won is the METHOD,
+            // The recipe's own name, not the dish's: what is being won is the METHOD,
             // and the board should say so while the stake is still riding.
             const int i = recipeIndexByOutput(cryptogramPrize_.id);
             return i >= 0 ? kMergeRecipes[i].displayName : nullptr;

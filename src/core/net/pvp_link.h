@@ -1,4 +1,4 @@
-// pvp_link.h — the 1v1 duel handshake's wire format.
+// pvp_link.h: the 1v1 duel handshake's wire format.
 //
 // PURE + HOST-TESTABLE, like peer_link.h: this is only the encode/decode of the bytes
 // two Malwariums exchange to agree on a fight. The radio that carries them is the
@@ -20,7 +20,7 @@
 //   START    host -> guest          the seed, plus a hash of everything it commits to
 //   BYE      either -> either       abandon the session
 //
-// WHO IS HOST is not negotiated — pvpHostIsLocal() derives it from the two radio MACs,
+// WHO IS HOST is not negotiated: pvpHostIsLocal() derives it from the two radio MACs,
 // which both devices already know the moment they hear each other. The host picks the
 // seed and sends START; the guest starts on receipt. That single frame is also what
 // makes the two screens start together.
@@ -46,7 +46,7 @@ namespace mal {
 // understand rather than misreading the layout.
 constexpr uint8_t kPvpProtoVersion = 1;
 
-// Resolution version — bumped whenever a change to combat maths or to the content a
+// Resolution version: bumped whenever a change to combat maths or to the content a
 // fighter references would make two builds resolve the SAME spec+seed differently.
 // The wire could be identical and the fight still diverge, so this is checked
 // separately from kPvpProtoVersion and a mismatch declines the duel outright. That is
@@ -68,14 +68,14 @@ constexpr int kPvpIdCap = 24;
 // of a serialized Combatant.
 struct PvpFighter {
     char tag[kPvpTagCap] = {0};                    // the operator's HackerTag
-    char creatureId[kPvpIdCap] = {0};              // species — the whole base stat line
+    char creatureId[kPvpIdCap] = {0};              // species: the whole base stat line
     char moveIds[kMaxMoveSlots][kPvpIdCap] = {};   // equipped moves, by slot; empty = none
     char modIds[kModSlots][kPvpIdCap] = {};        // equipped mods, by slot; empty = none
     uint16_t level = 0;                            // combat level (display + level-diff)
     uint8_t statPoints[4] = {0, 0, 0, 0};          // power / defense / speed / maxHealth
 };
 
-// Frame kinds. Values are wire constants — append, never renumber.
+// Frame kinds. Values are wire constants: append, never renumber.
 enum class PvpFrameType : uint8_t {
     Invite = 1,
     Accept = 2,
@@ -90,7 +90,7 @@ enum class PvpDeclineReason : uint8_t {
     Refused = 0,     // the human pressed C
     Busy = 1,        // mid-duel, or not on the LINK screen to consent from
     NoPet = 2,       // no hatched pet to fight with
-    Mismatch = 3,    // kPvpRulesVersion disagreement — the two builds would diverge
+    Mismatch = 3,    // kPvpRulesVersion disagreement: the two builds would diverge
 };
 
 // A decoded frame. Only the members its `type` defines are meaningful; the rest keep
@@ -101,8 +101,8 @@ struct PvpFrame {
     uint8_t rules = 0;           // sender's kPvpRulesVersion (Invite/Accept)
     PvpFighter fighter;          // Invite/Accept
     PvpDeclineReason reason = PvpDeclineReason::Refused;  // Decline
-    uint32_t seed = 0;           // Start — the fight's RNG seed
-    uint32_t commit = 0;         // Start — pvpCommitHash over seed + both fighters
+    uint32_t seed = 0;           // Start: the fight's RNG seed
+    uint32_t commit = 0;         // Start: pvpCommitHash over seed + both fighters
 };
 
 // Encoded sizes. Fixed per type: every field is a fixed-width slot, so there is no
@@ -118,11 +118,11 @@ constexpr size_t kPvpByeSize = kPvpHeaderSize;
 
 // ESP-NOW v1 carries 250 bytes per frame and this protocol never fragments, so the
 // largest frame has to fit one. If a new field breaks this, shorten a cap or move the
-// fighter to its own frame — do not add fragmentation for a beacon-grade protocol.
+// fighter to its own frame: do not add fragmentation for a beacon-grade protocol.
 constexpr size_t kPvpMaxFrameSize = 250;
 static_assert(kPvpInviteSize <= kPvpMaxFrameSize, "an INVITE must fit one ESP-NOW frame");
 
-// The largest frame this build can produce — what a send buffer should be sized to.
+// The largest frame this build can produce: what a send buffer should be sized to.
 constexpr size_t kPvpFrameCap = kPvpInviteSize;
 
 // --- Encode ------------------------------------------------------------------
@@ -138,7 +138,7 @@ size_t encodePvpBye(uint32_t session, uint8_t* out, size_t cap);
 
 // --- Decode ------------------------------------------------------------------
 
-// Parse a received frame. Returns false — leaving `out` untouched — unless the frame
+// Parse a received frame. Returns false (leaving `out` untouched), unless the frame
 // carries the duel magic, declares a protocol version this build understands, names a
 // known type, and is exactly that type's length.
 //
@@ -155,7 +155,7 @@ bool isPvpFrame(const uint8_t* in, size_t len);
 // --- Agreement helpers -------------------------------------------------------
 
 // Which device hosts, decided from the two packed radio MACs (packPeerKey) that both
-// sides already have: the LOWER key hosts. No negotiation round, no tie — two distinct
+// sides already have: the LOWER key hosts. No negotiation round, no tie: two distinct
 // devices cannot share a MAC. The host picks the seed, sends START, and occupies
 // Combat's player_ slot on BOTH screens (see core/model/pvp_battle.h).
 bool pvpHostIsLocal(uint64_t localKey, uint64_t remoteKey);
@@ -164,7 +164,7 @@ bool pvpHostIsLocal(uint64_t localKey, uint64_t remoteKey);
 // fighter specs, in host-then-guest order. The guest recomputes it from its own copies
 // and refuses the duel if it differs.
 //
-// This is the divergence guard, not a security measure — it catches the cases that
+// This is the divergence guard, not a security measure: it catches the cases that
 // would otherwise produce two screens showing different fights (a spec that decoded
 // differently, a stale session, mismatched builds) and turns them into a clean refusal.
 // An attacker who can forge frames can forge this too; see the file header.

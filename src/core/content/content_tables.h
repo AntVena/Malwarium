@@ -1,4 +1,4 @@
-// content_tables.h — the embedded content tables, one per entity type.
+// content_tables.h: the embedded content tables, one per entity type.
 //
 // The data is split across sibling content_*.cpp units (one file per content
 // type, so each stays skimmable: content_items / content_mods / content_moves /
@@ -18,17 +18,17 @@ namespace mal {
 // Creatures are NOT here: they are grouped into families, one folder each, and
 // listed in creatures/creature_lines.h (kCreatureLines). A family's rows are
 // authored together, so the roster is a list of families rather than a table of
-// rows — see creatures/CREATURE_CONTENT_STANDARD.md.
+// rows: see creatures/CREATURE_CONTENT_STANDARD.md.
 extern const EggLineDef      kEggLines[];      extern const int kEggLinesCount;
 extern const ItemDef         kItems[];         extern const int kItemsCount;
-extern const char* const kDefragToolId;  // "disk_scrubber" — MAINT's TOOL-defrag item id
-extern const char* const kBackupDriveId;  // "backup_drive" — the combat-shield buff item id
+extern const char* const kDefragToolId;  // "disk_scrubber": MAINT's TOOL-defrag item id
+extern const char* const kBackupDriveId;  // "backup_drive": the combat-shield buff item id
 // The walk loot-cache event's reward pool (Game::grantLootReward). Lives with the item
 // table because it is a set of item ids; every CACHE's pool is on its own row's CacheDef.
 extern const LootEntry kLootPool[];      extern const int kLootPoolCount;
 extern const ModDef          kMods[];          extern const int kModsCount;
 // Save capacity for the owned-mod pool, in ModDef::wire numbers. The pool ships as a
-// COUNT PER WIRE — a nibble each — so what this bounds is the array's addressable range,
+// COUNT PER WIRE (a nibble each), so what this bounds is the array's addressable range,
 // NOT how many mods exist: a roster twice this long is a content problem, a wire number
 // past it is a save problem. Raise it in multiples of 2 (a whole byte of nibbles) with a
 // save-version note. The array is length-prefixed like the achievement masks, so a
@@ -39,7 +39,7 @@ extern const MoveDef         kMoves[];         extern const int kMovesCount;
 // Chained-move FOLLOW-UP steps (MoveDef::chainNextId). Same row type as a move and a
 // deliberately separate table: a step is reached only by casting the move that names it,
 // so keeping it out of kMoves is what stops it appearing in the equip picker, a hatch
-// grant, a move drop or a rolled arena kit — none of which need to know chains exist.
+// grant, a move drop or a rolled arena kit. None of which need to know chains exist.
 extern const MoveDef         kChainSteps[];    extern const int kChainStepsCount;
 extern const DaemonPoolDef   kDaemonPools[];   extern const int kDaemonPoolsCount;
 

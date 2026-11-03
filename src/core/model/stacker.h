@@ -1,8 +1,8 @@
-// stacker.h — the rules of the STACKER, with no rendering and no Game.
+// stacker.h: the rules of the STACKER, with no rendering and no Game.
 //
 // The FIREWALL. Intruders drop down the well over their columns while you raise walls
 // under them: a run of blocks slides across the well and B locks it, every block falling
-// straight down its column onto whatever is there — a block, or the floor. A block that
+// straight down its column onto whatever is there. A block, or the floor. A block that
 // lands on a wall, at whatever height, stays in the hand. One that falls past the walls
 // to the floor while the rest of its run lands on them leaves the hand, which is what
 // narrows it. A run that lands wholly on the floor keeps every block, so a second wall
@@ -11,7 +11,7 @@
 // An intruder that reaches a wall is stopped, and takes the block it hit with it. One
 // that reaches the floor is a BREACH, and ends the run. Stop every intruder and the line
 // is HELD. The catch is the floor: every lock that puts a block on the ground calls more
-// intruders over the columns it touched, so a new wall — or a block that fell past one —
+// intruders over the columns it touched, so a new wall (or a block that fell past one)
 // costs blocks off that wall later, and enough of them wear it through. And a board
 // gets kStackerDrops locks in all, so a hand narrowed by a sloppy lock is fewer blocks
 // in every lock after it.
@@ -61,7 +61,7 @@ constexpr int kStackerMaxThreats = 16;
 // to take what its first lock calls on HARD, with a couple to spare.
 constexpr int kStackerDrops = 10;
 
-// How many intruders one lock on the ground calls, by difficulty (EASY, MEDIUM, HARD —
+// How many intruders one lock on the ground calls, by difficulty (EASY, MEDIUM, HARD:
 // Game reads the dial, the model only takes the number).
 constexpr int kStackerGroundCalls[] = {1, 2, 3};
 
@@ -70,8 +70,8 @@ constexpr int kStackerGroundCalls[] = {1, 2, 3};
 constexpr int kStackerMaxScore =
     kStackerDealtThreats * kStackerStartWidth * kStackerRows * (kStackerRows + 1) / 2;
 // A held line scores the maximum less kStackerLossCost per block lost past the ones
-// every board loses — each opening intruder's, and the ones each of their walls' first
-// lock calls (Stacker::freeLosses) — but never below kStackerHeldFloor. A breached board
+// every board loses. Each opening intruder's, and the ones each of their walls' first
+// lock calls (Stacker::freeLosses), but never below kStackerHeldFloor. A breached board
 // scores what it built, kept under that floor, so holding the line always outscores
 // losing it.
 constexpr int kStackerLossCost = kStackerMaxScore / 18;
@@ -204,8 +204,8 @@ class Stacker {
     }
 
     // What the board is WORTH so far: every block is worth its level, level 1 being the
-    // floor. So height is paid for twice over — once by reaching a row at all, and again
-    // by how many blocks reached it — without the model knowing what the number buys.
+    // floor. So height is paid for twice over (once by reaching a row at all, and again
+    // by how many blocks reached it) without the model knowing what the number buys.
     // A held line is scored on what holding it cost instead (kStackerLossCost).
     int score() const {
         if (state_ == State::Won) {
@@ -293,7 +293,7 @@ class Stacker {
     }
 
     // NOT named `bit`: Arduino.h defines a `bit(b)` macro, so that name compiles on the
-    // host and is rewritten out from under this class on the device — a break only the
+    // host and is rewritten out from under this class on the device. A break only the
     // S3 gate would ever see.
     static constexpr uint8_t colBit(int c) { return static_cast<uint8_t>(1u << c); }
     static int popcount(uint8_t v) {

@@ -1,19 +1,19 @@
-// tar_reader.h — read one entry header out of an uncompressed tar stream.
+// tar_reader.h: read one entry header out of an uncompressed tar stream.
 //
-// PURE + HOST-TESTABLE, like update_manifest.h — no filesystem. Hand it a
+// PURE + HOST-TESTABLE, like update_manifest.h: no filesystem. Hand it a
 // 512-byte block and it tells you what the next entry is; creating directories
 // and writing bytes is the device tier's job (platform/esp32/net_update.h).
 //
 // WHY TAR. The web 'Pedia bundle is ~50 small files, so it has to travel as one
 // artifact, and uncompressed tar is the only container a device can unpack with no
-// decompressor at all — the whole reader is a fixed-offset header parse.
+// decompressor at all: the whole reader is a fixed-offset header parse.
 //
 // THE PART THAT MATTERS IS parseTarHeader's PATH CHECK. An archive names its own
 // destinations, so an entry called "../../boot/whatever" would let a bad (or
 // merely corrupt) bundle write anywhere the device can reach. Every name is
 // therefore validated against escaping the extraction root BEFORE the caller ever
 // opens a file, and an entry that fails is rejected outright rather than
-// sanitised — a name we had to rewrite is not a name we understood.
+// sanitised: a name we had to rewrite is not a name we understood.
 #pragma once
 
 #include <cstddef>
@@ -28,7 +28,7 @@ enum class TarEntryKind : uint8_t {
     End,       // the all-zero block that terminates the archive
     File,      // regular file; `size` bytes of data follow, padded to kTarBlock
     Directory, // create it; no data follows
-    Skip,      // something this reader doesn't handle — jump `size` and continue
+    Skip,      // something this reader doesn't handle: jump `size` and continue
     Invalid,   // not a tar header, or a name that tries to escape the root
 };
 

@@ -1,4 +1,4 @@
-// game_sound.cpp — the SOUND/VOLUME preferences and Game::playSound.
+// game_sound.cpp: the SOUND/VOLUME preferences and Game::playSound.
 #include "core/app/game.h"
 
 #include "tunables.h"

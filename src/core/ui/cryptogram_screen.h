@@ -1,4 +1,4 @@
-// cryptogram_screen.h — THE DECRYPTOGRAM, the quote board.
+// cryptogram_screen.h: THE DECRYPTOGRAM, the quote board.
 //
 // One screen for the whole game: the struck-out quote, the letter pool under it, and
 // the verdict. Everything the player needs is on it at once, because the deduction is
@@ -14,8 +14,8 @@ namespace mal {
 
 class Framebuffer;
 
-// The board. `attribution` is drawn only once the quote is solved — it is the reward
-// for finishing, never something to guess at — so it may be anything before then and
+// The board. `attribution` is drawn only once the quote is solved (it is the reward
+// for finishing, never something to guess at), so it may be anything before then and
 // the screen will not have shown it.
 //
 struct CryptogramView {

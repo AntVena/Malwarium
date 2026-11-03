@@ -1,29 +1,29 @@
-// version.h — firmware identity: what this build calls itself, and the number
+// version.h (firmware identity): what this build calls itself, and the number
 // an update check compares against.
 //
 // One source of truth: the three MAJOR/MINOR/PATCH numbers below. Both public
 // constants derive from them, so the string and the number can never disagree.
 //
-//   kFirmwareVersion     — the human string ("v0.1.0"), drawn on the CFG
+//   kFirmwareVersion:     the human string ("v0.1.0"), drawn on the CFG
 //                          System Info FW row (drawSysInfo, cfg_screen.cpp).
-//   kFirmwareVersionCode — a monotonic integer (v0.1.0 -> 1000). An update is
+//   kFirmwareVersionCode: a monotonic integer (v0.1.0 -> 1000). An update is
 //                          offered only when a published build's code is
-//                          strictly greater than this one, so this — not the
-//                          string — is what actually gates an OTA.
+//                          strictly greater than this one, so this (not the
+//                          string) is what actually gates an OTA.
 //
 // WHICH NUMBER A RELEASE MOVES. This is the one place the rule is written; the bump
 // tooling (tools/serve_updates.sh) and the web bundle (web/VERSION) defer to it.
 //
-//   MAJOR — a release of the device itself. Moved by a deliberate call, never as the
+//   MAJOR: a release of the device itself. Moved by a deliberate call, never as the
 //           next step of a run of features.
-//   MINOR — the player can do something they could not before: a new screen, mode,
+//   MINOR. The player can do something they could not before: a new screen, mode,
 //           activity or system. Or the SAVE FORMAT changed (save.h kSaveVersion),
 //           because that is the one change a rollback cannot simply undo.
-//   PATCH — everything else, which is nearly everything: new content inside a system
+//   PATCH. Everything else, which is nearly everything: new content inside a system
 //           that already exists (wilds, bosses, art, items, moves, chapters),
 //           balance and tuning, wording and UI polish, and bug fixes.
 //
-// Every release gets a note, so "worth a note" is not the test — the test is whether
+// Every release gets a note, so "worth a note" is not the test: the test is whether
 // a player has something new to DO.
 //
 // A release build overrides the numbers from the build system instead of
@@ -39,7 +39,7 @@
 //
 // THE CODE is MAJOR * 1000000 + MINOR * 1000 + PATCH (packVersion), so MINOR and PATCH
 // each get three digits (0..999). Over-running either is a compile error rather than a
-// silent carry into the field above it — a device would decline the update it was just
+// silent carry into the field above it: a device would decline the update it was just
 // handed. MINOR was two digits until it filled at 0.99; for every 0.x version the two
 // packings give the same code, so widening it changed no number already in the field.
 #pragma once
@@ -72,7 +72,7 @@ static_assert(FW_VERSION_MINOR >= 0 && FW_VERSION_MINOR < 1000,
 static_assert(FW_VERSION_PATCH >= 0 && FW_VERSION_PATCH < 1000,
               "FW_VERSION_PATCH must fit three digits (0..999) — bump MINOR instead");
 
-// The packing every version code uses — this firmware's, a manifest's, the web bundle's
+// The packing every version code uses: this firmware's, a manifest's, the web bundle's
 // (the Makefile's `manifest` and tools/serve_updates.sh repeat it in shell).
 constexpr uint32_t packVersion(uint32_t major, uint32_t minor, uint32_t patch) {
     return major * 1000000u + minor * 1000u + patch;

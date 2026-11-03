@@ -1,10 +1,10 @@
-// test_main.cpp — the native gate ROSTER and the two harnesses that run it.
+// test_main.cpp: the native gate ROSTER and the two harnesses that run it.
 //
 // The gate bodies live in test_<subject>.cpp beside this file; this one holds the
 // single list of what runs. MAL_RUN_ALL_GATES is expanded three times: once to
-// declare every gate, and once by each harness to call them —
-//   * ctest (CMake `mal_tests`)  — the counting CHECK + the hand-rolled main().
-//   * `pio test -e native`       — PlatformIO's runner, on the Unity C test framework
+// declare every gate, and once by each harness to call them;
+//   * ctest (CMake `mal_tests`):  the counting CHECK + the hand-rolled main().
+//   * `pio test -e native`:       PlatformIO's runner, on the Unity C test framework
 //                                  it bundles (not the game engine): CHECK maps to a
 //                                  Unity assertion and each gate is a RUN_TEST
 //                                  (PlatformIO defines PIO_UNIT_TESTING for test builds).
@@ -16,11 +16,11 @@
 int g_failures = 0;
 #endif
 
-// The gate roster — listed once, expanded by whichever harness compiles the
+// The gate roster: listed once, expanded by whichever harness compiles the
 // file. RUN(fn) is supplied per harness (a plain call for ctest, RUN_TEST for
 // pio test). Keep this in milestone order; add new gates here, not in main().
 #define MAL_RUN_ALL_GATES(RUN)              \
-    /* T0–T2 — pipeline + idle + STAT */    \
+    /* T0–T2: pipeline + idle + STAT */    \
     RUN(test_sprite_roundtrip)              \
     RUN(test_asset_lookup_resolves_every_name) \
     RUN(test_oversized_cell_holds_a_row_stack) \
@@ -140,7 +140,7 @@ int g_failures = 0;
     RUN(test_hatch_opens_the_decryption_board) \
     RUN(test_hatch_briefing_opens_once_per_line) \
     RUN(test_hatch_briefing_skips_and_stays_off_the_arcade) \
-    /* DISK DECRYPTION — the Ransomware line's board */ \
+    /* DISK DECRYPTION: the Ransomware line's board */ \
     RUN(test_decryption_three_locks_play_a_row) \
     RUN(test_decryption_counts_exact_and_elsewhere) \
     RUN(test_decryption_scores_the_attempts_it_saved) \
@@ -161,7 +161,7 @@ int g_failures = 0;
     RUN(test_egg_exploit_chord_hatches)     \
     RUN(test_egg_cannot_explore)            \
     RUN(test_evolve_remaining_readout)      \
-    /* Task 1 — dev reset shortcut */       \
+    /* Task 1: dev reset shortcut */       \
     RUN(test_reset_to_hatch)                \
     /* Evolution boundary stub */           \
     RUN(test_evolution_boot_to_process)     \
@@ -413,7 +413,7 @@ int g_failures = 0;
     RUN(test_expl_beaten_is_not_done_until_learned_out) \
     RUN(test_expl_nested_list_nav)                \
     RUN(test_expl_categories_are_the_top_level)   \
-    /* The STORY — what the walk stops to say */  \
+    /* The STORY: what the walk stops to say */  \
     RUN(test_story_chapters_fit_their_page)       \
     RUN(test_story_arrival_fires_once_and_hands_back) \
     RUN(test_story_panel_turns_on_its_own_clock)  \
@@ -438,7 +438,7 @@ int g_failures = 0;
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
     RUN(test_wifi_discovery_kind)                 \
-    /* THE SHIBOLEET — the Cant, the guardian, the riddle pool */ \
+    /* THE SHIBOLEET: the Cant, the guardian, the riddle pool */ \
     RUN(test_cant_reveal_order_is_the_whole_alphabet) \
     RUN(test_cant_cipher_is_width_preserving)     \
     RUN(test_cant_sigils_read_plain_and_nothing_else_does) \
@@ -459,7 +459,7 @@ int g_failures = 0;
     RUN(test_the_bracketing_screens_auto_play_out) \
     RUN(test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned) \
     RUN(test_cant_persists_across_a_reboot)       \
-    /* FX_SWARM — the guardian's body, as boids */ \
+    /* FX_SWARM: the guardian's body, as boids */ \
     RUN(test_flock_never_leaves_its_cell)         \
     RUN(test_flock_holds_together_without_collapsing) \
     RUN(test_flock_moods_read_as_different_shapes) \
@@ -506,7 +506,7 @@ int g_failures = 0;
     RUN(test_rival_prize_mask_matches_the_drop_filter) \
     RUN(test_combat_kit_row_fits_the_panel)       \
     RUN(test_combat_kit_page_holds_the_widest_boss) \
-    /*Backlog / — shop explore events + the two shop consumables */ \
+    /*Backlog /: shop explore events + the two shop consumables */ \
     RUN(test_shop_event_buy_decrements)           \
     RUN(test_shop_buy_gated_when_broke)           \
     RUN(test_shop_sold_out_after_stock)           \
@@ -533,7 +533,7 @@ int g_failures = 0;
     RUN(test_null_noodles_effects)                \
     RUN(test_null_noodles_happy_pull_from_below)  \
     RUN(test_r007_b33r_effects)                   \
-    /* Hacker Rank — the XP model, and device-scan dedup */ \
+    /* Hacker Rank: the XP model, and device-scan dedup */ \
     RUN(test_hacker_rank_xp_model)                \
     RUN(test_register_network_queue_dedup)         \
     RUN(test_peer_hello_round_trip)               \
@@ -562,7 +562,7 @@ int g_failures = 0;
     RUN(test_combat_stage_size_is_intrinsic) \
     RUN(test_combat_strike_mark_travels_toward_its_target) \
     RUN(test_combat_windup_reads_apart_from_impact) \
-    /* Engine-drawn backdrops — the places, and the ground they compose against */ \
+    /* Engine-drawn backdrops: the places, and the ground they compose against */ \
     RUN(test_scene_composes_at_both_floors) \
     RUN(test_scene_keeps_ink_legible) \
     RUN(test_scene_tint_refuses_interface_colours) \
@@ -575,7 +575,7 @@ int g_failures = 0;
     RUN(test_background_pick_survives_a_reboot) \
     RUN(test_background_absent_from_an_older_save_reads_as_auto) \
     RUN(test_background_rows_are_well_formed) \
-    /* ROCK THE DOCK — the operator bracket in The Pirate Bayou */ \
+    /* ROCK THE DOCK: the operator bracket in The Pirate Bayou */ \
     RUN(test_tourney_handles_fit_an_operator_tag) \
     RUN(test_tourney_entrants_are_derived_from_the_seed) \
     RUN(test_tourney_entrants_are_legal_petware) \
@@ -650,7 +650,7 @@ int g_failures = 0;
     RUN(test_register_handshake_rotates_at_cap)   \
     RUN(test_audit_ledgers_persist_no_recredit)   \
     RUN(test_save_v7_ledger_roundtrip)            \
-    /*pcap-blowup fix — filename-by-network + discovery rewards */ \
+    /*pcap-blowup fix: filename-by-network + discovery rewards */ \
     RUN(test_pcap_naming_sanitizes_and_falls_back_to_bssid) \
     RUN(test_handshake_already_captured_query)    \
     RUN(test_network_discovery_reward_fires_once_per_network) \
@@ -784,7 +784,7 @@ int g_failures = 0;
     RUN(test_battery_level_bands)               \
     RUN(test_battery_percent_smoothing)         \
     RUN(test_firmware_version_ordering)         \
-    /*Web 'Pedia slice — HackerTag rename + the state JSON builder */ \
+    /*Web 'Pedia slice: HackerTag rename + the state JSON builder */ \
     RUN(test_set_hacker_tag_validates)            \
     RUN(test_pedia_state_json_shape)              \
     RUN(test_pedia_state_publishes_the_pets_learnable_kit) \
@@ -858,7 +858,7 @@ int g_failures = 0;
     RUN(test_fragger_cadence_follows_the_score) \
     RUN(test_stacker_stopping_early_banks_the_board) \
     RUN(test_stacker_wins_ladder_sweeps_and_persists) \
-    /* GAMES — the arcade: the till, the dial, and the stakes it must not touch */ \
+    /* GAMES. The arcade: the till, the dial, and the stakes it must not touch */ \
     RUN(test_arcade_pays_the_attempt)             \
     RUN(test_arcade_perfect_board_pays_the_bonus) \
     RUN(test_arcade_stacker_leaves_the_disk_alone) \
@@ -868,7 +868,7 @@ int g_failures = 0;
     RUN(test_arcade_ladders_split_plays_wins_losses) \
     RUN(test_stack_overflow_fires_on_the_second_row) \
     RUN(test_arcade_tallies_persist)              \
-    /* THE DECRYPTOGRAM — the quote board, its pool's fit, and both doors in */ \
+    /* THE DECRYPTOGRAM: the quote board, its pool's fit, and both doors in */ \
     RUN(test_cryptogram_quotes_fit_the_panel)     \
     RUN(test_cryptogram_opens_at_least_three_letters) \
     RUN(test_cryptogram_difficulty_opens_more)    \
@@ -887,7 +887,7 @@ int g_failures = 0;
     RUN(test_cryptogram_arcade_cabinet_waits_for_eight_wins) \
     RUN(test_cryptogram_arcade_replays_a_solved_quote_for_bits) \
     RUN(test_cryptogram_grayscale)                \
-    /* Isolation Protocol — the Worm egg's hatch minigame + its line gate */ \
+    /* Isolation Protocol: the Worm egg's hatch minigame + its line gate */ \
     RUN(test_isolation_opens_on_the_middle_row)   \
     RUN(test_isolation_step_moves_without_growing) \
     RUN(test_isolation_double_turn_is_one_quarter) \
@@ -899,7 +899,7 @@ int g_failures = 0;
     RUN(test_isolation_steps_on_its_own_cadence)  \
     RUN(test_isolation_crash_banks_a_minute_per_byte) \
     RUN(test_isolation_clean_run_hatches_and_unlocks) \
-    /* CHROMATOPHORE: the Metamorphic egg's hatch board — the rules, the screen, the \
+    /* CHROMATOPHORE: the Metamorphic egg's hatch board. The rules, the screen, the \
        colour source it is built on, and the egg-locomotion rule its jellyfish egg is \
        the reason for (test_chroma.cpp). */ \
     RUN(test_chroma_opens_on_a_change)            \
@@ -963,7 +963,7 @@ int g_failures = 0;
     RUN(test_every_area_fields_a_resolving_pair) \
     RUN(test_every_combatant_sprite_resolves)
 
-// Every gate's declaration, derived from the roster itself — so a listed gate can
+// Every gate's declaration, derived from the roster itself, so a listed gate can
 // never be missing one, and a roster entry that names nothing fails to LINK rather
 // than quietly running one gate fewer.
 #define MAL_DECLARE_GATE(fn) void fn();

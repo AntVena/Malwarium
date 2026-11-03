@@ -1,27 +1,27 @@
-// The Metamorphic family — the line that has not decided what it is.
+// The Metamorphic family: the line that has not decided what it is.
 //
 // Every other family converges on a plan: Ransomware toward a wall or a bill, Phishing
 // toward a bubble it spends, Trojan toward a hijack, Worm toward a board. This one
-// refuses to, and its whole design follows from that refusal — its slots roll out of a
+// refuses to, and its whole design follows from that refusal: its slots roll out of a
 // pool far wider than a kit, so it fields whatever comes to hand, and it pays for having
 // no plan by acting more often than anything it faces. The identity mechanic, the
 // Polymorph passive and the picker LOCK that lets an operator mutate toward a strategy
 // are specified in ../../LINE_MOVE_IDENTITIES.md.
 //
 // Registered in creature_lines.h with NO passive flag: Polymorph gates on combat state
-// this line's own rows populate — a slot holding a wildcard move — the way Perfect Bite
+// this line's own rows populate (a slot holding a wildcard move) the way Perfect Bite
 // gates on a live bubble rather than on an id, so the turn engine never learns the name.
 //
 // The roster's two-mod invariant is met the way every line meets it (test_combat.cpp walks
 // kCreatureLines to enforce it): Junk Padding is the soft affinity in the Bayou band, and
 // Mutation Engine is the hard-gated amplifier at the bottom of the dive. The amplifier
-// pays on a DIFFERENT axis than the passive beside it — distinct effect KINDS landed
-// rather than distinct moves cast — so a run of plain swings ramps the pet and pays the
+// pays on a DIFFERENT axis than the passive beside it (distinct effect KINDS landed
+// rather than distinct moves cast), so a run of plain swings ramps the pet and pays the
 // mod nothing.
 //
 // Slot typing runs Attack/Defend alternating rather than leaning one way. The line has to
-// be able to field a metamorphic row of EITHER kind — a wild Attack row and a wild Defend
-// row draw from different pools and are the line's two halves — so a kit that could only
+// be able to field a metamorphic row of EITHER kind (a wild Attack row and a wild Defend
+// row draw from different pools and are the line's two halves), so a kit that could only
 // hold one of them would only ever play half of it. The Daemon branch then splits slot 3
 // the way every branch does: Good takes the Defend, Bad takes the Attack.
 #pragma once
@@ -59,15 +59,15 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // shape, so the shape is what changes between contexts rather than a pose over one
      // drawing. Row 0 hovers and takes every settled moment. Row 1 is the stretched
      // travelling torpedo and plays only while the wander is actually travelling. Row 2
-     // is the flamboyant threat display — papillae up, violet flushed — and row 3 is the
+     // is the flamboyant threat display (papillae up, violet flushed), and row 3 is the
      // blanched flinch.
      //
      // BOTH ATTACK FRAMES ARE A COMPLETE STRIKE, and that is a requirement rather than a
      // style. frameAt() indexes off the global anim beat and nothing restarts a clip when
      // a swing begins, so a swing's kAttackHopPeriod window (ui/combat_screen.cpp) can
      // open on either column and end on either. A windup-then-strike pair would show its
-     // windup last as often as first. So the two frames differ in DETAIL — which arm is
-     // forward, where the bands sit — never in phase, and holdBeats=2 walks the pair
+     // windup last as often as first. So the two frames differ in DETAIL (which arm is
+     // forward, where the bands sit), never in phase, and holdBeats=2 walks the pair
      // across the window exactly once.
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
                 {"walk", /*row=*/1, /*frames=*/1},
@@ -91,17 +91,17 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      "Behavioural mimicry / signature synchronisation",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
-     // Three rows of eight 78x64 cells — the widest cell on the line, because the frame
+     // Three rows of eight 78x64 cells: the widest cell on the line, because the frame
      // is sized to the creature rather than the creature trimmed to a frame, and the
      // walk row below spreads the arm skirt to 74 across. Its sibling's
      // constraint applies here too: 64 is the Daemon box's ceiling, so the head cannot
-     // rise and the idle lives below it — the arm tips curling and uncurling, the two
+     // rise and the idle lives below it. The arm tips curling and uncurling, the two
      // raised shoulder arms swaying in and back out, and a pulse travelling along the
      // disguise lights.
      //
      // WHAT THE ROW IS ACTUALLY HOLDING STILL IS THE FACE. This creature's whole claim
      // is that it holds a convincing surface, and a surface that re-resolves its own
-     // eyes every column stops being one — so the eye box occupies identical
+     // eyes every column stops being one, so the eye box occupies identical
      // coordinates in all eight cells and only its LIT AREA breathes, which reads as a
      // slow narrowing rather than as a face being redrawn. The bead collar and the
      // swept-back horn arms beside it are pinned for the same reason: the face is where
@@ -115,14 +115,14 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // ROW 1 IS A TORQUE, AND THE TORQUE IS WHAT MAKES IT LEGAL. 64 is the Daemon box's
      // ceiling and the drawing already reaches it, so a strike that gains reach has
      // nowhere to go; what the row spends instead is the pair of small arms rising off
-     // the torso, slashing forward as the body twists — one leading as the twist goes
+     // the torso, slashing forward as the body twists: one leading as the twist goes
      // one way, the other as it comes back. The mantle surges about 2 logical px with
      // it, which is why two of the four columns carry the crest flush to the cell's top
      // row rather than at the drawing's usual 2px inset.
      //
      // A twist is CYCLIC where a swing is PHASED, and that is the whole reason to draw
      // the attack this way. frameAt() indexes off the global beat and nothing restarts a
-     // clip when a swing begins, so the window can open on any column — a row drawn as
+     // clip when a swing begins, so the window can open on any column: a row drawn as
      // wind-up-then-strike shows its wind-up last as often as first. A row where every
      // column is mid-twist has no wind-up to show: each one already has an arm swung
      // out, and they differ in WHICH arm and how far, never in how ready the creature
@@ -136,7 +136,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      //
      // ROW 2 IS A WALK FOR A CREATURE WITH NO LEGS. What steps is the arm skirt: it
      // gathers under the body, spreads wide as the weight goes onto the outer arms, and
-     // comes back — so the cycle reads across the SILHOUETTE's width rather than up and
+     // comes back, so the cycle reads across the SILHOUETTE's width rather than up and
      // down a pair of limbs. The four columns sample that loop evenly, and holdBeats=1
      // walks them at the beat the habitat moves the anchor on, so the spread and the
      // drift are one motion.
@@ -148,7 +148,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // drawn crown goes back at an offset measured from the eye box IN each frame, in a
      // column narrow enough that an arm raised across the head is not taken off with the
      // stalk (assets/ASSET_MANIFEST.md §C). The eyes are stamped back for the same
-     // reason the sibling below stamps its own — a snap to the line's hexes loses them.
+     // reason the sibling below stamps its own: a snap to the line's hexes loses them.
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
                 {"attack", /*row=*/1, /*frames=*/4, /*holdBeats=*/1},
                 {"walk", /*row=*/2, /*frames=*/4, /*holdBeats=*/1}}},
@@ -161,8 +161,8 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
      // Four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch. The
      // Daemon cell is 64 TALL, which is the box's ceiling, so the standing pose has no
-     // room to rise and falls: the crown is pinned and the whole idle lives in the arms —
-     // the chest curtain swaying and the side arms breathing. The cell is 72 WIDE rather
+     // room to rise and falls: the crown is pinned and the whole idle lives in the arms.
+     // The chest curtain swaying and the side arms breathing. The cell is 72 WIDE rather
      // than 64 only because row 2 reaches; the standing pose is 57 across and an arm
      // thrown clear of the body is 65, and a limb that stopped on the cell edge would
      // read as a blitter fault rather than as a crop. gen_assets cuts the sheet at all
@@ -170,8 +170,8 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // (56 divides neither) and reaches the rows below the first because ROW_H_OVERRIDES
      // names the 64 a Daemon row is measured in rather than the 48 a pet row defaults to.
      //
-     // EVERY ROW STANDS ON ONE SPOT. Each frame is seated by its FEET — their centre and
-     // the floor row — rather than by its drawing's bounding box, because a clip swap is
+     // EVERY ROW STANDS ON ONE SPOT. Each frame is seated by its FEET (their centre and
+     // the floor row), rather than by its drawing's bounding box, because a clip swap is
      // not a move: the habitat changes rows the beat a wander starts travelling and the
      // fight changes them mid-swing, and a body that jumped sideways on the swap would
      // read as a teleport rather than as the same creature doing something else.
@@ -180,8 +180,8 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // lifted 2px on the even beats (IdleWander::bobs, core/model/idle_wander.h) and
      // frameAt() indexes off that same beat, so at holdBeats=1 the parity is fixed:
      // columns 0 and 2 always land on the lifted beat, 1 and 3 always on the flat one.
-     // The even columns are therefore the PASS — one foot swung clear, the standing leg
-     // at full extension to the cell floor — and the odd ones the CONTACT, both feet
+     // The even columns are therefore the PASS (one foot swung clear, the standing leg
+     // at full extension to the cell floor), and the odd ones the CONTACT, both feet
      // down and both legs drawn ONE row shorter, which is the row count that most
      // nearly cancels the lift: the bob is 2 px of the panel while a cell row is 1.75 of
      // them (kScaleNum/kScaleDen, core/render/canvas.h), so one row spends 1.75 against
@@ -189,11 +189,11 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // lands. What is left of the bob after that lands on the head: up as a leg swings,
      // down as the weight settles, instead of the whole creature hovering off the shelf
      // twice a second the way row 0 does. That is also why the cycle is FOUR columns and
-     // not five — an odd count would walk the phases off the parity and hand the standing
+     // not five: an odd count would walk the phases off the parity and hand the standing
      // foot to the beat the whole creature is already rising on.
      //
      // The step is front-on because the sheet has no facing (gen_assets' FACING table)
-     // and so is never mirrored — the legs alternate in place rather than reaching in a
+     // and so is never mirrored: the legs alternate in place rather than reaching in a
      // direction, and the reach the gait would have spent goes into the 1px rock toward
      // whichever leg is standing. That rock carries the face rather than redrawing it,
      // which is the one thing this line's signature region cannot survive
@@ -201,7 +201,7 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      //
      // ROW 2 IS THE POSE COMING APART, which is this creature's whole flavour line: the
      // arms that were folded into a person leave the body and lash. Every column is a
-     // COMPLETE strike, and that is a requirement rather than a preference — frameAt()
+     // COMPLETE strike, and that is a requirement rather than a preference: frameAt()
      // indexes off the global beat and nothing restarts a clip when a swing begins, so
      // the kAttackHopPeriod window (core/ui/combat_screen.cpp) can open on any column,
      // and a column drawn as wind-up would show the wind-up last as often as first. So
@@ -213,8 +213,8 @@ inline constexpr CreatureDef kMetamorphicCreatures[] = {
      // IS the ceiling, full reach and the ceiling are the same row.
      //
      // ROW 3 IS THE BLOW ARRIVING, and it is composed out of row 0 rather than drawn
-     // again: the mass is shoved off its stand — full displacement at the crown, none at
-     // the hem, so the feet hold the spot the seating rule above pins them to — and the
+     // again: the mass is shoved off its stand (full displacement at the crown, none at
+     // the hem, so the feet hold the spot the seating rule above pins them to), and the
      // eyes narrow to slits. It keeps the accent while doing it, which is the point of
      // narrowing them rather than shutting them: the eyes are the smallest bright thing
      // on the sheet and the first thing any pass over the pixels loses (a snap to the

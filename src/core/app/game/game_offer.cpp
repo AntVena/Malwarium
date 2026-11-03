@@ -12,14 +12,14 @@
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
 
-// game_offer.cpp — the ITEM OFFER: a rare-moment item, put in front of the player at
+// game_offer.cpp (the ITEM OFFER): a rare-moment item, put in front of the player at
 // the moment it matters.
 //
 // Some items do nothing for days and then matter for one press: the bells and
 // Deep-Learning devices only at the top of a DeepWeb Dive, the Boot Accelerator only
 // while an egg incubates. Left in the bag they are forgotten at exactly that press, so
 // the game asks instead. What is offered is decided by the item's own row (its effect
-// kinds, its Use) and by itemUsable, the same gate the ITEMS screen uses — so an item
+// kinds, its Use) and by itemUsable, the same gate the ITEMS screen uses, so an item
 // that would be refused there (a shallower bell over a deeper one, an accelerator on a
 // shell that is already cracking) is never offered here either.
 
@@ -73,7 +73,7 @@ void Game::offerThenDive() {
 
 void Game::autoUseDiveGear() {
     // The deepest start a held bell would give (a Checkpoint's is this pet's record),
-    // and the strongest depth multiplier a held device would arm — one of each, which is
+    // and the strongest depth multiplier a held device would arm: one of each, which is
     // everything a dive can use. offerItems has already dropped anything that would be
     // refused, such as a bell shallower than the start already armed.
     offerFor_ = OfferFor::Dive;
@@ -179,8 +179,8 @@ void Game::drawItemOfferScreen(Framebuffer& fb) const {
         drawText(fb, 24, y, label, palColor(r == cursor ? Pal::INK : Pal::INK_DIM));
     }
 
-    // The focused item's own description — the row says what it is, this says what it
-    // does — under a rule, down to the hint band.
+    // The focused item's own description (the row says what it is, this says what it
+    // does) under a rule, down to the hint band.
     const int descTop = kTop + kMaxRows * kPitch + 6;
     if (cursor < static_cast<int>(items.size())) {
         const EffectText t = effectText(*items[cursor]);

@@ -8,13 +8,13 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 
-// game_isolation.cpp — the Isolation Protocol, the Worm line's hatch minigame.
+// game_isolation.cpp: the Isolation Protocol, the Worm line's hatch minigame.
 //
 // A Vermicell egg is laid and the worm inside it is turned straight loose in a
 // quarantine buffer: it never stops moving, A steers it left, C steers it right, and
 // every byte it swallows is kIsolationDotMs off the incubation clock. Crash into a wall
 // or into its own body and the run banks what it earned; swallow the whole clock and the
-// protocol finished CLEAN — the egg hatches out of the minigame and WORM_WHISPERER
+// protocol finished CLEAN: the egg hatches out of the minigame and WORM_WHISPERER
 // fires. A bad run costs only the bonus, never the pet, which is the same deal the
 // Clutch Pick and the defrag Stacker both offer.
 //
@@ -67,12 +67,12 @@ void Game::onIsolation(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
     if (!isolation_.running()) {
         // Parked on the result. B banks and leaves; C is DISABLED, like every other
-        // hatch screen — there is no pet to go back to, only an egg to get on with.
+        // hatch screen: there is no pet to go back to, only an egg to get on with.
         if (ev.button == Button::B) finishIsolation();
         return;
     }
-    // A and C STEER — the OUTER two buttons, so the hand maps left to left and right to
-    // right — which is the deviation from the standard A/B/C contract this screen spells
+    // A and C STEER (the OUTER two buttons, so the hand maps left to left and right to
+    // right), which is the deviation from the standard A/B/C contract this screen spells
     // out in its hint band. B is inert while the run is live: a run ends by crashing or
     // by finishing, and quitting out of one would be a third way with nothing to say
     // about it. B comes back as CONTINUE on the verdict above.
@@ -84,7 +84,7 @@ void Game::onIsolation(const ButtonEvent& ev) {
 void Game::finishIsolation() {
     // An arcade run has no clock to spend the bytes on, and no achievement riding on a
     // clean one: the till takes the score and that is the whole settlement. The cabinet
-    // run is ENDLESS, so `clean` is only the freak run that filled the whole buffer — a
+    // run is ENDLESS, so `clean` is only the freak run that filled the whole buffer: a
     // win is passing the till's own line (kArcadeIsolationWinBytes), which the score is
     // free to go well past.
     if (arcadeRun_) {
@@ -103,7 +103,7 @@ void Game::finishIsolation() {
     // the run that ate the entire clock, not the one that ran out of buffer first.
     if (isolation_.clean()) unlockAchievement(ach::kWormWhisperer);
     if (bootHatchRemainMs_ == 0) {
-        completeHatch();   // nothing left to incubate — hatch here, not a tick later
+        completeHatch();   // nothing left to incubate: hatch here, not a tick later
         return;
     }
     nav_ = Nav::Idle;
@@ -121,7 +121,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
     drawText(fb, (kActiveW - textWidth(title)) / 2, kTitleY, title, palColor(Pal::INK));
 
     // The buffer wall, drawn as a frame OUTSIDE the play area so a cell touching it is
-    // still a whole cell — the wall is lethal, so where it starts has to be exact.
+    // still a whole cell: the wall is lethal, so where it starts has to be exact.
     const Rgb565 ink = palColor(Pal::INK);
     fb.fillRect(kBoardX - kWall, kBoardY - kWall, kBoardW + 2 * kWall, kWall, ink);
     fb.fillRect(kBoardX - kWall, kBoardY + kBoardH, kBoardW + 2 * kWall, kWall, ink);
@@ -130,7 +130,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
 
     // The loose byte: a HOLLOW square, against the worm's solid ones. Solid-vs-hollow is
     // the one difference that holds at any brightness, which matters more here than
-    // anywhere else on the screen — the byte is the only thing the player is aiming at.
+    // anywhere else on the screen: the byte is the only thing the player is aiming at.
     if (isolation_.running()) {
         const int bx = cellX(isolation_.dot()) + 2, by = cellY(isolation_.dot()) + 2;
         fb.fillRect(bx, by, 8, 2, ink);
@@ -142,7 +142,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
     // The worm, tail first so the head lands on top of its own neck. Body cells are
     // inset by a pixel, which leaves the seam between two segments visible and makes the
     // coil countable; the HEAD fills its cell edge to edge. That size difference is what
-    // carries the head in grayscale — the ACCENT on it only repeats what the shape
+    // carries the head in grayscale: the ACCENT on it only repeats what the shape
     // already says, and accent is this screen's focus, not a status.
     for (int i = isolation_.length() - 1; i > 0; --i)
         fb.fillRect(cellX(isolation_.segment(i)) + 1, cellY(isolation_.segment(i)) + 1,
@@ -155,7 +155,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
         const char* verdict = clean ? "BUFFER CLEAN" : "COLLISION - RUN ENDED";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, kVerdictY, verdict, ink);
 
-        // The effect line is priced in incubation, which an arcade run doesn't have —
+        // The effect line is priced in incubation, which an arcade run doesn't have:
         // there it reports the buffer itself and lets the payout screen do the money.
         char effect[28];
         if (arcadeRun_)
@@ -187,7 +187,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
     drawText(fb, (kActiveW - textWidth(status)) / 2, kEffectY, status, ink);
 
     // UI_HINT_BAND. A and C steer here instead of stepping and cancelling, so the band
-    // names the turn each one makes and sits them the way the buttons do — A on the
+    // names the turn each one makes and sits them the way the buttons do: A on the
     // left of the device turns left, C on the right turns right.
     const char* hint = "A LEFT   C RIGHT";
     drawText(fb, (kActiveW - textWidth(hint)) / 2, kHintY, hint, palColor(Pal::INK_DIM));

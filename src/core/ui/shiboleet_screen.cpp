@@ -15,7 +15,7 @@ namespace mal {
 namespace {
 
 // The block reads as a script: the stage direction first, then what the guardian says,
-// then what it asks. Every one of these tops is FIXED rather than flowed — a shorter
+// then what it asks. Every one of these tops is FIXED rather than flowed: a shorter
 // riddle leaves air instead of sliding the choices up, which is what lets a player
 // answer without re-reading where the rows went between encounters.
 //
@@ -50,7 +50,7 @@ constexpr int kClockY = kStripY - 6;
 // The HAIL and the VERDICT share one shape, because they are the same beat twice: a
 // banner naming what is happening, the guardian ITSELF, then its gesture, its words, a
 // rule, and two plain lines saying what all that means to the pet. Fixed tops for the
-// same reason the riddle board's are — a player who has met a guardian before should find
+// same reason the riddle board's are: a player who has met a guardian before should find
 // every part of the next meeting where they left it.
 //
 // The body gets the top of the panel and the widest single band on it, which is the whole
@@ -82,7 +82,7 @@ void drawCantStrip(Framebuffer& fb, uint32_t sigils) {
         const int x = kStripX + i * kStripCellW;
         const bool known = (sigils & (1u << i)) != 0;
         if (known) {
-            // A learned sigil is drawn as its own letter on a filled cell — the letter
+            // A learned sigil is drawn as its own letter on a filled cell: the letter
             // IS the dual coding, so the strip reads at a glance in grayscale and reads
             // exactly as precisely in colour.
             fb.fillRect(x, kStripY, kStripCellW - 1, kStripH, palColor(Pal::ACCENT));
@@ -108,21 +108,21 @@ void drawShiboleet(Framebuffer& fb, const GuardianView& g, const RiddleView& r) 
                    palColor(Pal::ACCENT));
 
     // What the pet can SEE. The only plain-language thing on the screen, and drawn dim
-    // and unquoted so it never reads as speech — it is what the guardian is doing, not
+    // and unquoted so it never reads as speech: it is what the guardian is doing, not
     // what it is saying. Clipped rather than wrapped: the gate holds it to one line.
     if (g.demeanour && g.demeanour[0])
         drawTextMarquee(fb, kMargin, kDemeanourY, kRiddleBodyW, g.demeanour,
                         palColor(Pal::INK_DIM), /*beat=*/0, Overflow::Clip);
 
     // What it SAYS, then what it ASKS. Both in the Cant and both in INK, because to the
-    // pet they are one utterance — the greeting is not a friendlier register it could
+    // pet they are one utterance: the greeting is not a friendlier register it could
     // have chosen, it is the same language doing the same thing.
     if (r.greeting && r.greeting[0])
         drawTextWrapped(fb, kMargin, kGreetingY, kRiddleBodyW, r.greeting,
                         palColor(Pal::INK), kRiddleLineH, kGreetingLines);
 
     // The question, flowed. Enciphered upstream, so a letter the pet can read arrives
-    // here already reading — nothing on this screen distinguishes the two, which is
+    // here already reading. Nothing on this screen distinguishes the two, which is
     // exactly right: to the pet they are one sentence with holes in it.
     if (r.riddle && r.riddle[0])
         drawTextWrapped(fb, kMargin, kRiddleTop, kRiddleBodyW, r.riddle,
@@ -141,7 +141,7 @@ void drawShiboleet(Framebuffer& fb, const GuardianView& g, const RiddleView& r) 
                         /*beat=*/0, Overflow::Clip);
     }
 
-    // The patience bar. It empties rather than fills — what is draining is the time the
+    // The patience bar. It empties rather than fills: what is draining is the time the
     // guardian is willing to wait, and a bar that grew would read as progress.
     const float held = r.holdFrac < 0.0f ? 0.0f : (r.holdFrac > 1.0f ? 1.0f : r.holdFrac);
     const float left = 1.0f - held;
@@ -160,7 +160,7 @@ namespace {
 
 // The chrome both bracketing screens wear: the guardian's name over its sigil count, the
 // banner, the gesture, the speech, and the rule under them. Drawn once here so the hail
-// and the verdict cannot drift apart — they are the two halves of one conversation, and
+// and the verdict cannot drift apart: they are the two halves of one conversation, and
 // a player reading the second should recognise the first.
 //
 // `tone` colours the banner and the guardian's body alike: the body takes the verdict's
@@ -174,7 +174,7 @@ void drawMeetingChrome(Framebuffer& fb, const GuardianView& g, const char* banne
 
     drawCentered(fb, kMeetBannerY, banner, tone);
 
-    // THE GUARDIAN. Not a sprite and never going to be one — a flock of marks steering by
+    // THE GUARDIAN. Not a sprite and never going to be one: a flock of marks steering by
     // boids rules (core/render/swarm.h), so the thing across from the pet is visibly not
     // the same kind of thing the pet is. It is drawn before the words because it is what
     // the words are coming out of.
@@ -183,7 +183,7 @@ void drawMeetingChrome(Framebuffer& fb, const GuardianView& g, const char* banne
                   tone, palColor(Pal::INK_DIM));
 
     // What the pet can SEE, and the only plain-language thing above the rule. Dim and
-    // unquoted, so it never reads as speech — it is what the guardian is doing.
+    // unquoted, so it never reads as speech: it is what the guardian is doing.
     if (g.demeanour && g.demeanour[0])
         drawTextWrapped(fb, kMargin, kMeetSeenY, kRiddleBodyW, g.demeanour,
                         palColor(Pal::INK_DIM), kRiddleLineH, kMeetLines);
@@ -221,7 +221,7 @@ void drawShiboleetHail(Framebuffer& fb, const GuardianView& g, const char* greet
     drawMeetingChrome(fb, g, "IT SPEAKS THE CANT", palColor(Pal::ACCENT), greeting);
 
     // Below the rule: how much of that the pet can read, and what buying more costs. The
-    // count is the strip in words — the same fact in the screen's other channel — and the
+    // count is the strip in words (the same fact in the screen's other channel), and the
     // purse line is the only place the shake-for-a-sigil trade is ever explained.
     // Sized for the widest either line can format rather than for the values that
     // actually reach it: the purse is a device-lifetime count, and a buffer picked from
@@ -255,12 +255,12 @@ void drawShiboleetVerdict(Framebuffer& fb, const GuardianView& g, const VerdictV
                       v.speech);
 
     // Below the rule: what it cost or paid, then what that leaves the pet with. The
-    // ledger is the numbers and the flavor is the sentence — kept apart because a player
+    // ledger is the numbers and the flavor is the sentence: kept apart because a player
     // who only reads one of the two should still come away with the outcome.
     drawCentered(fb, kMeetNoteY, v.ledger, palColor(bad ? Pal::WARN : Pal::ACCENT));
     drawCentered(fb, kMeetNote2Y, v.flavor, palColor(Pal::INK));
 
-    // The strip last, because a sigil bought by this answer is lit in it — the payout and
+    // The strip last, because a sigil bought by this answer is lit in it: the payout and
     // the picture of the payout on the same screen.
     drawCantStrip(fb, g.sigils);
 

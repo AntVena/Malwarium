@@ -12,12 +12,12 @@ bool canBuildPvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
 
 void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
                       MoveLoadout& moves, Loadout& mods) {
-    // Equipping stores the id POINTER, so it must be the registry's stable copy — the
+    // Equipping stores the id POINTER, so it must be the registry's stable copy: the
     // spec's own char arrays live on a transient wire struct.
     for (int i = 0; i < kMaxMoveSlots; ++i) {
         if (!f.moveIds[i][0]) continue;
         // An id this build doesn't know leaves the slot empty, which makePlayerCombatant
-        // fills with the innate default — the same shape as an unequipped slot, so an
+        // fills with the innate default: the same shape as an unequipped slot, so an
         // unknown move costs a slot's worth of kit instead of desyncing the fight.
         if (const MoveDef* m = reg.move(f.moveIds[i])) {
             moves.grant(m->id);
@@ -49,7 +49,7 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
     const int statPoints[4] = {f.statPoints[0], f.statPoints[1], f.statPoints[2],
                                f.statPoints[3]};
     applyLevelStatPoints(c, statPoints);
-    // The level is carried for display only (the combat screen's "Lv" readout) — a duel
+    // The level is carried for display only (the combat screen's "Lv" readout): a duel
     // pays no XP, so nothing scales off it.
     c.level = f.level;
     c.hasLevel = true;

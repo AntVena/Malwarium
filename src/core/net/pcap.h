@@ -1,4 +1,4 @@
-// pcap.h — classic libpcap (pcap) file writer for the Audit capture slice.
+// pcap.h: classic libpcap (pcap) file writer for the Audit capture slice.
 //
 // PURE + HOST-TESTABLE. This knows nothing about the radio or SD: it turns
 // captured 802.11 frames into the on-disk libpcap byte stream (a 24-byte global
@@ -6,7 +6,7 @@
 // device tier drives it with real EAPOL frames from promiscuous mode and points
 // its sink at a file on SD; the native gates drive it with a memory sink and
 // assert the exact bytes. Byte order is little-endian (the classic "a1b2c3d4"
-// magic — a reader auto-detects endianness from it).
+// magic: a reader auto-detects endianness from it).
 //
 // AUTHORIZED USE / PASSIVE ONLY: the writer is a sink for frames the device
 // already heard; it neither transmits nor injects. The capture policy (when it is
