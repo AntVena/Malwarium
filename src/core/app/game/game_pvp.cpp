@@ -23,18 +23,18 @@
 //
 //   1. B on a LIVE peer sends an INVITE carrying this device's fighter spec.
 //   2. Their human presses B, which sends an ACCEPT carrying theirs. Consent is
-//      explicit and human, never automatic: an incoming challenge is only even
-//      considered while their LINK screen is open, and anything else replies BUSY.
+//      explicit: an incoming challenge is considered only while the LINK screen is
+//      open, and anywhere else the device replies BUSY.
 //   3. Whichever device has the lower radio MAC is the HOST (pvpHostIsLocal). It picks
 //      the seed and sends START. Both devices then build the same two fighters and step
 //      the same seeded Combat locally (core/model/pvp_battle.h), so the fight plays out
 //      on both screens at once with the same result and not one turn crosses the air.
 //
 // The host occupies Combat's player_ slot on BOTH devices, so the guest's own pet is
-// the enemy_ row: a display fact the combat screen relabels (CombatSides), never a
-// resolution difference. START also carries pvpCommitHash over the seed and both specs;
-// a guest that computes a different one refuses rather than playing a fight its
-// opponent isn't playing.
+// the enemy_ row: the combat screen relabels the sides (CombatSides) and the fight
+// resolves the same. START also carries pvpCommitHash over the seed and both specs; a
+// guest that computes a different one refuses rather than playing a fight its opponent
+// isn't playing.
 //
 // NO STAKES, AND THE WIRE FORMAT DEPENDS ON THAT. Nothing here is saved, no XP, Bits,
 // Fragmentation or care signal moves, and no Exploit is available mid-fight (the A+C
@@ -65,9 +65,9 @@ bool Game::buildPvpFighter(PvpFighter* out) const {
     std::strncpy(f.tag, hackerTag_, sizeof(f.tag) - 1);
     std::strncpy(f.creatureId, pet_->id, sizeof(f.creatureId) - 1);
 
-    // Equipped kit by id. Only the slots this pet's stage has actually UNLOCKED are
-    // offered: an equipped-but-locked move is inert in combat anyway, and sending it
-    // would invite the two devices to disagree about which slots count.
+    // Equipped kit by id. Only slots this pet's stage has unlocked are sent. A
+    // locked move is inert in combat, and sending it could make the two devices
+    // disagree about which slots count.
     const int slots = MoveLoadout::slotsForStage(pet_->stage);
     for (int i = 0; i < slots && i < kMaxMoveSlots; ++i)
         if (const char* id = moveLoadout_.equipped(i))
@@ -92,7 +92,7 @@ void Game::queuePvpFrame(const uint8_t* mac, const uint8_t* buf, size_t len) {
     if (!mac || !buf || len == 0 || len > kPvpFrameCap) return;
     // Full outbox: drop it. Every frame this state machine sends is repeated on
     // kPvpRetryMs and is idempotent at the receiver, so a drop costs one retry
-    // interval: cheaper than growing a queue for a three-frame protocol.
+    // interval, and a three-frame protocol needs no queue.
     if (pvpOutCount_ >= kPvpOutboxCap) return;
     PvpOut& o = pvpOutbox_[pvpOutCount_++];
     std::memcpy(o.mac, mac, 6);
@@ -126,7 +126,7 @@ void Game::sendPvpPending() {
             break;
         case PvpPhase::Arming:
         case PvpPhase::Fighting:
-            // Whoever ANSWERED the challenge owes the other device its fighter spec:
+            // The device that answered the challenge sends its fighter spec next:
             // the challenger already sent theirs inside the INVITE. Repeating it
             // alongside START is what lets a host that was also the target get both
             // frames across without a second handshake stage.
@@ -194,8 +194,8 @@ void Game::pvpTick() {
 
 bool Game::pvpChallenge(uint64_t key) {
     if (pvpPhase_ != PvpPhase::Idle) return false;
-    // No local MAC means no way to decide who hosts: the host build and any board that
-    // never handed one over simply can't duel. Inert, not broken.
+    // Without a local MAC there is no way to pick the host, so the host build and any
+    // board without one cannot duel. Inert, not broken.
     if (localRadioKey_ == 0 || key == 0 || key == localRadioKey_) return false;
     if (!buildPvpFighter(&pvpLocalFighter_)) {
         endPvpSession("NO PET TO FIGHT", /*notify=*/false);
@@ -241,8 +241,8 @@ void Game::pvpAcceptChallenge() {
     pvpRetries_ = 0;
     if (pvpHost_) {
         // We host: pick the seed and start immediately. sendPvpPending then carries our
-        // fighter AND the START across together, repeated until the retry budget runs
-        // out: the guest only needs one of them to land.
+        // fighter and the START together, repeated until the retry budget runs out: the
+        // guest only needs one of them to land.
         rng_ = rng_ * 1664525u + 1013904223u;
         startPvpBattle(rng_ ? rng_ : 1u);
     } else {
@@ -271,8 +271,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
     if (!mac) return false;
     PvpFrame f;
     // A frame that fails to decode is simply not a duel frame: wrong magic, a protocol
-    // version this build can't lay out, or a wrong-length payload. Dropped silently:
-    // anything in range can transmit, so a bad frame is noise, not an error.
+    // version this build can't lay out, or a wrong-length payload. Dropped silently,
+    // because anything in range can transmit and a bad frame is noise.
     if (!decodePvpFrame(payload, len, &f)) return false;
 
     const uint64_t key = packPeerKey(mac);
@@ -288,12 +288,11 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
     switch (f.type) {
         case PvpFrameType::Invite: {
             // A RETRY of the session we are already in, from the same operator. The
-            // challenger repeats its INVITE until something answers, which for a
-            // challenge means "until a human presses a button", so these arrive for
-            // the whole time the prompt is on screen. Ignoring them is the only correct
-            // answer: replying BUSY here would decline the very challenge this device
-            // is displaying, and the challenger would give up before its opponent could
-            // possibly accept.
+            // challenger repeats its INVITE until something answers, which means until
+            // someone presses a button, so these arrive the whole time the prompt is
+            // up. Ignoring them is the only correct answer: replying BUSY here would
+            // decline the very challenge this device is displaying, and the challenger
+            // would give up before its opponent could possibly accept.
             if (pvpSession_ == f.session && pvpPeerKey_ == key) return false;
 
             if (pvpPhase_ != PvpPhase::Idle) {
@@ -307,8 +306,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
                 return false;
             }
             // Consent is a human on the LINK screen. Anywhere else the answer is BUSY:
-            // a challenge must never interrupt someone who isn't looking for one, and
-            // this device may not have the radio at all outside that screen.
+            // a challenge must not interrupt someone who is not looking for one, and
+            // outside that screen the radio may be off.
             uint8_t buf[kPvpFrameCap];
             PvpDeclineReason refuse = PvpDeclineReason::Busy;
             bool ok = true;
@@ -317,8 +316,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
             else if (f.rules != kPvpRulesVersion ||
                      !canBuildPvpCombatant(registry_, f.fighter)) {
                 // Different builds or different content would resolve the same spec
-                // differently. Refusing is the honest outcome: two screens disagreeing
-                // about who won is worse than no duel.
+                // differently. Refuse: two screens disagreeing about who won is worse
+                // than no duel.
                 ok = false;
                 refuse = PvpDeclineReason::Mismatch;
             }
@@ -344,8 +343,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         }
 
         case PvpFrameType::Accept: {
-            // Only the challenger is waiting on one, and only once: a repeat that
-            // arrives after the fight has started is the retry doing its job.
+            // Only the challenger is waiting on one, and only once: a repeat
+            // after the fight has started is just the retry.
             if (pvpPhase_ != PvpPhase::Inviting) return false;
             if (f.rules != kPvpRulesVersion ||
                 !canBuildPvpCombatant(registry_, f.fighter)) {
@@ -394,8 +393,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         }
 
         case PvpFrameType::Bye:
-            // They walked away. Nothing to tell them, and a fight already resolved
-            // locally keeps its result: the verdict was computed here, not received.
+            // They walked away. Nothing to send. A fight already resolved locally
+            // keeps its result, because the verdict is computed on each device.
             if (pvpPhase_ == PvpPhase::Result) return false;
             endPvpSession("OPPONENT LEFT", /*notify=*/false);
             return true;
@@ -407,8 +406,8 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
 
 void Game::startPvpBattle(uint32_t seed) {
     pvpSeed_ = seed;
-    // Host first, always, on both devices: that fixed seating is what makes two
-    // independent runs of the same seeded Combat land on the same result.
+    // Host first on both devices. That fixed seating makes two runs of the same
+    // seeded Combat reach the same result.
     const PvpFighter& host = pvpHost_ ? pvpLocalFighter_ : pvpRemoteFighter_;
     const PvpFighter& guest = pvpHost_ ? pvpRemoteFighter_ : pvpLocalFighter_;
     beginPvpBattle(combat_, registry_, host, guest, seed);
@@ -421,8 +420,8 @@ void Game::startPvpBattle(uint32_t seed) {
     // ...and on the same rule, the achievement for facing another operator at all. A duel
     // pays nothing, so recording that it HAPPENED is the whole reward.
     unlockAchievement(ach::kFirstDuel);
-    // ...and, on the same rule, the mirror: recorded at the START because the meeting is
-    // the whole event, exactly as it is for the reveal and the duel above.
+    // ...and, on the same rule, the mirror: recorded at the START, as the reveal and the
+    // duel above are.
     noteMirrorMatch(pvpRemoteFighter_.creatureId);
     combatCaller_ = CombatCaller::Duel;   // see startSimBattle: never inherit a wild caller
     combatBeat_ = 0;
@@ -457,8 +456,8 @@ void Game::finishPvpBattle() {
     // It is not a payout and does not make the duel one: RECORDING a result costs the
     // loser nothing and hands the winner nothing they can spend, which is the same
     // footing FIRST_DUEL already stands on above (it fires at the start of every duel
-    // and marks the save then). What stays true is the line below: no XP, no Bits, no
-    // Fragmentation, no care signal.
+    // and marks the save then). A duel still pays no XP, Bits, Fragmentation or care
+    // signal.
     if (pvpWon_) {
         ++pvpWins_;
         markSaveDirty();
@@ -507,9 +506,8 @@ void Game::onHackerLink(const ButtonEvent& ev) {
 }
 
 int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
-    // Live peers only. A remembered operator is a memory, not an opponent: both
-    // devices have to be powered, present, and on the same rendezvous channel for a
-    // duel to happen at all.
+    // Live peers only. A remembered operator cannot be challenged: a duel needs
+    // both devices powered, present, and on the same rendezvous channel.
     int n = 0;
     for (int i = 0; i < livePeerCount_ && n < max; ++i)
         if (peerLive(livePeers_[i])) out[n++] = livePeers_[i].key;
@@ -618,8 +616,8 @@ void Game::drawHackerLink(Framebuffer& fb) const {
             // (core/net/peer_link.h) and had no reader, so the one thing that makes
             // a duel a rivalry rather than a stat check was arriving and being
             // dropped. Same three channels the CREW screen uses (the name, the
-            // side's glyph, and its colour), so an unenlisted peer reads as
-            // NO CREW rather than as a missing tint.
+            // side's glyph, and its colour), so an unenlisted peer reads as NO
+            // CREW.
             const int crewY = rowY + kLineH * 2;
             if (h->crewName[0]) {
                 const Rgb565 side = teamColor(h->crewRed);

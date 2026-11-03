@@ -36,17 +36,17 @@
 // guardian made of it, what that paid or cost, and what happens next. Every band passes
 // through both, so an affront is a refusal the player watched rather than a boss that
 // appeared, and a lost riddle is something the guardian DID rather than a fight with no
-// stated cause. The bracketing screens are also where the encounter explains itself at
-// all: the Cant strip, the sigil count and the purse are read on the hail, and a sigil
-// earned lights its own cell on the verdict.
+// stated cause. The encounter explains itself only on these two screens: the Cant
+// strip, the sigil count and the purse are read on the hail, and a sigil earned lights
+// its own cell on the verdict.
 //
 // WHAT A WIN ACTUALLY BUYS, and why it is two things. Answering correctly always pays
-// the Happiness and the shed Fragmentation: that reward is for the ANSWER, and a player
-// with no radio hardware, or with capture switched off, earns it in full. Learning a
-// SIGIL is separate and costs one unspent SHAKE (buySigil): a captured handshake is the
-// only thing a guardian will take for a piece of its own language. So the Cant is paced
-// by the radio without any of the walk's rewards being gated behind it, which is the
-// line docs/ORIENTATION.md draws between the two consent axes, kept here too.
+// the Happiness and the shed Fragmentation: that reward is for the answer, so a player
+// with no radio hardware or with capture off earns it in full. Learning a SIGIL is
+// separate and costs one unspent SHAKE (buySigil): a captured handshake is the only
+// thing a guardian will take for a piece of its own language. So the radio paces the
+// Cant without gating any walk reward, keeping docs/ORIENTATION.md's split between the
+// two consent axes.
 //
 // Three files, the usual split: the rules of the tongue are core/model/cant.h (no Game,
 // no framebuffer), the pool is core/content/content_riddles.h (no rules), and this file
@@ -56,9 +56,9 @@
 namespace mal {
 
 namespace {
-// A guardian's own seed. Mixed from the walk's position rather than the clock so the
-// same encounter re-renders identically for as long as it is on screen: the cipher is
-// built once, in startShiboleet, and everything after reads it.
+// A guardian's own seed. Mixed from the walk's position, so the encounter re-renders
+// identically while it is on screen: the cipher is built once, in startShiboleet, and
+// everything after reads it.
 uint32_t cipherSeed(uint32_t rng, int area, int steps) {
     return rng ^ (static_cast<uint32_t>(area) << 24) ^ static_cast<uint32_t>(steps);
 }
@@ -67,8 +67,8 @@ uint32_t cipherSeed(uint32_t rng, int area, int steps) {
 namespace {
 // The guardian's line pair for this meeting, bounds-safe. A row that authored fewer than
 // kGuardianLines leaves null cells, and a null `cant`/`seen` would be a blank line rather
-// than a crash, but the content gate rejects an under-filled row, so this is the
-// defensive floor and not a supported shape.
+// than a crash, but the content gate rejects an under-filled row, so this is only a
+// defensive floor.
 const GuardianLine& guardianLine(const AreaDef& a, int i) {
     static const GuardianLine kNone{"", ""};
     if (i < 0 || i >= kGuardianLines) return kNone;
@@ -97,14 +97,13 @@ const char* Game::guardianName() const {
 }
 
 void Game::startShiboleet() {
-    // Grade the welcome first. All three bands then meet the pet the SAME way (a hail),
-    // because the pet cannot tell which one it landed in until the thing in front of it
-    // decides to ask, refuse, or talk.
+    // Grade the welcome first. All three bands start with the same hail, because the
+    // pet cannot tell which band it is in until the guardian asks, refuses, or talks.
     //
     // A ROLL against fluency, not a threshold on it. The two edge bands are chances that
     // move in opposite directions as the Cant is learned (refusal thins out, a quiet
-    // word thickens), so a pet with no sigils at all is still mostly ASKED, which is the
-    // only reason the ladder has a first rung. See tunables.h.
+    // word thickens), so a pet with no sigils is still mostly asked, which gives the
+    // ladder its first rung. See tunables.h.
     const int fluency = cantFluencyPct(cantSigils_);
     const int affront = kShiboleetAffrontBasePct * (100 - fluency) / 100;
     const int boon = kShiboleetBoonMaxPct * fluency / 100;
@@ -125,8 +124,8 @@ void Game::startShiboleet() {
     if (shibWelcome_ == ShiboleetWelcome::Riddle) {
         const int n = riddleCount();
         if (n <= 0) {
-            // An empty pool has nothing to ask, so the meeting is a refusal instead,
-            // which is the one band that needs no content beyond the guardian itself.
+            // An empty pool has nothing to ask, so the meeting becomes a refusal,
+            // which needs no content beyond the guardian.
             shibWelcome_ = ShiboleetWelcome::Affront;
         } else {
             rng_ = rng_ * 1664525u + 1013904223u;
@@ -145,17 +144,16 @@ void Game::startShiboleet() {
         }
     }
 
-    // One cipher for the WHOLE meeting: the greeting on the hail, the riddle and its
+    // One cipher for the whole meeting: the greeting on the hail, the riddle and its
     // replies, and whatever the guardian says about the answer at the end are all drawn
     // in it, so a letter the pet cannot read is the same letter on every screen. Built
     // for every band and not just the asking one: a refusal is still spoken in the Cant.
     shibCipher_.build(cantSigils_, cipherSeed(rng_, exploreSector_, exploreSteps_));
 
     // The BODY. Reset per meeting and seeded off the same walk position the cipher is,
-    // so a guardian re-renders identically for as long as it is on screen and is a
-    // different shape the next time it is met, which is the whole of what a swarm has
-    // instead of a sheet. The cell is the screen's (shiboleet_screen.h): a flock knows
-    // how big the box is and nothing about where the box is.
+    // so a guardian re-renders identically while it is on screen and takes a different
+    // shape the next time it is met. The cell is the screen's (shiboleet_screen.h): a
+    // flock knows how big the box is and nothing about where the box is.
     guardianFlock_.seed(cipherSeed(rng_, exploreSector_, exploreSteps_) | 1u);
     guardianFlock_.reset(kGuardianSwarmMarks, kGuardianCellW, kGuardianCellH);
 
@@ -167,10 +165,8 @@ void Game::startShiboleet() {
 
 FlockMood Game::guardianFlockMood() const {
     // What the swarm is doing, which is the same question as what the guardian is doing.
-    // Read off the NAV rather than off a timer: the hail is a thing deciding, the riddle
-    // board is a thing waiting on an answer, and the verdict is a thing that has made up
-    // its mind, and each holds until the meeting moves on, which is what makes this a
-    // state and not an effect running out.
+    // Read from the nav, not a timer: deciding on the hail, waiting on the riddle board,
+    // settled on the verdict. Each mood holds until the meeting moves on.
     if (nav_ == Nav::ShiboleetHail) return FlockMood::Watching;
     if (nav_ == Nav::Shiboleet) return FlockMood::Attending;
     if (nav_ == Nav::Combat) {
@@ -242,9 +238,8 @@ void Game::openShiboleetWelcome() {
 
 void Game::onShiboleet(const ButtonEvent& ev) {
     // A cursor list, the same contract every other picker keeps: A steps the row, B
-    // commits it, C backs out. C is NOT a way out of the encounter (backing away from
-    // something that asked you a question is its own answer, and it is the wrong one),
-    // so it resolves as an unanswered riddle rather than returning to the walk.
+    // commits it, C backs out. C does not leave the encounter. Backing away from a
+    // question counts as a wrong answer, so C resolves the riddle as unanswered.
     if (shibReply_ != ShiboleetReply::Pending) return;
     if (ev.button == Button::A) {
         shibRow_ = (shibRow_ + 1) % kRiddleReplies;
@@ -274,8 +269,8 @@ void Game::answerShiboleet(bool answered) {
         model_.setHappiness(model_.happiness() - kShiboleetLoseHappy);
         model_.setFragmentation(model_.fragmentation() + kShiboleetLoseFrag);
         // Names WHICH silence this was. The guardian's own reaction is the same either
-        // way (GuardianOutcome::Displeased): this line is the engine saying what the pet
-        // actually did, which is the half a player can act on next time.
+        // way (GuardianOutcome::Displeased): this line says what the pet did, which the
+        // player can act on next time.
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "%s",
                       answered ? "YOU ANSWERED WRONG" : "YOU SAID NOTHING");
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "-%d HAPPY  +%d FRAG",
@@ -290,15 +285,15 @@ void Game::answerShiboleet(bool answered) {
     model_.setHappiness(happyBefore + kShiboleetWinHappy);
     const int fragBefore = model_.fragmentation();
     model_.setFragmentation(fragBefore - kShiboleetWinFragCut);
-    // Reports what the pet ACTUALLY moved rather than the tunables, so a pet already at
-    // full Happiness or already clean is never told it gained what it had no room for:
-    // the same honesty grantBoon's line keeps.
+    // Reports what actually moved, so a pet already at full Happiness or already clean
+    // is never told it gained more than it had room for. grantBoon's line does the
+    // same.
     std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "+%d HAPPY  -%d FRAG",
                   model_.happiness() - happyBefore, fragBefore - model_.fragmentation());
 
     // The sigil is the SEPARATE half, and the only part a shake buys. A pet that answered
-    // correctly with an empty purse still keeps everything above: it understood the
-    // question, it just had nothing to trade for the word.
+    // correctly with an empty purse still keeps everything above: it only lacked a SHAKE
+    // to trade for the sigil.
     if (buySigil()) {
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "LEARNED A SIGIL - %d/%d",
                       sigilsKnown(), kCantSigils);
@@ -334,9 +329,8 @@ void Game::shiboleetOutcomeSpeech(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
     const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
-    // The SAME cipher as the greeting and the riddle. A guardian does not switch to the
-    // 'net's alphabet because the conversation is over: what it makes of the answer is
-    // as legible as the question was, which is what makes a fluent pet's verdict land.
+    // The SAME cipher as the greeting and the riddle. The verdict stays in the Cant, so
+    // it is exactly as legible as the question was.
     shibCipher_.applyTo(guardianOutcomeLine(area(a), shiboleetOutcome()).cant, out, cap);
 }
 
@@ -354,7 +348,7 @@ void Game::enterShiboleetVerdict() {
 
 void Game::onShiboleetVerdict(const ButtonEvent& ev) {
     // A REVEAL again: B plays out what the guardian decided, any press restarts the hold.
-    // Nothing here is a choice: the choice was the reply, and this is its consequence.
+    // Nothing here asks for input; the reply already decided it.
     exploreEventBeat_ = 0;
     dirty_ = true;
     if (ev.button == Button::B) finishShiboleet();
@@ -387,8 +381,8 @@ void Game::grantBoon() {
     // same lump would stop being a character: most of the time it simply sits with the
     // pet a while, and sometimes it sends something along with it.
     //
-    // Pays here and hands back nowhere: finishShiboleet is the one exit, so the pet
-    // reads what it was given on the verdict before the walk resumes.
+    // Pays here without handing back, because finishShiboleet is the only exit, so
+    // the pet reads what it was given on the verdict before the walk resumes.
     rng_ = rng_ * 1664525u + 1013904223u;
     const bool escort = static_cast<int>((rng_ >> 16) % 100) < kShiboleetBoonEscortPct;
     if (escort) {
@@ -402,9 +396,9 @@ void Game::grantBoon() {
         model_.setHappiness(happyBefore + kShiboleetBoonHappy);
         const int fragBefore = model_.fragmentation();
         model_.setFragmentation(fragBefore - kShiboleetBoonFragCut);
-        // Reports the Happiness and Fragmentation actually moved rather than the
-        // tunables, so a pet already near clean is never told it lost more than it had:
-        // the same honesty resolveSafeRestEvent's line keeps.
+        // Reports the Happiness and Fragmentation that actually moved, so a pet already
+        // near clean is never told it lost more than it had. resolveSafeRestEvent's
+        // line does the same.
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "A QUIET WORD (-%d FRAG)",
                       fragBefore - model_.fragmentation());
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "+%d HAPPY  -%d FRAG",
@@ -418,13 +412,13 @@ void Game::startGuardianCombat() {
     // Re-home the body into the FIGHTER seat before the stage is drawn. Same flock and
     // same seed (it is the creature the pet was just talking to), but the stage's seat is
     // a different box from the meeting screens' (kSwarmSeatW/H, core/ui/combat_screen.h),
-    // and a flock only ever knows how big its box is.
+    // and a flock knows only its box's size.
     guardianFlock_.reset(kGuardianSwarmMarks, kSwarmSeatW, kSwarmSeatH);
 
-    // The guardian's fight, on the ordinary wild path, so a loss ends the walk exactly
-    // as any other loss does, and the post-encounter readout, the streak and the loot
-    // rolls all behave as they always have. What makes it a guardian is the enemy
-    // (guardianEnemy, combat_factory.cpp), not a second set of combat rules.
+    // The guardian's fight, on the ordinary wild path, so a loss ends the walk like
+    // any other, and the post-encounter readout, streak and loot rolls work as usual.
+    // What makes it a guardian is the enemy (guardianEnemy, combat_factory.cpp), not a
+    // second set of combat rules.
     encounterEnemy_ = guardianEnemy(exploreSector_, exploreSub_);
     startWildCombat(/*forceEnemyFirst=*/false);
 }

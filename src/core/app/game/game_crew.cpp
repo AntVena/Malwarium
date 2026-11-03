@@ -19,37 +19,35 @@
 // game_crew.cpp (the Hacker-face CREW slot): enlist in a crew (content_crews.h) and
 // designate the HOME NETWORK that membership hangs off.
 //
-// FOUR VIEWS, not one list (Game::CrewView). Enlisting is the one piece of player
-// IDENTITY the device asks you to author (it outlives every pet you raise), and a
-// roster stacked into a single scrolling list gives it the same weight as a settings
-// row. So the screen spends the space instead:
+// FOUR VIEWS, not one list (Game::CrewView). Enlisting is player identity that
+// outlives every pet, so the roster gets its own pages; one scrolling list would
+// make it look like a settings row. So the screen spends the space instead:
 //
 //   Hub     · who you are now (the allegiance card), and the two SIDES to browse.
 //   Team    · one side's roster, a row per crew: name at title weight, motto under it,
 //             and the Exploit's mechanic word right-aligned so the side is comparable
 //             down a column.
 //   Detail  · one crew's page: glyph, motto, the Exploit named and described in full,
-//             and the single verb (ENLIST / LEAVE) that changes anything.
+//             and the one action (ENLIST / LEAVE).
 //   Picker  · the home-network chooser, a modal over the Hub rather than a step past
 //             it: designating turf is the PRECONDITION for all of the above, not a
 //             stage of the browse.
 //
 // C walks back up that order, and only leaves the screen from the Hub, so the deeper
-// views cost a press to escape and never strand the player. The picker answers exactly
-// one question ("which of the networks I can hear right now am I claiming?"), so its
-// rows are the live in-range snapshot the passive scan refreshes
-// (Game::registerNetwork -> visibleNetworks_), and opening the screen arms that scan on
-// its own (Game::radioScanWanted). The SD-backed NetworkLedger
+// views cost a press to escape and never strand the player. The picker asks which
+// in-range network the operator claims, so its rows are the live in-range snapshot the
+// passive scan refreshes (Game::registerNetwork -> visibleNetworks_), and opening the
+// screen arms that scan on its own (Game::radioScanWanted). The SD-backed NetworkLedger
 // (core/net/network_ledger.h) supplies each row's walked-in tally as evidence for the
 // choice; it never contributes a row of its own.
 //
 // Membership's payoff in play is the crew's signature Exploit: crewExploitOption()
 // hands it to Combat as the A+C picker's last row (Game::onCombat → openOverride).
 //
-// THE SIDE IS DUAL-CODED EVERYWHERE, in this order of authority: the word (RED/BLUE,
-// and the doctrine under it), the glyph (ICON_TEAM_RED/BLUE. Different shapes, not one
-// shape recoloured), and only then the tint. The tint is the channel that can be lost,
-// so nothing on these screens is distinguishable by it alone.
+// The side is dual-coded everywhere, in this order: the word (RED/BLUE, and the
+// doctrine under it), the glyph (ICON_TEAM_RED/BLUE. Different shapes, not one shape
+// recoloured), and only then the tint. The tint is the channel that can be lost, so
+// nothing on these screens is distinguishable by it alone.
 
 namespace mal {
 
@@ -60,14 +58,13 @@ constexpr int kNetRowPitch = kFontH + 14;
 constexpr int kNetVisibleRows = 6;
 constexpr int kGlyph = 16;   // ICON_TEAM_RED / ICON_TEAM_BLUE are 16x16
 
-// --- The Hub ---------------------------------------------------------------
-// The allegiance card: a raised TRACK panel given the top of the body, so the first
-// thing the screen says is who you are. Three lines, and each is sized to hold the
-// LONGEST row the table can hand it rather than to whatever fits today: the crew name
-// gets the full width beside the glyph, the side word and the Exploit's meter share the
-// second, and the Exploit's name has the third to itself. Nothing on this card clips.
-// Fixed height whether or not you belong to a crew, so enlisting never shifts the two
-// side rows out from under the cursor.
+// --- The Hub --------------------------------------------------------------- The
+// allegiance card: a raised TRACK panel given the top of the body, so the first thing
+// the screen says is who you are. Three lines, each sized for the longest row the table
+// holds: the crew name gets the full width beside the glyph, the side word and the
+// Exploit's meter share the second, and the Exploit's name has the third to itself.
+// Nothing on this card clips. Fixed height whether or not you belong to a crew, so
+// enlisting never shifts the two side rows out from under the cursor.
 constexpr int kCardTop = 50;
 constexpr int kCardH = 46;
 constexpr int kCardPad = 6;
@@ -108,8 +105,8 @@ constexpr int kDetailVerbY = kActiveH - 46;                         // 178
 // readout is bounded and never cut, the authored prose is elastic and scrolls).
 constexpr int kDetailProseLines = (kDetailVerbY - kDetailProseTop) / kLineH;
 
-// A raised panel, the same TRACK fill the combat picker and stat panels use: the
-// device's one "this block is a thing, not a row" cue.
+// A raised panel, the same TRACK fill the combat picker and stat panels use:
+// which marks a block as an object and not a list row.
 void drawPanel(Framebuffer& fb, int x, int y, int w, int h) {
     fb.fillRect(x, y, w, h, palColor(Pal::TRACK));
 }
@@ -135,9 +132,8 @@ bool Game::joinCrew(int index) {
     if (!hasHomeNetwork()) return false;   // a crew member is always somebody's defender
     if (crewIndex_ == index) return true;
     crewIndex_ = index;
-    // Taking a side at all, once. Fired on the join rather than counted, because a
-    // player belongs to at most one crew and may switch freely: there is no tally here
-    // that could mean anything, only the first time they stopped being unaffiliated.
+    // Taking a side at all, once. Fired on the first join. A player belongs to at most
+    // one crew and can switch freely, so there is nothing to count.
     unlockAchievement(ach::kCrewEnlisted);
     log_.push(LogEventType::ItemGained, kCrews[index].displayName);
     markSaveDirty();
@@ -166,11 +162,10 @@ void Game::debugSeedNetworkLedger(uint64_t key, const char* name, int count) {
 
 int Game::crewNetworkRows(CrewNetRow* rows, int max) const {
     int n = 0;
-    // Exactly one source of rows: what the radio can hear right now. The reward
-    // queue (pendingNetworks_) is deliberately NOT consulted: its size and its
-    // walk-paced drain rate have nothing to do with which networks are in range, and
-    // letting them leak in here is what made a saturated backlog hide the network the
-    // operator was standing in front of.
+    // Exactly one source of rows: what the radio can hear right now. The reward queue
+    // (pendingNetworks_) is not consulted. It says nothing about which networks are
+    // in range, and a full backlog would hide the network the operator is standing
+    // next to.
     for (int i = 0; i < visibleNetworkCount_ && n < max; ++i) {
         const VisibleNetwork& v = visibleNetworks_[i];
         if (!networkVisible(v)) continue;
@@ -181,9 +176,9 @@ int Game::crewNetworkRows(CrewNetRow* rows, int max) const {
         const uint32_t count = networkLedger_.lookup(v.key, &known) ? known.count : 0;
         rows[n++] = {v.key, v.name, count};
     }
-    // Most-walked first: the strongest available signal for which network is actually
-    // yours, offered as a choice rather than inferred. Stable within a tie, so the order stays
-    // steady between repaints instead of shuffling under the cursor.
+    // Most-walked first, as the best guess at which network is yours. The operator still
+    // chooses. Stable within a tie, so the order stays steady between repaints instead of
+    // shuffling under the cursor.
     std::stable_sort(rows, rows + n, [](const CrewNetRow& a, const CrewNetRow& b) {
         return a.count > b.count;
     });
@@ -272,10 +267,10 @@ void Game::onHackerCrew(const ButtonEvent& ev) {
 
 // --- Rendering ---------------------------------------------------------------
 
-// The one dispatch, and the only place the header band is chosen. Unlike its sibling
-// Hacker sub-screens (whose caller draws a fixed band for them), the CREW title is a
-// function of the view, and the deeper two are TINTED by the side they belong to, so
-// the band itself carries the Red/Blue axis down with you.
+// The one dispatch, and the only place the header band is chosen. The CREW title
+// depends on the view (the sibling Hacker sub-screens get a fixed band from their
+// caller), and the deeper two are tinted by their side, so the band carries Red/Blue
+// as you go deeper.
 void Game::drawHackerCrew(Framebuffer& fb) const {
     switch (crewView_) {
         case CrewView::Hub:
@@ -319,9 +314,9 @@ void Game::drawCrewHub(Framebuffer& fb) const {
                    scrollWhen(homeSel));
     fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
-    // The allegiance card: the screen's answer to "who am I", stated before it offers
-    // anywhere to go. Not selectable: there is nothing to DO to your own membership
-    // from here that leaving through the crew's own page doesn't say better.
+    // The allegiance card, shown before any navigation. Not selectable: there is
+    // nothing to DO to your own membership from here that leaving through the crew's
+    // own page doesn't say better.
     drawPanel(fb, kMargin, kCardTop, kActiveW - 2 * kMargin, kCardH);
     const int cx = kMargin + kCardPad;
     const int cRight = kActiveW - kMargin - kCardPad;
@@ -334,9 +329,9 @@ void Game::drawCrewHub(Framebuffer& fb) const {
         drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0, cx,
                          kCardTextTop - 2, side);
         const int tx = cx + kGlyph + 6;
-        // The name in the side's colour, with the whole card to run in: the one line
-        // on this screen that is purely who you are. Regular weight: colour and the
-        // card's top line already carry it, and Bold here only outranked the header.
+        // The name in the side's colour, with the whole card width to scroll in.
+        // Regular weight: colour and the card's top line already carry it, and Bold
+        // here only outranked the header.
         drawTextMarquee(fb, tx, kCardTextTop, cRight - tx, mine->displayName, side,
                         beat_, Overflow::Scroll);
         // The side spelled out beside its glyph (never the tint alone), against what
@@ -417,8 +412,9 @@ void Game::drawCrewNetPicker(Framebuffer& fb) const {
     fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
 
     if (n == 0) {
-        // Empty for two very different reasons: say which, so a starved radio
-        // never reads as "there is nothing around me". Words, never colour alone.
+        // Empty for two different reasons, and the screen says which, so a radio
+        // that has not scanned never reads as nothing in range. Words, never
+        // colour alone.
         drawText(fb, kMargin, 56, starved ? "SCAN CANT RUN" : "NO NETWORKS IN RANGE",
                  palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 56 + kLineH,
@@ -441,7 +437,7 @@ void Game::drawCrewNetPicker(Framebuffer& fb) const {
             if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
             // Sighting count doubles as the "is this really home?" evidence, and is
             // the grayscale-safe ordering cue for the sort. A network in range that
-            // no walk has resolved yet has no tally: say NEW, not a hollow "x0".
+            // no walk has resolved yet has no tally, so it shows NEW.
             char seen[16];
             if (row.count == 0) std::snprintf(seen, sizeof(seen), "NEW");
             else std::snprintf(seen, sizeof(seen), "x%u",
@@ -493,9 +489,7 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         const bool s = scrollTop + v == sel;
         const bool joined = crewIndex_ == i;
         if (s) drawRowCursor(fb, 2, y + 1, palColor(Pal::ACCENT));
-        // One job per line, each with the full row to do it in: no two things on this
-        // screen compete for the same pixels, which is what keeps a long crew name from
-        // clipping.
+        // One job per line, each with the full row, so a long crew name never clips.
         const int tx = kMargin + 10;
         const int w = kActiveW - kMargin - tx;
         // 1: the name, at title weight and in the side's colour while focused. Bold is
@@ -504,11 +498,10 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // the row's heading.
         drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
                         beat_, scrollWhen(s), FontFace::Bold);
-        // 2: the motto, which is the crew's whole character and the reason to read
-        // on. WRAPPED, not marqueed: a marquee only ever ran for the focused row, so
-        // an unselected crew with a long motto (e.g. "fail to plan; plan to fail")
-        // was silently cut mid-word with no indication there was more. Wrapping
-        // shows the whole thing on every row, focused or not.
+        // 2: the motto. WRAPPED, not marqueed: a marquee only ever ran for the
+        // focused row, so an unselected crew with a long motto (e.g. "fail to plan;
+        // plan to fail") was silently cut mid-word with no indication there was
+        // more. Wrapping shows the whole thing on every row, focused or not.
         const int mottoEnd = drawTextWrapped(fb, tx, y + kLineH, w, c.tagline,
                                              palColor(Pal::INK_DIM), kLineH, 2);
         // 3: the Exploit's mechanic word, and where you already belong. The tag is the
@@ -541,9 +534,8 @@ void Game::drawCrewDetail(Framebuffer& fb) const {
     const Rgb565 side = teamColor(red);
     const bool joined = crewIndex_ == crewDetail_;
 
-    // Glyph + motto. The name is already the header band's title, so this block is the
-    // crew's voice rather than a repeat of its label, and it WRAPS rather than
-    // marqueeing, because a motto the reader has to wait out isn't one.
+    // Glyph + motto. The name is already the header band's title, so this block holds
+    // the motto. It wraps instead of scrolling, so the reader never waits for it.
     drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0, kMargin,
                      kDetailMottoY - 3, side);
     const int mottoX = kMargin + kGlyph + 8;
@@ -554,8 +546,8 @@ void Game::drawCrewDetail(Framebuffer& fb) const {
     // The Exploit, given the page's middle: what it is called, what it meters, and
     // what it does. The heading line carries the derived "<TAG> xN" so the NAME gets
     // the next line whole: the longest of them ("MALBEAST IN THE MIDDLE") is 22
-    // characters, and sharing a line with its own meter is what cut it. Name and
-    // meter are the bounded half and are never cut; the description under them is the
+    // characters and would clip if it shared a line with its meter. Name and meter
+    // are the bounded half and are never cut; the description under them is the
     // elastic half and pages on A.
     char tag[16];
     crewExploitLabel(tag, sizeof(tag), c->exploit.kind, c->exploit.magnitude);
