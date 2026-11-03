@@ -8,7 +8,7 @@
 <h3 align="center"><a href="https://antvena.github.io/Malwarium/play/">▶ Play the demo in your browser</a></h3>
 <p align="center"><sub>The real firmware running in a tab, with a pet already raised. No hardware needed.</sub></p>
 
-Malwarium is a handheld virtual pet for a little ESP32 gadget — think Tamagotchi, but
+Malwarium is a handheld virtual pet for a little ESP32 gadget: think Tamagotchi, but
 you're a hacker and the "pet" is a computer virus you've caught and tamed. You hatch a
 sealed egg, then raise the creature inside through four life stages by **feeding it,
 keeping it de-fragmented, and keeping it happy**. Raise it kindly and it grows into a
@@ -28,7 +28,7 @@ found this sweet project"* to *"there's an egg-like-thing wobbling on my screen"
 
 ## What it looks like
 
-Real screens, straight off the 240×240 display — or skip the pictures and
+Real screens, straight off the 240×240 display, or skip the pictures and
 **[play it in your browser](https://antvena.github.io/Malwarium/play/)**:
 
 <table>
@@ -49,19 +49,19 @@ Real screens, straight off the 240×240 display — or skip the pictures and
 </tr>
 </table>
 
-**Minigames** — hatch games, maintenance games and a quote board, all replayable for Bits
+**Minigames**. Hatch games, maintenance games and a quote board, all replayable for Bits
 from the GAMES arcade:
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/screens/firewall.png" width="200" alt="The FIREWALL minigame"><br><sub><b>Wall them off.</b> FIREWALL — an AV scan you play, against intruders you call by building.</sub></td>
-<td align="center"><img src="docs/media/screens/fragger.png" width="200" alt="The FRAGGER minigame"><br><sub><b>Shoot the fragments.</b> FRAGGER — a defrag you play, catching the files.</sub></td>
+<td align="center"><img src="docs/media/screens/firewall.png" width="200" alt="The FIREWALL minigame"><br><sub><b>Wall them off.</b> FIREWALL. An AV scan you play, against intruders you call by building.</sub></td>
+<td align="center"><img src="docs/media/screens/fragger.png" width="200" alt="The FRAGGER minigame"><br><sub><b>Shoot the fragments.</b> FRAGGER. A defrag you play, catching the files.</sub></td>
 <td align="center"><img src="docs/media/screens/decryptogram.png" width="200" alt="The Decryptogram quote board"><br><sub><b>Crack a quote.</b> The Decryptogram, one letter at a time.</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/media/screens/disk-decryption.png" width="200" alt="The Disk Decryption minigame"><br><sub><b>Brute-force the key.</b> Disk Decryption — a Ransomware egg's hatch game.</sub></td>
-<td align="center"><img src="docs/media/screens/clutch-pick.png" width="200" alt="The Clutch Pick minigame, Spot the Phish"><br><sub><b>Spot the phish.</b> Clutch Pick — only the live egg twitches.</sub></td>
-<td align="center"><img src="docs/media/screens/isolation.png" width="200" alt="The Isolation Protocol minigame"><br><sub><b>Stay uncaught.</b> Isolation Protocol — a Worm egg's hatch game.</sub></td>
+<td align="center"><img src="docs/media/screens/disk-decryption.png" width="200" alt="The Disk Decryption minigame"><br><sub><b>Brute-force the key.</b> Disk Decryption. A Ransomware egg's hatch game.</sub></td>
+<td align="center"><img src="docs/media/screens/clutch-pick.png" width="200" alt="The Clutch Pick minigame, Spot the Phish"><br><sub><b>Spot the phish.</b> Clutch Pick, only the live egg twitches.</sub></td>
+<td align="center"><img src="docs/media/screens/isolation.png" width="200" alt="The Isolation Protocol minigame"><br><sub><b>Stay uncaught.</b> Isolation Protocol. A Worm egg's hatch game.</sub></td>
 </tr>
 </table>
 
@@ -69,12 +69,12 @@ from the GAMES arcade:
 
 ## What you'll need
 
-### The board — one specific one
+### The board: one specific one
 
 > ### Waveshare **ESP32-S3-LCD-1.54**
 > **<https://www.waveshare.com/esp32-s3-lcd-1.54.htm>** · SKU **33866** or **33867**
 >
-> The **Touch** variant (SKU **33868** / **33869**) works too — Malwarium doesn't use the
+> The **Touch** variant (SKU **33868** / **33869**) works too: Malwarium doesn't use the
 > touchscreen, so you gain nothing by it, but nothing breaks either.
 
 **This is the only board Malwarium runs on today**, and that's worth knowing
@@ -82,7 +82,7 @@ before you spend money. It is not general "an ESP32 project" you can point at a 
 At this time, the firmware has exactly one hardware definition compiled into it, and the screen, the
 three buttons, the SD slot and the battery latch are all wired to specific pins on *this*
 board. On anything else you'd get a dark screen at best. The 16MB flash isn't optional
-either — the layout is two 7.5MB update slots plus a save area, which simply doesn't fit
+either: the layout is two 7.5MB update slots plus a save area, which simply doesn't fit
 on the 8MB boards. If you think you've found another board that meets the hardware requirements
 be sure to let us know! Chances are good that we'll add support. That support just doesn't exist *right now*. 
 
@@ -90,7 +90,7 @@ be sure to let us know! Chances are good that we'll add support. That support ju
 
 | | |
 |---|---|
-| **Screen** | 1.54 inch, **square**, 240×240 — about the size of a large postage stamp |
+| **Screen** | 1.54 inch, **square**, 240×240: about the size of a large postage stamp |
 | **Buttons** | **three**, in a row along one edge |
 | **Port** | **USB-C** |
 | **Storage** | a **microSD (TF) card slot** |
@@ -102,20 +102,20 @@ different board and this firmware won't run on it.
 ### Everything else
 
 - A **USB-C cable that carries data.** This trips more people up than anything else on this
-  page — a lot of cables sold with phones and battery packs are charge-only, and they look
+  page: a lot of cables sold with phones and battery packs are charge-only, and they look
   identical. If the flasher can't see your board, this is the first thing to swap.
 - **Chrome or Edge, on a computer.** That's the whole software list: no toolchain, no
-  Python, no command line. Safari and Firefox can't talk to USB, and phones can't either —
+  Python, no command line. Safari and Firefox can't talk to USB, and phones can't either,
   not a limitation of this project, just of those browsers. No Chrome just means some manual non-browser-based installation.
 
 **Optional, and you can add both later:**
 
 - A **microSD card**, any size, formatted **FAT32**. The device plays perfectly happily
-  without one — it's what holds the in-device wiki (the "'Pedia") and any `.pcap` captures,
+  without one: it's what holds the in-device wiki (the "'Pedia") and any `.pcap` captures,
   and the device can fill it over Wi-Fi by itself once you slot one in.
 - A **3.7V LiPo battery** to run it untethered. USB power is fine to start with.
 
-> **Already have a working Malwarium and just want the newest build?** Skip all of this —
+> **Already have a working Malwarium and just want the newest build?** Skip all of this:
 > the device updates itself over Wi-Fi. [See *Updates*](#updates).
 
 ---
@@ -124,16 +124,16 @@ different board and this firmware won't run on it.
 
 <p align="center"><img src="docs/media/flash/flasher.png" width="620" alt="The browser flasher"></p>
 
-### Flash it from your browser — **<https://antvena.github.io/Malwarium/flash/>**
+### Flash it from your browser: **<https://antvena.github.io/Malwarium/flash/>**
 
 Open that in **Chrome or Edge on a computer** and it writes a whole working device down the
-cable — bootloader, partition table and firmware. Nothing to install, nothing to clone.
+cable: bootloader, partition table and firmware. Nothing to install, nothing to clone.
 Start to finish it's about five minutes, most of it waiting.
 
 **1. Hold down the leftmost button (A), and keep holding it while you plug the USB-C cable
 in.** Hold a second or two after the cable is seated, then let go.
 
-> **Nothing appears to happen, and the screen stays dark. That is exactly right** — don't
+> **Nothing appears to happen, and the screen stays dark. That is exactly right**: don't
 > keep pressing things. Button A doubles as the chip's "listen to the cable" switch, so
 > holding it tells the board to wait for the flasher instead of starting the game. A brand
 > new board has nothing to show you anyway.
@@ -142,15 +142,15 @@ in.** Hold a second or two after the cable is seated, then let go.
 
 > Not sure which entry is yours? It'll usually say something like *USB JTAG/serial debug
 > unit* or *USB Serial*. If the list is empty or yours isn't in it, click **MY DEVICE
-> ISN'T LISTED** on the page — that widens the filter and shows everything.
+> ISN'T LISTED** on the page: that widens the filter and shows everything.
 
 **3. Click FLASH.** A progress bar fills as it writes, and the page tells you which of the
-pieces it's on. **A couple of minutes is normal** — it's writing about 2MB down a serial
+pieces it's on. **A couple of minutes is normal**: it's writing about 2MB down a serial
 line. Don't unplug it, and don't worry when it pauses.
 
 **4. It reboots itself, and your screen lights up with a wobbling egg.**
 
-That's it — you're running your very own shiny new state-of-the-*start*… **Malwarium**. We
+That's it: you're running your very own shiny new state-of-the-*start*… **Malwarium**. We
 pray you're more benevolent than your charges.
 
 Flashing a device that already has a pet on it? A normal flash leaves the save partition
@@ -158,15 +158,15 @@ alone, so your pet is still there when it reboots. (There's an **ERASE** option 
 *do* want a clean slate.)
 
 > **The browser can't see the board?** In order of how often it's the answer: **the cable
-> doesn't carry data** (try a different one — this is the usual culprit); **A wasn't held
+> doesn't carry data** (try a different one. This is the usual culprit); **A wasn't held
 > down *before* the cable went in** (unplug, hold A, plug back in); the port picker is
 > filtered (**MY DEVICE ISN'T LISTED**); or something else already has the port open, like
-> a serial monitor or the Arduino IDE. If you're in Safari or Firefox, that's the reason —
+> a serial monitor or the Arduino IDE. If you're in Safari or Firefox, that's the reason:
 > those can't talk to USB at all.
 
 ### Adding the wiki (optional, any time later)
 
-The flasher writes the device's own flash — bootloader, partitions, firmware. The in-device
+The flasher writes the device's own flash: bootloader, partitions, firmware. The in-device
 wiki lives on the **microSD card**, so if you have one, there's one more step. **The device
 does it for you:**
 
@@ -174,11 +174,11 @@ does it for you:**
    flasher page, or use **CFG → DEVICE → FORMAT SD** on the device. Either one erases the
    card and sets it up as FAT32, so you don't need a computer's card reader or formatter. A
    card you've already formatted FAT32 yourself works as it is.
-2. Give the device your Wi-Fi once — turn the AP on, scan the setup QR with your phone, and
+2. Give the device your Wi-Fi once: turn the AP on, scan the setup QR with your phone, and
    type your password into the page it serves. ([*Updates*](#updates) has the detail.)
 3. **CFG → UPDATES → CHECK NOW.** It'll offer you the 'Pedia site and install it.
 
-You don't have to type an address anywhere — the device already knows where its releases
+You don't have to type an address anywhere: the device already knows where its releases
 are published. No computer, no cable, no toolchain.
 
 (Prefer to load the card from your computer instead? That's the manual route below.)
@@ -186,12 +186,12 @@ are published. No computer, no cable, no toolchain.
 ---
 
 <details>
-<summary><b>🔧 The manual way — build it from source yourself (click to expand)</b></summary>
+<summary><b>🔧 The manual way: build it from source yourself (click to expand)</b></summary>
 
 <br>
 
 **You don't need any of this to play.** It's here for the people who'd rather read the
-process than trust a web page with their USB port — and for anyone who wants to change the
+process than trust a web page with their USB port, and for anyone who wants to change the
 code. It does the same job as the flasher, plus it loads the SD card directly from your
 computer instead of leaving that to the device.
 
@@ -202,7 +202,7 @@ You'll need, on top of the hardware above: a **microSD card** ⚠️ (**it gets 
 erased**, so use a blank one or one you don't mind wiping) and an **SD card reader** for
 your computer.
 
-#### Step 1 — Install the tools
+#### Step 1: Install the tools
 
 You need Python 3, then two things installed through it: **PlatformIO** (does the actual
 flashing) and **pyserial** (lets the setup script read status back from the device).
@@ -235,13 +235,13 @@ pio --version
 ```
 
 > **"pio: command not found"?** pip installed it somewhere not on your PATH. The quickest
-> fix is to run it as `python3 -m platformio` instead of `pio` — or follow PlatformIO's
+> fix is to run it as `python3 -m platformio` instead of `pio`, or follow PlatformIO's
 > installer guide at <https://docs.platformio.org/en/latest/core/installation/>.
 
 You'll also need **git** to download the project. Check with `git --version`; if it's
 missing, grab it from <https://git-scm.com/downloads>.
 
-#### Step 2 — Download the project
+#### Step 2: Download the project
 
 ```bash
 git clone https://github.com/AntVena/Malwarium.git
@@ -250,11 +250,11 @@ cd Malwarium
 
 Everything from here runs from inside that `Malwarium` folder.
 
-#### Step 3 — Get your microSD card ready
+#### Step 3: Get your microSD card ready
 
 The device serves its in-game wiki (the "'Pedia") off the SD card, so we copy those files
 onto it and format it the way the device expects. **The setup script does all of this for
-you** — including wiping and reformatting the card — but first it needs to know *which*
+you** (including wiping and reformatting the card), but first it needs to know *which*
 disk your card is, so it doesn't touch the wrong one.
 
 Put the card in your reader, plug the reader into your computer, then list your disks:
@@ -269,18 +269,18 @@ diskutil list
 Get-Disk
 ```
 
-Find your card in the list — **identify it by its size** (e.g. your 32GB card shows as
+Find your card in the list: **identify it by its size** (e.g. your 32GB card shows as
 ~32GB). Note its identifier: on macOS that's something like `disk4`; on Windows it's a
 number like `2`.
 
-> ⚠️ **Get this right — this step erases the disk you name.** Double-check the size matches
+> ⚠️ **Get this right: this step erases the disk you name.** Double-check the size matches
 > your card and not your computer's main drive. The script refuses to touch internal or
 > system disks as a safety net, but you should still confirm you've got the right one.
 
-#### Step 4 — Run the setup script
+#### Step 4: Run the setup script
 
 This is the one command that does everything: it formats and loads your SD card, then
-erases and flashes the board with the firmware — checking its own work at each step.
+erases and flashes the board with the firmware. Checking its own work at each step.
 
 Have the **card in the reader** to start (the script will tell you when to move it into the
 device). Then run, replacing `disk4` / `2` with *your* card's identifier from Step 3:
@@ -298,13 +298,13 @@ device). Then run, replacing `disk4` / `2` with *your* card's identifier from St
 Here's what it does, and what you'll do, along the way:
 
 1. **Formats your SD card** and copies the 'Pedia wiki onto it. It asks you to type the
-   disk identifier once to confirm the wipe — this is your last chance to back out.
+   disk identifier once to confirm the wipe: this is your last chance to back out.
 2. **Pauses and asks you to move the card into the device.** Eject the card from your
    computer, pop it into the Malwarium's card slot, then connect the **device itself** to
    your computer with the USB-C cable and press Enter.
 3. **Erases and flashes the board.** This takes a couple of minutes. You'll see a lot of
-   progress text scroll by — that's normal.
-4. **Verifies everything worked** — that the firmware landed correctly and that the device
+   progress text scroll by: that's normal.
+4. **Verifies everything worked**: that the firmware landed correctly and that the device
    can read your SD card.
 
 When it finishes you'll see lines like these, which mean success:
@@ -315,7 +315,7 @@ When it finishes you'll see lines like these, which mean success:
 >> board provisioned + verified.
 ```
 
-**And your device screen should now show a wobbling egg** — with the wiki already on the
+**And your device screen should now show a wobbling egg**: with the wiki already on the
 card, since you loaded it yourself.
 
 > **Prefer to do it in two halves?** You can run the SD and board steps separately:
@@ -334,11 +334,11 @@ connection. Re-run with `--wait-wake` and **press any button on the device** whe
 ./tools/provision.ps1 board -WaitWake         # Windows
 ```
 
-(A truly blank, first-ever flash won't hit this — there's nothing running yet to fall
+(A truly blank, first-ever flash won't hit this: there's nothing running yet to fall
 asleep.)
 
 **The SD script says my card is "not external" and refuses to format it.** That's the
-safety net working. It only formats removable cards — make sure you named your *card's*
+safety net working. It only formats removable cards: make sure you named your *card's*
 disk identifier from Step 3, not your computer's drive.
 
 **Windows: "running scripts is disabled on this system."** Windows blocks unsigned scripts
@@ -349,7 +349,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 **I just want to re-flash after a code change, not redo the whole card.** Use
-`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing — the full `provision`
+`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing: the full `provision`
 script is really for first-time, blank-device setup. It regenerates the sprite/palette
 codegen and the web 'Pedia data before delegating the actual build+upload to the lighter
 `./tools/flash.sh` (read `build_and_flash.sh`'s own header comment for the full pipeline
@@ -368,7 +368,7 @@ The device has **three buttons: A, B, C.**
 - **B = Accept** (choose / confirm) 
 - **C = Cancel**
   (back out).
-- **A and C together** is the "Exploit" chord — a hacker override used in a few special places. There's a symbol for when it's relevant.
+- **A and C together** is the "Exploit" chord: a hacker override used in a few special places. There's a symbol for when it's relevant.
 
 ### Hatching your egg
 Your first egg is laid the moment the device boots, and it drops you straight into a
@@ -406,7 +406,7 @@ holds the fix:
 | Gauge | What it means | How to fix it |
 |---|---|---|
 | **FED** | How full it is. Drops slowly over the day; more is better. | Feed it: **ITEMS**, pick a food, **FEED**. You start with a few meals; more turn up while exploring (**EXPL**), in loot and in area shops. |
-| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost — or play it as **FIREWALL**) from **MAINT**. Costs a few Bits. A QUICK defrag can fail, and the screen tells you the odds; your first pet comes with a **Defrag Tool** for a guaranteed one. Or play **FRAGGER** for it: every fragment you shoot is 1 frag off and every file you catch is 2 Bits on EASY, both doubling with each step up in difficulty (which also adds a lane). |
+| **FRAG** | Fragmentation, i.e. how glitchy it is. Fights and exploring raise it; less is better. A new pet starts half-fragmented. | Run a **Defrag** (or an AV scan for a ghost, or play it as **FIREWALL**) from **MAINT**. Costs a few Bits. A QUICK defrag can fail, and the screen tells you the odds; your first pet comes with a **Defrag Tool** for a guaranteed one. Or play **FRAGGER** for it: every fragment you shoot is 1 frag off and every file you catch is 2 Bits on EASY, both doubling with each step up in difficulty (which also adds a lane). |
 | **HAPPY** | Its mood. Drops slowly; more is better. | Play something in **GAMES**. Some foods help too. |
 
 **You don't have to remember any of that.** When a need slips out of the comfortable
@@ -458,29 +458,29 @@ up faster than one switched on for an hour each evening.
 Explore the 'net (**EXPL**) for battles, loot, and Bits to spend.
 
 ### Your half of the device 
-**A+C on the main screen flips to the Hacker face** — the parallel menu where *you* live
+**A+C on the main screen flips to the Hacker face**: the parallel menu where *you* live
 rather than the pet. It holds your operator profile and HackerTag, a **shop** of upgrades
 for your rig, a **vault** where you cash things in, a **merge hub** for cooking ingredients into better
 items, and the two social slots below.
 
-You also collect **achievements** (they survive your pet's death — they're yours, not its),
+You also collect **achievements** (they survive your pet's death: they're yours, not its),
 **Titles** you can equip beside your tag, and a **Hacker Rank** that climbs as you see more
 of the world.
 
 ### The Decryptogram 
 A **Decryptogram** is a rare find you cash in at the vault. It puts a quote on screen with
-every letter struck out — punctuation and spacing stay, so you can read the shape of the
-sentence — plus a pool of the letters that are actually in it. A few of the commonest ones
+every letter struck out (punctuation and spacing stay, so you can read the shape of the
+sentence), plus a pool of the letters that are actually in it. A few of the commonest ones
 start open. Pick a letter, pick a gap you think it belongs in, and if you're right *every*
 instance of that letter opens at once.
 
-**A and C move the cursor in both directions** — through the pool, then through the gaps
-once you've taken a letter — and holding either runs it along. That leaves no spare button
+**A and C move the cursor in both directions** (through the pool, then through the gaps
+once you've taken a letter), and holding either runs it along. That leaves no spare button
 for a cancel, so **A+C hands the letter back**. There's no way off a board once it's
 started: the ticket is spent either way.
 
 Get the whole quote out and you're paid in Bits plus a free account upgrade, and you finally
-see who said it. Put one letter in the wrong place and the run is over — but that quote comes
+see who said it. Put one letter in the wrong place and the run is over, but that quote comes
 back easier next time you find a ticket, and easier again after that, so nothing is lost
 forever. Crack eight of them and a cabinet appears in **GAMES** where you can replay the ones
 you've already beaten for Bits.
@@ -489,10 +489,10 @@ you've already beaten for Bits.
 Everything wireless is off until you switch it on, and there are **two separate switches,
 because listening and announcing yourself are different things to agree to**:
 
-- **AUDIT** is how hard the device *listens* — off, passive scanning, or scanning plus
+- **AUDIT** is how hard the device *listens*: off, passive scanning, or scanning plus
   capture. Passive only: it never transmits, deauthenticates or injects anything. Scanning
   feeds your Hacker Rank; captures land on the SD card as `.pcap` files.
-- **LINK** is whether the device *transmits* — announcing your tag, your pet and your crew
+- **LINK** is whether the device *transmits*: announcing your tag, your pet and your crew
   to other Malwaria nearby, which is what makes **PEERS** and 1v1 **duels** possible.
 
 Duels cost nothing and pay nothing: two devices agree on a seed and each replays the same
@@ -505,12 +505,12 @@ grants a signature Exploit that shows up as an extra row in the A+C combat picke
 You can toggle allowing your Malwarium to broadcast its own Wi-Fi network. Connect to view your glorious achievements on the big screen:
 
 1. In Config, Enable AP (Access Point) mode. 
-2. On your phone or laptop, connect to the Wi-Fi network named **`Malwarium`** (it's open —
+2. On your phone or laptop, connect to the Wi-Fi network named **`Malwarium`** (it's open:
    no password).
 3. Open a browser and go to **`http://192.168.4.1/pedia`**.
 > Or just follow the on-scren QR code the device will show you when you turn AP on. 
 
-You'll get a terminal-styled wiki of every creature, item, and achievement — the ones you
+You'll get a terminal-styled wiki of every creature, item, and achievement: the ones you
 haven't discovered yet show up as locked silhouettes. (There may also be a way for the
 curious to peek at locked entries... but that would be telling.)
 
@@ -540,11 +540,11 @@ ways to take one. The device prefers the first; the second exists for the times 
 **CFG → UPDATES → CHECK NOW.** That's the whole thing. There is no internet switch to leave
 on: pressing the button *is* the permission. The device joins your network for the length of
 the job, tells you what's published, asks before it installs anything, and hands the radio
-back when it's done — nothing survives the job, and nothing survives a reboot.
+back when it's done: nothing survives the job, and nothing survives a reboot.
 
 It checks two things independently, because they version separately: the **firmware** and
 the **'Pedia site** on the SD card. Either can be newer without the other. Every download is
-checked against a SHA-256 the release publishes for it, and a new firmware boots on trial —
+checked against a SHA-256 the release publishes for it, and a new firmware boots on trial,
 if it doesn't come up properly, the device puts the old one back by itself.
 
 The one thing it needs first is a home network to join. Turn the AP on, scan the setup QR
@@ -555,7 +555,7 @@ with your phone, and type your Wi-Fi password into the page the device serves.
 The same **[browser flasher](#getting-started)** that set the device up in the first place
 is also the way back when Wi-Fi can't reach it. Reach for it when:
 
-- the release notes say an update needs a cable — an over-the-air update writes into a
+- the release notes say an update needs a cable: an over-the-air update writes into a
   spare app slot and nothing else, so it structurally **cannot** replace the bootloader or
   the partition table;
 - the device won't boot at all. Holding A works even when the firmware on it is the reason
@@ -566,7 +566,7 @@ is also the way back when Wi-Fi can't reach it. Reach for it when:
 <p align="center"><img src="docs/media/screens/flash-qr.png" width="200" alt="The flasher QR on the device"></p>
 
 The device knows the address too: **CFG → UPDATES → FLASH OVER USB** draws it as a QR code,
-derived from whatever publish host that device is pointed at — so it's right even on a fork
+derived from whatever publish host that device is pointed at, so it's right even on a fork
 or a laptop.
 
 ---
@@ -576,7 +576,7 @@ or a laptop.
 **The browser flasher can't see my device.** In order of how often it's the answer: the
 cable doesn't carry data; A wasn't held down *before* the cable went in; the port picker is
 filtered (the page has a **MY DEVICE ISN'T LISTED** button that shows everything); or
-something else — a serial monitor, the Arduino IDE — already has the port open. Safari and
+something else (a serial monitor, the Arduino IDE) already has the port open. Safari and
 Firefox can't talk to USB at all, and no phone can.
 
 **The device screen says the SD card won't mount.** The card must be formatted **FAT32**
@@ -587,7 +587,7 @@ Windows' own formatter won't do as FAT32.
 
 **The wiki is empty, or says the card is absent.** The 'Pedia lives on the SD card, and a
 browser-flashed device starts without it. Slot a card in (format it with **CFG → DEVICE →
-FORMAT SD** if the device can't read it) and run **CFG → UPDATES → CHECK NOW** — the device
+FORMAT SD** if the device can't read it) and run **CFG → UPDATES → CHECK NOW**: the device
 downloads the site itself.
 
 **It went dark and won't come back.** Check whether it's in travel mode: that's a deliberate
@@ -602,18 +602,18 @@ the ordinary idle sleep wakes on any button.
 ## For developers
 
 This README is the *player* on-ramp. If you want to build, extend, or contribute to
-Malwarium, the developer entry point is **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — the constraints the
+Malwarium, the developer entry point is **[`CONTRIBUTING.md`](CONTRIBUTING.md)**: the constraints the
 code is written against, where each standard lives, and how to run the gates. Start there.
 
 ---
 
 ## License
 
-Malwarium is free software under the **GNU General Public License, version 3 or later** —
+Malwarium is free software under the **GNU General Public License, version 3 or later**:
 the full text is in [`LICENSE`](LICENSE).
 
 In short: the device in your hands is yours. You may use, study, modify and redistribute
-this firmware, and if you hand someone a Malwarium you must let them do the same — which
+this firmware, and if you hand someone a Malwarium you must let them do the same, which
 includes being able to flash their own build onto it. That is the point rather than the
 price: a containment habitat you can't open isn't one you own.
 

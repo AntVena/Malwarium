@@ -1,11 +1,11 @@
-# Malwarium — the board
+# Malwarium: the board
 
 > **The one list of what's open.** Planning/design decisions, code TODOs, and art we'll need soon.
 > Each item carries a **difficulty** (S/M/L/XL) so work can be dispatched without re-deriving
 > context.
 >
 > **Anything completed and tested is DELETED from this list, not checked off.** This is a planning
-> board, not a log — the code and `git log` are the only living history we need, and kept-around
+> board, not a log: the code and `git log` are the only living history we need, and kept-around
 > history just dilutes searches. Same for entries in flight: don't annotate what changed, describe
 > what's left.
 >
@@ -18,7 +18,7 @@
 **Difficulty:** `S` ≈ an afternoon, localized · `M` ≈ a session, one subsystem · `L` ≈ multi-file,
 needs a save bump or new data model · `XL` ≈ architectural / cross-cutting / needs a design pass first.
 
-**When testing something here, ask first whether a test is warranted** — does another test already
+**When testing something here, ask first whether a test is warranted**: does another test already
 cover it? Does it matter if it fails? If it is worth one, manufacture the starting state rather than
 building it up organically.
 
@@ -28,23 +28,23 @@ building it up organically.
 
 ### 1a. Ready to build
 
-**Five areas have no STORY.** The chapter machinery ships whole — four beats per zone, fired by
-the walk, archived in EXPL's CHAPTERS list — and only CITRUS CIRCUIT is written
+**Five areas have no STORY.** The chapter machinery ships whole (four beats per zone, fired by
+the walk, archived in EXPL's CHAPTERS list), and only CITRUS CIRCUIT is written
 (`src/core/content/areas/citrus_circuit/area.cpp`'s `story` row). Every other area, and both
 endless zones, carry a zeroed `AreaStoryDef`, which reads as "nothing to say yet" and fires
 nothing. What is left is the WRITING, one area at a time: arrival, gauntlet, cleared,
 departure, each a run of heading-plus-prose panels held to `EffectText::kMaxProse`, each with
-its own `wire` number. The premise Citrus Circuit sets up — a surge nobody has explained, a
-Crew that has not turned up — is the thread the rest of the ladder has to pay off, so the arc
+its own `wire` number. The premise Citrus Circuit sets up (a surge nobody has explained, a
+Crew that has not turned up) is the thread the rest of the ladder has to pay off, so the arc
 wants deciding before the middle areas are written rather than after. |
 *The story* in [`AREA_CONTENT_STANDARD.md`](../src/core/content/areas/AREA_CONTENT_STANDARD.md);
 `test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
-reach the ARRIVAL beat — there is no gauntlet down there to open or close. |
+reach the ARRIVAL beat: there is no gauntlet down there to open or close. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, but with ~56KB left once capture is armed, anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
-the board was designed to hand over ("you find a crew to join"), but crews are ungated today —
+the board was designed to hand over ("you find a crew to join"), but crews are ungated today:
 every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
 prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and one applier case. |
 `content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
@@ -62,7 +62,7 @@ spent. |
 ### 1b. A separation pass over every screen
 
 **There are only three levers for making one thing read apart from another**: put it in a
-HEADER, set it BOLD, or spend SCREEN SPACE on a gap. Two of them are free and one is not —
+HEADER, set it BOLD, or spend SCREEN SPACE on a gap. Two of them are free and one is not:
 a 224×224 panel has a fixed amount of space and every gap is taken from something else on
 the page. So the failure mode is not "this screen is hard to read", it is **spending a
 header or a bolding on a distinction that did not need it, and having nothing left but
@@ -71,42 +71,42 @@ decision that caused it, which is why it wants a pass rather than a fix.
 
 The pass: walk every screen, name which lever each distinction is currently using, and check
 that the page's most important separation is not the one paying in space. Where the levers
-stand today — `drawHeaderBand` claims Bold everywhere, and a second claim is allowed only
+stand today: `drawHeaderBand` claims Bold everywhere, and a second claim is allowed only
 where grayscale fails without it (VISUAL_LANGUAGE §2.3 states the test and the three places
 that pass it); VISUAL_LANGUAGE §4.1's
 dim-means-READOUT split is the detail pages' free lever and the one that survives grayscale;
 the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
 Diff **M**, taste before code.
 
-### 1c. Evolution routing — one weighted edge list per creature
+### 1c. Evolution routing: one weighted edge list per creature
 
 `CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
 `evolvesToBadId`, `evolvesToTrojanId`, `evolvesToTrojanBadId`) and `kDaemonPools` carries a sixth
-route in a table beside them — six mechanisms for one question, and the fifth was added purely so
+route in a table beside them: six mechanisms for one question, and the fifth was added purely so
 one divert could land on a care branch, which an edge list would have expressed for free. [`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md)
 rule 1 asks for the opposite shape: a typed list on the row, not optional fields bolted onto the
-shared struct. The target is one array per creature —
+shared struct. The target is one array per creature.
 
 ```cpp
 struct EvolutionEdge { const char* toId; EvoWhen when; uint8_t signal; uint8_t weight; };
 ```
 
-— where `EvoWhen` is `Always | CareGood | CareBad | Signal | TrojanDivert`, and
+where `EvoWhen` is `Always | CareGood | CareBad | Signal | TrojanDivert`, and
 `Game::evolutionTargetId` becomes "filter the row's edges to those whose condition holds, then draw
 by weight". That subsumes the Daemon pool, the care branch, the linear hop and the Trojan divert
 (today a separate `if` in `fireEvolution`), and makes a signal-dependent route expressible for the
-first time — `Game::dominantSignal` computes the key and nothing consumes it.
+first time: `Game::dominantSignal` computes the key and nothing consumes it.
 
 **Do it when a chain actually needs a weight or a signal branch**, not before: every pool is
 single-entry today, so building the general mechanism now means designing it with the least
-information about what it has to carry. Consumer surface is small — `evolutionTargetId`, one
+information about what it has to carry. Consumer surface is small: `evolutionTargetId`, one
 registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
 Diff **M**.
 
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
-  is "flash, read the boot line, confirm no crash loop" — nobody has walked the buttons through
+  is "flash, read the boot line, confirm no crash loop": nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design).
 - **`tools/screens.sh` misses four screens, so a refactor of them has no pixel check.** The
   cache-yield reveal (`dump_frame`'s `cache` scene renders the idle habitat instead), the VAULT
@@ -117,7 +117,7 @@ Diff **M**.
 ### 1h. Web 'Pedia
 
 Every reveal tier is backed by persisted state. **RAISED** = any pet that was, or could have been,
-active on this device — written at the single `Game::installPet` seam, so hatch, evolution, an ARCH
+active on this device: written at the single `Game::installPet` seam, so hatch, evolution, an ARCH
 Deploy and the Trojan divert are all covered by construction. **SEEN** = faced in a fight; a menu,
 hint or cinematic doesn't count, which leaves a **duel opponent** as the only creature-species
 writer (every PVE combatant is a name-only `CombatEnemy` from a pool deliberately disjoint from the
@@ -126,14 +126,14 @@ roster, and the wild half keeps its own roster-keyed masks).
 **Open:**
 
 - **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
-  worth persisting it wants its own tier ("teased") rather than sharing this bit — two meanings on
+  worth persisting it wants its own tier ("teased") rather than sharing this bit: two meanings on
   one flag is what was deliberately removed. Diff **S** (design, not storage).
 
-### 1i. Hacker-face CREW — enlistment shipped, Red/Blue archetype layer open
+### 1i. Hacker-face CREW: enlistment shipped, Red/Blue archetype layer open
 
 - **The Red/Blue archetype + PvP contest layer.** Archetypes (Operators: Botmaster/Insider
   Threat/Ghost vs. Guardians: Orchestrator/Watchdog/Dispatcher), the capture broadcast-window
-  lifecycle, and target-cooldown + Honeypot/IDS defensive mods have no code. Diff **XL** —
+  lifecycle, and target-cooldown + Honeypot/IDS defensive mods have no code. Diff **XL**:
   needs a first design pass reconciling the ability list against everything that's shipped since.
 - **The crew roster is seven, both sides, seven ability shapes.** Shipped: Deniers of Service
   (negate), Shell Smashers (bank damage as Power), Injection Protection (reset + floor the stat
@@ -141,7 +141,7 @@ roster, and the wild half keeps its own roster-keyed masks).
   save that rallies on the overkill), Hot Spares (the next casts resolve twice) and Shakedown Artists (a
   turn-metered rake of damage dealt back as Health). Adding another is still a `kCrews[]` row; a new ability shape
   is one `CrewExploitKind` entry plus one case in `Combat::applyCrewExploit`. What's missing is the
-  *earn* model — every crew is joinable the moment a home network exists. Diff **M**.
+  *earn* model: every crew is joinable the moment a home network exists. Diff **M**.
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M**.
 
@@ -198,11 +198,11 @@ Engine slots for most of these exist (they render via placeholder or text today)
 **drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
 Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a-i. Template pet sheet — one row per default animation
+### 2a-i. Template pet sheet: one row per default animation
 
 No starting point exists for a new creature sheet today. `gen_assets.py` already slices a pet sheet
 into independent rows of up to 8 56×48 columns each (`frame_rows`/`PET_ROW_H`), and a creature's
-`CreatureDef::clips` already name an arbitrary row + frame count on its own row — so this is purely
+`CreatureDef::clips` already name an arbitrary row + frame count on its own row, so this is purely
 an authoring aid, no ingestion change needed. A template just needs one labeled row per default
 animation (idle, attack, plus the locomotion cycle §2c wants), each row 8 cells wide with
 placeholder ink or guide marks, so an artist opens one file and knows where "walk" goes without
@@ -219,7 +219,7 @@ columns were which. A template makes that a drawing instruction rather than a gu
 **A limb cut off by the frame edge reads as a rendering bug on the device, not as a crop.** At
 x1.75 a tentacle or a tail that simply stops on a flat vertical line looks like the blitter
 failed, and no amount of good drawing above it recovers the read. So the rule is: a creature
-must fit, whole, inside its own frame — the FRAME is sized to the creature, never the creature
+must fit, whole, inside its own frame. The FRAME is sized to the creature, never the creature
 trimmed to the frame. The cell may grow (`gen_assets.py` reads any `SPR_PET_` sheet whose width
 is not a multiple of 56 as one oversized frame, up to the 128x64 sprite box), which is the
 release valve that makes the rule always satisfiable.
@@ -233,7 +233,7 @@ sheets are clean, 13 are not**, led by `SPR_PET_BRUINFORCE` (30 px) and a tie be
 right) and `SPR_PET_CROAKEN` (33/33/34) are the pattern for the fix: neither was cropped, both
 were re-composed inside a cell chosen to fit them, which is why Goliauth sits in the 96x64
 Daemon box rather than the 56px cell it was overflowing. `SPR_PET_MORPHOPUS` was the worst row
-here at 42 px and is now clean, by the same move at a smaller scale — its cell grew from 66x48
+here at 42 px and is now clean, by the same move at a smaller scale: its cell grew from 66x48
 to 66x52 so the drawing kept every pixel it had. The attempt that shrank the creature to 46
 rows instead cost 12% of its opaque mass, which is the measurement that says which way round
 this rule runs.
@@ -242,23 +242,23 @@ this rule runs.
 count keeps moving: a redraw resolves the silhouette afresh every frame, so a creature drawn
 with a comfortable margin can still surge into its own top edge on one column of eight. Every
 multi-frame Metamorphic sheet is here for that reason and no other. Re-measure a sheet after
-animating it — the still frame it was approved from proves nothing about the row. Some of it
+animating it: the still frame it was approved from proves nothing about the row. Some of it
 is deliberate (a boss filling its cell, a 2px surge bought on purpose), so the sweep is a
 judgement per sheet, not a blanket re-crop, and that is why this is not already a gate. |
 `assets/` + `tools/quantize.py`; the check itself is ~20 lines over `gen_assets.frame_width` /
-`frame_rows`. | M | Do it in the same pass as 2a-ii — both walk every pixel of every sheet, and
+`frame_rows`. | M | Do it in the same pass as 2a-ii. Both walk every pixel of every sheet, and
 both end in the same place: a mechanical check in the gates once the roster agrees with itself.
 Until then this is a drawing rule enforced by eye, which is how it got broken twice. |
 
 ### 2a-ii. Outline consistency pass over the whole roster
 
-**The roster does not agree with itself about outlines.** Measured on the silhouette edge —
-every opaque pixel touching transparency — the shipped sprites split three ways:
+**The roster does not agree with itself about outlines.** Measured on the silhouette edge
+(every opaque pixel touching transparency) the shipped sprites split three ways:
 `SPR_PET_PAYPUP` is **one tone at 100%**, `SPR_PET_CROAKEN` is one tone at 96%, and
 `SPR_PET_MALBEAR` and `SPR_PET_BRUINFORCE` are ~67% over five or six tones. So the gold
 standard states a rule the rest of the roster only half-follows, and nothing writes it down.
 
-Two things to settle, in this order. **Pick the convention** — a single dark ink on every
+Two things to settle, in this order. **Pick the convention**: a single dark ink on every
 boundary pixel (what Paypup does) or no forced outline at all. Either is defensible; having
 both is what reads as sloppy at x1.75. `SPR_PET_SYNCAELIA` measures 83% ink over four tones,
 which is a fourth position again and the clearest argument that the rule wants writing down
@@ -280,15 +280,15 @@ high→low value:
   `SPR_PET_RINGWYRM`.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, a `SPR_PET_*` attack-pose frame.
-- **Six archetype icons** (`ICON_ARCHETYPE_*`) — cosmetic accompaniment to §1i; parked in `_attic/`.
+- **Six archetype icons** (`ICON_ARCHETYPE_*`): cosmetic accompaniment to §1i; parked in `_attic/`.
 
 ### 2c. New art implied by unbuilt features
 
 These come with the features above rather than ahead of them. The `ICON_SECTOR_*` glyph family is
 drawn and live on the EXPL zone picker.
 
-**A backdrop is not a sheet.** A place is engine-drawn — one file under `core/render/scenes/`,
-palette-anchored tables composed against a `SceneGround` the screen supplies — named by a
+**A backdrop is not a sheet.** A place is engine-drawn. One file under `core/render/scenes/`,
+palette-anchored tables composed against a `SceneGround` the screen supplies. Named by a
 `SceneId` and reached through `core/render/scenes.h`. An area names its own on `AreaDef::scene`
 beside the glyph it already names; a prize background names one from wherever prizes are held,
 which is why the id could never hang off `AreaDef` alone. The whole contract is in
@@ -300,12 +300,12 @@ you look at one.
   already exist. Built so far: Citrus Circuit, The Pirate Bayou, Net-Sea Crossing, Napstorrent
   Moors, Castle Rapidscare, The Silk Lode, The DeepWeb Dive, Grid Horizon, Mainframe Row, The
   Line, The CRT Bench, Ground Station, Trace City, The Cipher Hut, The Specimen Hall, The LAN
-  Party, Neon Subnet, Paywall Ridge, Zero Day Shrine —
-  beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
+  Party, Neon Subnet, Paywall Ridge, Zero Day Shrine.
+  Beside the six a CREATURE is at home in (`content/content_homes.h`), which are not on the
   authoring list because they belong to a line or a locomotion rather than to the ladder.
   Every one of the twenty-five is an ownable background (`content/content_backgrounds.h`), so a
   new place arrives with a row there and something that earns it. Diff **S**.
-- **Backdrop brightness, and one colour for lights — once the screens are locked.** Every scene
+- **Backdrop brightness, and one colour for lights. Once the screens are locked.** Every scene
   is held well under `ink` (`test_scene.cpp`), so on the value ramp a scene's brightest "light"
   is a mid grey: a lit window, a buoy lamp or a worm copy reads by contrast and shape (a dark
   housing, a halo, rays) rather than by glowing. Once the screens a backdrop sits under stop
@@ -321,16 +321,16 @@ you look at one.
   storefront motif.
 - **Castle Rapidscare art** (shipped mechanically, art pending): castle-themed malbeasts + a
   `COUNT CONFICKER` apex, and the `SPAM & SCRAM` / `THE GHOST IN THE MACHINE` storefront motifs.
-  The keep also fights with the tier-3 wild roster today — it has no malbeasts of its own, since a
+  The keep also fights with the tier-3 wild roster today: it has no malbeasts of its own, since a
   new `SPR_MALBEAST_*` grows `kWildMalbeastCount` and with it the 'Pedia's seen/defeated masks.
-- **Rarity-tiered, area-themed foods** — per-area food sets across Citrus Circuit / Pirate Bayou /
+- **Rarity-tiered, area-themed foods**: per-area food sets across Citrus Circuit / Pirate Bayou /
   Napstorrent with a rarity ramp, where the **best** food carries an effect that fits the area theme
   (Citrus Circuit might trade levels to revert a care mistake; Pirate Bayou the inverse). A
   meaningful new `ICON_ITEM_*` batch plus a mechanic. The permanent once-per-pet payoff such a
-  set's best rows would hang off already exists — `core/model/pet_upgrades.h`, six Epic dishes
-  today — so what is left here is the per-area rows and their art. Diff **L**.
+  set's best rows would hang off already exists (`core/model/pet_upgrades.h`, six Epic dishes
+  today), so what is left here is the per-area rows and their art. Diff **L**.
 - **Locomotion poses to match the resting motion.** Every creature declares how it gets around
-  (`CreatureDef::locomotion`) and the habitat already moves it that way — a walker ambles along the
+  (`CreatureDef::locomotion`) and the habitat already moves it that way: a walker ambles along the
   shelf, a swimmer drifts through the box, a flier holds an altitude, and a `Static` row (every egg
   but the jellyfish one) sits exactly where it was put (`core/model/idle_wander.h`).
   The clip the habitat swaps in for as long as the wander is travelling is named `walk` whatever
@@ -338,11 +338,11 @@ you look at one.
   and Kalico, and every row `tools/gen_worm_art.py` draws (the Worm line's four movers and the two
   Trojans diverted out of it). Every other mover poses its breathe/blink idle while it travels, so
   a drifting tadpole is a standing tadpole that slides. Wants an extra clip row per mover on the
-  existing sheets (swim cycle, step cycle), keyed off the same field — sheet rows, not new
+  existing sheets (swim cycle, step cycle), keyed off the same field: sheet rows, not new
   sprites. Diff **M**.
-- **Per-line move-fx assets / silhouette + eye-anchor data** — eye-pixel metadata
+- **Per-line move-fx assets / silhouette + eye-anchor data**: eye-pixel metadata
   per sprite + the layered gamma-pulse treatment. Largely procedural + data, not flat icons.
-- **Branching-roster sprites** — full `SPR_PET_*` sheets for the named alternates once the roster
+- **Branching-roster sprites**: full `SPR_PET_*` sheets for the named alternates once the roster
   naming session lands.
 
 ---
@@ -352,7 +352,7 @@ you look at one.
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
 rather than by line count. `save.cpp` (1215), `combat.cpp` (1888), `combat_factory.cpp` (955),
 `expl_screen.cpp` (911) and `cfg_screen.cpp` (799) are each past the number and each still
-ONE concern at UNIT level — save.cpp is long because the format is flat, which is not a second
+ONE concern at UNIT level: save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
 **Three `game_*.cpp` units are past 600 and hold more than one concern.** Each has a seam
@@ -378,7 +378,7 @@ The rest past 600 are one concern each and stay: `game_render` (one function per
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
   and the min-1 floor are one negotiation over a single value; splitting them further means
   handing the pieces a struct of each other. If it grows again the split to reach for is
-  pierce RESOLUTION — a pure `int -> int` over the three pierce sources — rather than another
+  pierce RESOLUTION (a pure `int -> int` over the three pierce sources), rather than another
   slice off the end. | `combat.cpp`'s `mitigate`. | S, if it is ever needed. | The phase order
   around it is gated (`test_pipeline_*` in `test_combat.cpp`), so a future split has something
   to fail against rather than only a comment to contradict. |
@@ -387,5 +387,5 @@ The rest past 600 are one concern each and stay: `game_render` (one function per
 
 ## If picking up cold
 
-1. **The template pet sheet (§2a-i)** — an authoring aid with no ingestion change behind it:
+1. **The template pet sheet (§2a-i)**. An authoring aid with no ingestion change behind it:
    one labeled row per default animation, so a new creature sheet starts from a plan.

@@ -1,4 +1,4 @@
-# assets/_attic — parked art
+# assets/_attic: parked art
 
 Drawings with no consumer yet. `tools/gen_assets.py` skips any path segment that starts with
 `_`, so nothing here is compiled or costs flash, and `tools/check_orphan_assets.py` is what

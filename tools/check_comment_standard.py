@@ -41,11 +41,8 @@ the subject" exception:
   * Any comment naming a save version (`v33`, `v51`): the same exception wherever it
     lands, which is how a save-migration TEST comment keeps its wire-format note.
 
-EM DASHES are counted rather than banned. docs/COMMENT_STANDARD.md's "Write plainly"
-section rules them out, and the tree held thousands when it did. EM_DASH_CEILING is the
-current count: the check fails when the count rises above it, and also when it falls
-below it, so that a cleanup lowers the ceiling in the same commit and the count can only
-go down.
+EM DASHES in comments fail the check, each one named by file and line.
+docs/COMMENT_STANDARD.md's "Write plainly" section rules them out.
 
 Only comment text is scanned. A date inside a JSON fixture and a *capture* session in
 a field name are both legitimate, and both look exactly like a violation in raw grep.
@@ -112,8 +109,6 @@ MIGRATION_UNITS = {
 # wire-format note, which is what the exception is for.
 EXEMPT_VERSION_NOTE = re.compile(r"\bv\d{1,3}\b")
 
-# The comment em dashes in the tree. Lower it when a cleanup removes some; never raise it.
-EM_DASH_CEILING = 0
 EM_DASH = "\u2014"
 
 # // to end of line, and /* ... */ across lines. Close enough on real source: the
@@ -152,12 +147,14 @@ def offenders():
 
 
 def em_dashes():
-    total = 0
     for path in sources():
+        rel = os.path.relpath(path, REPO).replace(os.sep, "/")
         with open(path, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
-        total += sum(m.group().count(EM_DASH) for m in COMMENTS.finditer(text))
-    return total
+        for m in COMMENTS.finditer(text):
+            for i, ch in enumerate(m.group()):
+                if ch == EM_DASH:
+                    yield rel, text.count("\n", 0, m.start() + i) + 1
 
 
 def main():
@@ -169,19 +166,15 @@ def main():
             print(f"  {path}:{line}  {tok!r}: {why}")
         print("\nSay what the code IS, here and now. See docs/COMMENT_STANDARD.md.")
         status = 1
-    dashes = em_dashes()
-    if dashes > EM_DASH_CEILING:
-        print(f"{dashes - EM_DASH_CEILING} new em dash(es) in comments ({dashes} against a "
-              f"ceiling of {EM_DASH_CEILING}). Use a period, colon, comma or parentheses; "
-              f"see docs/COMMENT_STANDARD.md, Write plainly.")
-        status = 1
-    elif dashes < EM_DASH_CEILING:
-        print(f"Comment em dashes are down to {dashes}. Lower EM_DASH_CEILING in "
-              f"tools/check_comment_standard.py from {EM_DASH_CEILING} to {dashes}.")
+    dashes = list(em_dashes())
+    if dashes:
+        print(f"{len(dashes)} em dash(es) in comments. Use a period, colon, comma or "
+              f"parentheses; see docs/COMMENT_STANDARD.md, Write plainly.\n")
+        for path, line in dashes:
+            print(f"  {path}:{line}")
         status = 1
     if status == 0:
-        print(f"comments clean (no board pointers, no change narration, "
-              f"{dashes} em dashes at the ceiling)")
+        print("comments clean (no board pointers, no change narration, no em dashes)")
     return status
 
 

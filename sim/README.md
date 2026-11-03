@@ -1,10 +1,10 @@
-# Wokwi simulation tier — recipe + why it is deferred
+# Wokwi simulation tier: recipe + why it is deferred
 
 > **The Wokwi *screenshot* tier is DEFERRED.** The Simulation tier's **native-unit row is
 > delivered** (`pio test -e native`, the same cases the gates run through ctest). The Wokwi
 > PNG-regression row is not, and the **host-tier render + grayscale gates stand in as the
 > acceptance proxy** for layout/rendering; the **real board is the timing authority**
-> (`docs/TEST_STRATEGY.md` — Wokwi timing is not cycle-accurate). Rationale below.
+> (`docs/TEST_STRATEGY.md`: Wokwi timing is not cycle-accurate). Rationale below.
 
 ## Why deferred (not "couldn't be bothered")
 
@@ -16,7 +16,7 @@
    against a wrong-resolution, different-controller emulation would be of uncertain
    fidelity (LovyanGFX's ST7789 init vs. Wokwi's ILI9341 command emulation is unverified).
 3. **The host tier already does more.** `pio test`/ctest run the *real* compositor and
-   assert grayscale readability + event-driven repaint on **every** screen in-process —
+   assert grayscale readability + event-driven repaint on **every** screen in-process:
    strictly more than a PNG diff would give, and without the resolution mismatch. Wokwi's
    unique value (rough MCU timing) is explicitly non-authoritative; the device covers it.
 
@@ -32,7 +32,7 @@ is low, and the two blockers above make it un-runnable here regardless.
    ```
 2. **Build the firmware:** `pio run -e wokwi_sim` (→ `.pio/build/wokwi_sim/firmware.{bin,elf}`;
    `wokwi.toml` at repo root already points here).
-3. **Author `diagram.json`** (intentionally NOT committed — it must be validated live in the
+3. **Author `diagram.json`** (intentionally NOT committed: it must be validated live in the
    Wokwi UI first, because of the ST7789 caveat above). Build it in the Wokwi editor with:
    - **Board:** `board-esp32-s3-devkitc-1`
    - **Display:** the closest SPI-TFT part Wokwi offers (today `wokwi-ili9341`; switch to a
@@ -60,4 +60,4 @@ is low, and the two blockers above make it un-runnable here regardless.
 CANCEL tokens; dump current screen/state, optionally a per-region framebuffer CRC). It is
 **not built yet.** It would let Wokwi scenarios *assert state* (not just diff pixels) and is
 the same mechanism the on-device automated re-smoke would use. Scope it together with whichever
-of {Wokwi, device automation} gets stood up first — it underpins both.
+of {Wokwi, device automation} gets stood up first: it underpins both.

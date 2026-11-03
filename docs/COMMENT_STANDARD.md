@@ -1,8 +1,8 @@
-# Malwarium — Comment & Doc-Prose Standard
+# Malwarium: Comment & Doc-Prose Standard
 
 How to write comments (and `docs/` prose) so they orient a developer **in the moment** and
 don't rot. Hold every new or edited comment to this. It's also the forward-facing half of the
-`docs/MAINTENANCE.md` "docs cleanup" dimension — this doc is how you avoid making that mess in the
+`docs/MAINTENANCE.md` "docs cleanup" dimension: this doc is how you avoid making that mess in the
 first place.
 
 ## The principle
@@ -13,41 +13,41 @@ A comment earns its place only by saying what the code cannot, concisely:
 2. **WHERE else is it used?** The consumer or collaborator, when it lives in *another* file.
 
 It never restates WHAT the code does. A restatement duplicates the code, goes stale when the
-code changes, and then disagrees with it — which reads as a bug. If deleting a comment would not
+code changes, and then disagrees with it, which reads as a bug. If deleting a comment would not
 leave a reader confused, delete it.
 
-**A comment must never point back at the planning board.** `docs/MASTER_TODO.md` is the planning surface — it
+**A comment must never point back at the planning board.** `docs/MASTER_TODO.md` is the planning surface: it
 decide *what* to build, like cards on a Kanban board. You don't write the card number on the code.
 Once the thing is built the card is irrelevant to a reader of the code (it might belong in the
-git-commit message — never in the comment). The code plus `git log` are the living history; a pointer
+git-commit message, never in the comment). The code plus `git log` are the living history; a pointer
 to a waterfall doc just rots the moment that doc moves, and adds nothing a reader-in-the-moment needs.
 
 The unambiguous half of that is a build gate: `tools/check_comment_standard.py` runs as the ctest
 `comment_standard` and fails on a board name, an `FB-*`/`Phase N` id, an attribution or a date in
 any comment under `src/`, `include/` or `test/`. It also fails on the past-tense half of **change
-narration** — "it used to be", "now lives in", "superseded", "replaces the old", "this session
-ships" — exempting the save-migration units and any comment naming a `vNN` wire version, per the
+narration** ("it used to be", "now lives in", "superseded", "replaces the old", "this session
+ships") exempting the save-migration units and any comment naming a `vNN` wire version, per the
 exceptions below. The present-tense half ("no longer", "the old X", "was removed") reads identically
 to ordinary current-state prose and is deliberately not gated, so it is still on you; so are bare
 `§` refs.
 
 **Same rule for doc prose itself: forward-facing state, not a changelog.** Cite
-*how/where* (the mechanism, a `file:line`, a sibling symbol) — never *when* (a date, a session, a
+*how/where* (the mechanism, a `file:line`, a sibling symbol), never *when* (a date, a session, a
 milestone). `git log` is the changelog.
 
 ## Don't write (strip on sight)
 
-- **Planning-board pointers** — `§`-section refs into the board, design `Area N` labels.
-- **Planning / row IDs** — `FB-*`, `D#`, `S#`, `M#` and `Phase N` milestone/build labels,
+- **Planning-board pointers**: `§`-section refs into the board, design `Area N` labels.
+- **Planning / row IDs**: `FB-*`, `D#`, `S#`, `M#` and `Phase N` milestone/build labels,
   `backlog …`, `Feedback #N`, `MASTER_TODO`, `Next-phase`.
-- **Attribution** — `(PO)`, "the PO asked for", "PO noted", "cowork decided".
-- **Time / session provenance** — dates (`2026-07-19`), "this session", "reworked <date>",
+- **Attribution**: `(PO)`, "the PO asked for", "PO noted", "cowork decided".
+- **Time / session provenance**: dates (`2026-07-19`), "this session", "reworked <date>",
   "redesign (…)", "shipped on …".
-- **Change narration** — "the old X", "used to", "no longer", "previously applied inside", "now
+- **Change narration**: "the old X", "used to", "no longer", "previously applied inside", "now
   lives on", "replaces the old", "superseded by", "[retired]". Describe the **current** state
   instead; if the *why* still matters, state it as a present fact ("opened lazily to avoid a
   file-count blowup"), not as a change story ("we used to open eagerly, which…").
-- **Opinion and unenforced rules** — taste, persuasion, or a "rule" the code does not
+- **Opinion and unenforced rules**: taste, persuasion, or a "rule" the code does not
   enforce ("held to the same ceiling every other fighter is"). A reader takes a stated rule as
   binding, then designs around a limit that does not exist. If it is a rule, enforce it in code or
   a gate and let the comment point there; if it is a fact the code doesn't show, state the fact.
@@ -55,8 +55,8 @@ milestone). `git log` is the changelog.
 ## Do write
 
 - What the thing is for, how to use it, worked examples.
-- The **why** behind a non-obvious choice — phrased as current-state rationale, not history.
-- **References to other code** — a sibling file, a class/function/tunable name — when the
+- The **why** behind a non-obvious choice: phrased as current-state rationale, not history.
+- **References to other code** (a sibling file, a class/function/tunable name), when the
   collaborator or consumer lives elsewhere. `resolveMaint() → addCareMistakeShielded`,
   `game_hacker.cpp`, `dev_config.h`, `Nav::PostEncounter` all orient you *in the codebase* and stay.
 
@@ -66,8 +66,7 @@ Comments and docs are technical instructions for the next developer. Write them 
 would explain the code to a colleague at the desk: the fact, the reason, the place.
 
 - **No em dashes.** Use a period, a colon, a comma or parentheses. `check_comment_standard.py`
-  counts the em dashes in comments under `src/`, `include/` and `test/` and fails if the count
-  rises above its ceiling. When a cleanup lowers the count, lower the ceiling to match.
+  fails on any em dash in a comment under `src/`, `include/` and `test/`, and names its line.
 - **No contrast framing.** "X, not Y", "not just X but Y", "rather than Y" and "the point isn't
   Y, it's X" make a reader hold an idea only to drop it. State X. Name an alternative only
   when a reader would otherwise choose it, and give the reason it fails.
@@ -97,11 +96,11 @@ maintenance run's docs cleanup sweeps the rest.
 
 ## Legit exceptions (they look like refs, but keep them)
 
-- **Living "how to add X" standards** — `src/core/content/CONTENT_STANDARD.md`, `src/core/content/LINE_MOVE_IDENTITIES.md`,
+- **Living "how to add X" standards**: `src/core/content/CONTENT_STANDARD.md`, `src/core/content/LINE_MOVE_IDENTITIES.md`,
   and this doc. Pointing at these *is* "how to use," so it's allowed.
-- **Save-schema `vNN` version notes** and **save-migration test comments** — the old wire format is
+- **Save-schema `vNN` version notes** and **save-migration test comments**: the old wire format is
   literally the test's subject, so describing it is current-state, not narration.
-- **Domain terms that collide with ref syntax** — the WPA 4-way handshake messages `M1`–`M4`
+- **Domain terms that collide with ref syntax**: the WPA 4-way handshake messages `M1`–`M4`
   (`eapol.*`), board names (`S3` / `C5`), SDIO data pins (`D0`–`D3`), and the in-game world areas
   (`Area 0`–`Area 3`, e.g. Citrus Circuit). These are the *thing itself*, not a reference to a card.
 
