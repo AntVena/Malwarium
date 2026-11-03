@@ -1423,7 +1423,7 @@ public:
     // dedup set rotates that BSSID out at its cap (core/net/handshake_ledger.h).
     int handshakesSeen() const { return handshakesSeen_; }
     // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
-    // a guardian's answer (game_shiboleet.cpp), The lifetime tally above counts
+    // a guardian's answer (game_shiboleet.cpp). The lifetime tally above counts
     // every capture and this counts the ones left to spend; they show together as
     // "unspent/lifetime". Never negative: spending is the only thing that moves it,
     // and it checks first.
@@ -1980,7 +1980,7 @@ public:
     int pvpWins() const { return pvpWins_; }           // LINK duels won
     int mergesCooked() const { return mergesCooked_; } // dishes cooked at the MERGE HUB
     // Has this item EVER been in the bag? (save v40): the collection tally behind the
-    // cuisine/rarity achievements, Anything asking what the player has seen reads
+    // cuisine/rarity achievements. Anything asking what the player has seen reads
     // this; the bag holds only what is left. Written by a sweep over the live
     // inventory, so every path that grants an item is covered by construction.
     bool itemCollected(const char* id) const;
