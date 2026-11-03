@@ -119,7 +119,7 @@ inline constexpr int kShopBulkOpenCost = 2048;
 
 // --- ITEMS Type-Picker --------------------------------------------------------
 // A one-time unlock that puts a category tile screen (ALL/FOOD/BUFFS/KEYS/TOOLS,
-// items_screen.h's ItemPickRow) in FRONT of the ITEMS list: entering ITEMS lands on
+// items_screen.h's kItemPickerTiles) in FRONT of the ITEMS list: entering ITEMS lands on
 // the picker, B drills into that category, C walks back to it. Independent of Items
 // Type-Tabs — either row is useful alone — but owning both upgrades the hold-B
 // gesture to the picker's finer CATEGORY axis (Game::nextItemFilter's categoryAxis),

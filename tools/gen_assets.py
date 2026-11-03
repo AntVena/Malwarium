@@ -771,9 +771,10 @@ def emit_assets_header(decls, table):
     lines.append("")
     lines.append("// Resolve a sprite by its asset name (the AssetSource seam: an")
     lines.append("// SD-backed source resolves the same names against card art later).")
+    lines.append("// Sorted by strcmp order: EmbeddedAssets::sprite binary-searches it.")
     lines.append("struct AssetEntry { const char* name; const SpriteData* data; };")
     lines.append("inline const AssetEntry kAssetTable[] = {")
-    for name, sym, *_ in table:
+    for name, sym, *_ in sorted(table, key=lambda t: t[0].encode()):
         lines.append(f'    {{"{name}", &{sym}}},')
     lines.append("};")
     lines.append(f"inline constexpr int kAssetCount = {len(table)};")

@@ -707,8 +707,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Stat: drawStat(fb); break;
         case SubmenuId::Items: {
             if (itemsScreen_ == ItemsScreen::Picker) {
-                drawItemTypePicker(fb, buildItemPickerRows(registry_, inventory_),
-                                   itemPickRow_);
+                drawItemTypePicker(fb, itemPickRow_);
                 break;
             }
             auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_,

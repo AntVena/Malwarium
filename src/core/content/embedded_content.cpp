@@ -5,6 +5,7 @@
 // so every table stays small and skimmable. This file just ASSEMBLES those tables into
 // the ContentSource the registry reads. An SD-backed source is a parallel implementation
 // merged at boot — not a change to anything that reads the registry.
+#include <algorithm>
 #include <cstring>
 
 #include "core/content/content_source.h"
@@ -51,10 +52,12 @@ public:
 class EmbeddedAssets : public AssetSource {
 public:
     const SpriteData* sprite(const char* name) const override {
-        for (int i = 0; i < kAssetCount; ++i)
-            if (std::strcmp(kAssetTable[i].name, name) == 0)
-                return kAssetTable[i].data;
-        return nullptr;
+        const AssetEntry* end = kAssetTable + kAssetCount;
+        const AssetEntry* it = std::lower_bound(
+            kAssetTable, end, name, [](const AssetEntry& e, const char* n) {
+                return std::strcmp(e.name, n) < 0;
+            });
+        return (it != end && std::strcmp(it->name, name) == 0) ? it->data : nullptr;
     }
 };
 

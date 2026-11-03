@@ -39,6 +39,16 @@ void test_sprite_roundtrip() {
 // naming a row past the first quietly draws nothing. This sheet stacks the most rows
 // on a cell taller than PET_ROW_H, which makes it the case that proves
 // ROW_H_OVERRIDES is still being read.
+// The embedded asset lookup binary-searches kAssetTable, so every entry must resolve
+// to its own sprite by name, and a name absent from the table must miss.
+void test_asset_lookup_resolves_every_name() {
+    const AssetSource& assets = embeddedAssets();
+    for (int i = 0; i < kAssetCount; ++i)
+        CHECK(assets.sprite(kAssetTable[i].name) == kAssetTable[i].data);
+    CHECK(assets.sprite("ICON_ITEM_NO_SUCH_ITEM") == nullptr);
+    CHECK(assets.sprite("") == nullptr);
+}
+
 void test_oversized_cell_holds_a_row_stack() {
     const SpriteData& s = ASSET_SPR_PET_SYNCAELIA;
     CHECK(s.frameW == 78);   // FRAME_W_OVERRIDES: 624 does not divide by 56

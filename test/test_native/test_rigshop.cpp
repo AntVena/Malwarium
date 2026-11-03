@@ -966,58 +966,16 @@ void test_item_category_filters_split_quest() {
     CHECK(itemCount(keys) == 2);                            // Keys untouched by it
 }
 
-// The type-picker's tiles: fixed ALL/FOOD/INGREDIENTS/BUFFS/KEYS/TOOLS order, each
-// carrying the UNIT count of what's behind it. Caches are absent by construction
-// (they decrypt in the VAULT, so buildInventoryRows never lists one and no tile can
-// hold one). Of the 5 food units, the 2 Tor-Tilla Chips are also Nachos' ingredient
-// (content_recipes.cpp), so INGREDIENTS carries those 2 while FOOD still carries
-// all 5 — the tile narrows by filterMatches (unsplit), not by group.
-void test_item_picker_tiles_count_units() {
-    ContentRegistry r = ContentRegistry::embedded();
-    Inventory inv = Inventory::starting();      // 5 food + 2 buffs + 2 keys = 9 units
-    auto tiles = buildItemPickerRows(r, inv);
-    CHECK(tiles.size() == 6);
-    CHECK(tiles[0].filter == ItemFilter::All         && tiles[0].units == 9);
-    CHECK(tiles[1].filter == ItemFilter::Food        && tiles[1].units == 5);
-    CHECK(tiles[2].filter == ItemFilter::Ingredients && tiles[2].units == 2);
-    CHECK(tiles[3].filter == ItemFilter::Buffs       && tiles[3].units == 2);
-    CHECK(tiles[4].filter == ItemFilter::Keys        && tiles[4].units == 2);
-    CHECK(tiles[5].filter == ItemFilter::Tools       && tiles[5].units == 0);
-
-    // A cache is listed under ALL only (its CACHES group points at the VAULT), so ALL
-    // counts it — a tile never disagrees with its list — and no narrower tile moves.
-    inv.add("sealed_cache_epic", 4);
-    auto withCache = buildItemPickerRows(r, inv);
-    CHECK(withCache[0].units == tiles[0].units + 4);
-    for (size_t i = 1; i < tiles.size(); ++i) CHECK(withCache[i].units == tiles[i].units);
-}
-
-// Grayscale gate: on the type-picker, BOTH the focused tile's cursor marker and an
-// empty category's dimmed row read without colour — selection and emptiness each
-// carry a luminance channel of their own.
+// Grayscale gate: on the type-picker, the focused tile's cursor marker reads without
+// colour.
 void test_item_picker_grayscale() {
-    ContentRegistry r = ContentRegistry::embedded();
-    auto tiles = buildItemPickerRows(r, Inventory::starting());   // TOOLS tile is x0
     Framebuffer fb(kActiveW, kActiveH);
-    drawItemTypePicker(fb, tiles, 0);
+    drawItemTypePicker(fb, 0);
 
     constexpr int kPickRowH = 30;   // mirrors drawItemTypePicker's pitch
     const int focusY = kItemsRowTop + 0 * kPickRowH + kPickRowH / 2;  // ALL (selected)
     const int plainY = kItemsRowTop + 1 * kPickRowH + kPickRowH / 2;  // FOOD (not)
     CHECK(luminance(fb.get(9, focusY)) - luminance(fb.get(9, plainY)) > 0.3f);
-
-    // An empty tile's label is dimmer than a populated one's, at the same x.
-    // Row 5 (TOOLS) is the x0 tile now that INGREDIENTS sits at row 2.
-    const int filledY = kItemsRowTop + 1 * kPickRowH + (kPickRowH - 7) / 2 + 3;
-    const int emptyY  = kItemsRowTop + 5 * kPickRowH + (kPickRowH - 7) / 2 + 3;
-    float filledMax = 0.f, emptyMax = 0.f;
-    for (int x = 24; x < 24 + textWidth("BUFFS"); ++x) {
-        for (int dy = -4; dy <= 4; ++dy) {
-            filledMax = std::max(filledMax, luminance(fb.get(x, filledY + dy)));
-            emptyMax  = std::max(emptyMax,  luminance(fb.get(x, emptyY + dy)));
-        }
-    }
-    CHECK(filledMax - emptyMax > 0.15f);
 }
 
 // The picker's nav contract. Unowned: ITEMS opens straight on the list, exactly as

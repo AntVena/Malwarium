@@ -90,34 +90,19 @@ int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir);
 // The L2 tile screen the ITEMS submenu opens on once the upgrade is owned: pick a
 // category, then B drills into that filtered list (C on the list walks back here).
 
-// One picker tile: a filter, its chip word, and how many units of it the bag holds
-// right now. `units` == 0 draws dim — the tile stays selectable and openable, so the
-// screen's shape never changes under the player.
-struct ItemPickRow {
-    ItemFilter filter;
-    const char* label;
-    int units;
-};
-
-// The picker's fixed tile order. There is no CACHES tile: buildInventoryRows lists a
-// Sealed Cache only under ALL (in its own CACHES group, since they open in the Hacker
-// VAULT), so ALL counts them and no narrower tile does. Input handlers step and commit
-// against this table directly, so a cursor move never pays for the counts.
+// The picker's fixed tile order, labelled by itemFilterLabel. Tiles carry no unit
+// count: a total across a category says nothing about which items it holds, and the
+// list behind an empty tile says "- NO MATCHING ITEMS -". There is no CACHES tile:
+// buildInventoryRows lists a Sealed Cache only under ALL, in its own CACHES group,
+// since they open in the Hacker VAULT.
 inline constexpr ItemFilter kItemPickerTiles[] = {
     ItemFilter::All,  ItemFilter::Food, ItemFilter::Ingredients,
     ItemFilter::Buffs, ItemFilter::Keys, ItemFilter::Tools};
 inline constexpr int kItemPickerTileCount =
     static_cast<int>(sizeof(kItemPickerTiles) / sizeof(kItemPickerTiles[0]));
 
-// The tiles with their unit counts, for drawing. One pass over the bag fills every
-// tile, using the same inclusion rule buildInventoryRows filters by, so a tile can
-// never disagree with the list behind it.
-std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
-                                             const Inventory& inv);
-
-// L2 type-picker. `cursor` indexes `tiles` (every tile is selectable).
-void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
-                        int cursor);
+// L2 type-picker. `cursor` indexes kItemPickerTiles.
+void drawItemTypePicker(Framebuffer& fb, int cursor);
 
 // Whether a row carries a ONCE-PER-PET grant, and whether the active pet has taken it.
 // Three states, not two: an ordinary item has nothing to spend, and "no grant" must never

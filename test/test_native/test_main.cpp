@@ -22,6 +22,7 @@ int g_failures = 0;
 #define MAL_RUN_ALL_GATES(RUN)              \
     /* T0–T2 — pipeline + idle + STAT */    \
     RUN(test_sprite_roundtrip)              \
+    RUN(test_asset_lookup_resolves_every_name) \
     RUN(test_oversized_cell_holds_a_row_stack) \
     RUN(test_indexed_sprite_decodes_across_byte_boundaries) \
     RUN(test_tiled_sprite_shares_one_tile_between_positions) \
@@ -726,7 +727,6 @@ int g_failures = 0;
     RUN(test_item_hold_b_cycles_filter_tap_opens) \
     RUN(test_hacker_shop_item_picker_buy)         \
     RUN(test_item_category_filters_split_quest)   \
-    RUN(test_item_picker_tiles_count_units)       \
     RUN(test_item_picker_grayscale)               \
     RUN(test_item_picker_nav_drills_in_and_back)  \
     RUN(test_item_picker_skipped_in_lockout)      \

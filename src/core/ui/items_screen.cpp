@@ -72,16 +72,6 @@ bool filterMatches(ItemFilter f, const ItemDef& d) {
     return true;
 }
 
-// Does the list under `f` show `d`? Sealed caches open in the Hacker VAULT only
-// (itemUsable's "OPEN IN VAULT (A+C)" gate), but the ALL list still shows them, in a
-// group of their own that says where they go: a reward the bag hides is a reward the
-// player never learns they have. Every narrower filter leaves them out, so no tile
-// holds them. Shared by buildInventoryRows and the picker's tile counts.
-bool listShows(ItemFilter f, const ItemDef& d) {
-    if (d.use == ItemDef::Use::OpenContainer && f != ItemFilter::All) return false;
-    return filterMatches(f, d);
-}
-
 // Rarity ladder: four cells, one lit per tier up to the item's own (Common 1 .. Epic
 // 4). Lit cells are full-height blocks in the rarity's colour, unlit ones a baseline
 // tick — so the tier is COUNTABLE before it is coloured, which is what lets the row
@@ -235,7 +225,12 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
     struct Owned { const ItemDef* def; int qty; int key; };
     std::vector<Owned> owned;
     for (const ItemDef* d : reg.allItems()) {
-        if (!listShows(filter, *d)) continue;
+        // Sealed caches open in the Hacker VAULT only (itemUsable's "OPEN IN VAULT
+        // (A+C)" gate), but the ALL list still shows them, in a group of their own that
+        // says where they go: a reward the bag hides is a reward the player never learns
+        // they have. Every narrower filter leaves them out, so no tile holds them.
+        if (d->use == ItemDef::Use::OpenContainer && filter != ItemFilter::All) continue;
+        if (!filterMatches(filter, *d)) continue;
         int q = inv.count(d->id);
         if (q > 0) owned.push_back({d, q, groupKey(*d, lockoutSort)});
     }
@@ -292,45 +287,23 @@ int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir) {
     return cur;  // all headers (shouldn't happen)
 }
 
-std::vector<ItemPickRow> buildItemPickerRows(const ContentRegistry& reg,
-                                             const Inventory& inv) {
-    std::vector<ItemPickRow> tiles;
-    for (ItemFilter f : kItemPickerTiles) tiles.push_back({f, itemFilterLabel(f), 0});
-    for (const ItemDef* d : reg.allItems()) {
-        const int q = inv.count(d->id);
-        if (q <= 0) continue;
-        for (ItemPickRow& t : tiles)
-            if (listShows(t.filter, *d)) t.units += q;
-    }
-    return tiles;
-}
-
-void drawItemTypePicker(Framebuffer& fb, const std::vector<ItemPickRow>& tiles,
-                        int cursor) {
+void drawItemTypePicker(Framebuffer& fb, int cursor) {
     listHeader(fb, "ITEMS - PICK TYPE", 0, 0);
 
     // Pitch is set by the tile COUNT against the footer, not chosen for looks: the
-    // picker never scrolls (buildItemPickerRows returns a fixed set), so every tile
+    // picker never scrolls (kItemPickerTiles is a fixed set), so every tile
     // has to fit between kRowTop and the footer rule. Six tiles at the old pitch of
     // 32 put the last row's selection band straight through the rule — the INGREDIENTS
     // tile is what made six. 26 + 6*30 = 206 clears the rule at kActiveH-16.
     constexpr int kPickRowH = 30;
-    const int n = static_cast<int>(tiles.size());
-    for (int i = 0; i < n; ++i) {
-        const ItemPickRow& t = tiles[i];
+    for (int i = 0; i < kItemPickerTileCount; ++i) {
         const int y = kRowTop + i * kPickRowH;
         if (i == cursor) {  // UI_ROW_SEL band (grayscale-separable from paper)
             fb.fillRect(4, y + 2, kActiveW - 8, kPickRowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + (kPickRowH - 7) / 2, palColor(Pal::ACCENT));
         }
-        // An empty category dims BOTH its name and its count — the count is the
-        // non-colour channel, so the row still reads as empty in grayscale.
-        const Rgb565 ink = t.units > 0 ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
-        drawText(fb, 24, y + (kPickRowH - kFontH) / 2, t.label, ink);
-        char qty[8];
-        std::snprintf(qty, sizeof(qty), "x%d", t.units);
-        drawText(fb, kActiveW - kMargin - textWidth(qty),
-                 y + (kPickRowH - kFontH) / 2, qty, ink);
+        drawText(fb, 24, y + (kPickRowH - kFontH) / 2,
+                 itemFilterLabel(kItemPickerTiles[i]), palColor(Pal::INK));
     }
 
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
