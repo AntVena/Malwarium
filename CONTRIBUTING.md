@@ -1,30 +1,29 @@
 # Contributing to Malwarium
 
-`README.md` is the player on-ramp: start there if you want the device working. This file is
-the developer one: the constraints the code is written against, where the standards live, and
-how to run the gates.
+Players start at `README.md`, which gets a device working. This file is for developers: the
+constraints the code is written against, where the standards live, and how to run the gates.
 
 ## Hard constraints (non-negotiable)
 
 ST7789 **240×240** RGB565 · active canvas **224×224** (8px bezel, no UI in it) · author at
 **128×128 logical** (rect 128×64) · **×1.75 integer canvas upscale, no resampling** (a sprite's
-own scale is per-blit; the combat stage draws its fighters at 1/1: `RENDER_PIPELINE.md`) · ~4fps
-event-driven repaint (redraw on change) · 2-frame loops are the norm · pet cell **56×48
+scale is set per blit, and the combat stage draws its fighters at 1/1; see `RENDER_PIPELINE.md`)
+· ~4fps event-driven repaint (redraw on change) · 2-frame loops are the norm · pet cell **56×48
 logical** (max 128×64) · buttons **A=Next · B=Accept · C=Cancel**, with **A+C** the Exploit
 chord (Hacker face, combat override, egg crack).
 
 **Each button's HOLD is the bigger version of its tap**, and there are only three: hold **A**
 to repeat the step, hold **B** for the screen's second action (the ITEMS type filter, the
 MOVES show-all, the VAULT bulk-open, the CFG factory reset), hold **C** to walk a list
-backward. A hold never means something unrelated to the tap under it, and C's tap stays
-Cancel everywhere: that one does not bend. The row-stepping half is implemented once, in
+backward. A hold never means something unrelated to the tap under it, and C's tap is Cancel
+on every screen, with no exceptions. The row-stepping half is implemented once, in
 [`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it by gaining a case
 there rather than by writing its own cursor arithmetic. A tap/hold button settles on the
 RELEASE edge, so anything driving one (a gate, `tools/dump_frame.cpp`) must send both edges.
 
-**Dual-coding release gate:** every status meaning carries a non-colour channel; **a grayscale
-screenshot of any screen must stay fully readable.** The pipeline all of this describes is
-[`src/core/render/RENDER_PIPELINE.md`](src/core/render/RENDER_PIPELINE.md).
+**Dual-coding release gate:** every status meaning carries a non-colour channel, so **a
+grayscale screenshot of any screen stays fully readable.** The pipeline all of this describes
+is [`src/core/render/RENDER_PIPELINE.md`](src/core/render/RENDER_PIPELINE.md).
 
 **Locked vocabulary:** *Malwarium* = the device/habitat · *malbeast* = a wild creature ·
 *petware* = a tamed pet · *the 'net* = the world. You **tame by raising**, never by capturing.
@@ -82,17 +81,15 @@ a board row for what is not. The smallest patch that makes the symptom go away i
 ## Comments and doc prose
 
 **A comment says only what the code cannot: *why* it is this way, and *where else* it is
-used.** Keep it to a line or two. Never restate what the code does: the code already says
-that, and a restatement goes stale the moment the code changes, leaving a comment that
-disagrees with the code and reads like a bug. If deleting a comment would not leave a reader
-confused, delete it. A comment also never points back at the planning board:
-[`docs/MASTER_TODO.md`](docs/MASTER_TODO.md) decides *what* to build, and the card does not go
-in the code.
+used.** Keep it to a line or two. Never restate what the code does. A restatement goes stale
+when the code changes, and then it disagrees with the code and reads like a bug. If deleting a
+comment would not leave a reader confused, delete it. A comment never cites the planning board
+([`docs/MASTER_TODO.md`](docs/MASTER_TODO.md)); its cards stay out of the code.
 
 So: no planning or milestone IDs, no dates or session tags, no change-narration ("the old X",
 "used to", "now lives on"). Describe the **current** state, and reference other code (files,
-symbols) freely. Docs are forward-facing for the same reason: cite how and where, never when.
-`git log` is the changelog, and prose that narrates change competes with it and loses.
+symbols) freely. Docs follow the same rule: cite how and where, never when. `git log` is the
+changelog, and prose that narrates change competes with it and loses.
 
 Full rules and the keep-anyway exceptions (EAPOL `M1–M4`, board and pin names, world
 `Area 0–3`, living how-to standards): [`docs/COMMENT_STANDARD.md`](docs/COMMENT_STANDARD.md).
@@ -116,10 +113,10 @@ Each lives in the folder it governs. This table is for finding them cold.
 
 | If the task involves… | Read first |
 |---|---|
-| Re-orienting, "what's open" | [`docs/MASTER_TODO.md`](docs/MASTER_TODO.md): the one board |
+| Re-orienting, "what's open" | [`docs/MASTER_TODO.md`](docs/MASTER_TODO.md) |
 | The cross-cutting picture: repo map, stack, carousel, care model, currency, radio, releasing | [`docs/ORIENTATION.md`](docs/ORIENTATION.md) |
 | Adding a milestone-sized feature | the board (open work) + [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) ("done" criteria) |
-| Content: items, mods, moves, creatures, or a balance constant | [`src/core/content/README.md`](src/core/content/README.md) |
+| Content (items, mods, moves, creatures) or a balance constant | [`src/core/content/README.md`](src/core/content/README.md) |
 | An EXPL area, its bosses/shop/mod pool, or adding a new one | [`src/core/content/areas/README.md`](src/core/content/areas/README.md) |
 | Naming a creature, item, area or sub-area | the naming docs beside the tables, routed from those two |
 | Art, palette, sprites, what exists vs. what's a placeholder | [`assets/README.md`](assets/README.md) |
@@ -127,8 +124,8 @@ Each lives in the folder it governs. This table is for finding them cold.
 | A render pass or visual effect | [`src/core/render/RENDER_PIPELINE.md`](src/core/render/RENDER_PIPELINE.md) |
 | Pins, board peripherals, bring-up | [`include/config.h`](include/config.h) is the pin authority; [`src/platform/esp32/HARDWARE.md`](src/platform/esp32/HARDWARE.md) for the board |
 
-**Source types.** `assets/` and `PAL_CORE.json` are final data: reproduce them exactly, and
-never re-invent a colour that already has a token. `include/tunables.h` holds cross-cutting
+**Source types.** `assets/` and `PAL_CORE.json` are final data. Reproduce them exactly, and
+use the existing token for any colour that has one. `include/tunables.h` holds cross-cutting
 balance only; a magnitude one entity reads lives on that entity's row. A shipped screen is its
 own contract.
 
@@ -146,30 +143,29 @@ Quiet on success, and on failure it prints only the lines that explain it. `--na
 firmware build for a tight edit loop; `--verbose` streams everything. The same two tiers run in
 CI on every push (`.github/workflows/gates.yml`).
 
-`src/generated/` is compiled from `assets/` by `tools/gen_assets.py` and is not committed: the
+`src/generated/` is compiled from `assets/` by `tools/gen_assets.py` and is not committed. The
 gates regenerate it, so a fresh clone needs no extra step.
 
 **Editor diagnostics.** The two tiers build on two toolchains, and clangd can infer neither, so
 each pins its own compile database: `.clangd` at the root points at `build/` (what the gates
-configure) and `src/platform/esp32/.clangd` at `build-device/`. `./tools/compiledb.sh`
-regenerates both: run it after a fresh clone, and again whenever the include set moves. With
-them in place a clangd error is a real error on either tier; there is no "device code always
-looks broken" to read past.
+configure) and `src/platform/esp32/.clangd` at `build-device/`. Run `./tools/compiledb.sh` to
+regenerate both after a fresh clone and whenever the include set changes. With them in place a
+clangd error is a real error on either tier; there is no "device code always looks broken" to
+read past.
 
-**From a Claude Code on the web session.** `.claude/hooks/session-start.sh` installs what
-`tools/` imports and runs the codegen, so a fresh container can build and test on arrival.
-Run `./tools/gates.sh --native` there: the sandbox network policy refuses the PlatformIO
-registry, so the S3 tier cannot fetch its toolchain and cannot run at all. CI covers it:
-gates runs both tiers on pushes to `claude/**` and `ccr-*` as well as `main`, so a remote session's
-push is checked without opening a pull request. A session has no write on `refs/tags/*`,
-which costs nothing: releases here are cut by dispatching `publish.yml`, not by tagging
-(see *Releasing*). Pages deploys are held to `main`, so **publish only runs once the work
-has landed there**: dispatching `publish.yml` on a branch fails with an empty, logless
-deploy job.
+**From a Claude Code on the web session.** `.claude/hooks/session-start.sh` installs what `tools/`
+imports and runs the codegen, so a fresh container can build and test on arrival. Run
+`./tools/gates.sh --native` there: the sandbox network policy refuses the PlatformIO registry, so
+the S3 tier cannot fetch its toolchain and cannot run at all. CI runs both tiers on pushes to
+`claude/**`, `ccr-*` and `main`, so a remote session's push is checked without a pull request. A
+session has no write on `refs/tags/*`, which costs nothing: releases here are cut by dispatching
+`publish.yml`, not by tagging (see *Releasing*). Pages deploys only from `main`, so **dispatch
+publish after the work lands there**. Dispatched on a branch, it fails with an empty deploy job
+and no log.
 
-Neither tier can see two things drawn on top of each other, or a panel cutting its own
-copy. `./tools/screens.sh` renders the screen catalogue to one contact sheet for that:
-a looking tool, not a gate. Run it after touching the layout grid, the font, or a shared
+Neither tier can see two things drawn on top of each other, or a panel clipping its own
+text. `./tools/screens.sh` renders every screen to one contact sheet so you can look for
+both. It fails nothing. Run it after touching the layout grid, the font, or a shared
 widget.
 
 Commit verified work as logical units. A message should carry the motivation and the *why*, not
@@ -181,14 +177,14 @@ a restatement of the diff.
 parked on a side branch waiting for review: finish it, run the gates (`./tools/gates.sh`), bump
 the versions, cut the release.
 
-**Pushing `main` is half the job: the publish is a separate act.** `publish.yml` is what
-builds the firmware artifact, writes the manifest a device polls, stages the boot images
-`/flash/` writes and deploys the lot to Pages. Skip it and the release is not live: nothing is
-offered to any device, and the only symptom is a version nobody is running.
+**A release goes live only when `publish.yml` runs.** `publish.yml` is what builds the
+firmware artifact, writes the manifest a device polls, stages the boot images `/flash/` writes
+and deploys the lot to Pages. Skip it and the release is not live: nothing is offered to any
+device, and the only symptom is a version nobody is running.
 
-**So dispatch `publish.yml` on `main` as soon as the release commit lands: every time,
-without asking.** Nobody reviews a release before it ships here, so there is nothing to wait
-for. Tags are not used: `make pages` reads the version from `include/version.h` and
+**Dispatch `publish.yml` on `main` as soon as the release commit lands, every time, without
+asking.** Nobody reviews a release before it ships here, so there is nothing to wait for.
+Tags are not used: `make pages` reads the version from `include/version.h` and
 `web/VERSION`, never from the ref, so a dispatch publishes exactly what a tag would, and the
 release commit is the repo's record of it. (The workflow still answers a pushed `v*` tag;
 nothing needs one.)

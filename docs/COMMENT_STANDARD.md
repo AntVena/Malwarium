@@ -1,9 +1,8 @@
 # Malwarium: Comment & Doc-Prose Standard
 
-How to write comments (and `docs/` prose) so they orient a developer **in the moment** and
-don't rot. Hold every new or edited comment to this. It's also the forward-facing half of the
-`docs/MAINTENANCE.md` "docs cleanup" dimension: this doc is how you avoid making that mess in the
-first place.
+How to write comments (and `docs/` prose) so they orient a developer **in the moment** and don't
+rot. Hold every new or edited comment to this. The "docs cleanup" item in `docs/MAINTENANCE.md`
+fixes existing prose; this doc keeps new prose from needing it.
 
 ## The principle
 
@@ -16,11 +15,11 @@ It never restates WHAT the code does. A restatement duplicates the code, goes st
 code changes, and then disagrees with it, which reads as a bug. If deleting a comment would not
 leave a reader confused, delete it.
 
-**A comment must never point back at the planning board.** `docs/MASTER_TODO.md` is the planning surface: it
-decide *what* to build, like cards on a Kanban board. You don't write the card number on the code.
-Once the thing is built the card is irrelevant to a reader of the code (it might belong in the
-git-commit message, never in the comment). The code plus `git log` are the living history; a pointer
-to a waterfall doc just rots the moment that doc moves, and adds nothing a reader-in-the-moment needs.
+**A comment must never point back at the planning board.** `docs/MASTER_TODO.md` decides *what* to
+build, one card per piece of work. You don't write the card number on the code. Once the work is
+built, the card tells a reader of the code nothing. Cite it in the commit message if anywhere. The
+code plus `git log` are the living history; a pointer to a waterfall doc just rots the moment that
+doc moves, and adds nothing a reader-in-the-moment needs.
 
 The unambiguous half of that is a build gate: `tools/check_comment_standard.py` runs as the ctest
 `comment_standard` and fails on a board name, an `FB-*`/`Phase N` id, an attribution or a date in
@@ -31,9 +30,9 @@ exceptions below. The present-tense half ("no longer", "the old X", "was removed
 to ordinary current-state prose and is deliberately not gated, so it is still on you; so are bare
 `§` refs.
 
-**Same rule for doc prose itself: forward-facing state, not a changelog.** Cite
-*how/where* (the mechanism, a `file:line`, a sibling symbol), never *when* (a date, a session, a
-milestone). `git log` is the changelog.
+**Doc prose follows the same rule and describes current state.** Cite *how/where* (the
+mechanism, a `file:line`, a sibling symbol), never *when* (a date, a session, a milestone).
+`git log` is the changelog.
 
 ## Don't write (strip on sight)
 
@@ -55,7 +54,7 @@ milestone). `git log` is the changelog.
 ## Do write
 
 - What the thing is for, how to use it, worked examples.
-- The **why** behind a non-obvious choice: phrased as current-state rationale, not history.
+- The **why** behind a non-obvious choice, phrased as the reason it holds today.
 - **References to other code** (a sibling file, a class/function/tunable name), when the
   collaborator or consumer lives elsewhere. `resolveMaint() → addCareMistakeShielded`,
   `game_hacker.cpp`, `dev_config.h`, `Nav::PostEncounter` all orient you *in the codebase* and stay.
@@ -99,7 +98,7 @@ maintenance run's docs cleanup sweeps the rest.
 - **Living "how to add X" standards**: `src/core/content/CONTENT_STANDARD.md`, `src/core/content/LINE_MOVE_IDENTITIES.md`,
   and this doc. Pointing at these *is* "how to use," so it's allowed.
 - **Save-schema `vNN` version notes** and **save-migration test comments**: the old wire format is
-  literally the test's subject, so describing it is current-state, not narration.
+  the test's subject, so describing it describes the code.
 - **Domain terms that collide with ref syntax**: the WPA 4-way handshake messages `M1`–`M4`
   (`eapol.*`), board names (`S3` / `C5`), SDIO data pins (`D0`–`D3`), and the in-game world areas
   (`Area 0`–`Area 3`, e.g. Citrus Circuit). These are the *thing itself*, not a reference to a card.

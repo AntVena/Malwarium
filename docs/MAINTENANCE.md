@@ -1,20 +1,17 @@
 # Malwarium: Maintenance Routine
 
-A recurring self-review pile. Start a session with **"let's do a maintenance run"**: pick the
-item below with the oldest "Last run" date, do it for real (not a superficial pass), then bump its
-date and commit. The date is the only breadcrumb this file keeps; what the run actually found goes
-in the commit, and anything left open becomes a row on `docs/MASTER_TODO.md`.
+A recurring self-review pile. Start a session with **"let's do a maintenance run"**: pick the item
+below with the oldest "Last run" date, do it fully, then bump its date and commit. The date is the
+only breadcrumb this file keeps; what the run actually found goes in the commit, and anything left
+open becomes a row on `docs/MASTER_TODO.md`.
 
-**Philosophy:** docs describe **current state and forward-facing work**, not a changelog. `git
-log` is the changelog. The specific rule: cite **how/where**, never **when**. *When* something was
-decided rarely matters: a decision can be revisited at any time regardless of its age, so a date
+**Philosophy:** docs describe **current state and open work**. `git log` is the changelog. The
+specific rule: cite **how/where**, never **when**. Leave out *when* something was decided: a date
 doesn't change what a reader should do. *How/where* (the mechanism, the file:line, the structural
 reason something is the path of least resistance) is worth keeping, because it lets a reader judge
-whether the reasoning still holds, and it usually carries the *why* for free. Don't trust a doc's
-own narrative: verify claims against the actual code before relying on them; a doc can go stale
-the moment it's written and nothing enforces it silently. A maintenance run is the mechanism that
-keeps this from drifting back into changelog-shaped docs: regular, bounded passes instead of one
-overdue cleanup.
+whether the reasoning still holds, and it usually carries the *why* for free. Verify a doc's
+claims against the code before relying on them. Nothing keeps a doc in sync with the code.
+Maintenance runs keep the docs that way through small, regular passes.
 
 ## The pile
 
@@ -41,12 +38,13 @@ contrast carries no decision, and delete sentences that add emphasis without a f
 first: they are read more often than any one comment.
 
 ### Self-architecture review. Last run: 2026-10-17
-Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication, dead code, and orphaned helpers
-that should have moved to `game_internal.h` or been deleted. Verify actual file sizes, don't trust
-what a doc says they are. Sources are globbed (`CMakeLists.txt`, `build_src_filter`), so a new
-unit needs no build-file edit: the cost of a split is the reading, not the plumbing. When a
-unit is big but genuinely one concern (a dispatcher, a flat save mapping, a screen-per-function
-render file), leave it and say so: length that follows from the number of cases is not creep.
+Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication,
+dead code, and orphaned helpers that should have moved to `game_internal.h` or been deleted. Verify
+actual file sizes, don't trust what a doc says they are. Sources are globbed (`CMakeLists.txt`,
+`build_src_filter`), so a new unit needs no build-file edit, and a split costs only the time to
+review it. When a unit is big but genuinely one concern (a dispatcher, a flat save mapping, a
+screen-per-function render file), leave it and say so: length that follows from the number of cases
+is not creep.
 
 **Audit against CONTRIBUTING's *Structure* section.** Its rules say how code here is
 written; this run finds where the code falls short. Look for:
@@ -76,9 +74,9 @@ length, and the two are indistinguishable by line count alone.
 
 ### Design consistency pass. Last run: 2026-09-23
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
-`assets/CREATURE_VISUAL_RULES.md`) and against each other: a screen that solves a problem its
-siblings solve differently is the drift worth catching. Fix the standard to match reality, or if
-the drift looks like an undocumented real decision, surface it explicitly.
+`assets/CREATURE_VISUAL_RULES.md`) and against each other. Look for a screen that solves a
+problem differently from its siblings. Fix the standard to match reality, or if the drift looks
+like an undocumented real decision, surface it explicitly.
 
 ### Screen separation pass. Last run: 2026-09-23
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
@@ -92,53 +90,53 @@ reader could lose. The groups below it (the readout grid, the prose, `HAVE`, the
 are the ones running together with nothing between them, and they get no help. Emphasis landed
 where it was cheapest to apply rather than where the screen needed it.
 
-Four levers, and the run should reach for them in this order. The cheapest one that works wins:
+Use these four levers, in this order. The cheapest one that works wins:
 
 - **Spacing and grouping.** Bands whose height is reserved regardless of content (the detail
   pages' `kDetailPanelTop`/`Bottom`) leave dead gaps mid-screen and none at the seams.
 - **Rules and indentation**, which the header band already uses.
 - **`Pal::INK` vs `INK_DIM`**, the separation that costs nothing and survives grayscale.
-- **`FontFace::Bold` last**, and only where the other three don't reach: one thing per screen
-  claims emphasis (VISUAL_LANGUAGE §2.3), so every new use spends a budget the screen has one of.
+- **`FontFace::Bold` last**, and only where the other three don't reach. A screen gets one
+  emphasised element (VISUAL_LANGUAGE §2.3), so a new use takes that slot.
 
 Where a screen genuinely reads fine, say so and move on; the output that matters is the handful
 that don't. Anything needing a real layout change becomes a row on `docs/MASTER_TODO.md` rather
 than being done inside the run.
 
 Two things the sheet will show you that are NOT findings. A name cut mid-word on a list row is
-usually `drawTextMarquee` caught mid-travel, not a clip: the Hacker face's SHOP/CREW rows all
-look truncated in a still and scroll on the device. And a band that ends short of the screen is
-only a defect if the group BELOW it has nothing separating it; empty canvas under the last group
-is just empty canvas.
+usually `drawTextMarquee` caught mid-scroll. The Hacker face's SHOP/CREW rows look truncated in
+a still and scroll on the device. And a band that ends short of the screen is only a defect if
+the group BELOW it has nothing separating it; empty canvas under the last group is just empty
+canvas.
 
 ### Stale cross-reference sweep. Last run: 2026-09-10
 Grep for links/citations across the docs (file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs), and verify they still resolve to something real. Fix or remove dangling references.
 
-**Three kinds of citation, and the yield is NOT in the paths.** A path-shaped scan is almost all
+**Check symbols and section numbers first; paths rarely break.** A path-shaped scan is almost all
 noise here, because the docs cite by basename and partial path on purpose (`game.h`,
 `core/ui/theme.h`), and because four classes of unresolvable path are correct: generated artifacts
-(`malwarium.wasm`, `manifest.json`, the boot images), the untracked `_attic/`, a hypothetical
-path introduced by *e.g.* (`pirate_bayou/bosses.cpp`. An illustration of a split that has not
+(`malwarium.wasm`, `manifest.json`, the boot images), the untracked `_attic/`, a hypothetical path
+introduced by *e.g.* (`pirate_bayou/bosses.cpp`. An illustration of a split that has not
 happened), and `diagram.json`, which `sim/README.md` says is deliberately uncommitted. Resolve a
 citation by SUFFIX against the tracked set before believing it dangles.
 
 The two that pay are the ones a mechanical grep for links never reaches:
 
-- **Symbol citations**: a backticked identifier is a claim about code, and code is renamed
-  under docs that are not rebuilt. Extract the constants, *Type::member* pairs, camelCase names
-  and *fn()* calls out of the backticks and check each against the tree. A NEAR-MISS is the
-  signature: a name that reads right and resolves to nothing, one noun off what the code calls
-  it (a *RampFor* where the member is a *SpriteFor*, a *Tokens* where the type is a *Grid*). Note
-  a miss in prose rather than pasting the dead name back in, or this entry becomes the next run's
-  own dangling symbol. When one is wrong, read the surrounding prose too: a citation that stale
-  usually describes the superseded DESIGN as well, not only the old name.
+- **Symbol citations**: a backticked identifier is a claim about code, and code is renamed under
+  docs that are not rebuilt. Extract the constants, *Type::member* pairs, camelCase names and
+  *fn()* calls out of the backticks and check each against the tree. Look for near-misses: a name
+  that reads right but resolves to nothing, one noun off what the code calls it (a *RampFor*
+  where the member is a *SpriteFor*, a *Tokens* where the type is a *Grid*). Note a miss in prose
+  rather than pasting the dead name back in, or this entry becomes the next run's own dangling
+  symbol. When one is wrong, read the surrounding prose too: a citation that stale usually
+  describes the superseded DESIGN as well, not only the old name.
 - **`§N` section refs**, which have to be resolved against the TARGET doc's headings, not the
   citing one. Two conventions look like breakage and are not: `VISUAL_LANGUAGE §0.4` addresses
   the fourth numbered item inside §0 rather than a subsection, and a bare `§N` in a sentence
-  naming another doc belongs to that doc. What is real is a number pointing at the wrong section:
-  a lettered manifest still cited as `§4` for what is now `§D`, or `§4` used to mean *stage 4*
-  in a doc where `§` means section.
+  naming another doc belongs to that doc. The breakage that does happen is a number pointing at
+  the wrong section: a lettered manifest still cited as `§4` for what is now `§D`, or `§4` used
+  to mean *stage 4* in a doc where `§` means section.
 
 Also check that a doc which ROUTES to another for a process actually finds it there: the routing
 line and the section it points at are two places one process is described, and only one of them
@@ -177,19 +175,19 @@ header block copied from `game_render.cpp`, most of which a given unit doesn't u
 
 **The `core/ui` half is swept.** `game.h` no longer includes a screen header (it takes
 `core/ui/ui_state.h` for the ids `Game` holds), which is what made stripping one a genuine test of
-whether the unit draws through it. What's left is load-bearing: `game_render.cpp` keeps all eleven
-because it IS the render dispatcher, and every other unit keeps only the screens it enters.
-`game_config.cpp` its `cfg_screen.h`, `game_explore.cpp`/`game_net.cpp`/`game_lifecycle.cpp` their
-`expl_screen.h`, the four `layout.h`/`theme.h`/`widgets.h` units their drawing primitives. Re-run
-it when a unit is split or a screen header moves.
+whether the unit draws through it. `game_render.cpp` keeps all eleven because it is the render
+dispatcher; every other unit keeps only the screens it enters. `game_config.cpp` its
+`cfg_screen.h`, `game_explore.cpp`/`game_net.cpp`/`game_lifecycle.cpp` their `expl_screen.h`, the
+four `layout.h`/`theme.h`/`widgets.h` units their drawing primitives. Re-run it when a unit is
+split or a screen header moves.
 
-**The `core/render` DRAWING headers are swept too, and the block was narrower than it looked.**
-`game.h` hands out exactly one `core/render` header. `framebuffer.h`, and nothing it includes
-pulls `canvas.h`, `font.h`, `palette.h`, `sprite.h` or `generated/assets.h`. Those five were
-therefore always testable, and the broad block copied from `game_render.cpp` is gone from every
-unit that did not draw: 43 includes across 11 units, both tiers green.
+**Sweep the `core/render` drawing headers too.** `game.h` hands out exactly one `core/render`
+header. `framebuffer.h`, and nothing it includes pulls `canvas.h`, `font.h`, `palette.h`,
+`sprite.h` or `generated/assets.h`. Those five were therefore always testable, and the broad
+block copied from `game_render.cpp` is gone from every unit that did not draw: 43 includes
+across 11 units, both tiers green.
 
-What remains carries its weight: `game_render.cpp` (the dispatcher, all five), `game_crew`,
+Each remaining include is used: `game_render.cpp` (the dispatcher, all five), `game_crew`,
 `game_eggpick`, `game_peers`, `game_pvp`, `game_hacker`, `game_isolation`, `game_merge` (the
 subsets they draw with), and `game_core`/`game_lifecycle` (`sprite.h`, plus `canvas.h` in
 `game_core` for the tick cadences).
@@ -198,10 +196,10 @@ subsets they draw with), and `game_core`/`game_lifecycle` (`sprite.h`, plus `can
 `registry.h`, `framebuffer.h` and `platform.h`, so "it still compiles without it" proves nothing
 about those. Leave that half for whoever lands the next `game.h` slice.
 
-Method note earned the hard way: **grep the header's CONSTANTS, not just its functions and
-types.** A symbol scan built from function names alone cleared `canvas.h` out of `game_core.cpp`,
-which uses it only for `kHeartbeatMs`/`kCombatAnimMs`. The native build caught it, which is
-exactly why the build is the gate and the scan is only the finder.
+**Grep a header's constants as well as its functions and types.** A symbol scan built from
+function names alone cleared `canvas.h` out of `game_core.cpp`, which uses it only for
+`kHeartbeatMs`/`kCombatAnimMs`. The native build caught it, which is exactly why the build is the
+gate and the scan is only the finder.
 
 The finder doesn't need clangd. `clang-tidy -p build -checks='-*,misc-include-cleaner'` over
 the `src/` entries of `build/compile_commands.json` runs the same analysis, which is what a
@@ -223,12 +221,12 @@ the trap in a mechanical scan is a symbol that only appears in a comment.
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
 `assets/` and wired into `embedded_content.cpp`. Flag mismatches in either direction
 (claimed-delivered-but-missing, or shipped-but-still-marked-TODO). Audit the **File** column
-too, not just the marker: every concrete path had gone stale against the `icons/`/`sprites/`/
-`ui/` split, which no status marker would have caught. An `_attic/` file may share a basename
-with a live one (the superseded drawing), and a naive stem→path map resolves it to the parked
-copy. The attic is gitignored, so a `⌫` path is checkable only against `git ls-files
-assets/_attic`: a missing one means the drawing never left the machine that parked it, which
-is not something a manifest edit can fix.
+as well as the marker: a path goes stale when files move between `icons/`, `sprites/` and
+`ui/`, and no status marker shows it. An `_attic/` file may share a basename with a live one
+(the superseded drawing), and a naive stem→path map resolves it to the parked copy. The attic
+is gitignored, so a `⌫` path is checkable only against `git ls-files assets/_attic`: a
+missing one means the drawing never left the machine that parked it, which is not something a
+manifest edit can fix.
 
 **Three ways a marker check cries wolf**, all of which look like "claimed ☑, not compiled":
 `engine-drawn` rows (`UI_GAUGE`, `UI_SCROLLBAR`, `UI_HEALTH_BAR` …) are delivered as code and are
@@ -238,13 +236,13 @@ name that expands (`ICON_LOG_EVENT` → `_ITEM`/`_WARN`/`_COMBAT`, `UI_OVERRIDE_
 grep that forgets a prefix (`BG_`, `FX_`) invents missing rows. Check the expansions and the
 `ASSET_` form before believing any mismatch.
 
-**The stronger check is: should this row exist at all?** Any asset whose id is derived from a
-content row (`ICON_ITEM_<ID>`, `ICON_MOD_<ID>`, `ICON_MOVE_<ID>`, a creature's `spriteName`) must
-NOT have a per-row table in the manifest. That is a hand-maintained mirror of `content_*.cpp`
-that drifts without failing anything. The manifest's lede states the rule; enforce it. A row
-earns its place only by carrying an art *rule* or a quality judgement no code holds.
+**Also ask whether the row should exist at all.** Any asset whose id is derived from a content
+row (`ICON_ITEM_<ID>`, `ICON_MOD_<ID>`, `ICON_MOVE_<ID>`, a creature's `spriteName`) must NOT
+have a per-row table in the manifest. That is a hand-maintained mirror of `content_*.cpp` that
+drifts without failing anything. The manifest's lede states the rule; enforce it. A row earns its
+place only by carrying an art *rule* or a quality judgement no code holds.
 
 ---
 
 Add a new entry here when a new recurring quality dimension comes up. Keep each entry to *what it
-checks*, *where*, and what currently blocks it, not a running log of past findings.
+checks*, *where*, and what currently blocks it.

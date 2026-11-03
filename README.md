@@ -74,17 +74,17 @@ from the GAMES arcade:
 > ### Waveshare **ESP32-S3-LCD-1.54**
 > **<https://www.waveshare.com/esp32-s3-lcd-1.54.htm>** · SKU **33866** or **33867**
 >
-> The **Touch** variant (SKU **33868** / **33869**) works too: Malwarium doesn't use the
-> touchscreen, so you gain nothing by it, but nothing breaks either.
+> The **Touch** variant (SKU **33868** / **33869**) also works. Malwarium ignores the
+> touchscreen.
 
-**This is the only board Malwarium runs on today**, and that's worth knowing
-before you spend money. It is not general "an ESP32 project" you can point at a spare dev board:
-At this time, the firmware has exactly one hardware definition compiled into it, and the screen, the
-three buttons, the SD slot and the battery latch are all wired to specific pins on *this*
-board. On anything else you'd get a dark screen at best. The 16MB flash isn't optional
-either: the layout is two 7.5MB update slots plus a save area, which simply doesn't fit
-on the 8MB boards. If you think you've found another board that meets the hardware requirements
-be sure to let us know! Chances are good that we'll add support. That support just doesn't exist *right now*. 
+**This is the only board Malwarium runs on today**, and that's worth knowing before you spend money.
+It is not general "an ESP32 project" you can point at a spare dev board: At this time, the firmware
+has exactly one hardware definition compiled into it, and the screen, the three buttons, the SD slot
+and the battery latch are all wired to specific pins on *this* board. On anything else you'd get a
+dark screen at best. You need the 16MB flash: the layout is two 7.5MB update slots plus a save area,
+which doesn't fit on the 8MB boards. If you think you've found another board that meets the hardware
+requirements be sure to let us know! Chances are good that we'll add support. That support just
+doesn't exist *right now*.
 
 **Got one already and want to check it's the right one?** It should have all of these:
 
@@ -104,15 +104,15 @@ different board and this firmware won't run on it.
 - A **USB-C cable that carries data.** This trips more people up than anything else on this
   page: a lot of cables sold with phones and battery packs are charge-only, and they look
   identical. If the flasher can't see your board, this is the first thing to swap.
-- **Chrome or Edge, on a computer.** That's the whole software list: no toolchain, no
-  Python, no command line. Safari and Firefox can't talk to USB, and phones can't either,
-  not a limitation of this project, just of those browsers. No Chrome just means some manual non-browser-based installation.
+- **Chrome or Edge, on a computer.** That's the whole software list: no toolchain, no Python, no
+  command line. Safari, Firefox and phone browsers can't talk to USB. No Chrome just means some
+  manual non-browser-based installation.
 
 **Optional, and you can add both later:**
 
-- A **microSD card**, any size, formatted **FAT32**. The device plays perfectly happily
-  without one: it's what holds the in-device wiki (the "'Pedia") and any `.pcap` captures,
-  and the device can fill it over Wi-Fi by itself once you slot one in.
+- A **microSD card**, any size, formatted **FAT32**. The device plays without one. The
+  card holds the in-device wiki (the "'Pedia") and any `.pcap` captures, and the device
+  can fill it over Wi-Fi by itself once you slot one in.
 - A **3.7V LiPo battery** to run it untethered. USB power is fine to start with.
 
 > **Already have a working Malwarium and just want the newest build?** Skip all of this:
@@ -315,8 +315,8 @@ When it finishes you'll see lines like these, which mean success:
 >> board provisioned + verified.
 ```
 
-**And your device screen should now show a wobbling egg**: with the wiki already on the
-card, since you loaded it yourself.
+**And your device screen should now show a wobbling egg**, with the wiki already on the
+card because you loaded it yourself.
 
 > **Prefer to do it in two halves?** You can run the SD and board steps separately:
 > `./tools/provision.sh sd --format --device disk4` (card in reader), then move the card
@@ -349,8 +349,8 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 **I just want to re-flash after a code change, not redo the whole card.** Use
-`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing: the full `provision`
-script is really for first-time, blank-device setup. It regenerates the sprite/palette
+`./tools/build_and_flash.sh` (macOS/Linux) for everyday reflashing. The full `provision`
+script is for setting up a blank device the first time. It regenerates the sprite/palette
 codegen and the web 'Pedia data before delegating the actual build+upload to the lighter
 `./tools/flash.sh` (read `build_and_flash.sh`'s own header comment for the full pipeline
 and why it's ordered that way); pass `./tools/flash.sh`'s own flags straight through, e.g.
@@ -463,7 +463,7 @@ rather than the pet. It holds your operator profile and HackerTag, a **shop** of
 for your rig, a **vault** where you cash things in, a **merge hub** for cooking ingredients into better
 items, and the two social slots below.
 
-You also collect **achievements** (they survive your pet's death: they're yours, not its),
+You also collect **achievements** (they're yours, so they survive your pet's death),
 **Titles** you can equip beside your tag, and a **Hacker Rank** that climbs as you see more
 of the world.
 
@@ -544,7 +544,7 @@ back when it's done: nothing survives the job, and nothing survives a reboot.
 
 It checks two things independently, because they version separately: the **firmware** and
 the **'Pedia site** on the SD card. Either can be newer without the other. Every download is
-checked against a SHA-256 the release publishes for it, and a new firmware boots on trial,
+checked against a SHA-256 the release publishes for it, and a new firmware boots on trial:
 if it doesn't come up properly, the device puts the old one back by itself.
 
 The one thing it needs first is a home network to join. Turn the AP on, scan the setup QR
