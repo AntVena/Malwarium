@@ -29,7 +29,7 @@ void Game::onItemsPicker(const ButtonEvent& ev) {
         // dead button on a row the screen just drew.
         itemFilter_ = kItemPickerTiles[itemPickRow_];
         itemsScreen_ = ItemsScreen::List;
-        auto rows = buildInventoryRows(registry_, inventory_, false, itemFilter_);
+        auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::ByGroup, itemFilter_);
         listRow_ = firstSelectableRow(rows);
         if (listRow_ < 0) listRow_ = 0;
     } else if (ev.button == Button::C) {
@@ -38,7 +38,7 @@ void Game::onItemsPicker(const ButtonEvent& ev) {
 }
 
 void Game::onItemsList(const ButtonEvent& ev) {
-    auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_, itemFilter_);
+    auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
     if (ev.button == Button::A) {
         // A is the plain step here and holding it repeats (Game::tickListNav) — the
         // filter gesture lives on B below, so nothing has to share this button.
@@ -68,7 +68,7 @@ void Game::onItemsList(const ButtonEvent& ev) {
 // the cursor never rests on one, but a list rebuilt under a held button can move.
 void Game::openFocusedItem() {
     const auto rows =
-        buildInventoryRows(registry_, inventory_, lockoutItemsContext_, itemFilter_);
+        buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
     if (listRow_ < 0 || listRow_ >= static_cast<int>(rows.size())) return;
     if (rows[listRow_].header) return;
     detailItem_ = rows[listRow_].def;

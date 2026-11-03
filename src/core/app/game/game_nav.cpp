@@ -319,7 +319,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     // Lockout list already floats the resolving items to the top.
                     itemsScreen_ = ItemsScreen::List;
                     cursor_ = carouselSlotOf(SubmenuId::Items);
-                    auto rows = buildInventoryRows(registry_, inventory_, true, itemFilter_);
+                    auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::LockoutFirst, itemFilter_);
                     listRow_ = firstSelectableRow(rows);
                     nav_ = Nav::Submenu;
                 }
@@ -354,7 +354,7 @@ void Game::enterSubmenu() {
             // Owned, ITEMS opens on the category tiles; otherwise straight on the list.
             itemsScreen_ = itemPickerUnlocked() ? ItemsScreen::Picker : ItemsScreen::List;
             itemPickRow_ = 0;
-            auto rows = buildInventoryRows(registry_, inventory_, false, itemFilter_);
+            auto rows = buildInventoryRows(registry_, inventory_, ItemOrder::ByGroup, itemFilter_);
             listRow_ = firstSelectableRow(rows);
             break;
         }

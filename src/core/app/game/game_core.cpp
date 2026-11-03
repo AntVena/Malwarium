@@ -694,7 +694,7 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
         itemTabsUnlocked() && nowMs_ - bDownMs_ >= kItemFilterHoldMs) {
         bHeld_ = false;
         itemFilter_ = nextItemFilter(itemFilter_, itemPickerUnlocked());
-        auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_, itemFilter_);
+        auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
         listRow_ = firstSelectableRow(rows);
         if (listRow_ < 0) listRow_ = 0;
         lastInputMs_ = nowMs_;   // the cycle counts as activity (no defocus race)

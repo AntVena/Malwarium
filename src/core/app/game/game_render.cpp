@@ -710,7 +710,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 drawItemTypePicker(fb, itemPickRow_);
                 break;
             }
-            auto rows = buildInventoryRows(registry_, inventory_, lockoutItemsContext_,
+            auto rows = buildInventoryRows(registry_, inventory_, itemsOrder(),
                                            itemFilter_);
             const PetLifetimeGates gates = petLifetimeGates();
             ItemsListView v;

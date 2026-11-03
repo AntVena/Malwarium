@@ -32,9 +32,9 @@ namespace {
 // The CACHES group sorts after every type group, wherever the type order goes.
 constexpr int kCacheGroupKey = 1000;
 
-int groupKey(const ItemDef& d, bool lockout) {
+int groupKey(const ItemDef& d, ItemOrder order) {
     if (d.use == ItemDef::Use::OpenContainer) return kCacheGroupKey;
-    if (lockout && itemResolvesLockout(d)) return -1;
+    if (order == ItemOrder::LockoutFirst && itemResolvesLockout(d)) return -1;
     if (d.type == ItemDef::Type::Food)
         return itemIsRecipeIngredient(d.id) ? 1 : 0;
     return itemTypeOrder(d.type) + 1;
@@ -211,63 +211,90 @@ ItemFilter nextItemFilter(ItemFilter f, bool categoryAxis) {
 
 const char* const kNoMealNotice = "FOOD: NONE - FIND IN EXPL";
 
+namespace {
+
+bool isMeal(const ItemDef& d) {
+    return d.type == ItemDef::Type::Food && !itemIsRecipeIngredient(d.id);
+}
+
+// One owned stack resolved against the registry, with the group it sorts into.
+struct OwnedStack {
+    const ItemDef* def;
+    int qty;
+    int key;
+};
+
+// Sealed caches open in the Hacker VAULT only (itemUsable's "OPEN IN VAULT (A+C)"
+// gate), but the ALL list still shows them, in a group of their own that says where
+// they go: a reward the bag hides is a reward the player never learns they have. Every
+// narrower filter leaves them out, so no tile holds them.
+bool listShows(ItemFilter filter, const ItemDef& d) {
+    if (d.use == ItemDef::Use::OpenContainer && filter != ItemFilter::All) return false;
+    return filterMatches(filter, d);
+}
+
+// Group order, then RAREST first within a group, alphabetical between equals. Rarity
+// is the closest thing an item row has to "how much this hands you", so the top of
+// every block is the strongest thing the bag holds of that type.
+bool listsBefore(const OwnedStack& a, const OwnedStack& b) {
+    if (a.key != b.key) return a.key < b.key;
+    if (a.def->rarity != b.def->rarity) return a.def->rarity > b.def->rarity;
+    return std::strcmp(a.def->displayName, b.def->displayName) < 0;
+}
+
+// A category filter narrows WITHIN the Quest type, so its one group header names the
+// category (KEYS/TOOLS) rather than the type it happens to live under. The Lockout
+// RESOLVE group (key -1) always keeps its own label.
+const char* headerLabel(int key, ItemFilter filter) {
+    const bool namesCategory = filter == ItemFilter::Keys || filter == ItemFilter::Tools;
+    return (namesCategory && key >= 0) ? itemFilterLabel(filter) : groupLabel(key);
+}
+
+void appendGrouped(std::vector<InvRow>& rows, const ContentRegistry& reg,
+                   const std::vector<OwnedStack>& owned, ItemFilter filter) {
+    int curKey = 0x7fffffff;
+    for (const OwnedStack& o : owned) {
+        if (o.key != curKey) {
+            curKey = o.key;
+            rows.push_back({true, headerLabel(o.key, filter), nullptr, 0, nullptr});
+        }
+        rows.push_back({false, o.def->displayName, o.def, o.qty, itemIcon(reg, o.def->id)});
+    }
+}
+
+}  // namespace
+
 bool inventoryHoldsMeal(const ContentRegistry& reg, const Inventory& inv) {
-    for (const ItemDef* d : reg.allItems())
-        if (d->type == ItemDef::Type::Food && !itemIsRecipeIngredient(d->id) &&
-            inv.count(d->id) > 0)
-            return true;
+    for (const Inventory::Stack& s : inv.stacks()) {
+        const ItemDef* d = s.qty > 0 ? reg.item(s.id) : nullptr;
+        if (d && isMeal(*d)) return true;
+    }
     return false;
 }
 
 std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
-                                       const Inventory& inv, bool lockoutSort,
+                                       const Inventory& inv, ItemOrder order,
                                        ItemFilter filter) {
-    struct Owned { const ItemDef* def; int qty; int key; };
-    std::vector<Owned> owned;
-    for (const ItemDef* d : reg.allItems()) {
-        // Sealed caches open in the Hacker VAULT only (itemUsable's "OPEN IN VAULT
-        // (A+C)" gate), but the ALL list still shows them, in a group of their own that
-        // says where they go: a reward the bag hides is a reward the player never learns
-        // they have. Every narrower filter leaves them out, so no tile holds them.
-        if (d->use == ItemDef::Use::OpenContainer && filter != ItemFilter::All) continue;
-        if (!filterMatches(filter, *d)) continue;
-        int q = inv.count(d->id);
-        if (q > 0) owned.push_back({d, q, groupKey(*d, lockoutSort)});
+    // One pass over the bag. The meal check rides along on every stack, filtered or
+    // not, so the notice below agrees with inventoryHoldsMeal.
+    std::vector<OwnedStack> owned;
+    bool holdsMeal = false;
+    for (const Inventory::Stack& s : inv.stacks()) {
+        const ItemDef* d = s.qty > 0 ? reg.item(s.id) : nullptr;
+        if (!d) continue;
+        holdsMeal = holdsMeal || isMeal(*d);
+        if (listShows(filter, *d)) owned.push_back({d, s.qty, groupKey(*d, order)});
     }
-    // Group order, then RAREST first within a group, alphabetical between equals.
-    // Rarity is the closest thing an item row has to "how much this hands you", so
-    // the top of every block is the strongest thing the bag holds of that type.
-    std::sort(owned.begin(), owned.end(), [](const Owned& a, const Owned& b) {
-        if (a.key != b.key) return a.key < b.key;
-        if (a.def->rarity != b.def->rarity) return a.def->rarity > b.def->rarity;
-        return std::strcmp(a.def->displayName, b.def->displayName) < 0;
-    });
-
-    // A category filter narrows WITHIN the Quest type, so its one group header names
-    // the category (KEYS/TOOLS) rather than the type it happens to live under. The
-    // Lockout RESOLVE group (key -1) always keeps its own label.
-    const char* categoryHeader =
-        (filter == ItemFilter::Keys || filter == ItemFilter::Tools)
-            ? itemFilterLabel(filter) : nullptr;
+    std::sort(owned.begin(), owned.end(), listsBefore);
 
     std::vector<InvRow> rows;
     // Nothing under FOOD: say where food comes from before anything else, on the two
-    // lists that would have shown it — food is found or bought on the walk, never in a
+    // lists that would have shown it. Food is found or bought on the walk, never in a
     // menu, and an empty bag is otherwise silent about that.
-    if ((filter == ItemFilter::All || filter == ItemFilter::Food) &&
-        !inventoryHoldsMeal(reg, inv))
+    const bool listsFood = filter == ItemFilter::All || filter == ItemFilter::Food;
+    if (listsFood && !holdsMeal)
         rows.push_back({true, kNoMealNotice, nullptr, 0, nullptr, true});
-    int curKey = 0x7fffffff;
-    for (const Owned& o : owned) {
-        if (o.key != curKey) {  // section header at each group boundary
-            curKey = o.key;
-            const char* label = (categoryHeader && o.key >= 0) ? categoryHeader
-                                                               : groupLabel(o.key);
-            rows.push_back({true, label, nullptr, 0, nullptr});
-        }
-        rows.push_back({false, o.def->displayName, o.def, o.qty,
-                        itemIcon(reg, o.def->id)});
-    }
+    appendGrouped(rows, reg, owned, filter);
     return rows;
 }
 

@@ -74,13 +74,9 @@ inline int recipeInputCount(const MergeRecipe& r) {
 // hand-authored "is this an ingredient" flag on the item itself — a food row
 // already says everything a recipe needs to know about it by appearing in one
 // (or more) `inputs[]` list, and a dish that is ALSO an input further down the
-// chain (Hashed Browns, folded into Salted&Hashed Browns) is correctly both.
-inline bool itemIsRecipeIngredient(const char* itemId) {
-    if (!itemId) return false;
-    for (int i = 0; i < kMergeRecipeCount; ++i)
-        for (const RecipeInput& in : kMergeRecipes[i].inputs)
-            if (in.id && std::strcmp(in.id, itemId) == 0) return true;
-    return false;
-}
+// chain (Hashed Browns, folded into Salted&Hashed Browns) is correctly both. The ITEMS
+// list asks this of every food row on every build, so the input ids are collected
+// once, sorted, and binary-searched.
+bool itemIsRecipeIngredient(const char* itemId);
 
 }  // namespace mal

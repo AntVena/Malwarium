@@ -73,12 +73,12 @@ extern const char* const kNoMealNotice;
 // FIRST inside each group (Epic -> Common, alphabetical between items of equal
 // rarity). FOOD/INGREDIENTS is a split of the same Type::Food, not two types —
 // cooked dishes first, then the recipe ingredients a player rarely eats directly.
-// `lockoutSort` floats Lockout-resolving items to the very top.
-// `filter` (d) narrows the set to one type first; All = no narrowing.
+// `order` LockoutFirst floats Lockout-resolving items to the very top.
+// `filter` narrows the set to one type first; All = no narrowing.
 // With no meal held, an ALL or FOOD list opens on a kNoMealNotice header row.
 std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
                                        const Inventory& inv,
-                                       bool lockoutSort = false,
+                                       ItemOrder order = ItemOrder::ByGroup,
                                        ItemFilter filter = ItemFilter::All);
 
 // First selectable (non-header) row index, or -1 if the list is empty.

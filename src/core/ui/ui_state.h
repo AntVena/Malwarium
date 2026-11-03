@@ -87,6 +87,10 @@ enum class CfgScreen { SysInfo, HackerTag, Titles,
 // items_screen.h's nextItemFilter for the cycle order and which axis is live.
 enum class ItemFilter { All, Food, Buffs, Quest, Keys, Tools, Ingredients };
 
+// How the ITEMS list orders its groups. LockoutFirst floats every Lockout-resolving
+// item into a RESOLVE group at the top, for ITEMS opened from the Lockout modal.
+enum class ItemOrder { ByGroup, LockoutFirst };
+
 // The two MAINT actions.
 enum class MaintKind { Defrag, Av };
 

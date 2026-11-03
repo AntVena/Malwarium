@@ -157,7 +157,7 @@ void Game::stepFocusedList(int dir) {
             // Section headers are drawn but never landed on, which is exactly what
             // stepSelectableRow walks past — in either direction.
             const auto rows =
-                buildInventoryRows(registry_, inventory_, lockoutItemsContext_, itemFilter_);
+                buildInventoryRows(registry_, inventory_, itemsOrder(), itemFilter_);
             if (!rows.empty()) listRow_ = stepSelectableRow(rows, listRow_, dir);
             break;
         }

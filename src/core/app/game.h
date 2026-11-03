@@ -2630,6 +2630,11 @@ private:
     // than taking it: an InvRow is items_screen.h's, and game.h names no renderer type
     // (the split ui_state.h's header comment describes).
     void openFocusedItem();
+    // The ITEMS list order for the current context: LockoutFirst while ITEMS was
+    // opened from the Lockout modal.
+    ItemOrder itemsOrder() const {
+        return lockoutItemsContext_ ? ItemOrder::LockoutFirst : ItemOrder::ByGroup;
+    }
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);

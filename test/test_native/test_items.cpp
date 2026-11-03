@@ -44,7 +44,7 @@ void test_event_log() {
 void test_inventory_rows_grouped() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();           // 6 items across 4 groups
-    auto rows = buildInventoryRows(r, inv, false);
+    auto rows = buildInventoryRows(r, inv, ItemOrder::ByGroup);
 
     int headers = 0, items = 0;
     for (const auto& row : rows) (row.header ? headers : items)++;
@@ -139,7 +139,7 @@ void test_inventory_rows_rarity_desc() {
     inv.add("java");                   // Uncommon
     inv.add("applets");                // Uncommon
     inv.add("salted_hashed_browns");   // Rare
-    auto rows = buildInventoryRows(r, inv, false);
+    auto rows = buildInventoryRows(r, inv, ItemOrder::ByGroup);
 
     const char* const kExpected[] = {"Salted&Hashed Browns", "Applets", "Java",
                                      "Breadcrumbs"};
@@ -156,7 +156,7 @@ void test_inventory_rows_rarity_desc() {
 void test_inventory_scrollbar() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();
-    auto rows = buildInventoryRows(r, inv, false);
+    auto rows = buildInventoryRows(r, inv, ItemOrder::ByGroup);
     CHECK(static_cast<int>(rows.size()) > 6);        // 6 items + 3 headers = 9
     Framebuffer fb(kActiveW, kActiveH);
     ItemsListView v;
@@ -222,7 +222,7 @@ void test_item_context_gate() {
     enterSlot(g, SubmenuId::Items);
     // Walk to the Decryption Key row, then open + try to Use it.
     auto rows = buildInventoryRows(ContentRegistry::embedded(),
-                                   g.inventory(), false);
+                                   g.inventory(), ItemOrder::ByGroup);
     // The detail subject is driven by the engine's cursor; instead exercise the
     // pure gate predicate the engine uses.
     const ItemDef* key = ContentRegistry::embedded().item("decrypt_key");
@@ -1361,7 +1361,7 @@ void test_caches_listed_and_first_cache_card() {
     CHECK(header && row);
     for (ItemFilter f : {ItemFilter::Food, ItemFilter::Quest, ItemFilter::Keys,
                          ItemFilter::Tools, ItemFilter::Buffs})
-        for (const InvRow& r : buildInventoryRows(reg, g.inventory(), false, f))
+        for (const InvRow& r : buildInventoryRows(reg, g.inventory(), ItemOrder::ByGroup, f))
             CHECK(r.def != cache);
     g.debugUseItem(cache->id);                         // pet-side: still refused
     CHECK(g.inventory().count(cache->id) == 2);
@@ -1380,7 +1380,7 @@ void test_caches_listed_and_first_cache_card() {
 void test_items_grayscale() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();
-    auto rows = buildInventoryRows(r, inv, false);
+    auto rows = buildInventoryRows(r, inv, ItemOrder::ByGroup);
     const int cur = firstSelectableRow(rows);        // first FOOD row (v=1)
     Framebuffer fb(kActiveW, kActiveH);
     ItemsListView v;

@@ -6,6 +6,9 @@
 // nothing can hand over.
 #include "core/content/content_recipes.h"
 
+#include <algorithm>
+#include <vector>
+
 namespace mal {
 
 const MergeRecipe kMergeRecipes[] = {
@@ -367,5 +370,21 @@ const MergeRecipe kMergeRecipes[] = {
 };
 const int kMergeRecipeCount =
     static_cast<int>(sizeof(kMergeRecipes) / sizeof(kMergeRecipes[0]));
+
+namespace {
+bool idLess(const char* a, const char* b) { return std::strcmp(a, b) < 0; }
+}  // namespace
+
+bool itemIsRecipeIngredient(const char* itemId) {
+    static const std::vector<const char*> inputs = [] {
+        std::vector<const char*> ids;
+        for (int i = 0; i < kMergeRecipeCount; ++i)
+            for (const RecipeInput& in : kMergeRecipes[i].inputs)
+                if (in.id) ids.push_back(in.id);
+        std::sort(ids.begin(), ids.end(), idLess);
+        return ids;
+    }();
+    return itemId && std::binary_search(inputs.begin(), inputs.end(), itemId, idLess);
+}
 
 }  // namespace mal

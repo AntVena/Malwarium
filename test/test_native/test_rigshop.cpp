@@ -841,10 +841,10 @@ void test_hacker_shop_bulk_open_buy() {
 void test_item_filter_narrows_rows() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();
-    auto all   = buildInventoryRows(r, inv, false, ItemFilter::All);
-    auto food  = buildInventoryRows(r, inv, false, ItemFilter::Food);
-    auto buffs = buildInventoryRows(r, inv, false, ItemFilter::Buffs);
-    auto quest = buildInventoryRows(r, inv, false, ItemFilter::Quest);
+    auto all   = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::All);
+    auto food  = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Food);
+    auto buffs = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Buffs);
+    auto quest = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Quest);
 
     auto headerCount = [](const std::vector<InvRow>& rows) {
         int n = 0; for (const auto& row : rows) if (row.header) ++n; return n;
@@ -950,9 +950,9 @@ void test_item_category_filters_split_quest() {
         int n = 0; for (const auto& row : rows) if (!row.header) ++n; return n;
     };
 
-    auto quest = buildInventoryRows(r, inv, false, ItemFilter::Quest);
-    auto keys  = buildInventoryRows(r, inv, false, ItemFilter::Keys);
-    auto tools = buildInventoryRows(r, inv, false, ItemFilter::Tools);
+    auto quest = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Quest);
+    auto keys  = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Keys);
+    auto tools = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Tools);
     CHECK(itemCount(quest) == 2 && itemCount(keys) == 2);   // every quest item is a Key
     CHECK(tools.empty());                                   // nothing carried yet
     CHECK(std::strcmp(keys[0].label, "KEYS") == 0);         // header names the category
@@ -960,8 +960,8 @@ void test_item_category_filters_split_quest() {
         if (!row.header) CHECK(itemCategory(*row.def) == ItemDef::Category::Keys);
 
     inv.add("disk_scrubber", 2);                            // a Defrag Tool is a TOOL
-    tools = buildInventoryRows(r, inv, false, ItemFilter::Tools);
-    keys  = buildInventoryRows(r, inv, false, ItemFilter::Keys);
+    tools = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Tools);
+    keys  = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Keys);
     CHECK(itemCount(tools) == 1 && std::strcmp(tools[0].label, "TOOLS") == 0);
     CHECK(itemCount(keys) == 2);                            // Keys untouched by it
 }
@@ -1024,7 +1024,7 @@ void test_item_picker_nav_drills_in_and_back() {
     g.onButton(press(Button::A));                                // -> TOOLS (x0)
     g.onButton(press(Button::B));
     CHECK(g.itemsScreen() == Game::ItemsScreen::List && g.itemFilter() == ItemFilter::Tools);
-    CHECK(buildInventoryRows(ContentRegistry::embedded(), g.inventory(), false,
+    CHECK(buildInventoryRows(ContentRegistry::embedded(), g.inventory(), ItemOrder::ByGroup,
                              g.itemFilter()).empty());
     g.onButton(press(Button::B));                           // B on an empty list is inert
     CHECK(g.nav() == Game::Nav::Submenu);
