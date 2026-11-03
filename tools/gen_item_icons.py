@@ -541,8 +541,8 @@ def spiral(g, turns=3):
 # One body, five marks. Every USB item steers the same boundary (the pet's next
 # evolution), and the shelf has to say so at a glance: same silhouette, and the ONE
 # difference between two of them is what has been cut into the body. So the mark is the
-# whole recipe, and the two that carry a factor say it by how many holes they have —
-# countable in grayscale, which a difference of shading would not be.
+# whole recipe, and the two that carry a factor say it by how many holes they have,
+# which stays countable in grayscale.
 #
 # The body reproduces the hand-drawn Ambig-USB exactly (that glyph shipped before this
 # form existed); bringing it under the recipe is what makes the other four its siblings

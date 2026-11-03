@@ -68,8 +68,8 @@ STRIKE_W, STRIKE_H = 28, 44
 # and anything busier there competes with the fight above it.
 GLYPH_W, GLYPH_H = 8, 8
 
-# The clear border a STRIKE cell keeps. A mark floats inside a cell it is smaller than —
-# it travels down the lane, so the cell is travel room, not the drawing. Ink on the cell
+# The clear border a STRIKE cell keeps. A mark floats inside a cell it is smaller than
+# because it travels down the lane: the cell is its travel room. Ink on the cell
 # edge means the shape was drawn bigger than the cell and silently CUT, which at this
 # size takes the point off a slash or a whole barb off a harpoon and leaves something
 # that still looks deliberate. Enforced in main(); the 8x8 status glyphs are exempt,
@@ -426,7 +426,7 @@ def main():
                 if (min(xs) < MARGIN or min(ys) < MARGIN
                         or max(xs) > f.w - 1 - MARGIN or max(ys) > f.h - 1 - MARGIN):
                     bad.append("%s frame %d: ink on the cell edge (x %d-%d, y %d-%d of "
-                               "%dx%d) — the drawing is being cut"
+                               "%dx%d): the drawing is being cut"
                                % (asset_id, i, min(xs), max(xs), min(ys), max(ys),
                                   f.w, f.h))
         want = sheet(frames)

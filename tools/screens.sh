@@ -157,7 +157,7 @@ for scene in "${SCENES[@]}"; do
   # shellcheck disable=SC2086  # the flags are meant to word-split
   "$DUMP" 3 "$OUT/$(printf %02d $n)_$name.ppm" $args >/dev/null
   if cmp -s "$OUT/$(printf %02d $n)_$name.ppm" "$OUT/_idle.ppm"; then
-    echo "  no-op: '$name' [$args] rendered the idle habitat — its flags matched nothing"
+    echo "  no-op: '$name' [$args] rendered the idle habitat: its flags matched nothing"
   fi
 done
 

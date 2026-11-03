@@ -70,7 +70,7 @@ constexpr const char* kFirmwareVersion = "v" MAL_VERSION_STR(FW_VERSION_MAJOR)
 static_assert(FW_VERSION_MINOR >= 0 && FW_VERSION_MINOR < 1000,
               "FW_VERSION_MINOR must fit three digits (0..999)");
 static_assert(FW_VERSION_PATCH >= 0 && FW_VERSION_PATCH < 1000,
-              "FW_VERSION_PATCH must fit three digits (0..999) — bump MINOR instead");
+              "FW_VERSION_PATCH must fit three digits (0..999); bump MINOR instead");
 
 // The packing every version code uses: this firmware's, a manifest's, the web bundle's
 // (the Makefile's `manifest` and tools/serve_updates.sh repeat it in shell).

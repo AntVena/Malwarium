@@ -91,7 +91,7 @@
     }
   },
   "decryption": {
-    "_note": "DISK DECRYPTION's five code colours (core/model/disk_decryption.h). Their own block rather than borrowed status hues, because they are a VOCABULARY: the puzzle means nothing unless the five read as five, and a colourblind theme has to be able to move all of them together without touching what calm/warn/hot mean everywhere else. LUMINANCE IS THE DUAL-CODING CHANNEL and the reason these hues are not free: they are spaced ~0.18 apart down an even ladder (white > orange > green > blue > purple) so the five stay five as five greys, which is what carries the board through the grayscale test with nothing written on the cells. Retune a hue and the ladder is what has to survive it — test_decryption_grayscale asserts the spacing.",
+    "_note": "DISK DECRYPTION's five code colours (core/model/disk_decryption.h). Their own block rather than borrowed status hues, because they are a VOCABULARY: the puzzle means nothing unless the five read as five, and a colourblind theme has to be able to move all of them together without touching what calm/warn/hot mean everywhere else. LUMINANCE IS THE DUAL-CODING CHANNEL and the reason these hues are not free: they are spaced ~0.18 apart down an even ladder (white > orange > green > blue > purple) so the five stay five as five greys, which is what carries the board through the grayscale test with nothing written on the cells. A retuned hue must keep the ladder's spacing, which test_decryption_grayscale asserts.",
     "decryption-green": {
       "hex": "#35b268",
       "use": "code colour G"
@@ -129,7 +129,7 @@
     }
   },
   "scene": {
-    "_note": "A BACKDROP-ONLY ramp, admitted to sceneTint's anchor list (core/render/scene.cpp) beside the fragmentation pair. Scenes need hues the interface has not spoken for: `calm` and `accent` are the only green and blue PAL_CORE carries and a backdrop wearing either is claiming a state or a focus. These two are deliberately OFF both — acid rather than mint, electric rather than cyan — so a wide wash of them cannot be misread as a gauge or a cursor, which is the thing the rail is actually protecting. Nothing in the interface may bind to them.",
+    "_note": "A BACKDROP-ONLY ramp, admitted to sceneTint's anchor list (core/render/scene.cpp) beside the fragmentation pair. Scenes need hues the interface has not spoken for: `calm` and `accent` are the only green and blue PAL_CORE carries and a backdrop wearing either is claiming a state or a focus. These two sit off both (acid against mint, electric against cyan), so a wide wash of them cannot be misread as a gauge or a cursor. Nothing in the interface may bind to them.",
     "neon-lo": {
       "hex": "#2447ff",
       "use": "the cold end of a backdrop ramp \u2014 electric blue, well off `accent`'s cyan"
@@ -147,9 +147,9 @@
     }
   },
   "themes": {
-    "_note": "Alternate colour sets. A theme names ONLY the tokens it changes; everything else falls through to the role groups above, so a token added there can't go silently missing from a variant. Selected at runtime by palThemeIndex() (core/render/palette.h) — every colour on the device is fetched through palColor(), so a theme restyles the whole interface without any drawing call knowing. What a set may NOT do is break a LADDER, since the ladders are what carry a screen through the grayscale gate — calm>warn>hot, ink over paper, the decryption five and the camo three. test_theme_invariants (test/test_native/test_theme.cpp) asserts every one of them for EVERY set, and states them without a POLARITY: a light theme runs its ladders the other way up and is held to exactly the same separations. A theme moves the chrome and every tint drawn through palColor(), never a sprite's own baked palette: a creature looks the same in all of them. Which sets an operator may CHOOSE is content, not colour — src/core/content/content_themes.h names the row each of these is offered as and what unlocks it.",
+    "_note": "Alternate colour sets. A theme names ONLY the tokens it changes; everything else falls through to the role groups above, so a token added there can't go silently missing from a variant. Selected at runtime by palThemeIndex() (core/render/palette.h): every colour on the device is fetched through palColor(), so a theme restyles the whole interface without any drawing call knowing. What a set may NOT do is break a LADDER, since the ladders carry a screen through the grayscale gate: calm>warn>hot, ink over paper, the decryption five and the camo three. test_theme_invariants (test/test_native/test_theme.cpp) asserts every one of them for EVERY set, and states them without a POLARITY: a light theme runs its ladders the other way up and is held to exactly the same separations. A theme moves the chrome and every tint drawn through palColor(), never a sprite's own baked palette: a creature looks the same in all of them. Which sets an operator may choose is content, in src/core/content/content_themes.h names the row each of these is offered as and what unlocks it.",
     "high-contrast": {
-      "_note": "Accessibility. Pure black under pure white, every hue at the edge of the gamut, and the thing the default set spends least on bought back first: SEPARATION. Base calm/warn/hot clears its ordering by 0.009 luminance — legal, and nearly invisible; here the same three sit 0.13 and 0.32 apart, so which band a gauge is in survives a photocopy. ink-dim is deliberately bright (0.75 against paper's 0.0), because a gated row still has to be READ and the dim tier is the first thing a low-contrast set loses. The one set nothing gates, for the reason it exists.",
+      "_note": "Accessibility. Pure black under pure white, every hue at the edge of the gamut, and the thing the default set spends least on bought back first: SEPARATION. Base calm/warn/hot clears its ordering by 0.009 luminance: legal, and nearly invisible; here the same three sit 0.13 and 0.32 apart, so which band a gauge is in survives a photocopy. ink-dim is deliberately bright (0.75 against paper's 0.0), because a gated row still has to be READ and the dim tier is the first thing a low-contrast set loses. The one set nothing gates, for the reason it exists.",
       "paper": "#000000",
       "ink": "#ffffff",
       "ink-dim": "#b9c0c9",
@@ -177,7 +177,7 @@
       "notice-hold": "#d97706"
     },
     "synthwave": {
-      "_note": "Sunset over a chrome grid. The sky is the deep indigo the whole set is read against and the SUN is the focus hue: accent is the orange every carousel strip and selection box is lit with, which is the arrangement the look is actually named for — warm highlight, cold ground. That leaves the status three on the other half of the spectrum: cyan for calm, neon pink for caution, and a crimson hot that is the only red on the screen. Orange against that red is the one hue pair here that repeats, and it is the pair the base set already runs (warn against hot); 0.31 of luminance apart, and focus is a box while danger is a fill.",
+      "_note": "Sunset over a chrome grid. The sky is the deep indigo the whole set is read against and the SUN is the focus hue: accent is the orange every carousel strip and selection box is lit with, and the look is named for that pairing of warm highlight on cold ground. That leaves the status three on the other half of the spectrum: cyan for calm, neon pink for caution, and a crimson hot that is the only red on the screen. Orange against that red is the one hue pair here that repeats, and it is the pair the base set already runs (warn against hot); 0.31 of luminance apart, and focus is a box while danger is a fill.",
       "paper": "#150a24",
       "ink": "#f4e9ff",
       "ink-dim": "#8f7fb5",
@@ -205,7 +205,7 @@
       "notice-hold": "#e0631f"
     },
     "terminal": {
-      "_note": "A green phosphor tube with an amber alarm lamp — the two-CRT ops console. Green carries everything structural, so the sets that are VOCABULARIES (the decryption five, the camo three, the rarity four) become what they always secretly were: value ladders, spaced as widely as anywhere else and with no hue left to lean on. That is the reason to ship it — a set that a dual-coding slip cannot survive. Amber is rationed to what must interrupt green: warn, hot, the held notice, the Red team's glyph, and fragmentation's high end, where the ramp runs phosphor-green to burning amber.",
+      "_note": "A green phosphor tube with an amber alarm lamp: the two-CRT ops console. Green carries everything structural, so the sets that are VOCABULARIES (the decryption five, the camo three, the rarity four) become what they always secretly were: value ladders, spaced as widely as anywhere else and with no hue left to lean on. It ships because a dual-coding slip cannot survive it. Amber is rationed to what must interrupt green: warn, hot, the held notice, the Red team's glyph, and fragmentation's high end, where the ramp runs phosphor-green to burning amber.",
       "paper": "#04120a",
       "ink": "#4dff88",
       "ink-dim": "#2a8f52",
@@ -233,7 +233,7 @@
       "notice-hold": "#c46a10"
     },
     "amber": {
-      "_note": "The other tube. Amber phosphor was the green screen's expensive cousin and it is a warmer thing to sit in front of, which is the whole argument for it — the same monochrome discipline as `terminal`, read in a colour that does not buzz. It keeps no second hue at all: where the green set reaches for amber to interrupt itself, this one has nowhere to go and must do the interrupting with VALUE, so hot sits 0.22 below warn rather than 0.26 below a different colour. The strictest set on the device, and the one that proves the ladders are load-bearing.",
+      "_note": "The other tube. Amber phosphor was the green screen's expensive cousin and it is warmer to sit in front of: the same monochrome discipline as `terminal`, in a colour that does not buzz. It keeps no second hue at all: where the green set reaches for amber to interrupt itself, this one has nowhere to go and must do the interrupting with VALUE, so hot sits 0.22 below warn rather than 0.26 below a different colour. The strictest set on the device, and the one that proves the ladders are load-bearing.",
       "paper": "#130a02",
       "ink": "#ffc55e",
       "ink-dim": "#a06a1a",
@@ -261,7 +261,7 @@
       "notice-hold": "#d64f10"
     },
     "daylight": {
-      "_note": "Daylight — the only set that puts ink on paper the way paper actually works, and the one to reach for outdoors, where a black screen is a mirror. Every ladder on the device runs the other way up here: the decryption five descend from a near-white rung, the camo three sit between a dark ink and a bright page, and calm/warn/hot are DARK tints because a status that has to be read on white cannot be a bright one. Nothing in the engine knows that — the gates state their separations without a polarity, which is what makes a light theme a block of hexes rather than a second drawing path.",
+      "_note": "Daylight: the only set that puts ink on paper the way paper actually works, and the one to reach for outdoors, where a black screen is a mirror. Every ladder on the device runs the other way up here: the decryption five descend from a near-white rung, the camo three sit between a dark ink and a bright page, and calm/warn/hot are DARK tints because a status that has to be read on white cannot be a bright one. Nothing in the engine knows that. The gates state their separations without a polarity, so a light theme is only a block of hexes.",
       "paper": "#f4f2ec",
       "ink": "#12161c",
       "ink-dim": "#5c6572",
@@ -289,7 +289,7 @@
       "notice-hold": "#9a3412"
     },
     "dot-matrix": {
-      "_note": "Four shades of pea green behind a scratched window: the pocket LCD that every virtual pet was first met on. Faithful to the medium means faithful to its CONSTRAINT — a real one had four values and no hues, so the rarity ramp, the code ladder and the camo three are all cut from one ramp and separated by nothing but how dark they are. It is the tightest fit on the device: the ink/paper range is the narrowest any set may have and still seat three camo rungs 0.15 apart inside it, which is why the page is lifted a shade brighter than the tube it is imitating.",
+      "_note": "Four shades of pea green behind a scratched window: the pocket LCD that every virtual pet was first met on. It keeps the medium's constraint: a real one had four values and no hues, so the rarity ramp, the code ladder and the camo three are all cut from one ramp and separated by nothing but how dark they are. It is the tightest fit on the device: the ink/paper range is the narrowest any set may have and still seat three camo rungs 0.15 apart inside it, which is why the page is lifted a shade brighter than the tube it is imitating.",
       "paper": "#bede1e",
       "ink": "#06200a",
       "ink-dim": "#4b7014",
@@ -317,7 +317,7 @@
       "notice-hold": "#2b5010"
     },
     "night-vision": {
-      "_note": "Red on black, for the reason a chart table is: red light is the light that does not cost you your dark adaptation. Monochrome like the two tubes, but built around the dimmest hue in the gamut — a saturated red is only 0.21 luminance, so ink is pulled up to a lit salmon rather than left at the signal red the look suggests. That is the honest trade: a set whose whole point is being read in the dark cannot ship text that fails the contrast the gate asks for, and pure #f00 on black misses it by a tenth.",
+      "_note": "Red on black, for the reason a chart table is: red light is the light that does not cost you your dark adaptation. Monochrome like the two tubes, but built around the dimmest hue in the gamut: a saturated red is only 0.21 luminance, so ink is pulled up to a lit salmon rather than left at the signal red the look suggests. That is the honest trade: a set whose whole point is being read in the dark cannot ship text that fails the contrast the gate asks for, and pure #f00 on black misses it by a tenth.",
       "paper": "#0f0203",
       "ink": "#ffb0a0",
       "ink-dim": "#a83c38",

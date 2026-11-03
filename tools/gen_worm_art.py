@@ -567,7 +567,7 @@ class Cell:
             y = int(round(oy - (size - 1) / 2.0))
             if all(safe.get(x + i, y + j) for i in range(size) for j in range(size)):
                 return self.solid(x, y, size, size)
-        raise ValueError("no interior seat for the eye — the head is too small")
+        raise ValueError("no interior seat for the eye: the head is too small")
 
     def chords(self, path, ts, radius_at, overhang=0.9, lean=0.0):
         """Rule 3: rungs across the body at fixed spine parameters.
@@ -1140,8 +1140,7 @@ def _shenloop_cell(pts, whisker=1.0, level=0.75):
 
     # The head is LEVELLED off the neck instead of pointing wherever the spine happens to
     # arrive, and that one rotation is most of the creature's stage read. §2 of
-    # CREATURE_VISUAL_RULES is explicit that the levers are posture rather than parts —
-    # a head carried along its own neck reads as a body going somewhere, and the same
+    # CREATURE_VISUAL_RULES makes posture the lever: a head carried along its own neck reads as a body going somewhere, and the same
     # head held level on a rising neck reads as one that arrived and is now waiting,
     # which is exactly what the row's flavour says it does. It has to be resolved BEFORE
     # the head is drawn now, because the muzzle and the mane are both laid out along it.
@@ -1423,7 +1422,7 @@ def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
             vane(cell.body, wrist, l0, a0, a1 - a0, taper=l1 / l0)
         # The fingers, into `ink`. Without them the membrane is a blank shape and reads as
         # a sail; these are what say it is stretched over something, and they are the
-        # wing's answer to the segment chords the body carries. Only the interior ones —
+        # wing's answer to the segment chords the body carries. Only the interior ones:
         # the outer two are already the membrane's own boundary.
         for a1, l1 in tips[1:-1]:
             line(cell.ink, wrist,
@@ -1550,8 +1549,8 @@ def threadbore():
 # to re-ink: the disguise IS the ink.
 #
 # What separates them from the real Worm Daemons is where the one solid mass goes.
-# Nodeatode and Shenloop spend it on an eye and Rootgrub and Threadbore on a throat —
-# either way, on a FACE. These two spend it on a CONTACT: the tongue inside USBasilisk's
+# Nodeatode and Shenloop spend it on an eye and Rootgrub and Threadbore on a throat,
+# so on a FACE either way. These two spend it on a CONTACT: the tongue inside USBasilisk's
 # plug, the centre conductor at the end of Coaxeel's tail. That is the tell, and it is
 # the only one they get. A worm-shaped thing whose one solid feature is a piece of
 # hardware is a creature pretending to be a peripheral, which is what a Trojan out of
@@ -1963,14 +1962,14 @@ def main():
 
         if args.check:
             if not os.path.exists(path):
-                sys.exit(f"{name}: no committed PNG at {path} — run without --check")
+                sys.exit(f"{name}: no committed PNG at {path}; run without --check")
             want, got = alpha_plane(path), sheet_plane(sheet)
             if want != got:
                 if want[:2] != got[:2]:
                     sys.exit(f"{name}: committed sheet is {want[0]}x{want[1]}, "
                              f"the recipe draws {got[0]}x{got[1]}")
                 n = sum(a != b for a, b in zip(want[2], got[2]))
-                sys.exit(f"{name}: committed PNG and its recipe disagree on {n} px — "
+                sys.exit(f"{name}: committed PNG and its recipe disagree on {n} px; "
                          f"re-run `python3 tools/gen_worm_art.py` and commit the result")
             print(f"  {name}: matches its recipe ({sheet.mask.count()} ink px)")
             continue

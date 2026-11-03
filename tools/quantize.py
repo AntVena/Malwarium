@@ -166,8 +166,8 @@ def main():
     ap.add_argument("--accent", action="append", default=[],
                     help="a colour carried on its own channel so it can't average away; "
                          "repeatable. Keep the line's eye colour OUT of the body ramp and "
-                         "pass it here — that is what lets a recolour effect repaint the "
-                         "body and leave the eyes alone.")
+                         "pass it here, so a recolour effect repaints the body and leaves "
+                         "the eyes alone.")
     ap.add_argument("--height", type=int,
                     help="sharpen, then area-average down to this many px tall")
     ap.add_argument("--outline", metavar="HEX",
@@ -226,9 +226,9 @@ def main():
               f"{sum(1 for p in out.get_flattened_data() if 0 < p[3] < 255)}  (alpha values {alphas})")
         if accents:
             print(f"  accent pixels recovered: {kept}"
-                  + ("   !! none — check the accent colour" if kept == 0 else ""))
+                  + ("   !! none: check the accent colour" if kept == 0 else ""))
         print(f"  silhouette-edge tones: {len(tones)}"
-              + ("  (consistent)" if len(tones) == 1 else "  (mixed — see --outline)"))
+              + ("  (consistent)" if len(tones) == 1 else "  (mixed; see --outline)"))
 
 
 if __name__ == "__main__":

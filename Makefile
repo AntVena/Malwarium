@@ -47,7 +47,7 @@ pedia-check: dump-content
 		echo "pedia data in sync"; \
 		rm -f $$tmp; \
 	else \
-		echo "web/data/pedia_data.js is STALE — run 'make pedia' and commit the result"; \
+		echo "web/data/pedia_data.js is STALE. Run 'make pedia' and commit the result"; \
 		diff -u web/data/pedia_data.js $$tmp || true; \
 		rm -f $$tmp; \
 		exit 1; \
@@ -76,7 +76,7 @@ pedia-sd: pedia
 	@cp -R web/data/. "$(DEST)/web/data/"
 	@cp -R web/fonts/. "$(DEST)/web/fonts/"
 	@# macOS cp writes AppleDouble ._* sidecars (+ .DS_Store) when copying xattrs
-	@# onto a FAT/exFAT card — harmless to the device but dead-weight litter. Strip
+	@# onto a FAT/exFAT card. The device ignores them, but they are clutter: strip
 	@# them so the staged bundle is exactly the served files.
 	@find "$(DEST)/web" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
 	@echo "staged web/ bundle -> $(DEST)/web/"
@@ -228,7 +228,7 @@ boot-images: firmware-artifact
 	done
 	@[ -f "$(BOOT_APP0)" ] || { \
 	    echo "error: boot_app0.bin not found at $(BOOT_APP0)"; \
-	    echo "  it ships with framework-arduinoespressif32 — set PIO_CORE if your"; \
+	    echo "  it ships with framework-arduinoespressif32. Set PIO_CORE if your"; \
 	    echo "  PlatformIO core directory is not $(PIO_CORE)"; exit 1; }
 	@cp "$(BOOT_APP0)" "$(DIST)/boot_app0.bin"
 	@echo "staged boot images -> $(DIST)/ (bootloader.bin, partitions.bin, boot_app0.bin)"
@@ -254,4 +254,4 @@ site:
 # and their manifest first (which is also what validates them), then the boot
 # images beside them, then the pages that read both. This is what CI runs.
 pages: manifest boot-images demo site
-	@echo "publish ready in $(DIST)/ — serve it, or upload it as a Pages artifact"
+	@echo "publish ready in $(DIST)/. Serve it, or upload it as a Pages artifact"

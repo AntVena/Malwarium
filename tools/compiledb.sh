@@ -26,4 +26,4 @@ mkdir -p build-device
 pio run -t compiledb -e "$FW_ENV" >/dev/null
 mv compile_commands.json build-device/compile_commands.json
 
-echo "ok — clangd reads build/ for everything but src/platform/esp32/, which reads build-device/"
+echo "ok: clangd reads build/ for everything but src/platform/esp32/, which reads build-device/"

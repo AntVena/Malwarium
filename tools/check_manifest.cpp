@@ -24,8 +24,8 @@ using namespace mal;
 static const char* parseName(ManifestParse r) {
     switch (r) {
         case ManifestParse::Ok: return "ok";
-        case ManifestParse::Malformed: return "MALFORMED — the device would reject this";
-        case ManifestParse::NoArtifacts: return "empty — nothing is published";
+        case ManifestParse::Malformed: return "MALFORMED: the device would reject this";
+        case ManifestParse::NoArtifacts: return "empty: nothing is published";
         case ManifestParse::TooMany: return "ok (more rows than the device can hold)";
     }
     return "?";

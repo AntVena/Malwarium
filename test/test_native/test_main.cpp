@@ -987,10 +987,10 @@ int main() {
     MAL_RUN_ALL_GATES(MAL_RUN_GATE)
 #undef MAL_RUN_GATE
     if (g_failures == 0) {
-        std::puts("OK — all gates passed");
+        std::puts("OK: all gates passed");
         return 0;
     }
-    std::printf("FAILED — %d check(s)\n", g_failures);
+    std::printf("FAILED: %d check(s)\n", g_failures);
     return 1;
 }
 #endif

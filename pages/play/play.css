@@ -1,5 +1,5 @@
 /* ============================================================
-   MALWARIUM://PLAY — the demo shell.
+   MALWARIUM://PLAY: the demo shell.
 
    Dresses only what the demo adds to pages/style.css: the panel,
    the three keys and the hint rows. Every colour is a role token
@@ -39,8 +39,7 @@
 
 /* Rides on the bezel so the framing travels with a screenshot: the panel is the part
    of this page that gets cropped and shared, and out of context it is indistinguishable
-   from the device. Muted rather than loud — it labels the thing, it does not shout over
-   it. */
+   from the device. It is muted so it labels the screen without competing with it. */
 .demo-tag {
   position: absolute; top: 0; right: 0;
   padding: 2px 7px;
@@ -84,7 +83,7 @@ button.key {
   border: 1px solid var(--track);
   border-radius: 4px;
   /* A held key must not start a text selection or fire the mobile double-tap
-     zoom — both make a hold unusable on a touchscreen. */
+     zoom; either makes a hold unusable on a touchscreen. */
   user-select: none; -webkit-user-select: none;
   touch-action: manipulation;
 }
@@ -93,8 +92,8 @@ button.key .cap {
 }
 button.key .fn { font-size: 10px; letter-spacing: 1px; color: var(--ink-dim); }
 
-/* Pressed state is dual-coded — the fill moves AND the border does — so the key
-   still reads as held with colour taken away. */
+/* Pressed state is dual-coded (the fill and the border both move), so the key
+   still reads as held without colour. */
 button.key.down {
   background: var(--accent-wash);
   border-color: var(--accent);

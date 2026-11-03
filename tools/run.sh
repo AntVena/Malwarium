@@ -26,4 +26,4 @@ pkill -x malwarium_host 2>/dev/null || true   # close the previous window first
 sleep 0.2
 nohup ./build/malwarium_host >/tmp/malwarium_host.log 2>&1 &
 disown || true
-echo "launched malwarium_host (pid $!) — Z=A · X=B · C=C · U=UI mode · H=hungry · Esc=quit"
+echo "launched malwarium_host (pid $!). Keys: Z=A · X=B · C=C · U=UI mode · H=hungry · Esc=quit"

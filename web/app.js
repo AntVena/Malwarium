@@ -563,7 +563,7 @@
 
     var method = known
       ? '<div class="method">' + ingredients + '</div>'
-      : '<div class="method">method encrypted — won off a DECRYPTOGRAM, never sold' +
+      : '<div class="method">method encrypted. Won off a DECRYPTOGRAM; never sold' +
         (waiting.length
           ? ' · held back until you’ve met ' +
             waiting.map(itemName).join(' + ')
@@ -575,7 +575,7 @@
       '<div class="body"><div class="nm">' + itemName(r.output) +
       (dish ? rar(dish.rarity) : '') + chip(known ? 'known' : 'unknown') + '</div>' +
       '<div class="fx">' + (met && dish ? esc(dish.effect)
-        : 'dish encrypted — get hold of one to read what it does') + '</div>' +
+        : 'dish encrypted. Get hold of one to read what it does') + '</div>' +
       (met && dish ? stats(dish.stats) : '') + method + '</div>' +
       (met && dish && dish.bits ? '<span class="bits">' + dish.bits + ' BITS</span>' : '') +
       '</div>';
@@ -613,7 +613,7 @@
     var gotPantry = pantry.filter(function (i) { return st('items', i.id) === 'unlocked'; }).length;
     h += '<h2 class="sect">// PANTRY<span class="count">' + gotPantry + '/' + pantry.length +
       '</span></h2>';
-    h += '<div class="note">raw staples · found, foraged or bought — edible as-is, ' +
+    h += '<div class="note">raw staples · found, foraged or bought · edible as-is, ' +
       'better cooked</div>';
     h += pantry.map(itemRow).join('');
 
@@ -824,7 +824,7 @@
         msg.className = 'formmsg ok';
         msg.textContent = resolved
           ? '>> OK: now checking ' + resolved
-          : '>> OK: cleared — this build has no built-in address.';
+          : '>> OK: cleared. This build has no built-in address.';
       }).catch(function () {
         msg.className = 'formmsg deny';
         msg.textContent = '>> DENIED: the device refused it (fixture mode, or a bad address).';

@@ -1,5 +1,5 @@
 // =============================================================================
-//  pin_finder.ino  —  discover which GPIO a button is wired to
+//  pin_finder.ino: discover which GPIO a button is wired to
 // -----------------------------------------------------------------------------
 //  Use this to find the PLUS and PWR button GPIOs on the Waveshare board
 //  (BOOT is already known to be GPIO0), or any free/attached buttons on a board
@@ -19,7 +19,7 @@
 //      SD card, audio and I2C on the Waveshare board, so it won't fight them.
 //    - Buttons here are assumed active-LOW with internal pull-ups (matches the
 //      board). If a button reads as "always pressed", it may be on an
-//      input-only pin without a pull-up (e.g. the classic ESP32's GPIO34-39) — add a 10k
+//      input-only pin without a pull-up (e.g. the classic ESP32's GPIO34-39), add a 10k
 //      pull-up to 3V3.
 //    - PWR also powers the board: a LONG press will turn the board off. Use
 //      SHORT taps when probing PWR.

@@ -140,7 +140,7 @@ esac
 if [ "$SKIP_ASSETS" -eq 1 ]; then
     echo ">> [1/5] skipping gen_assets.py (--skip-assets)"
 else
-    echo ">> [1/5] gen_assets.py — assets/**.png -> src/generated/"
+    echo ">> [1/5] gen_assets.py: assets/**.png -> src/generated/"
     python3 tools/gen_assets.py >/dev/null
 fi
 
@@ -157,8 +157,8 @@ fi
 pack_code() { echo $(( $1 * 1000000 + $2 * 1000 + $3 )); }
 
 check_range() {  # $1=maj $2=min $3=pat, named for the error
-    [ "$2" -lt 1000 ] || die "MINOR $2 is out of range (0..999) — bump major"
-    [ "$3" -lt 1000 ] || die "PATCH $3 is out of range (0..999) — bump feature"
+    [ "$2" -lt 1000 ] || die "MINOR $2 is out of range (0..999). Bump major instead"
+    [ "$3" -lt 1000 ] || die "PATCH $3 is out of range (0..999). Bump feature instead"
 }
 
 # `fix`/`feature` are the words the parts are called; patch/minor still answer to
@@ -225,7 +225,7 @@ if [ -n "$BUMP" ]; then
         both) bump_firmware fix; bump_web fix ;;
         *)    bump_firmware "$BUMP" ;;
     esac
-    echo "         (edited in place — commit them with the change they publish)"
+    echo "         (edited in place; commit them with the change they publish)"
 else
     echo ">> [2/5] no version bump (--bump fix|feature|major|web|both)"
     fw_now="$(sed -n 's/^#  define FW_VERSION_MAJOR *//p' include/version.h)."
@@ -245,13 +245,13 @@ if [ -z "$HOST" ]; then
         iface=$(route -n get default 2>/dev/null | sed -n 's/.*interface: //p' | head -1)
         [ -n "$iface" ] && HOST=$(ipconfig getifaddr "$iface" 2>/dev/null || true)
     fi
-    [ -n "$HOST" ] || die "could not find this machine's LAN address — pass --host <ip>"
+    [ -n "$HOST" ] || die "could not find this machine's LAN address. Pass --host <ip>"
 fi
 BASE="http://$HOST:$PORT"
 
 echo ">> [3/5] make pages BASE=$BASE  (FW_ENV=$FW_ENV, V=$BUILD_V)"
 if [ "$BUILD_V" -eq 1 ]; then
-    echo "         building firmware — compiler output follows (--quiet-build to hide)"
+    echo "         building firmware; compiler output follows (--quiet-build to hide)"
 else
     echo "         building firmware quietly; this is the slow step"
 fi
@@ -339,7 +339,7 @@ if [ "$SERVE" -eq 0 ]; then
     exit 0
 fi
 
-echo ">> [5/5] serving ${DIST:-dist}/ on port $PORT — Ctrl-C to stop"
+echo ">> [5/5] serving ${DIST:-dist}/ on port $PORT (Ctrl-C to stop)"
 echo "         (each device fetch logs below; a completed firmware pull is the proof)"
 echo
 exec python3 -m http.server "$PORT" --directory "${DIST:-dist}" --bind 0.0.0.0

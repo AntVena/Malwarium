@@ -1,20 +1,20 @@
 <#
-provision.ps1 — Windows parity for tools/provision.sh.
+provision.ps1: the Windows version of tools/provision.sh.
 
 Same job: take a FRESH ESP32-S3 board and a FRESH microSD card and leave BOTH in
-the verified state this project runs on — a blank board is missing the custom
-partition table the save depends on, and a blank/exFAT card won't mount at all.
+the verified state this project runs on. A blank board lacks the custom partition
+table the save depends on, and a blank or exFAT card won't mount.
 
 Windows has no `make`, `diskutil`, or a guaranteed `bash`, so where the bash
 script DELEGATES (to flash.sh and the `pedia-sd` Make target) this one replicates
-the SAME patterns inline with native tooling — the pio commands, the gen_esp32part
-partition decode, and the pyserial DTR boot-line listen are identical in spirit.
+the same steps inline with native tooling: the pio commands, the gen_esp32part
+partition decode, and the pyserial DTR boot-line listen.
 tools/flash.sh remains the canonical bash counterpart; keep the two in step.
 
 Phases run in the same order (the card physically moves between them):
-  1) sd    — card in a READER on THIS PC. Format (optional) + stage + verify.
-  2) board — card seated in the DEVICE. Erase + clean build + flash + verify.
-  all      — sd, prompt to move the card, then board.
+  1) sd    : card in a READER on THIS PC. Format (optional) + stage + verify.
+  2) board : card seated in the DEVICE. Erase + clean build + flash + verify.
+  all      : sd, prompt to move the card, then board.
 
 Usage:
   ./tools/provision.ps1 all -Format -Device 2
@@ -27,7 +27,7 @@ Usage:
 Params:
   -Dest <path>    Mounted card path for staging (e.g. E:\). Required for `sd`
                   without -Format; ignored with -Format (re-derived after format).
-  -Format         Reformat the card FAT32 first. DESTRUCTIVE — needs -Device and
+  -Format         Reformat the card FAT32 first. DESTRUCTIVE: needs -Device and
                   confirmation; refuses the system disk and non-removable disks.
                   NOTE: Windows' built-in Format-Volume only does FAT32 up to 32GB;
                   for a larger card, format it FAT32 with a third-party tool and
@@ -37,7 +37,7 @@ Params:
   -WaitWake       Retry erase/upload across the light-sleep window (re-provisioning
                   an already-alive board; a blank chip won't need it).
   -KeepBuild      Skip the clean rebuild. Do NOT use for a partition-table change.
-  -EnvName <name> PlatformIO env (default waveshare_s3_154 — the only target).
+  -EnvName <name> PlatformIO env (default waveshare_s3_154, the only target).
 #>
 
 [CmdletBinding()]
@@ -75,19 +75,19 @@ function Invoke-SdFormat {
     $disk = Get-Disk -Number $Device -ErrorAction SilentlyContinue
     if (-not $disk) { Die "no disk number $Device (see: Get-Disk)" }
     # Fail closed: refuse the boot/system disk and any non-removable/USB disk.
-    if ($disk.IsBoot -or $disk.IsSystem) { Die "disk $Device is the boot/system disk — refusing to format it" }
+    if ($disk.IsBoot -or $disk.IsSystem) { Die "disk $Device is the boot/system disk. Refusing to format it" }
     if ($disk.BusType -notin @('USB', 'SD', 'MMC')) {
-        Die "disk $Device BusType='$($disk.BusType)' is not removable (USB/SD/MMC) — refusing. Only external cards can be formatted here."
+        Die "disk $Device BusType='$($disk.BusType)' is not removable (USB/SD/MMC). Refusing: only external cards can be formatted."
     }
 
     Write-Host ''
     Write-Host 'About to ERASE and reformat FAT32 (this destroys everything on it):'
     $disk | Format-List Number, FriendlyName, BusType, @{n = 'SizeGB'; e = { [math]::Round($_.Size / 1GB, 1) } }
     if ($disk.Size -gt 32GB) {
-        Say 'card is >32GB — Windows'' built-in FAT32 formatter may refuse. If it does, format FAT32 with a third-party tool and re-run with -Dest.'
+        Say 'card is over 32GB, and the built-in Windows FAT32 formatter may refuse it. If it does, format FAT32 with a third-party tool and re-run with -Dest.'
     }
     $reply = Read-Host "Type the disk number '$Device' to confirm the wipe"
-    if ($reply -ne "$Device") { Die "confirmation did not match ('$reply' != '$Device') — aborting, nothing was erased" }
+    if ($reply -ne "$Device") { Die "confirmation did not match ('$reply' != '$Device'). Aborting; nothing was erased" }
 
     Say "formatting disk $Device as FAT32 (volume MALWARIUM)…"
     # Clear then a single FAT32 partition, assign a letter, format FAT32.
@@ -102,12 +102,12 @@ function Invoke-SdFormat {
 function Test-SdFilesystem {
     $root = ([System.IO.Path]::GetPathRoot((Resolve-Path $Dest).Path))
     $vol = Get-Volume -FilePath $root -ErrorAction SilentlyContinue
-    if (-not $vol) { Say "couldn't read the volume for $Dest — proceeding, but confirm it's FAT32 not exFAT"; return }
+    if (-not $vol) { Say "couldn't read the volume for $Dest. Continuing; make sure it is FAT32"; return }
     switch -Wildcard ($vol.FileSystem) {
         'FAT32' { Say "filesystem: FAT32 (good)" }
         'FAT'   { Say "filesystem: FAT (good)" }
-        'exFAT' { Die "card is exFAT — the device CANNOT mount exFAT. Reformat FAT32 (-Format -Device n, or a third-party FAT32 tool)." }
-        default { Say "filesystem: $($vol.FileSystem) — proceeding, but the device needs FAT32/FAT16 (not exFAT)" }
+        'exFAT' { Die "card is exFAT, which the device cannot mount. Reformat it FAT32 (-Format -Device n, or a third-party FAT32 tool)." }
+        default { Say "filesystem: $($vol.FileSystem). Continuing, but the device needs FAT32 or FAT16" }
     }
 }
 
@@ -138,7 +138,7 @@ function Invoke-DoSd {
     }
     $nassets = (Get-ChildItem (Join-Path $webDst 'assets') -File -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count
     if ($nassets -eq 0) { $missing += "$webDst\assets\ (empty)" }
-    if ($missing.Count -gt 0) { $missing | ForEach-Object { Write-Host "   MISSING: $_" }; Die 'SD bundle verification failed — the card is not fully provisioned' }
+    if ($missing.Count -gt 0) { $missing | ForEach-Object { Write-Host "   MISSING: $_" }; Die 'SD bundle verification failed: the card is not fully provisioned' }
     Say "SD verified: index.html + style.css + app.js + data/pedia_data.js + assets/ ($nassets files)"
     Say 'eject the card and move it into the DEVICE before flashing (the on-device SD check needs it seated).'
 }
@@ -160,16 +160,16 @@ function Invoke-FlashCmd {
         Push-Location $RepoRoot; try { & pio @PioArgs } finally { Pop-Location }
         if ($LASTEXITCODE -eq 0) { return }
         $attempt++
-        if ((Get-Date) -ge $deadline) { Die "no wake pulse within ${IdleSleepWakeBudgetS}s ($attempt attempts) — giving up" }
+        if ((Get-Date) -ge $deadline) { Die "no wake pulse within ${IdleSleepWakeBudgetS}s ($attempt attempts). Giving up" }
         Say "attempt $attempt missed the wake window, retrying…"
     }
 }
 
 function Test-BoardPartition {
     $bin = Join-Path $RepoRoot ".pio\build\$EnvName\partitions.bin"
-    if (-not (Test-Path $bin)) { Die "no partitions.bin at $bin — did the build run?" }
+    if (-not (Test-Path $bin)) { Die "no partitions.bin at $bin. Did the build run?" }
     $tool = Get-GenPartTool
-    if (-not $tool) { Say 'gen_esp32part.py not found — skipping partition assertion'; return }
+    if (-not $tool) { Say 'gen_esp32part.py not found, skipping the partition check'; return }
     $table = & python $tool $bin 2>$null
     $table | ForEach-Object { Write-Host "   $_" }
     $ok = $table | Where-Object {
@@ -217,13 +217,13 @@ rc = 0
 print("   " + (save_line or "(no [save] line captured)"))
 print("   " + (sd_line or "(no [sd] line captured)"))
 if save_ok is False:
-    print("   !! SAVE UNHEALTHY — blob at/over capacity or a write FAILED (the NVS-full bug). NOT provisioned."); rc = 2
+    print("   !! SAVE UNHEALTHY: blob at or over capacity, or a write FAILED (the NVS-full bug). NOT provisioned."); rc = 2
 elif save_ok is None:
-    print("   .. couldn't confirm the save line (best-effort) — power-cycle and check 'pio device monitor'.")
+    print("   .. couldn't confirm the save line. Power-cycle and check 'pio device monitor'.")
 if sd_ok is False:
-    print("   !! SD did NOT round-trip on-device — the card isn't mounting (exFAT? bad seat?). Re-provision the card."); rc = 2 if rc == 0 else rc
+    print("   !! SD did NOT round-trip on the device, so the card isn't mounting (exFAT? badly seated?). Re-provision the card."); rc = 2 if rc == 0 else rc
 elif sd_ok is None and rc == 0:
-    print("   .. couldn't confirm the [sd] line (best-effort) — seat the card and check the monitor.")
+    print("   .. couldn't confirm the [sd] line. Reseat the card and check the monitor.")
 sys.exit(rc)
 '@
 
@@ -237,9 +237,9 @@ function Test-BoardBoot {
             elseif ($inEnv -and $line -match '^\s*monitor_port\s*=\s*(\S+)') { $p = $Matches[1]; break }
         }
     }
-    if (-not $p) { Say 'no serial port resolved — skipping on-device boot assertion (check `pio device monitor`)'; return }
+    if (-not $p) { Say 'no serial port found, skipping the on-device boot check (check `pio device monitor`)'; return }
     & python -c 'import serial' 2>$null
-    if ($LASTEXITCODE -ne 0) { Say 'pyserial not installed — skipping boot assertion (pip install pyserial)'; return }
+    if ($LASTEXITCODE -ne 0) { Say 'pyserial not installed, skipping the boot check (pip install pyserial)'; return }
     Say "verifying boot lines on $p…"
     $tmp = New-TemporaryFile
     Set-Content -Path $tmp -Value $BootVerifyPy -Encoding ascii
@@ -256,7 +256,7 @@ function Invoke-DoBoard {
         $tmp = New-TemporaryFile
         & python 'tools\gen_pedia_data.py' --repo . --out $tmp 2>$null
         if ((Get-FileHash $tmp).Hash -ne (Get-FileHash 'web\data\pedia_data.js').Hash) {
-            Say 'note: web/data/pedia_data.js looks STALE vs. content tables — run ''.\tools\provision.ps1 sd …'' to re-stage the card.'
+            Say 'note: web/data/pedia_data.js is older than the content tables. Run ''.\tools\provision.ps1 sd …'' to re-stage the card.'
         }
         Remove-Item $tmp -ErrorAction SilentlyContinue
     } finally { Pop-Location }

@@ -54,8 +54,8 @@ KEEP = {
     # Two kinds of art look like they need one and do not. A sector glyph is named on its
     # own `AreaDef::icon` row (src/core/content/areas/area_defs.h), which is a consumer
     # like any other. A line glyph (`ICON_LINE_*`) is claimed by whichever creature rows
-    # carry that line, through the path the 'Pedia writes into web/data/pedia_data.js —
-    # so adding a family is what un-orphans its glyph, and no list has to be edited.
+    # carry that line, through the path the 'Pedia writes into web/data/pedia_data.js,
+    # so adding a family un-orphans its glyph with no list to edit.
 }
 
 # Directories holding hand-written code. src/generated/ is excluded on purpose: it's

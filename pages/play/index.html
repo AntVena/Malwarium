@@ -35,7 +35,7 @@
     and see if it's your kind of thing before you go and order hardware for it.</p>
 
     <!-- The device. The canvas is the panel at its native 240x240 and is scaled up
-         by CSS with image-rendering:pixelated — the engine renders no extra pixels,
+         by CSS with image-rendering:pixelated, so the engine renders no extra pixels
          and art authored at 128 logical never gets smoothed. -->
     <div class="device">
       <div class="panel">
@@ -48,13 +48,13 @@
            every button's HOLD is the bigger version of its tap and a hold settles on
            the release edge. -->
       <div class="buttons" id="buttons">
-        <button class="key" data-btn="0" aria-label="A — next">
+        <button class="key" data-btn="0" aria-label="A: next">
           <span class="cap">A</span><span class="fn">NEXT</span>
         </button>
-        <button class="key" data-btn="1" aria-label="B — accept">
+        <button class="key" data-btn="1" aria-label="B: accept">
           <span class="cap">B</span><span class="fn">ACCEPT</span>
         </button>
-        <button class="key" data-btn="2" aria-label="C — cancel">
+        <button class="key" data-btn="2" aria-label="C: cancel">
           <span class="cap">C</span><span class="fn">CANCEL</span>
         </button>
       </div>

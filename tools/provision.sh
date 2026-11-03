@@ -123,7 +123,7 @@ sd_format() {
     [ -n "$DEVICE" ] || die "--format needs --device <diskN> (see: diskutil list)"
     local dev="${DEVICE#/dev/}"                       # accept 'disk4' or '/dev/disk4'
     case "$dev" in disk[0-9]) ;; disk[0-9][0-9]) ;; *) die "--device must be a WHOLE disk like disk4, not a slice or volume";; esac
-    command -v diskutil >/dev/null || die "diskutil not found — the --format path is macOS-only (use --dest on an already-FAT32 card, or format it yourself)"
+    command -v diskutil >/dev/null || die "diskutil not found. --format works on macOS only; format the card FAT32 yourself and pass --dest"
 
     local info location removable virtual
     info="$(diskutil info "/dev/$dev" 2>/dev/null)" || die "/dev/$dev is not a disk diskutil knows about"
@@ -135,9 +135,9 @@ sd_format() {
     location="$(printf  '%s\n' "$info" | awk -F': *' '/Device Location:/{print $2; exit}')"
     removable="$(printf '%s\n' "$info" | awk -F': *' '/Removable Media:/{print $2; exit}')"
     virtual="$(printf   '%s\n' "$info" | awk -F': *' '/^ *Virtual:/{print $2; exit}')"
-    [ "$virtual" = "No" ] || die "/dev/$dev reports Virtual='$virtual' — refusing to format a virtual disk"
+    [ "$virtual" = "No" ] || die "/dev/$dev reports Virtual='$virtual'. Refusing to format a virtual disk"
     if [ "$location" != "External" ] && [ "$removable" != "Removable" ]; then
-        die "/dev/$dev looks non-external (Device Location='$location', Removable Media='$removable') — refusing. Only external/removable cards can be formatted here."
+        die "/dev/$dev looks non-external (Device Location='$location', Removable Media='$removable'). Refusing: only external or removable cards can be formatted."
     fi
 
     echo
@@ -146,7 +146,7 @@ sd_format() {
     echo
     printf "Type the device id '%s' to confirm the wipe: " "$dev"
     local reply; read -r reply
-    [ "$reply" = "$dev" ] || die "confirmation did not match ('$reply' != '$dev') — aborting, nothing was erased"
+    [ "$reply" = "$dev" ] || die "confirmation did not match ('$reply' != '$dev'). Aborting; nothing was erased"
 
     say "formatting /dev/$dev as FAT32 (volume MALWARIUM)…"
     # FAT32 personality + MBR: the layout SD_MMC expects. Volume name is the
@@ -160,14 +160,14 @@ sd_format() {
 # on-card property the firmware can't work around. An exFAT card copies fine
 # here but silently fails to mount on the device (sd_esp32.h lastError()).
 sd_verify_fs() {
-    command -v diskutil >/dev/null || { say "diskutil unavailable — skipping FAT32 check (ensure the card is FAT32, not exFAT)"; return 0; }
+    command -v diskutil >/dev/null || { say "diskutil unavailable, skipping the filesystem check. Make sure the card is FAT32"; return 0; }
     local personality
     personality="$(diskutil info "$DEST" 2>/dev/null | awk -F': *' '/File System Personality:/{print $2; exit}')"
     case "$personality" in
-        *FAT32*|*FAT16*|*MS-DOS*) say "filesystem: $personality (FAT — good)" ;;
-        *xFAT*|*ExFAT*|*exFAT*)   die "card is $personality — the device CANNOT mount exFAT. Reformat FAT32 (re-run with --format --device diskN)." ;;
-        "" ) say "couldn't read filesystem personality for $DEST — proceeding, but confirm it's FAT32 not exFAT" ;;
-        *  ) say "filesystem: $personality — proceeding, but the device needs FAT32/FAT16 (not exFAT)" ;;
+        *FAT32*|*FAT16*|*MS-DOS*) say "filesystem: $personality (FAT, OK)" ;;
+        *xFAT*|*ExFAT*|*exFAT*)   die "card is $personality, which the device cannot mount. Reformat it FAT32 (re-run with --format --device diskN)." ;;
+        "" ) say "couldn't read the filesystem of $DEST. Continuing; make sure it is FAT32" ;;
+        *  ) say "filesystem: $personality. Continuing, but the device needs FAT32 or FAT16" ;;
     esac
 }
 
@@ -195,7 +195,7 @@ do_sd() {
     local nassets
     nassets="$(find "$DEST/web/assets" -type f 2>/dev/null | wc -l | tr -d ' ')"
     [ "${nassets:-0}" -gt 0 ] || { echo "   MISSING: $DEST/web/assets/ is empty" >&2; missing=1; }
-    [ "$missing" -eq 0 ] || die "SD bundle verification failed — the card is not fully provisioned"
+    [ "$missing" -eq 0 ] || die "SD bundle verification failed: the card is not fully provisioned"
     say "SD verified: index.html + style.css + app.js + data/pedia_data.js + assets/ ($nassets files)"
     say "eject the card and move it into the DEVICE before flashing (the on-device SD check needs it seated)."
 }
@@ -217,7 +217,7 @@ run_flashcmd() {   # args: pio subcommand words
     deadline=$(( $(date +%s) + IDLE_SLEEP_WAKE_BUDGET_S ))
     until ( cd "$repo_root" && pio "$@" ); do
         attempt=$(( attempt + 1 ))
-        [ "$(date +%s)" -lt "$deadline" ] || die "no wake pulse within ${IDLE_SLEEP_WAKE_BUDGET_S}s (${attempt} attempts) — giving up"
+        [ "$(date +%s)" -lt "$deadline" ] || die "no wake pulse within ${IDLE_SLEEP_WAKE_BUDGET_S}s (${attempt} attempts). Giving up"
         say "attempt ${attempt} missed the wake window, retrying…"
     done
 }
@@ -228,14 +228,14 @@ run_flashcmd() {   # args: pio subcommand words
 board_verify_partition() {
     local bin="$repo_root/.pio/build/$ENV/partitions.bin"
     local tool; tool="$(gen_part_py)"
-    [ -f "$bin" ] || die "no partitions.bin at $bin — did the build run?"
-    [ -n "$tool" ] || { say "gen_esp32part.py not found — skipping partition assertion (flash.sh already printed the table)"; return 0; }
+    [ -f "$bin" ] || die "no partitions.bin at $bin. Did the build run?"
+    [ -n "$tool" ] || { say "gen_esp32part.py not found, skipping the partition check (flash.sh printed the table above)"; return 0; }
     local table; table="$(python3 "$tool" "$bin" 2>/dev/null)"
     echo "$table" | sed 's/^/   /'
     echo "$table" | awk -F, -v n="$EXPECT_PART_NAME" -v s="$EXPECT_PART_SIZE" '
         $1==n && $3=="nvs" && $5==s {found=1}
         END{exit found?0:1}' \
-        || die "partition table is MISSING '$EXPECT_PART_NAME' ($EXPECT_PART_SIZE nvs). The save has nowhere to live — the board would silently drop writes. Re-run WITHOUT --keep-build (a clean rebuild) so the custom table is emitted."
+        || die "partition table is MISSING '$EXPECT_PART_NAME' ($EXPECT_PART_SIZE nvs). Without it the board drops every save without an error. Re-run WITHOUT --keep-build (a clean rebuild) so the custom table is emitted."
     say "partition OK: '$EXPECT_PART_NAME' present ($EXPECT_PART_SIZE nvs)"
 }
 
@@ -252,7 +252,7 @@ board_verify_boot() {
         $0==e{ineq=1} /^\[/&&$0!=e{ineq=0} ineq&&$1=="monitor_port"{print $3; exit}' \
         "$repo_root/platformio.ini")}"
     if [ -z "$port" ] || ! python3 -c "import serial" >/dev/null 2>&1; then
-        say "no serial port / pyserial — skipping on-device boot assertion (check 'pio device monitor' for [save] blob<100% and [sd] round-trip OK)"
+        say "no serial port or pyserial, skipping the on-device boot check (check 'pio device monitor' for [save] blob<100% and [sd] round-trip OK)"
         return 0
     fi
     say "verifying boot lines on $port…"
@@ -301,15 +301,15 @@ if sd_line:   print("   " + sd_line)
 else:         print("   (no [sd] line captured)")
 
 if save_ok is False:
-    print("   !! SAVE UNHEALTHY — blob at/over capacity or a write FAILED (the NVS-full bug). NOT provisioned.")
+    print("   !! SAVE UNHEALTHY: blob at or over capacity, or a write FAILED (the NVS-full bug). NOT provisioned.")
     rc = 2
 elif save_ok is None:
-    print("   .. couldn't confirm the save line this time (best-effort) — power-cycle and check 'pio device monitor'.")
+    print("   .. couldn't confirm the save line this time. Power-cycle and check 'pio device monitor'.")
 if sd_ok is False:
-    print("   !! SD did NOT round-trip on-device — the card isn't mounting (exFAT? bad seat?). Re-provision the card.")
+    print("   !! SD did NOT round-trip on the device, so the card isn't mounting (exFAT? badly seated?). Re-provision the card.")
     rc = 2 if rc == 0 else rc
 elif sd_ok is None and rc == 0:
-    print("   .. couldn't confirm the [sd] line (best-effort) — seat the card and check the monitor.")
+    print("   .. couldn't confirm the [sd] line. Reseat the card and check the monitor.")
 sys.exit(rc)
 PYEOF
     # rc 2 = a line was captured AND reported unhealthy → hard fail; anything
@@ -324,7 +324,7 @@ do_board() {
     # Warn if the staged 'Pedia data would be stale vs. the content tables. Not
     # fatal for a board-only run (the card may just not be re-staged); `sd`/`all`
     # always regenerate it fresh.
-    make -C "$repo_root" pedia-check >/dev/null 2>&1 || say "note: web/data/pedia_data.js looks STALE vs. content tables — run './tools/provision.sh sd …' (or 'make pedia') to re-stage the card."
+    make -C "$repo_root" pedia-check >/dev/null 2>&1 || say "note: web/data/pedia_data.js is older than the content tables. Run './tools/provision.sh sd …' (or 'make pedia') to re-stage the card."
 
     # A partition-table change only reliably takes effect from a clean build:
     # a stale cache keeps emitting the OLD firmware.bin offset even after

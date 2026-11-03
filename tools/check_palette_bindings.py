@@ -66,7 +66,7 @@ def offenders():
 def main():
     found = list(offenders())
     if not found:
-        print("check_palette_bindings: ok — every colour comes from palColor()")
+        print("check_palette_bindings: ok: every colour comes from palColor()")
         return 0
     print("check_palette_bindings: colours that no theme can reach:\n")
     for path, line, text in found:

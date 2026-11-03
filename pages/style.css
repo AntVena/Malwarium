@@ -1,23 +1,23 @@
 /* ============================================================
-   MALWARIUM — publish-host styles (GitHub Pages).
+   MALWARIUM: publish-host styles (GitHub Pages).
    Same terminal-dark look as the device's own 'Pedia, from the
    same authority: every colour binds to a PAL_CORE role token
    (assets/PAL_CORE.json) or a documented derived tint.
 
    Standalone by design. web/style.css dresses the bundle that
    ships to an SD card and versions with it; this dresses the
-   pages served beside the artifacts. They share the palette,
-   not a file — one is downloaded by a device, the other never is.
+   pages served beside the artifacts. They share the palette
+   but not a file, because a device downloads one and never the other.
    ============================================================ */
 
-/* FONT_UI = Pixel Operator Mono 8 — the same cut the device renders, vendored in
+/* FONT_UI = Pixel Operator Mono 8, the same cut the device renders, vendored in
    fonts/ (CC0, 20KB) so the pages carry the real face on a machine that has
    never installed it. The local() probes name the 8px cut EXACTLY: the wider
    "Pixel Operator Mono" family is a different cut, and matching it would dress
    the page in a face the device never draws. `make site` copies this directory
    whole, so the file publishes with no staging step of its own.
 
-   It dresses HEADINGS AND CHROME ONLY — the wordmark, tabs, section rules, step
+   It dresses HEADINGS AND CHROME ONLY: the wordmark, tabs, section rules, step
    and card titles. Body copy stays on the system mono stack, because this is a
    page someone reads while flashing a board they may have just bricked: an 8px
    pixel face at paragraph length costs legibility that flavour doesn't buy back.
@@ -30,7 +30,7 @@
 }
 
 :root {
-  /* PAL_CORE role tokens — never a literal hex below this block */
+  /* PAL_CORE role tokens. No literal hex below this block. */
   --paper:    #14171c;
   --ink:      #e8edf2;
   --ink-dim:  #717a86;
@@ -42,7 +42,7 @@
   --frag-lo:  #7a3df0;
   --frag-hi:  #ff5cb8;
   /* documented derived tints (from PAL_CORE, not new hues) */
-  --paper-deep:  #0e1116;                    /* paper −25% lum — page field */
+  --paper-deep:  #0e1116;                    /* paper −25% lum: page field */
   --paper-sunk:  #101318;                    /* recessed panel fill         */
   --calm-wash:   rgba(58, 209, 126, .12);
   --accent-wash: rgba(31, 195, 230, .12);

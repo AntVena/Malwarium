@@ -1,11 +1,11 @@
 /* ============================================================
-   MALWARIUM://PEDIA — style.css
+   MALWARIUM://PEDIA: style.css
    Terminal dark wiki. Every colour binds to a PAL_CORE role
    token (assets/PAL_CORE.json) or a documented derived tint.
    Phone-first (375px), desktop-fine. No CDN, no framework.
    ============================================================ */
 
-/* FONT_UI = Pixel Operator Mono 8 — the SAME cut the device renders, shipped in
+/* FONT_UI = Pixel Operator Mono 8, the same cut the device renders, shipped in
    the bundle (fonts/, CC0, 20KB) so a reader gets the real face rather than a
    system mono standing in beside a panel showing the true one.
    The local() probes name the 8px cut EXACTLY: the wider "Pixel Operator Mono"
@@ -13,7 +13,7 @@
    device never draws. An exact local hit skips the download; anything else takes
    the url(). The AP server serves .ttf as font/ttf (esp32/ap_server.h).
 
-   It dresses NAMES AND CHROME ONLY — the wordmark, tabs, section rules, and the
+   It dresses NAMES AND CHROME ONLY: the wordmark, tabs, section rules, and the
    card/row/cell/entry names that are the device's own copy. Descriptions, hints,
    effect text and meta lines stay on the system mono stack: the face carries the
    identity at label length and costs legibility at sentence length, which is the
@@ -26,7 +26,7 @@
 }
 
 :root {
-  /* PAL_CORE role tokens — never literal hex below this block */
+  /* PAL_CORE role tokens. No literal hex below this block. */
   --paper:    #14171c;
   --ink:      #e8edf2;
   --ink-dim:  #717a86;
@@ -42,7 +42,7 @@
   --rarity-rare:     #6f6cf0;
   --rarity-epic:     #f06bc4;
   /* documented derived tints (from PAL_CORE, not new hues) */
-  --paper-deep:  #0e1116;                    /* paper −25% lum — page field   */
+  --paper-deep:  #0e1116;                    /* paper −25% lum: page field    */
   --paper-sunk:  #101318;                    /* locked-card fill              */
   --calm-wash:   rgba(58, 209, 126, .12);    /* calm @ 12%                    */
   --accent-wash: rgba(31, 195, 230, .12);    /* accent @ 12%                  */
@@ -103,9 +103,9 @@ nav.tabs a {
 nav.tabs a:hover { color: var(--ink); background: var(--paper); }
 nav.tabs a.active { color: var(--paper-deep); background: var(--calm); font-weight: 700; }
 /* Six sections is one more than a phone's width divides comfortably at the display
-   face's tracking — the longest label ends up flush against its divider. Give the
-   letters back their air on the narrow screens this is mostly read on, rather than
-   shortening the labels: they are the device's own words for these screens. */
+   face's tracking, which leaves the longest label flush against its divider. Narrow
+   screens get looser spacing here. The labels stay full length because they are the
+   device's own words for these screens. */
 @media (max-width: 420px) {
   nav.tabs a { font-size: 11px; letter-spacing: 0; padding: 9px 2px 8px; }
 }
@@ -194,7 +194,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .chip.crashed  { color: var(--hot); border: 1px solid var(--hot); }
 .chip.retired  { color: var(--calm); border: 1px solid var(--calm); }
 
-/* rarity tags — ramp readable by position, outline style */
+/* rarity tags: the ramp reads by position, in outline style */
 .rar { font-size: 10px; letter-spacing: 1px; padding: 1px 6px; border-radius: 2px; border: 1px solid; flex: none; }
 .rar.COMMON   { color: var(--rarity-common);   border-color: var(--rarity-common); }
 .rar.UNCOMMON { color: var(--rarity-uncommon); border-color: var(--rarity-uncommon); }
@@ -216,8 +216,8 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 
 /* ---- the pet's kit grids (learned moves / one-time items) -------------
    Tighter than the roster grid because these cells are an ICON and a word rather than
-   a sprite and a name — a 104px column would put four things on a phone row and leave
-   half of each one empty. The cell is a <button>: it opens a detail panel in place, so
+   a sprite and a name. A 104px column would fit four to a phone row with half of
+   each one empty. The cell is a <button>: it opens a detail panel in place, so
    it has to be reachable by keyboard and announce itself as something that does. */
 .kitgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px; }
 .kitcell {
@@ -280,8 +280,7 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
    rather than prose. Letter-spaced because it is all caps and mostly numbers. */
 .row .fxnum { font-size: 11px; color: var(--accent); margin-top: 2px;
               letter-spacing: 0.06em; }
-/* A recipe row's METHOD line — what the dish takes, as against .fx/.fxnum's what it
-   does. Ruled and indented so the two can't be read as one paragraph, the same nesting
+/* A recipe row's METHOD line: what the dish takes. .fx/.fxnum say what it does. Ruled and indented so the two can't be read as one paragraph, the same nesting
    the device's own MERGE HUB draws ingredients with (game_merge.cpp's kIndent). It
    carries INK rather than the accent: on this page the ingredient list is the answer,
    not an aside, and .fxnum is already spending the accent one line above it. */
@@ -311,8 +310,8 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .ach .nm { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; }
 .ach.incomplete .nm { color: var(--ink-dim); }
 .ach .tr { font-size: 11px; color: var(--ink-dim); }
-/* progress on an unfinished countable ladder — a slimmer .bar, since it sits
-   inside a card rather than owning a section. The body takes the slack so every
+/* progress on an unfinished countable ladder: a slimmer .bar, because it sits
+   inside a card. The body takes the slack so every
    rail is the same length: bars that start and end in the same place can be
    compared down the column, where rails sized by their own caption cannot. */
 .ach .body { flex: 1; min-width: 0; }
@@ -347,13 +346,13 @@ a.card:hover { background: var(--paper); border-color: var(--accent); color: inh
 .tagform input::placeholder { color: var(--ink-dim); letter-spacing: 1px; }
 /* The HackerTag field is uppercase-only, so the shared rule above forces the
    case. A URL is case-SENSITIVE past the host, and one displayed back in caps
-   reads as mangled to whoever just pasted it — so this field shows exactly what
+   reads as mangled to whoever just pasted it, so this field shows exactly what
    was typed. Tighter tracking too: an address is long and not a callsign. */
 #urlinput { text-transform: none; letter-spacing: 0; font-size: 14px; }
 /* The network picker sits on its own row above the passphrase, because an SSID can
    be long and sharing a row with a password field squeezes both. Its button is the
    rescan glyph only, so it shrinks to the glyph instead of taking a WRITE-sized
-   share of the row. A passphrase is case-SENSITIVE — same reasoning as #urlinput. */
+   share of the row. A passphrase is case-sensitive too, so it gets #urlinput's treatment. */
 .netform { margin-bottom: 8px; }
 .tagform select {
   flex: 1; min-width: 0; background: var(--paper-deep); border: 1px solid var(--track);

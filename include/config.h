@@ -453,7 +453,7 @@
 #  define UPDATE_ENABLED         0    // default: no update path (no radio, or one app slot)
 #endif
 #if UPDATE_ENABLED && !STA_ENABLED
-#  error "UPDATE_ENABLED needs STA_ENABLED — there is nothing to fetch a manifest over."
+#  error "UPDATE_ENABLED needs STA_ENABLED, the only way to fetch a manifest."
 #endif
 #if UPDATE_ENABLED
 #  ifndef UPDATE_MANIFEST_URL

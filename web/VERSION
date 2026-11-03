@@ -1,6 +1,6 @@
 # Which web 'Pedia bundle this is. `code` is the packed monotonic integer an
 # update check compares; `version` is the string it displays. Bump both when
-# publishing a bundle, the same way include/version.h stamps the firmware — the
+# publishing a bundle, the same way include/version.h stamps the firmware. The
 # two version independently, which is why the manifest lists them as separate
 # artifacts.
 #

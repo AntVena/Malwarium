@@ -26,7 +26,7 @@ import sys
 try:
     import yaml
 except ImportError:                      # pragma: no cover - environment guard
-    print("check_workflows: PyYAML not installed — skipping", file=sys.stderr)
+    print("check_workflows: PyYAML not installed, skipping", file=sys.stderr)
     sys.exit(0)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

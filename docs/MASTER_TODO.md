@@ -314,8 +314,8 @@ you look at one.
   never a hue that already means a state) is worth adding to the rail. Decide on the device,
   not the contact sheet: the panel's x1.75 changes what reads. Diff **S** (taste first).
 - **Net-Sea Crossing area art** (shipped mechanically, art pending): the `FLOATING POINT` / `THE
-  HARDENED SHELL` storefront motifs. Its twelve mods are drawn — the whole `ICON_MOD_*` family is,
-  so no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of
+  HARDENED SHELL` storefront motifs. Its twelve mods are drawn, as is the whole `ICON_MOD_*`
+  family, so no area owes one. Like the keep, it fights with the shared tier roster and has no malbeasts of
   its own.
 - **Napstorrent Moors area art** (shipped mechanically, art pending): the `MOOR-TO-MOOR`
   storefront motif.

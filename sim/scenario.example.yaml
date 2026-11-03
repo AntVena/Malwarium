@@ -1,4 +1,4 @@
-# Example wokwi-cli scenario — UNVERIFIED template (see sim/README.md).
+# Example wokwi-cli scenario: an UNVERIFIED template (see sim/README.md).
 # Drives the carousel + a submenu via button GPIOs and snapshots the panel.
 # Run (once token + diagram.json exist):
 #   wokwi-cli . --scenario sim/scenario.example.yaml --screenshot-part lcd1 \

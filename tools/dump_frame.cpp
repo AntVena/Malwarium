@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
             }
         game.setThemePick(t);
         if (t == 0 && std::strcmp(want, game.themeName()) != 0)
-            std::fprintf(stderr, "dump_frame: no theme '%s' — drawing in %s\n", want,
+            std::fprintf(stderr, "dump_frame: no theme '%s', drawing in %s\n", want,
                          game.themeName());
     }
     // ARCH rack: seed a frozen stored pet so the rack list / Deploy record render.

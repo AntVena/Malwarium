@@ -7523,8 +7523,8 @@ window.PEDIA_DATA = {
   "moveGroups": {
     "core": "CORE MOVES",
     "ransomware": "RANSOMWARE LINE",
-    "phishing": "PHISHING LINE — dormant",
-    "threat": "THREAT SIGNATURES — wielded against you"
+    "phishing": "PHISHING LINE: dormant",
+    "threat": "THREAT SIGNATURES: used against you"
   },
   "achievements": [
     {

@@ -980,8 +980,8 @@ GLYPHS = [
     ("ICON_ACH_TWINS_8", "clones", tally(2)),
     # --- The arcade's long tail ----------------------------------------------
     # Rungs above ladders that stopped where a casual player stops. Every one INHERITS
-    # its ladder's motif. The three single rows that became the foot of a ladder —
-    # ARCADE_WINS_10, SUNK_COST, TOWER_OF_FRAGGLE: take their own motif back with the
+    # its ladder's motif. The three single rows at the foot of a ladder
+    # (ARCADE_WINS_10, SUNK_COST, TOWER_OF_FRAGGLE) take their own motif back with the
     # one mark a first rung wears, so the rungs above them count up from it.
     ("ICON_ACH_ARCADE_500", inherit("ICON_ACH_ARCADE_100"), tally(4)),
     ("ICON_ACH_ARCADE_1000", inherit("ICON_ACH_ARCADE_100"), tally(5)),
@@ -1073,7 +1073,7 @@ def motif_rows(motif_name):
             raise ValueError("%s: nothing to centre" % what)
         body = rows[ink[0]:ink[-1] + 1]
         if len(body) > MOTIF_ROWS:
-            raise ValueError("%s: %d rows of ink, the band holds %d — draw this one a "
+            raise ValueError("%s: %d rows of ink, the band holds %d; draw this one a "
                              "motif instead" % (what, len(body), MOTIF_ROWS))
         top = (MOTIF_ROWS - len(body)) // 2
         blank = "." * SIZE
@@ -1091,8 +1091,8 @@ def build(motif_name, footer):
         raw = ["." * SIZE] * top + body + ["." * SIZE] * (SIZE - top - len(body))
         footer = {}
     elif len(raw) != MOTIF_ROWS:
-        raise ValueError("motif '%s' is %d rows, want %d — rows 14+ belong to the "
-                         "footer" % (motif_name, len(raw), MOTIF_ROWS))
+        raise ValueError("motif '%s' is %d rows, want %d (rows 14+ belong to the "
+                         "footer)" % (motif_name, len(raw), MOTIF_ROWS))
     grid = [[False] * SIZE for _ in range(SIZE)]
     for y, line in enumerate(raw):
         if len(line) != SIZE:

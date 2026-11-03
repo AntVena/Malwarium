@@ -16,7 +16,7 @@ src/core/content/areas/
   citrus_circuit/area.cpp
   pirate_bayou/area.cpp
   napstorrent_moors/area.cpp
-  deepweb_dive/area.{h,cpp}   the terminal endless zone — see below, not an AreaDef
+  deepweb_dive/area.{h,cpp}   the terminal endless zone (not an AreaDef; see below)
 ```
 
 An `AreaDef` row owns, in one place: the area's name/Title, its **`badge`**. The same area in
@@ -92,11 +92,11 @@ its VOICE:
 ```
 {"THE LONG SEEDER",
  {"ratio_debt"},
- // lines[] — how it MEETS a pet, one rolled per encounter
+ // lines[]: how it MEETS a pet, one rolled per encounter
  {{"YOU ARE LATE. THEY WERE ALL LATE.", "IT HAS WAITED SO LONG."},
   {"I STILL HAVE EVERY FILE. ASK ME.",  "IT HOLDS OUT NOTHING."},
   {"STAY. THE OTHERS DID NOT STAY.",    "IT HOPES YOU WILL STAY."}},
- // outcomes[] — how it TAKES what the pet did: pleased, displeased, affront, boon
+ // outcomes[]: how it TAKES what the pet did (pleased, displeased, affront, boon)
  {{"THEN THE SWARM IS NOT DEAD.", "IT SEEDS TO YOU AT LAST."},
   {"YOU LEECH LIKE ALL OF THEM.", "YOUR RATIO IS NOTED."},
   {"I DO NOT SEED TO STRANGERS.", "IT CHOKES THE STREAM OFF."},

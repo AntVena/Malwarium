@@ -23,7 +23,7 @@ target_include_directories(malcore PUBLIC
 # links; MALWARIUM_DEMO is what shuts the slots a browser cannot honour
 # (include/demo_config.h), and it goes on malcore because Game::slotLocked lives
 # there. src/generated/demo_save.cpp is the baked seed, produced by a NATIVE build
-# of gen_demo_save before this tree is configured — see tools/build_web.sh.
+# of gen_demo_save before this tree is configured; see tools/build_web.sh.
 if(EMSCRIPTEN)
     target_compile_definitions(malcore PUBLIC MALWARIUM_DEMO)
 
@@ -78,7 +78,7 @@ if(SDL2_FOUND OR SDL2_CONFIG)
         target_link_libraries(malwarium_host PRIVATE ${SDL2_LIBS})
     endif()
 else()
-    message(WARNING "SDL2 not found — host preview target skipped (tests still build).")
+    message(WARNING "SDL2 not found: host preview target skipped (tests still build).")
 endif()
 
 # --- Headless frame dumper (visual checks / screenshot baselines) -----------
@@ -92,7 +92,7 @@ target_link_libraries(check_manifest PRIVATE malcore)
 
 # Style check for the wild-malbeast art spike: renders one malbeast's silhouette plus the
 # FX_GLITCH shader's states to a PPM (tools/preview_malbeast.py wraps it to PNG). A
-# look-at-it tool, not a gate — the sibling of dump_frame for a sprite with no screen yet.
+# viewing tool that fails nothing; dump_frame's sibling for a sprite with no screen yet.
 add_executable(preview_malbeast tools/preview_malbeast.cpp)
 target_link_libraries(preview_malbeast PRIVATE malcore)
 
@@ -106,7 +106,7 @@ target_link_libraries(gen_demo_save PRIVATE malcore)
 # --- Native tests -----------------------------------------------------------
 enable_testing()
 # Globbed: the suite is one gate roster (test_main.cpp) over per-subject units, and
-# a new test_<subject>.cpp should cost a file, not a build edit — same rule the
+# a new test_<subject>.cpp needs no build edit, the same rule the
 # engine sources follow. CONFIGURE_DEPENDS re-globs when a file appears.
 file(GLOB MAL_TEST_SOURCES CONFIGURE_DEPENDS test/test_native/*.cpp)
 add_executable(mal_tests ${MAL_TEST_SOURCES})
@@ -128,7 +128,7 @@ if(Python3_Interpreter_FOUND)
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_comment_standard.py)
     # The footer hint is centred across the whole canvas, so one character too many
-    # is cut at BOTH ends — including the leading button letter. Source-level for the
+    # is cut at BOTH ends, including the leading button letter. Source-level for the
     # same reason the two above are: the hints are literals spread over every screen,
     # and a native test would have to keep a second copy of the list.
     add_test(NAME hint_bands

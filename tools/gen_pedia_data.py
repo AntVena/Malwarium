@@ -171,7 +171,7 @@ MOVE_ICONS = {
 CONTEXT_USE = {"LockoutOnly": "LOCKOUT ONLY", "PreEncounter": "PRE-ENCOUNTER"}
 MOVE_GROUPS = {
     "core": "CORE MOVES", "ransomware": "RANSOMWARE LINE",
-    "phishing": "PHISHING LINE — dormant", "threat": "THREAT SIGNATURES — wielded against you",
+    "phishing": "PHISHING LINE: dormant", "threat": "THREAT SIGNATURES: used against you",
 }
 THREAT_MOVES = {"system_hang", "data_rot", "nag_screen"}
 
@@ -197,7 +197,7 @@ def strip_comments(src):
 def load_content(tool):
     """Run the compiled dump tool and return its JSON (the firmware's own view)."""
     if not Path(tool).exists():
-        sys.exit(f"error: {tool} not found — build it first:\n"
+        sys.exit(f"error: {tool} not found. Build it first:\n"
                  f"  make pedia   (or see the compile line in the repo-root Makefile)")
     out = subprocess.run([str(tool)], capture_output=True, text=True, check=True).stdout
     return json.loads(out)
@@ -226,7 +226,7 @@ def main():
         stnum, stname = STAGE.get(c["stage"], (0, c["stage"]))
         hint, context = c["hint"], c["context"]
         if not hint:
-            warnings.append(f"creature '{c['id']}' has no hint field — add one to its creatures/<line>/line.h row")
+            warnings.append(f"creature '{c['id']}' has no hint field; add one to its creatures/<line>/line.h row")
             hint, context = "TODO: add a hint to this creature's row.", context or "TODO"
         # A branch node names a Good AND a Bad successor; a linear hop names one.
         linear, good, bad = c["evolvesToId"], c["evolvesToGoodId"], c["evolvesToBadId"]
@@ -262,7 +262,7 @@ def main():
         if icon:
             line_icons[lid] = icon
         else:
-            warnings.append(f"line '{lid}' has no {name} — its section renders text-only")
+            warnings.append(f"line '{lid}' has no {name}, so its section renders text-only")
 
     # ---- items ----
     # `effect` and `stats` arrive already rendered by the firmware's own expander, so
@@ -274,7 +274,7 @@ def main():
               "effect": d["effect"], "stats": d["stats"],
               "icon": icon or asset_path(repo, ITEM_ICON_GENERIC)}
         if icon is None:
-            warnings.append(f"item '{d['id']}' has no glyph in assets/ — using generic ICON_ITEMS")
+            warnings.append(f"item '{d['id']}' has no glyph in assets/; using generic ICON_ITEMS")
         if d["context"] in CONTEXT_USE:
             it["use"] = CONTEXT_USE[d["context"]]
         if d["use"] == "DecryptEgg":
@@ -325,7 +325,7 @@ def main():
     for r in content["recipes"]:
         if r["output"] not in item_ids:
             warnings.append(f"recipe '{r['name']}' outputs '{r['output']}', "
-                            "which is not an item — it will render nameless")
+                            "which is not an item, so it will render nameless")
         for inp in r["inputs"]:
             if inp["id"] not in item_ids:
                 warnings.append(f"recipe '{r['name']}' wants ingredient '{inp['id']}', "
@@ -343,7 +343,7 @@ def main():
     combat = strip_comments(src_path.read_text(encoding="utf-8", errors="replace"))
     marker = "kWildRoster[kWildMalbeastCount] = {"
     if marker not in combat:
-        sys.exit(f"error: '{marker}' not found in {src_path} — the wild roster moved; "
+        sys.exit(f"error: '{marker}' not found in {src_path}. The wild roster moved; "
                  f"point this at its new home.")
     fn = combat[combat.index(marker):]
     fn = fn[: fn.index("\n};") + 3]
@@ -383,7 +383,7 @@ def main():
     crawl = re.search(r'kDarkWebWilds\[2\]\s*=\s*\{([^}]*)\}',
                       strip_comments(crawl_path.read_text(encoding="utf-8")))
     if not crawl:
-        sys.exit(f"error: kDarkWebWilds not found in {crawl_path} — point this at its home.")
+        sys.exit(f"error: kDarkWebWilds not found in {crawl_path}. Point this at its home.")
     for bid in re.findall(r'"([^"]+)"', crawl.group(1)):
         if bid not in met_in:
             sys.exit(f"error: kDarkWebWilds names wild '{bid}', which the roster in "

@@ -54,8 +54,8 @@ def main() -> int:
         if width > ACTIVE_W:
             rel = src.relative_to(SRC.parent)
             over.append(
-                f"  {rel}:{line}: {width}px ({len(s)} chars) — "
-                f"{ACTIVE_W // ADVANCE} chars is the ceiling\n"
+                f"  {rel}:{line}: {width}px ({len(s)} chars), over the "
+                f"{ACTIVE_W // ADVANCE}-char ceiling\n"
                 f"      {s!r}"
             )
 

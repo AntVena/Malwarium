@@ -47,7 +47,7 @@ Open work: `docs/MASTER_TODO.md`.
 malwarium/
 ├── CONTRIBUTING.md      ← constraints, standards routing, the gates (read first)
 ├── README.md            ← the player on-ramp: build one, flash it, play
-├── assets/              ← FINAL art + PAL_CORE.json — this directory IS the atlas
+├── assets/              ← FINAL art + PAL_CORE.json: this directory IS the atlas
 │   ├── README.md           the atlas rules + when to read which art doc
 │   ├── ASSET_MANIFEST.md · VISUAL_LANGUAGE.md · CREATURE_VISUAL_RULES.md
 │   └── _attic/             drawn but consumerless art (untracked, uncompiled)

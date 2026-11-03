@@ -100,7 +100,7 @@ async function sha256Hex(bytes) {
 // an indeterminate leg rather than a failure).
 async function fetchImage(url, onChunk) {
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`${url.split("/").pop()} — the server answered ${res.status}`);
+  if (!res.ok) throw new Error(`${url.split("/").pop()}: the server answered ${res.status}`);
   const total = Number(res.headers.get("content-length")) || 0;
   const chunks = [];
   let seen = 0;
@@ -186,7 +186,7 @@ async function downloadAll() {
     const data = await fetchImage(job.url, (seen, total) => {
       const frac = total ? seen / total : 0;
       progress((done + frac * job.weight) / totalWeight,
-               `${job.file} — ${kib(seen)}${total ? ` of ${kib(total)}` : ""}`);
+               `${job.file}: ${kib(seen)}${total ? ` of ${kib(total)}` : ""}`);
     });
     done += job.weight;
     log(`fetched ${job.file} (${data.length} bytes)`);
@@ -203,10 +203,10 @@ async function downloadAll() {
     log(`expected ${app.sha256}`, "hot");
     log(`     got ${got}`, "hot");
     throw new Error("the firmware that downloaded doesn't match the digest the manifest " +
-                    "publishes for it. Nothing was written. Reload the page and try again — " +
-                    "if it happens twice, the published file is the problem, not your machine.");
+                    "publishes for it. Nothing was written. Reload the page and try again. " +
+                    "If it happens twice, the published file is the problem.");
   }
-  log(`sha-256 ok — ${got}`, "lit");
+  log(`sha-256 ok: ${got}`, "lit");
   return fileArray;
 }
 
@@ -273,7 +273,7 @@ async function flashImages(filtered) {
     const before = fileArray.map((_, i) =>
       fileArray.slice(0, i).reduce((a, f) => a + f.data.length, 0));
 
-    if (eraseAll) status("Erasing the whole chip — this takes a while…", "busy");
+    if (eraseAll) status("Erasing the whole chip. This takes a while…", "busy");
     else status("Writing…", "busy");
 
     await loader.writeFlash({
@@ -305,7 +305,7 @@ async function flashImages(filtered) {
     // operator is told to replug regardless, which is why a failure here is a log
     // line and not an error.
     try { await loader.after("hard_reset", true); }
-    catch { log("(the board rebooted before it could be reset from here — replug it)"); }
+    catch { log("(the board rebooted before it could be reset from here; replug it)"); }
 
   } catch (e) {
     const msg = (e && e.message) ? e.message : String(e);
@@ -408,7 +408,7 @@ async function askPort(port) {
         lastSend = Date.now();
         try { await writer.write(enc.encode(kSdCommand)); } catch { break; }
       }
-      if (acked) status("Formatting the card — don't unplug it…", "busy");
+      if (acked) status("Formatting the card. Don't unplug it…", "busy");
       await sleep(200);
     }
   } finally {
@@ -435,10 +435,10 @@ async function formatSd(picked, afterFlash) {
   progress(0, "");
   const like = picked ? picked.getInfo() : null;
   const replug = "If the screen stays dark, unplug the device and plug it back in " +
-                 "WITHOUT holding any button — this page will find it.";
+                 "WITHOUT holding any button, and this page will find it.";
   status("Waiting for the device to start…", "busy");
   $("detail").textContent = afterFlash ? replug : "";
-  log("— SD card —", "lit");
+  log("-- SD card --", "lit");
 
   const deadline = Date.now() + kSdDeadlineMs;
   let verdict = null;
@@ -473,7 +473,7 @@ async function formatSd(picked, afterFlash) {
     return;
   }
   status("The SD card wasn't formatted.", "err");
-  let why = afterFlash ? "The firmware flashed fine — only the card step didn't finish. " : "";
+  let why = afterFlash ? "The firmware flashed fine; only the card step didn't finish. " : "";
   if (!verdict)
     why += "The device never answered. Make sure it's plugged in and showing its screen " +
           "(not held in download mode), nothing else has the port open, and try FORMAT THE " +
@@ -509,10 +509,10 @@ async function formatSdOnly(filtered) {
 // Anything else is passed through as-is rather than guessed at.
 function friendlyError(msg) {
   if (/Failed to connect/i.test(msg))
-    return `${msg} — this is almost always the board running the game instead of listening. ` +
+    return `${msg}. The board is almost always running the game instead of listening. ` +
            `Unplug it, hold A, plug it back in, and press FLASH again.`;
   if (/Failed to open serial port|device has been lost|The port is already open/i.test(msg))
-    return `${msg} — something else may have the port open (a serial monitor, the Arduino IDE). ` +
+    return `${msg}. Something else may have the port open (a serial monitor, the Arduino IDE). ` +
            `Close it, replug the device holding A, and try again.`;
   return msg;
 }

@@ -34,7 +34,7 @@ for arg in "$@"; do
 done
 
 if ! command -v emcmake >/dev/null 2>&1; then
-    echo "build_web.sh: emcmake not on PATH — source your emsdk_env.sh first" >&2
+    echo "build_web.sh: emcmake not on PATH. Source your emsdk_env.sh first" >&2
     exit 1
 fi
 
@@ -64,6 +64,6 @@ echo "  (gzip: $(gzip -9 -c "$OUT/malwarium.wasm" | wc -c | awk '{printf "%.1f K
 
 if [ "$SERVE" = 1 ]; then
     echo
-    echo "serving pages/ on http://localhost:8000/play/ — Ctrl-C to stop"
+    echo "serving pages/ on http://localhost:8000/play/ (Ctrl-C to stop)"
     (cd pages && python3 -m http.server 8000)
 fi

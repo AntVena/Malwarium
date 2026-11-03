@@ -150,11 +150,11 @@ def pack_crop(strips, frames, report):
     if report:
         print(f"  union content box {bw}x{bh} at {box[:2]} (no resampling)")
     if bw > CELL_W or bh > CELL_H:
-        sys.exit(f"content {bw}x{bh} does not fit the {CELL_W}x{CELL_H} cell — "
+        sys.exit(f"content {bw}x{bh} does not fit the {CELL_W}x{CELL_H} cell; "
                  f"use --mode decimate, or re-source at project scale")
     # Centred across, but SEATED down: the habitat bottom-anchors the whole cell
-    # (drawHabitat, game_render.cpp), so padding left under the feet becomes float —
-    # the creature hovers that many logical px over the shelf. The shipped roster sits
+    # (drawHabitat, game_render.cpp), so padding left under the feet
+    # makes the creature hover that many logical px over the shelf. The shipped roster sits
     # its feet one px off the cell floor, so that is the gap reproduced here.
     ox = (CELL_W - bw) // 2
     # Content as tall as the cell has no room for the gap; seating it anyway would

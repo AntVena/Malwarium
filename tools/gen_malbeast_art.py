@@ -258,7 +258,7 @@ def stack(*frames, swells=False):
             raise SystemExit(
                 f"sheet row {i} has a body of {b // (NIB * NIB)} cells against "
                 f"{max(bodies) // (NIB * NIB)} in another pose: its outline is open "
-                f"somewhere (an open mouth?) — seal the gap with ':' so the fill stays in")
+                f"somewhere (an open mouth?). Seal the gap with ':' so the fill stays in")
     return px, w, h * len(frames)
 
 
@@ -2356,9 +2356,9 @@ def main():
         p = path_for(sym)
         if args.check:
             if not os.path.exists(p):
-                bad.append(f"{sym}: no committed PNG at {p} — run without --check")
+                bad.append(f"{sym}: no committed PNG at {p}; run without --check")
             elif open(p, "rb").read() != data:
-                bad.append(f"{sym}: committed PNG differs from recipe — "
+                bad.append(f"{sym}: committed PNG differs from recipe; "
                            f"rerun `python3 tools/gen_malbeast_art.py` to regenerate")
         else:
             with open(p, "wb") as f:

@@ -82,7 +82,7 @@ done
 if [ "$SKIP_ASSETS" -eq 1 ]; then
     echo ">> [1/3] skipping gen_assets.py (--skip-assets)"
 else
-    echo ">> [1/3] gen_assets.py — assets/**.png -> src/generated/"
+    echo ">> [1/3] gen_assets.py: assets/**.png -> src/generated/"
     python3 tools/gen_assets.py
 fi
 
@@ -90,7 +90,7 @@ fi
 if [ "$SKIP_PEDIA" -eq 1 ]; then
     echo ">> [2/3] skipping pedia data regen (--skip-pedia)"
 else
-    echo ">> [2/3] make pedia — content tables -> web/data/pedia_data.js"
+    echo ">> [2/3] make pedia: content tables -> web/data/pedia_data.js"
     make -C "$repo_root" pedia
 fi
 

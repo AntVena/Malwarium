@@ -105,7 +105,7 @@ if [ "$DO_UPLOAD" -eq 1 ]; then
     [ -n "$PORT" ] && upload_args+=(--upload-port "$PORT")
     echo ">> flashing $ENV${PORT:+ (port $PORT)}"
     if [ "$WAIT_WAKE" -eq 1 ]; then
-        echo ">> looking for the device — make sure it's plugged in, and if the" \
+        echo ">> looking for the device. Make sure it's plugged in, and if the" \
              "screen is asleep, press any button on it to wake it (a button wake" \
              "holds the USB link up far longer than the light-sleep timer pulse" \
              "this loop would otherwise be waiting on)."
@@ -115,7 +115,7 @@ if [ "$DO_UPLOAD" -eq 1 ]; then
             attempt=$(( attempt + 1 ))
             if [ "$(date +%s)" -ge "$deadline" ]; then
                 echo ">> --wait-wake: no wake pulse landed within ${IDLE_SLEEP_WAKE_BUDGET_S}s" \
-                     "(${attempt} attempts) — giving up." >&2
+                     "(${attempt} attempts). Giving up." >&2
                 exit 1
             fi
             echo ">> attempt ${attempt} missed the wake window, retrying..."
@@ -169,7 +169,7 @@ try:
 except Exception:
     pass
 if not found:
-    print("   (didn't catch the boot line this time — check the serial monitor directly)")
+    print("   (didn't catch the boot line this time; check the serial monitor directly)")
 PYEOF
     fi
 fi

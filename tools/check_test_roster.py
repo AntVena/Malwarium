@@ -34,7 +34,7 @@ def main() -> int:
     for src in sorted(TEST_DIR.glob("test_*.cpp")):
         for name in DEFINITION.findall(src.read_text()):
             if name in defined:
-                duplicates.append(f"{name} — in both {defined[name]} and {src.name}")
+                duplicates.append(f"{name}: in both {defined[name]} and {src.name}")
             defined[name] = src.name
 
     problems: list[str] = []
@@ -49,7 +49,7 @@ def main() -> int:
     for name in sorted(set(defined) - seen):
         problems.append(
             f"  NEVER RUNS: {name} is defined in {defined[name]} but is not in "
-            f"MAL_RUN_ALL_GATES — add it there, in milestone order."
+            f"MAL_RUN_ALL_GATES. Add it there, in milestone order."
         )
     for name in sorted(seen - set(defined)):
         problems.append(f"  roster names a gate nothing defines: {name}")
@@ -59,7 +59,7 @@ def main() -> int:
         print("\n".join(problems))
         return 1
 
-    print(f"test roster ok — {len(defined)} gates, all listed")
+    print(f"test roster ok: {len(defined)} gates, all listed")
     return 0
 
 

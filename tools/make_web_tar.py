@@ -64,14 +64,14 @@ def build(src, out):
     for name in TOP_LEVEL_FILES:
         path = os.path.join(src, name)
         if not os.path.isfile(path):
-            sys.exit(f"error: {path} is missing — the bundle would be incomplete")
+            sys.exit(f"error: {path} is missing, so the bundle would be incomplete")
         files.append((name, path))
 
     dirs = []
     for sub in SUBDIRS:
         root = os.path.join(src, sub)
         if not os.path.isdir(root):
-            sys.exit(f"error: {root} is missing — the bundle would be incomplete")
+            sys.exit(f"error: {root} is missing, so the bundle would be incomplete")
         dirs.append(sub)
         for walk_root, walk_dirs, walk_files in os.walk(root):
             walk_dirs.sort()
