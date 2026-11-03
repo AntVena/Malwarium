@@ -5,13 +5,11 @@
 // drawing art against it; this header is what the code reads. They are one
 // decision written twice, and these numbers are the ones that ship.
 //
-// A screen that wants a different value gives it a NAME OF ITS OWN
-// (expl_screen's kTrackRowTop, items_screen's kPickRowH) rather than redeclaring
-// one of these in a file-private namespace: that is what keeps "the grid" a
-// single answer and a deviation a visible, named choice. Redeclaring one at
-// namespace scope inside `mal` is an ambiguity the compiler catches. Beware the
-// one hole it does not: a `constexpr int kMargin` declared inside a FUNCTION
-// shadows silently.
+// A screen that needs a different value gives it its own name (expl_screen's
+// kTrackRowTop, items_screen's kPickRowH), so the grid stays one set of values
+// and every deviation is visible. Redeclaring one at namespace scope inside
+// `mal` is an ambiguity the compiler catches. Beware the one hole it does not: a
+// `constexpr int kMargin` declared inside a FUNCTION shadows silently.
 //
 // Consumers: every src/core/ui/*_screen.cpp and every game_*.cpp unit that draws
 // a list. The band itself is drawn by widgets.h's drawHeaderBand.

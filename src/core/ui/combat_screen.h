@@ -33,8 +33,8 @@ struct AnimClip;
 
 // Which authored clip a fighter shows this tick. TAKING a hit outranks throwing one, so a
 // trade reads as the recoil. A creature missing the pose it is asked for falls back to its
-// idle, so a sheet may author any subset. `takingHit` means "flinches NOW", not "was
-// damaged": hurtPoseEarned splits the two.
+// idle, so a sheet may author any subset. `takingHit` means the fighter flinches this
+// beat; hurtPoseEarned decides whether a damaging hit earns that.
 //
 // A combatant with no creature behind it (a sprite-named enemy spec, i.e. a wild malbeast)
 // has no clips to name, so its poses come from the SHEET: one with a second row is idle on
@@ -44,12 +44,12 @@ struct AnimClip;
 const AnimClip* fightPose(const Combatant& c, bool takingHit, bool swinging,
                           const SpriteData* sprite = nullptr);
 
-// How big a single hit has to be, as a percentage of the TARGET's own maxHealth, before it
-// answers with its BODY: the authored `hurt` pose and the knock-back that carries it.
-// Fighters alternate, so a reaction to any landed damage would fire every other beat and a
-// permanently flinching creature has no idle left to flinch out of. Measured against
-// maxHealth rather than flat, so the bar asks the same question of a Process form and a
-// Daemon with four times the pool.
+// How big a single hit has to be, as a percentage of the TARGET's own maxHealth, before
+// the target reacts with its body (the authored `hurt` pose and the knock-back that
+// carries it). Fighters alternate, so a reaction to any landed damage would fire every
+// other beat and a permanently flinching creature has no idle left to flinch out of.
+// Measured against maxHealth rather than flat, so the bar asks the same question of a
+// Process form and a Daemon with four times the pool.
 constexpr int kHeavyHitPctOfMax = 20;
 
 // Is a hit of `damage` a heavy one for `target`, by the bar above? Both BODY cues ask it
@@ -58,9 +58,9 @@ constexpr int kHeavyHitPctOfMax = 20;
 // REACTION without hiding the damage.
 bool heavyHit(const Combatant& target, int damage);
 
-// Has `target` earned the flinch for a hit of `damage`? A heavy hit has, and a LOCKED
-// fighter always has: there the pose is the state it is stuck in rather than a reaction.
-// The SHOVE does not follow the lock: a fighter that cannot act is not being hit harder.
+// Has `target` earned the flinch for a hit of `damage`? A heavy hit earns it, and a
+// locked fighter always holds it, as the state it is stuck in. The SHOVE does not follow
+// the lock: a fighter that cannot act is not being hit harder.
 bool hurtPoseEarned(const Combatant& target, int damage);
 
 // The strike mark a fighter's last swing draws: which source's sheet, and which half of
@@ -72,9 +72,8 @@ bool hurtPoseEarned(const Combatant& target, int damage);
 // (the common pool) shows the common mark.
 //
 // The variant walks the FIGHT's swing count (Combat::strikeCount), so no two blows in a
-// row draw the same frame, which is the sequence the player is watching. Counting per
-// FIGHTER instead makes two same-line fighters advance in lockstep, so every second pair
-// of consecutive attacks repeats.
+// row draw the same frame. Counting per FIGHTER instead makes two same-line fighters
+// advance in lockstep, so every second pair of consecutive attacks repeats.
 struct StrikeMark {
     const SpriteData* sheet;
     int variant;
@@ -86,9 +85,9 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
 // The lane keeps two creatures from merging into one unreadable mass, and is where the
 // strike mark is drawn, so it is reserved FIRST and each fighter seated against one of its
 // edges. Fixed boxes with the gap left over cannot do this: the widest Daemon draws 96px
-// against a 60px box, so the two biggest fighters would meet in the middle. The bands are
-// the DRAWING's, not the cell's (SpriteData::contentX0): a cell is routinely much wider
-// than what is drawn in it.
+// against a 60px box, so the two biggest fighters would meet in the middle. The bands
+// measure the drawing (SpriteData::contentX0), because a cell is often much wider than
+// what is drawn in it.
 //
 // EVERY fight is framed at 1/1 (the creature's authored pixels, one panel pixel each)
 // for two reasons. It resamples nothing, where the device's usual x1.75 cannot hold two
@@ -97,11 +96,11 @@ StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
 // drew a Daemon at 73px beside a Process at 70. Held at 1/1 a Process is 27-40px and a
 // Daemon 73-96 in every fight.
 //
-// The room that buys is spent on MOTION rather than margin: the lane is wide enough for a
-// strike mark to cross, and the lunge and recoil are big enough to see (kAttackHop,
-// kImpactNudge). CROPPING survives as a last resort for a pair too wide even at 1/1: it
-// cuts at the outer screen edges, and only on whichever fighter is over half the room. No
-// pairing in the roster reaches it.
+// The room this frees goes to motion: the lane is wide enough for a strike mark to cross,
+// and the lunge and recoil are big enough to see (kAttackHop, kImpactNudge). CROPPING
+// survives as a last resort for a pair too wide even at 1/1: it cuts at the outer screen
+// edges, and only on whichever fighter is over half the room. No pairing in the roster
+// reaches it.
 struct CombatStage {
     int localX = 0, localW = 0; // the local pet's drawn band (localX may be negative)
     int rivalX = 0, rivalW = 0; // its rival's
@@ -113,10 +112,10 @@ struct CombatStage {
 };
 
 // The seat a fighter with NO SHEET holds, in active px at the stage's 1/1 scale: one
-// standard creature cell. Two things take it, and `isSwarm` (CombatEnemy,
-// core/model/combat.h) is the difference: a fighter whose art is genuinely missing, which
-// draws nothing, and an area GUARDIAN, which has no sheet by design and draws its flock
-// into exactly this box (FX_SWARM, core/render/swarm.h).
+// standard creature cell. Two kinds of fighter use it, told apart by `isSwarm`
+// (CombatEnemy, core/model/combat.h): one whose art is missing draws nothing, and an area
+// guardian, which has no sheet, draws its flock into this box (FX_SWARM,
+// core/render/swarm.h).
 //
 // Published because the ENGINE resets that flock into the cell (Game::startGuardianCombat)
 // and a flock is told how big its box is and never where it is, so this is the one number
@@ -125,19 +124,19 @@ constexpr int kSwarmSeatW = 56;
 constexpr int kSwarmSeatH = 56;
 
 // Seat a fight. Either sprite may be null: a fighter with no art still holds a
-// standard-cell seat, so the side a missing sprite would have occupied stays empty
-// instead of the other fighter drifting into the middle of the stage.
+// standard-cell seat, so a missing sprite's side stays empty and the other fighter
+// keeps its place.
 CombatStage combatStage(const SpriteData* localSprite, const SpriteData* rivalSprite);
 
 // A fighter's motion this beat, held inside the canvas. `motion` is its total offset from
 // its seat in active px, `bandX`/`bandW` the seat, and `outward` the seat's direction away
 // from the clash lane: -1 left, +1 right.
 //
-// Every cue that moves a struck fighter pushes it OUTWARD, which is where the stage has
-// least to give: the widest pairings stand closest to the screen edge, so a flat shove
-// would walk a fighter off it. The motion is therefore HELD rather than sized down for the
-// worst pairing: a fighter with room takes the full travel and one without takes what it
-// has. INWARD motion is never held, the lane being reserved for it.
+// Every cue that moves a struck fighter pushes it outward, where the stage has least room:
+// the widest pairings stand closest to the screen edge, so a flat shove would walk a
+// fighter off it. The motion is therefore HELD rather than sized down for the worst
+// pairing: a fighter with room takes the full travel and one without takes what it has.
+// INWARD motion is never held, the lane being reserved for it.
 int heldOnStage(int motion, int bandX, int bandW, int outward);
 
 // Which side of a fight the local operator is on, plus what to call the two of them. The
@@ -183,8 +182,7 @@ constexpr int kCombatStatPages = 2;
 //
 // A row appears only when at least one side has it, so an ordinary encounter is the four
 // vitals. `local`/`rival` empty means "not in play for that fighter", which the draw
-// renders as a dash: a fighter that is not stunned and a stun the panel forgot to report
-// must not look the same.
+// renders as a dash so it never looks like a value the panel failed to report.
 //
 // What MOVED a vital is folded onto the vital's own row as a signed delta rather than
 // getting a row: a siphon and a Lockout stack both push on Power, and what is needed is
@@ -218,8 +216,8 @@ struct CombatVsGrid {
 // `localGuard` reports the one-shot defend brace, which is only meaningful on the side
 // whose braces the operator is choosing; a rival's brace is spent before the panel could
 // be opened on it. Rows come out in DECISION order (the four vitals, then what changes
-// what you would do next turn, then what merely happened), because the box is finite and
-// what falls off the bottom should be the least of it.
+// what you would do next turn, then what merely happened), so when the box runs out of
+// room, the least important rows are cut.
 CombatVsGrid combatVsGrid(const Combatant& local, const Combatant& rival, bool localGuard);
 
 // What a fighter is UNDER, as a strip of glyphs drawn beneath it, so a condition is
@@ -271,7 +269,7 @@ constexpr int kCombatSpriteShelf = 140;
 // sample these bands to prove a gauge and its blips still read in grayscale, and a gate
 // that restated the numbers would be a second copy free to fall out of step with the draw.
 // Both rows share one column, so the bars start on one x, run to one width and put their
-// numerics on one right edge, which is what lets an operator read who is ahead by looking.
+// numerics on one right edge, so an operator can see who is ahead at a glance.
 //
 // The stage scale below is stated rather than measured again for the same reason: a gate
 // sampling a band sized for a different scale would go quiet instead of failing.
@@ -292,8 +290,8 @@ constexpr int kCombatPanelTop = 28;
 // Stops just clear of the local pet's Health gauge, so both halves of reading a fight
 // survive an open panel: what your pet has left (the gauge and its numeric) and what just
 // happened to it (the last-move line). The pet's status and passive strips sit in the few
-// px above the gauge, so only a page running its full depth reaches over them: the right
-// thing to spend last, being a glance-level readout the VS page can answer in words.
+// px above the gauge, so only a page running its full depth covers them. They are the
+// last thing to cover because the VS page states the same thing in words.
 constexpr int kCombatPanelBottom = kCombatLocalGaugeY - 4;
 constexpr int kCombatPanelFirstRow = kCombatPanelTop + 20;   // under the header + its rule
 constexpr int kCombatPanelPitch = 11;
@@ -326,11 +324,11 @@ struct CombatOutro {
 // WHOSE colours the local pet's live cast makes it, and how far into them it is
 // (FX_CAMO, core/render/camo.h).
 //
-// A LEVEL, not a window. Every other cue here decays off `hitBeat`, which names the most
-// recent strike by EITHER fighter and so lasts exactly one strike: right for a punch,
-// wrong for a colour, which must hold while the pet holds what it borrowed. So the level is
-// carried by the caller (Game::combatCamoLevel_), eased toward the pet's LIVE cast
-// (camoTarget) once per anim tick, and read here as a fact.
+// A LEVEL, not a window. Every other cue here decays off `hitBeat`, which lasts one strike
+// by either fighter. A borrowed colour has to hold as long as the pet holds what it
+// borrowed, so it keeps its own state. So the level is carried by the caller
+// (Game::combatCamoLevel_), eased toward the pet's LIVE cast (camoTarget) once per anim
+// tick, and read here as a fact.
 //
 // The RAMPS are resolved by the caller too (Game::drawCombatScreen), since turning a
 // CamoTarget into a palette means sampling a sprite out of the registry. `ramp` is what the
@@ -347,9 +345,8 @@ struct CombatCamo {
 // CombatCamo's level eases toward. Gated on the CAST rather than on who is casting,
 // following a wildcard slot through to what it rolled: moveAllowedForLine (content/defs.h)
 // holds every other line to its own moves, so a cast whose line differs from its caster's
-// belongs to a metamorphic pet. A STATE, not a beat: lastMoveIdx and lastRolled are
-// rewritten only when THAT fighter acts, so an answer holds across any number of rival
-// turns.
+// belongs to a metamorphic pet. A state: lastMoveIdx and lastRolled change only when that
+// fighter acts, so an answer holds across any number of rival turns.
 //
 // THE RIVAL comes first: the pet swings the thing in front of it in that thing's own
 // palette. A cast is theirs when the rolled move sits in their kit (matched by id) or

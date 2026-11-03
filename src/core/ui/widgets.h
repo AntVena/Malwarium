@@ -23,10 +23,10 @@ class Framebuffer;
 //
 // It clears the canvas to PAPER first, because opening a screen with this band IS
 // what every list and viewer does, and thirty copies of the same clear is how the
-// per-screen header helpers drifted apart. drawHeaderBandOver below is the band
-// WITHOUT that clear, for the screen that has already painted something under it:
-// ROCK THE DOCK's dock scene (ui/tourney_screen.h) is the one, and the two share a
-// body so the title can never sit at a different height on a screen with a backdrop.
+// per-screen header helpers drifted apart. drawHeaderBandOver below skips that
+// clear, for a screen that has already painted under the band (ROCK THE DOCK's dock
+// scene, ui/tourney_screen.h). The two share a body so the title sits at the same
+// height with or without a backdrop.
 //
 // Both colours are the caller's because what a label MEANS varies: ARCH's slot
 // count is secondary information (INK_DIM), SHOP's Bits wallet is the thing the
@@ -38,8 +38,8 @@ void drawHeaderBand(Framebuffer& fb, const char* title,
                     Rgb565 rightColor = palColor(Pal::INK_DIM),
                     Rgb565 titleColor = palColor(Pal::INK));
 
-// The same band drawn ONTO whatever is already on the canvas. Same title, same
-// right label, same rule, same grid, only the clear is missing.
+// The same band drawn ONTO whatever is already on the canvas. It draws the same
+// title, right label, rule and grid, and skips the clear.
 void drawHeaderBandOver(Framebuffer& fb, const char* title,
                         const char* right = nullptr,
                         Rgb565 rightColor = palColor(Pal::INK_DIM),
@@ -62,27 +62,25 @@ constexpr Overflow scrollWhen(bool focused) { return focused ? Overflow::Scroll 
 // Only the FOCUSED row of a list should scroll. An unfocused overflowing row is
 // clipped instead: a screen of lines all travelling at once is unreadable, and
 // the cursor is already the thing that says which row the player is asking about.
-// The 5x7-era ellipsis is not available (the glyph table is ASCII, which the
-// content tests enforce), so the clip is the truncation cue.
+// There is no ellipsis glyph (the glyph table is ASCII, which the content tests
+// enforce), so the clip itself shows the truncation.
 //
-// `face` rides along because a row's NAME is often both the heading of its row and the
-// thing too long for it: a title-weight label that overflows still has to travel, and
-// dropping to Regular to get that is a weight change nobody asked for.
+// `face` is passed because a row's name is often its heading and also too long for it,
+// and an overflowing title-weight label has to scroll in its own weight.
 void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
                      Rgb565 color, int beat, Overflow mode,
                      FontFace face = FontFace::Regular);
 
-// The marquee's own clock, in heartbeats. Public because anything that has to stay on
-// screen long enough to be READ must derive its dwell from the same numbers the scroll
-// runs on: a constant chosen to suit one string is too short for the next one, and the
-// failure (a name that leaves before it has finished travelling) is invisible to
-// whoever picked the constant, because they were reading a short one.
+// The marquee's own clock, in heartbeats. Public so anything that must stay up long
+// enough to be read derives its dwell from the numbers the scroll runs on. A constant
+// chosen for one string is too short for a longer one, and whoever tested it with a
+// short string never sees the long one leave early.
 constexpr int kMarqueeHoldBeats = 6;    // ~1.5s parked at each end: time to read it
 constexpr int kMarqueePxPerBeat = 2;    // ~8px/s, about a character a second
 
 // Heartbeats for one full pass of `s` through a `w`-wide window: both holds, plus the
-// travel between them when it overflows. A line that FITS still returns the two holds:
-// it is not moving, but it is being read, and the caller is asking how long that takes.
+// travel between them when it overflows. A line that fits still returns the two holds,
+// because the caller is asking how long it takes to read.
 int marqueeCycleBeats(const char* s, int w);
 
 // A one-line label/value pair: `value` right-aligned against the right margin, `label`
@@ -110,11 +108,10 @@ void drawLabelValueIn(Framebuffer& fb, int x, int y, int right, const char* labe
 // (decryption_screen.h). Anything else that grows a fragmentation read should join
 // them here rather than rolling its own dither.
 //
-// Re-rolling is not decoration. Rolls collide, so the sub-cells lit by ONE roll are a
-// sample of the damage rather than a count of it: 4 rolls land as anywhere from 1 to
-// 4 blocks. Held still, a screen shows the player a single draw and invites them to
-// read it as the number; re-rolled per beat, the samples average back to the true
-// figure over the frames they watch.
+// Re-rolling is not decoration. Rolls can hit the same sub-cell, so 4 rolls light
+// anywhere from 1 to 4 blocks. Held still, a screen shows the player a single draw
+// and invites them to read it as the number; re-rolled per beat, the samples average
+// back to the true figure over the frames they watch.
 
 // Fills `lit` with `draws` rolls into a 3x3 grid, from `seed`. Rolls collide, so
 // fewer than `draws` sub-cells light: the shortfall is RETURNED as the collision
@@ -193,25 +190,24 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 void drawCancelConfirm(Framebuffer& fb, int y, int choice);
 
 // UI_HINT_BAND: the control hint, centred in a filled strip pinned to the foot of
-// the canvas. The fill is what makes it a BAND rather than one more row: a hint
-// set as bare text a row-pitch under a list reads as another entry in the list, and
-// dimming it is no help to a reader who is scanning shape rather than words.
+// the canvas. The fill sets the band apart from the list. Bare text a row-pitch
+// under a list reads as another entry even when dimmed, because readers scan shape
+// first.
 //
 // Pinned to the bottom rather than following the content, so it lands in the same
 // place whether the list above it is full or half empty. Consumers: the list and
 // picker screens that end in one (EXPL, SHOP, TITLE).
 //
 // The height is named because a screen that FLOWS its content (STAT's prose pages
-// size each row to the text it holds) has to subtract the band from the room it
-// has before it lays anything out: the band is drawn last but occupies its strip
-// from the start, and a page that discovers it after filling the screen has
-// already overprinted it.
+// size each row to the text it holds) must subtract the band's height before
+// laying anything out. The band is drawn last, so a page that ignores it
+// overprints its strip.
 constexpr int kHintBandH = 16;
 void drawHintBand(Framebuffer& fb, const char* hint);
 
-// The derived readout (effect_text.h's specRows) as an aligned grid: label left,
-// magnitude RIGHT-aligned in its column, so two rows of a list line their numbers
-// up and become comparable at a glance, which a " / "-joined sentence never is.
+// The derived readout (effect_text.h's specRows) as an aligned grid: label left
+// and magnitude right-aligned in its column, so the numbers in a list line up and
+// compare at a glance.
 //
 // Packs two cells per line where both clear a column, and gives a wide pair or a
 // flag row (SpecRow::flag: a behaviour with no magnitude) the full width. Returns

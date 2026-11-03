@@ -44,20 +44,18 @@ constexpr int kExplRowsPerArea = 1 + kExplSubAreas;      // header + 5 sub rows
 // area_defs.h: one and two past the real ladder, so they stay terminal even as the
 // ladder grows) and ROCK THE DOCK below it, the operator bracket held in The Pirate
 // Bayou (content_tournament.h). Each is a single row with no sub-areas, and while
-// locked each is an inert "??????" teaser, which is what makes them read as promises
-// rather than as rows that appear from nowhere.
+// locked each shows as an inert "??????" teaser, so the player knows it is coming.
 //
 // THEIR POSITIONS IN THIS SPACE ARE NOT WHAT THE PLAYER SEES. The row space is the
 // flat address every state lookup and every save flag is keyed by, and the screen is
 // the ACTIVITY PICKER over it (ExplCat, below), so the two endless rows are reached
-// through ENDLESS, the ladder through STORY, and the arena row is never drawn as a row
-// at all: its state is what the ARENA category is drawn FROM. What stays fixed here is
-// the addressing, which is why adding a category costs no row and moving one costs no
-// migration.
+// through ENDLESS, the ladder through STORY, and the arena row is never drawn; the
+// ARENA category is drawn from its state. What stays fixed here is the addressing,
+// which is why adding a category costs no row and moving one costs no migration.
 constexpr int kExplLeadRows = 2;   // the DeepWeb Dive, then the DarkWeb Crawl
 // ROCK THE DOCK's row. It has no place in any drawn level (the arena is one press off
-// the category picker), but it keeps its address so explRowState stays the ONE place
-// every zone's unlock is decided, the arena's included.
+// the category picker), but it keeps its address so explRowState decides every zone's
+// unlock, the arena's included.
 constexpr int kExplTailRows = 1;
 inline int explRowCount() {
     return kExplLeadRows + kExplSectors * kExplRowsPerArea + kExplTailRows;
@@ -93,9 +91,8 @@ enum class ExplRowState {
                     // takes priority over EXPLORING so the action stays reachable)
     SubCleared,     // its boss beaten → BEAT (DONE once learned out, as above), but
                     // still RE-FARMABLE: selectable to re-arm explore for full XP+Bits +
-                    // diminishing loot, so a beaten rung stays a training ground, which
-                    // is exactly what a fresh pet, walking a ladder of BEAT rows it has
-                    // learned none of, is being pointed at.
+                    // diminishing loot, so a beaten rung stays a training ground for a
+                    // fresh pet that has learned none of its moves.
     DeepWebLocked,  // DeepWeb Dive, not all areas cleared → "??????" + LOCKED
     DeepWebOpen,    // every area cleared → "> DIVE" (selectable → arm the endless dive)
     DeepWebDiving,  // the endless dive is armed → DIVING (selectable → re-arm)
@@ -116,7 +113,7 @@ ExplRowState explRowState(int row, const bool* areaCleared, const bool* subClear
 // locked rows). Pure function of the state.
 bool explRowSelectable(ExplRowState s);
 
-// The WORD a row's right-anchored state tag carries: the meaning channel, since colour
+// The word in a row's right-anchored state tag. It carries the meaning, because colour
 // on this screen is only emphasis. `movesToLearn` is that row's "?n" count (see
 // ExplListView), which is the whole of what separates BEAT from DONE on a beaten row.
 // Public so a gate can assert what a row SAYS rather than read it out of pixels.
@@ -153,11 +150,10 @@ inline bool explRowInLevel(int row, ExplCat cat, int navArea) {
 }
 
 // The widest the "?n" move-to-learn lead ever draws, as the string a row budget is
-// measured against. Two digits is the ceiling by construction (a zone's pool is the
-// kits of a handful of enemies, not the roster), and the gate that budgets every EXPL
-// name against this asserts no shipped zone outgrows it
-// (test_expl_names_stay_scrollable). Public because the budget has two readers and they
-// must not each guess.
+// measured against. Two digits is the ceiling, because a zone's pool is the kits of a
+// handful of enemies. The gate that budgets every EXPL name against this asserts no
+// shipped zone outgrows it (test_expl_names_stay_scrollable). Public because the budget
+// has two readers and they must not each guess.
 constexpr const char* kExplLearnLeadMax = "?99";
 
 // Everything drawExplList renders. A view struct rather than a parameter list because
@@ -184,19 +180,17 @@ struct ExplListView {
     int bestDeepWebDepth = 0;        // the DeepWeb row's own progress readout (0 = none)
     int bestDarkWebDepth = 0;        // ...and the Crawl's, the same job for the same reason
     // The arena row's own progress readout: how many entrants are still standing in the
-    // run in progress (0 = no run), and which round it is on. Same job bestDeepWebDepth
-    // does for the dive: the frontier row answers "where am I up to" where the choice
-    // is made, rather than only once the screen is open.
+    // run in progress (0 = no run), and which round it is on. Like bestDeepWebDepth for
+    // the dive, it lets the frontier row show progress on the picker itself.
     bool tourneyRunning = false;
     int tourneyAlive = 0;
     int tourneyRound = 0;
     // HOW MANY MOVES ARE LEFT HERE, per row: the count of moves the current pet could
     // still learn in each zone (Game::areaMovesToLearn and friends). Drawn as a "?n"
     // lead just left of the state tag: n things in this place the pet does not know yet.
-    // A QUESTION MARK is this screen's own word for that: it is what a locked row is
-    // drawn as ("??????"), so the glyph already means "you have not seen what is here"
-    // everywhere else on the list. A plus would read as a modifier, which is what it is
-    // on every other number the device draws.
+    // A question mark marks it, because locked rows already draw as "??????" and the
+    // glyph means "not seen yet" across the list. A plus would read as a modifier, which
+    // is what it is on every other number the device draws.
     //
     // It is the one thing a ladder of CLEARED rows could not say. A cleared area is
     // still the only place some of its moves are findable, so without this a player
@@ -208,9 +202,8 @@ struct ExplListView {
     // while it is still holding something (ExplRowState::AreaCleared/SubCleared).
     //
     // Blocks are row-major and may be null (nothing marked, the honest default for a
-    // caller that has no pet to ask about). A LOCKED row is never marked whatever the
-    // block says: it is drawn as "??????", and a count beside that would be spoiling a
-    // zone the player cannot reach.
+    // caller that has no pet to ask about). A locked row is never marked, so the count
+    // cannot spoil a zone the player cannot reach yet.
     const int* areaMovesToLearn = nullptr;      // [kExplSectors]:   the top-level zone row
     const int* gauntletMovesToLearn = nullptr;  // [kExplSectors]:   the AREA GAUNTLET row
     const int* subMovesToLearn = nullptr;       // [kExplSectors * kExplSubAreas]
@@ -224,8 +217,8 @@ struct ExplListView {
 // EXPL's list, at whichever of its three levels `v` describes: the ACTIVITY PICKER
 // when v.cat is None, else the open category's rows one LEVEL at a time
 // (explRowInLevel). Areas carry their own sector glyph (ICON_SECTOR_<AREA_ID>,
-// resolved through `reg`: a missing one draws as an empty frame rather than shifting
-// the row).
+// resolved through `reg`: a missing one draws as an empty frame so the row keeps its
+// layout).
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v);
 
 // Is category `c` reachable at all? LOCKED categories still draw (as a "??????" row,
@@ -258,11 +251,11 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
                       ExploreBadgeMode mode);
 
 // Explore-control overlay: the walk's own action list, opened by the A+C chord over the
-// habitat. A CURSOR list, exactly like combat's Exploit picker: the chord opens it and
-// then plain A/B/C drive it (A next row, B do it, C back out). The chord itself is never
-// a navigation key inside a screen it opened: that is not what the Exploit chord is for,
-// and A+C is awkward to hit besides, since A registers on its own first.
-// STOP stays last, where a thumb parked on the bottom row expects the way out.
+// habitat. A cursor list, like combat's Exploit picker: the chord opens it and then
+// plain A/B/C drive it (A next row, B do it, C back out). The chord itself is never a
+// navigation key inside a screen it opened: that is not what the Exploit chord is for,
+// and A+C is awkward to hit besides, since A registers on its own first. STOP stays
+// last, where a thumb parked on the bottom row expects the way out.
 enum class ExploreControlRow { Ping, Warp, AutoProgress, Sound, Stop };
 constexpr int kExploreControlRows = 5;
 
@@ -355,11 +348,11 @@ void drawWifiEvent(Framebuffer& fb, const WifiEventView& v);
 
 // Storefront name accessors: each sector has an item shop AND a mod shop.
 // `shopName` is the item storefront's banner ("BYTE TO EAT" / "PIER-TO-PEER" /
-// "MOOR-TO-MOOR"); `modShopName` is the mod storefront's ("CHIP SHOP" /
-// "PLUNDER PORT" / "MOOR TO MODS"). Both fall back to sector 0's storefront for an
+// "MOOR-TO-MOOR"); `modShopName` is the mod storefront's ("CHIP SHOP" / "PLUNDER
+// PORT" / "MOOR TO MODS"). Both fall back to sector 0's storefront for an
 // out-of-range sector. A storefront's actual LISTINGS (arbitrary-length, priced in
-// Bits + item costs) are resolved through Game's shopListing* accessors, not here:
-// those need the ContentRegistry to turn an id into a display name.
+// Bits + item costs) are resolved through Game's shopListing* accessors, which
+// have the ContentRegistry to turn an id into a display name.
 const char* shopName(int sector);
 const char* modShopName(int sector);
 
@@ -385,11 +378,11 @@ struct ShopRowView {
 };
 
 // The tightest description budget on any screen: a storefront squeezes the selected
-// row's own prose between the last listing and the buy reason. This is the WORST case:
-// a storefront stocking the full kShopMaxRows; a one- or two-listing shop's adaptive
-// list leaves several times as much. Public so a content row stocked by an area shop
-// (content/areas/<id>/area.cpp) can be held to the worst case: anything longer is
-// silently truncated when a shop happens to be full.
+// row's own prose between the last listing and the buy reason. This is the worst case,
+// a storefront stocking the full kShopMaxRows. A shop with one or two listings leaves
+// several times as much room. Public so a content row stocked by an area shop
+// (content/areas/<id>/area.cpp) can be held to the worst case, since anything longer
+// is truncated when the shop is full.
 constexpr int kShopDescLines = 3;
 
 // Shop event: a storefront explore event (item shop OR mod shop, same chrome): the
@@ -420,7 +413,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
 // non-Sim) fight resolves win or loss, a brief ~2s overlay shows the persistent
 // BANDWIDTH spend + FRAGMENTATION change it just caused, before returning to the
 // habitat, so the player knows whether to keep exploring or go defrag. The
-// fragmentation half is tri-state, dual-coded by WORD (never colour alone):
+// fragmentation half is tri-state, dual-coded by word:
 //   None:     frag wasn't in play this encounter (row omitted entirely).
 // Shielded: 's Bandwidth shield covered the tax ("FRAG SHIELDED").
 //   Rose:     the tax landed ("FRAG +n", `fragDelta` is that positive n).
