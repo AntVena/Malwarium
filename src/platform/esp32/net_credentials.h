@@ -1,20 +1,20 @@
-// net_credentials.h — device-tier home-network credentials, backed by NVS.
+// net_credentials.h: device-tier home-network credentials, backed by NVS.
 //
 // The SSID + passphrase the device associates with (platform/esp32/net_sta.h),
 // written by the phone-driven setup page the SoftAP serves (ap_server.h) and read
 // back on every connect attempt. Opens NVS_WIFI_NAMESPACE in NVS_SAVE_PARTITION
-// per call, exactly like NvsSaveStore (save_store_esp32.h) — cheap, and no handle
+// per call, exactly like NvsSaveStore (save_store_esp32.h): cheap, and no handle
 // is left dangling across the long idle stretches between attempts.
 //
 // DELIBERATELY NOT IN THE SAVE BLOB. The save round-trips through the ARCH rack
-// and is described to the web 'Pedia, and src/core is platform-agnostic — a
+// and is described to the web 'Pedia, and src/core is platform-agnostic: a
 // passphrase belongs in neither. Its own namespace also means a Factory Reset of
 // the save leaves the network provisioning intact.
 //
 // The passphrase is stored in PLAINTEXT: stock ESP32 NVS is not encrypted, so
 // anyone who can read the flash can read it back. NVS encryption is a separate
 // feature and is not enabled here. Nothing in this codebase prints a stored
-// passphrase to serial or serialises it into pedia_state.json — keep it that way:
+// passphrase to serial or serialises it into pedia_state.json: keep it that way:
 // provisioned() is the only thing the UI ever needs to know.
 #pragma once
 
@@ -36,7 +36,7 @@ public:
     static constexpr size_t kSsidCap = 33;
     static constexpr size_t kPassCap = 64;
 
-    // Is a network stored? The only credential fact the UI is allowed to see —
+    // Is a network stored? The only credential fact the UI is allowed to see:
     // Game::setNetProvisioned() carries exactly this bool into the engine so the
     // UPDATES screen can tell "nowhere to go" apart from "nowhere to look".
     bool provisioned() const {
@@ -49,7 +49,7 @@ public:
     }
 
     // Fill both buffers from NVS. False (and untouched buffers) when nothing is
-    // stored — the caller must not attempt an association in that case.
+    // stored: the caller must not attempt an association in that case.
     bool load(char* ssid, size_t ssidCap, char* pass, size_t passCap) const {
 #if STA_ENABLED
         // Zero FIRST: a missing key leaves the caller's buffer untouched, so an
@@ -79,7 +79,7 @@ public:
         if (pass && std::strlen(pass) >= kPassCap) return false;
         Preferences p;
         if (!p.begin(NVS_WIFI_NAMESPACE, /*readOnly=*/false, NVS_SAVE_PARTITION)) return false;
-        // The SSID write is the one that decides success — an open network stores an
+        // The SSID write is the one that decides success: an open network stores an
         // empty passphrase, whose write legitimately reports zero bytes.
         const bool ok = p.putString(NVS_WIFI_SSID_KEY, ssid) > 0;
         p.putString(NVS_WIFI_PASS_KEY, pass ? pass : "");

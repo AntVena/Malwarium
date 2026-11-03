@@ -1,4 +1,4 @@
-// web_bundle.h — which web 'Pedia bundle is on the card.
+// web_bundle.h: which web 'Pedia bundle is on the card.
 //
 // The SD /web folder the AP serves (ap_server.h) is stamped by a marker file
 // sitting beside it, so an update check can tell "a bundle is published" apart
@@ -11,7 +11,7 @@
 // web/VERSION onto a card populated by hand. Both lay down the same two lines, so
 // a hand-staged card and an OTA-updated one are indistinguishable at check time.
 //
-// Plain POSIX stdio, exactly like ApServer's file streaming — no card, no folder
+// Plain POSIX stdio, exactly like ApServer's file streaming: no card, no folder
 // or no marker all land as "unknown" (code 0), which is the safe direction.
 #pragma once
 
@@ -26,7 +26,7 @@ namespace mal {
 constexpr const char* kWebBundleMarkerPath = "/sdcard/web/VERSION";
 
 // Read the installed bundle's stamp. False (and a zeroed `out`) when the card,
-// the bundle or the marker is absent — the caller compares `out->code` either way.
+// the bundle or the marker is absent: the caller compares `out->code` either way.
 inline bool readWebBundleVersion(VersionMarker* out,
                                  const char* path = kWebBundleMarkerPath) {
     if (!out) return false;

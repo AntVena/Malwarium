@@ -1,10 +1,10 @@
-// main_web.cpp — the browser target: the firmware engine, a 2D canvas, and the
-// three buttons.
+// main_web.cpp: the browser target (the firmware engine, a 2D canvas and the
+// three buttons).
 //
 // The engine renders in software into an RGB565 Framebuffer and hands it over the
 // IDisplay boundary (platform/platform.h), so a target only has to get those bytes
 // onto a screen. Here that is one putImageData per repaint, which is why this build
-// pulls in NO graphics library at all — the desktop preview's SDL2 (platform/host)
+// pulls in NO graphics library at all: the desktop preview's SDL2 (platform/host)
 // buys a window, a texture and a key handler, and a browser already has all three.
 // The wasm is the engine and nothing else.
 //
@@ -12,8 +12,8 @@
 // shell drives presses through the mal_button entry point below and binds the
 // keyboard itself. One input path, not two that can disagree.
 //
-// The panel is composed exactly as the device composes it — the 224 active canvas
-// centred in the 240 panel with the 8px bezel — so a visitor sees the screen the
+// The panel is composed exactly as the device composes it: the 224 active canvas
+// centred in the 240 panel with the 8px bezel, so a visitor sees the screen the
 // hardware would show.
 #include <emscripten.h>
 
@@ -97,7 +97,7 @@ WebSound sound;
 uint32_t nowMs() { return static_cast<uint32_t>(emscripten_get_now()); }
 
 // Hand the finished panel to the page. ImageData is built over the wasm heap in
-// place — the pixels are not copied into JS, only viewed — so a repaint costs one
+// place: the pixels are not copied into JS, only viewed, so a repaint costs one
 // putImageData and no allocation.
 EM_JS(void, malWebPresent, (const uint8_t* rgba, int w, int h), {
     const canvas = document.getElementById('screen');
@@ -109,7 +109,7 @@ EM_JS(void, malWebPresent, (const uint8_t* rgba, int w, int h), {
 });
 
 // Compose the active (224) canvas into the full 240x240 panel, clearing the bezel to
-// the paper field — the device's own composition step — then widen RGB565 to the
+// the paper field (the device's own composition step), then widen RGB565 to the
 // RGBA8888 a canvas wants. r8/g8/b8 (core/render/color.h) are the same expansion the
 // host preview's PPM dump uses, so the two tiers cannot disagree about a colour.
 void composeAndPresent() {
@@ -144,7 +144,7 @@ void frame() {
     const uint32_t t = nowMs();
     if (g.game->tick(t)) g.dirty = true;
 
-    // Travel sleep has no browser equivalent — there is no SoC to park — so the
+    // Travel sleep has no browser equivalent: there is no SoC to park, so the
     // request is landed as a save and cleared, which is the half of it that matters
     // to the visitor's progress.
     if (g.game->travelSleepRequested() && g.game->saveNow())
@@ -169,8 +169,8 @@ extern "C" {
 
 // `button` is Button's ordinal: 0=A(NEXT) 1=B(ACCEPT) 2=C(CANCEL). Both edges must
 // be sent: a tap/hold settles on the RELEASE edge (CONTRIBUTING.md's button
-// contract), so a control that only reported presses would make every hold — the
-// ITEMS filter, the list back-out, the CFG holds — impossible.
+// contract), so a control that only reported presses would make every hold (the
+// ITEMS filter, the list back-out, the CFG holds) impossible.
 EMSCRIPTEN_KEEPALIVE void mal_button(int button, int pressed) {
     if (!g.game || button < 0 || button > 2) return;
     pressEdge(static_cast<Button>(button), pressed != 0);

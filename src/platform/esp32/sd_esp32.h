@@ -1,28 +1,28 @@
-// sd_esp32.h — device-tier microSD bring-up (SD_MMC, 4-bit SDIO).
+// sd_esp32.h: device-tier microSD bring-up (SD_MMC, 4-bit SDIO).
 //
 // Mounts the card over the 4-bit SDIO bus using the pins in
 // config.h, and offers a write/read round-trip self-test. This is the
 // prerequisite for the Audit.pcap capture slice and, later, the SD-
-// backed 'Pedia store — but it stands alone: a clean mount + round-trip at boot
+// backed 'Pedia store, but it stands alone: a clean mount + round-trip at boot
 // is the whole acceptance for this step.
 //
 // Config-gated: the whole SDIO path compiles only when SD_ENABLED && SD_USE_SDMMC
-// (the reference Waveshare S3). A card-less or SPI-SD board — one whose block
-// sets SD_USE_SDMMC 0 — gets an inert stub, so it still builds. Every method is safe to
-// call whether or not a card is present — begin() returns false and boot stays
+// (the reference Waveshare S3). A card-less or SPI-SD board (one whose block
+// sets SD_USE_SDMMC 0) gets an inert stub, so it still builds. Every method is safe to
+// call whether or not a card is present: begin() returns false and boot stays
 // clean (no crash loop) when the slot is empty or the pins are wrong.
 //
 // WHY THE IDF DRIVER, NOT Arduino SD_MMC: this board's TF slot has NO external
-// pull-ups on CMD/DAT — it relies on the SoC's INTERNAL pull-ups (the vendor
+// pull-ups on CMD/DAT: it relies on the SoC's INTERNAL pull-ups (the vendor
 // 07_sd_card_test demo mounts it with nothing external, on Arduino core 3.x).
 // Arduino-ESP32 2.0.x's SD_MMC.begin() wrapper builds its slot_config with
 // flags=0 and NEVER sets SDMMC_SLOT_FLAG_INTERNAL_PULLUP (only core 3.x does),
-// and the IDF SDMMC driver then actively *disables* the pin pull-ups — so card
+// and the IDF SDMMC driver then actively *disables* the pin pull-ups, so card
 // init never completes and cardType()==CARD_NONE even though the pins (CLK16/
 // CMD15/D0-17/D1-18/D2-13/D3-14, identical to the vendor demo) are correct. We
 // pin core 2.0.x for the rest of the device tier, so rather than bump the whole
 // core we mount through esp_vfs_fat_sdmmc_mount() directly with the pull-up flag
-// set — exactly what core 3.x does. File I/O then uses POSIX stdio on /sdcard.
+// set: exactly what core 3.x does. File I/O then uses POSIX stdio on /sdcard.
 #pragma once
 
 #include <cstdint>
@@ -34,8 +34,8 @@
 #endif
 
 // The 4-bit SDIO path drives the ESP32-S3's GPIO-matrix SDMMC host directly, so
-// it only compiles on that SoC. Any other target — the classic ESP32 (no GPIO-
-// matrix SDMMC fields) or a SPI-SD board — gets the inert stub. Gate
+// it only compiles on that SoC. Any other target (the classic ESP32, which has no GPIO-
+// matrix SDMMC fields, or a SPI-SD board) gets the inert stub. Gate
 // on the actual build TARGET, not the board macro, so it stays correct even where
 // board selection is overridden by build flags.
 #if SD_ENABLED && SD_USE_SDMMC && defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -50,7 +50,7 @@
 #  include <cstdlib>             // the format's FatFs work buffer
 #  include "driver/sdmmc_host.h"
 #  include "esp_vfs_fat.h"
-#  include "ff.h"                 // f_fdisk / f_mkfs — what format() writes with
+#  include "ff.h"                 // f_fdisk / f_mkfs: what format() writes with
 #  include "diskio_sdmmc.h"       // ff_diskio_get_pdrv_card (needs ff.h's BYTE first)
 #  include "sdmmc_cmd.h"
 #endif
@@ -61,12 +61,12 @@ class SdCard {
 public:
 #if MAL_SD_SDMMC
     // Mount the card over SDIO with internal pull-ups enabled. Returns true on a
-    // successful mount. false = no card / wrong pins / bad card — caller logs and
+    // successful mount. false = no card / wrong pins / bad card: caller logs and
     // continues (SD is optional for the core game).
     bool begin() { return mount(/*formatIfUnmountable=*/false); }
 
     // Erase the card and lay down a fresh FAT32 filesystem: one MBR partition over
-    // the whole card, kFormatAllocUnit clusters — what the boot mount, the 'Pedia
+    // the whole card, kFormatAllocUnit clusters: what the boot mount, the 'Pedia
     // installer and the .pcap writer all expect. Works on a card begin() refused
     // (exFAT, unformatted, a dead filesystem) as well as a mounted one; the card
     // only has to answer the SDIO bus. Ends remounted the ordinary way, so a true
@@ -75,7 +75,7 @@ public:
     // ONLY ON AN OPERATOR'S EXPLICIT ASK (CFG -> DEVICE -> FORMAT SD, or the
     // browser flasher's checkbox over serial). The caller must guarantee no open
     // file handle survives, exactly as for recheck(). Blocks for the length of
-    // the write — a few seconds on a large card.
+    // the write: a few seconds on a large card.
     bool format() {
         if (card_) {
             esp_vfs_fat_sdcard_unmount(kMount, card_);
@@ -83,13 +83,13 @@ public:
             mounted_ = false;
         }
         // Mounting with format-if-unmountable is what gets an unreadable card
-        // registered with FatFs at all — the IDF formats it on the way in. A card
+        // registered with FatFs at all: the IDF formats it on the way in. A card
         // that mounted without needing that still holds its old files, so the
         // explicit pass below runs either way: the same bytes on every card.
         if (!mount(/*formatIfUnmountable=*/true)) return false;
 
         // The same two calls, in the same order, the IDF's own format-on-mount
-        // makes (vfs_fat_sdmmc.c) — only the cluster size differs.
+        // makes (vfs_fat_sdmmc.c), only the cluster size differs.
         const BYTE pdrv = ff_diskio_get_pdrv_card(card_);
         const char drv[3] = {static_cast<char>('0' + pdrv), ':', '\0'};
         constexpr size_t kWork = 4096;
@@ -112,7 +112,7 @@ public:
         Serial.printf("[sd] format: f_fdisk/f_mkfs -> %d\n", static_cast<int>(fr));
 
         // f_mkfs invalidated the volume the VFS had open, so drop that mount and
-        // come back through the ordinary path — which also proves the new
+        // come back through the ordinary path, which also proves the new
         // filesystem is one begin() accepts.
         esp_vfs_fat_sdcard_unmount(kMount, card_);
         card_ = nullptr;
@@ -133,7 +133,7 @@ private:
 
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
         host.slot = SDMMC_HOST_SLOT_1;
-        host.max_freq_khz = SDMMC_FREQ_DEFAULT;  // 20 MHz — conservative for init
+        host.max_freq_khz = SDMMC_FREQ_DEFAULT;  // 20 MHz: conservative for init
 
         sdmmc_slot_config_t slot = SDMMC_SLOT_CONFIG_DEFAULT();
         slot.clk = static_cast<gpio_num_t>(PIN_SD_CLK);
@@ -143,7 +143,7 @@ private:
         slot.d2 = static_cast<gpio_num_t>(PIN_SD_D2);
         slot.d3 = static_cast<gpio_num_t>(PIN_SD_D3);
         slot.width = SD_BUS_WIDTH;  // 4
-        // The one line the Arduino 2.0.x SD_MMC wrapper omits (see header note) —
+        // The one line the Arduino 2.0.x SD_MMC wrapper omits (see header note):
         // without it card init never even starts on this pull-up-less TF slot.
         slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
@@ -157,7 +157,7 @@ private:
         lastErr_ = esp_vfs_fat_sdmmc_mount(kMount, &host, &slot, &mnt, &card_);
         if (lastErr_ != ESP_OK) {
             card_ = nullptr;
-            // Retry 1-bit (uses only CLK/CMD/D0) — some slots/cards are fussy in
+            // Retry 1-bit (uses only CLK/CMD/D0): some slots/cards are fussy in
             // 4-bit but come up in 1-bit.
             host.flags = SDMMC_HOST_FLAG_1BIT;
             slot.width = 1;
@@ -173,7 +173,7 @@ public:
     // Runtime re-check: unmount (if mounted) then mount again, so a card inserted
     // AFTER boot is picked up without a reboot (CFG "SD RECHECK" -> Game seam ->
     // main.cpp). Returns the new mounted state. The caller must guarantee no open
-    // file handle survives (main.cpp seals a live .pcap capture first) — unmounting
+    // file handle survives (main.cpp seals a live .pcap capture first): unmounting
     // with the sink still open would corrupt it.
     bool recheck() {
         if (card_) {
@@ -186,7 +186,7 @@ public:
 
     // esp_err_t of the last begin() (for the boot log). ESP_FAIL after a card is
     // seated == the card initialised but its filesystem isn't FAT-mountable
-    // (exFAT / unformatted) — reformat FAT32; the pins/pull-ups are fine.
+    // (exFAT / unformatted): reformat FAT32; the pins/pull-ups are fine.
     const char* lastError() const { return esp_err_to_name(lastErr_); }
 
     bool mounted() const { return mounted_; }
@@ -199,7 +199,7 @@ public:
         return static_cast<uint32_t>(bytes / (1024ULL * 1024ULL));
     }
 
-    // Write a marker file, read it back, and compare — the round-trip that proves
+    // Write a marker file, read it back, and compare: the round-trip that proves
     // the filesystem is actually usable (not just mounted). Leaves the file behind
     // as a visible artifact. Returns true only on a byte-exact match.
     bool selfTest(const char* path = "/sdcard/malwarium_sd_test.txt") {

@@ -1,4 +1,4 @@
-// save_store_host.h — desktop ISaveStore: the save blob is a file in the cwd.
+// save_store_host.h: desktop ISaveStore. The save blob is a file in the cwd.
 // Lets the host preview survive a relaunch exactly as the device survives a
 // power-cycle (the engine is identical; only the byte sink differs).
 #pragma once

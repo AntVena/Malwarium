@@ -1,9 +1,9 @@
-// radio_arbiter.h — the single owner of the Wi-Fi radio (RF arbitration).
+// radio_arbiter.h: the single owner of the Wi-Fi radio (RF arbitration).
 //
 // AUDIT SCAN (net_sniff.h, passive discovery), AUDIT CAPTURE (net_capture.h,
 // promiscuous EAPOL sniff), pet-to-pet LINK (net_link.h, ESP-NOW broadcast), the
 // 'Pedia AP (ap_server.h) and the home-network association (net_sta.h) all want the
-// radio and CANNOT run at once — they variously drive the Arduino WiFi scan stack,
+// radio and CANNOT run at once: they variously drive the Arduino WiFi scan stack,
 // raw esp_wifi promiscuous mode, a channel-parked ESP-NOW session, a SoftAP, and a
 // station association. This is the arbiter that guarantees they never both power it:
 // each loop it picks ONE owner (or none), forces every non-owner fully down
@@ -15,21 +15,21 @@
 // layer outranks a user-facing service, and it is deliberate: an association is only
 // ever wanted while an update job the operator just started is running
 // (Game::netConnectWanted), and a job somebody is waiting on outranks a toggle
-// somebody left on. It also cannot become a standing claim — there is no permission
+// somebody left on. It also cannot become a standing claim: there is no permission
 // to leave switched on, so the job ending is the radio coming back, and whichever
 // toggle was already on takes it again with no bookkeeping. The visible consequence:
 // checking for updates while the 'Pedia AP is up drops the AP, so a phone browsing
 // the 'Pedia loses its connection until the check finishes.
 //
 // AP and STA want the Wi-Fi stack in incompatible modes, so they can never be
-// co-resident — the stand-down-then-service ordering below is what enforces that.
+// co-resident: the stand-down-then-service ordering below is what enforces that.
 // Provisioning has the opposite requirement (the AP must be up before there are any
 // credentials to use), which is why the setup portal scans in WIFI_AP_STA inside the
 // AP owner and never associates: storing credentials and using them are two separate
 // flows, and only the second one comes through here as the Update owner.
 //
 // Below the AP: LINK only ever asks while the PEERS screen is open, which is a live,
-// seconds-long, user-present act — the same reasoning that already lets the AP
+// seconds-long, user-present act: the same reasoning that already lets the AP
 // preempt capture, and a sealed capture re-arms by itself the moment the screen
 // closes. Below that, CAPTURE outranks SCAN (a live/armed handshake session is the
 // higher-intent, time-sensitive activity; discovery resumes when it seals).
@@ -45,7 +45,7 @@
 //
 // A low-battery guard sits in front of capture: below kAuditMinBatteryPct SoC on
 // battery, capture is refused and any live session is sealed (SM sealActive keeps
-// the toggle intent, so it re-arms once charged) — the radio is the dominant
+// the toggle intent, so it re-arms once charged): the radio is the dominant
 // draw, so we don't let a headless capture flatten the pack.
 //
 // Device-only (references the esp32 net_sniff / net_capture tiers); compiled only
@@ -88,7 +88,7 @@ public:
     void poll(uint32_t nowMs) {
         if (!game_ || !sniff_ || !capture_ || !ap_ || !link_ || !sta_) return;
 
-        // Low-battery guard (event-driven read of the last PowerStatus — no new
+        // Low-battery guard (event-driven read of the last PowerStatus, no new
         // timer). Seal a live/armed capture before it drains the pack; keeps the
         // toggle intent so it re-arms when charged.
         if (!batteryOkForCapture() && game_->auditCapture().capturing()) {
@@ -160,7 +160,7 @@ public:
     // poll() would put straight back whatever the persisted opt-ins ask for, so this
     // is for the one caller that is about to stop calling poll() at all: travel sleep
     // (platform/esp32/main.cpp), on its way into a deep sleep the association would
-    // not survive anyway. The opt-ins are untouched — a wake resolves them afresh.
+    // not survive anyway. The opt-ins are untouched: a wake resolves them afresh.
     void standDown(uint32_t nowMs) {
         if (!game_ || !sniff_ || !capture_ || !ap_ || !link_ || !sta_) return;
         game_->auditCapture().sealActive(nowMs);
@@ -174,7 +174,7 @@ public:
     }
 
 private:
-    // The engine-facing name for an owner (core/device/radio_status.h) — a straight
+    // The engine-facing name for an owner (core/device/radio_status.h): a straight
     // relabelling, since both enums name the association after the update job that
     // is the only thing which ever raises it.
     static RadioOwner reported(Owner o) {
@@ -190,16 +190,16 @@ private:
     }
 
     Owner desired(uint32_t nowMs) const {
-        // The association is the TOP owner — see the file banner. It can only want
+        // The association is the TOP owner: see the file banner. It can only want
         // the radio while an update job is actually running, so this never becomes a
         // standing claim that starves everything below.
         if (sta_->wants()) return Owner::Update;
         // AP is the next owner: a user-facing service the player explicitly turned
         // on preempts the audit radio. When the player switches it off, ap_->wants()
         // goes false and the radio falls through to whichever audit toggle is still
-        // on — so audit resumes automatically (no extra bookkeeping needed).
+        // on, so audit resumes automatically (no extra bookkeeping needed).
         if (ap_->wants()) return Owner::Ap;
-        // LINK asks only while the PEERS screen is open — a live, user-present act
+        // LINK asks only while the PEERS screen is open: a live, user-present act
         // measured in seconds. It preempts a capture the same way the AP does, and
         // the sealed capture re-arms on its own the moment the screen closes.
         if (link_->wants()) return Owner::Link;

@@ -1,21 +1,21 @@
-// ap_server.h — device-tier 'Pedia local Access Point.
+// ap_server.h: device-tier 'Pedia local Access Point.
 //
 // Stands up a standalone 2.4GHz SoftAP (no internet) plus a tiny HTTP server
 // that serves the web 'Pedia. A phone/PC joins the "Malwarium" network and
 // browses http://192.168.4.1 to see the roster/archive/HackerTag. It serves the
 // real static /web bundle straight off the SD card
-// (mirrors web/ in the repo — see web/README.md) plus the live JSON state +
+// (mirrors web/ in the repo; see web/README.md) plus the live JSON state +
 // the two write endpoints app.js expects; a card-less/SD-absent board falls
 // back to the inline terminal landing page so it still shows
 // SOMETHING ("SD absent → minimal fallback").
 //
 // Deliberately first-cut: files are read fresh off SD on every request (no
 // RAM cache), so updating the SD's /web folder shows up on the very next
-// request — no reboot needed to see a new bundle (only toggling the AP off/on
+// request: no reboot needed to see a new bundle (only toggling the AP off/on
 // re-triggers the heavier SoftAP bring-up, which is unrelated to file content).
 //
 // Radio ownership: like NetSniff/NetCapture this is a RadioArbiter owner, and it
-// outranks everything except an on-the-spot connect request (net_sta.h) — the
+// outranks everything except an on-the-spot connect request (net_sta.h): the
 // player explicitly turned on a user-facing service, so it preempts the audit
 // scan/capture. wants() reads the persisted CFG opt-in (Game::apEnabled, save v20);
 // the arbiter services this owner while it wants the radio and stands it down
@@ -24,16 +24,16 @@
 // mutual exclusion is mandatory, not just tidy.
 //
 // SETUP PORTAL. The AP is also where the operator's home network gets provisioned,
-// because the alternative is entering a WPA2 passphrase with three buttons — which
+// because the alternative is entering a WPA2 passphrase with three buttons, which
 // is not a thing anyone should be asked to do. A phone joins this AP, the captive-
 // portal DNS lands it on /setup, it picks a network from a live scan and types the
 // passphrase on a real keyboard, and net_credentials.h stores it. The page is
 // INLINE, not part of the SD /web bundle: provisioning has to work on a device with
-// no card in it. RE-provisioning self-presents the same way — see handleProbe for
+// no card in it. RE-provisioning self-presents the same way: see handleProbe for
 // what tells a device that has moved house apart from one that is simply offline.
 //
 // Storing credentials deliberately does NOT connect. The phone submitting the form
-// is attached to THIS AP, and joining a home network tears the AP down — so the
+// is attached to THIS AP, and joining a home network tears the AP down, so the
 // association is a separate act, raised later by an update job that needs it
 // (net_sta.h). Scanning, unlike joining, is compatible with the AP: the
 // portal flips the radio to WIFI_AP_STA so the STA side can sweep while the SoftAP
@@ -64,7 +64,7 @@ namespace mal {
 
 class ApServer {
 public:
-    // Wire the engine seam. Does NOT power the radio — the RadioArbiter decides
+    // Wire the engine seam. Does NOT power the radio: the RadioArbiter decides
     // when this owner may run (service) vs must stand down (ensureDown).
     void begin(Game* game) { game_ = game; }
 
@@ -91,15 +91,15 @@ public:
             WiFi.softAP(AP_SSID, pw, AP_CHANNEL);
             const IPAddress ip = WiFi.softAPIP();
             // ROUTES ARE REGISTERED ONCE, EVER. WebServer::on() appends to a handler
-            // list that only its destructor frees — stop() closes the socket and
-            // leaves the list alone — so registering them per bring-up leaked every
+            // list that only its destructor frees (stop() closes the socket and
+            // leaves the list alone), so registering them per bring-up leaked every
             // handler and its captured lambda on each AP off→on cycle (measured at
             // ~1.9KB a cycle, monotonic, never recovered). The list survives
             // stop()/begin(), so one registration serves every later bring-up.
             if (!routesRegistered_) {
                 server_.on("/", HTTP_GET, [this]() { handleStaticOrFallback("/"); });
                 // The on-device QR + CFG screen advertise.../pedia,
-                // but the SPA is a hash-routed single page served at index.html — so
+                // but the SPA is a hash-routed single page served at index.html, so
                 // /pedia is an ALIAS for the entry point, not a file on the card.
                 server_.on("/pedia", HTTP_GET, [this]() { handleStaticOrFallback("/pedia"); });
                 server_.on("/pedia_state.json", HTTP_GET, [this]() { handlePediaStateJson(); });
@@ -117,7 +117,7 @@ public:
                 server_.on("/api/networks", HTTP_GET, [this]() { handleNetworkList(); });
                 server_.on("/api/wifi", HTTP_POST, [this]() { handleWifiPost(); });
                 // Captive-portal probes. Phones/laptops fetch one of these expecting a
-                // specific tiny response; anything else — a redirect above all — is read
+                // specific tiny response; anything else (a redirect above all) is read
                 // as "a portal is in the way", which pops the sign-in sheet and keeps the
                 // OS re-probing instead of treating the network as usable.
                 //
@@ -125,8 +125,8 @@ public:
                 // an UNPROVISIONED device the redirect is the point: the setup page has
                 // to present itself to someone who was never told to type an address. Once
                 // a network is stored there is nothing to sign in to, and a device that
-                // keeps claiming otherwise fights the 'Pedia — the whole reason the
-                // operator joined this AP — so the probes get the plain success each OS
+                // keeps claiming otherwise fights the 'Pedia (the whole reason the
+                // operator joined this AP), so the probes get the plain success each OS
                 // is looking for. The wildcard DNS below stays either way, so any typed
                 // hostname still lands here.
                 server_.on("/generate_204", HTTP_GET, [this]() { handleProbe(204, "", ""); });
@@ -212,10 +212,10 @@ public:
 
 private:
 #if AP_ENABLED
-    // Resolve `uri` (a request path, no query string — WebServer.uri() already
+    // Resolve `uri` (a request path, no query string: WebServer.uri() already
     // strips it, but a caller-supplied path is defended against too) against the
     // SD-served /web bundle at /sdcard/web/<path>, "/" → index.html. Streams the
-    // file straight off SD in small chunks (no RAM cache — see the file banner).
+    // file straight off SD in small chunks (no RAM cache: see the file banner).
     // Falls back to the inline handleRoot() terminal page ONLY for the index
     // page when SD is absent or the file is missing; any other missing asset is
     // a plain 404 (so a partially-populated SD is still debuggable).
@@ -264,17 +264,17 @@ private:
         return "application/octet-stream";
     }
 
-    // GET /pedia_state.json — the live state payload app.js prefers over its
+    // GET /pedia_state.json: the live state payload app.js prefers over its
     // embedded fixture (web/fixtures/pedia_state.js). Built fresh from the live
-    // Game every request (core/app/pedia_state.h) — never cached.
+    // Game every request (core/app/pedia_state.h): never cached.
     void handlePediaStateJson() {
         const std::string json = buildPediaStateJson(*game_);
         server_.send(200, "application/json", json.c_str());
     }
 
-    // POST /api/tag {"tag":"NEWTAG"} — the one safe write: rename the
+    // POST /api/tag {"tag":"NEWTAG"}: the one safe write, a rename of the
     // HackerTag. A tiny hand-rolled JSON-value extraction (no library) is fine
-    // here — the only field is a short, already-charset-restricted string.
+    // here: the only field is a short, already-charset-restricted string.
     void handleApiTag() {
         const String body = server_.arg("plain");
         const String tag = extractJsonStringValue(body, "tag");
@@ -286,14 +286,14 @@ private:
     }
 
 #if UPDATE_ENABLED
-    // POST /api/update-source (form-encoded: url) — repoint this device at a
+    // POST /api/update-source (form-encoded: url): repoint this device at a
     // different manifest, from the 'Pedia's user section.
     //
     // THE REASON THIS IS A UI AT ALL: the compiled-in default lives in a firmware
     // image that only changes via the mechanism it points at, so a device whose
     // publish host moved could never be told where the new one is. Someone who
     // cannot reflash a board can still join its AP and paste a URL, which is the
-    // whole point — this is the recovery path, not a convenience.
+    // whole point: this is the recovery path, not a convenience.
     //
     // Form-encoded for the same reason /api/wifi is: this is arbitrary operator-
     // typed text, and the WebServer's own arg() parsing handles percent-escapes
@@ -320,30 +320,30 @@ private:
     }
 #endif
 
-    // POST /api/achievement/DEVTOOLS_INTRUDER — the DevTools honeytoken callback
-    // Now persisted (save v25) via the real achievement
-    // seam — a later /pedia_state.json fetch reports it "complete".
+    // POST /api/achievement/DEVTOOLS_INTRUDER: the DevTools honeytoken callback,
+    // persisted (save v25) via the real achievement
+    // seam, so a later /pedia_state.json fetch reports it "complete".
     void handleDevToolsAchievement() {
         if (game_) game_->unlockAchievement(ach::kDevtoolsIntruder);
-        Serial.println("[pedia] DEVTOOLS_INTRUDER hit — persisted");
+        Serial.println("[pedia] DEVTOOLS_INTRUDER hit: persisted");
         server_.send(200, "text/plain", "ok");
     }
 
 #if STA_ENABLED
     // Answer one OS connectivity probe: 302 to /setup when this device wants
     // provisioning (so the portal self-presents on the phone that just joined),
-    // otherwise the `status`/`body` that probe expects — which is a small lie that
+    // otherwise the `status`/`body` that probe expects, which is a small lie that
     // buys a lot, since it stops the OS flagging the AP as dead and wandering off
     // mid-'Pedia.
     //
     // Two devices want provisioning. One has no stored network at all. The other has
-    // one that no longer works — the moved-house case, where credentials exist and
+    // one that no longer works: the moved-house case, where credentials exist and
     // are simply wrong now; without this it would answer probes happily, no portal
     // would pop, and re-provisioning would mean knowing to type /setup by hand.
     // A failed association is the only honest signal for that, and an update check
     // is what surfaces it: UPDATES → CHECK NOW joins before it fetches.
     //
-    // Reading the live NetStatus makes this THIS BOOT's evidence — a power cycle
+    // Reading the live NetStatus makes this THIS BOOT's evidence: a power cycle
     // clears it back to Idle and the portal stops presenting until a check is run
     // again. That is the right trade rather than persisting a "last attempt failed"
     // bit: the retry is one screen away and always tells the truth about now, where
@@ -360,7 +360,7 @@ private:
         server_.send(status, mime[0] ? mime : "text/plain", body);
     }
 
-    // GET /api/networks — what the radio can hear right now, as JSON, for the
+    // GET /api/networks: what the radio can hear right now, as JSON, for the
     // setup page's picker. The scan runs ASYNC and this endpoint is polled: the
     // first call kicks a sweep off and answers `{"scanning":true}`, later calls
     // return the results once they land. Blocking for the 2-3s a sweep takes
@@ -382,7 +382,7 @@ private:
         const int n = WiFi.scanComplete();
         if (n == WIFI_SCAN_RUNNING || n < 0) {
             // Negative also covers the window where the sweep has stopped but the
-            // scan-done event hasn't dispatched yet (see net_sniff.h) — keep polling
+            // scan-done event hasn't dispatched yet (see net_sniff.h): keep polling
             // rather than deleting results that are about to arrive.
             server_.send(200, "application/json", "{\"scanning\":true,\"networks\":[]}");
             return;
@@ -404,7 +404,7 @@ private:
         server_.send(200, "application/json", out);
     }
 
-    // POST /api/wifi (form-encoded: ssid, pass) — store the operator's home network.
+    // POST /api/wifi (form-encoded: ssid, pass): store the operator's home network.
     //
     // Form-encoded, NOT JSON, and deliberately: a WPA2 passphrase may contain quotes
     // and backslashes, and extractJsonStringValue() below has no escape handling. The
@@ -426,7 +426,7 @@ private:
             return;
         }
         // The engine only ever learns THAT a network is stored, never which or what
-        // its passphrase is — that is the whole reason the store is device-tier.
+        // its passphrase is: that is the whole reason the store is device-tier.
         if (game_) game_->setNetProvisioned(true);
         // SSID only. The passphrase is never printed, here or anywhere.
         Serial.printf("[setup] stored network ssid=%s\n", ssid.c_str());
@@ -434,7 +434,7 @@ private:
     }
 
     // The setup page. Inline and self-contained (no SD, no external assets) because
-    // provisioning must work on a card-less device — and because this is the page a
+    // provisioning must work on a card-less device, and because this is the page a
     // non-technical person meets first, so it stays one screen: pick, type, save.
     void handleSetupPage() {
         String p;
@@ -474,7 +474,7 @@ private:
 #if UPDATE_ENABLED
         // Where this device looks for updates. The 'Pedia's DEVICE SETTINGS page
         // edits the same thing through the same endpoint, but a CARD-LESS device
-        // has no 'Pedia — and the compiled-in default lives in a firmware image
+        // has no 'Pedia, and the compiled-in default lives in a firmware image
         // that only changes via the mechanism it points at, so without a field
         // here such a device could never be told that its publish host moved.
         // This is the card-less half of the recovery path, not a convenience.
@@ -530,8 +530,8 @@ private:
 #if UPDATE_ENABLED
         // Form-encoded like /api/wifi, and for the same reason: this is arbitrary
         // pasted text, and the WebServer's own arg() parsing decodes percent-escapes
-        // where the hand-rolled JSON reader does not. An EMPTY submit is legitimate —
-        // it clears the override — so unlike the tag there is no "type something
+        // where the hand-rolled JSON reader does not. An EMPTY submit is legitimate
+        // (it clears the override), so unlike the tag there is no "type something
         // first" guard. The device answers with what it RESOLVED to, which is what
         // the field should now advertise: after a clear, that is the built-in address.
         p += F("document.getElementById('gourl').onclick=function(){"
@@ -571,7 +571,7 @@ private:
 
     // Minimal manual JSON-string-value extractor: find "key", the next ':',
     // then the quoted value between the first pair of quotes after it. No
-    // escape handling — fine here since the only caller (the tag rename) also
+    // escape handling: fine here since the only caller (the tag rename) also
     // validates the charset (A-Z0-9_, no quotes/backslashes possible anyway).
     static String extractJsonStringValue(const String& body, const char* key) {
         const String needle = String("\"") + key + "\"";
@@ -589,7 +589,7 @@ private:
     // Build + serve the landing page from LIVE engine state, so a reload always
     // reflects the current pet/tag. Deliberately tiny: a terminal-styled identity
     // card (HackerTag + current pet species). This is now purely the SD-absent /
-    // missing-bundle FALLBACK — the real 'Pedia is the static /web bundle above.
+    // missing-bundle FALLBACK: the real 'Pedia is the static /web bundle above.
     void handleRoot() {
         const CreatureDef* pet = game_->pet();
         const char* species = pet ? pet->displayName : "UNHATCHED EGG";
@@ -597,8 +597,8 @@ private:
         String tag = htmlEscape(game_->hackerTag());
         String sp = htmlEscape(species);
 
-        // Terminal green-on-black — a dark CRT-wiki look matching the 'Pedia's
-        // hacker theme. No external assets — inline CSS only.
+        // Terminal green-on-black: a dark CRT-wiki look matching the 'Pedia's
+        // hacker theme. No external assets: inline CSS only.
         String p;
         p.reserve(1200);
         p += F("<!DOCTYPE html><html><head><meta charset='utf-8'>"
@@ -646,7 +646,7 @@ private:
     }
 
     bool up_ = false;
-    bool routesRegistered_ = false;   // see service() — the handler list is never freed
+    bool routesRegistered_ = false;   // see service(): the handler list is never freed
     uint32_t lastClientMs_ = 0;       // last time a station was associated (idle auto-off)
     WebServer server_{80};
 #if STA_ENABLED

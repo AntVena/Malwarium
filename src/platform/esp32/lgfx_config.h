@@ -1,4 +1,4 @@
-// lgfx_config.h — LovyanGFX device definition for the Waveshare ESP32-S3-LCD-1.54.
+// lgfx_config.h: LovyanGFX device definition for the Waveshare ESP32-S3-LCD-1.54.
 //
 // ST7789, 240x240, 4-wire SPI. All pins come from include/config.h (never
 // hardcoded here) so a new board is a config edit, not a driver edit. This is
@@ -14,7 +14,7 @@
 namespace mal {
 
 // Concrete LovyanGFX device: ST7789 over the board's hardware SPI bus.
-// Backlight is NOT managed here — the demo drives PIN_LCD_BL as a plain GPIO
+// Backlight is NOT managed here: the demo drives PIN_LCD_BL as a plain GPIO
 // (digitalWrite HIGH), so Esp32Display owns it directly (no Light_PWM).
 class LgfxWaveshareS3 : public lgfx::LGFX_Device {
     lgfx::Panel_ST7789 panel_;

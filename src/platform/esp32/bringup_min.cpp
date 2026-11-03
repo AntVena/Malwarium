@@ -1,4 +1,4 @@
-// bringup_min.cpp — backlight retest (env: waveshare_s3_154_min).
+// bringup_min.cpp: backlight retest (env: waveshare_s3_154_min).
 //
 // Earlier sweep was invalid for GPIO6: lcd.init() attaches LEDC to PIN_LCD_BL,
 // so digitalWrite(6) was overridden. This: (A) tests GPIO6 via LovyanGFX's own
@@ -16,7 +16,7 @@ const int kNum = sizeof(kPins) / sizeof(kPins[0]);
 
 void setup() {
     // Hold the battery power latch (BAT_EN) so this diagnostic survives on
-    // battery too — otherwise the rail drops during the 15s serial wait below.
+    // battery too: otherwise the rail drops during the 15s serial wait below.
 #ifdef PIN_POWER_HOLD
     pinMode(PIN_POWER_HOLD, OUTPUT);
     digitalWrite(PIN_POWER_HOLD, POWER_HOLD_ACTIVE_HIGH ? HIGH : LOW);

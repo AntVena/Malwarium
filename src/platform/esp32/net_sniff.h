@@ -1,12 +1,12 @@
-// net_sniff.h — device-tier passive network-discovery scan.
+// net_sniff.h: device-tier passive network-discovery scan.
 //
 // Feeds the engine's lifetime NETS counter (Game::networksSeen_) from the REAL
 // radio: a periodic, PASSIVE Wi-Fi scan that counts distinct networks the device
 // can actually hear (dedup by BSSID lives engine-side, Game::registerNetwork).
-// Before this, that counter was simulated — it only ticked from the in-game
+// Before this, that counter was simulated: it only ticked from the in-game
 // explore event's fake pool (game.cpp startWifiEvent, "no real radio, ").
 //
-// AUTHORIZED USE — PASSIVE ONLY. This scans/listens; it never deauths, injects,
+// AUTHORIZED USE: PASSIVE ONLY. This scans/listens; it never deauths, injects,
 // or captures a handshake (that's the separate Audit.pcap slice,, not
 // built here). Whether it runs at all is a RUNTIME choice, asked as
 // Game::radioScanWanted(): the player's persisted "AUDIT SCAN" toggle in CFG
@@ -44,7 +44,7 @@ namespace mal {
 
 class NetSniff {
 public:
-    // Wire the engine seam. Does NOT power the radio — the RadioArbiter decides
+    // Wire the engine seam. Does NOT power the radio: the RadioArbiter decides
     // when this owner may run (service) vs must stand down (ensureDown), so a
     // device with Audit off (or capture owning the radio) never radiates here.
     void begin(Game* game) { game_ = game; }
@@ -82,7 +82,7 @@ public:
     }
 
     // Run one scan step, ASSUMING the arbiter has granted this owner the radio.
-    // Brings the radio up in STA (disconnected — we only scan, never associate)
+    // Brings the radio up in STA (disconnected: we only scan, never associate)
     // and harvests a completed async scan into the engine (one registerNetwork
     // per heard AP; engine dedups by BSSID). Non-blocking: a running scan just
     // returns. No-op when compiled out.
@@ -101,7 +101,7 @@ public:
             const int n = WiFi.scanComplete();
             if (n == WIFI_SCAN_RUNNING) return;      // still scanning
 
-            // A NEGATIVE result here is normally NOT a failure — it's "the results
+            // A NEGATIVE result here is normally NOT a failure: it's "the results
             // haven't landed yet". The wrapper clears its scanning bit as soon as the
             // driver stops sweeping, but only fills in the count when the scan-done
             // event is dispatched later from the WiFi task, and WIFI_SCAN_FAILED is
@@ -122,7 +122,7 @@ public:
                 uint8_t* bssid = WiFi.BSSID(i);      // 6 bytes, valid until scanDelete
                 if (!bssid) continue;
                 // Named String (not just its .c_str()) so the buffer stays alive
-                // across both calls below — a temporary's c_str() pointer would
+                // across both calls below: a temporary's c_str() pointer would
                 // dangle the moment the temporary is destroyed.
                 String ssid = WiFi.SSID(i);
                 game_->registerNetwork(bssid, ssid.c_str());
@@ -168,7 +168,7 @@ public:
 #endif
     }
 
-    // The radio is up and no sweep is in flight — the gap between sweeps, which is
+    // The radio is up and no sweep is in flight (the gap between sweeps), which is
     // the only safe moment to lend the hot radio to another job. The RadioArbiter
     // reads this to hand the pet-to-pet LINK its ambient window (net_link.h), so
     // announcing costs that window rather than a whole power cycle. False while a

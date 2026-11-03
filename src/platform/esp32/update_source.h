@@ -1,14 +1,14 @@
-// update_source.h — where this device looks for the published artifact list.
+// update_source.h: where this device looks for the published artifact list.
 //
 // One question, answered in one place: what URL does an update check fetch? A
 // stored override wins if there is one, otherwise the compiled-in
 // UPDATE_MANIFEST_URL (config.h). Opens NVS_UPDATE_NAMESPACE in
-// NVS_SAVE_PARTITION per call, exactly like NetCredentials (net_credentials.h) —
+// NVS_SAVE_PARTITION per call, exactly like NetCredentials (net_credentials.h):
 // cheap, and no handle is left open across the long stretches between checks.
 //
 // WHY AN OVERRIDE AT ALL, when a default is compiled in. That default is baked
 // into a firmware image which, by definition, only changes via the very mechanism
-// it points at — so a device whose publish host moved could never be told where
+// it points at, so a device whose publish host moved could never be told where
 // the new one is. The override is the way out of that circle, and it is ADDITIVE:
 // it never replaces the default, it just takes precedence while it is set, and
 // clear() falls back. The setup page the SoftAP serves (ap_server.h) is where an
@@ -20,7 +20,7 @@
 //
 // NO SOURCE AT ALL IS STILL A LEGITIMATE STATE. With UPDATE_MANIFEST_URL empty
 // (a board that names no host, or a fork that cleared it) and nothing stored,
-// url() reports false and a check has nowhere to look — which is the honest
+// url() reports false and a check has nowhere to look, which is the honest
 // answer, and far better than fetching a placeholder and reporting a network
 // error the operator can do nothing about.
 #pragma once
@@ -44,7 +44,7 @@ public:
     static constexpr size_t kUrlCap = 160;
 
     // Fill `out` with the URL to fetch. False (and an empty `out`) when neither an
-    // override nor a compiled default exists — the caller must not fetch.
+    // override nor a compiled default exists: the caller must not fetch.
     bool url(char* out, size_t cap) const {
         if (!out || cap == 0) return false;
         out[0] = '\0';
@@ -73,7 +73,7 @@ public:
     }
 
     // Point this device at a different publish host. Rejects anything that isn't
-    // an absolute http(s) URL that fits, rather than writing it — a bad override
+    // an absolute http(s) URL that fits, rather than writing it: a bad override
     // would otherwise silently shadow a working default until someone cleared it.
     //
     // Both schemes are accepted because neither is trusted: the fetch runs

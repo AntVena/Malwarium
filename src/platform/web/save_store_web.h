@@ -1,4 +1,4 @@
-// save_store_web.h — browser ISaveStore: the save blob lives in localStorage, and
+// save_store_web.h: browser ISaveStore. The save blob lives in localStorage, and
 // an empty one falls back to the baked demo seed.
 //
 // The storage boundary is the only thing the web target changes about persistence:
@@ -9,7 +9,7 @@
 //
 // Bytes are held as hex rather than raw: localStorage stores DOMStrings, so a blob
 // with embedded NULs and non-UTF-8 bytes cannot go in verbatim. Hex doubles the
-// length — a ~1.5KB save becomes ~3KB of string, against a multi-megabyte quota —
+// length: a ~1.5KB save becomes ~3KB of string, against a multi-megabyte quota,
 // and costs nothing to get right, which base64 does not.
 #pragma once
 
@@ -39,7 +39,7 @@ EM_JS(void, malWebSaveWrite, (const char* key, const char* hex), {
         localStorage.setItem(UTF8ToString(key), UTF8ToString(hex));
     } catch (e) {
         // A full or blocked store (private browsing, quota) must not take the game
-        // down with it — the session simply stops surviving a reload.
+        // down with it: the session simply stops surviving a reload.
         console.warn('malwarium: save failed', e);
     }
 });
@@ -70,7 +70,7 @@ public:
         return true;
     }
 
-    // Drops the visitor's progress so the next load() falls back to the seed again —
+    // Drops the visitor's progress so the next load() falls back to the seed again:
     // what the shell's START OVER control calls before reloading the page.
     void clear() override { malWebSaveClear(kWebSaveKey); }
 
@@ -84,7 +84,7 @@ private:
     }
 
     // Returns empty on anything malformed, which the engine already treats as "no
-    // save" — a corrupted key falls back to the seed rather than to a crash.
+    // save": a corrupted key falls back to the seed rather than to a crash.
     static std::vector<uint8_t> fromHex(const char* s) {
         const size_t n = std::strlen(s);
         std::vector<uint8_t> out;

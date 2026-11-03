@@ -1,9 +1,9 @@
-// display_esp32.h — IDisplay backed by LovyanGFX on the device panel.
+// display_esp32.h: IDisplay backed by LovyanGFX on the device panel.
 //
 // Mirrors the host's composePanel(): the engine hands us the already-upscaled
 // 224x224 active canvas; we centre it in the 240 panel behind the fixed 8px
 // bezel. The bezel is painted once (it never changes), so present() is just a
-// DMA push of the active region — keeping the ~4fps repaint cheap.
+// DMA push of the active region: keeping the ~4fps repaint cheap.
 #pragma once
 
 #include "core/render/canvas.h"
@@ -26,7 +26,7 @@ public:
         // opposite byte order, so swap to render true colours.
         lcd_.setSwapBytes(true);
 #if HAS_BACKLIGHT_PWM
-        // LEDC-driven dimmable backlight — the shipped path on this board (config.h).
+        // LEDC-driven dimmable backlight: the shipped path on this board (config.h).
         ledcSetup(BACKLIGHT_LEDC_CHANNEL, BACKLIGHT_LEDC_FREQ_HZ, BACKLIGHT_LEDC_BITS);
         ledcAttachPin(PIN_LCD_BL, BACKLIGHT_LEDC_CHANNEL);
         ledcWrite(BACKLIGHT_LEDC_CHANNEL, duty_);
@@ -59,7 +59,7 @@ public:
         lcd_.endWrite();
     }
 
-    // Idle power saving (device tier only — the engine is unaware). Backlight
+    // Idle power saving (device tier only: the engine is unaware). Backlight
     // off + panel sleep is the big battery win on an LCD.
     void sleep() {
 #if HAS_BACKLIGHT_PWM

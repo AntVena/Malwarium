@@ -1,15 +1,15 @@
-// net_sta.h — device-tier association with the operator's own home network.
+// net_sta.h: device-tier association with the operator's own home network.
 //
-// The only place in the firmware that calls WiFi.begin(ssid, pass) — everything
+// The only place in the firmware that calls WiFi.begin(ssid, pass): everything
 // else that touches the radio either listens (net_sniff.h / net_capture.h),
 // broadcasts to whoever is in range (net_link.h), or is its own access point
 // (ap_server.h). This one JOINS someone else's network, which is what an update
 // check needs and the one thing that leaves the room.
 //
-// Radio ownership: a RadioArbiter owner, and the TOP one — above the AP. That is
+// Radio ownership: a RadioArbiter owner, and the TOP one, above the AP. That is
 // deliberate and the opposite of a standing toggle winning: this owner only ever
 // wants the radio while an update job the operator just started is running
-// (Game::netConnectWanted — a stored network AND a live job, nothing else). A job
+// (Game::netConnectWanted: a stored network AND a live job, nothing else). A job
 // somebody is waiting on outranks a toggle somebody left on, and it cannot linger,
 // because there is no permission to leave switched on: the job ending is the radio
 // going back. The practical consequence is worth knowing: checking for updates
@@ -18,8 +18,8 @@
 //
 // AP and STA want the Wi-Fi stack in incompatible modes and cannot be co-resident
 // here, which is exactly what the arbiter's stand-down-then-service ordering
-// guarantees. Provisioning has the opposite need — the AP must be up before there
-// are any credentials to use — so it does its scanning inside the AP owner in
+// guarantees. Provisioning has the opposite need: the AP must be up before there
+// are any credentials to use, so it does its scanning inside the AP owner in
 // WIFI_AP_STA (ap_server.h) and NEVER auto-connects; joining is a separate, later
 // act that only an update job performs. That is why storing credentials and using
 // them are two different flows rather than one.
@@ -43,7 +43,7 @@ namespace mal {
 
 class NetSta {
 public:
-    // Wire the engine seam. Does NOT power the radio — the RadioArbiter decides
+    // Wire the engine seam. Does NOT power the radio: the RadioArbiter decides
     // when this owner may run (service) vs must stand down (ensureDown).
     void begin(Game* game) { game_ = game; }
 
@@ -97,7 +97,7 @@ public:
         }
 
         // Not connected (yet). WL_CONNECT_FAILED / WL_NO_SSID_AVAIL are reported by
-        // some paths and not others, so the timeout is the authority — it covers a
+        // some paths and not others, so the timeout is the authority: it covers a
         // wrong passphrase, an out-of-range AP and a DHCP that never answers alike.
         if (online_) {
             // Dropped after being up. Report it as a failure so the screen stops

@@ -1,4 +1,4 @@
-// main.cpp — ESP32-S3 device entry for Malwarium.
+// main.cpp: ESP32-S3 device entry for Malwarium.
 //
 // The portable engine (src/core) is identical to the host build; only this
 // thin tier differs. We mirror host/main.cpp's loop: render the 224 active
@@ -53,7 +53,7 @@ NetCapture netCapture;  // Audit promiscuous EAPOL .pcap capture ("AUDIT CAPTURE
 ApServer apServer;      // 'Pedia local SoftAP + HTTP landing page ("PEDIA AP")
 NetLink netLink;        // pet-to-pet ESP-NOW discovery (CFG's "PASSIVE LINK")
 NetSta netSta;          // home-network association, raised by an update job only
-NetUpdate netUpdate;    // update CHECK — rides netSta's association, owns no radio
+NetUpdate netUpdate;    // update CHECK: rides netSta's association, owns no radio
 RadioArbiter radio;     // single radio owner: STA XOR AP XOR link XOR capture XOR scan XOR off
 SdCard sdCard;          // microSD (SD_MMC 4-bit); inert on card-less / SPI-SD boards
 Esp32Sound sound;
@@ -81,7 +81,7 @@ uint32_t lastActivityMs = 0;
 void applyBrightness();  // defined below; noteActivity re-applies it when un-dimming
 
 // Any input wakes the panel. The waking press is *swallowed* (returns true) so
-// it doesn't also trigger a game action — a press to wake shouldn't navigate.
+// it doesn't also trigger a game action: a press to wake shouldn't navigate.
 bool noteActivity() {
     lastActivityMs = millis();
     // Any input ends the dim ramp instantly, restoring the stored CFG level. This runs
@@ -175,7 +175,7 @@ constexpr uint32_t kSerialFormatWindowMs = 120000;
 constexpr const char* kSerialFormatCmd = "MALSD FORMAT";
 
 // Reads whatever is waiting on the serial port; true once a whole MALSD FORMAT
-// line has arrived. Any other line is dropped — this port carries no other input.
+// line has arrived. Any other line is dropped: this port carries no other input.
 bool pollSerialFormatAsk() {
     static char line[24];
     static size_t len = 0;
@@ -211,7 +211,7 @@ void applyBrightness() {
 // Real hardware light sleep for the screen-asleep + radio-quiet window: parks the whole
 // SoC (µA range) instead of skipping loop iterations. Every button pin is armed as a wake
 // source (active-low), plus a timer wakeup in case a GPIO edge is ever missed. The game's
-// timers need no bookkeeping across it — they are anchor-based against real elapsed ms and
+// timers need no bookkeeping across it: they are anchor-based against real elapsed ms and
 // light sleep keeps the system clock running. Stopping the game clock outright is travel
 // mode's job, and travel mode deep-sleeps instead (travelDeepSleep below).
 //
@@ -265,7 +265,7 @@ void enterIdleLightSleep(uint32_t maxSleepMs) {
 // Nothing needs pausing, because nothing survives to run.
 //
 // The wake source is B+C held together. Button A is GPIO0, the download-mode strap
-// (HARDWARE.md), and a deep-sleep wake re-runs the reset that strap is sampled at —
+// (HARDWARE.md), and a deep-sleep wake re-runs the reset that strap is sampled at:
 // waking on A risks coming up in the ROM downloader instead of the game, which on a
 // device with no cable reads as dead. B and C are ordinary GPIOs and carry the same
 // two-button deliberateness.
@@ -279,7 +279,7 @@ constexpr uint64_t kTravelWakeMask =
 
 // Park the core until the wake gesture. Does not return.
 void travelDeepSleep() {
-    // Clear what the idle light sleep left configured — its fallback TIMER above all,
+    // Clear what the idle light sleep left configured: its fallback TIMER above all,
     // which would otherwise wake a travelling device every IDLE_SLEEP_FALLBACK_MS and
     // turn an indefinite pause into a slow one.
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
@@ -303,11 +303,11 @@ void travelDeepSleep() {
     // Hold the power latch through the sleep, for the same reason the pull-ups are
     // held: this pad reverts too, and it is the only thing keeping the battery rail
     // up (HARDWARE.md). Dropping it turns the sleep into a power-off that only the
-    // PWR button can undo — which is a different, worse feature.
+    // PWR button can undo, which is a different, worse feature.
     gpio_hold_en(static_cast<gpio_num_t>(PIN_POWER_HOLD));
     gpio_deep_sleep_hold_en();
 #endif
-    Serial.println("[travel] deep sleep — wake on B+C");
+    Serial.println("[travel] deep sleep: wake on B+C");
     Serial.flush();
     esp_deep_sleep_start();
 }
@@ -333,14 +333,14 @@ void travelWakeGate() {
 // Is a real USB HOST attached right now?
 //
 // HWCDC::isPlugged() watches USB Start-of-Frame packets via a FreeRTOS tick hook,
-// so it means "a host is actively framing us" — a computer, not a dumb charger
+// so it means "a host is actively framing us": a computer, not a dumb charger
 // (chargers send no SOF). That distinction is deliberate: charging overnight from
 // a wall plug should still sleep normally; only a dev tether keeps the device up.
 //
 // Two consequences of the tick-hook implementation matter here. It is free to poll
 // (a volatile bool, no bus transaction), so this can run every loop. And it cannot
-// update while the SoC is light-sleeping — the tick hook is not running and the USB
-// link has to re-enumerate on wake — which is what USB_SETTLE_MS exists to cover.
+// update while the SoC is light-sleeping (the tick hook is not running and the USB
+// link has to re-enumerate on wake), which is what USB_SETTLE_MS exists to cover.
 bool usbHostAttached() {
 #if USB_KEEPS_AWAKE && ARDUINO_USB_MODE && ARDUINO_USB_CDC_ON_BOOT
     return HWCDC::isPlugged();
@@ -355,7 +355,7 @@ bool usbHostAttached() {
 // once as PENDING_VERIFY and is only kept if something calls
 // esp_ota_mark_app_valid_cancel_rollback(); reboot while still pending and the
 // bootloader reverts to the slot that was running before. That is the whole
-// recovery story on a device with no second way in — nothing here is signed, and
+// recovery story on a device with no second way in: nothing here is signed, and
 // a brick means a USB cable, which the person this update path was built for does
 // not have.
 //
@@ -364,7 +364,7 @@ bool usbHostAttached() {
 // test can be the one that matters: the device reached the main loop, put a frame on the
 // panel, and stayed up. A build that panics in setup(), wedges the display or crash-loops
 // never commits, and the next power cycle silently restores the old firmware. The window is
-// survivable rather than long — power yanked inside it costs a rollback nobody needed,
+// survivable rather than long: power yanked inside it costs a rollback nobody needed,
 // which is the safe direction.
 uint32_t otaCommitAtMs = 0;   // 0 once committed or when nothing is pending
 
@@ -374,7 +374,7 @@ void armOtaCommitIfPending() {
     if (!running || esp_ota_get_state_partition(running, &state) != ESP_OK) return;
     if (state != ESP_OTA_IMG_PENDING_VERIFY) return;
     otaCommitAtMs = millis() + OTA_PROVE_MS;
-    Serial.printf("[ota] on trial — committing in %us if we stay up\n",
+    Serial.printf("[ota] on trial: committing in %us if we stay up\n",
                   static_cast<unsigned>(OTA_PROVE_MS / 1000));
 }
 
@@ -383,7 +383,7 @@ void commitOtaWhenProven(uint32_t nowMs) {
     if (otaCommitAtMs == 0 || nowMs < otaCommitAtMs) return;
     otaCommitAtMs = 0;
     if (esp_ota_mark_app_valid_cancel_rollback() == ESP_OK)
-        Serial.println("[ota] image committed — rollback cancelled");
+        Serial.println("[ota] image committed: rollback cancelled");
     else
         Serial.println("[ota] commit failed; this image will roll back on reboot");
 }
@@ -402,7 +402,7 @@ extern "C" bool verifyRollbackLater() { return true; }
 #endif
 
 void setup() {
-    // POWER LATCH FIRST — before anything that can delay boot (Serial, the
+    // POWER LATCH FIRST: before anything that can delay boot (Serial, the
     // bringup 15s serial-wait, display init). On battery this board's rail is
     // held only by the physical PWR button until firmware asserts BAT_EN; miss
     // this and the panel flashes then dies the moment PWR is released. Harmless
@@ -458,7 +458,7 @@ void setup() {
 #endif
     game = &g;
     // How the engine asks whether there is room to save before it commits to the
-    // attempt. Largest free BLOCK, not total free — the save wants its blob in one
+    // attempt. Largest free BLOCK, not total free: the save wants its blob in one
     // piece, so a fragmented heap refuses it long before it runs out. Wired here and
     // never again: it is a probe the engine calls, not a reading pushed at it, so it
     // is always answering about now (Game::setHeapProbe).
@@ -467,11 +467,11 @@ void setup() {
     // a "loaded NVS" line reporting an edited tag proves the save survived in flash
     // (independent of any battery-retained RAM). One line, same tier as the banner.
     // lvl is included because it's the one field known to have gone stale across a
-    // reflash in the field — this line is the fastest way to tell whether NVS itself
+    // reflash in the field: this line is the fastest way to tell whether NVS itself
     // already held the wrong value (nothing wrote the level before power was cut) vs.
     // it was loaded correctly and something downstream cleared it.
     // Blob-vs-capacity is printed every boot (not just on a write failure) so
-    // headroom is visible well before NOT_ENOUGH_SPACE — the failure mode
+    // headroom is visible well before NOT_ENOUGH_SPACE: the failure mode
     // that motivated NVS_SAVE_PARTITION_BYTES existing at all.
     Serial.printf("[save] %s pet=%s gen=%d lvl=%d tag=%s blob=%u/%uB (%u%%)\n",
                   hadSave ? "loaded NVS" : "empty -> seed",
@@ -499,7 +499,7 @@ void setup() {
     BOOT_TRACE("[boot] phase=6 first frame presented\n");
 
     // microSD bring-up (SD_MMC 4-bit SDIO). Optional: a failed mount (no card /
-    // wrong pins) logs and continues — boot stays clean. A successful mount runs
+    // wrong pins) logs and continues: boot stays clean. A successful mount runs
     // a write/read round-trip so the boot line proves the filesystem is usable,
     // not merely detected. This is the prerequisite for the Audit .pcap slice.
     if (sdCard.begin()) {
@@ -509,20 +509,20 @@ void setup() {
         // Feed the CFG "SD" line: present only when the round-trip proves the
         // filesystem is actually usable (mounted-but-unwritable reads as absent).
         game->setSdStatus({rt, sdCard.sizeMB()});
-        // Real-network discovery history (core/net/network_ledger.h) — a missing
+        // Real-network discovery history (core/net/network_ledger.h): a missing
         // file (first boot) just starts the ledger empty, not an error.
         game->loadNetworkLedger("/sdcard/network_ledger.bin");
         // The SHAKES handshake-dedup history (core/net/handshake_ledger.h). The
         // card holds the full rotating set; a missing file just leaves the
         // save-blob fallback in place (card-less dedup still works, smaller).
         game->loadHandshakeLedger("/sdcard/handshake_ledger.bin");
-        // The met-operators roster (core/net/peer_ledger.h) — same deal: a
+        // The met-operators roster (core/net/peer_ledger.h) works the same way: a
         // missing file just starts it empty. Without a card the roster still
         // works, it just lasts only as long as this boot.
         game->loadPeerLedger("/sdcard/peer_ledger.bin");
     } else {
         // ESP_FAIL with a card seated = the card initialised but its filesystem
-        // isn't FAT-mountable (exFAT / unformatted) — reformat FAT32. Any other
+        // isn't FAT-mountable (exFAT / unformatted): reformat FAT32. Any other
         // code (timeout etc.) points at no card / a hardware issue.
         Serial.printf("[sd] no card / mount failed: %s (continuing)\n",
                       sdCard.lastError());
@@ -540,7 +540,7 @@ void setup() {
     netSta.begin(game);
     radio.begin(game, &netSniff, &netCapture, &apServer, &netLink, &netSta);
     // Tell the engine whether a home network is stored. The credentials themselves
-    // stay device-tier (net_credentials.h) — this bool is all the UPDATES screen
+    // stay device-tier (net_credentials.h): this bool is all the UPDATES screen
     // needs to tell "no consent" apart from "consented, nowhere to go". Refreshed by
     // the setup portal the moment it writes one (ap_server.h).
     {
@@ -560,23 +560,23 @@ void setup() {
         static UpdateSource src;
         char manifestUrl[UpdateSource::kUrlCap];
         // Tell the engine whether a check is even possible. Like setNetProvisioned
-        // this is a bare bool — the URL stays device-tier — and it is what the
+        // this is a bare bool (the URL stays device-tier), and it is what the
         // UPDATES screen reads to name the missing piece instead of offering a
         // button that would do nothing.
         const bool known = src.url(manifestUrl, sizeof(manifestUrl));
         if (!known) manifestUrl[0] = '\0';
-        // Carries the address too, not just "is there one" — the 'Pedia's user
+        // Carries the address too, not just "is there one": the 'Pedia's user
         // section shows it in the field that edits it (ap_server.h).
         game->setUpdateManifestUrl(manifestUrl);
         if (known)
             Serial.printf("[upd] manifest %s (%s)\n", manifestUrl,
                           src.overridden() ? "stored" : "built-in");
         else
-            Serial.printf("[upd] no manifest source — checks are unavailable\n");
+            Serial.printf("[upd] no manifest source: checks are unavailable\n");
 
         // What the check would compare against, one line for both artifacts. The
         // web bundle's version is a file on the card, so the engine gets told what
-        // it says — the install-confirm prompt names it as the "now" half.
+        // it says: the install-confirm prompt names it as the "now" half.
         VersionMarker web;
         readWebBundleVersion(&web);
         game->setWebBundleVersion(web.version);
@@ -588,7 +588,7 @@ void setup() {
 #endif
     beginBattery();    // prime the charge-status pin (no-op if no battery monitor)
     game->setPowerStatus(readPowerStatus());  // first reading before any repaint
-    // Last, so the trial window starts from a device that finished coming up —
+    // Last, so the trial window starts from a device that finished coming up:
     // everything above is what an OTA image has to survive to be worth keeping.
     armOtaCommitIfPending();
 }
@@ -610,15 +610,15 @@ void loop() {
     // keeps ticking; we just stop presenting. Disabled during bring-up.
     //
     // Four states hold the panel awake, each by stamping every frame as fresh activity
-    // rather than by a sticky flag — so the normal timeout resumes cleanly the moment the
+    // rather than by a sticky flag, so the normal timeout resumes cleanly the moment the
     // state ends, with no transition edge to miss:
-    //   auto-explore   — a hands-off run the player is watching.
-    //   the PEDIA QR   — has to stay lit long enough to scan and join the AP.
-    //   a RADIO screen — CREW's network picker and PEERS are read hands-off while they
+    //   auto-explore:   a hands-off run the player is watching.
+    //   the PEDIA QR:   has to stay lit long enough to scan and join the AP.
+    //   a RADIO screen: CREW's network picker and PEERS are read hands-off while they
     //                    fill in, which takes far longer than SCREEN_SLEEP_MS (their own
     //                    budget is kRadioScreenDefocusMs). Holding one open is also what
     //                    ARMS their radio, so a dark screen there is a dead radio.
-    //   a USB host     — the sleeps exist to save battery and a tethered device isn't on
+    //   a USB host:     the sleeps exist to save battery and a tethered device isn't on
     //                    battery. Unplugging lets the normal timeout resume.
     if (game->exploreActive() || game->qrScreenActive() || game->radioScreenOpen() ||
         usbHostAttached())
@@ -656,14 +656,14 @@ void loop() {
 
     // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The
     // card is mounted once in setup(), so one inserted later is invisible until
-    // this remounts it. DECISION: seal any live capture FIRST rather than defer —
+    // this remounts it. DECISION: seal any live capture FIRST rather than defer.
     // sealActive() keeps the toggle intent (it re-arms after the normal cooldown),
     // and a forced arbiter poll powers the capture owner down so its .pcap sink is
     // flushed + closed before we unmount (unmounting under an open file corrupts
     // it). Then remount, push a fresh SD reading (which also flashes the idle SD
     // icon via setSdStatus), and log one [sd] line. Inert on card-less/SPI-SD boards.
     // Brightness: re-drive the backlight whenever the CFG level changes.
-    // Only the user changes it (in CFG), so a cheap value-compare suffices — no
+    // Only the user changes it (in CFG), so a cheap value-compare suffices: no
     // one-shot flag needed. Applied even while the screen is "asleep" so waking
     // restores the right level (wake() also re-pushes duty_).
     static int lastBrightness = -1;
@@ -686,13 +686,13 @@ void loop() {
         dirty = true;
     }
 
-    // FORMAT SD — from CFG -> DEVICE -> FORMAT SD (Game::requestSdFormat) or the
+    // FORMAT SD: from CFG -> DEVICE -> FORMAT SD (Game::requestSdFormat) or the
     // browser flasher over serial (pollSerialFormatAsk). Everything that can hold a
     // file open on the card stands down first, as for a recheck but wider: the AP
     // streams 'Pedia files and the capture writes a .pcap, and an erase under either
     // is a corrupt card. The arbiter re-raises whatever is opted in on its next poll.
-    // An update job is the one writer this does not stop — it is installing the
-    // 'Pedia onto this card — so a format waits for it (CFG) or is refused (serial).
+    // An update job is the one writer this does not stop (it is installing the
+    // 'Pedia onto this card), so a format waits for it (CFG) or is refused (serial).
     // The 'Pedia's version marker went with the card, so the engine is told the
     // bundle is gone, which is what lets UPDATES offer it straight back.
     {
@@ -721,7 +721,7 @@ void loop() {
             else Serial.printf("MALSD FAIL %s\n", ok ? "round-trip" : sdCard.lastError());
             Serial.flush();
             // The flasher repeats its command until it hears BUSY, so copies sent
-            // before this one was answered are still queued — drop them unanswered.
+            // before this one was answered are still queued: drop them unanswered.
             while (Serial.available() > 0) Serial.read();
             lastActivityMs = millis();
             dirty = true;
@@ -732,29 +732,29 @@ void loop() {
     // off) from the persisted CFG opt-ins + the low-battery guard, stands the
     // others down, and services the owner. The audit consumers are
     // passive/authorized-use (scan/listen only; the capture path records EAPOL
-    // already on the air — no deauth/inject); LINK is the one that TRANSMITS —
-    // its own HELLO beacon, plus unicast duel frames to one operator — behind its
+    // already on the air, no deauth/inject); LINK is the one that TRANSMITS
+    // (its own HELLO beacon, plus unicast duel frames to one operator), behind its
     // own opt-in. Non-blocking so the ~4fps render loop never stalls.
     //
     // Screen-sleep interaction (deliberate): capture KEEPS RUNNING while the panel
-    // is asleep — arming it and pocketing the device is the intended use. The
+    // is asleep, because arming it and pocketing the device is the intended use. The
     // headless drain is bounded by the SM arm-window (self-seals a listen session
-    // that never captures), the re-arm cooldown, and this battery guard — those,
+    // that never captures), the re-arm cooldown, and this battery guard: those,
     // not the screen, are the drain safeguards. The guard thresholds are a
     // first cut pending a real bench power-measurement pass.
     radio.poll(millis());
 
     // The update job rides whatever association the arbiter just serviced, so it
-    // runs after the poll — it owns no radio of its own, it only waits for one.
+    // runs after the poll: it owns no radio of its own, it only waits for one.
     netUpdate.service(millis());
 #if UPDATE_ENABLED
     // A committed firmware image only takes effect on the next boot. Give the
-    // "RESTARTING..." frame time to reach the panel first — the operator should
+    // "RESTARTING..." frame time to reach the panel first: the operator should
     // see why the device went dark, not just watch it vanish mid-install.
     static uint32_t restartAtMs = 0;
     if (netUpdate.restartPending() && restartAtMs == 0) {
-        // The restart is a reset, so land anything still inside the save debounce first
-        // — a setting changed just before the install is the operator's, and the save
+        // The restart is a reset, so land anything still inside the save debounce first:
+        // a setting changed just before the install is the operator's, and the save
         // partition is what the new image boots onto (partitions_malwarium.csv).
         game->saveNow();
         restartAtMs = millis() + 2000;
@@ -762,8 +762,8 @@ void loop() {
     if (restartAtMs != 0 && millis() >= restartAtMs) ESP.restart();
 #endif
 
-    // Battery/charge status. Two consumers now draw it — the CFG "BATT" line and
-    // the Hacker face's glyph — and the face is a screen a player SITS on, so a
+    // Battery/charge status. Two consumers draw it (the CFG "BATT" line and
+    // the Hacker face's glyph), and the face is a screen a player SITS on, so a
     // reading taken only on arrival would freeze there for as long as they stayed.
     // Hence a slow sample on top of the arrival ones, at BATTERY_SAMPLE_MS: SoC
     // moves over hours, so a minute paces the display generously and still costs
@@ -771,7 +771,7 @@ void loop() {
     //
     // The arrival reads stay, and are not redundant with the timer: landing on a
     // readout should show the battery NOW, not up to a minute ago. Waking is the
-    // same case at a larger scale — the last reading can be a whole sleep old.
+    // same case at a larger scale: the last reading can be a whole sleep old.
     //
     // Nothing here repaints on its own. setPowerStatus smooths the sample in and
     // dirties the frame only when the drawn value moves, which is what keeps a
@@ -874,8 +874,8 @@ void loop() {
     //
     // The settle window is what makes a cable plugged in DURING a sleep detectable at all.
     // There is no USB wake source on this SDK, so the fallback timer wake is the only
-    // chance to notice — and at that instant usbHostAttached() is still stale, the tick
-    // hook that maintains it having been stopped while the link re-enumerates. Staying up
+    // chance to notice, and at that instant usbHostAttached() is still stale (the tick
+    // hook that maintains it having been stopped while the link re-enumerates). Staying up
     // briefly after every wake gives that a chance to land, at ~0.3% duty against a
     // 2-minute fallback.
     // A frame has been on the panel by now, so this is the full health test.

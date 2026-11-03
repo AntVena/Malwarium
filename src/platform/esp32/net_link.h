@@ -1,16 +1,16 @@
-// net_link.h — device-tier pet-to-pet discovery (ESP-NOW broadcast).
+// net_link.h: device-tier pet-to-pet discovery (ESP-NOW broadcast).
 //
 // Carries two formats over one radio: the HELLO beacon (core/net/peer_link.h), which
 // is broadcast and announces this device, and the 1v1 duel handshake
 // (core/net/pvp_link.h), which is unicast to one operator. Every received frame is
-// handed to the engine — Game::registerPeer for a beacon, Game::onPvpFrame for a duel
-// frame — which owns the decoding, the snapshot, the roster and the session state.
+// handed to the engine: Game::registerPeer for a beacon, Game::onPvpFrame for a duel
+// frame, which owns the decoding, the snapshot, the roster and the session state.
 // Nothing here parses a payload or decides what a meeting or a duel is; this file is
 // the radio and nothing else. The two formats are told apart by their magic, so the
 // engine seam that rejects one simply gets offered the other.
 //
 // CONNECTIONLESS. Broadcast frames need no pairing and no association, and the
-// people we merely HEAR never enter the ESP-NOW peer table — so the met-list is
+// people we merely HEAR never enter the ESP-NOW peer table, so the met-list is
 // bounded by storage rather than by the 20-peer limit. Only the broadcast address
 // itself is registered, because sending requires a peer entry even for broadcast.
 //
@@ -20,14 +20,14 @@
 // inaudible, which is why the channel is a config constant rather than a scan.
 //
 // TWO WAYS TO GET AIRTIME, because an unassociated listener cannot use Wi-Fi modem
-// sleep (that needs an AP's DTIM beacons) — its receiver is on continuously, so
+// sleep (that needs an AP's DTIM beacons). Its receiver is on continuously, so
 // there is no cheap always-on mode:
-//   * service() — this tier OWNS the radio, beaconing, listening, and sending queued
+//   * service(): this tier OWNS the radio, beaconing, listening, and sending queued
 //     duel frames continuously. The arbiter grants that only for the stretch a PEERS
 //     or LINK screen is open or a duel is in flight (Game::linkForegroundWanted),
 //     where the exchange has to be immediate and the backlight already dominates the
 //     draw.
-//   * piggyback() — the audit SCAN owns a radio that is already hot and is idle
+//   * piggyback(): the audit SCAN owns a radio that is already hot and is idle
 //     between sweeps. Announcing into that window costs the window, not a whole
 //     power cycle. This is the ambient path, and it exists only while the scan runs
 //     (Game::linkAmbientStarved is how the UI says so when it doesn't).
@@ -54,7 +54,7 @@ namespace mal {
 
 class NetLink {
 public:
-    // Wire the engine seam. Does NOT power the radio — the RadioArbiter decides when
+    // Wire the engine seam. Does NOT power the radio: the RadioArbiter decides when
     // this owner may run (service) vs must stand down (ensureDown).
     void begin(Game* game) {
         game_ = game;
@@ -62,7 +62,7 @@ public:
         instance_ = this;
         // Hand the engine this device's own radio MAC. Duels need it to decide which
         // side hosts (pvpHostIsLocal, core/net/pvp_link.h), and esp_read_mac returns
-        // the burned-in address without the radio being powered — so the identity is
+        // the burned-in address without the radio being powered, so the identity is
         // known from boot rather than only once LINK first wins the arbiter. A build
         // without LINK never calls this, leaving the key 0 and duels inert.
         uint8_t mac[6] = {0};
@@ -74,7 +74,7 @@ public:
     // Whether this tier should OWN the radio right now. Only the foreground cases
     // (Game::linkForegroundWanted): the PEERS or LINK screen is open and wants
     // discovery inside a second, or a duel session is mid-handshake and cannot wait on
-    // a duty cycle. Ambient LINK deliberately does not claim ownership — it rides the
+    // a duty cycle. Ambient LINK deliberately does not claim ownership: it rides the
     // scan's window instead, so leaving the toggle on never powers the radio up on its
     // own schedule.
     bool wants() const {
@@ -114,7 +114,7 @@ public:
 
     // Announce into a radio window the SCAN owner already has hot. Call only while
     // the scan is idle between sweeps; this parks the channel and beacons, and does
-    // not touch the radio's power state — the scan still owns that, and its next
+    // not touch the radio's power state: the scan still owns that, and its next
     // sweep re-sweeps every channel regardless of where we left it parked.
     //
     // The window is bounded by PEER_BURST_MS so a burst can't crowd out the sweep
@@ -212,8 +212,8 @@ private:
     // where the ESP-NOW peer table finally binds: broadcast needs no addressee but a
     // directed frame does.
     //
-    // The addressee STAYS registered. esp_now_send() is asynchronous — it queues the
-    // frame and returns long before the radio has actually transmitted it — so removing
+    // The addressee STAYS registered. esp_now_send() is asynchronous: it queues the
+    // frame and returns long before the radio has actually transmitted it, so removing
     // the peer straight after the call can pull the entry out from under the pending
     // TX. A duel talks to exactly one operator, and stopEspNow()'s deinit drops the
     // whole table anyway, so holding one slot for the length of a session costs nothing
@@ -240,7 +240,7 @@ private:
     // Hand the engine every duel frame the radio buffered since the last loop.
     //
     // THE DEFERRAL IS THE POINT. onRecv runs in the WiFi task, and the duel state
-    // machine it feeds is not a small in-RAM note like a beacon sighting — it allocates
+    // machine it feeds is not a small in-RAM note like a beacon sighting: it allocates
     // combatants, switches the nav state, and pushes replies into an outbox the main
     // loop is concurrently draining. Running that from another task races the main loop
     // for both the outbox and the game state. So the callback only copies bytes, and
@@ -275,7 +275,7 @@ private:
     //
     // One callback, two formats, offered to both seams. Each decoder checks its own
     // magic first and drops anything that isn't its format, so a beacon never reaches
-    // the duel state machine and a handshake frame never becomes a meeting — no length
+    // the duel state machine and a handshake frame never becomes a meeting: no length
     // guessing or format sniffing needed here. (registerPeer's return value means "a
     // NEW operator", not "this was a beacon", so it can't be used to short-circuit.)
     static void onRecv(const uint8_t* mac, const uint8_t* data, int len) {
@@ -287,12 +287,12 @@ private:
     }
 
     // Copy one frame in for the main loop. Single producer (the WiFi task) and single
-    // consumer (drainInbox), so the two indices need no lock — only that each is
+    // consumer (drainInbox), so the two indices need no lock, only that each is
     // written by one side. A full inbox drops the oldest-unread rather than blocking
     // the radio; every duel frame is repeated on a timer, so a drop costs a retry.
     void pushInbox(const uint8_t* mac, const uint8_t* data, size_t len) {
         // Beacons vastly outnumber duel frames, so they are dropped on the magic here
-        // rather than at decode — otherwise every HELLO would burn an inbox slot and a
+        // rather than at decode: otherwise every HELLO would burn an inbox slot and a
         // trace line, burying the handshake it is supposed to make visible.
         if (len > kPvpFrameCap || !isPvpFrame(data, len)) return;
         Rx& r = inbox_[inboxHead_ % kInboxCap];

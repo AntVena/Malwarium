@@ -1,4 +1,4 @@
-// host/main.cpp — desktop (SDL2) preview of the Malwarium engine.
+// host/main.cpp: desktop (SDL2) preview of the Malwarium engine.
 //
 // Renders the logical 128 canvas, upscales x1.75 to the 224 active area,
 // composes it into the 240 panel with the 8px bezel, and shows it in a
@@ -151,8 +151,8 @@ int main(int, char**) {
                 }
             }
         }
-        // Travel sleep has no host equivalent — there is no SoC to park and no
-        // battery to save — so the request is landed as a save and cleared, which
+        // Travel sleep has no host equivalent: there is no SoC to park and no
+        // battery to save, so the request is landed as a save and cleared, which
         // leaves the window sitting on the screen the device would have gone dark
         // from. That is the honest host behaviour: the seam is exercised, and the
         // one thing the device tier does that matters to the SAVE still happens.

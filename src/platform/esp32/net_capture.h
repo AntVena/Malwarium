@@ -1,18 +1,18 @@
-// net_capture.h — device-tier promiscuous 802.11 EAPOL sniffer (RF half).
+// net_capture.h: device-tier promiscuous 802.11 EAPOL sniffer (RF half).
 //
 // The RF half of the Audit .pcap handshake-capture slice. Puts the S3 radio into
 // promiscuous mode, hops the 2.4GHz channel set, recognises WPA 4-way-handshake
 // EAPOL frames (via the pure core/net/eapol.h classifier), timestamps each into
 // the host-tested PcapWriter, and lazily lands them on a /sdcard/audit_<network>.pcap
-// file (SdPcapSink) named after the network they belong to — the SSID (via the
+// file (SdPcapSink) named after the network they belong to: the SSID (via the
 // scan's SsidCache) when known, else the BSSID hex. The file opens only once a
 // frame for a genuinely-new (not-already-credited) BSSID actually arrives, never
 // per arm/seal radio cycle (see drain()'s comment for the file-blowup this fixes),
 // is written via a temp file, and only replaces an existing capture of the same
-// network if the new one is LARGER (see placeSession) — a header-only/partial
+// network if the new one is LARGER (see placeSession): a header-only/partial
 // session is discarded rather than left on the card.
 // When a BSSID's handshake first becomes crackable it calls
-// Game::registerHandshake(bssid) — which dedups SHAKES + drives the AuditCapture
+// Game::registerHandshake(bssid), which dedups SHAKES + drives the AuditCapture
 // policy SM hot. Modelled on net_sniff.h's radio lifecycle (radioOn_ gate, full
 // WIFI_OFF power-down when not wanted, poll-driven, non-blocking).
 //
@@ -30,7 +30,7 @@
 // write burst per session is tiny (a handful of small frames, flushed on seal).
 //
 // COMPILE GATE: needs a Wi-Fi radio (NET_SNIFF_ENABLED) AND the SDMMC .pcap sink
-// (SD_ENABLED && SD_USE_SDMMC — S3 only). A card-less / SPI-SD board gets the
+// (SD_ENABLED && SD_USE_SDMMC: S3 only). A card-less / SPI-SD board gets the
 // inert stub below so both boards still build.
 //
 // ⚠ ON-AIR VERIFICATION PENDING (docs): the esp_wifi
@@ -55,8 +55,8 @@
 // trace. These were decisive bringing the sniffer up on air (proving promiscuous
 // RX hears traffic + which 4-way message arrived), but are noisy for a shipping
 // build. Default ON for now; define NET_CAPTURE_DEBUG 0 (build flag / config.h) to
-// silence them. The real signal lines — "[cap] armed / handshake / sealed" and the
-// arbiter's "[radio] owner" — are NEVER gated.
+// silence them. The real signal lines ("[cap] armed / handshake / sealed" and the
+// arbiter's "[radio] owner") are NEVER gated.
 #ifndef NET_CAPTURE_DEBUG
 #  define NET_CAPTURE_DEBUG 1
 #endif
@@ -100,7 +100,7 @@ public:
         drain(nowMs);  // queued EAPOL frames -> .pcap + ledger (+ may channel-lock)
 
         // Channel hop: a handshake lands on the AP's channel, so we rotate the
-        // 2.4GHz trio — UNLESS we just heard EAPOL and locked onto its channel to
+        // 2.4GHz trio, UNLESS we just heard EAPOL and locked onto its channel to
         // catch the rest of the 4-way (drain() extends hopHoldUntil_). Every hop
         // is time-on-air (battery), so dwell is tuned.
         if (nowMs >= hopHoldUntil_ && nowMs - lastHopMs_ >= kAuditChannelDwellMs) {
@@ -110,7 +110,7 @@ public:
         }
 
         // Coarse RX heartbeat: confirms promiscuous RX is actually hearing traffic
-        // (data climbing) and whether any of it is EAPOL — the key diagnostic when
+        // (data climbing) and whether any of it is EAPOL: the key diagnostic when
         // a handshake doesn't register. Debug-gated (noisy for a shipping build).
 #if NET_CAPTURE_DEBUG
         if (nowMs - lastStatMs_ >= kStatIntervalMs) {
@@ -153,7 +153,7 @@ private:
 
     void onFrame(const uint8_t* frame, uint32_t len, uint8_t chan) {
         ++rxData_;  // every promiscuous DATA frame (RX-alive diagnostic)
-        // Only EAPOL-Key frames are captured — a focused, minimal, passive .pcap
+        // Only EAPOL-Key frames are captured: a focused, minimal, passive .pcap
         // (not the whole air), which also keeps the SD burst + RAM ring tiny.
         EapolKeyInfo info = parseEapolKey(frame, len);
         if (!info.isEapolKey) return;
@@ -181,11 +181,11 @@ private:
     // --- Drain (runs on the main task) --------------------------------------
     // Avoids the pcap file-count blowup: a file is opened LAZILY, at most
     // once per powered session, only once a frame for a genuinely-new BSSID
-    // (not already in the SHAKES ledger) is actually heard — and it's named
+    // (not already in the SHAKES ledger) is actually heard, and it's named
     // after that network (see openSessionFor), not a counter. A repeat capture
     // attempt for an already-credited AP is dropped before ever touching SD.
     // (Opening eagerly in powerUp() would mint a fresh audit_N.pcap on every
-    // arm/seal radio cycle — most empty — and the SM's rearm cadence makes that
+    // arm/seal radio cycle, most of them empty, and the SM's rearm cadence makes that
     // cycle frequent.)
     void drain(uint32_t nowMs) {
         for (;;) {
@@ -197,7 +197,7 @@ private:
             portEXIT_CRITICAL(&mux_);
 
             // Focus on ONE target network per powered session (the EAPOL channel
-            // -lock above already implies this in practice — only one AP's 4-way
+            // -lock above already implies this in practice, only one AP's 4-way
             // is realistically mid-flight on the locked channel at a time). A
             // frame for a second, different BSSID while a target is already
             // active is dropped rather than juggling a second open file.
@@ -205,7 +205,7 @@ private:
                 continue;
 
             // Already fully captured in a prior session (the v7 SHAKES ledger,
-            // survives a reboot) — skip entirely: no file, no write, no re-credit.
+            // survives a reboot), so skip entirely: no file, no write, no re-credit.
             // This is what stops a repeat walk past a known AP from minting
             // another .pcap.
             if (!hasActiveBssid_ && game_->handshakeAlreadyCaptured(local.bssid)) {
@@ -228,7 +228,7 @@ private:
                                    local.tsUsec);
             }
             // Per-EAPOL trace (rare frames): shows we're hearing the handshake and
-            // which 4-way message — the diagnostic for a partial/mistimed capture.
+            // which 4-way message: the diagnostic for a partial/mistimed capture.
             // Debug-gated; the per-AP "[cap] handshake" credit line below is not.
 #if NET_CAPTURE_DEBUG
             Serial.printf("[cap] eapol bssid=%02x:%02x:%02x:%02x:%02x:%02x msg=%d ch=%d\n",
@@ -260,7 +260,7 @@ private:
     // --- Radio + session lifecycle ------------------------------------------
     void powerUp(uint32_t nowMs) {
         // Self-contained IDF init (tolerant of an already-inited stack left by the
-        // Arduino WiFi scan path — the arbiter powers that fully down first, but we
+        // Arduino WiFi scan path: the arbiter powers that fully down first, but we
         // don't assume it deinited). ⚠ coexistence unverified on bench.
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
         esp_wifi_init(&cfg);                       // ESP_ERR_WIFI_INIT_STATE = already up
@@ -280,7 +280,7 @@ private:
         esp_wifi_set_channel(kAuditChannels[chanIdx_], WIFI_SECOND_CHAN_NONE);
 
         // NOTE: no file is opened here. openSessionFor() is called lazily from
-        // drain() the first time a frame for a genuinely-new BSSID is heard — see
+        // drain() the first time a frame for a genuinely-new BSSID is heard. See
         // the drain() comment for why (this avoids the file-count blowup).
         radioOn_ = true;
         lastHopMs_ = nowMs;
@@ -317,9 +317,9 @@ private:
 
     // Lazily opens ONE file for this powered session, the first time a frame for
     // a genuinely-new (not-already-credited) BSSID is heard. The FINAL name is
-    // derived from the network — the SSID (from the scan's SsidCache) suffixed
+    // derived from the network: the SSID (from the scan's SsidCache) suffixed
     // with the last BSSID octets, or the BSSID hex when the network was never
-    // scanned (see pcap_naming.h) — but the session writes to a fixed TEMP file
+    // scanned (see pcap_naming.h), but the session writes to a fixed TEMP file
     // first. On seal (placeSession) the temp only replaces the final file if it's
     // LARGER (or the final doesn't exist yet), so a fresh partial capture can
     // never clobber a bigger/better capture of the same network with a smaller one.
@@ -343,7 +343,7 @@ private:
 
     // Move the sealed temp capture to its network-named target IFF it beats what's
     // already there (bigger = a more complete handshake). A temp with no frames
-    // (header only) is discarded outright — that empty "pcap that never turns into
+    // (header only) is discarded outright: that empty "pcap that never turns into
     // anything" would otherwise litter the card.
     void placeSession() {
         if (tmpPath_[0] == '\0') return;
@@ -357,7 +357,7 @@ private:
                           tgtSz);
         } else {
             std::remove(tmpPath_);
-            Serial.printf("[cap] discarded temp (%ld bytes) — kept %s (%ld)\n", tmpSz,
+            Serial.printf("[cap] discarded temp (%ld bytes): kept %s (%ld)\n", tmpSz,
                           tgtSz >= 0 ? targetPath_ : "(none)", tgtSz);
         }
         tmpPath_[0] = targetPath_[0] = '\0';
@@ -406,7 +406,7 @@ private:
 
 } // namespace mal
 
-#else  // !MAL_NET_CAPTURE — inert stub (card-less / SPI-SD / radio-less board)
+#else  // !MAL_NET_CAPTURE: inert stub (card-less / SPI-SD / radio-less board)
 
 namespace mal {
 class Game;

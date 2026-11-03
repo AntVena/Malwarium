@@ -1,15 +1,15 @@
-// net_update.h — device-tier update CHECK: fetch the published list, compare it
-// with what is installed, report.
+// net_update.h: device-tier update CHECK, which fetches the published list, compares it
+// with what is installed and reports.
 //
 // NOT a RadioArbiter owner. It rides the association net_sta.h already owns: an
 // update job makes Game::netConnectWanted() true (game.h), the arbiter grants the
 // STA owner the radio, and this waits for NetState::Online and then does one HTTP
-// GET. One fetch per job — the job ends on its own outcome, which is what hands
+// GET. One fetch per job: the job ends on its own outcome, which is what hands
 // the radio back.
 //
 // WHY A JOB AND NOT A SCREEN. Anything nav-derived dies when the operator walks
 // away, which is fatal for a transfer. So a check is latched (Game::updateJobLive)
-// and runs to a terminal state whether or not anyone is looking — leaving the
+// and runs to a terminal state whether or not anyone is looking: leaving the
 // UPDATES screen mid-check finds the verdict waiting on the way back. It is also
 // what makes the association's lifetime honest: the job is the permission, so the
 // device is on the network for exactly as long as the job needs it.
@@ -17,7 +17,7 @@
 // setInsecure(), DELIBERATELY. There is no CA bundle to keep current on a device
 // that may sit in a drawer for a year, and no code signing either. What protects
 // an install is the per-artifact SHA-256 in the manifest, which catches the
-// realistic failure — a corrupted or truncated download — and NOT a hostile
+// realistic failure (a corrupted or truncated download) and NOT a hostile
 // network, since the manifest rides the same unauthenticated channel as the
 // artifacts. That trade is spelled out in core/net/update_manifest.h.
 //
@@ -26,7 +26,7 @@
 //
 //   FIRMWARE streams into the INACTIVE OTA slot while hashing. A slot is only
 //   bootable once Update.end() sets the boot partition, so a digest mismatch just
-//   calls Update.abort() — the half-written slot is never selected and the running
+//   calls Update.abort(): the half-written slot is never selected and the running
 //   build is untouched. There is no way to buffer 1.7MB to hash it first, and no
 //   need to.
 //
@@ -37,7 +37,7 @@
 //
 // AND A VERIFIED IMAGE STILL HAS TO EARN ITS KEEP. A digest only says the bytes
 // arrived intact; it cannot say the build works. So a firmware install boots on
-// trial and is thrown away unless it proves itself — main.cpp's rollback gate,
+// trial and is thrown away unless it proves itself: main.cpp's rollback gate,
 // which commits the image only after the device reaches the main loop, paints a
 // frame and stays up. Nothing here is signed and there is no second way into the
 // device, so an image that boots into a crash-loop would otherwise mean a USB
@@ -45,7 +45,7 @@
 //
 // A check's fetch BLOCKS for the length of its (sub-kilobyte) transaction. A
 // download does NOT: it moves a bounded chunk per service() call and pushes
-// progress, so the panel keeps repainting and the operator can walk away — the
+// progress, so the panel keeps repainting and the operator can walk away. The
 // job holds the radio on its own.
 #pragma once
 
@@ -87,7 +87,7 @@ public:
             phase_ = Phase::Start;
             received_ = 0;
             // A job that ended without going through failInstall (consent
-            // withdrawn mid-download) still has a sink open. Discard it — an
+            // withdrawn mid-download) still has a sink open. Discard it. An
             // aborted OTA slot is never bootable and a temp file is just a file.
             closeDownload();
             if (otaOpen_) { Update.abort(); otaOpen_ = false; }
@@ -139,7 +139,7 @@ private:
         static_cast<uint32_t>(STA_CONNECT_TIMEOUT_MS) + 5000u;
     static constexpr uint32_t kHttpTimeoutMs = 10000;
     // A published manifest is a few hundred bytes. This bound is what stops a
-    // captive portal's login page from being read into RAM in full — anything
+    // captive portal's login page from being read into RAM in full. Anything
     // longer is truncated here and then rejected by the parser, which requires the
     // closing brace precisely so a cut-off body cannot look complete.
     static constexpr size_t kManifestCap = 2048;
@@ -191,7 +191,7 @@ private:
             finishFail(UpdateFail::Malformed);
             return;
         }
-        // An empty list is a publish host with nothing on it — that is an answer
+        // An empty list is a publish host with nothing on it. That is an answer
         // ("nothing for you"), not a failure, and it reads as up to date.
 
         UpdateStatus st;
@@ -203,7 +203,7 @@ private:
         }
         // The web bundle's installed version is a file beside the bundle, since
         // nothing about the SD card is compiled in (web_bundle.h). No marker reads
-        // as 0, which offers a re-install — the safe direction.
+        // as 0, which offers a re-install, which is the safe direction.
         VersionMarker web;
         readWebBundleVersion(&web);
         if (const UpdateArtifact* wa = man.byId("web")) {
@@ -231,7 +231,7 @@ private:
         WiFiClient plain;
         HTTPClient http;
 
-        if (secure) tls.setInsecure();   // no CA chain to rot — see the banner
+        if (secure) tls.setInsecure();   // no CA chain to rot: see the banner
         http.setConnectTimeout(kHttpTimeoutMs);
         http.setTimeout(kHttpTimeoutMs);
         if (!http.begin(secure ? static_cast<WiFiClient&>(tls) : plain, url)) {
@@ -367,7 +367,7 @@ private:
     }
 
     // Every byte is here. Hash first, and only then let it become the thing that
-    // runs — this is the one gate between a damaged download and a bricked device.
+    // runs: this is the one gate between a damaged download and a bricked device.
     void finishInstall() {
         closeDownload();
         push(InstallState::Verifying, InstallFail::None);
@@ -376,7 +376,7 @@ private:
         mbedtls_sha256_finish_ret(&sha_, got);
         mbedtls_sha256_free(&sha_);
         if (std::memcmp(got, art_.sha256, sizeof(got)) != 0) {
-            Serial.println("[upd] digest mismatch — discarding");
+            Serial.println("[upd] digest mismatch: discarding");
             closeSink(/*keep=*/false);   // firmware: abort; web: delete the temp file
             failInstall(InstallFail::Corrupt);
             return;
@@ -401,7 +401,7 @@ private:
     bool openSink(UpdateTarget target) {
         if (target == UpdateTarget::Firmware) {
             // Update.h picks the inactive OTA slot. A false here means the image
-            // does not fit the slot — the one thing worth naming separately,
+            // does not fit the slot: the one thing worth naming separately,
             // because no amount of retrying fixes it.
             if (!Update.begin(art_.size, U_FLASH)) {
                 Serial.printf("[upd] ota begin failed: %s\n", Update.errorString());
@@ -471,7 +471,7 @@ private:
     }
 
     // Walk the archive one header at a time. Names are validated by
-    // parseTarHeader before anything is opened — an entry that tries to climb out
+    // parseTarHeader before anything is opened: an entry that tries to climb out
     // of `root` stops the whole extraction rather than being quietly renamed.
     static bool untar(const char* tarPath, const char* root) {
         FILE* f = std::fopen(tarPath, "rb");
@@ -532,7 +532,7 @@ private:
 
     bool openDownload(const char* url) {
         const bool secure = std::strncmp(url, "https://", 8) == 0;
-        if (secure) tls_.setInsecure();   // no CA chain to rot — see the banner
+        if (secure) tls_.setInsecure();   // no CA chain to rot: see the banner
         http_.setConnectTimeout(kHttpTimeoutMs);
         http_.setTimeout(kHttpTimeoutMs);
         if (!http_.begin(secure ? static_cast<WiFiClient&>(tls_) : plain_, url))
@@ -568,7 +568,7 @@ private:
         st.target = game_->updateJobTarget();
         st.received = received_;
         st.total = art_.size;
-        game_->setInstallStatus(st);   // terminal — this is what releases the radio
+        game_->setInstallStatus(st);   // terminal: this is what releases the radio
         phase_ = Phase::Start;
     }
 
@@ -582,7 +582,7 @@ private:
         UpdateStatus st;
         st.state = UpdateState::Failed;
         st.fail = why;
-        game_->setUpdateStatus(st);   // terminal — this is what releases the radio
+        game_->setUpdateStatus(st);   // terminal: this is what releases the radio
     }
 
     UpdateSource source_;
@@ -606,7 +606,7 @@ private:
     // The download's transfer buffer. A MEMBER, not a stepInstall() local: the
     // Arduino loop task gets an 8KB stack, and kChunk bytes of it live across
     // beginInstall()'s own frame (a 2KB manifest body + a parsed UpdateManifest)
-    // plus HTTPClient's — which overflows the stack and double-faults the moment an
+    // plus HTTPClient's, which overflows the stack and double-faults the moment an
     // install starts. Job state belongs beside sha_/art_/received_ anyway; this is
     // the buffer that job streams through.
     uint8_t chunk_[kChunk] = {0};

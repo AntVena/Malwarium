@@ -1,13 +1,13 @@
-// ssid_cache.h — device-tier BSSID→SSID map for naming audit .pcap files.
+// ssid_cache.h: device-tier BSSID→SSID map for naming audit .pcap files.
 //
 // The audit capture path (net_capture.h) hears only DATA/EAPOL frames, which
-// carry a BSSID but never the human-readable SSID — so on its own it can only
+// carry a BSSID but never the human-readable SSID, so on its own it can only
 // name a capture after the raw BSSID hex. The passive scan (net_sniff.h) DOES
 // see SSIDs (WiFi.scanNetworks reports both), and the two owners are radio-
 // arbitrated (never live at once), so the scan populates this small RAM cache
 // and the capture reads it when opening a session file.
 //
-// Pure C++ (no Arduino) so it compiles on host + both boards. RAM-only — the
+// Pure C++ (no Arduino) so it compiles on host + both boards. RAM-only: the
 // mapping is a naming convenience, not persisted state. Fixed capacity with a
 // round-robin victim; a full table just recycles the oldest slot.
 #pragma once
@@ -48,7 +48,7 @@ public:
     }
 
     // The SSID for a BSSID, or nullptr if never scanned. The returned pointer is
-    // valid until the next put() that could evict the slot — copy it right away.
+    // valid until the next put() that could evict the slot: copy it right away.
     const char* get(const uint8_t bssid[6]) const {
         if (!bssid) return nullptr;
         for (auto& e : entries_) {

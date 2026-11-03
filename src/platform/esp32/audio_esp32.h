@@ -1,4 +1,4 @@
-// audio_esp32.h — ISoundOut on the ES8311 codec + NS4150B amp over I2S.
+// audio_esp32.h: ISoundOut on the ES8311 codec + NS4150B amp over I2S.
 #pragma once
 
 #include <Arduino.h>

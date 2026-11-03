@@ -1,4 +1,4 @@
-// battery_esp32.h — device-tier battery/charge reader for the CFG "BATT" line.
+// battery_esp32.h: device-tier battery/charge reader for the CFG "BATT" line.
 //
 // Reads the pack voltage off BAT_ADC (PIN_BATTERY_ADC = GPIO1, behind the
 // board's 3:1 divider) and the ETA6098 charge-status pin (PIN_CHARGE_STAT =
