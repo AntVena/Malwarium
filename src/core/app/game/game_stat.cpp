@@ -8,8 +8,8 @@
 // STAT opens on VITALS and never on the INDEX. Hunger, frag and the evolve clock are
 // what the slot is entered for, several times a session; a menu in front of them would
 // charge every one of those visits a press to pay for the occasional long jump. The
-// index is what that jump costs instead: one hold, from any page, landing on any page
-// or on any SECTION of one (StatIndexRow::anchor, core/ui/stat_screen.h).
+// index replaces that walk: one hold, from any page, landing on any page or on any
+// SECTION of one (StatIndexRow::anchor, core/ui/stat_screen.h).
 //
 // The pages' row models are marshalled here too: Game owns the state they report,
 // stat_screen.h owns the shape, and these are the seam between the two. The draw and
@@ -181,8 +181,8 @@ void Game::openStatIndex() {
 
 void Game::onStatIndex(const ButtonEvent& ev) {
     // A's REPEAT and C's backward walk are the list contract's (game_listnav.cpp); the
-    // tap of each is still this screen's own, the shape every list handler on the device
-    // has: the contract owns how a cursor moves, not when.
+    // tap of each stays this screen's own, as in every list handler: the contract
+    // decides how a cursor moves and the screen decides when.
     const std::vector<StatIndexRow> rows = statIndexRows();
     const int n = static_cast<int>(rows.size());
     if (ev.button == Button::A) {

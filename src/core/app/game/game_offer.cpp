@@ -73,9 +73,9 @@ void Game::offerThenDive() {
 
 void Game::autoUseDiveGear() {
     // The deepest start a held bell would give (a Checkpoint's is this pet's record),
-    // and the strongest depth multiplier a held device would arm: one of each, which is
-    // everything a dive can use. offerItems has already dropped anything that would be
-    // refused, such as a bell shallower than the start already armed.
+    // and the strongest depth multiplier a held device would arm. A dive uses at most
+    // one of each. offerItems has already dropped anything that would be refused, such
+    // as a bell shallower than the start already armed.
     offerFor_ = OfferFor::Dive;
     const ItemDef* bell = nullptr;
     const ItemDef* device = nullptr;

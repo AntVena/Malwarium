@@ -3,10 +3,10 @@
 // core/app/game.h).
 //
 // A Daemon is the end of a raise, and once there is nothing left for it to become a
-// rack slot holding one is a trophy shelf. The counter is how a finished pet is turned
-// back into the game, three ways:
+// rack slot holding one is a trophy shelf. The counter turns a finished pet into one
+// of three things:
 //   BITS:     priced on its level (tunables.h's daemonSaleBits).
-//   REIMAGE:  the active pet, if it is the SAME species, goes back to its Script with a
+//   REIMAGE:  the active pet, if it is the same species, goes back to its Script with a
 //              clean error log and keeps everything else it has earned. This is what a
 //              duplicate is for: a second copy of the Daemon you did not want buys
 //              another try at the one you did, without raising a third from an egg.
@@ -104,8 +104,8 @@ ArchSaleSheet Game::archSaleSheet() const {
             std::snprintf(out.value, sizeof(out.value), "+%d B",
                           daemonSaleBits(sold.combatLevel));
         } else {
-            // A patch's value names the pet that RECEIVES it: the active one, never the
-            // Daemon this sheet is selling.
+            // A patch's value names the pet that receives it, which is the active pet
+            // and never the Daemon being sold.
             std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_->displayName);
         }
     }

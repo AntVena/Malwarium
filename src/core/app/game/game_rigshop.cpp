@@ -10,10 +10,10 @@
 namespace mal {
 
 // Is this row on sale right now? One way it isn't: it's maxed/owned, with nothing left
-// to buy. Every row in the table is an ordinary purchase: the one Hacker-face unlock
-// that ISN'T is a MERGE HUB recipe, which is won off a Decryptogram and is not a rig
-// row to gate. The single answer the A-cycle, the render loop and buyRigUpgrade all
-// defer to, so the list can't show a row the cursor skips, or sell one it never drew.
+// to buy. Every row in the table is an ordinary purchase. MERGE HUB recipes are won
+// off a Decryptogram and are not rig rows. The single answer the A-cycle, the render
+// loop and buyRigUpgrade all defer to, so the list can't show a row the cursor skips,
+// or sell one it never drew.
 bool Game::shopRowOffered(int i) const {
     if (i < 0 || i >= kRigUpgradeCount) return false;
     return rigLevel_[i] < kRigUpgrades[i].maxLevel;

@@ -313,8 +313,8 @@ void Game::onCombat(const ButtonEvent& ev) {
     // A linked duel is running the SAME fight on two devices with no turn-by-turn
     // traffic (game_pvp.cpp), so anything that pauses or ends this copy of it would
     // desync the pair: the Exploit picker stops the clock for a human, and fleeing ends
-    // a fight the opponent is still playing. Both are inert for the duration, which is
-    // why beginPvpBattle grants zero Exploit uses: this is the input half of that.
+    // a fight the opponent is still playing. Both are inert for the duration.
+    // beginPvpBattle grants zero Exploit uses, and this blocks the input side.
     const bool duel = pvpFighting();
 
     // A+C opens the Exploit picker: the chord arrives here because

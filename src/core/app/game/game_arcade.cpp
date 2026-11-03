@@ -21,7 +21,7 @@
 // incubation clock, which a cabinet doesn't have) and a PACE (the difficulty dial). Both
 // are parameters at the start call; nothing inside a game knows the arcade exists.
 //
-// The payout is deliberately mostly flat: see kArcadePlayBits in tunables.h for why.
+// The payout is mostly flat; kArcadePlayBits in tunables.h says why.
 
 namespace mal {
 
@@ -239,17 +239,15 @@ void Game::startArcadeRun() {
             break;
         case ArcadeGameKind::Chroma:
             // ENDLESS, like the buffer above: the board runs until the sweep finds it.
-            // The dial is the WINDOW, which is the paced games' knob (playStepMs),
-            // and hard alone turns switching on, which is the only rule any cabinet
-            // adds to a game rather than re-times.
+            // The dial is the WINDOW, which is the paced games' knob (playStepMs), and
+            // HARD also turns switching on, the only rule a cabinet adds.
             startChroma(/*rounds=*/0, playStepMs(kChromaWindowMs),
                         /*switching=*/arcadeDifficulty_ == ArcadeDifficulty::Hard);
             break;
         case ArcadeGameKind::Cryptogram: {
-            // The dial IS the quote's difficulty ladder, so the cabinet reuses the same
-            // opening the VAULT would give: no second answer to what MEDIUM means on
-            // a quote board. Only a SOLVED quote is offered: the cabinet is a re-run,
-            // never a free route through the pool.
+            // The dial is the quote's difficulty ladder, so the cabinet opens the board
+            // as the VAULT would and MEDIUM means one thing. Only a SOLVED quote is
+            // offered: the cabinet is a re-run, never a free route through the pool.
             const int quote = pickQuote(QuotePick::SolvedOnly);
             if (quote < 0) {
                 arcadeRun_ = false;   // nothing to re-run: leave the cabinet page up
@@ -300,8 +298,8 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
         arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
         if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
     }
-    // The pet enjoyed itself, and PLAY is the signal that says so: the arcade is the
-    // one place a player can hand a pet that signal on purpose.
+    // The pet enjoyed itself, which the PLAY signal records. The arcade is the one
+    // place a player can give it on purpose.
     noteCareSignal(DominantSignal::Play);
     markSaveDirty();
 
@@ -312,8 +310,8 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
 }
 
 void Game::onArcadeResult(const ButtonEvent& ev) {
-    // Informational: the run is banked already, so any press leaves. C is not "back"
-    // here: there is nothing to go back to, only the list to return to.
+    // Informational: the run is banked already, so any press leaves. C returns to
+    // the cabinet list.
     (void)ev;
     nav_ = Nav::Submenu;
     dirty_ = true;

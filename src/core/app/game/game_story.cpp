@@ -106,9 +106,9 @@ int Game::storyWindow() const {
 }
 
 void Game::advanceStoryPanel() {
-    // One window on, by exactly the rows that were shown: the step prose_page exports
-    // proseRowsFitting for, so what the reader saw and what the next window starts at
-    // can never be two different answers. Past the last window the chapter is over.
+    // One window on, by exactly the rows that were shown: using prose_page's
+    // proseRowsFitting, so the next window starts right after what the reader saw.
+    // Past the last window the chapter is over.
     if (!storyChapter_) { finishStoryChapter(); return; }
     const std::vector<ProseRow> rows = storyRows();
     const int total = static_cast<int>(rows.size());
@@ -121,7 +121,7 @@ void Game::advanceStoryPanel() {
 
 void Game::finishStoryChapter() {
     // The queued second half of a paired beat first: it is the same sitting, so it
-    // opens in place rather than handing back and being fired again.
+    // opens in place.
     if (storyNext_) {
         const StoryChapterDef* next = storyNext_;
         storyNext_ = nullptr;

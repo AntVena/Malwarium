@@ -1,12 +1,12 @@
 // game_onboard.cpp: what the device teaches a first-time player, and how it knows it
 // already has.
 //
-// Nobody is standing beside a new operator, so the device has to say the things the
-// hint bands cannot: what an egg's first minigame is staking, which button opens the
-// menu, which part of the menu the pet needs right now, and, the first time each need
-// comes up and the first time a walk is armed, WHY. Everything but the "!" marks is a
-// one-time TIP, a player-level persisted set (save v66) so a new egg does not re-teach
-// the buttons; the marks are a standing readout and are never "seen".
+// No one is there to explain the device, so it says what the hint bands cannot: what
+// an egg's first minigame is staking, which button opens the menu, which part of the
+// menu the pet needs right now, and, the first time each need comes up and the first
+// time a walk is armed, WHY. Everything but the "!" marks is a one-time TIP, a
+// player-level persisted set (save v66) so a new egg does not re-teach the buttons;
+// the marks are a standing readout and are never "seen".
 #include "core/app/game.h"
 
 #include <cstdio>

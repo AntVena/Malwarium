@@ -9,8 +9,8 @@
 // A Decryptogram is a found item with one use: cash it in at the Hacker VAULT and a
 // quote comes up struck out. Open every letter without a single wrong placement and it
 // pays Bits plus one account unlock; place one letter wrong and the ticket is gone and
-// the quote keeps its secret. There is no partial credit and no walking away: C does
-// not leave a board any more than it leaves a hatch.
+// the quote keeps its secret. There is no partial credit and no leaving: C does not
+// exit a board, as it does not exit a hatch.
 //
 // What makes losing survivable is that the QUOTE remembers. Every quote starts Hard;
 // each loss ratchets it down a rung (Medium opens one more letter at the start, Easy
@@ -102,8 +102,8 @@ int Game::pickQuote(QuotePick pick) {
 QuoteReward Game::quoteFirstSolvePrize() const {
     // The ladder in payout order (content_quotes.h): the first dish the operator can't
     // already cook and is ready to be taught. A recipe with no MERGE HUB to cook it in,
-    // or for a dish never met, is stepped over rather than handed out dead: it comes
-    // back around on a later board once the kitchen has caught up.
+    // or for a dish never met, is skipped and comes back on a later board once it can
+    // be cooked.
     const char* const* ladder = quotePrizeLadder();
     for (int i = 0; i < quotePrizeLadderCount(); ++i) {
         if (recipeGrantable(recipeIndexByOutput(ladder[i])))
@@ -126,8 +126,8 @@ void Game::startCryptogram(int quote, int extraReveals) {
     cryptogramPrizeBits_ = arcadeRun_ ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
     cryptogramPrize_ = firstSolve ? quoteFirstSolvePrize() : QuoteReward{};
     // A quote the content gate has passed always fits, so the return is ignored here
-    // and asserted there instead: a board that refused to load at runtime would strand
-    // a spent ticket with nothing to show for it.
+    // and asserted by the gate. A board that failed to load at runtime would waste a
+    // spent ticket.
     cryptogram_.reset(quotes()[quote].text, extraReveals);
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Cryptogram;
@@ -137,8 +137,8 @@ void Game::startCryptogram(int quote, int extraReveals) {
 void Game::onCryptogram(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
     if (!cryptogram_.running()) {
-        // Parked on the verdict, which the settle has already banked. B leaves; C is
-        // DISABLED, like every other board: the ticket is spent either way.
+        // Parked on the verdict, which the settle has already banked. B leaves. C is
+        // disabled, as on every board, because the ticket is spent either way.
         if (ev.button == Button::B) finishCryptogram();
         return;
     }
@@ -147,9 +147,9 @@ void Game::onCryptogram(const ButtonEvent& ev) {
     // board opens with thirty-odd gaps, and overshooting by one on a forward-only
     // cursor costs a full lap of the quote.
     //
-    // That spends both of the buttons a cancel would want, so A+C hands the letter back:
-    // the chord, which this board is routed for. C is therefore not "cancel" here and
-    // there is no way off a board at all, which is the deal every ticket is bought on.
+    // That uses both buttons a cancel would need, so the A+C chord hands the letter
+    // back. C is therefore not "cancel" here and there is no way off a board at all,
+    // which is the deal every ticket is bought on.
     //
     // dropLetter() is inert with nothing held (PickLetter), which is exactly when the
     // chord is free to mean something else instead: the RULES page. A player mid-place
@@ -205,7 +205,7 @@ void Game::applyQuoteReward() {
     bits_ += cryptogramPrizeBits_;
     switch (cryptogramPrize_.kind) {
         case QuoteReward::Kind::RigGrant: {
-            // Free, but otherwise exactly a purchase: grantRigLevel is the same call
+            // Free, but otherwise a purchase: grantRigLevel is the same call
             // buyRigUpgrade makes once it has taken the Bits, so a granted Bandwidth
             // level tops the live pool up the way a bought one does.
             const int row = rigRowIndexById(cryptogramPrize_.id);
@@ -232,8 +232,8 @@ void Game::finishCryptogram() {
         finishArcadeRun(cryptogram_.solved(), cryptogram_.score(), cryptogram_.maxScore());
         return;
     }
-    // Back to the VAULT the ticket was cashed at: the one screen that can say whether
-    // there is another Decryptogram to spend.
+    // Back to the VAULT the ticket was cashed at, which shows whether another
+    // Decryptogram is left.
     nav_ = Nav::Submenu;
     dirty_ = true;
 }
@@ -255,8 +255,8 @@ const char* Game::cryptogramPrizeLabel() const {
             return d ? d->displayName : nullptr;
         }
         case QuoteReward::Kind::Recipe: {
-            // The recipe's own name, not the dish's: what is being won is the METHOD,
-            // and the board should say so while the stake is still riding.
+            // The recipe's name, because the prize is the method, and the board names
+            // it while the run is live.
             const int i = recipeIndexByOutput(cryptogramPrize_.id);
             return i >= 0 ? kMergeRecipes[i].displayName : nullptr;
         }

@@ -15,11 +15,11 @@
 // game_rig_shop.h) that flips the MRG carousel slot accessible
 // (Game::hackerSlotAccessible, which drawHackerCarousel's accessible mask is built from).
 //
-// The RECIPES cooked in it are not for sale at any price: each is won off a first
-// solve on the DECRYPTOGRAM (game_cryptogram.cpp's prize ladder), and owning one is
-// necessary but not sufficient to craft. The raw ingredients still have to be in the
-// bag. Ownership is a bit per recipe wire in recipesOwned_ (save v31's recipesUnlocked
-// bitset, save v51), which this file is the only writer of.
+// Its recipes cannot be bought. Each is won by a first solve on the DECRYPTOGRAM
+// (game_cryptogram.cpp's prize ladder), and crafting also needs the ingredients. The
+// raw ingredients still have to be in the bag. Ownership is a bit per recipe wire in
+// recipesOwned_ (save v31's recipesUnlocked bitset, save v51), which this file is the
+// only writer of.
 //
 // So this file owns cooking end to end: the ownership bit, the craft mechanic over
 // MergeRecipe (core/content/content_recipes.h), and the screen body.
@@ -155,8 +155,8 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
         const bool owned = recipeOwned(i);
 
         // Title. LOCKED (the recipe hasn't been won off a Decryptogram yet) is a
-        // genuinely different state from "missing ingredients", and it is the state the
-        // row cannot lose: the dish name yields to it and scrolls when focused.
+        // separate state from missing ingredients and always shows: the dish name
+        // yields to it and scrolls when focused.
         drawLabelValue(fb, kMargin, rowY, r.displayName,
                        sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
                        owned ? "" : "LOCKED", palColor(Pal::INK_DIM), beat_, scrollWhen(sel));
@@ -180,8 +180,7 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
         } else if (owned) {
             // Folded rows still carry a second, dimmer line: a stocked count rather
             // than the full ingredient breakdown, so the row keeps the shop's
-            // bold-title/dim-detail shape without reopening the overflow the
-            // accordion exists to avoid.
+            // bold-title/dim-detail shape without overflowing.
             int total = 0, satisfied = 0;
             for (const RecipeInput& in : r.inputs) {
                 if (!in.id) continue;
