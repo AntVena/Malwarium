@@ -7,11 +7,10 @@
 // a player on a device with no achievement browser.
 //
 // The catalogue itself is data (content/content_achievements.cpp) and the set sizes its
-// kGoalAll rows measure against are a pure helper (app/game_achievements.h), so what
-// lives here is strictly the player's side of it: how far along they are, and what to do
-// when a row lands. Adding an achievement touches none of this file; adding a new PROGRESS
-// SOURCE is one case in achValue(), and a new REWARD is one case in
-// applyAchievementRewards().
+// kGoalAll rows measure against are a pure helper (app/game_achievements.h), so this file
+// holds only the player's side: how far along they are, and what to do when a row lands.
+// Adding an achievement touches none of this file; adding a new PROGRESS SOURCE is one
+// case in achValue(), and a new REWARD is one case in applyAchievementRewards().
 //
 // The handful of rows that can't be swept (AchSeries::Event. The moment leaves no
 // counter behind) are fired by hand from wherever they happen: hatch/evolution →
@@ -84,8 +83,8 @@ bool Game::petAteFood(const char* id) const {
 
 void Game::markFoodEaten(const ItemDef& d) {
     // Foods only. The palate is what the pet has EATEN, and the grid it feeds shows the
-    // kitchen: a Backup Drive is used, not tasted, and would read as a gap that can
-    // never be filled by cooking.
+    // kitchen: a Backup Drive is used without being eaten, so it would leave a gap
+    // cooking can never fill.
     if (itemCategory(d) != ItemDef::Category::Food) return;
     ensureFavouriteFood();
     if (!upgrades_.favouriteFound && upgrades_.favouriteFood == &d) {
@@ -177,9 +176,8 @@ bool Game::hasAchievement(const char* id) const {
 
 void Game::unlockAchievement(const char* id) {
     const AchievementDef* d = achievementById(id);
-    // An unknown id is a call site naming a row that no longer exists. Nothing to do but
-    // ignore it: the native gate is what catches the typo, not a runtime crash on a
-    // device someone is carrying around.
+    // An unknown id is a call site naming a row that no longer exists. Ignore it. The
+    // native gate catches the typo, so a device in the field never crashes on it.
     if (!d || achBit(achEarned_, d->wire)) return;   // unknown / already earned
     setAchBit(achEarned_, d->wire);
     applyAchievementRewards(*d);
@@ -210,7 +208,7 @@ void Game::applyAchievementRewards(const AchievementDef& d) {
                 break;
             case AchievementReward::Kind::Item:
                 // Straight into the bag: a Commendation Cache is opened from the VAULT
-                // when the player chooses, so nothing here interrupts what they are doing.
+                // when the player chooses, so nothing here interrupts the player.
                 if (r.id && registry_.item(r.id)) inventory_.add(r.id, r.magnitude);
                 break;
         }
@@ -302,8 +300,8 @@ int Game::achValue(const AchievementDef& d) const {
             return n;
         }
         case AchSeries::RigCappedLevels: {
-            // Capped rows only, and clamped to each row's cap: an uncapped row (or an
-            // over-bought one) must not be able to stand in for a row never touched.
+            // Capped rows only, and clamped to each row's cap: an uncapped or
+            // over-bought row cannot make up for a row never touched.
             int n = 0;
             for (int i = 0; i < kRigUpgradeCount; ++i) {
                 const int cap = kRigUpgrades[i].maxLevel;
@@ -355,10 +353,10 @@ int Game::achValue(const AchievementDef& d) const {
         case AchSeries::RackHeld:
             return rackCount();
         // The four COLLECTION reads of the same shelf. All of them walk the rack rather
-        // than a tally, because every one is a live "at once" fact: a released pet has
-        // to take its contribution with it. The walks are O(n^2) in the rack, which is a
-        // container that tops out at 64 entries and is only read on the achievement
-        // sweep; a set worth allocating would cost more than it saves.
+        // than a tally, because each is an "at once" fact, and a released pet takes its
+        // contribution with it. The walks are O(n^2) in the rack, which is a container
+        // that tops out at 64 entries and is only read on the achievement sweep; a set
+        // worth allocating would cost more than it saves.
         case AchSeries::RackSpecies: {
             int n = 0;
             for (size_t i = 0; i < rack_.size(); ++i) {
@@ -489,10 +487,10 @@ void Game::dismissAchievementBanner() {
 void Game::tickAchievementBanner() {
     // Retire the banner on screen, marking everything it spoke for as announced. Only
     // here: a banner that was never shown is never marked, so an unlock earned during a
-    // fight waits for the player to come home rather than being spent on nobody.
-    // A HELD banner has no deadline. It waits for dismissAchievementBanner(), so the
-    // retire below must not see it. Everything after that point is unchanged: one at a
-    // time, and only while the player is actually looking at the home screen.
+    // fight waits until the player is home. A HELD banner has no deadline. It waits for
+    // dismissAchievementBanner(), so the retire below must not see it. Everything after
+    // that point is unchanged: one at a time, and only while the player is actually
+    // looking at the home screen.
     if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_ && !achBannerHeld()) {
         if (achBannerCount_ > 1) {
             for (int i = 0; i < kAchievementCount; ++i)
@@ -512,10 +510,9 @@ void Game::tickAchievementBanner() {
     if (face_ != Face::Pet || nav_ != Nav::Idle) return;
     const int pending = achPendingNotify();
     if (pending == 0) return;
-    // A burst too long to parade past one at a time (a firmware update retro-awarding a
-    // back catalogue, most likely) collapses into a single "N ACHIEVEMENTS" banner, so
-    // the home screen isn't unusable for several minutes. Under the threshold they are
-    // announced properly, by name, one after another.
+    // A long burst (usually a firmware update awarding many at once) collapses into one
+    // "N ACHIEVEMENTS" banner so the home screen stays usable. Under the threshold they
+    // are announced properly, by name, one after another.
     if (pending > kAchBannerBurstMax) {
         achBannerWire_ = -1;
         for (int i = 0; i < kAchievementCount; ++i) {

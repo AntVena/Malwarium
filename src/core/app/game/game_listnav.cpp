@@ -8,10 +8,9 @@
 // lap of the table.
 //
 // The gate is Game::listFocus(): it names the list under the cursor right now, or None.
-// None is the important half: an inline confirm, a detail page, a modal or a minigame
-// all answer None, so C stays the instant tap-to-cancel there and nothing about those
-// screens changes. A screen joins the contract by gaining a case here, not by growing
-// its own stepping code.
+// An inline confirm, a detail page, a modal or a minigame answer None, so C stays an
+// instant cancel on them. A screen joins the contract by gaining a case here, not by
+// growing its own stepping code.
 
 #include "core/app/game.h"
 #include "core/app/game_internal.h"
@@ -54,8 +53,8 @@ Game::ListFocus Game::listFocus() const {
             case HackerSlotId::Shop:
                 // Two screens behind one slot, the shape CREW's views take: the
                 // storefront list, and the SERVICES switchboard its head slot opens.
-                // The info page is a READER: nothing on it is selected, so it takes
-                // no row contract and C stays the instant tap-to-back it is elsewhere.
+                // The info page is a reader with nothing selected, so it takes no row
+                // contract and C stays an instant back.
                 if (rigShop_.view() == ShopView::ServiceInfo) return ListFocus::None;
                 return rigShop_.view() == ShopView::Services ? ListFocus::HackerServices
                                                              : ListFocus::HackerShop;
@@ -77,9 +76,8 @@ Game::ListFocus Game::listFocus() const {
 
     if (nav_ == Nav::Submenu) {
         switch (enteredId()) {
-            // Only the INDEX is a list. The six pages behind it are READERS: nothing
-            // on them is selected, their A is "next page" rather than a row step, and
-            // their C is the tap-to-leave it is on every other reader.
+            // Only the INDEX is a list. The six pages behind it are readers: nothing
+            // is selected, A turns the page, and C leaves as on every reader.
             case SubmenuId::Stat:
                 return statScreen_ == StatScreen::Index ? ListFocus::StatIndex
                                                         : ListFocus::None;
@@ -88,9 +86,9 @@ Game::ListFocus Game::listFocus() const {
                                                           : ListFocus::ItemsList;
             // ARCH is two L2 screens now, the same shape ITEMS is above: the group
             // picker and the rows behind one group. Both are row lists and both want
-            // the hold-repeat, so both take the contract: separately, because C's tap
-            // means a different thing on each (out to the carousel vs back to the
-            // picker) and leaveFocusedList replays exactly that.
+            // the hold-repeat, so both take the contract, as separate cases because
+            // C's tap differs (out to the carousel, or back to the picker) and
+            // leaveFocusedList replays it.
             case SubmenuId::Arch:
                 return archScreen_ == ArchScreen::Picker ? ListFocus::ArchPicker
                                                          : ListFocus::ArchList;
@@ -128,11 +126,10 @@ Game::ListFocus Game::listFocus() const {
         }
     }
 
-    // The CHAPTERS archive is a row list wearing a Nav of its own: it grows with the
-    // ladder, so it takes the shared cursor rather than leaving a long list to be
-    // tapped across. The chapter READER beside it does not: nothing on that page is
-    // selected, its B is "next window" rather than a row step, and its C is the
-    // tap-to-leave every other reader's is.
+    // The CHAPTERS archive is a row list with its own Nav. It grows with the ladder,
+    // so it takes the shared cursor and its hold-repeat. The chapter READER beside
+    // it does not: nothing on that page is selected, its B is "next window" rather
+    // than a row step, and its C is the tap-to-leave every other reader's is.
     if (nav_ == Nav::StoryArchive) return ListFocus::StoryArchive;
     return ListFocus::None;
 }
@@ -300,8 +297,8 @@ bool Game::tickListNav() {
     }
 
     // C's backward walk. Crossing kListRepeatDelayMs is what turns the press from a tap
-    // into a hold, so the first backward step and the decision "this is not a cancel"
-    // are the same event: listBackStepped_ latches it for the release edge.
+    // into a hold, so the first backward step and the decision that this is not a
+    // cancel happen together: listBackStepped_ latches it for the release edge.
     if (cHeld_ && listFocus() != ListFocus::None &&
         nowMs_ - cDownMs_ >= kListRepeatDelayMs &&
         nowMs_ - listBackRepeatLastMs_ >= kListRepeatMs) {

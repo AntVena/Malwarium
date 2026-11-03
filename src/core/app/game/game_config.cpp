@@ -56,8 +56,8 @@ void Game::enterCfgScreen(CfgScreen target) {
 }
 
 // Leave the current L3: back to its group screen if it has one (a radio toggle
-// returns to RADIO, not to the top of CFG), otherwise out to the list. Applying a
-// setting exits the same way, so B and C land in the same place.
+// returns to RADIO), otherwise out to the list. Applying a setting exits the same
+// way, so B and C land in the same place.
 void Game::leaveCfgScreen() {
     const CfgScreen parent = cfgParentGroup(cfgScreen_);
     if (parent == cfgScreen_) { nav_ = Nav::Submenu; return; }
@@ -244,11 +244,11 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             } else if (ev.button == Button::C) leaveCfgScreen();  // no change
             break;
         case CfgScreen::Background:
-            // A walks EVERY row, locked ones included: the line under the header names
-            // what the focused row is earned by, so walking the ones you have not got is
-            // the whole way the economy is taught. B uses the focused row and backs out;
-            // on a locked row setBackgroundPick refuses and the screen simply stays,
-            // which is the row's own LOCKED tag answering rather than a second modal.
+            // A walks every row, locked ones included, because the line under the header
+            // names how the focused row is earned. That is how the screen teaches the
+            // economy. B uses the focused row and backs out; on a locked row
+            // setBackgroundPick refuses and the screen simply stays, which is the row's
+            // own LOCKED tag answering rather than a second modal.
             if (ev.button == Button::A)
                 cfgBgPick_ = (cfgBgPick_ + 1) % (kBackgroundCount + 1);
             else if (ev.button == Button::B) {
@@ -289,9 +289,9 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             break;
         case CfgScreen::Update:
             // Three faces on one screen: the row list, the yes/no confirm an
-            // install row opens, and a job's progress. Leaving deliberately does
-            // NOT cancel a job: it holds the radio itself, so a download runs to
-            // the end and the outcome is waiting here on the way back.
+            // install row opens, and a job's progress. Leaving does not cancel a
+            // job. The job holds the radio, so a download finishes and its
+            // outcome waits here.
             if (updateJobLive() || installStatus_.state != InstallState::Idle) {
                 if (ev.button == Button::C) {
                     // Only a finished job's report is cleared on the way out; a live
@@ -332,7 +332,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
                     case UpdateRowKind::FlashQr:
                         // Needs no radio and no network: the code is drawn from an
                         // address this device already holds, so it opens even when a
-                        // check cannot run, which is when it is most wanted.
+                        // check cannot run.
                         if (updateSourceKnown_) {
                             cfgScreen_ = CfgScreen::UpdateQr;
                             dirty_ = true;
@@ -372,8 +372,8 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
 
 void Game::executeFactoryReset() {
     // The two scopes differ in exactly what the screen promises. RESET PET lays a
-    // fresh egg over the same operator: resetToHatch() leaves every player-level
-    // tally standing, which IS "keeps 'Pedia progress". WIPE EVERYTHING clears that
+    // fresh egg over the same operator: resetToHatch() keeps every player-level
+    // tally, which is how 'Pedia progress survives. WIPE EVERYTHING clears that
     // standing state first, so the reset that follows lands on a device with no
     // history. Order matters: the wipe runs BEFORE resetToHatch, so the fresh egg it
     // lays is tallied as raised (a wiped device still knows its own current pet).
@@ -437,7 +437,7 @@ bool Game::setThemePick(int index) {
     if (index < 0 || index >= kPalThemeCount) index = 0;
     // A set nobody has unlocked is not applied, and index 0 always is, so a save
     // naming a set this device has not earned (a chip removed from the tables, a blob
-    // from another device) lands on base rather than on nothing.
+    // from another device) falls back to base.
     int row = -1;
     for (int i = 0; i < kThemeCount; ++i)
         if (palThemeByName(kThemes[i].palette) == index) { row = i; break; }
@@ -664,9 +664,8 @@ bool Game::backgroundOwned(SceneId s) const {
         case BackgroundSource::Bracket:
             return tourneyWins_ >= b->rung;
         case BackgroundSource::Achieve:
-            // The achievement bitset is already on the save, so this is the same
-            // derivation the other three are: one more question asked of state that
-            // was written down for its own reasons.
+            // The achievement bitset is already saved, so this is derived the same
+            // way as the other three.
             return b->earnedById && hasAchievement(b->earnedById);
     }
     return false;
@@ -684,9 +683,9 @@ bool Game::setBackgroundPick(SceneId s) {
 }
 
 void Game::announceBackground(SceneId s) {
-    // Ownership is DERIVED, so "just earned" is not a state anything holds: it is only
-    // knowable by asking before the thing that grants it moves and again after. Each of
-    // the three callers does that; this is only the saying-so.
+    // Ownership is derived, so nothing stores "just earned". It is found by asking
+    // before and after the grant. Each of the three callers does that; this is only the
+    // saying-so.
     const BackgroundDef* b = backgroundFor(s);
     if (!b) return;
     char line[28];

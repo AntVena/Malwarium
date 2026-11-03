@@ -2,16 +2,15 @@
 // buy flow (part of the Game unit split, core/app/game.h).
 //
 // Both storefronts an area owns run through here (its item shop and its mod shop),
-// because the difference between them is which registry resolves a listing id, not
-// how a shop behaves. The rows themselves belong to the area
-// (content/areas/area_defs.h's AreaStorefrontDef); this unit owns the visit: the
-// per-visit stock that refills on entry, the accessors the screen reads a row
-// through, and the purchase that spends Bits plus any item costs on the row.
+// because they differ only in which registry resolves a listing id. The rows
+// themselves belong to the area (content/areas/area_defs.h's AreaStorefrontDef);
+// this unit owns the visit: the per-visit stock that refills on entry, the
+// accessors the screen reads a row through, and the purchase that spends Bits plus
+// any item costs on the row.
 //
-// Split out of game_explore.cpp, which owns the walk: stepping, loot rolls, the
-// sub-area boss ladder. A shop is reached FROM an explore event and is otherwise
-// independent of it: nothing here reads the streak, the boss state or the step
-// counter.
+// game_explore.cpp owns the walk: stepping, loot rolls, the sub-area boss
+// ladder. A shop is reached FROM an explore event and is otherwise independent
+// of it: nothing here reads the streak, the boss state or the step counter.
 #include "core/app/game.h"
 
 #include <cstdio>
@@ -23,8 +22,8 @@ namespace mal {
 
 namespace {
 // Bounds-clamped: an out-of-range row (or no storefront entered yet) reads as
-// empty/zero rather than reading past the array. Callers loop 0..listingCount()
-// which already stays in range, but the accessors stay safe on their own.
+// empty or zero. Callers loop 0..listingCount() which already stays in range,
+// but the accessors stay safe on their own.
 bool shopRowInRange(const AreaStorefrontDef* front, int i) {
     return front && i >= 0 && i < front->listingCount;
 }
@@ -118,8 +117,8 @@ int Game::shopListingHeld(int i) const {
     if (!shopRowInRange(shopFront_, i)) return 0;
     const char* id = shopFront_->listings[i].id;
     // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
-    // (Loadout::grant): an installed mod was consumed and left the pool, so it is
-    // neither held nor in the way of holding another.
+    // (Loadout::grant): an installed mod left the pool, so it does not count
+    // against the cap.
     return shopIsModShop_ ? loadout_.countOf(id) : inventory_.count(id);
 }
 
@@ -127,8 +126,8 @@ int Game::shopListingHeldCap(int i) const {
     if (!shopRowInRange(shopFront_, i)) return 0;
     // Only mods have a ceiling: the MOD STORAGE rig row's allowance, the same one every
     // other grant site measures against. An inventory stack has none, so an item row
-    // reports 0: the screen reads that as "no HAVE column", and the buy gate as
-    // "nothing to be full of".
+    // reports 0: the screen then shows no HAVE column, and the buy gate never reports
+    // full.
     return shopIsModShop_ ? modStorageCap() : 0;
 }
 
@@ -138,9 +137,8 @@ const char* Game::shopRowRefusal(int i) const {
     if (shopStockLeft_[i] <= 0) return "SOLD OUT";
     // Storage before the wallet: a full mod pool is the one refusal Bits cannot answer,
     // so naming a price the player could meet would send them off to earn Bits that
-    // still would not buy this. The buy is refused OUTRIGHT rather than taken and
-    // dropped: Loadout::grant would return false and the Bits would be gone for a mod
-    // that never arrived.
+    // still would not buy this. The buy is refused up front, because Loadout::grant
+    // would return false after the Bits were spent.
     const int cap = shopListingHeldCap(i);
     if (cap > 0 && shopListingHeld(i) >= cap) return "STORAGE FULL";
     if (bits_ < def.bitsPrice) return "NOT ENOUGH BITS";
@@ -189,9 +187,9 @@ void Game::buyShopItem() {
 void Game::onShop(const ButtonEvent& ev) {
     // B buys the SELECTED row (while stock + wallet + item costs allow); C leaves
     // back to the idle habitat. A cycles the selection through every listing
-    // (wraps): a no-op, not an exit, on a single-listing storefront so a stray
-    // "Next" press can't drop the player out mid-shop. Any press restarts the
-    // hands-off hold so an engaged shopper isn't auto-left.
+    // (wraps): on a single-listing storefront it does nothing, so a stray Next
+    // press never exits the shop. Any press restarts the hands-off hold so an
+    // engaged shopper isn't auto-left.
     exploreEventBeat_ = 0;
     if (!shopFront_) return;
     if (ev.button == Button::A) {

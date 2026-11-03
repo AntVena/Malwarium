@@ -49,21 +49,21 @@ void formatDisplayName(const uint8_t* bssid, const char* ssid, char* out, size_t
 // Wi-Fi network event ------------------------------------------
 
 void Game::startWifiEvent() {
-    // Real-network discovery resolves FIRST, and what it found is what ROUTES the rest
-    // of this event. The two halves of this screen are ONE decision, not independent
-    // rolls: rolled apart, the event can announce a new network, say the pet wanted one,
-    // and then have a friend stop by. Three sentences about three different things. The
-    // sighting queue decides instead: something to resolve makes this the discovery beat,
-    // and an empty queue is what puts the area's GUARDIAN in front of the pet.
+    // Real-network discovery resolves FIRST, and what it found is what ROUTES the rest of
+    // this event. The two halves of this screen come from one roll. Separate rolls could
+    // announce a new network, say the pet wanted one, and then have a friend stop by.
+    // Three sentences about three different things. The sighting queue decides instead:
+    // something to resolve makes this the discovery beat, and an empty queue is what puts
+    // the area's GUARDIAN in front of the pet.
     resolveNetworkDiscovery();
 
     // A dry queue on the cadence beat: the guardian is standing there
-    // (game_shiboleet.cpp). Every Nth dry event, and NOT the first: arming a walk
-    // resets the streak (game_explore.cpp's startExplore), so summoning on the first
-    // miss would put a guardian at the head of every fresh walk and let re-arming farm
-    // them. Counting to N first also means a walk has to actually BE somewhere dry for
-    // a while before anything comes out to look at it, which is the fiction. The dry
-    // events between fall through to the ordinary sub-outcome below, so the walk's event
+    // (game_shiboleet.cpp). Every Nth dry event, never the first: arming a walk resets
+    // the streak (game_explore.cpp's startExplore), so summoning on the first miss would
+    // put a guardian at the head of every fresh walk and let re-arming farm them.
+    // Counting to N first also means a walk has to actually BE somewhere dry for a while
+    // before anything comes out to look at it, which is the fiction. The dry events
+    // between fall through to the ordinary sub-outcome below, so the walk's event
     // density is the same either way.
     if (netDiscovery_ == NetDiscovery::None &&
         emptyQueueStreak_ % kNetDiscoveryEmptyGuardianStrikes == 0) {
@@ -102,9 +102,9 @@ void Game::startWifiEvent() {
 }
 
 void Game::onWifi(const ButtonEvent& ev) {
-    // B plays out the rolled outcome; A/C are no-ops: it auto-resolves,
-    // there's no engage/flee choice here the way a wild encounter has one. Any press
-    // restarts the hands-off hold so a watching player isn't rushed.
+    // B plays out the rolled outcome; A/C are no-ops: it resolves itself, with no
+    // engage/flee choice. Any press restarts the hands-off hold so a watching player
+    // isn't rushed.
     exploreEventBeat_ = 0;
     if (ev.button == Button::B) resolveWifiOutcome();
 }
@@ -295,10 +295,9 @@ void Game::resolveNetworkDiscovery() {
         ++emptyQueueStreak_;
         netDiscoveryFlavor_[0] = '\0';
         netDiscovery_ = NetDiscovery::None;
-        // No penalty. A dry queue costs the pet nothing at all: walking somewhere with
-        // no new networks is a fact about the PLACE, and taxing Happiness for it would
-        // grind a long unmonitored walk down with nothing offered in exchange. The streak
-        // is still counted, because startWifiEvent reads it to decide when the guardian
+        // No penalty. A dry queue costs the pet nothing. An empty area is not the pet's
+        // fault, and a Happiness tax would drain a long unattended walk. The streak is
+        // still counted, because startWifiEvent reads it to decide when the guardian
         // appears: the beat that costs nothing is the beat that summons.
         return;
     }
@@ -311,8 +310,8 @@ void Game::resolveNetworkDiscovery() {
 
     NetworkLedger::Entry existing;
     if (!networkLedger_.lookup(picked.key, &existing)) {
-        // Genuinely new: the sole source of Hacker Rank XP + the Sealed-Cache
-        // discovery reward.
+        // New: the only source of Hacker Rank XP and the Sealed-Cache discovery
+        // reward.
         networkLedger_.recordNew(picked.key, picked.name);
         ++networksSeen_;
         // (Hatch acceleration already fired when this sighting was queued, in
@@ -342,10 +341,9 @@ void Game::resolveNetworkDiscovery() {
 
     // Repeat: familiar (outside your top favorites, still feeds the pet) vs.
     // home-turf (inside them: flat, no reward, nudges toward variety). The
-    // top-N check MUST run before recordSeenAgain: this visit's own count is
-    // about to grow, and checking after would compare it against a landscape
-    // where it just outgrew itself, self-defeating the "was this occasional
-    // UNTIL NOW" question for a network sitting exactly at the boundary.
+    // top-N check must run before recordSeenAgain. This visit's count is about
+    // to grow, and checking after would defeat the "was this occasional UNTIL
+    // NOW" question for a network sitting exactly at the boundary.
     const bool wasHomeTurf =
         networkLedger_.inTopN(picked.key, kNetDiscoveryTopFavoritesCount);
     networkLedger_.recordSeenAgain(picked.key, picked.name);
@@ -377,8 +375,8 @@ bool Game::registerHandshake(const uint8_t* bssid) {
     auditCapture_.noteHandshake(nowMs_);
     if (!handshakeLedger_.insert(packBssid(bssid))) return false;  // already credited this AP
     ++handshakesSeen_;
-    // A genuinely new captured handshake is the rarer, harder-earned event: a
-    // richer Sealed Cache than the plain-discovery reward above (no Common tier).
+    // A new captured handshake is rarer and harder to earn, so it pays a richer
+    // Sealed Cache than the plain-discovery reward above (no Common tier).
     rng_ = rng_ * 1664525u + 1013904223u;
     {
         const char* id = rollHandshakeCaptureCacheId(static_cast<int>((rng_ >> 16) % 100));

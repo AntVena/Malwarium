@@ -61,8 +61,8 @@ void Game::onButton(const ButtonEvent& ev) {
               : ev.button == Button::B ? Sound::KeyAccept
                                        : Sound::KeyBack);
     // The first press after a long quiet reports what happened meanwhile, and is spent
-    // on it: the pet's state may be nothing like what the player last saw, and the
-    // press they meant was decided against that older picture.
+    // on it, because the pet may have changed since the player last looked and their
+    // press was aimed at the old state.
     if (nav_ != Nav::AwayDigest && openAwayDigestIfDue(quietMs)) return;
     // A HELD announcement eats the first press, whatever it was. Only the NEW EGG LINE
     // banner holds (Game::achBannerHeld), and only on the home screen, where it is
@@ -75,9 +75,9 @@ void Game::onButton(const ButtonEvent& ev) {
         dismissAchievementBanner();
         return;
     }
-    // A+C is the reserved no-op stub everywhere pet-side EXCEPT combat: the one
-    // place the Exploit override is live. The early-out is bypassed
-    // only in the combat Nav state, which routes the chord to the override picker.
+    // A+C does nothing pet-side except in combat, where it opens the Exploit
+    // override. The early-out is bypassed only in the combat Nav state, which
+    // routes the chord to the override picker.
     if (ev.chordAC) {
         if (nav_ == Nav::Combat) onCombat(ev);
         // ROCK THE DOCK: the arena's BRIEFING. The chord is the device's one spare
@@ -91,19 +91,18 @@ void Game::onButton(const ButtonEvent& ev) {
         // the two meanings out itself (a letter held drops it; nothing held opens the
         // RULES page instead), since only it knows which stage the board is in.
         else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
-        // The other game engines have nothing else living on the chord, so it is
-        // always the RULES page here: open it, or close it if it's already up. The
-        // egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav straight
-        // out of layEgg with no menu stop) have no other route to this at all, and the
-        // CHROMATOPHORE needs it most: it is the one board whose three buttons are all
-        // spoken for, so the chord is the only press left that can explain them.
+        // Nothing else in these engines uses the chord, so it toggles the RULES page.
+        // The egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav
+        // straight out of layEgg with no menu stop) have no other route to this at all,
+        // and the CHROMATOPHORE needs it most: it is the one board whose three buttons
+        // are all spoken for, so the chord is the only press left that can explain them.
         else if (nav_ == Nav::Stacker || nav_ == Nav::Fragger || nav_ == Nav::Isolation ||
                  nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick ||
                  nav_ == Nav::Chroma)
             toggleGameBrief();
-        // Hacker face: A+C at the top level flips PET ↔ HACKER. On the HACKER
-        // face this takes priority so the player can ALWAYS return to the pet: nothing
-        // else claims the chord there (you can't explore/combat/hatch from it).
+        // Hacker face: A+C at the top level flips PET ↔ HACKER. On the Hacker face
+        // this takes priority so the player can always return to the pet; nothing else
+        // uses the chord there.
         else if (face_ == Face::Hacker && (nav_ == Nav::Idle || nav_ == Nav::Cursor))
             toggleFace();
         // Explore-control chord: while explore-mode is running, A+C on the
@@ -124,8 +123,9 @@ void Game::onButton(const ButtonEvent& ev) {
         else if (hatchRevealReady()) openHatchReveal();
         // Otherwise (pet face, idle/cursor, not exploring, past the egg phase): flip to
         // the Hacker face. The lowest-priority top-level action, so the existing chord
-        // meanings above are all preserved. An egg's A+C stays the hatch exploit only:
-        // the operator face belongs to a raised pet (and stays inert in the first half).
+        // meanings above are all preserved. An egg's A+C is only the hatch exploit,
+        // because the operator face belongs to a raised pet (and the chord does nothing
+        // in the first half).
         else if ((nav_ == Nav::Idle || nav_ == Nav::Cursor) && !inEggPhase())
             toggleFace();
         return;
@@ -149,9 +149,9 @@ void Game::onButton(const ButtonEvent& ev) {
 
     switch (nav_) {
         case Nav::Idle:
-            // B cracks the egg once its clock is nearly out: the one idle action
-            // for an egg, and the same thing the A+C chord does. A/C still summon the
-            // carousel (an egg can still be carried around / walked to hatch faster).
+            // B cracks the egg once its clock is nearly out, like the A+C chord. It
+            // is an egg's only idle action. A/C still summon the carousel (an egg can
+            // still be carried around / walked to hatch faster).
             if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
             // A failing pet with a cookie that would save it: B feeds it, as the
             // habitat's FAILING banner says. Nothing else at idle is on B.
@@ -275,16 +275,15 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Decryption: onDecryption(ev); break;
         case Nav::Cryptogram: onCryptogram(ev); break;
         case Nav::ModalHatchReveal:
-            // The crack cinematic runs itself and hatches off the end: every button is
-            // inert for its ~2 seconds, so a stray press can't skip the one animation
-            // the screen exists to show.
+            // The crack cinematic runs by itself and hatches at the end. Every button
+            // is inert for its ~2 seconds so a stray press cannot skip it.
             break;
         case Nav::ModalEggPick:
             // Clutch Pick: A and C AIM at the first/second half of the clutch (left/top
-            // vs right/bottom, whichever way this round cuts) and B commits that half,
-            // so C is not "back" here either, and the modal can't be cancelled out of.
-            // The RULES overlay (opened on the chord, above) is the one exception: while
-            // it's up, B/C read as its scroll/close instead, same as every other engine.
+            // vs right/bottom, whichever way this round cuts) and B commits that half. C
+            // is not back here, and the modal cannot be cancelled. The RULES overlay
+            // (opened on the chord, above) is the one exception: while it's up, B/C read
+            // as its scroll/close instead, same as every other engine.
             if (onGameBriefInput(ev)) break;
             if (ev.button == Button::A) eggPickAim(false);
             else if (ev.button == Button::C) eggPickAim(true);
@@ -292,8 +291,8 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::ModalEvolve:
             // B continues once the reveal is up; A is a no-op and C is
-            // disabled (nothing to cancel: the evolution already happened). The
-            // A+C chord is the reserved no-op stub, already filtered above.
+            // disabled, because the evolution already happened. The A+C chord
+            // is the reserved no-op stub, already filtered above.
             if (ev.button == Button::B && evolveRevealed()) completeEvolution();
             break;
         case Nav::ModalCSF:
@@ -380,8 +379,8 @@ void Game::dropCursor() {
 
 bool Game::slotLocked(SubmenuId id) const {
 #ifdef MALWARIUM_DEMO
-    // CFG is Wi-Fi join / update install / SD mount / Factory Reset: nothing a
-    // browser can act on, and a reset that would wipe the demo (demo_config.h).
+    // CFG is Wi-Fi join / update install / SD mount / Factory Reset: a browser
+    // can do none of them, and a reset would wipe the demo (demo_config.h).
     if (id == SubmenuId::Cfg) return true;
 #endif
     if (!inEggPhase()) return false;
@@ -390,13 +389,13 @@ bool Game::slotLocked(SubmenuId id) const {
         case SubmenuId::Maint:
         case SubmenuId::Mods:
         case SubmenuId::Expl:
-            // Explore-mode is unavailable to a Boot-Sector egg: an egg
-            // can't fight, so it can't explore (nor equip or maintain). The
-            // old walk-to-accelerate-hatch path retires with the Walk screen; the
-            // egg still hatches on its incubation clock + the Wi-Fi network accel.
-            // GAMES is locked with them: the arcade pays a pet in Bits and
-            // Happiness, and an egg is neither playing nor able to bank either. Its
-            // own hatch minigame reaches it from the habitat, not from here.
+            // A Boot-Sector egg cannot fight, so it cannot explore, equip or
+            // maintain. The old walk-to-accelerate-hatch path retires with the Walk
+            // screen; the egg still hatches on its incubation clock + the Wi-Fi
+            // network accel. GAMES is locked with them: the arcade pays a pet in
+            // Bits and Happiness, and an egg is neither playing nor able to bank
+            // either. Its own hatch minigame reaches it from the habitat, not from
+            // here.
             return true;
         default:
             // STAT + ITEMS (quest-only) + ARCH/CFG stay reachable for an egg.

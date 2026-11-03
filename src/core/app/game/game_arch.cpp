@@ -2,11 +2,10 @@
 // screens that drive it (part of the Game unit split, core/app/game.h).
 //
 // ARCH is cold storage for pets. The rack holds live pets frozen mid-lifecycle
-// (every stat they went down with comes back with them), while the RECORD rows below
-// it are read-only headstones for pets that retired or corrupted. Freezing and
-// thawing are the whole subsystem: what a rack slot must carry is exactly what
-// PetModel cannot be rebuilt without, which is why freezePet lives here rather than
-// on the model.
+// (every stat comes back on thaw). The RECORD rows below are read-only entries for
+// pets that retired or corrupted. Freezing and thawing are the whole subsystem: what
+// a rack slot must carry is exactly what PetModel cannot be rebuilt without, which
+// is why freezePet lives here rather than on the model.
 //
 // Split out of game_config.cpp, which owns navigating the CFG screens; a rack is
 // storage, not a setting, and the two only ever met because both hang off the same
@@ -33,8 +32,8 @@ ArchRow Game::archFocusedRow() const {
 
 void Game::onArchPicker(const ButtonEvent& ev) {
     // The L2 group picker: NEW EGG, ACTIVE, one row per creature family, RECORDS. A
-    // walks (wraps), B opens, C backs out: the ITEMS type-picker's gestures exactly,
-    // because they are the same screen doing the same job one level up.
+    // walks (wraps), B opens, C backs out: the ITEMS type-picker's gestures, because
+    // this is the same kind of screen one level up.
     const auto tiles = buildArchPickerRows(registry_, pet_, rack_, records_);
     const int n = static_cast<int>(tiles.size());
     if (n <= 0) { if (ev.button == Button::C) nav_ = Nav::Cursor; return; }
@@ -47,8 +46,8 @@ void Game::onArchPicker(const ButtonEvent& ev) {
         archConfirm_ = false;
         archConfirmChoice_ = 0;
         // NEW EGG is an ACTION, so it opens its own L3 confirm rather than a list. An
-        // EMPTY group still opens: the list says "- NOTHING HERE -" and C walks back,
-        // which reads better than a dead button on a row the screen just drew.
+        // empty group still opens, showing "- NOTHING HERE -", so B never does
+        // nothing on a row the screen drew.
         if (archGroup_.kind == ArchGroup::Kind::NewEgg) {
             nav_ = Nav::Detail;
         } else {
@@ -58,16 +57,16 @@ void Game::onArchPicker(const ButtonEvent& ev) {
                                                                      : ArchAction::Deploy;
         }
     } else if (ev.button == Button::C) {
-        // With no active pet the carousel is not somewhere to be: the player is between
-        // a Store and the egg that follows it, and the only two rooms are this one and
-        // line-select. C returns to the choice rather than out to a habitat with nothing
-        // living in it (the mirror of the modal's own C, game_nav.cpp).
+        // With no active pet there is no carousel. The player is between a Store and the
+        // next egg, and can be only here or on line-select. C returns to the choice
+        // rather than out to a habitat with nothing living in it (the mirror of the
+        // modal's own C, game_nav.cpp).
         //
         // startHatch() rather than a nav_ poke, because it is the same call that put the
         // player here and re-derives what is on offer. It cannot lay an egg by surprise:
         // it only skips straight to layEgg with ONE unlocked line, and with one line
-        // there is no line-select to have been backed out of, so this state is
-        // unreachable unless the modal was up, which means two or more.
+        // there is no line-select to have been backed out of, so this state needs the
+        // modal, which means two or more lines.
         if (!pet_ && !rack_.empty()) startHatch();
         else nav_ = Nav::Cursor;
     }
@@ -98,10 +97,9 @@ void Game::onArchList(const ButtonEvent& ev) {
 }
 
 void Game::archHatchNewEgg() {
-    // The NEW EGG row's commit. With a pet to set aside this IS archStoreActive: the
-    // freeze and the hatch are one act, and always were; the row just stopped hiding it
-    // behind a pet's record. With no pet (the two-room state after a Store) there is
-    // nothing to freeze and the egg is laid outright.
+    // The NEW EGG row's commit. With a pet to set aside this is archStoreActive: the
+    // freeze and the hatch are one act. With no pet (the two-room state after a Store)
+    // there is nothing to freeze and the egg is laid outright.
     archConfirm_ = false;
     archScreen_ = ArchScreen::Picker;
     if (pet_) archStoreActive();
@@ -253,8 +251,8 @@ void Game::noteRackDuplicates() {
     // The unlock it gates (the Worm egg line, Game::eggLineUnlocked) is therefore an
     // earned BIT rather than a live read of the rack: releasing one of the pair later
     // must not take the line back off line-select. archStoreActive calls this before
-    // startHatch() for the same reason in the other direction: the freeze that earns
-    // the line is usually the one whose line-select should already be offering it.
+    // startHatch() for the same reason: the freeze that earns a line is usually the
+    // one whose line-select should offer it.
     for (size_t i = 0; i + 1 < rack_.size(); ++i)
         for (size_t j = i + 1; j < rack_.size(); ++j)
             if (std::strcmp(rack_[i].id, rack_[j].id) == 0) {
@@ -274,10 +272,9 @@ void Game::archStoreActive() {
                                nowMs_ - stageEnteredMs_, bestDeepWebDepth_,
                                dyingElapsedMs_, upgrades_, petFoodsEaten_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
-    // ...and the shelf with nothing free left on it. Fired at the freeze rather than
-    // swept off a count, because "full" is a comparison against rackSlots() (a ceiling
-    // the player buys), so there is no fixed rung to hold it to, and a slot bought
-    // afterwards must not read as the row having come undone.
+    // ...and the shelf with nothing free left on it. Fired at the freeze instead of
+    // swept off a count, because "full" compares against rackSlots(), which the player
+    // can raise. A slot bought later must not un-earn the row.
     if (static_cast<int>(rack_.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
     archConfirm_ = false;
     listRow_ = 0;
@@ -290,10 +287,10 @@ void Game::archDeployStored(int storedIdx) {
     // Slot-neutral swap: the deployed pet becomes active; the current active freezes into
     // the slot it vacated.
     //
-    // With NO active pet the swap is a plain thaw and the slot is FREED instead: the
-    // state a player is in between an ARCH Store and the egg that follows it, now that
-    // line-select can be backed out of (game_nav.cpp). There is nothing to freeze into
-    // the slot, and leaving the pet's own frozen copy behind would duplicate it.
+    // With no active pet the swap is a plain thaw and the slot is freed. That happens
+    // between an ARCH Store and the next egg, because line-select can be backed out of
+    // (game_nav.cpp). There is nothing to freeze into the slot, and leaving the pet's
+    // own frozen copy behind would duplicate it.
     const SaveStoredPet incoming = rack_[storedIdx];
     const CreatureDef* next = registry_.creature(incoming.id);
     if (!next) return;                              // unknown id: abort the swap
@@ -316,13 +313,13 @@ void Game::archDeployStored(int storedIdx) {
     model_.setGhost(incoming.ghost != 0);
     generation_ = incoming.generation;
     defragCount_ = incoming.defragCount;            // thaw the defrag tally
-    // The USB port empties on a pet swap. It is NOT frozen with either pet (a device is
-    // plugged into the rig, not into the creature), but it steers a boundary the incoming
-    // pet is standing at a different distance from, and a soak is Process-only by gate
-    // (Game::itemUsable), which a swap would otherwise walk straight around. Emptying is
-    // the honest reading of both: what was plugged in was plugged in for the pet that has
-    // just gone into the rack. The hold included, which is also the way out of a pet
-    // parked at a stage by a player who has no Eject-USB to hand.
+    // The USB port empties on a pet swap. It is not frozen with either pet, because a
+    // device is plugged into the rig, but it steers a boundary the incoming pet is
+    // standing at a different distance from, and a soak is Process-only by gate
+    // (Game::itemUsable), which a swap would otherwise walk straight around. Emptying
+    // fits both cases: the device was plugged in for the pet that just went into the
+    // rack. The hold included, which is also the way out of a pet parked at a stage by a
+    // player who has no Eject-USB to hand.
     clearUsbPort();
     // The incoming pet's own palate. A food the build no longer has is dropped, the way
     // applySave drops one.
@@ -351,10 +348,10 @@ void Game::archDeployStored(int storedIdx) {
     for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = incoming.statPoints[i];
     for (int i = 0; i < kMaxMoveSlots; ++i)
         slotKinds_[i] = static_cast<SlotKind>(incoming.slotKinds[i]);
-    // The incoming pet's own move + mod loadout: has-a, not shared. Empty
-    // ownedMoves marks a pre-v29 stored pet with no recorded move state, so it
-    // seeds its line's starting kit instead. The mod SPARE pool stays untouched
-    // (player-level, like the ITEMS inventory), only the installed slots are per-pet.
+    // The incoming pet's own move + mod loadout: has-a, not shared. Empty ownedMoves
+    // marks a pre-v29 stored pet with no recorded move state, so it seeds its line's
+    // starting kit instead. The spare mod pool is player-level, like the ITEMS
+    // inventory, and stays; only the installed slots are per pet.
     if (!incoming.ownedMoves.empty()) {
         moveLoadout_ = MoveLoadout{};
         for (const auto& mv : incoming.ownedMoves)
@@ -387,9 +384,9 @@ void Game::archDeployStored(int storedIdx) {
 }
 
 void Game::archReleaseStored(int storedIdx) {
-    // A no-reward Release valve: drop a stored pet from the rack entirely to
-    // free a slot (e.g. a full rack of non-Daemon pets that can't be Sold). Leaves no
-    // record (a plain release, not a CSF/sale): the pet is simply gone.
+    // A no-reward Release valve: drop a stored pet from the rack entirely to free a
+    // slot (e.g. a full rack of non-Daemon pets that can't be Sold). Leaves no
+    // record: a plain release, unlike a CSF or a sale.
     if (storedIdx < 0 || storedIdx >= static_cast<int>(rack_.size())) return;
     rack_.erase(rack_.begin() + storedIdx);
     archConfirm_ = false;

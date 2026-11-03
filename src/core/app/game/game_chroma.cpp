@@ -27,7 +27,7 @@
 // THE SAME COLOUR TWICE. A skin is one PAL_CORE token used for both halves of the
 // match: camoRampFromTone builds the water's tones AND the palette FX_CAMO repaints the
 // creature in, so "wearing it" is literally the same ramp on both, and a retune of the
-// hue can never desynchronise the two. What it costs is one call: the pet is drawn with
+// hue can never desynchronise the two. It costs one call: the pet is drawn with
 // drawSpriteCamo instead of drawSpriteUpscaled, and the level it is drawn at is the
 // model's own settle (Chromatophore::wearPct) rather than a second animation clock, so
 // the scatter crawling across the creature IS the thing the sweep is about to score.
@@ -47,8 +47,8 @@ namespace mal {
 
 namespace {
 
-// One skin: the colour it is, and what it is called. INDEX-addressed, because that is
-// what the model deals in: kSkins[i] is the whole mapping from a rule to a screen.
+// One skin: the colour it is, and what it is called. Indexed, as the model is:
+// kSkins[i] maps a rule to a screen.
 struct Skin {
     Pal tone;
     const char* name;
@@ -64,8 +64,7 @@ static_assert(sizeof(kSkins) / sizeof(kSkins[0]) == kChromaSkins,
 
 // The water, and the three chips under it. Named for what it is rather than as a panel,
 // since canvas.h already owns kPanelW/kPanelH for the physical display. Drawn at native
-// active res like every other piece of chrome: nothing here is art, so there is no cell
-// grid to keep whole.
+// active res like other chrome, because nothing here is art with a cell grid to keep.
 constexpr int kWaterX = 16;
 constexpr int kWaterY = 46;
 constexpr int kWaterW = kActiveW - 2 * kWaterX;   // 192
@@ -97,9 +96,9 @@ CamoRamp skinRamp(int skin) {
 }
 
 // The water, in one skin. The fill is the ramp's own mid tone and the texture is drawn
-// out of the same ramp, so a plate is never anything but the colour it claims to be,
-// and the PATTERN is what carries the skin once the hue is gone: weed runs vertical,
-// seabed grains stipple, a bloom drifts in horizontal bands.
+// out of the same ramp, so a plate only ever shows its own colour, and the pattern
+// identifies the skin without hue: weed runs vertical, seabed grains stipple, a bloom
+// drifts in horizontal bands.
 void drawPlate(Framebuffer& fb, int skin, const CamoRamp& ramp) {
     fb.fillRect(kWaterX, kWaterY, kWaterW, kWaterH, ramp.tone[ramp.count / 2]);
     const Rgb565 dark = ramp.tone[0];
@@ -166,8 +165,8 @@ void Game::startChroma(int rounds, int windowMs, bool switching) {
 void Game::onChroma(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
     if (!chroma_.running()) {
-        // Parked on the result. B banks and leaves; C is DISABLED, like every other
-        // hatch screen: there is no pet to go back to, only an egg to get on with.
+        // Parked on the result. B banks and leaves. C is disabled, as on every
+        // hatch screen, because there is no pet to go back to.
         if (ev.button == Button::B) finishChroma();
         return;
     }
@@ -185,9 +184,8 @@ void Game::onChroma(const ButtonEvent& ev) {
 
 void Game::finishChroma() {
     // An arcade run has no clock to spend the passes on: the till takes the score and
-    // that is the whole settlement. The cabinet run is ENDLESS, so it has no clean() to
-    // report: a win is passing the till's own line (kArcadeChromaWinPasses), which the
-    // score is free to go well past.
+    // that is the whole settlement. The cabinet run is endless, so it has no clean()
+    // result. A win is reaching kArcadeChromaWinPasses, and the score can go past it.
     if (arcadeRun_) {
         finishArcadeRun(chroma_.passes() >= kArcadeChromaWinPasses, chroma_.passes(),
                         kArcadeChromaWinPasses);
@@ -251,10 +249,10 @@ void Game::drawChroma(Framebuffer& fb) const {
         fb.clearClip();
     }
 
-    // The sweep, over everything in the water: it is looking AT the creature, so it
-    // cannot pass behind it. Held at the far edge once the run is over, where it stands
-    // as the reason the verdict says what it says. Clipped to the water, because a
-    // search light spilling onto the chrome either side would read as part of the
+    // The sweep is drawn over everything in the water, because it looks at the creature
+    // and cannot pass behind it. Held at the far edge once the run is over, where it
+    // stands as the reason the verdict says what it says. Clipped to the water, because
+    // a search light spilling onto the chrome either side would read as part of the
     // frame rather than as something moving through the scene.
     const int sweepX = kWaterX + (kWaterW - kSweepW) * chroma_.sweepPct() / 100;
     fb.setClip(kWaterX, kWaterY, kWaterW, kWaterH);
@@ -269,9 +267,8 @@ void Game::drawChroma(Framebuffer& fb) const {
     fb.clearClip();
 
     // The three chips: one per skin, in button order, each filled with the skin it
-    // offers and named in words. The WORN one is the one with the frame around it:
-    // shape, not brightness, so the answer to "what am I wearing" holds in grayscale
-    // and against a chip whose own colour is nearly the ink's.
+    // offers and named in words. The worn skin gets a frame, a shape cue, so it
+    // reads in grayscale and on a chip whose colour is close to the ink's.
     for (int i = 0; i < kChromaSkins; ++i) {
         const int x = kWaterX + i * (kChipW + kChipGap);
         const CamoRamp r = skinRamp(i);
@@ -283,8 +280,8 @@ void Game::drawChroma(Framebuffer& fb) const {
             fb.fillRect(x + kChipW - 2, kChipY, 2, kChipH, ink);
         }
         // The label takes the ramp's darkest or lightest tone, whichever the chip is
-        // not: the one piece of text on this screen that cannot use INK, since the
-        // chip beneath it is a different colour on every row.
+        // not: the only text on this screen that cannot use INK, because the chip
+        // under it changes colour per row.
         const Rgb565 label = luminance(r.tone[r.count / 2]) > 0.5f ? r.tone[0]
                                                                    : r.tone[r.count - 1];
         const char* name = kSkins[i].name;
@@ -297,8 +294,8 @@ void Game::drawChroma(Framebuffer& fb) const {
         const char* verdict = clean ? "NEVER SEEN" : "SPOTTED - RUN ENDED";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, kVerdictY, verdict, ink);
 
-        // The effect line is priced in incubation, which an arcade run doesn't have:
-        // there it reports the passes themselves and lets the payout screen do the money.
+        // The effect line is priced in incubation, which an arcade run lacks, so there it
+        // reports passes and the payout screen shows the money.
         char effect[32];
         if (arcadeRun_)
             std::snprintf(effect, sizeof(effect), "%d / %d PASSES", chroma_.passes(),

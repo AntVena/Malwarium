@@ -19,15 +19,14 @@
 // A device announces itself (buildPeerHello -> the platform tier's ESP-NOW beacon,
 // platform/esp32/net_link.h) and remembers whoever it hears (registerPeer). The
 // announcing is gated on Game::linkWanted() (the persisted CFG opt-in, plus the
-// stretch this screen raises it for), so a device with LINK off is silent and
-// deaf, and opening this screen is itself the explicit act that makes it talk.
+// stretch this screen raises it for), so a device with LINK off neither sends nor
+// listens, and opening this screen is the explicit act that turns it on.
 //
 // Two sources feed one list, and keeping them apart is the point: livePeers_ is
 // what the radio can hear this second, peerLedger_ is everyone ever met. A LIVE row
 // renders from the snapshot's fresh HELLO, so it shows what someone is raising
 // right now; a remembered row renders from the roster's last-meeting copy. The
-// merge (peerRows) is what the screen draws, and LIVE leads it: the person
-// standing in front of you is the one you're looking for.
+// merge (peerRows) is what the screen draws, with live peers first.
 //
 // Everything but the key and the meeting tally is UNAUTHENTICATED (peer_link.h):
 // it is what a device in range claimed about itself, sanitized but never verified.
@@ -58,7 +57,7 @@ void Game::buildPeerHello(PeerHello* out) const {
     std::strncpy(h.tag, hackerTag_, sizeof(h.tag) - 1);
 
     // An operator with no pet yet (a fresh device on the Hatch screen) broadcasts an
-    // empty species: the row reads as "no pet" rather than inventing one.
+    // empty species: the row reads "no pet".
     if (pet_) {
         std::strncpy(h.petName, pet_->displayName, sizeof(h.petName) - 1);
         h.stage = static_cast<uint8_t>(pet_->stage);
@@ -81,17 +80,16 @@ bool Game::registerPeer(const uint8_t* mac, const uint8_t* payload, size_t len) 
     if (!mac) return false;
     PeerHello hello;
     // A frame that fails to decode is simply not a peer: wrong magic, a protocol
-    // version this build can't lay out, or a truncated payload. Dropped silently:
-    // anything in range can transmit, so a bad frame is background noise, not an
-    // error worth surfacing.
+    // version this build can't lay out, or a truncated payload. Dropped silently,
+    // because anything in range can transmit and a bad frame is noise.
     if (!decodePeerHello(payload, len, &hello)) return false;
 
     const uint64_t key = packPeerKey(mac);
     if (key == 0) return false;
 
     // The snapshot takes every beacon; the roster only takes the arrival edge. That
-    // split is what makes timesMet a count of MEETINGS: a device parked next to
-    // this one beacons once a second and must still read as one encounter.
+    // split makes timesMet count meetings: a device parked next to this one beacons
+    // once a second and must still read as one encounter.
     if (!noteLivePeer(key, hello)) return false;
 
     const bool firstEver = peerLedger_.record(key, hello);
@@ -159,8 +157,7 @@ int Game::peerRows(PeerRow* rows, int max) const {
     int n = 0;
 
     // Live first, straight from the snapshot: these rows show what the operator is
-    // raising THIS SECOND, which is the whole reason the snapshot keeps the full
-    // HELLO rather than just a timestamp.
+    // raising now, which is why the snapshot keeps the full HELLO.
     for (int i = 0; i < livePeerCount_ && n < max; ++i) {
         const LivePeer& p = livePeers_[i];
         if (!peerLive(p)) continue;
@@ -208,8 +205,7 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
 
     drawText(fb, kMargin, kContextY, "PEERS MET", palColor(Pal::INK));
 
-    // Name whoever actually holds the radio rather than claiming LINKING
-    // unconditionally: an empty list means something entirely different when the
+    // Name whoever holds the radio. An empty list means something different when the
     // 'Pedia AP has the radio than when nobody is around. Doubles as the notice that
     // this screen announces on its own, so an operator who deliberately keeps LINK
     // off is never surprised into broadcasting.
@@ -282,9 +278,9 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
     }
 
     // Ambient discovery borrows the audit scan's radio window, so with the scan off
-    // this screen is the ONLY place meetings happen. Saying so here is what keeps a
-    // LINK-on/AUDIT-off device from looking broken: the toggle is working, it just
-    // has no ambient airtime to use.
+    // this screen is the ONLY place meetings happen. Saying so keeps a
+    // LINK-on/AUDIT-off device from looking broken: the toggle works but has no
+    // ambient airtime.
     if (linkAmbientStarved())
         drawText(fb, kMargin, kActiveH - 34, "AMBIENT NEEDS AUDIT SCAN",
                  palColor(Pal::WARN));

@@ -85,9 +85,9 @@ void Game::startMaint() {
 }
 
 void Game::beginStackerBoard() {
-    // The board itself, with no opinion about who is paying for it: MAINT takes the
-    // units, the arcade charges nothing and takes the score.
-    // The shared LCG seeds the intruders' columns; the dial sets what the ground costs.
+    // The board itself, independent of who pays for it: MAINT takes the units, the
+    // arcade charges nothing and takes the score. The shared LCG seeds the intruders'
+    // columns; the dial sets what the ground costs.
     rng_ = rng_ * 1664525u + 1013904223u;
     stacker_.reset(rng_ >> 8, kStackerGroundCalls[static_cast<int>(runDifficulty())]);
     lastStackerStepMs_ = nowMs_;
@@ -111,9 +111,8 @@ void Game::onStacker(const ButtonEvent& ev) {
         else if (stacker_.threatCount() > threats) playSound(Sound::Probe);
         else playSound(Sound::Point);
     } else if (ev.button == Button::C) {
-        // Stop early and bank the board. Since a run that ends in mid-air keeps whatever
-        // it locked, quitting has to keep it too, otherwise C would be a button that
-        // throws away blocks the player has already earned, which is a trap, not a choice.
+        // Stop early and bank the board. A run that ends mid-air keeps what it locked, so
+        // quitting keeps it too and C never throws away earned blocks.
         finishStacker();
     }
 }
@@ -164,14 +163,13 @@ void Game::resolveMaint() {
             // A botched defrag on an ALREADY-CRITICAL disk forks a Replication Ghost:
             // the write went wrong badly enough to leave a phantom second copy of the
             // pet's process behind. This is the only thing that raises one, and it is
-            // deliberately not a dice roll on top of a dice roll. The state the player
-            // is in is what decides it, so the way to never see a ghost is to not let
-            // Fragmentation reach Critical before defragmenting (or to stop rolling for
-            // it: the Tool and Played variants never reach this path. One is bought and
-            // the other is played, and neither has a roll to lose). Worm-line only: a
-            // self-replicating phantom copy is that line's own failure mode, the way
-            // Lockout is Ransomware's. A Phishing or Trojan pet's disk just stays
-            // fragmented.
+            // deliberately not a dice roll on top of a dice roll. The player's state
+            // decides it: to avoid a ghost, defragment before Fragmentation reaches
+            // Critical (or to stop rolling for it: the Tool and Played variants never
+            // reach this path. One is bought and the other is played, and neither has a
+            // roll to lose). Worm-line only: a self-replicating phantom copy is that
+            // line's failure mode, as Lockout is Ransomware's. A Phishing or Trojan
+            // pet's disk just stays fragmented.
             const bool wormLine = pet_ && pet_->line &&
                                   std::strcmp(pet_->line, "worm") == 0;
             if (wormLine && model_.fragmentation() >= kFragCriticalMin &&
@@ -193,8 +191,8 @@ void Game::maybeAutoDefrag() {
     // Disk Maintenance (Rig Shop i): silently runs a guaranteed-clean defrag
     // between explore events once Fragmentation crosses the owned tier's
     // threshold. A deeper (pricier) tier both lowers that threshold and raises
-    // the per-run Bits cost: the "buy more safety" trade for an older, stronger
-    // pet that explores enough to make a hands-off defrag worth paying for.
+    // the per-run Bits cost: which suits an older pet that explores enough to
+    // make a hands-off defrag worth paying for.
     const int lvl = rigLevel_[kRigRowDiskMaintenance];
     if (lvl <= 0 || !pet_) return;
     // Owned is not the same as RUNNING: a service the player has stopped on the SHOP's
@@ -262,8 +260,8 @@ void Game::openLoadoutTab(LoadoutTab tab) {
             nav_ = Nav::Submenu;
             break;
         case LoadoutTab::Practise:
-            // The dummy fight has no list of its own to rest on: the hub row IS its
-            // L2, so it opens straight into the tier pick.
+            // The dummy fight has no list of its own. The hub row is its L2, so it
+            // opens straight into the tier pick.
             trainScreen_ = TrainScreen::SimTier;
             simTier_ = 0;
             nav_ = Nav::Detail;
@@ -370,7 +368,7 @@ void Game::commitModEquip() {
     if (md && md->requiresLine &&
         (!pet_ || !pet_->line || std::strcmp(md->requiresLine, pet_->line) != 0))
         return;
-    // One slot per id per pet: already installed elsewhere on this pet is a no-op.
+    // One slot per id per pet, so a mod already installed on this pet is a no-op.
     const int elsewhere = loadout_.slotOf(id);
     if (elsewhere >= 0 && elsewhere != modSlot_) return;
     const char* cur = loadout_.equipped(modSlot_);
