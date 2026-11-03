@@ -5,6 +5,8 @@
 // without touching call sites — the registration seam.
 #pragma once
 
+#include <algorithm>
+#include <cstring>
 #include <vector>
 
 #include "core/content/content_source.h"
@@ -13,8 +15,9 @@ namespace mal {
 
 class ContentRegistry {
 public:
-    // Merge a content source. Earlier sources win on id collision.
-    void addSource(const ContentSource& src) { sources_.push_back(&src); }
+    // Merge a content source. Earlier sources win on id collision. The merge runs here,
+    // once per source, so every lookup and every all*() list reads the merged tables.
+    void addSource(const ContentSource& src);
     void setAssets(const AssetSource& assets) { assets_ = &assets; }
 
     const CreatureDef* creature(const char* id) const;
@@ -42,28 +45,32 @@ public:
     // creature's own evolvesTo* fields). Every other hop is on the creature row.
     const DaemonPoolDef* daemonPool(const char* fromId, bool badBranch) const;
 
+    // The all*() lists return a copy in merge order (source order, first id wins). A
+    // copy keeps `for (x : ContentRegistry::embedded().allItems())` safe, where a
+    // reference would outlive the temporary registry it points into.
+
     // Every known item def, across all sources (the inventory list builds off
     // this — content stays data-driven, no hardcoded item table in the UI).
-    std::vector<const ItemDef*> allItems() const;
+    std::vector<const ItemDef*> allItems() const { return items_.rows(); }
     // Every known mod def (the MODS picker builds off this, same rationale).
-    std::vector<const ModDef*> allMods() const;
+    std::vector<const ModDef*> allMods() const { return mods_.rows(); }
     // The mod carrying save wire number `wire` (ModDef::wire), or nullptr — the lookup
     // the save's owned-mod pool needs, since a blob names a mod by number and not by id.
     // A number belonging to a RETIRED row resolves to nullptr, which is exactly what
     // should happen: its copies are dropped on load rather than resurrected.
     const ModDef* modByWire(int wire) const;
     // Every known move def (the MOVES picker builds off this, same rationale).
-    std::vector<const MoveDef*> allMoves() const;
+    std::vector<const MoveDef*> allMoves() const { return moves_.rows(); }
     // Every known FAMILY, across all sources, in roster order. What a caller asking
     // about the lines themselves rather than about one line by id needs — the habitat's
     // ambient colour drift walks it to find the families a pet is not (idleCamoSprite).
-    std::vector<const CreatureLine*> allCreatureLines() const;
+    std::vector<const CreatureLine*> allCreatureLines() const { return lines_.rows(); }
     // Every known creature def, across all sources. Roster-wide invariants build
     // off this (e.g. the wild-name / roster-name disjointness gate).
-    std::vector<const CreatureDef*> allCreatures() const;
+    std::vector<const CreatureDef*> allCreatures() const { return creatures_.rows(); }
     // Every known egg line, across all sources (the hatch line-select builds off
     // this — a new line is a data row, no UI change).
-    std::vector<const EggLineDef*> allEggLines() const;
+    std::vector<const EggLineDef*> allEggLines() const { return eggLines_.rows(); }
 
     // Resolve a creature's sprite via the AssetSource (art may ship with content).
     const SpriteData* creatureSprite(const CreatureDef& c) const;
@@ -80,8 +87,48 @@ public:
     static ContentRegistry embedded();
 
 private:
-    std::vector<const ContentSource*> sources_;
+    // One merged content table: rows in merge order, plus the same rows sorted by id
+    // for binary-search lookup. Every row type here carries a `const char* id`.
+    template <typename T>
+    class IdTable {
+    public:
+        // Add `n` rows, skipping any whose id is already present (earlier wins).
+        void merge(const T* arr, int n) {
+            for (int i = 0; i < n; ++i) {
+                const T* row = &arr[i];
+                auto at = lowerBound(row->id);
+                if (at != byId_.end() && std::strcmp((*at)->id, row->id) == 0) continue;
+                byId_.insert(at, row);
+                rows_.push_back(row);
+            }
+        }
+        const T* find(const char* id) const {
+            if (!id) return nullptr;
+            auto at = lowerBound(id);
+            return (at != byId_.end() && std::strcmp((*at)->id, id) == 0) ? *at : nullptr;
+        }
+        const std::vector<const T*>& rows() const { return rows_; }
+
+    private:
+        typename std::vector<const T*>::const_iterator lowerBound(const char* id) const {
+            return std::lower_bound(byId_.begin(), byId_.end(), id,
+                                    [](const T* r, const char* k) {
+                                        return std::strcmp(r->id, k) < 0;
+                                    });
+        }
+        std::vector<const T*> rows_;
+        std::vector<const T*> byId_;
+    };
+
+    std::vector<const ContentSource*> sources_;   // daemonPool still scans these raw
     const AssetSource* assets_ = nullptr;
+    IdTable<CreatureLine> lines_;
+    IdTable<CreatureDef> creatures_;
+    IdTable<EggLineDef> eggLines_;
+    IdTable<ItemDef> items_;
+    IdTable<ModDef> mods_;
+    IdTable<MoveDef> moves_;
+    IdTable<MoveDef> chainSteps_;
 };
 
 } // namespace mal

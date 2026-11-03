@@ -4,99 +4,57 @@
 
 namespace mal {
 
+void ContentRegistry::addSource(const ContentSource& src) {
+    sources_.push_back(&src);
+    int n = 0;
+    const CreatureLine* lines = src.creatureLines(n);
+    lines_.merge(lines, n);
+    for (int l = 0; l < n; ++l) creatures_.merge(lines[l].rows, lines[l].count);
+    const EggLineDef* eggs = src.eggLines(n);
+    eggLines_.merge(eggs, n);
+    const ItemDef* items = src.items(n);
+    items_.merge(items, n);
+    const ModDef* mods = src.mods(n);
+    mods_.merge(mods, n);
+    const MoveDef* moves = src.moves(n);
+    moves_.merge(moves, n);
+    const MoveDef* steps = src.chainSteps(n);
+    chainSteps_.merge(steps, n);
+}
+
 const CreatureDef* ContentRegistry::creature(const char* id) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const CreatureLine* lines = src->creatureLines(n);
-        for (int l = 0; l < n; ++l)
-            for (int i = 0; i < lines[l].count; ++i)
-                if (std::strcmp(lines[l].rows[i].id, id) == 0)
-                    return &lines[l].rows[i];
-    }
-    return nullptr;
+    return creatures_.find(id);
 }
 
 const CreatureLine* ContentRegistry::creatureLine(const char* lineId) const {
-    if (!lineId) return nullptr;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const CreatureLine* lines = src->creatureLines(n);
-        for (int l = 0; l < n; ++l)
-            if (std::strcmp(lines[l].id, lineId) == 0) return &lines[l];
-    }
-    return nullptr;
+    return lines_.find(lineId);
 }
 
 const EggLineDef* ContentRegistry::eggLine(const char* id) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const EggLineDef* arr = src->eggLines(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
-    }
-    return nullptr;
+    return eggLines_.find(id);
 }
 
 const EggLineDef* ContentRegistry::eggLineForCreature(const char* creatureId) const {
     if (!creatureId) return nullptr;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const EggLineDef* arr = src->eggLines(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].eggCreatureId, creatureId) == 0) return &arr[i];
-    }
+    for (const EggLineDef* e : eggLines_.rows())
+        if (std::strcmp(e->eggCreatureId, creatureId) == 0) return e;
     return nullptr;
 }
 
-const ItemDef* ContentRegistry::item(const char* id) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const ItemDef* arr = src->items(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
-    }
-    return nullptr;
-}
+const ItemDef* ContentRegistry::item(const char* id) const { return items_.find(id); }
 
 const ModDef* ContentRegistry::modByWire(int wire) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const ModDef* arr = src->mods(n);
-        for (int i = 0; i < n; ++i)
-            if (arr[i].wire == wire) return &arr[i];
-    }
+    for (const ModDef* m : mods_.rows())
+        if (m->wire == wire) return m;
     return nullptr;
 }
 
-const ModDef* ContentRegistry::mod(const char* id) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const ModDef* arr = src->mods(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
-    }
-    return nullptr;
-}
+const ModDef* ContentRegistry::mod(const char* id) const { return mods_.find(id); }
 
-const MoveDef* ContentRegistry::move(const char* id) const {
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const MoveDef* arr = src->moves(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
-    }
-    return nullptr;
-}
+const MoveDef* ContentRegistry::move(const char* id) const { return moves_.find(id); }
 
 const MoveDef* ContentRegistry::chainStep(const char* id) const {
-    if (!id) return nullptr;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const MoveDef* arr = src->chainSteps(n);
-        for (int i = 0; i < n; ++i)
-            if (std::strcmp(arr[i].id, id) == 0) return &arr[i];
-    }
-    return nullptr;
+    return chainSteps_.find(id);
 }
 
 const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
@@ -110,100 +68,6 @@ const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
                 return &arr[i];
     }
     return nullptr;
-}
-
-std::vector<const ItemDef*> ContentRegistry::allItems() const {
-    std::vector<const ItemDef*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const ItemDef* arr = src->items(n);
-        for (int i = 0; i < n; ++i) {
-            // Earlier sources win on id collision (matches the lookup rule).
-            bool dup = false;
-            for (const ItemDef* e : out)
-                if (std::strcmp(e->id, arr[i].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&arr[i]);
-        }
-    }
-    return out;
-}
-
-std::vector<const ModDef*> ContentRegistry::allMods() const {
-    std::vector<const ModDef*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const ModDef* arr = src->mods(n);
-        for (int i = 0; i < n; ++i) {
-            bool dup = false;
-            for (const ModDef* e : out)
-                if (std::strcmp(e->id, arr[i].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&arr[i]);
-        }
-    }
-    return out;
-}
-
-std::vector<const MoveDef*> ContentRegistry::allMoves() const {
-    std::vector<const MoveDef*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const MoveDef* arr = src->moves(n);
-        for (int i = 0; i < n; ++i) {
-            bool dup = false;
-            for (const MoveDef* e : out)
-                if (std::strcmp(e->id, arr[i].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&arr[i]);
-        }
-    }
-    return out;
-}
-
-std::vector<const CreatureLine*> ContentRegistry::allCreatureLines() const {
-    std::vector<const CreatureLine*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const CreatureLine* lines = src->creatureLines(n);
-        for (int l = 0; l < n; ++l) {
-            bool dup = false;
-            for (const CreatureLine* e : out)
-                if (std::strcmp(e->id, lines[l].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&lines[l]);
-        }
-    }
-    return out;
-}
-
-std::vector<const CreatureDef*> ContentRegistry::allCreatures() const {
-    std::vector<const CreatureDef*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const CreatureLine* lines = src->creatureLines(n);
-        for (int l = 0; l < n; ++l) {
-            for (int i = 0; i < lines[l].count; ++i) {
-                const CreatureDef& c = lines[l].rows[i];
-                bool dup = false;
-                for (const CreatureDef* e : out)
-                    if (std::strcmp(e->id, c.id) == 0) { dup = true; break; }
-                if (!dup) out.push_back(&c);
-            }
-        }
-    }
-    return out;
-}
-
-std::vector<const EggLineDef*> ContentRegistry::allEggLines() const {
-    std::vector<const EggLineDef*> out;
-    for (const ContentSource* src : sources_) {
-        int n = 0;
-        const EggLineDef* arr = src->eggLines(n);
-        for (int i = 0; i < n; ++i) {
-            bool dup = false;
-            for (const EggLineDef* e : out)
-                if (std::strcmp(e->id, arr[i].id) == 0) { dup = true; break; }
-            if (!dup) out.push_back(&arr[i]);
-        }
-    }
-    return out;
 }
 
 const SpriteData* ContentRegistry::creatureSprite(const CreatureDef& c) const {
