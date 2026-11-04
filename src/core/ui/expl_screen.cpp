@@ -365,19 +365,14 @@ bool explCatOpen(ExplCat c, const ExplListView& v) {
 
 namespace {
 
-// The glyph a category row carries. STORY shows the DEEPEST OPEN area, which is a
-// picture of where the operator is on the ladder rather than of the ladder's first
-// rung: it moves as they do, and it says the same thing the "n/N CLEARED" beside it
-// says in numbers. ENDLESS borrows the Dive's, ARENA its water's. CHAPTERS has no art
-// yet and draws the empty frame, which on this screen means exactly that.
-const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c, const ExplListView& v) {
+// The glyph a category row carries. STORY and CHAPTERS have glyphs of their own, so
+// the category reads the same wherever the operator is on the ladder; the story list
+// one level down is where each area shows its own. ENDLESS borrows the Dive's, ARENA its
+// water's.
+const SpriteData* catIcon(const ContentRegistry& reg, ExplCat c) {
     switch (c) {
-        case ExplCat::Story: {
-            int deepest = 0;
-            for (int a = kExplSectors - 1; a > 0; --a)
-                if (explSectorOpen(a, v.areaCleared)) { deepest = a; break; }
-            return sectorIcon(reg, deepest);
-        }
+        case ExplCat::Story:    return reg.sprite("ICON_EXPL_STORY");
+        case ExplCat::Chapters: return reg.sprite("ICON_EXPL_CHAPTERS");
         case ExplCat::Endless:  return reg.sprite(kDeepWebIcon);
         case ExplCat::Arena:    return sectorIcon(reg, kTourneyAreaIndex);
         default:                return nullptr;
@@ -438,7 +433,7 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
             drawRowCursor(fb, 3, y + (pitch - 7) / 2, palColor(Pal::ACCENT));
         }
         if (open)
-            drawIconSlot(fb, catIcon(reg, c, v), kIconX, y + (pitch - kRowIcon) / 2,
+            drawIconSlot(fb, catIcon(reg, c), kIconX, y + (pitch - kRowIcon) / 2,
                          palColor(Pal::INK));
         // A focused category title pulses INK <-> ACCENT on the care-pip cadence, the
         // same way a focused ZONE title does: both are headings you can press, and the

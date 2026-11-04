@@ -310,12 +310,12 @@ which is why gameplay ships first and the drawing follows.
   restamp after the snap: walk the output's accent pixels, area-average each one's source block,
   and put the floor ink back wherever that block was actually dark. Worth knowing before drawing
   any creature whose tell is dark-on-bright rather than bright-on-dark.
-- **`SPR_PET_BAITRACUDA` is `▨`, and what it owes is RESOLUTION.** Its source framed at 160×65
-  against the 96×64 Daemon cell, so it is width-bound decimated at 3:5: 874 single-pixel
-  features land on a deleted lattice line. The
-  silhouette, the teeth and the cursor rig survive; the thin filaments the cursors hang from
-  degrade to dotted lines. Re-sourcing at cell scale is the fix, and the framing lever below is
-  how: this cut asked for a third of the canvas width and got four fifths.
+- **`SPR_PET_BAITRACUDA` is `☑`, its filaments redrawn by hand.** Its source framed at 160×65
+  against the 96×64 Daemon cell, so it was width-bound decimated at 3:5, which broke the thin lines
+  the cursors hang from into dotted runs. Each one is now redrawn as a single unbroken 1px line in
+  the lure line's grey, from the jaw down past its cursor; the silhouette, the teeth and the cursor
+  rig survived the decimation on their own. A lost thin LINE is a hand repair; re-sourcing at cell
+  scale is only owed when the loss is spread through the drawing.
 - **A clip can be drawn by hand from the shipped frame, and for a soft body that is the cheaper
   road.** `SPR_PET_TADPOLL`'s idle, swim, attack and hurt rows are its one drawing moved rather than
   redrawn. The tail turns as a piece about its root through five bands, each turned a little
@@ -720,8 +720,9 @@ blank: that is the prompt to draw one, and `check_orphan_assets.py` catches the 
   (Tiramisudo), two pleated pouches (Core Dumplings), and a SQUARE lidded bake with side handles
   (Cacherole) against GNUlash's round horned pot. Every near-miss in that list is a pair drawn
   apart on purpose: bowl/pan, pot/bake, layers/dimples.
-- **`ICON_ITEM_FULLY_STACKED_NACHOS` is `▨`**: it reuses `ICON_ITEM_TORTILLA_CHIP` rather than
-  being bespoke. The only item icon that is a stand-in.
+- **`ICON_ITEM_FULLY_STACKED_NACHOS` is `☑`**: a bowl with a cheese-spotted chip heaped in the
+  middle and two outlined chips leaning out, so it parts from `ICON_ITEM_TORTILLA_CHIP` (one bare
+  chip) and from `ICON_ACH_COOK_NACHOS` (the pot) at a glance.
 - **`ICON_ITEM_BOOT_ACCELERATOR`, `ICON_ITEM_ROLLBACK` and `ICON_ITEM_REPARTITION` are the set's
   BARE symbols**: no object body, just the mark. That is deliberate and they are a set: one skips
   a clock forward (a double fast-forward chevron, tips cut flat at 2px because a 1px apex is noise
@@ -753,6 +754,8 @@ blank: that is the prompt to draw one, and `check_orphan_assets.py` catches the 
 | `ICON_EXPLORE_STATE` | Sub-area row state marker (EXPL) | 16×16 | **NOT A GLYPH**: the state is the row's right-anchored `FONT_UI` tag (`EXPLORING` / `> BOSS` / `BEAT` / `DONE` / `LOCKED`, `expl_screen.cpp`'s `rowTag`), which already reads in grayscale. The row's one glyph column belongs to `ICON_SECTOR_*`, so a state glyph would have nowhere to stand but on top of the zone's own | ⊘ | `rowTag`, `src/core/ui/expl_screen.cpp` |
 | `UI_DIFFICULTY_PIPS` | Sector difficulty tier (filled/empty diamonds) | ~30×10 | e.g. `◆◇◇` | ⌫ | placeholder `/assets/_attic/UI_DIFFICULTY_PIPS.png` |
 | ~~`ICON_EXPL_PACKET`~~ | ~~Packet Capture row glyph~~ |. | **REMOVED**. Packet Capture minigame scrapped; "packet sniffing" is now the Wi-Fi explore event | ⊘ |. |
+| `ICON_EXPL_STORY` | STORY's row glyph, EXPL activity picker | 20×20 | a staircase climbing to a pennant: the area ladder, the same at every rung, since the story list below it is where each area shows its own | ☑ | `/assets/icons/ICON_EXPL_STORY.png` |
+| `ICON_EXPL_CHAPTERS` | CHAPTERS' row glyph, EXPL activity picker | 20×20 | an open book with a ribbon marker: the journey so far, drawn as STORY's pair in the same 2px hand | ☑ | `/assets/icons/ICON_EXPL_CHAPTERS.png` |
 | `ICON_SECTOR_<AREA_ID>` | Per-area row glyph, EXPL zone picker | 20×20 | one per area, named on that area's own `AreaDef::icon`; the two ENDLESS zones have no AreaDef and name `ICON_SECTOR_DEEPWEB_DIVE` / `ICON_SECTOR_DARKWEB_CRAWL` from their own `areas/*/area.cpp` instead | ☑ | `/assets/icons/ICON_SECTOR_*.png` |
 | `ICON_SECTOR_SILK_LODE` | THE SILK LODE's row glyph | 20×20 | the sixth area: a seam of silk in rock, read as a vein rather than as a spider (the spider is the guardian's, and a flock is how a guardian draws). Named on its row; until it exists the EXPL row draws `drawIconSlot`'s empty frame, which means "art pending" and not "no zone" | ☑ | `/assets/icons/ICON_SECTOR_SILK_LODE.png` |
 | `ICON_SECTOR_DARKWEB_CRAWL` | THE DARKWEB CRAWL's row glyph | 20×20 | the terminal endless zone, under the Dive's row. Wants to read as the Dive's opposite number at a glance: the Dive descends, this one spreads | ☑ | `/assets/icons/ICON_SECTOR_DARKWEB_CRAWL.png` |
@@ -970,7 +973,7 @@ recognise the blow.
 | `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
 | `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring: drop the PNG in `assets/icons/` and it lights up. MOVES falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
 | `UI_DAMAGE_POPUP` | Floating damage number |. | `FONT_UI` tabular digits; **procedural, no art** | ⊘ |. |
-| `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat.cpp`): they are the same prop, and the tier reads off the level/stat rows | ▨ | `/assets/sprites/SPR_DUMMY.png` (56×48) |
+| `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat_factory.cpp`): they are the same prop, and the tier reads off the level/stat rows. A burlap sack on a crossbar and footed post, X-stitched face, a ring target on the chest; seated like a wild, so row 1 is its swing, the whole dummy tipped toward its opponent with the stand planted | ☑ | `/assets/sprites/SPR_DUMMY.png` (56×96, two rows) |
 | `ICON_EVENT_WIFI` | Wi-Fi network event glyph | 20×20 | **optional**. The event draws `ICON_SYS_WIFI` for this today; a dedicated glyph would take its place as the thing the pet eats, so it is judged at creature scale mid-dissolve rather than as a 20×20 chrome mark: a fan of few, chunky strokes breaks into a better mouthful than a thin one | ⌫ | placeholder `/assets/_attic/ICON_EVENT_WIFI.png` |
 | `UI_RANK_BADGE` | Hacker-Rank badge (CFG / HackerTag) | ~16–20 | **optional**; else plain `FONT_UI` rank text | ⌫ | placeholder `/assets/_attic/UI_RANK_BADGE.png` (20×20) |
 

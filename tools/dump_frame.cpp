@@ -1057,6 +1057,8 @@ int main(int argc, char** argv) {
             game.debugSetSubCleared(0, 1, true);
             game.debugSetSubBossUnlocked(0, 2, true);
         }
+        // "read" marks every chapter read, which is what opens the CHAPTERS row.
+        if (hasFlag(argc, argv, "read")) game.debugMarkStoryRead();
         if (hasFlag(argc, argv, "cats")) {
             enterSlot(SubmenuId::Expl);                  // the activity picker itself
         } else {
