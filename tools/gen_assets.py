@@ -204,6 +204,8 @@ FRAME_W_OVERRIDES = {
     # 832x128 = eight 104x64 frames, the gallop's own frame width: its reach at full
     # stretch is 99 px, past the 96 a Daemon cell usually gives.
     "SPR_PET_BREECHEETAH": 104,
+    # 768x256 = four rows of eight 96x64 frames: idle, swim, strike, flinch.
+    "SPR_PET_SPAMWHALE": 96,
 }
 
 # The HEIGHT half of the table above, keyed the same way: asset name -> one row's height.

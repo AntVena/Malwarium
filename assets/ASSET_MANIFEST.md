@@ -326,7 +326,10 @@ which is why gameplay ships first and the drawing follows.
   credits and is cheap in flash, because a moved body repeats its tiles. What it cannot make is a
   new pose: a spine that flexes or a leg that changes shape is a redraw, which is what
   `SPR_PET_BREECHEETAH`'s gallop row is. `SPR_PET_PAYPUP`'s walk is the limit case the other way:
-  its feet are separate blocks, so stepping them is the whole cycle.
+  its feet are separate blocks, so stepping them is the whole cycle. The phishing fish
+  (`SPR_PET_PHISHLET`, `_CLICKBAIT`, `_SPAMWHALE`) are drawn the same way, and add the one rule a
+  lure needs: rotate the LINE and carry what hangs from it rigidly, because a small cursor or
+  panel rotated as pixels loses its point and its text, while one moved whole stays crisp.
 - **An animation round trip keeps the pixel scale and loses the palette.** Feeding a cell-scale
   sprite to `animate_game_art` returns frames drawn at that same scale (a 48×36 subject comes back
   47×37 across eight frames), so the sheet crops into the cell with no resampling, which is what
