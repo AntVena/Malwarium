@@ -198,14 +198,10 @@ which is why gameplay ships first and the drawing follows.
   long teeth together at the wrap; equal-length spokes around a circle read as a flower.
 - **`SPR_PET_PINGCUB` is `▨`**: it has one idle frame and wants a second to match the 2-frame
   norm above. The drawing itself is final.
-- **`SPR_PET_WIRE_HEIR` is `▨`, and what it owes is COLOUR SEPARATION, not a redraw.** The drawing is
-  the one that is wanted: a long low dachshund turned three-quarter to the viewer, its dark eye box
-  carried down from Paypup, a plumed helm answering the horizontal body with a vertical, a heraldic
-  device on the surcoat. What it does not yet do is the per-local-colour tone budget in
-  `CREATURE_VISUAL_RULES §3`: helm, surcoat and cloak sit in the same green as the animal, so the
-  regalia reads as more creature rather than as cloth and steel over one. That is a recolour of existing pixels (the forms are already
-  separated, only the hues are not), so it is a paint pass on the shipped file rather than another
-  generation. `SPR_PET_PWNTHER` is the reference for how far the tones have to move apart.
+- **`SPR_PET_WIRE_HEIR` is `☑`.** A long low dachshund turned three-quarter to the viewer, its
+  dark eye box carried down from Paypup, a plumed helm answering the horizontal body with a vertical.
+  The regalia already reads as cloth and metal over the animal: a red-brown surcoat, gold trim and a
+  gold heraldic device, a pink plume, each on hues the body does not wear.
 - **`SPR_PET_BARKMAIL` is `☑`, and its mail is a pattern the cell can hold.** The armour is a dozen
   overlapping envelope plates, each a grey rectangle with a dark V flap, so the creature row's pun
   (each link a letter) is drawn rather than implied, and each plate is big enough that its flap
