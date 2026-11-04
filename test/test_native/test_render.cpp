@@ -7,12 +7,13 @@
 
 // --- Gate: PNG round-trips to RGB565 and blits pixel-correct ---------------
 void test_sprite_roundtrip() {
-    // Paypup decoded to the expected sheet geometry (448x48, 8 frames of 56).
+    // Paypup decoded to the expected sheet geometry (672x192, four rows of 12 frames of 56).
     const SpriteData& pet = ASSET_SPR_PET_PAYPUP;
-    CHECK(pet.sheetW == 448);
+    CHECK(pet.sheetW == 672);
     CHECK(pet.h == 48);
     CHECK(pet.frameW == 56);
-    CHECK(pet.frames == 8);
+    CHECK(pet.frames == 12);
+    CHECK(pet.rows == 4);
 
     // Blitting frame 0 reproduces every opaque source pixel exactly.
     Framebuffer fb(kLogicalW, kLogicalH);

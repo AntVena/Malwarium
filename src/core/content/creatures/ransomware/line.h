@@ -39,7 +39,13 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "Loves chasing code, fetching cookies, and dropping malicious payloads.",
      "Software payloads / tracking cookies",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk,
+     // The idle row spells out idleFrame()'s breathe-and-blink beat by beat, with a
+     // tail wag in one slot, because a clip plays its columns in order.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/12, /*holdBeats=*/1},
+                {"attack", /*row=*/1, /*frames=*/2, /*holdBeats=*/1},
+                {"hurt", /*row=*/2, /*frames=*/2, /*holdBeats=*/1},
+                {"walk", /*row=*/3, /*frames=*/4, /*holdBeats=*/1}}},
     {"barkmail", "Barkmail", Stage::Script, "SPR_PET_BARKMAIL", nullptr,
      /*good=*/"wire_heir", /*bad=*/"extorgi", 100, 100, "ransomware",
      "The pup grown into its armour, plated in overlapping links it calls correspondence. Every one of them is a letter, and every letter says the same thing louder.",
