@@ -54,50 +54,6 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
-### 1b. A separation pass over every screen
-
-**There are only three levers for making one thing read apart from another**: put it in a
-HEADER, set it BOLD, or spend SCREEN SPACE on a gap. Two of them are free and one is not:
-a 224×224 panel has a fixed amount of space and every gap is taken from something else on
-the page. So the failure mode is not "this screen is hard to read", it is **spending a
-header or a bolding on a distinction that did not need it, and having nothing left but
-pixels when a more important one turns up.** That cost lands one screen later than the
-decision that caused it, which is why it wants a pass rather than a fix.
-
-The pass: walk every screen, name which lever each distinction is currently using, and check
-that the page's most important separation is not the one paying in space. Where the levers
-stand today: `drawHeaderBand` claims Bold everywhere, and a second claim is allowed only
-where grayscale fails without it (VISUAL_LANGUAGE §2.3 states the test and the three places
-that pass it); VISUAL_LANGUAGE §4.1's
-dim-means-READOUT split is the detail pages' free lever and the one that survives grayscale;
-the STAT LOADOUT group seams are space spent deliberately, on the page with the least of it.
-Diff **M**, taste before code.
-
-### 1c. Evolution routing: one weighted edge list per creature
-
-`CreatureDef` carries five optional successor pointers (`evolvesToId`, `evolvesToGoodId`,
-`evolvesToBadId`, `evolvesToTrojanId`, `evolvesToTrojanBadId`) and `kDaemonPools` carries a sixth
-route in a table beside them: six mechanisms for one question, and the fifth was added purely so
-one divert could land on a care branch, which an edge list would have expressed for free. [`CONTENT_STANDARD.md`](../src/core/content/CONTENT_STANDARD.md)
-rule 1 asks for the opposite shape: a typed list on the row, not optional fields bolted onto the
-shared struct. The target is one array per creature.
-
-```cpp
-struct EvolutionEdge { const char* toId; EvoWhen when; uint8_t signal; uint8_t weight; };
-```
-
-where `EvoWhen` is `Always | CareGood | CareBad | Signal | TrojanDivert`, and
-`Game::evolutionTargetId` becomes "filter the row's edges to those whose condition holds, then draw
-by weight". That subsumes the Daemon pool, the care branch, the linear hop and the Trojan divert
-(today a separate `if` in `fireEvolution`), and makes a signal-dependent route expressible for the
-first time: `Game::dominantSignal` computes the key and nothing consumes it.
-
-**Do it when a chain actually needs a weight or a signal branch**, not before: every pool is
-single-entry today, so building the general mechanism now means designing it with the least
-information about what it has to carry. Consumer surface is small: `evolutionTargetId`, one
-registry accessor, one `ContentSource` virtual, one test. No save concern; routing is not persisted.
-Diff **M**.
-
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
@@ -108,21 +64,6 @@ Diff **M**.
   bulk-open reveal and the ARCH new-egg confirm have no `dump_frame` scene; the Wi-Fi event has
   one (`wifi new|fond|hometurf`) but no catalogue line. Add the scenes and list all four in
   `screens.sh`. Diff **S**.
-
-### 1h. Web 'Pedia
-
-Every reveal tier is backed by persisted state. **RAISED** = any pet that was, or could have been,
-active on this device: written at the single `Game::installPet` seam, so hatch, evolution, an ARCH
-Deploy and the Trojan divert are all covered by construction. **SEEN** = faced in a fight; a menu,
-hint or cinematic doesn't count, which leaves a **duel opponent** as the only creature-species
-writer (every PVE combatant is a name-only `CombatEnemy` from a pool deliberately disjoint from the
-roster, and the wild half keeps its own roster-keyed masks).
-
-**Open:**
-
-- **A solo operator's "seen" tier is empty until they duel.** If the Daemon branch-sibling reveal is
-  worth persisting it wants its own tier ("teased") rather than sharing this bit: two meanings on
-  one flag is what was deliberately removed. Diff **S** (design, not storage).
 
 ### 1i. Hacker-face CREW: enlistment shipped, Red/Blue archetype layer open
 

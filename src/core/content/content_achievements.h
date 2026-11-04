@@ -117,9 +117,8 @@ enum class AchSeries : uint8_t {
     TitlesUnlocked,     // zone-completion Titles earned (total = every area)
     PeersMet,           // distinct operators this device has ever met over the radio
     // Distinct species ever LAID EYES ON (total = the roster). The third axis beside
-    // SpeciesRaised and MalbeastsDefeated, and the only one a duel, an arena entrant or
-    // a branch-sibling reveal can move: you can meet far more of the roster than you
-    // will ever raise.
+    // SpeciesRaised and MalbeastsDefeated, and the only one a duel or an arena entrant
+    // can move: you can meet far more of the roster than you will ever raise.
     SpeciesSeen,
     // Pets held in the ARCH rack at once. UNBOUNDED on purpose though the rack has a
     // ceiling: that ceiling is a rig upgrade, so it is player state, and

@@ -349,14 +349,13 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     const int afterStats =
         drawSpecSheet(fb, kMargin, 56, kActiveW - 2 * kMargin, proseFloor, sheet).endY;
 
-    // ONE-SHOT flag: a consumed-on-trigger mod carries a distinct, grayscale-safe
-    // caveat line (the word itself is the channel; HOT tints it too). It is a caveat ON
-    // the description, so it hangs directly under it rather than at a fixed y of its
-    // own, and the footer below measures from it.
+    // ONE-SHOT flag: a caveat ON the description, so it is drawn as prose (ink) and
+    // hangs directly under it, and the footer below measures from it. The word is the
+    // channel. HOT stays free for the gate below that is actually stopping you.
     int contentEnd = afterStats;
     if (mod.oneShot) {
         drawText(fb, kMargin, afterStats + 4, "ONE-SHOT: CONSUMED ON USE",
-                 palColor(Pal::HOT));
+                 palColor(Pal::INK));
         contentEnd = afterStats + 4 + kFontH;
     }
     const int slotY = std::min(kDetailSlotY, contentEnd + kDetailFooterGap);

@@ -810,17 +810,15 @@ void test_mods_overwrite_confirm() {
       CHECK(g.loadout().owns(spare)); }            // spare still held (not consumed)
 }
 
-// the mod detail spells out the effect + flags a ONE-SHOT. The one-shot
-// caveat line is drawn for a consumed-on-trigger mod and absent otherwise:
-// the grayscale-safe channel that distinguishes the two mod kinds. It hangs off the
-// prose, so its y follows the description; what identifies it is that it is the only
-// HOT text on a page where no gate is failing (level 0 against a level-0 pet).
+// The ONE-SHOT caveat is drawn for a consumed-on-trigger mod and absent otherwise. It is
+// prose, so it draws no HOT: on a page where no gate is failing (level 0 against a
+// level-0 pet) HOT appears nowhere.
 void test_mod_detail_oneshot() {
     ContentRegistry r = ContentRegistry::embedded();
-    const ModDef* oneShot = r.mod("raid_mirror");        // oneShot == true
-    const ModDef* reuse = r.mod("firewall_patch");       // oneShot == false
-    CHECK(oneShot && reuse);
-    CHECK(oneShot->oneShot && !reuse->oneShot);
+    const ModDef* oneShot = r.mod("raid_mirror");
+    CHECK(oneShot && oneShot->oneShot);
+    ModDef reuse = *oneShot;
+    reuse.oneShot = false;
 
     Framebuffer os(kActiveW, kActiveH), ru(kActiveW, kActiveH);
     Loadout load;
@@ -828,18 +826,17 @@ void test_mod_detail_oneshot() {
     dv.slot = 2;
     dv.storageCap = kModCopyCapBase;
     drawModDetail(os, r, load, *oneShot, dv);
-    drawModDetail(ru, r, load, *reuse, dv);
-    CHECK(anyNonPaper(os, 0, 0, kActiveW, kActiveH));     // renders
-    // Below the icon/name row, so a sprite's own colours can't stand in for the text.
-    const auto anyHot = [](const Framebuffer& fb) {
-        const Rgb565 hot = palColor(Pal::HOT);
-        for (int y = 56; y < kActiveH; ++y)
-            for (int x = 0; x < kActiveW; ++x)
-                if (fb.get(x, y) == hot) return true;
-        return false;
-    };
-    CHECK(anyHot(os));
-    CHECK(!anyHot(ru));
+    drawModDetail(ru, r, load, reuse, dv);
+    bool differ = false;
+    bool hot = false;
+    // From the panel top down, so the name row's own 1-SHOT tag can't count as the caveat.
+    for (int y = 56; y < kActiveH; ++y)
+        for (int x = 0; x < kActiveW; ++x) {
+            if (os.get(x, y) != ru.get(x, y)) differ = true;
+            if (os.get(x, y) == palColor(Pal::HOT)) hot = true;
+        }
+    CHECK(differ);
+    CHECK(!hot);
 }
 
 // A mod holds at most one slot per pet: equip() refuses to install an id already

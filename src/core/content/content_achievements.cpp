@@ -713,8 +713,8 @@ const AchievementDef kAchievements[] = {
 
     // --- The bestiary's third axis: SEEN ------------------------------------------
     // Beside SpeciesRaised (what you brought up) and MalbeastsDefeated (what you beat),
-    // this is what you have merely LAID EYES ON. Moved by a duel, an arena entrant and
-    // a branch-sibling reveal as well as by raising. The widest of the three by
+    // this is what you have merely LAID EYES ON. Moved by a duel or an arena entrant
+    // as well as by raising. The widest of the three by
     // construction: a device can meet far more of the roster than it will ever raise,
     // which is exactly why the capstone here is worth less than FULL_ROSTER below.
     {/*wire=*/119, "SEEN_12", "Field Notes",

@@ -492,12 +492,11 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         // One job per line, each with the full row, so a long crew name never clips.
         const int tx = kMargin + 10;
         const int w = kActiveW - kMargin - tx;
-        // 1: the name, at title weight and in the side's colour while focused. Bold is
-        // earned here (VISUAL_LANGUAGE §2.3): the focused name is side-coloured, and in
-        // grayscale that colour sits at the motto's dim level. Weight is what keeps it
-        // the row's heading.
+        // 1: the name. Bold only while focused (VISUAL_LANGUAGE §2.3): the focused name
+        // is side-coloured, and in grayscale that colour sits at the motto's dim level.
+        // An unfocused name is ink over a dim motto, so colour already separates them.
         drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
-                        beat_, scrollWhen(s), FontFace::Bold);
+                        beat_, scrollWhen(s), s ? FontFace::Bold : FontFace::Regular);
         // 2: the motto. WRAPPED, not marqueed: a marquee only ever ran for the
         // focused row, so an unselected crew with a long motto (e.g. "fail to plan;
         // plan to fail") was silently cut mid-word with no indication there was

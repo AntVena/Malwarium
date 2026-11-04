@@ -156,7 +156,8 @@ the level of the text it heads. Three places pass that test today, each with its
 the call site:
 
 - **The CREW side roster** (`drawCrewTeam`): the focused crew's name is side-coloured, and
-  in grayscale Blue lands at the motto's `ink-dim` level.
+  in grayscale Blue lands at the motto's `ink-dim` level. Unfocused names are `ink` over a
+  dim motto, so they stay Regular.
 - **The CREW detail's Exploit name** (`drawCrewDetail`): `accent` over `ink` prose, which in
   grayscale sits between the prose and the dim readout above it.
 - **The Decryptogram status line** (`cryptogram_screen.cpp`), the one line that says what the
@@ -236,6 +237,20 @@ Global: **8px bezel** (no UI) every edge; whole-canvas **×1.75** integer upscal
 downscaling**. Author all UI to land on clean logical-pixel boundaries so the
 upscale stays crisp.
 
+### 4.0 Separation levers
+
+A screen has three ways to set one thing apart from another: a **header**, **Bold**, or
+**space** (a gap). `ink` vs `ink-dim` and position are a fourth, free channel and come first.
+Header and Bold are free in pixels but lose meaning each time they are spent. Space is paid
+out of a 224×224 panel. So spend each lever only on a distinction the cheaper channels
+cannot carry:
+
+- **A header names one group among several.** A header over the only group on the page
+  (MOVES' slots, which each read `SLOT n`) marks nothing.
+- **Bold follows §2.3**: the header title, plus the three stated exceptions.
+- **Space separates blocks.** Lines inside a block keep the line pitch, and a verdict sits one
+  footer gap under its block (§4.1).
+
 ### 4.1 Detail pages
 
 A DETAIL page is what a list row opens onto: `item_detail`, `mod_detail`, `maint_detail`.
@@ -250,7 +265,9 @@ mark nothing) spends the page's one free lever.
 
 **A failing gate lights up.** A requirement drawn dim while it holds goes `HOT`/`WARN` the
 moment it is the thing stopping you: MODS' `REQUIRES LVL n`, MAINT's `COST n B`. The word
-carries it in grayscale; the colour is emphasis on top.
+carries it in grayscale; the colour is emphasis on top. Nothing else on a detail page takes
+`HOT`: MODS' `ONE-SHOT` caveat is prose and draws in `ink`, so a locked one-shot mod has
+one red line, the gate.
 
 **One action line, last.** The verdict (the cursor plus a verb, or the reason there is no
 verb) is the last line of the page. Last in READING ORDER, not pinned to the panel's

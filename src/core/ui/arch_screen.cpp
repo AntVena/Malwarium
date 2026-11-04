@@ -273,9 +273,10 @@ void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
         drawText(fb, kMargin, 34, "NO ACTIVE PET TO SET ASIDE.", palColor(Pal::INK));
         drawText(fb, kMargin, 52, "THE EGG IS LAID OUTRIGHT.", palColor(Pal::INK_DIM));
     }
-    drawText(fb, kMargin, 150,
-             v.rackFull ? "- NO FREE RACK SLOT -" : "HATCH A FRESH EGG.",
-             v.rackFull ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
+    if (!v.confirmOpen)
+        drawText(fb, kMargin, 74,
+                 v.rackFull ? "- NO FREE RACK SLOT -" : "HATCH A FRESH EGG.",
+                 v.rackFull ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
 
     if (v.confirmOpen) {
         drawConfirmBox(fb);

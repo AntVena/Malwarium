@@ -90,13 +90,10 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
 
     // No standalone "default" row: Quick Jab is a per-slot FALLBACK, not a
     // fixture. It's shown inside an empty slot below, never as a slot of its own.
-    drawText(fb, kMargin, 30, "EQUIPPED", palColor(Pal::INK_DIM));
-    fb.fillRect(kMargin + textWidth("EQUIPPED") + 6, 34, 90, 1, palColor(Pal::TRACK));
-
     // Row columns: the slot label on the margin, the state glyph, then the content,
-    // with the accepted-kind tag right-aligned opposite. `top` clears the LOADOUT
-    // caption's own row, which the focused band would otherwise draw over.
-    const int rowH = 20, top = 48;
+    // with the accepted-kind tag right-aligned opposite. The focused band starts 7px
+    // above its row's baseline, so `top` keeps it clear of the header rule.
+    const int rowH = 20, top = kRowTop + 8;
     constexpr int kSlotLabelX = 20;   // clear of the row cursor at the margin
     constexpr int kSlotGlyphX = 72;
     constexpr int kSlotTextX = 96;
