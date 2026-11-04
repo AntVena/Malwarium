@@ -87,9 +87,11 @@ comment would not leave a reader confused, delete it. A comment never cites the 
 ([`docs/MASTER_TODO.md`](docs/MASTER_TODO.md)); its cards stay out of the code.
 
 So: no planning or milestone IDs, no dates or session tags, no change-narration ("the old X",
-"used to", "now lives on"). Describe the **current** state, and reference other code (files,
-symbols) freely. Docs follow the same rule: cite how and where, never when. `git log` is the
-changelog, and prose that narrates change competes with it and loses.
+"used to", "now lives on"). Describe the **current** state. Reference other code only when a
+reader needs to go there, and name the symbol over the file. A rule saying a comment is
+*allowed* never makes one *required*: the deletion test above still decides. Docs follow the
+same rule: cite how and where, never when. `git log` is the changelog, and prose that narrates
+change competes with it and loses.
 
 Full rules and the keep-anyway exceptions (EAPOL `M1–M4`, board and pin names, world
 `Area 0–3`, living how-to standards): [`docs/COMMENT_STANDARD.md`](docs/COMMENT_STANDARD.md).

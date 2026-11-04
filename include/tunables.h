@@ -1129,7 +1129,7 @@ constexpr uint32_t kAuditEapolHoldMs      = 3000;              // dwell-lock aft
 //     Common); a genuinely NEW captured handshake (the rarer, harder event)
 //     grants a richer one (no Common). Percent pairs/triples below must each sum
 //     to 100; rolled with the shared LCG (rng_ >> 16) % 100, matching every other
-//     weighted roll in game_items.cpp.
+//     weighted roll.
 constexpr int kNetDiscoveryCacheCommonPct     = 70;  // new network: 70% common
 constexpr int kNetDiscoveryCacheUncommonPct   = 30;  //              30% uncommon
 constexpr int kHandshakeCaptureCacheUncommonPct = 50; // new handshake: 50% uncommon

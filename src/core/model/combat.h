@@ -514,7 +514,7 @@ struct CombatEnemy {
     // The one move that is THIS creature's, whatever depth it was met at. Beside moveIds
     // rather than in it because the depth ladder REPLACES that list (applyWildSubAreaRamp),
     // so a kit written into the row would survive only the shallowest sub-area. A win
-    // teaches out of the beaten enemy's whole kit (rollEnemyMoveDrop, game_explore.cpp), so
+    // teaches out of the beaten enemy's whole kit (rollEnemyMoveDrop), so
     // a signature is the legible reason to hunt one creature over another; being generic
     // (MoveDef::line null) it drops to whatever the player hatched.
     const char* signatureMoveId = nullptr;

@@ -53,11 +53,20 @@ mechanism, a `file:line`, a sibling symbol), never *when* (a date, a session, a 
 
 ## Do write
 
+This list says what a comment MAY carry. Each comment still has to pass the deletion test: if a
+reader would not be confused without it, leave it out. Valid is the floor for a comment, and
+needed is the bar.
+
 - What the thing is for, how to use it, worked examples.
 - The **why** behind a non-obvious choice, phrased as the reason it holds today.
 - **References to other code** (a sibling file, a class/function/tunable name), when the
-  collaborator or consumer lives elsewhere. `resolveMaint() → addCareMistakeShielded`,
-  `game_hacker.cpp`, `dev_config.h`, `Nav::PostEncounter` all orient you *in the codebase* and stay.
+  collaborator or consumer lives elsewhere and a reader needs to go there to understand this
+  code. `resolveMaint() → addCareMistakeShielded`, `game_hacker.cpp`, `dev_config.h`,
+  `Nav::PostEncounter` all orient you *in the codebase* and stay.
+  - **Name the symbol over the file.** A symbol is greppable and survives a move. A file name
+    records where the code sat when the comment was written, which is provenance.
+  - **When code moves, do not repoint comments that name its old file.** Drop the file name
+    and keep the symbol. Add a location only when its absence would confuse a reader.
 
 ## Write plainly
 

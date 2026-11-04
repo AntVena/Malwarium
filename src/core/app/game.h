@@ -2364,7 +2364,7 @@ public:
     // in full: clearing an area's gauntlet, and taking a bracket at the arena. Both move
     // exactly the state ownership is derived from and nothing else, so what they exercise
     // is the derivation rather than a flag written past it. The real paths are the area
-    // boss's final win (game_explore.cpp) and awardTourneyPurse.
+    // boss's final win and awardTourneyPurse.
     void debugClearSector(int area) {
         if (area < 0 || area >= kAreaCount) return;
         sectorCleared_[area] = true;
@@ -2862,8 +2862,8 @@ private:
     // MODS earn path. rollAreaModId draws a rarity-weighted id from an area's
     // loot table (area 0..kAreaCount-1 or kDeepWebSector); rollAnyModId draws globally
     // (Epic cache jackpot); grantMod adds the spare if there is room for it under
-    // modStorageCap() and logs either way. Drop sites: boss clears + DeepWeb wins
-    // (game_explore/game_combat), Epic sealed caches (game_items).
+    // modStorageCap() and logs either way. Drop sites: boss clears, DeepWeb wins,
+    // Epic sealed caches.
     const char* rollAreaModId(int area);
     const char* rollAnyModId();
     void grantMod(const char* id);

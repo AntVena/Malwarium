@@ -11,7 +11,7 @@ namespace mal {
 namespace {
 // Weighted Sealed-Cache rarity picks for the real-radio discovery rewards
 // (pcap-blowup fix follow-on). `roll` is 0..99 from the shared LCG,
-// matching every other weighted roll in game_items.cpp. Local to this unit,
+// matching every other weighted roll. Local to this unit,
 // only resolveNetworkDiscovery()/registerHandshake() below use them.
 const char* rollNetworkDiscoveryCacheId(int roll) {
     return roll < kNetDiscoveryCacheCommonPct ? "sealed_cache_common"

@@ -37,7 +37,7 @@ const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome ou
 
 // Combat-stat labels ---------------------------------------------
 // Indexed to statPoints_/lastLevelUpStat_: 0 power · 1 defense · 2 speed · 3
-// max-Health. Shared by the Rollback picker + its log line (game_items), the
+// max-Health. Shared by the Rollback picker + its log line, the
 // post-encounter level-up readout (game_render), and any other unit that needs to
 // name a levelled stat. The words themselves come from content/defs.h's levelStatWord,
 // which the item readouts also draw on: an Epic dish grants a point on this same axis,

@@ -28,18 +28,13 @@ building it up organically.
 
 ### 1a. Ready to build
 
-**Five areas have no STORY.** The chapter machinery ships whole (four beats per zone, fired by
-the walk, archived in EXPL's CHAPTERS list), and only CITRUS CIRCUIT is written
-(`src/core/content/areas/citrus_circuit/area.cpp`'s `story` row). Every other area, and both
-endless zones, carry a zeroed `AreaStoryDef`, which reads as "nothing to say yet" and fires
-nothing. What is left is the WRITING, one area at a time: arrival, gauntlet, cleared,
-departure, each a run of heading-plus-prose panels held to `EffectText::kMaxProse`, each with
-its own `wire` number. The premise Citrus Circuit sets up (a surge nobody has explained, a
-Crew that has not turned up) is the thread the rest of the ladder has to pay off, so the arc
-wants deciding before the middle areas are written rather than after. |
+**The two endless zones have no STORY.** Every ladder area's four chapters are written (wires
+1-24); DEEPWEB DIVE and DARKWEB CRAWL still carry a zeroed `AreaStoryDef` (`kStoryDeepWeb`,
+`kStoryDarkWeb`), which reads as "nothing to say yet" and fires nothing. Only the ARRIVAL beat
+can ever fire there: there is no gauntlet down there to open or close. Each wants an arrival
+that pays off the thread the ladder ends on. |
 *The story* in [`AREA_CONTENT_STANDARD.md`](../src/core/content/areas/AREA_CONTENT_STANDARD.md);
-`test_story_chapters_fit_their_page` is the gate. | M each | The two endless zones only ever
-reach the ARRIVAL beat: there is no gauntlet down there to open or close. |
+`test_story_chapters_fit_their_page` is the gate. | S each | Wire numbers continue past 24. |
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, but with ~56KB left once capture is armed, anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
@@ -358,23 +353,10 @@ rather than by line count. `save.cpp` (1215), `combat.cpp` (1888), `combat_facto
 ONE concern at UNIT level: save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
-**Three `game_*.cpp` units are past 600 and hold more than one concern.** Each has a seam
-where a whole cluster lifts out without touching the rest:
-
-- **`game_combat.cpp` (1018) carries the MOVES/TRAIN screens' input**, ~200 lines from
-  `onTrainList` to `onSimTier`, which is screen handling rather than the fight. Split →
-  `game_train.cpp`. | `game_combat.cpp` | S |
-- **`game_items.cpp` (972) carries the cache economy and the stat pickers.** `rollLootEntry`
-  through `onBulkYield` (~150) is the VAULT's payout path, and the
-  Rollback/Repartition pickers (~130) are their own modal. Split → `game_caches.cpp`, and the
-  pickers either beside it or in their own unit. | `game_items.cpp` | S |
-- **`game_explore.cpp` (973) carries boss rounds and the move-learn queries.** From
-  `moveIsTeachable` to the end (~230) is the bosses and what each zone can teach, which the
-  walk only calls into. Split → `game_bosses.cpp`. | `game_explore.cpp` | S |
-
-The rest past 600 are one concern each and stay: `game_render` (one function per screen),
-`game_persist` (the flat save mapping), `game_core` (the tick clocks), and `game_config`,
-`game_pvp`, `game_crew` (one screen each, just over).
+The units past 600 are one concern each and stay: `game_render` (one function per screen),
+`game_persist` (the flat save mapping), `game_core` (the tick clocks), `game_combat` (the fight's
+lifecycle, entry to settle, plus the `debug*` combat hooks §1j retires), `game_explore` (the
+walk), and `game_config`, `game_pvp`, `game_crew` (one screen each, just over).
 
 **The function rule.** What is left is a note rather than a task:
 

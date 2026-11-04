@@ -54,7 +54,7 @@ const MoveDef kMoves[] = {
 
     // --- Wild SIGNATURES. One per malbeast --------------------------------------
     // Generic on purpose (line == nullptr), because these are what a wild TEACHES: a win
-    // drops out of the beaten enemy's own kit (rollEnemyMoveDrop, game_explore.cpp), and
+    // drops out of the beaten enemy's own kit (rollEnemyMoveDrop), and
     // a line-exclusive row would be a prize half the roster could never field. Which
     // creature carries which is the roster itself (CombatEnemy::signatureMoveId,
     // wildMalbeast in combat_factory.cpp); this file only says what each one DOES.
