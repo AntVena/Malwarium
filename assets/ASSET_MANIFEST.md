@@ -296,8 +296,8 @@ which is why gameplay ships first and the drawing follows.
   floor as the first palette entry AND as `--outline`, which is what makes the darkest tone a
   decision rather than a sample. `SPR_PET_TADPOLL` did not need re-snapping: it was already at
   cell scale and on-palette, so it took a remap of its ink instead, which is the cheaper repair
-  whenever the art itself is sound. That pass also caught 9 pixels of pure `#000000` in its
-  second frame's tail: a sheet can hold a handful of off-palette pixels that no eye will find
+  whenever the art itself is sound. That pass also caught 9 pixels of pure `#000000` in a
+  tail: a sheet can hold a handful of off-palette pixels that no eye will find
   and no colour count will flag if the count is taken per frame. **Measure the darkest tone over
   the WHOLE sheet, against `PAPER`, before shipping**: a hand pass that picks ink off a shipped
   phishing sprite reintroduces the fault, so measure rather than choosing by eye.
@@ -316,6 +316,17 @@ which is why gameplay ships first and the drawing follows.
   silhouette, the teeth and the cursor rig survive; the thin filaments the cursors hang from
   degrade to dotted lines. Re-sourcing at cell scale is the fix, and the framing lever below is
   how: this cut asked for a third of the canvas width and got four fifths.
+- **A clip can be drawn by hand from the shipped frame, and for a soft body that is the cheaper
+  road.** `SPR_PET_TADPOLL`'s idle, swim, attack and hurt rows are its one drawing moved rather than
+  redrawn. The tail turns as a piece about its root through five bands, each turned a little
+  further, so it arcs instead of hinging; each band is upscaled, rotated and majority-sampled back
+  down, so the ribbed fin keeps its own colours, and then pinholes are filled and the outline re-run.
+  Squash and stretch remove or duplicate one row or column through the head, which keeps the face
+  crisp, and the eyes and mouth swap as stamps. The result stays on model and on palette, costs no
+  credits and is cheap in flash, because a moved body repeats its tiles. What it cannot make is a
+  new pose: a spine that flexes or a leg that changes shape is a redraw, which is what
+  `SPR_PET_BREECHEETAH`'s gallop row is. `SPR_PET_PAYPUP`'s walk is the limit case the other way:
+  its feet are separate blocks, so stepping them is the whole cycle.
 - **An animation round trip keeps the pixel scale and loses the palette.** Feeding a cell-scale
   sprite to `animate_game_art` returns frames drawn at that same scale (a 48×36 subject comes back
   47×37 across eight frames), so the sheet crops into the cell with no resampling, which is what
