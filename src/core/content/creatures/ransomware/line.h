@@ -144,17 +144,19 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      "System pwnage / privilege takeover",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
-    // Breecheetah takes the same 96x64 cell and the same palette as its Good sibling
-    // above, and spends both differently, where Pwnther is bulk under grey plate,
-    // this is a bare green sprinter wearing its shell as glowing pips and flat decal
-    // tiles. Same line, same branch signature, opposite silhouettes: which one a
+    // Breecheetah takes the same palette as its Good sibling above and spends it
+    // differently: where Pwnther is bulk under grey plate, this is a bare green
+    // sprinter wearing its shell as glowing pips and flat decal tiles. Same line, same branch signature, opposite silhouettes: which one a
     // player got reads across the room (CREATURE_VISUAL_RULES §4).
     {"breecheetah", "Breecheetah", Stage::Daemon, "SPR_PET_BREECHEETAH",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
      "Data breach / exfiltration",
      {MoveKind::Attack, MoveKind::Attack, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
+     // Ground for the reason Kalico is: the walk row is drawn motion.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/4, /*holdBeats=*/2},
+                {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/1}}},
 };
 inline constexpr int kRansomwareCreatureCount =
     sizeof(kRansomwareCreatures) / sizeof(kRansomwareCreatures[0]);

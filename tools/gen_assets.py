@@ -201,6 +201,9 @@ FRAME_W_OVERRIDES = {
     # measured, and to 78 when the walk row spread the arm skirt to 74 across. Without
     # the row here the eight cells read as one very wide frame.
     "SPR_PET_SYNCAELIA": 78,
+    # 832x128 = eight 104x64 frames, the gallop's own frame width: its reach at full
+    # stretch is 99 px, past the 96 a Daemon cell usually gives.
+    "SPR_PET_BREECHEETAH": 104,
 }
 
 # The HEIGHT half of the table above, keyed the same way: asset name -> one row's height.
@@ -220,6 +223,8 @@ ROW_H_OVERRIDES = {
     "SPR_PET_MORPHOPUS": 64,
     # 576x256 = four rows of 72x64 cells: the idle, the step cycle, the strike, the flinch.
     "SPR_PET_TENTACLONE": 64,
+    # 832x128 = two rows of 104x64 cells: the standing idle, the gallop.
+    "SPR_PET_BREECHEETAH": 64,
     # The wild malbeasts: two rows of one frame each, the idle then the attack (tools/
     # gen_malbeast_art.py); 56x96 for the 56x48 cell, 64x112 for the apex's 64x56. Not
     # SPR_PET_ sheets, so the stack has to be declared here.
