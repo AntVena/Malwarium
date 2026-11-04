@@ -206,15 +206,16 @@ which is why gameplay ships first and the drawing follows.
   regalia reads as more creature rather than as cloth and steel over one. That is a recolour of existing pixels (the forms are already
   separated, only the hues are not), so it is a paint pass on the shipped file rather than another
   generation. `SPR_PET_PWNTHER` is the reference for how far the tones have to move apart.
-- **`SPR_PET_BARKMAIL` is `▨`, and what wants redrawing is the MAIL rather than the dog.** Its
-  source is 81×66 against the 56×48 Script cell, so it is width-bound decimated onto it and 622
-  single-pixel features land on a deleted lattice line. Chain-mail *is* 1px texture, so it absorbs
-  almost all of that: the rings degrade into a stipple that reads as an armour drape rather than as
-  links. What survives is what matters (the silhouette, the stage read, and Paypup's visor band, the
-  one detail carrying the evolution), which is why it ships. **The lesson generalises: decimation
-  destroys thin structural LINES and merely coarsens TEXTURE**, so it is survivable exactly when the
-  detail at risk is a value field rather than an outline. A redraw wants the mail drawn as a
-  deliberately coarser pattern the cell can hold, not the same pattern sourced larger.
+- **`SPR_PET_BARKMAIL` is `☑`, and its mail is a pattern the cell can hold.** The armour is a dozen
+  overlapping envelope plates, each a grey rectangle with a dark V flap, so the creature row's pun
+  (each link a letter) is drawn rather than implied, and each plate is big enough that its flap
+  survives the trip to 56×48. Paypup's black visor band carries the evolution. **Decimation destroys
+  thin structural LINES and merely coarsens TEXTURE**, which is why a ring-mail texture at 1px turns
+  to stipple at cell scale while a few large plates do not: draw the armour as a coarser pattern,
+  rather than sourcing the same fine one larger. The plates carry their own grey ramp beside the
+  green one (`CREATURE_VISUAL_RULES §3`), and the source was darkened to 0.85 before `quantize.py`
+  so the plates' mass sits on the mid greys instead of the top rung. Without that, the sharpened
+  brights snap onto the green highlight ramp.
 - **`SPR_PET_CONKITTENATE` is one 448×48 row, all eight columns of it idle.** It carries the cat
   branch's two-headed signature (`CREATURE_VISUAL_RULES §4`) on Kalico's machined finish held back to
   Process restraint (a few panel seams, one joint puck per haunch, a segmented tail), so the kitten
@@ -315,7 +316,7 @@ which is why gameplay ships first and the drawing follows.
   any creature whose tell is dark-on-bright rather than bright-on-dark.
 - **`SPR_PET_BAITRACUDA` is `▨`, and what it owes is RESOLUTION.** Its source framed at 160×65
   against the 96×64 Daemon cell, so it is width-bound decimated at 3:5: 874 single-pixel
-  features land on a deleted lattice line, against the 622 `SPR_PET_BARKMAIL` ships with. The
+  features land on a deleted lattice line. The
   silhouette, the teeth and the cursor rig survive; the thin filaments the cursors hang from
   degrade to dotted lines. Re-sourcing at cell scale is the fix, and the framing lever below is
   how: this cut asked for a third of the canvas width and got four fifths.
