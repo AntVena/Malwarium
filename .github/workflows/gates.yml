@@ -44,11 +44,10 @@ jobs:
       # and the file stops parsing, which GitHub reports as a 0-second run with no
       # jobs and no logs, not as a syntax error.
       - name: "'Pedia data freshness"
-        # Here and NOT in tools/gates.sh: this guards a PUBLISH, not a build. Stale
-        # pedia data cannot break the firmware or the device, and gates.sh is the
-        # tight edit loop whose whole bet is that it stays cheap enough to always
-        # run. This job already has the two halves the check needs (a C++ compiler
-        # for tools/dump_content.cpp and python3), so it costs one compile here.
+        # tools/gates.sh runs this too in its full cycle (not --native), so a push
+        # that skipped `make pedia` fails before it leaves the machine. This job
+        # already has the two halves the check needs (a C++ compiler for
+        # tools/dump_content.cpp and python3), so it costs one compile here.
         #
         # It catches two things: a content-table edit that never got re-generated,
         # and a generator that can no longer parse what it scrapes (gen_pedia_data.py

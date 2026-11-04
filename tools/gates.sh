@@ -15,9 +15,10 @@
 #   ./tools/gates.sh --verbose    stream everything instead of logging it
 #
 # Exits non-zero if any tier fails. CI runs the same two tiers as separate jobs
-# (.github/workflows/gates.yml) so a failure names which one broke. CI also runs
-# `make pedia-check`, which is not here on purpose: it guards a publish, not a
-# build, and paying for it on every edit loop would buy nothing the loop can act on.
+# (.github/workflows/gates.yml) so a failure names which one broke. The full run also
+# does CI's `make pedia-check`, because a content or sprite edit moves
+# web/data/pedia_data.js without touching anything under web/, and the push is where
+# that has to be caught. --native skips it, so the edit loop stays cheap.
 set -uo pipefail
 
 cd "$(dirname "$0")/.." || exit 1
@@ -28,7 +29,7 @@ for arg in "$@"; do
     case "$arg" in
         --native)  NATIVE_ONLY=1 ;;
         --verbose) VERBOSE=1 ;;
-        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "gates.sh: unknown option '$arg'" >&2; exit 2 ;;
     esac
 done
@@ -89,6 +90,9 @@ if [ "$NATIVE_ONLY" = 1 ]; then
     echo "(S3 skipped: --native)"
     exit 0
 fi
+
+run "pedia freshness" make pedia-check || exit 1
+echo "pedia   ok"
 
 run "S3 firmware build" pio run -e waveshare_s3_154 || exit 1
 echo "S3      ok"

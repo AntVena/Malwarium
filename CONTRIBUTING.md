@@ -139,9 +139,12 @@ native run says nothing about whether the firmware still links.
 ./tools/gates.sh
 ```
 
-Quiet on success, and on failure it prints only the lines that explain it. `--native` skips the
-firmware build for a tight edit loop; `--verbose` streams everything. The same two tiers run in
-CI on every push (`.github/workflows/gates.yml`).
+Quiet on success, and on failure it prints only the lines that explain it. Between the two tiers
+the full run also checks that `web/data/pedia_data.js` is fresh (`make pedia-check`), because a
+content or sprite edit moves it without touching anything under `web/`; run `make pedia` and
+commit the result when it fails. `--native` skips both that check and the firmware build for a
+tight edit loop; `--verbose` streams everything. The same checks run in CI on every push
+(`.github/workflows/gates.yml`).
 
 `src/generated/` is compiled from `assets/` by `tools/gen_assets.py` and is not committed. The
 gates regenerate it, so a fresh clone needs no extra step.
