@@ -53,7 +53,7 @@
 #  define FW_VERSION_MINOR 100
 #endif
 #ifndef FW_VERSION_PATCH
-#  define FW_VERSION_PATCH 14
+#  define FW_VERSION_PATCH 15
 #endif
 
 // Two-step expansion: the outer macro forces its argument to expand to a
