@@ -51,8 +51,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_PAYPUP.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 448,
-      "sheetH": 48
+      "sheetW": 672,
+      "sheetH": 192
     },
     {
       "id": "barkmail",
@@ -230,10 +230,10 @@ window.PEDIA_DATA = {
       "hint": "The fastest cat on the wire - breaches the perimeter then bails before alerts even fire.",
       "context": "Data breach / exfiltration",
       "sprite": "assets/sprites/SPR_PET_BREECHEETAH.png",
-      "cellW": 96,
+      "cellW": 104,
       "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sheetW": 832,
+      "sheetH": 128
     },
     {
       "id": "phrogspawn",
@@ -266,8 +266,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_TADPOLL.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 112,
-      "sheetH": 48
+      "sheetW": 448,
+      "sheetH": 192
     },
     {
       "id": "croaken",
@@ -315,8 +315,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_PHISHLET.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48
+      "sheetW": 448,
+      "sheetH": 192
     },
     {
       "id": "clickbait",
@@ -333,8 +333,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_CLICKBAIT.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48,
+      "sheetW": 448,
+      "sheetH": 192,
       "branchSplit": true
     },
     {
@@ -349,8 +349,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_SPAMWHALE.png",
       "cellW": 96,
       "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sheetW": 768,
+      "sheetH": 256
     },
     {
       "id": "baitracuda",
