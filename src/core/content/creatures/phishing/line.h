@@ -71,17 +71,26 @@ inline constexpr CreatureDef kPhishingCreatures[] = {
      "Half-grown and pleased about it. The legs have come in, the tail has not quite gone, and the throat has already learned to flash a six-digit code at anyone who asks. The number is real. The reason it wants yours is not.",
      "Token theft / one-time passcode phishing",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
-    // Its sheet is 96x64, which is ONE oversized Daemon frame rather than a row of 56px cells:
-    // gen_assets cuts a SPR_PET_ sheet into 56px frames only when the width divides by 56, so a
-    // width that does not is the larger Daemon box (up to 128x64). The extra room is the stage
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
+     // Ground, not Walk: the hop row is drawn motion, so the shelf bob would land a
+     // second rise on top of it.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/1},
+                {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/1},
+                {"hurt", /*row=*/2, /*frames=*/3, /*holdBeats=*/1}}},
+    // Its cell is the 96x64 Daemon box rather than the 56x48 Script one, declared in
+    // gen_assets.py's FRAME_W_OVERRIDES and ROW_H_OVERRIDES. The extra room is the stage
     // read: a Daemon held to the Script cell cannot pay off CREATURE_VISUAL_RULES §0's arrival.
     {"goliauth", "Goliauth", Stage::Daemon, "SPR_PET_GOLIAUTH", nullptr,
      nullptr, nullptr, 100, 100, "phishing",
      "It has not moved in years and has never needed to. The throat does the work: a croak pitched exactly like the helpdesk, over a prompt everyone has approved a hundred times without reading. It only has to be believed once.",
      "Vishing / phone phishing (phreaking)",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
+     // Ground, not Walk: the hop row is drawn motion, so the shelf bob would land a
+     // second rise on top of it.
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/1},
+                {"walk", /*row=*/1, /*frames=*/8, /*holdBeats=*/1},
+                {"hurt", /*row=*/2, /*frames=*/3, /*holdBeats=*/1}}},
 
     // --- Anglerfish chain ---
     {"phishlet", "Phishlet", Stage::Process, "SPR_PET_PHISHLET", "clickbait",

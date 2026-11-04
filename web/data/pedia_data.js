@@ -283,8 +283,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_CROAKEN.png",
       "cellW": 56,
       "cellH": 48,
-      "sheetW": 56,
-      "sheetH": 48
+      "sheetW": 448,
+      "sheetH": 144
     },
     {
       "id": "goliauth",
@@ -298,8 +298,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_GOLIAUTH.png",
       "cellW": 96,
       "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sheetW": 768,
+      "sheetH": 192
     },
     {
       "id": "phishlet",

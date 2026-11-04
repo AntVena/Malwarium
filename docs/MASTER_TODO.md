@@ -275,7 +275,10 @@ one sheet. What is left is the DECISION and then the sweep across the roster. Di
 These read fine by name + pips today; final art is polish, dropped in where it lands. Roughly
 high→low value:
 
-- **`SPR_DUMMY`**.
+- **`SPR_PET_CROAKEN` and `SPR_PET_GOLIAUTH` `attack` rows**, for a generator pass. A mouth or
+  tongue strike is a redraw, not a hand edit: neither frog has a mouth drawn at the front of its
+  face to open or to throw a tongue from. Their idle, hop and hurt rows ship, so a swing holds
+  the idle until then.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker

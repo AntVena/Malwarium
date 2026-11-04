@@ -206,6 +206,8 @@ FRAME_W_OVERRIDES = {
     "SPR_PET_BREECHEETAH": 104,
     # 768x256 = four rows of eight 96x64 frames: idle, swim, strike, flinch.
     "SPR_PET_SPAMWHALE": 96,
+    # 768x192 = three rows of eight 96x64 frames: idle, hop, flinch.
+    "SPR_PET_GOLIAUTH": 96,
 }
 
 # The HEIGHT half of the table above, keyed the same way: asset name -> one row's height.
@@ -228,6 +230,7 @@ ROW_H_OVERRIDES = {
     # 832x128 = two rows of 104x64 cells: the standing idle, the gallop.
     "SPR_PET_BREECHEETAH": 64,
     "SPR_PET_SPAMWHALE": 64,
+    "SPR_PET_GOLIAUTH": 64,
     # The wild malbeasts: two rows of one frame each, the idle then the attack (tools/
     # gen_malbeast_art.py); 56x96 for the 56x48 cell, 64x112 for the apex's 64x56. Not
     # SPR_PET_ sheets, so the stack has to be declared here.
