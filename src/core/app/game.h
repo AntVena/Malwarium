@@ -1568,7 +1568,7 @@ public:
     // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
     // petWander(). Each keeps its own stream so the group never marches in step.
     const IdleWander& companionWander(int i) const { return companionWander_[i]; }
-    // The copy one past the cap that crawls out and dies now and then
+    // The burst of copies past the cap that crawls out and dies now and then
     // (core/model/idle_fork.h). Rest for every pet that does not replicate.
     const IdleFork& petFork() const { return petFork_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,

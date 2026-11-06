@@ -778,9 +778,9 @@ void test_idle_wander_rehomes_when_the_mover_changes() {
     CHECK(w.offsetX() == 0 && w.offsetY() == 0);
 }
 
-// The worm flourish (core/model/idle_fork.h): rare, and once started it runs crawl, look
-// and die in order. A worm forks and keeps its copies; a line without Replication does
-// neither.
+// The worm flourish (core/model/idle_fork.h): rare, the extras arrive one at a time,
+// and all of them die on the same beat. A worm forks and keeps its copies; a line
+// without Replication does neither.
 void test_idle_fork_runs_whole_and_only_for_replicators() {
     IdleFork f;
     for (int i = 0; i < 1000; ++i) { f.step(false); CHECK(f.stage() == ForkStage::Rest); }
@@ -788,16 +788,22 @@ void test_idle_fork_runs_whole_and_only_for_replicators() {
     int rest = 0;
     while (f.stage() == ForkStage::Rest) { f.step(true); ++rest; }
     CHECK(rest == kIdleForkRestBeats);
-    const ForkStage order[] = {ForkStage::Crawl, ForkStage::Look, ForkStage::Die};
-    const int lengths[] = {kIdleForkCrawlBeats, kIdleForkLookBeats, kIdleForkDieBeats};
-    for (int s = 0; s < 3; ++s) {
-        for (int b = 0; b < lengths[s]; ++b) {
-            CHECK(f.stage() == order[s]);
-            CHECK(f.beatInStage() == b);
-            f.step(true);
-        }
+    int shown = 0;
+    while (f.stage() == ForkStage::Spawn) {
+        CHECK(f.extras() >= shown && f.extras() <= shown + 1);
+        shown = f.extras();
+        f.step(true);
+    }
+    CHECK(shown == kIdleForkExtras);
+    CHECK(f.stage() == ForkStage::Look);
+    while (f.stage() == ForkStage::Look) f.step(true);
+    for (int b = 0; b < kIdleForkDieBeats; ++b) {
+        CHECK(f.stage() == ForkStage::Die);
+        CHECK(f.extras() == kIdleForkExtras);
+        f.step(true);
     }
     CHECK(f.stage() == ForkStage::Rest);
+    CHECK(f.extras() == 0);
 
     Game worm{StartMode::Hatched, "nodeatode"};
     Game other{StartMode::Hatched, "paypup"};

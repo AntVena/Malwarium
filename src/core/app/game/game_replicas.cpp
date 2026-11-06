@@ -10,7 +10,7 @@
 // game_replicas.cpp: a replicating line's copies in the idle habitat. In a fight the
 // board is Combatant::wormReplicas, standing in rank between parent and enemy; at home
 // there is no combat state, so the copies mill about on their own wanders, and now and
-// then one more than the line has slots for crawls out and dies (core/model/idle_fork.h).
+// then a burst of extras past the line's slots crawls out and dies (core/model/idle_fork.h).
 
 namespace mal {
 
@@ -33,25 +33,32 @@ int clampOnCanvas(const SpriteData& glyph, int cx) {
     return std::max(w / 2, std::min(kActiveW - w / 2, cx));
 }
 
-void drawFork(Framebuffer& fb, const IdleFork& fork, int slot, int petCx, int beat) {
-    const SpriteData& glyph = replicaGlyph(slot);
-    const int seatCx = clampOnCanvas(glyph, replicaSeatX(slot));
-    const int b = fork.beatInStage();
-    switch (fork.stage()) {
-        case ForkStage::Rest:
-            return;
-        case ForkStage::Crawl: {
-            const int cx = petCx + (seatCx - petCx) * (b + 1) / kIdleForkCrawlBeats;
-            drawReplica(fb, glyph, kReplicaIdleFrame + (beat & 1), cx, kLivingBottom);
-            return;
+// Extra k takes the seat after the family's last copy, `copies + k`.
+void drawFork(Framebuffer& fb, const IdleFork& fork, int copies, int petCx, int beat) {
+    for (int k = 0; k < fork.extras(); ++k) {
+        const SpriteData& glyph = replicaGlyph(copies + k);
+        const int seatCx = clampOnCanvas(glyph, replicaSeatX(copies + k));
+        switch (fork.stage()) {
+            case ForkStage::Rest:
+                return;
+            case ForkStage::Spawn: {
+                const int age = fork.crawlBeat(k);
+                const int cx = petCx + (seatCx - petCx) * age / kIdleForkSpawnBeats;
+                drawReplica(fb, glyph, kReplicaIdleFrame + (beat & 1), cx, kLivingBottom);
+                break;
+            }
+            case ForkStage::Look: {
+                // Each extra turns on its own beat, so the crowd glances about.
+                const bool flipped = ((fork.beatInStage() + k) / 2) & 1;
+                drawReplica(fb, glyph, kReplicaIdleFrame, seatCx, kLivingBottom, kScaleNum,
+                            kScaleDen, flipped ? Mirror::Flipped : Mirror::None);
+                break;
+            }
+            case ForkStage::Die:
+                drawReplica(fb, glyph, kReplicaDeathFrame + fork.beatInStage(), seatCx,
+                            kLivingBottom);
+                break;
         }
-        case ForkStage::Look:
-            drawReplica(fb, glyph, kReplicaIdleFrame, seatCx, kLivingBottom, kScaleNum,
-                        kScaleDen, ((b / 2) & 1) ? Mirror::Flipped : Mirror::None);
-            return;
-        case ForkStage::Die:
-            drawReplica(fb, glyph, kReplicaDeathFrame + b, seatCx, kLivingBottom);
-            return;
     }
 }
 
