@@ -287,6 +287,7 @@ int g_failures = 0;
     RUN(test_idle_wander_reads_differently_per_locomotion) \
     RUN(test_idle_wander_crawler_never_leaves_the_floor) \
     RUN(test_idle_wander_rehomes_when_the_mover_changes) \
+    RUN(test_idle_fork_runs_whole_and_only_for_replicators) \
     RUN(test_habitat_moves_a_pet_and_parks_an_egg) \
     /* Sim-Battle + combat integration */   \
     RUN(test_sim_battle_end_to_end)         \

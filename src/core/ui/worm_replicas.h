@@ -35,11 +35,15 @@ constexpr int kReplicaSlotW = 30;
 // fight passes its own: the combat stage picks a SHOT per pairing (CombatStage,
 // ui/combat_screen.h), and a copy drawn at the habitat's scale on a wide-shot stage
 // would stand taller than the worm that made it.
+enum class Mirror : uint8_t { None, Flipped };
+
 inline void drawReplica(Framebuffer& fb, const SpriteData& s, int frame, int cx,
-                        int shelfY, int num = kScaleNum, int den = kScaleDen) {
+                        int shelfY, int num = kScaleNum, int den = kScaleDen,
+                        Mirror mirror = Mirror::None) {
     const int w = s.frameW * num / den;
     const int h = s.h * num / den;
-    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, num, den);
+    drawSpriteUpscaled(fb, s, frame, cx - w / 2, shelfY - h, num, den, /*row=*/0,
+                       mirror == Mirror::Flipped);
 }
 
 }  // namespace mal

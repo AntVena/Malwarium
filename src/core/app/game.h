@@ -37,6 +37,7 @@
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
+#include "core/model/idle_fork.h"
 #include "core/model/idle_wander.h"
 #include "core/model/inventory.h"
 #include "core/model/loadout.h"
@@ -1567,6 +1568,9 @@ public:
     // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
     // petWander(). Each keeps its own stream so the group never marches in step.
     const IdleWander& companionWander(int i) const { return companionWander_[i]; }
+    // The copy one past the cap that crawls out and dies now and then
+    // (core/model/idle_fork.h). Rest for every pet that does not replicate.
+    const IdleFork& petFork() const { return petFork_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
     // played once, the moment the egg is laid, like the Clutch and the Isolation
     // Protocol. Cracking the key halves what is left of the incubation clock; running out
@@ -2507,6 +2511,10 @@ private:
     void returnToLockout() override;
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
+    void drawIdleReplicas(Framebuffer& fb, int petCx) const;
+    // A raised pet whose line carries LinePassive::Replication: the one question both
+    // the ambient copies and the fork ask.
+    bool petReplicates() const;
     // Say that a background has just been come into. The three moments that can grant
     // one call it after the state that grants it has moved.
     void announceBackground(SceneId s);
@@ -3448,6 +3456,7 @@ private:
     // slot, of which idleCompanionCount() are live; each is seeded apart in Game's
     // constructor, since identical wanders move identically.
     IdleWander companionWander_[kWormReplicaSlots];
+    IdleFork petFork_;
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot

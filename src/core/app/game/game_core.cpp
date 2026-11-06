@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstring>
 
 #include "tunables.h"
 #include "core/render/canvas.h"   // kHeartbeatMs/kCombatAnimMs: the tick cadences
@@ -75,9 +74,14 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     }
 }
 
+bool Game::petReplicates() const {
+    if (!pet_ || inEggPhase()) return false;   // an egg has no copies; nor has an empty save
+    const CreatureLine* line = registry_.creatureLine(pet_->line);
+    return line && hasLinePassive(line->passives, LinePassive::Replication);
+}
+
 int Game::idleCompanionCount() const {
-    if (!pet_ || inEggPhase()) return 0;   // an egg has no copies; nor has an empty save
-    if (!pet_->line || std::strcmp(pet_->line, "worm") != 0) return 0;
+    if (!petReplicates()) return 0;
     // One more copy per stage raised, which is Nodeatode's own hint text made visible:
     // a Process worm has found one friend, and by the Daemon the family fills every
     // replication slot the line ever gets. The clamp is what keeps the two agreeing if
@@ -210,6 +214,7 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             if (i < companions) companionWander_[i].step(pet_->locomotion);
             else companionWander_[i].park();
         }
+        petFork_.step(petReplicates());
         // Resting colour: a line that wears borrowed colours drifts into another
         // family's palette now and then and comes back (core/model/idle_camo.h). An egg
         // is left out, because the Metamorphic hatch board (game_chroma.cpp) is a

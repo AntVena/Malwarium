@@ -778,6 +778,43 @@ void test_idle_wander_rehomes_when_the_mover_changes() {
     CHECK(w.offsetX() == 0 && w.offsetY() == 0);
 }
 
+// The worm flourish (core/model/idle_fork.h): rare, and once started it runs crawl, look
+// and die in order. A worm forks and keeps its copies; a line without Replication does
+// neither.
+void test_idle_fork_runs_whole_and_only_for_replicators() {
+    IdleFork f;
+    for (int i = 0; i < 1000; ++i) { f.step(false); CHECK(f.stage() == ForkStage::Rest); }
+
+    int rest = 0;
+    while (f.stage() == ForkStage::Rest) { f.step(true); ++rest; }
+    CHECK(rest == kIdleForkRestBeats);
+    const ForkStage order[] = {ForkStage::Crawl, ForkStage::Look, ForkStage::Die};
+    const int lengths[] = {kIdleForkCrawlBeats, kIdleForkLookBeats, kIdleForkDieBeats};
+    for (int s = 0; s < 3; ++s) {
+        for (int b = 0; b < lengths[s]; ++b) {
+            CHECK(f.stage() == order[s]);
+            CHECK(f.beatInStage() == b);
+            f.step(true);
+        }
+    }
+    CHECK(f.stage() == ForkStage::Rest);
+
+    Game worm{StartMode::Hatched, "nodeatode"};
+    Game other{StartMode::Hatched, "paypup"};
+    CHECK(worm.idleCompanionCount() == 1);
+    CHECK(other.idleCompanionCount() == 0);
+    uint32_t t = 0;
+    bool wormForked = false, otherForked = false;
+    for (int i = 0; i < kIdleForkRestBeats + 2; ++i) {
+        worm.tick(t += kHeartbeatMs);
+        other.tick(t);
+        wormForked |= worm.petFork().stage() != ForkStage::Rest;
+        otherForked |= other.petFork().stage() != ForkStage::Rest;
+    }
+    CHECK(wormForked);
+    CHECK(!otherForked);
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.
