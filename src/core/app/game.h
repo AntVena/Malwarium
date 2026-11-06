@@ -38,6 +38,7 @@
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
 #include "core/model/idle_fork.h"
+#include "core/model/idle_relay.h"
 #include "core/model/idle_wander.h"
 #include "core/model/inventory.h"
 #include "core/model/loadout.h"
@@ -1571,6 +1572,8 @@ public:
     // The burst of copies past the cap that crawls out and dies now and then
     // (core/model/idle_fork.h). Rest for every pet that does not replicate.
     const IdleFork& petFork() const { return petFork_; }
+    // The byte the copies pass along between forks (core/model/idle_relay.h).
+    const IdleRelay& petRelay() const { return petRelay_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
     // played once, the moment the egg is laid, like the Clutch and the Isolation
     // Protocol. Cracking the key halves what is left of the incubation clock; running out
@@ -3457,6 +3460,7 @@ private:
     // constructor, since identical wanders move identically.
     IdleWander companionWander_[kWormReplicaSlots];
     IdleFork petFork_;
+    IdleRelay petRelay_;
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot

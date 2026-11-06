@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include "core/render/canvas.h"
+#include "core/render/framebuffer.h"
+#include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
@@ -11,6 +13,7 @@
 // board is Combatant::wormReplicas, standing in rank between parent and enemy; at home
 // there is no combat state, so the copies mill about on their own wanders, and now and
 // then a burst of extras past the line's slots crawls out and dies (core/model/idle_fork.h).
+// Between bursts the copies pass a byte along (core/model/idle_relay.h).
 
 namespace mal {
 
@@ -62,15 +65,42 @@ void drawFork(Framebuffer& fb, const IdleFork& fork, int copies, int petCx, int 
     }
 }
 
+// The byte in flight: a block at the head of a parabola from `fromCx` to `toCx`, with a
+// dotted trail behind it over the part of the arc already flown. y is the copies' top.
+constexpr int kPacketPx = 6;
+constexpr int kArcRisePx = 22;
+constexpr int kTrailDotsPerBeat = 3;
+
+void drawPacket(Framebuffer& fb, int fromCx, int toCx, int topY, int beatInHop) {
+    const Rgb565 ink = palColor(Pal::INK);
+    const int steps = kIdleRelayHopBeats * kTrailDotsPerBeat;
+    const int head = (beatInHop + 1) * kTrailDotsPerBeat;
+    for (int s = 0; s <= head; ++s) {
+        const int x = fromCx + (toCx - fromCx) * s / steps;
+        const int y = topY - kArcRisePx * 4 * s * (steps - s) / (steps * steps);
+        if (s == head)
+            fb.fillRect(x - kPacketPx / 2, y - kPacketPx, kPacketPx, kPacketPx, ink);
+        else if (s % 2 == 0)
+            fb.fillRect(x - 1, y - kPacketPx / 2, 2, 2, ink);
+    }
+}
+
 }  // namespace
 
 void Game::drawIdleReplicas(Framebuffer& fb, int petCx) const {
     const int copies = idleCompanionCount();
+    int seatedCx[kWormReplicaSlots] = {};
     for (int i = 0; i < copies; ++i) {
         const SpriteData& glyph = replicaGlyph(i);
         const int cx = replicaSeatX(i) + logicalToActive(companionWander(i).offsetX());
-        drawReplica(fb, glyph, kReplicaIdleFrame + (beat_ & 1), clampOnCanvas(glyph, cx),
-                    kLivingBottom);
+        seatedCx[i] = clampOnCanvas(glyph, cx);
+        const int pose = petRelay_.chomping() == i ? kReplicaAttackFrame : kReplicaIdleFrame;
+        drawReplica(fb, glyph, pose + (beat_ & 1), seatedCx[i], kLivingBottom);
+    }
+    if (const int h = petRelay_.hop(); h >= 0 && h < copies) {
+        const int topY = kLivingBottom - replicaGlyph(h).h * kScaleNum / kScaleDen;
+        drawPacket(fb, h == 0 ? petCx : seatedCx[h - 1], seatedCx[h], topY,
+                   petRelay_.beatInHop());
     }
     if (petReplicates()) drawFork(fb, petFork_, copies, petCx, beat_);
 }

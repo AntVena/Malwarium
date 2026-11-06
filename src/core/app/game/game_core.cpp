@@ -215,6 +215,7 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
             else companionWander_[i].park();
         }
         petFork_.step(petReplicates());
+        petRelay_.step(petFork_.stage() == ForkStage::Rest ? companions : 0);
         // Resting colour: a line that wears borrowed colours drifts into another
         // family's palette now and then and comes back (core/model/idle_camo.h). An egg
         // is left out, because the Metamorphic hatch board (game_chroma.cpp) is a

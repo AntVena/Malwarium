@@ -821,6 +821,34 @@ void test_idle_fork_runs_whole_and_only_for_replicators() {
     CHECK(!otherForked);
 }
 
+// The relay (core/model/idle_relay.h): after its rest the byte hops once per copy, in
+// order, each copy chomps on the beats right after its catch, and then it rests again.
+// No copies, no relay.
+void test_idle_relay_hops_in_order_and_chomps_on_catch() {
+    IdleRelay none;
+    for (int i = 0; i < 500; ++i) { none.step(0); CHECK(none.hop() == -1); }
+
+    IdleRelay r;
+    int rest = 0;
+    while (r.hop() == -1) { r.step(3); ++rest; }
+    CHECK(rest == kIdleRelayRestBeats);
+    for (int h = 0; h < 3; ++h) {
+        for (int b = 0; b < kIdleRelayHopBeats; ++b) {
+            CHECK(r.hop() == h);
+            CHECK(r.beatInHop() == b);
+            CHECK(r.chomping() == (h > 0 && b < kIdleRelayChompBeats ? h - 1 : -1));
+            r.step(3);
+        }
+    }
+    for (int b = 0; b < kIdleRelayChompBeats; ++b) {
+        CHECK(r.hop() == -1);
+        CHECK(r.chomping() == 2);
+        r.step(3);
+    }
+    CHECK(r.chomping() == -1);
+    for (int i = 0; i < kIdleRelayRestBeats - 1; ++i) { r.step(3); CHECK(r.hop() == -1); }
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.
