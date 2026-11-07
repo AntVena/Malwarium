@@ -1967,25 +1967,6 @@ def _disguise_sheet(draw):
     return sheet
 
 
-def _gift_cell(eyes):
-    """A gift box whose lid lifts on the eyes: they peer out through the gap."""
-    c = Cell(DW, DH)
-    lift = {None: 0, "open": 3, "shut": 2}[eyes]
-    rect(c.body, 3, 10, 20, 23)                       # box
-    rect(c.body, 2, 7 - lift, 21, 10 - lift)          # lid
-    line(c.ink, (11, 10), (11, 23))                   # ribbon down the box
-    line(c.ink, (12, 10), (12, 23))
-    line(c.ink, (11, 7 - lift), (11, 10 - lift))      # ...and across the lid
-    line(c.ink, (12, 7 - lift), (12, 10 - lift))
-    ring(c.ink, (8.5, 4.5 - lift), 2.2)               # bow
-    ring(c.ink, (14.5, 4.5 - lift), 2.2)
-    if eyes == "open":
-        c.solid(6, 8, 12, 2).pupils((9, 8), (14, 8), h=2)
-    elif eyes == "shut":
-        c.solid(6, 9, 12, 1)
-    return c
-
-
 def _file_cell(eyes):
     """A dog-eared page of text. The eyes open where a line of text was."""
     c = Cell(DW, DH)
@@ -2020,8 +2001,54 @@ def _floppy_cell(eyes):
     return c
 
 
-def disguise_gift():
-    return _disguise_sheet(_gift_cell)
+def _usb_cell(eyes):
+    """A USB stick stood on its end, plug up. The eyes open across its body."""
+    c = Cell(DW, DH)
+    rect(c.body, 8, 2, 15, 8)                         # plug
+    rect(c.body, 6, 9, 17, 24)                        # body
+    rect(c.ink, 10, 4, 10, 5)                         # the plug's two contacts
+    rect(c.ink, 13, 4, 13, 5)
+    line(c.ink, (7, 11), (16, 11))                    # cap seam
+    ring(c.ink, (11.5, 20.5), 1.6)                    # lanyard hole
+    if eyes == "open":
+        c.solid(8, 13, 8, 3).pupils((10, 14), (13, 14), h=2)
+    elif eyes == "shut":
+        c.solid(8, 15, 8, 1)
+    return c
+
+
+def _monitor_cell(eyes):
+    """A monitor on its stand, a prompt on the screen. The eyes look out of it."""
+    c = Cell(DW, DH)
+    rect(c.body, 1, 2, 22, 16)                        # bezel
+    rect(c.body, 10, 17, 13, 20)                      # neck
+    rect(c.body, 5, 21, 18, 24)                       # foot
+    frame(c.ink, 3, 4, 20, 14)                        # screen
+    if eyes == "open":
+        c.solid(6, 7, 12, 3).pupils((9, 8), (14, 8), h=2)
+    elif eyes == "shut":
+        c.solid(6, 9, 12, 1)
+    else:
+        line(c.ink, (5, 6), (7, 8))                   # >_
+        line(c.ink, (7, 8), (5, 10))
+        line(c.ink, (9, 10), (11, 10))
+    return c
+
+
+def _malwarium_cell(eyes):
+    """The device itself: a square screen over the A/B/C buttons."""
+    c = Cell(DW, DH)
+    superellipse(c.body, 11.5, 12.5, 9.6, 11.6, n=5)  # case
+    frame(c.ink, 5, 4, 18, 14)                        # screen
+    for x in (7, 11.5, 16):                           # A B C
+        ring(c.ink, (x, 19), 1.4)
+    if eyes == "open":
+        c.solid(7, 7, 10, 3).pupils((9, 8), (14, 8), h=2)
+    elif eyes == "shut":
+        c.solid(7, 9, 10, 1)
+    else:
+        line(c.ink, (7, 12), (16, 12))                # the shelf, with nobody on it
+    return c
 
 
 def disguise_file():
@@ -2032,6 +2059,18 @@ def disguise_floppy():
     return _disguise_sheet(_floppy_cell)
 
 
+def disguise_usb():
+    return _disguise_sheet(_usb_cell)
+
+
+def disguise_monitor():
+    return _disguise_sheet(_monitor_cell)
+
+
+def disguise_malwarium():
+    return _disguise_sheet(_malwarium_cell)
+
+
 RECIPES = {
     "SPR_PET_NODEATODE": nodeatode,
     "SPR_PET_ROOTGRUB": rootgrub,
@@ -2039,9 +2078,11 @@ RECIPES = {
     "SPR_PET_THREADBORE": threadbore,
     "SPR_PET_USBASILISK": usbasilisk,
     "SPR_PET_COAXEEL": coaxeel,
-    "SPR_DISGUISE_GIFT": disguise_gift,
     "SPR_DISGUISE_FILE": disguise_file,
     "SPR_DISGUISE_FLOPPY": disguise_floppy,
+    "SPR_DISGUISE_USB": disguise_usb,
+    "SPR_DISGUISE_MONITOR": disguise_monitor,
+    "SPR_DISGUISE_MALWARIUM": disguise_malwarium,
 }
 
 

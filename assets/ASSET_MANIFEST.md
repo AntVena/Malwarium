@@ -526,7 +526,7 @@ looking like one creature in a fight and another at home.
 
 ### C.4b Trojan disguises (`SPR_DISGUISE_*`)
 
-Three props for the **whole Trojan line**: every so often a resting Trojan glitches into one of
+Five props for the **whole Trojan line**, all of them the machine or what it holds: every so often a resting Trojan glitches into one of
 them, wobbles, and gives itself away with a pair of eyes (`core/model/idle_disguise.h`, drawn by
 `game_disguise.cpp`). Drawn in `tools/gen_worm_art.py`'s vocabulary: the rest pose is pure outline
 with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each: **0** rest,
@@ -534,9 +534,11 @@ with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each:
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
-| `SPR_DISGUISE_GIFT` | Gift box | 24×24 ×5 | The lid lifts and the eyes peer out of the gap | ☑ | `/assets/sprites/SPR_DISGUISE_GIFT.png` |
 | `SPR_DISGUISE_FILE` | Dog-eared page | 24×24 ×5 | A line of text opens into eyes, and closes back into a line | ☑ | `/assets/sprites/SPR_DISGUISE_FILE.png` |
 | `SPR_DISGUISE_FLOPPY` | Floppy disk | 24×24 ×5 | The eyes open across the label | ☑ | `/assets/sprites/SPR_DISGUISE_FLOPPY.png` |
+| `SPR_DISGUISE_USB` | USB stick | 24×24 ×5 | Stood plug-up; the eyes open across its body | ☑ | `/assets/sprites/SPR_DISGUISE_USB.png` |
+| `SPR_DISGUISE_MONITOR` | Monitor | 24×24 ×5 | A `>_` prompt on the screen, replaced by the eyes | ☑ | `/assets/sprites/SPR_DISGUISE_MONITOR.png` |
+| `SPR_DISGUISE_MALWARIUM` | The device itself | 24×24 ×5 | A square screen over the A/B/C buttons; the eyes look out of its screen | ☑ | `/assets/sprites/SPR_DISGUISE_MALWARIUM.png` |
 
 ### C.5 Isolation Protocol: the Worm egg's hatch minigame
 

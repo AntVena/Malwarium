@@ -15,9 +15,11 @@ namespace mal {
 namespace {
 
 const SpriteData* const kDisguiseProps[] = {
-    &ASSET_SPR_DISGUISE_GIFT,
     &ASSET_SPR_DISGUISE_FILE,
     &ASSET_SPR_DISGUISE_FLOPPY,
+    &ASSET_SPR_DISGUISE_USB,
+    &ASSET_SPR_DISGUISE_MONITOR,
+    &ASSET_SPR_DISGUISE_MALWARIUM,
 };
 constexpr int kDisguisePropCount =
     static_cast<int>(sizeof(kDisguiseProps) / sizeof(kDisguiseProps[0]));
