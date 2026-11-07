@@ -533,6 +533,7 @@ class Cell:
         self.body = Mask(w, h)
         self.ink = Mask(w, h)
         self.cut = Mask(w, h)
+        self.holes = Mask(w, h)
         self._solid = None
 
     def solid(self, x, y, w=2, h=2):
@@ -723,7 +724,19 @@ class Cell:
 
     def bake(self):
         """body -> outline, less the cut, plus the ink. The whole finishing pass."""
-        return self.body.outline().subtract(self.cut).union(self.ink)
+        return self.body.outline().subtract(self.cut).union(self.ink).subtract(self.holes)
+
+    def pupils(self, *pts, h=1):
+        """Punch 1px-wide holes in the solid mass, which turns it into a pair of eyes.
+
+        The disguise props are the only users: a solid band with two holes in it is a
+        pair of eye-whites with pupils, and it is still the cell's one solid mass.
+        """
+        if self._solid is None:
+            raise ValueError("pupils need the solid mass to sit in")
+        for x, y in pts:
+            rect(self.holes, x, y, x, y + h - 1)
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -1913,6 +1926,112 @@ def coaxeel():
 # Every sheet this tool owns. A creature is added by writing its recipe above and one
 # row here; nothing else in the repo needs to know the tool exists, because what ships
 # is the committed PNG either way.
+# ---------------------------------------------------------------------------
+#  Trojan disguises: the props a resting Trojan turns into (core/model/idle_disguise.h)
+# ---------------------------------------------------------------------------
+# Shared by the whole line, so they are drawn in the one hand every line can wear: a
+# rest pose that is pure outline with NO solid mass, because nothing is alive in an
+# object. The tell is the solid mass arriving as a pair of eyes, which is the rule-4
+# read used for exactly what it is: where the creature is.
+#
+# One 1-row strip each, five DW x DH frames:
+#   0 rest   1 lean left   2 lean right   3 eyes open   4 eyes closing
+DW, DH = 24, 24
+DISGUISE_LEAN_PX = 2
+
+
+def lean(m, px):
+    """Shear a baked cell so its top moves `px` sideways and its base stays planted.
+
+    The wobble. A shear keeps every horizontal line whole, where a rotation at this size
+    breaks 1px strokes into dashes.
+    """
+    out = Mask(m.w, m.h)
+    for y in range(m.h):
+        dx = int(round(px * (m.h - 1 - y) / (m.h - 1)))
+        for x in range(m.w):
+            if m.get(x - dx, y):
+                out.set(x, y)
+    return out
+
+
+def _disguise_sheet(draw):
+    """`draw(eyes)` builds one Cell; eyes is None, "open" or "shut"."""
+    sheet = Sheet(5, 1, DW, DH)
+    rest = draw(None).bake()
+    sheet.place(0, 0, rest)
+    sheet.place(1, 0, lean(rest, -DISGUISE_LEAN_PX))
+    sheet.place(2, 0, lean(rest, DISGUISE_LEAN_PX))
+    sheet.place(3, 0, draw("open"))
+    sheet.place(4, 0, draw("shut"))
+    return sheet
+
+
+def _gift_cell(eyes):
+    """A gift box whose lid lifts on the eyes: they peer out through the gap."""
+    c = Cell(DW, DH)
+    lift = {None: 0, "open": 3, "shut": 2}[eyes]
+    rect(c.body, 3, 10, 20, 23)                       # box
+    rect(c.body, 2, 7 - lift, 21, 10 - lift)          # lid
+    line(c.ink, (11, 10), (11, 23))                   # ribbon down the box
+    line(c.ink, (12, 10), (12, 23))
+    line(c.ink, (11, 7 - lift), (11, 10 - lift))      # ...and across the lid
+    line(c.ink, (12, 7 - lift), (12, 10 - lift))
+    ring(c.ink, (8.5, 4.5 - lift), 2.2)               # bow
+    ring(c.ink, (14.5, 4.5 - lift), 2.2)
+    if eyes == "open":
+        c.solid(6, 8, 12, 2).pupils((9, 8), (14, 8), h=2)
+    elif eyes == "shut":
+        c.solid(6, 9, 12, 1)
+    return c
+
+
+def _file_cell(eyes):
+    """A dog-eared page of text. The eyes open where a line of text was."""
+    c = Cell(DW, DH)
+    poly(c.body, [(4, 1), (15, 1), (19, 5), (19, 24), (4, 24)])
+    line(c.ink, (15, 1), (15, 5))                     # the fold
+    line(c.ink, (15, 5), (19, 5))
+    for y, x1 in ((9, 16), (16, 14), (19, 15)):
+        line(c.ink, (7, y), (x1, y))
+    if eyes == "open":
+        c.solid(7, 11, 10, 3).pupils((9, 12), (14, 12), h=2)
+    elif eyes == "shut":
+        c.solid(7, 13, 10, 1)                         # closes back into a line of text
+    else:
+        line(c.ink, (7, 12), (15, 12))
+    return c
+
+
+def _floppy_cell(eyes):
+    """A floppy disk. The eyes open across its label."""
+    c = Cell(DW, DH)
+    poly(c.body, [(2, 2), (19, 2), (21, 4), (21, 24), (2, 24)])
+    frame(c.ink, 7, 2, 16, 8)                         # shutter
+    rect(c.ink, 12, 4, 13, 6)
+    frame(c.ink, 5, 12, 18, 22)                       # label
+    if eyes == "open":
+        c.solid(7, 15, 10, 3).pupils((9, 16), (14, 16), h=2)
+    elif eyes == "shut":
+        c.solid(7, 17, 10, 1)
+    else:
+        line(c.ink, (8, 16), (15, 16))
+        line(c.ink, (8, 19), (13, 19))
+    return c
+
+
+def disguise_gift():
+    return _disguise_sheet(_gift_cell)
+
+
+def disguise_file():
+    return _disguise_sheet(_file_cell)
+
+
+def disguise_floppy():
+    return _disguise_sheet(_floppy_cell)
+
+
 RECIPES = {
     "SPR_PET_NODEATODE": nodeatode,
     "SPR_PET_ROOTGRUB": rootgrub,
@@ -1920,6 +2039,9 @@ RECIPES = {
     "SPR_PET_THREADBORE": threadbore,
     "SPR_PET_USBASILISK": usbasilisk,
     "SPR_PET_COAXEEL": coaxeel,
+    "SPR_DISGUISE_GIFT": disguise_gift,
+    "SPR_DISGUISE_FILE": disguise_file,
+    "SPR_DISGUISE_FLOPPY": disguise_floppy,
 }
 
 

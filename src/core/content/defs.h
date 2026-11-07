@@ -240,6 +240,10 @@ struct CreatureLine {
     // CHROMATOPHORE cabinet choosing whether the pet standing there can plausibly be
     // its subject) asks this instead of asking a creature's id.
     bool wearsBorrowedColours = false;
+    // Does this family pass itself off as a harmless object while it rests
+    // (core/model/idle_disguise.h)? Declared on the family for the same reason as the
+    // flag above: nothing on the idle screen says what a line does in a fight.
+    bool disguisesAsProps = false;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the

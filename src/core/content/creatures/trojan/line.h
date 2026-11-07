@@ -28,9 +28,8 @@
 namespace mal {
 
 inline constexpr CreatureDef kTrojanCreatures[] = {
-    // Sprite is the existing (placeholder) Keyloggerhead frame; the "right blue with
-    // a small tell" disguise art is a follow-up. Its sheet is two rows of 8 columns,
-    // so the resting loop plays row 0 in full and the swing has row 1 to itself.
+    // Its sheet is two rows of 8 columns, so the resting loop plays row 0 in full and
+    // the swing has row 1 to itself.
     {"keyloggerhead", "Keyloggerhead", Stage::Script, "SPR_PET_KEYLOGGERHEAD",
      "placeholder_daemon", nullptr, nullptr, 100, 100, "trojan",
      "A slow, stubborn turtle in a keyboard shell - it passes for one of your fish, but it's logging every key you press.",

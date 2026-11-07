@@ -37,6 +37,7 @@
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
+#include "core/model/idle_disguise.h"
 #include "core/model/idle_fork.h"
 #include "core/model/idle_relay.h"
 #include "core/model/idle_wander.h"
@@ -1572,6 +1573,8 @@ public:
     // The burst of copies past the cap that crawls out and dies now and then
     // (core/model/idle_fork.h). Rest for every pet that does not replicate.
     const IdleFork& petFork() const { return petFork_; }
+    // The prop a disguising line turns into now and then (core/model/idle_disguise.h).
+    const IdleDisguise& petDisguise() const { return petDisguise_; }
     // The byte the copies pass along between forks (core/model/idle_relay.h).
     const IdleRelay& petRelay() const { return petRelay_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
@@ -2515,6 +2518,7 @@ private:
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
     void drawIdleReplicas(Framebuffer& fb, int petCx) const;
+    void drawDisguiseProp(Framebuffer& fb, int petCx) const;
     // A raised pet whose line carries LinePassive::Replication: the one question both
     // the ambient copies and the fork ask.
     bool petReplicates() const;
@@ -3461,6 +3465,7 @@ private:
     IdleWander companionWander_[kWormReplicaSlots];
     IdleFork petFork_;
     IdleRelay petRelay_;
+    IdleDisguise petDisguise_;
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot

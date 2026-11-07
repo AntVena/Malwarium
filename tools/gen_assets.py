@@ -170,6 +170,11 @@ FRAME_W_OVERRIDES = {
     # creature with a 56x48 cell, so it needs the override to be a strip at all.
     "SPR_WORM_REPLICA_ATTACK": 16,
     "SPR_WORM_REPLICA_DEFEND": 16,
+    # 120x24 = a Trojan disguise prop's five 24x24 frames (rest, lean, lean, eyes,
+    # blink), shared by the whole line (core/model/idle_disguise.h).
+    "SPR_DISGUISE_GIFT": 24,
+    "SPR_DISGUISE_FILE": 24,
+    "SPR_DISGUISE_FLOPPY": 24,
     # The combat screen's strike marks: 56x44 = two 28x44 frames, the pair a source
     # alternates between (tools/gen_fight_art.py). Wider than tall, so without the
     # override each would read as one very wide single frame.

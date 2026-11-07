@@ -524,6 +524,20 @@ plays the idle pair only: nothing at home attacks or dies. The frame constants a
 helper are shared by both screens in `src/core/ui/worm_replicas.h`, which is what stops a copy
 looking like one creature in a fight and another at home.
 
+### C.4b Trojan disguises (`SPR_DISGUISE_*`)
+
+Three props for the **whole Trojan line**: every so often a resting Trojan glitches into one of
+them, wobbles, and gives itself away with a pair of eyes (`core/model/idle_disguise.h`, drawn by
+`game_disguise.cpp`). Drawn in `tools/gen_worm_art.py`'s vocabulary: the rest pose is pure outline
+with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each: **0** rest,
+**1–2** lean left/right (a shear of 0), **3** eyes open, **4** eyes closing. 1-bit masks on `ink`.
+
+| Asset ID | Element | Logical size | Notes | Status | File |
+|---|---|---|---|---|---|
+| `SPR_DISGUISE_GIFT` | Gift box | 24×24 ×5 | The lid lifts and the eyes peer out of the gap | ☑ | `/assets/sprites/SPR_DISGUISE_GIFT.png` |
+| `SPR_DISGUISE_FILE` | Dog-eared page | 24×24 ×5 | A line of text opens into eyes, and closes back into a line | ☑ | `/assets/sprites/SPR_DISGUISE_FILE.png` |
+| `SPR_DISGUISE_FLOPPY` | Floppy disk | 24×24 ×5 | The eyes open across the label | ☑ | `/assets/sprites/SPR_DISGUISE_FLOPPY.png` |
+
 ### C.5 Isolation Protocol: the Worm egg's hatch minigame
 
 **No art at all, and that is the design.** The Worm egg turns its worm loose in a quarantine buffer

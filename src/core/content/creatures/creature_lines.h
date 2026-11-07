@@ -34,7 +34,8 @@ inline constexpr CreatureLine kCreatureLines[] = {
     // The only line a pet can ARRIVE on mid-raise (the cross-line divert), so it is the
     // only one with an achievement for reaching it.
     {"trojan", kTrojanCreatures, kTrojanCreatureCount,
-     linePassives(LinePassive::ExecOverride), ach::kTrojanUnleashed},
+     linePassives(LinePassive::ExecOverride), ach::kTrojanUnleashed,
+     /*wearsBorrowedColours=*/false, /*disguisesAsProps=*/true},
     {"worm", kWormCreatures, kWormCreatureCount, linePassives(LinePassive::Replication)},
     // No passive FLAG: Polymorph gates on combat state the line's own rows populate (a
     // slot holding a wildcard row), the way Perfect Bite gates on a live bubble rather

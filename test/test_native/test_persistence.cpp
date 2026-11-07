@@ -849,6 +849,57 @@ void test_idle_relay_hops_in_order_and_chomps_on_catch() {
     for (int i = 0; i < kIdleRelayRestBeats - 1; ++i) { r.step(3); CHECK(r.hop() == -1); }
 }
 
+// The disguise (core/model/idle_disguise.h): rare; the glitch shows the creature torn,
+// then the prop torn; the prop gives itself away with its eyes; the next disguise is a
+// different prop. A Trojan holds still while disguised and a line without the flag
+// never disguises.
+void test_idle_disguise_swaps_tells_and_holds_still() {
+    IdleDisguise none;
+    for (int i = 0; i < 1000; ++i) { none.step(false); CHECK(!none.showsProp() && !none.torn()); }
+
+    IdleDisguise d;
+    int rest = 0;
+    while (d.stage() == DisguiseStage::Rest) { d.step(true); ++rest; }
+    CHECK(rest == kIdleDisguiseRestBeats);
+    const int firstSlot = d.slot();
+    CHECK(d.torn() && !d.showsProp());          // the creature tears first...
+    d.step(true);
+    CHECK(d.torn() && d.showsProp());           // ...then the prop arrives torn
+    d.step(true);
+    bool eyes = false;
+    while (d.stage() == DisguiseStage::Hidden) {
+        CHECK(d.showsProp() && !d.torn());
+        eyes |= d.propFrame() == 3;
+        d.step(true);
+    }
+    CHECK(eyes);
+    CHECK(d.torn() && d.showsProp());
+    d.step(true);
+    CHECK(d.torn() && !d.showsProp());
+    d.step(true);
+    CHECK(d.stage() == DisguiseStage::Rest);
+    CHECK(d.slot() != firstSlot);
+
+    Game trojan{StartMode::Hatched, "keyloggerhead"};
+    Game other{StartMode::Hatched, "paypup"};
+    uint32_t t = 0;
+    bool trojanHid = false, otherHid = false, movedWhileHidden = false;
+    int heldX = 0;
+    for (int i = 0; i < kIdleDisguiseRestBeats + kIdleDisguiseHiddenBeats; ++i) {
+        trojan.tick(t += kHeartbeatMs);
+        other.tick(t);
+        otherHid |= other.petDisguise().showsProp();
+        if (trojan.petDisguise().stage() == DisguiseStage::Hidden) {
+            if (!trojanHid) heldX = trojan.petWander().offsetX();
+            trojanHid = true;
+            movedWhileHidden |= trojan.petWander().offsetX() != heldX;
+        }
+    }
+    CHECK(trojanHid);
+    CHECK(!otherHid);
+    CHECK(!movedWhileHidden);
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.

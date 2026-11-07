@@ -207,8 +207,10 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // the same beat, each off its own stream; the ones past the live count are
         // parked so a shrinking family (an evolution, a fresh egg) leaves nothing
         // mid-stride to walk back in.
-        if (pet_) petWander_.step(pet_->locomotion);
-        else petWander_.park();
+        // A pet passing itself off as a prop holds still: a gift box that strolls is no
+        // disguise.
+        if (!pet_) petWander_.park();
+        else if (petDisguise_.stage() == DisguiseStage::Rest) petWander_.step(pet_->locomotion);
         const int companions = idleCompanionCount();
         for (int i = 0; i < kWormReplicaSlots; ++i) {
             if (i < companions) companionWander_[i].step(pet_->locomotion);
@@ -222,6 +224,7 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // minigame about this effect and the player should first see it there.
         const CreatureLine* petLine =
             pet_ ? registry_.creatureLine(pet_->line) : nullptr;
+        petDisguise_.step(petLine && petLine->disguisesAsProps && !inEggPhase());
         petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
         // The art is resolved once per drift, on the beat the level leaves zero: which
         // creature answers for a family is a registry walk, and the level moving is not

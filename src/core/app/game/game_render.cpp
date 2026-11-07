@@ -12,6 +12,7 @@
 #include "core/render/camo.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
+#include "core/render/glitch.h"
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
 #include "core/render/sprite.h"
@@ -266,7 +267,13 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         // this one between drifts, takes the plain blit and pays nothing.
         const CamoRamp drift =
             idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
-        if (petCamo_.level() > 0 && !drift.empty())
+        if (petDisguise_.showsProp())
+            drawDisguiseProp(fb, petX + petW / 2);
+        else if (petDisguise_.torn())
+            drawSpriteGlitch(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
+                             palColor(Pal::INK), palColor(Pal::HOT),
+                             static_cast<uint8_t>(beat_ * 32), row, mirror);
+        else if (petCamo_.level() > 0 && !drift.empty())
             drawSpriteCamo(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
                            petCamo_.level(), /*flashColor=*/0, /*flashAmt=*/0, row,
                            /*from=*/nullptr, mirror);
