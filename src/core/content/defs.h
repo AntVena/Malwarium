@@ -216,6 +216,12 @@ constexpr bool hasLinePassive(LinePassives set, LinePassive p) {
     return (set & static_cast<uint8_t>(p)) != 0;
 }
 
+enum class RestingTrick : uint8_t {
+    None,
+    Disguise,   // turns into a prop on the shelf (core/model/idle_disguise.h)
+    Harvest,    // pulls in streams of data and holds it encrypted (core/model/idle_harvest.h)
+};
+
 // One creature FAMILY: the rows of a single evolution line, which is what
 // CreatureDef::line names on every one of them. Each family is defined together in
 // src/core/content/creatures/<id>/line.h and listed once in creature_lines.h; the
@@ -240,10 +246,11 @@ struct CreatureLine {
     // CHROMATOPHORE cabinet choosing whether the pet standing there can plausibly be
     // its subject) asks this instead of asking a creature's id.
     bool wearsBorrowedColours = false;
-    // Does this family pass itself off as a harmless object while it rests
-    // (core/model/idle_disguise.h)? Declared on the family for the same reason as the
-    // flag above: nothing on the idle screen says what a line does in a fight.
-    bool disguisesAsProps = false;
+    // The trick this family plays while it rests, declared on the family for the same
+    // reason as the flag above: nothing on the idle screen says what a line does in a
+    // fight. The Worm's comes from LinePassive::Replication and the Metamorphic's from
+    // wearsBorrowedColours, because both are already declared for combat.
+    RestingTrick restingTrick = RestingTrick::None;
 };
 
 // Which minigame an egg line's hatch runs. One entry per interaction shape; the

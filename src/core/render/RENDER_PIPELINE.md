@@ -61,8 +61,10 @@ DMA-blitted to the panel.
 3. SPRITE_BASE  current pet animation frame, in whatever colours it is currently wearing:
                 FX_CAMO's borrowed palette, with the hit flash composed over it. A subject
                 with no sheet is drawn here too: FX_SWARM is an area guardian's
-                whole body (`render/swarm.h`)
-4. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost)
+                whole body (`render/swarm.h`), and FX_RAIN replaces it: the creature as a
+                silhouette full of falling digits (`render/rain.h`)
+4. SPRITE_MODS  overlay pet-effects (e.g. the Worm line's Replication Ghost, the data
+                strands a Ransomware pet pulls in)
 5. CORRUPTION   frag-driven: channel-shift -> scanline-tear -> dropped-px -> glitch-blocks
 6. SCREEN_FX    full-screen overlays: evolution flash, Lockout band, critical-failure crash, fades
    (then UPSCALE + DMA blit to panel)

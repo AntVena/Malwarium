@@ -224,7 +224,10 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // minigame about this effect and the player should first see it there.
         const CreatureLine* petLine =
             pet_ ? registry_.creatureLine(pet_->line) : nullptr;
-        petDisguise_.step(petLine && petLine->disguisesAsProps && !inEggPhase());
+        const RestingTrick trick =
+            petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
+        petDisguise_.step(trick == RestingTrick::Disguise);
+        petHarvest_.step(trick == RestingTrick::Harvest);
         petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
         // The art is resolved once per drift, on the beat the level leaves zero: which
         // creature answers for a family is a registry walk, and the level moving is not

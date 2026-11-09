@@ -1,5 +1,5 @@
 // idle_disguise.h: the resting flourish of a line that disguises itself
-// (CreatureLine::disguisesAsProps). Every so often the pet glitches into a harmless prop
+// (RestingTrick::Disguise). Every so often the pet glitches into a harmless prop
 // on the shelf, sits still, wobbles, gives itself away with a pair of eyes, and glitches
 // back. The props are shared by the whole line (SPR_DISGUISE_*); which one is up turns
 // over each time, like IdleCamo's slot.

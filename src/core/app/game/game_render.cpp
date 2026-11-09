@@ -13,6 +13,7 @@
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/glitch.h"
+#include "core/render/rain.h"
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
 #include "core/render/sprite.h"
@@ -269,6 +270,10 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
         if (petDisguise_.showsProp())
             drawDisguiseProp(fb, petX + petW / 2);
+        else if (petHarvest_.stage() == HarvestStage::Hold)
+            drawSpriteRain(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
+                           palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
+                           mirror);
         else if (petDisguise_.torn())
             drawSpriteGlitch(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
                              palColor(Pal::INK), palColor(Pal::HOT),
@@ -280,6 +285,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         else
             drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
                                mirror);
+        drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
     }
 
 

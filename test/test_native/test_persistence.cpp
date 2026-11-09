@@ -900,6 +900,37 @@ void test_idle_disguise_swaps_tells_and_holds_still() {
     CHECK(!movedWhileHidden);
 }
 
+// The harvest (core/model/idle_harvest.h): rare, the streams come before the hold, and
+// only a line whose resting trick it is ever does it.
+void test_idle_harvest_streams_then_holds_for_harvesters_only() {
+    IdleHarvest h;
+    int rest = 0;
+    while (h.stage() == HarvestStage::Rest) { h.step(true); ++rest; }
+    CHECK(rest == kIdleHarvestRestBeats);
+    for (int b = 0; b < kIdleHarvestStreamBeats; ++b) {
+        CHECK(h.stage() == HarvestStage::Stream);
+        h.step(true);
+    }
+    for (int b = 0; b < kIdleHarvestHoldBeats; ++b) {
+        CHECK(h.stage() == HarvestStage::Hold);
+        h.step(true);
+    }
+    CHECK(h.stage() == HarvestStage::Rest);
+
+    Game ransom{StartMode::Hatched, "paypup"};
+    Game other{StartMode::Hatched, "keyloggerhead"};
+    uint32_t t = 0;
+    bool ransomHeld = false, otherHeld = false;
+    for (int i = 0; i < kIdleHarvestRestBeats + kIdleHarvestStreamBeats + 1; ++i) {
+        ransom.tick(t += kHeartbeatMs);
+        other.tick(t);
+        ransomHeld |= ransom.petHarvest().stage() == HarvestStage::Hold;
+        otherHeld |= other.petHarvest().stage() != HarvestStage::Rest;
+    }
+    CHECK(ransomHeld);
+    CHECK(!otherHeld);
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.

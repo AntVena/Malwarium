@@ -29,13 +29,14 @@ namespace mal {
 
 inline constexpr CreatureLine kCreatureLines[] = {
     {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount,
-     linePassives(LinePassive::RansomNote)},
+     linePassives(LinePassive::RansomNote), /*raisedAchievement=*/nullptr,
+     /*wearsBorrowedColours=*/false, RestingTrick::Harvest},
     {"phishing", kPhishingCreatures, kPhishingCreatureCount, linePassives(LinePassive::Lure)},
     // The only line a pet can ARRIVE on mid-raise (the cross-line divert), so it is the
     // only one with an achievement for reaching it.
     {"trojan", kTrojanCreatures, kTrojanCreatureCount,
      linePassives(LinePassive::ExecOverride), ach::kTrojanUnleashed,
-     /*wearsBorrowedColours=*/false, /*disguisesAsProps=*/true},
+     /*wearsBorrowedColours=*/false, RestingTrick::Disguise},
     {"worm", kWormCreatures, kWormCreatureCount, linePassives(LinePassive::Replication)},
     // No passive FLAG: Polymorph gates on combat state the line's own rows populate (a
     // slot holding a wildcard row), the way Perfect Bite gates on a live bubble rather
