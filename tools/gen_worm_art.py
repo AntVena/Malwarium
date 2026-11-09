@@ -89,6 +89,7 @@ compared is exactly what the atlas build will see.
 """
 
 import argparse
+import ast
 import math
 import os
 import struct
@@ -785,8 +786,8 @@ class Sheet:
 #  RECIPES: one function per sheet. Everything above is the vocabulary; from
 #  here down is creature design, and a new worm-line creature is a new function.
 # ===========================================================================
-CW, CH = 56, 48       # the pet cell (gen_assets.py PET_FRAME_W / PET_ROW_H)
-GROUND = 46.0         # the shelf line inside the cell; a crawler never leaves it
+PET_CELL_W, PET_CELL_H = 56, 48  # the pet cell (gen_assets.py PET_FRAME_W / PET_ROW_H)
+PET_GROUND_Y = 46.0  # the shelf line inside the cell; a crawler never leaves it
 
 
 def _nodeatode_cell(head, c0, c1, mouth=0.0, tail_x=19.0,
@@ -797,7 +798,7 @@ def _nodeatode_cell(head, c0, c1, mouth=0.0, tail_x=19.0,
     (assets/CREATURE_VISUAL_RULES.md §4) kept literally, because the replicas beside it
     need the room. All four poses share this body; only the spine and the jaw move.
     """
-    tail = (tail_x, GROUND)
+    tail = (tail_x, PET_GROUND_Y)
     # Thick enough that the outline's two walls stay a clear 3px apart along the whole
     # body. A thinner tube collapses into a single line as it tapers, and a worm drawn
     # as one line is a piece of string: the gap between the walls IS the body.
@@ -807,7 +808,7 @@ def _nodeatode_cell(head, c0, c1, mouth=0.0, tail_x=19.0,
     # smudge. Growing it buys the room the open pose needs, and a head that fills as it
     # lunges is what the motion looks like anyway.
     head_r = 5.2 + 1.7 * mouth
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = bezier(tail, c0, c1, head)
 
     tube(cell.body, spine, r_tail, r_neck)
@@ -827,7 +828,7 @@ def _nodeatode_cell(head, c0, c1, mouth=0.0, tail_x=19.0,
     # The ground contact, drawn identically in every frame. A crawler that plants
     # harder on some frames than others reads as a flicker, not as a footfall, and a
     # bar this short is the only mark in the cell that says which way is down.
-    line(cell.ink, (tail[0] - 2, GROUND + 1), (tail[0] + 3, GROUND + 1))
+    line(cell.ink, (tail[0] - 2, PET_GROUND_Y + 1), (tail[0] + 3, PET_GROUND_Y + 1))
     return cell
 
 
@@ -844,7 +845,7 @@ def nodeatode():
       3  weak    2 frames: collapsed onto the shelf, barely a curve left in it.
       4  walk    4 frames: carried low and long, a contraction running tail to head.
     """
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     # Idle. The head holds station and the two control points move in QUADRATURE (c0
     # on the sine, c1 on the cosine), so the bulge travels from the head end down to
@@ -925,13 +926,13 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0, tail_x=24.0,
     whole face is the hole, and a creature whose one filled shape sits at the back of
     an open mouth reads as something that eats, which is the branch this row is on.
     """
-    tail = (tail_x, GROUND + 1)
+    tail = (tail_x, PET_GROUND_Y + 1)
     # The taper RUNS OUT before the head, so the maw sits on the body as a distinct
     # bulb. Nodeatode's head is barely wider than its neck and reads as a continuation;
     # here the neck has to give ground for the mouth to be a thing the body carries.
     r_tail, r_neck = 6.2, 8.4
     head_r = 10.4 + 1.5 * mouth
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = bezier(tail, c0, c1, head)
 
     tube(cell.body, spine, r_tail, r_neck)
@@ -995,7 +996,7 @@ def _rootgrub_cell(head, c0, c1, mouth, teeth=8, phase=0.0, tail_x=24.0,
     cell.solid(int(round(mouth_c[0] - (throat - 1) / 2.0)),
                int(round(mouth_c[1] - (throat - 1) / 2.0)), throat, throat)
 
-    line(cell.ink, (tail[0] - 5, GROUND + 1), (tail[0] + 6, GROUND + 1))
+    line(cell.ink, (tail[0] - 5, PET_GROUND_Y + 1), (tail[0] + 6, PET_GROUND_Y + 1))
     return cell
 
 
@@ -1013,7 +1014,7 @@ def rootgrub():
       4  walk    4 frames: maw carried forward at chest height, the body hauled up
                             behind it in one contraction.
     """
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     # Idle. A short body has little spine to run a wave down, so the motion is in the
     # MAW instead: it opens and closes on the loop while the body sways a pixel or two
@@ -1124,7 +1125,7 @@ def _shenloop_cell(pts, whisker=1.0, level=0.75):
     # the two is the other half of the dragon read.
     r_tail, r_neck = 1.9, 3.4
     skull_r, head_len, muzzle_r = 6.2, 6.4, 2.8
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = catmull(pts)
 
     # More steps than a Bézier body needs. This spine is roughly three times as long, and
@@ -1286,7 +1287,7 @@ def shenloop():
     # That is the real reason `wave` grew a taper: the amplitude a W wants at the whip end
     # is more than the shoulder end can survive, so it has to be two numbers.
     TAIL, HEAD = (4.0, 44.0), (38.0, 13.0)
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     def serpent(amp, phase, period=5.0, gather=1.0, drop=0.0, straight=0.0,
                 taper=0.55, n=12, axis=(TAIL, HEAD)):
@@ -1387,7 +1388,7 @@ def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
     tail = (16.0, 34.0)
     r_tail, r_neck = 7.6, 10.2
     head_r = 12.0 + 1.6 * mouth
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = bezier(tail, c0, c1, head)
 
     tube(cell.body, spine, r_tail, r_neck)
@@ -1476,7 +1477,7 @@ def _threadbore_cell(head, c0, c1, mouth, flap, teeth=8, phase=0.0):
     # No ground plant, and the body is held clear of the bottom of the cell. Every
     # crawling row of the line ends with a bar on the shelf; this one FLIES
     # (Locomotion::Fly, on its content row) and the habitat holds it at an altitude, so
-    # ink anywhere near y = CH-1 would read as crawling no matter what the engine does
+    # ink anywhere near y = PET_CELL_H-1 would read as crawling no matter what the engine does
     # with the anchor.
     return cell
 
@@ -1495,7 +1496,7 @@ def threadbore():
       4  walk    4 frames. Flying somewhere: pitched nose-down into the travel, a full
                             beat with the body lifting on the downstroke.
     """
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     # Idle. The wings run a full beat over the four frames while the body moves about a
     # pixel: deliberately the wrong way round for a flier this heavy, because the reason
@@ -1579,7 +1580,7 @@ def _usb_spine(rear, lean, sway=0.0):
     point four times stops being the same length by the fourth frame: the same reason
     Coaxeel's coil is four numbers rather than eleven points.
     """
-    bx, by = 19.0, GROUND - 2.6
+    bx, by = 19.0, PET_GROUND_Y - 2.6
     return [(bx + 2.0, by), (bx + 0.2 + sway * 0.4, by - rear * 0.28),
             (bx - 1.6 + sway, by - rear * 0.56),
             (bx + lean * 0.4 + sway * 0.6, by - rear * 0.80),
@@ -1616,7 +1617,7 @@ def _usbasilisk_cell(pts, hood=1.0, lift=6.0):
     own axis and nothing else.
     """
     r_tail, r_body = 3.6, 3.0
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = catmull(pts)
 
     tube(cell.body, spine, r_tail, r_body)
@@ -1657,7 +1658,7 @@ def _usbasilisk_cell(pts, hood=1.0, lift=6.0):
     # own height it merges into that outline and the base reads as the sole of a boot; a
     # pixel clear of it and under the weight, it reads as the contact every other
     # crawling row of the line makes.
-    line(cell.ink, (pts[0][0] - 6, GROUND + 1), (pts[0][0] + 3, GROUND + 1))
+    line(cell.ink, (pts[0][0] - 6, PET_GROUND_Y + 1), (pts[0][0] + 3, PET_GROUND_Y + 1))
     return cell
 
 
@@ -1675,7 +1676,7 @@ def usbasilisk():
       4  walk    4 frames: the column lowered and pitched forward, plug leading, the
                             rear and the lean pumping a quarter-cycle apart.
     """
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     # Idle. `rear` and `lean` hold, `sway` carries the whole motion, so the head keeps
     # station to within a pixel and only the column under it works, which is the contract
@@ -1757,7 +1758,7 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     family has, and a blunt block that is simply where the cable stops is not.
     """
     r = 3.0
-    cell = Cell(CW, CH)
+    cell = Cell(PET_CELL_W, PET_CELL_H)
     spine = catmull(pts)
 
     tube(cell.body, spine, r, r, steps=320)
@@ -1825,7 +1826,7 @@ def _coaxeel_cell(pts, gape=0.4, strip=1.0):
     # held up clear of it and the loop is what rests, so a bar under either end would be a
     # contact the drawing does not make.
     low = max(pts, key=lambda q: q[1])
-    line(cell.ink, (low[0] - 4, GROUND + 1), (low[0] + 4, GROUND + 1))
+    line(cell.ink, (low[0] - 4, PET_GROUND_Y + 1), (low[0] + 4, PET_GROUND_Y + 1))
     return cell
 
 
@@ -1851,7 +1852,7 @@ def coaxeel():
     shape whose whole read is that it is ONE continuous run wound up, a body placed point
     by point four times stops being the same length by the fourth frame.
     """
-    sheet = Sheet(4, 5, CW, CH)
+    sheet = Sheet(4, 5, PET_CELL_W, PET_CELL_H)
 
     def coil(cx, cy, r_out, r_in, a0, span, n=11, lead=5.5):
         """Points along an opening spiral: head at the last point, cut end at the first.
@@ -1934,9 +1935,9 @@ def coaxeel():
 # object. The tell is the solid mass arriving as a pair of eyes, which is the rule-4
 # read used for exactly what it is: where the creature is.
 #
-# One 1-row strip each, five DW x DH frames:
+# One 1-row strip each, five PROP_CELL_W x PROP_CELL_H frames:
 #   0 rest   1 lean left   2 lean right   3 eyes open   4 eyes closing
-DW, DH = 24, 24
+PROP_CELL_W, PROP_CELL_H = 24, 24
 DISGUISE_LEAN_PX = 2
 
 
@@ -1957,7 +1958,7 @@ def lean(m, px):
 
 def _disguise_sheet(draw):
     """`draw(eyes)` builds one Cell; eyes is None, "open" or "shut"."""
-    sheet = Sheet(5, 1, DW, DH)
+    sheet = Sheet(5, 1, PROP_CELL_W, PROP_CELL_H)
     rest = draw(None).bake()
     sheet.place(0, 0, rest)
     sheet.place(1, 0, lean(rest, -DISGUISE_LEAN_PX))
@@ -1969,7 +1970,7 @@ def _disguise_sheet(draw):
 
 def _file_cell(eyes):
     """A dog-eared page of text. The eyes open where a line of text was."""
-    c = Cell(DW, DH)
+    c = Cell(PROP_CELL_W, PROP_CELL_H)
     poly(c.body, [(4, 1), (15, 1), (19, 5), (19, 24), (4, 24)])
     line(c.ink, (15, 1), (15, 5))                     # the fold
     line(c.ink, (15, 5), (19, 5))
@@ -1986,7 +1987,7 @@ def _file_cell(eyes):
 
 def _floppy_cell(eyes):
     """A floppy disk. The eyes open across its label."""
-    c = Cell(DW, DH)
+    c = Cell(PROP_CELL_W, PROP_CELL_H)
     poly(c.body, [(2, 2), (19, 2), (21, 4), (21, 24), (2, 24)])
     frame(c.ink, 7, 2, 16, 8)                         # shutter
     rect(c.ink, 12, 4, 13, 6)
@@ -2003,7 +2004,7 @@ def _floppy_cell(eyes):
 
 def _usb_cell(eyes):
     """A USB stick stood on its end, plug up. The eyes open across its body."""
-    c = Cell(DW, DH)
+    c = Cell(PROP_CELL_W, PROP_CELL_H)
     rect(c.body, 8, 2, 15, 8)                         # plug
     rect(c.body, 6, 9, 17, 24)                        # body
     rect(c.ink, 10, 4, 10, 5)                         # the plug's two contacts
@@ -2019,7 +2020,7 @@ def _usb_cell(eyes):
 
 def _monitor_cell(eyes):
     """A monitor on its stand, a prompt on the screen. The eyes look out of it."""
-    c = Cell(DW, DH)
+    c = Cell(PROP_CELL_W, PROP_CELL_H)
     rect(c.body, 1, 2, 22, 16)                        # bezel
     rect(c.body, 10, 17, 13, 20)                      # neck
     rect(c.body, 5, 21, 18, 24)                       # foot
@@ -2037,7 +2038,7 @@ def _monitor_cell(eyes):
 
 def _malwarium_cell(eyes):
     """The device itself: a square screen over the A/B/C buttons."""
-    c = Cell(DW, DH)
+    c = Cell(PROP_CELL_W, PROP_CELL_H)
     superellipse(c.body, 11.5, 12.5, 9.6, 11.6, n=5)  # case
     frame(c.ink, 5, 4, 18, 14)                        # screen
     for x in (7, 11.5, 16):                           # A B C
@@ -2076,11 +2077,11 @@ def disguise_malwarium():
 #  (core/model/idle_feeding.h). One 3-frame strip: level, then tipped each way, which
 #  the habitat alternates as it sinks so it rocks the way a flake does through water.
 # ---------------------------------------------------------------------------
-BW, BH = 14, 12
+SCRAP_CELL_W, SCRAP_CELL_H = 14, 12
 
 
 def _envelope_cell():
-    c = Cell(BW, BH)
+    c = Cell(SCRAP_CELL_W, SCRAP_CELL_H)
     rect(c.body, 1, 2, 12, 10)
     line(c.ink, (1, 2), (6, 7))                       # the flap
     line(c.ink, (7, 7), (12, 2))
@@ -2099,7 +2100,7 @@ def _pixels(w, h, rows):
 
 
 def _address_cell():
-    return _pixels(BW, BH, [
+    return _pixels(SCRAP_CELL_W, SCRAP_CELL_H, [
         "....######....",
         "..##......##..",
         ".#..........#.",
@@ -2116,7 +2117,7 @@ def _address_cell():
 
 
 def _password_cell():
-    c = Cell(BW, BH)
+    c = Cell(SCRAP_CELL_W, SCRAP_CELL_H)
     rect(c.body, 1, 2, 12, 9)
     for x in (3, 6, 9):
         rect(c.ink, x, 5, x + 1, 6)
@@ -2124,7 +2125,7 @@ def _password_cell():
 
 
 def _rocking(cell):
-    sheet = Sheet(3, 1, BW, BH)
+    sheet = Sheet(3, 1, SCRAP_CELL_W, SCRAP_CELL_H)
     level = cell().bake()
     sheet.place(0, 0, level)
     sheet.place(1, 0, lean(level, -1))
@@ -2149,25 +2150,25 @@ def mail_password():
 #  comes in to click one (core/model/idle_lure.h). The tag is blank; the habitat writes
 #  the prize on it. The cursor's second frame is the click.
 # ---------------------------------------------------------------------------
-TW, TH = 28, 10
-PW, PH = 12, 16
+TAG_CELL_W, TAG_CELL_H = 28, 10
+CURSOR_CELL_W, CURSOR_CELL_H = 12, 16
 
 
 def _tag_cell():
-    c = Cell(TW, TH)
+    c = Cell(TAG_CELL_W, TAG_CELL_H)
     poly(c.body, [(0, 4.5), (5, 0), (27, 0), (27, 9), (5, 9)])
     rect(c.ink, 3, 4, 4, 5)                           # the eyelet the line ties to
     return c
 
 
 def lure_tag():
-    sheet = Sheet(1, 1, TW, TH)
+    sheet = Sheet(1, 1, TAG_CELL_W, TAG_CELL_H)
     sheet.place(0, 0, _tag_cell())
     return sheet
 
 
 def _cursor_cell(clicked):
-    c = _pixels(PW, PH, [
+    c = _pixels(CURSOR_CELL_W, CURSOR_CELL_H, [
         "",
         "",
         "...#........",
@@ -2192,7 +2193,7 @@ def _cursor_cell(clicked):
 
 
 def lure_cursor():
-    sheet = Sheet(2, 1, PW, PH)
+    sheet = Sheet(2, 1, CURSOR_CELL_W, CURSOR_CELL_H)
     sheet.place(0, 0, _cursor_cell(False))
     sheet.place(1, 0, _cursor_cell(True))
     return sheet
@@ -2231,6 +2232,23 @@ def sheet_plane(sheet):
     return sheet.mask.w, sheet.mask.h, bytes(1 if v else 0 for v in sheet.mask.px)
 
 
+def rebound_globals():
+    """Module-level names assigned more than once. Each section of this file owns its own
+    sizes, and one that reuses another's name silently redraws every recipe above it at
+    the wrong size."""
+    tree = ast.parse(open(__file__).read())
+    seen, twice = set(), []
+    for node in tree.body:
+        targets = node.targets if isinstance(node, ast.Assign) else []
+        for t in targets:
+            for n in ast.walk(t):
+                if isinstance(n, ast.Name):
+                    if n.id in seen:
+                        twice.append(n.id)
+                    seen.add(n.id)
+    return twice
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--check", action="store_true",
@@ -2239,6 +2257,9 @@ def main():
     ap.add_argument("--preview", metavar="ROW", nargs="?", const="0",
                     help="ASCII one row of frames to stdout instead of writing")
     args = ap.parse_args()
+
+    if args.check and rebound_globals():
+        sys.exit(f"module-level names assigned twice: {', '.join(rebound_globals())}")
 
     names = [args.only] if args.only else sorted(RECIPES)
     for name in names:
