@@ -180,6 +180,9 @@ FRAME_W_OVERRIDES = {
     # 42x12 = the Phishing mail envelope, level and tipped each way
     # (core/model/idle_feeding.h).
     "SPR_MAIL_ENVELOPE": 14,
+    "SPR_MAIL_ADDRESS": 14,
+    "SPR_MAIL_PASSWORD": 14,
+    "SPR_LURE_CURSOR": 12,
     # The combat screen's strike marks: 56x44 = two 28x44 frames, the pair a source
     # alternates between (tools/gen_fight_art.py). Wider than tall, so without the
     # override each would read as one very wide single frame.

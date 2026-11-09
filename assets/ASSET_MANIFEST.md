@@ -540,16 +540,21 @@ with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each:
 | `SPR_DISGUISE_MONITOR` | Monitor | 24×24 ×5 | A `>_` prompt on the screen, replaced by the eyes | ☑ | `/assets/sprites/SPR_DISGUISE_MONITOR.png` |
 | `SPR_DISGUISE_MALWARIUM` | The device itself | 24×24 ×5 | A square screen over the A/B/C buttons; the eyes look out of its screen | ☑ | `/assets/sprites/SPR_DISGUISE_MALWARIUM.png` |
 
-### C.4c Phishing mail (`SPR_MAIL_ENVELOPE`)
+### C.4c Phishing mail and lure (`SPR_MAIL_*`, `SPR_LURE_*`)
 
-What sinks into a resting Phishing pet's habitat for it to chase and skim
-(`core/model/idle_feeding.h`, drawn by `game_feeding.cpp`). Drawn in `tools/gen_worm_art.py`'s
-vocabulary, 1-bit on `ink`. Three 14×12 frames: **0** level, **1–2** tipped each way, alternated
-as it sinks.
+The scraps of identity that sink into a resting Phishing pet's habitat for it to chase and skim
+(`core/model/idle_feeding.h`, drawn by `game_feeding.cpp`), and the bait it sets between skims
+(`core/model/idle_lure.h`, drawn by `game_lure.cpp`). Drawn in `tools/gen_worm_art.py`'s
+vocabulary, 1-bit on `ink`. Each scrap is three 14×12 frames: **0** level, **1–2** tipped each way,
+alternated as it sinks.
 
 | Asset ID | Element | Logical size | Notes | Status | File |
 |---|---|---|---|---|---|
 | `SPR_MAIL_ENVELOPE` | Envelope | 14×12 ×3 | Outline and flap, no solid mass | ☑ | `/assets/sprites/SPR_MAIL_ENVELOPE.png` |
+| `SPR_MAIL_ADDRESS` | Email address | 14×12 ×3 | An `@`, drawn pixel for pixel | ☑ | `/assets/sprites/SPR_MAIL_ADDRESS.png` |
+| `SPR_MAIL_PASSWORD` | Password | 14×12 ×3 | A field with three dots | ☑ | `/assets/sprites/SPR_MAIL_PASSWORD.png` |
+| `SPR_LURE_TAG` | Prize tag | 28×10 | Blank; the habitat writes the prize on it | ☑ | `/assets/sprites/SPR_LURE_TAG.png` |
+| `SPR_LURE_CURSOR` | Cursor | 12×16 ×2 | **0** arrow, **1** clicking | ☑ | `/assets/sprites/SPR_LURE_CURSOR.png` |
 
 ### C.5 Isolation Protocol: the Worm egg's hatch minigame
 

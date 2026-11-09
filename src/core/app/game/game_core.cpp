@@ -208,19 +208,23 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // parked so a shrinking family (an evolution, a fresh egg) leaves nothing
         // mid-stride to walk back in.
         // A pet passing itself off as a prop holds still: a prop that strolls is no
-        // disguise. One skimming mail goes where the letter it is after is.
+        // disguise, and nor does an angler with its bait out. One skimming mail goes
+        // where the scrap it is after is.
         const CreatureLine* petLine =
             pet_ ? registry_.creatureLine(pet_->line) : nullptr;
         const RestingTrick trick =
             petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
-        petFeeding_.step(trick == RestingTrick::Skim, petWander_.offsetX(),
-                         petWander_.offsetY());
+        // The skim and the lure take turns: each runs only while the other rests.
+        const bool skims = trick == RestingTrick::Skim;
+        if (!petLure_.active())
+            petFeeding_.step(skims, petWander_.offsetX(), petWander_.offsetY());
+        if (!petFeeding_.active()) petLure_.step(skims);
         if (!pet_) {
             petWander_.park();
         } else if (const Mail* m = petFeeding_.target()) {
             petWander_.chase(pet_->locomotion, IdleFeeding::standX(*m),
                              IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
-        } else if (petDisguise_.stage() == DisguiseStage::Rest) {
+        } else if (petDisguise_.stage() == DisguiseStage::Rest && !petLure_.active()) {
             petWander_.step(pet_->locomotion);
         }
         const int companions = idleCompanionCount();

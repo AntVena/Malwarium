@@ -931,34 +931,41 @@ void test_idle_harvest_streams_then_holds_for_harvesters_only() {
     CHECK(!otherHeld);
 }
 
-// The mail skim (core/model/idle_feeding.h): after its rest, letters sink in one at a
-// time; a pet standing where the model says to stand bites each one; and an uneaten
-// letter does not outlive the feed. Driven at the model, with the pet teleported to its
-// stand point, so the gate is about the rules rather than the chase pace.
+// The mail skim (core/model/idle_feeding.h): after its rest, scraps sink in one at a
+// time; a pet standing where the model says to stand bites each one; an uneaten scrap
+// does not outlive the feed; and the squat and the login follow before it rests again.
+// Driven at the model, with the pet teleported to its stand point, so the gate is about
+// the rules rather than the chase pace.
 void test_idle_feeding_letters_sink_and_get_eaten() {
     IdleFeeding f;
-    for (int i = 0; i < kIdleFeedRestBeats; ++i) { f.step(true, 0, 0); CHECK(!f.feeding()); }
+    for (int i = 0; i < kIdleFeedRestBeats; ++i) { f.step(true, 0, 0); CHECK(!f.active()); }
     int petX = 0, petY = 0;
-    bool sawBite = false;
-    for (int i = 0; i < kIdleFeedMaxBeats + 10 && (f.feeding() || i == 0); ++i) {
+    bool sawBite = false, sawSquat = false, sawGrant = false;
+    for (int i = 0; i < kIdleFeedMaxBeats + kIdleSquatBeats + kIdleLoginBeats + 10 &&
+                    (f.active() || i == 0);
+         ++i) {
         f.step(true, petX, petY);
         if (const Mail* m = f.target()) {
             petX = IdleFeeding::standX(*m);
             petY = IdleFeeding::standY(*m);
         }
         sawBite |= f.biting();
+        sawSquat |= f.squatted();
+        sawGrant |= f.stage() == FeedStage::Login && f.loginStep() == LoginStep::Granted;
     }
     CHECK(sawBite);
-    CHECK(!f.feeding());   // the feed ended, so every letter went somewhere
+    CHECK(sawSquat);
+    CHECK(sawGrant);
+    CHECK(!f.active());   // it all ended, so every scrap went somewhere
 
     IdleFeeding none;
-    for (int i = 0; i < 1000; ++i) { none.step(false, 0, 0); CHECK(!none.feeding()); }
+    for (int i = 0; i < 1000; ++i) { none.step(false, 0, 0); CHECK(!none.active()); }
 
     Game phish{StartMode::Hatched, "tadpoll"};
     Game other{StartMode::Hatched, "paypup"};
     uint32_t t = 0;
     bool phishFed = false, otherFed = false;
-    for (int i = 0; i < kIdleFeedRestBeats + 2; ++i) {
+    for (int i = 0; i < 2 * kIdleFeedRestBeats; ++i) {
         phish.tick(t += kHeartbeatMs);
         other.tick(t);
         phishFed |= phish.petFeeding().feeding();
@@ -966,6 +973,30 @@ void test_idle_feeding_letters_sink_and_get_eaten() {
     }
     CHECK(phishFed);
     CHECK(!otherFed);
+}
+
+// The lure (core/model/idle_lure.h) takes turns with the skim: it never runs while a
+// skim does, it comes round for a skimming line only, and its pet holds still while the
+// bait is out.
+void test_idle_lure_takes_turns_with_the_skim() {
+    Game phish{StartMode::Hatched, "tadpoll"};
+    Game other{StartMode::Hatched, "paypup"};
+    uint32_t t = 0;
+    bool lured = false, otherLured = false, held = true;
+    int lastX = 0;
+    for (int i = 0; i < 2 * kIdleFeedRestBeats; ++i) {
+        phish.tick(t += kHeartbeatMs);
+        other.tick(t);
+        const bool on = phish.petLure().active();
+        CHECK(!(on && phish.petFeeding().active()));
+        if (on && lured) held &= phish.petWander().offsetX() == lastX;
+        lured |= on;
+        lastX = phish.petWander().offsetX();
+        otherLured |= other.petLure().active();
+    }
+    CHECK(lured);
+    CHECK(held);
+    CHECK(!otherLured);
 }
 
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat

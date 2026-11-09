@@ -292,6 +292,7 @@ int g_failures = 0;
     RUN(test_idle_disguise_swaps_tells_and_holds_still) \
     RUN(test_idle_harvest_streams_then_holds_for_harvesters_only) \
     RUN(test_idle_feeding_letters_sink_and_get_eaten) \
+    RUN(test_idle_lure_takes_turns_with_the_skim) \
     RUN(test_habitat_moves_a_pet_and_parks_an_egg) \
     /* Sim-Battle + combat integration */   \
     RUN(test_sim_battle_end_to_end)         \

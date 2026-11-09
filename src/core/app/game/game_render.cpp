@@ -237,7 +237,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         // every single-row sheet does.
         const AnimClip* clip = nullptr;
         if (pet_) {
-            if (petFeeding_.biting()) clip = pet_->clip("attack");
+            if (petFeeding_.biting() || petLure_.biting()) clip = pet_->clip("attack");
             if (!clip && petWander_.travelling()) clip = pet_->clip("walk");
             if (!clip) clip = pet_->clip("idle");
         }
@@ -287,8 +287,12 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
                                mirror);
         drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
+        drawLure(fb, petX + petW / 2, petY + petH / 4);
     }
     drawFeedingMail(fb);
+    // The squat writes on the caption row, so only while that row is free: no menu
+    // summoned, no nudge, and no explore readout hanging off the corner beside it.
+    if (cursor < 0 && tipSeen(Tip::MenuOpened) && !exploreActive_) drawSquatLogin(fb);
 
 
     // Boot-Sector incubation prompt (redesign): an unhatched egg shows its

@@ -2087,12 +2087,114 @@ def _envelope_cell():
     return c
 
 
-def mail_envelope():
+def _pixels(w, h, rows):
+    """A cell laid down pixel for pixel from rows of '#', for a glyph too small to
+    construct: at 14px an @ is a drawing, not a geometry."""
+    c = Cell(w, h)
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                c.ink.set(x, y)
+    return c
+
+
+def _address_cell():
+    return _pixels(BW, BH, [
+        "....######....",
+        "..##......##..",
+        ".#..........#.",
+        ".#...####...#.",
+        "#...#...#...#.",
+        "#...#...#...#.",
+        "#...#..##...#.",
+        "#....##.####..",
+        ".#............",
+        ".#..........#.",
+        "..##......##..",
+        "....######....",
+    ])
+
+
+def _password_cell():
+    c = Cell(BW, BH)
+    rect(c.body, 1, 2, 12, 9)
+    for x in (3, 6, 9):
+        rect(c.ink, x, 5, x + 1, 6)
+    return c
+
+
+def _rocking(cell):
     sheet = Sheet(3, 1, BW, BH)
-    level = _envelope_cell().bake()
+    level = cell().bake()
     sheet.place(0, 0, level)
     sheet.place(1, 0, lean(level, -1))
     sheet.place(2, 0, lean(level, 1))
+    return sheet
+
+
+def mail_envelope():
+    return _rocking(_envelope_cell)
+
+
+def mail_address():
+    return _rocking(_address_cell)
+
+
+def mail_password():
+    return _rocking(_password_cell)
+
+
+# ---------------------------------------------------------------------------
+#  Phishing lure: the prize tags a resting Phishing pet dangles and the cursor that
+#  comes in to click one (core/model/idle_lure.h). The tag is blank; the habitat writes
+#  the prize on it. The cursor's second frame is the click.
+# ---------------------------------------------------------------------------
+TW, TH = 28, 10
+PW, PH = 12, 16
+
+
+def _tag_cell():
+    c = Cell(TW, TH)
+    poly(c.body, [(0, 4.5), (5, 0), (27, 0), (27, 9), (5, 9)])
+    rect(c.ink, 3, 4, 4, 5)                           # the eyelet the line ties to
+    return c
+
+
+def lure_tag():
+    sheet = Sheet(1, 1, TW, TH)
+    sheet.place(0, 0, _tag_cell())
+    return sheet
+
+
+def _cursor_cell(clicked):
+    c = _pixels(PW, PH, [
+        "",
+        "",
+        "...#........",
+        "...##.......",
+        "...#.#......",
+        "...#..#.....",
+        "...#...#....",
+        "...#....#...",
+        "...#.....#..",
+        "...#......#.",
+        "...#...####.",
+        "...#.#.#....",
+        "...##..#....",
+        "...#....#...",
+        "........#...",
+        "........##..",
+    ])
+    if clicked:
+        for x, y in ((0, 2), (1, 2), (1, 0), (2, 1), (3, 0)):    # the click, at the tip
+            c.ink.set(x, y)
+    return c
+
+
+def lure_cursor():
+    sheet = Sheet(2, 1, PW, PH)
+    sheet.place(0, 0, _cursor_cell(False))
+    sheet.place(1, 0, _cursor_cell(True))
     return sheet
 
 
@@ -2109,6 +2211,10 @@ RECIPES = {
     "SPR_DISGUISE_MONITOR": disguise_monitor,
     "SPR_DISGUISE_MALWARIUM": disguise_malwarium,
     "SPR_MAIL_ENVELOPE": mail_envelope,
+    "SPR_MAIL_ADDRESS": mail_address,
+    "SPR_MAIL_PASSWORD": mail_password,
+    "SPR_LURE_TAG": lure_tag,
+    "SPR_LURE_CURSOR": lure_cursor,
 }
 
 
