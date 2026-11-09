@@ -29,6 +29,11 @@ constexpr int kIdleFeedMaxBeats = 60;
 constexpr int kIdleFeedMouthForwardPx = 18;
 constexpr int kIdleFeedMouthRisePx = 18;
 constexpr int kIdleFeedMouthReachPx = 6;
+// Letters land as far out as a pet at the edge of its wander can still reach with its
+// mouth, and alternate edges, so each one is a crossing of the habitat. kIdleFeedLaneJitterPx
+// keeps the same edge from being the same spot.
+constexpr int kIdleFeedDropHalfSpanPx = kWanderHalfSpanX + kIdleFeedMouthForwardPx;
+constexpr int kIdleFeedLaneJitterPx = 8;
 
 enum class MailState : uint8_t { Unborn, Sinking, Bitten, Gone };
 
@@ -47,7 +52,7 @@ public:
         if (++beat_ <= kIdleFeedRestBeats) return;
         const int t = beat_ - kIdleFeedRestBeats - 1;
         if (t % kIdleFeedDropGapBeats == 0 && t / kIdleFeedDropGapBeats < kIdleFeedLetters)
-            drop(letters_[t / kIdleFeedDropGapBeats]);
+            drop(letters_[t / kIdleFeedDropGapBeats], t / kIdleFeedDropGapBeats);
         bool live = false;
         for (Mail& b : letters_) {
             advance(b, petX, petY, t >= kIdleFeedMaxBeats);
@@ -90,9 +95,11 @@ private:
         return (rng_ >> 16) % span;
     }
 
-    void drop(Mail& b) {
+    void drop(Mail& b, int n) {
+        if (n == 0) firstEdge_ = roll(2) ? 1 : -1;
+        const int edge = (n & 1) ? -firstEdge_ : firstEdge_;
         b.state = MailState::Sinking;
-        b.x = static_cast<int>(roll(2 * kWanderHalfSpanX + 1)) - kWanderHalfSpanX;
+        b.x = edge * (kIdleFeedDropHalfSpanPx - static_cast<int>(roll(kIdleFeedLaneJitterPx + 1)));
         b.y = kIdleFeedTopPx;
         b.side = 0;
     }
@@ -127,6 +134,7 @@ private:
     }
 
     int beat_ = 0;
+    int firstEdge_ = 1;
     uint32_t rng_ = 0x9e3779b9u;
     Mail letters_[kIdleFeedLetters];
 };
