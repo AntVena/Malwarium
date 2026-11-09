@@ -240,7 +240,17 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // minigame about this effect and the player should first see it there.
         petDisguise_.step(trick == RestingTrick::Disguise);
         petHarvest_.step(trick == RestingTrick::Harvest);
-        petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
+        // A shapeshifter's colour drift, vanish and mimic take turns: each runs only while
+        // the others rest. The creature a mimic wears is resolved as it begins, like the
+        // drift's.
+        const bool shifts = trick == RestingTrick::Shapeshift;
+        const bool drifting = petCamo_.level() > 0;
+        if (!drifting && !petMimic_.active()) petVanish_.step(shifts);
+        if (!drifting && !petVanish_.active()) petMimic_.step(shifts);
+        if (!petMimic_.active()) idleMimicWorn_ = nullptr;
+        else if (!idleMimicWorn_) idleMimicWorn_ = idleCamoSprite(petMimic_.slot());
+        if (!petVanish_.active() && !petMimic_.active())
+            petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
         // The art is resolved once per drift, on the beat the level leaves zero: which
         // creature answers for a family is a registry walk, and the level moving is not
         // a change of who is being sampled.

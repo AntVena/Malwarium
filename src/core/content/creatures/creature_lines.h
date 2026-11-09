@@ -47,7 +47,8 @@ inline constexpr CreatureLine kCreatureLines[] = {
     // wildcard slots are: declared here because a screen outside combat has no cast to
     // read it off (CreatureLine::wearsBorrowedColours).
     {"metamorphic", kMetamorphicCreatures, kMetamorphicCreatureCount,
-     /*passives=*/0, /*raisedAchievement=*/nullptr, /*wearsBorrowedColours=*/true},
+     /*passives=*/0, /*raisedAchievement=*/nullptr, /*wearsBorrowedColours=*/true,
+     RestingTrick::Shapeshift},
 };
 inline constexpr int kCreatureLineCount =
     sizeof(kCreatureLines) / sizeof(kCreatureLines[0]);

@@ -13,6 +13,7 @@
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/glitch.h"
+#include "core/render/cloak.h"
 #include "core/render/rain.h"
 #include "core/render/palette.h"
 #include "core/render/scenes.h"
@@ -275,6 +276,11 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             drawSpriteRain(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
                            palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
                            mirror);
+        else if (petVanish_.active())
+            drawSpriteCloak(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
+                            petVanish_.amount(), palColor(Pal::INK), beat_, row, mirror);
+        else if (petMimic_.active() && idleMimicWorn_)
+            drawMimic(fb, *pet, frame, row, petX, petY, mirror);
         else if (petDisguise_.torn())
             drawSpriteGlitch(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
                              palColor(Pal::INK), palColor(Pal::HOT),

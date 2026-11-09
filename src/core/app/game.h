@@ -40,6 +40,8 @@
 #include "core/model/idle_disguise.h"
 #include "core/model/idle_feeding.h"
 #include "core/model/idle_lure.h"
+#include "core/model/idle_mimic.h"
+#include "core/model/idle_vanish.h"
 #include "core/model/idle_fork.h"
 #include "core/model/idle_harvest.h"
 #include "core/model/idle_relay.h"
@@ -1586,6 +1588,12 @@ public:
     const IdleFeeding& petFeeding() const { return petFeeding_; }
     // The bait the same line sets between skims (core/model/idle_lure.h).
     const IdleLure& petLure() const { return petLure_; }
+    // A shapeshifting line's two tricks: fading into the habitat
+    // (core/model/idle_vanish.h) and wiping into another family's creature
+    // (core/model/idle_mimic.h).
+    const IdleVanish& petVanish() const { return petVanish_; }
+    const IdleCamo& petCamo() const { return petCamo_; }
+    const IdleMimic& petMimic() const { return petMimic_; }
     // The byte the copies pass along between forks (core/model/idle_relay.h).
     const IdleRelay& petRelay() const { return petRelay_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
@@ -2534,6 +2542,8 @@ private:
     void drawFeedingMail(Framebuffer& fb) const;
     void drawSquatLogin(Framebuffer& fb) const;
     void drawLure(Framebuffer& fb, int originX, int originY) const;
+    void drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row, int petX,
+                   int petY, bool mirror) const;
     // A raised pet whose line carries LinePassive::Replication: the one question both
     // the ambient copies and the fork ask.
     bool petReplicates() const;
@@ -3474,6 +3484,9 @@ private:
     // Null between drifts, which is also what says nothing is worn.
     IdleCamo petCamo_;
     const SpriteData* idleCamoWorn_ = nullptr;
+    IdleVanish petVanish_;
+    IdleMimic petMimic_;
+    const SpriteData* idleMimicWorn_ = nullptr;
     // ...and where the ambient copies beside it are standing. One per replication
     // slot, of which idleCompanionCount() are live; each is seeded apart in Game's
     // constructor, since identical wanders move identically.

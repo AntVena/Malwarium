@@ -999,6 +999,28 @@ void test_idle_lure_takes_turns_with_the_skim() {
     CHECK(!otherLured);
 }
 
+// A shapeshifter's vanish (core/model/idle_vanish.h) and mimic (core/model/idle_mimic.h)
+// both come round, never at once and never over a colour drift, and only for that line.
+void test_idle_shapeshift_takes_turns_with_the_drift() {
+    Game shifter{StartMode::Hatched, "morphopus"};
+    Game other{StartMode::Hatched, "paypup"};
+    uint32_t t = 0;
+    bool vanished = false, mimicked = false, otherShifted = false;
+    for (int i = 0; i < 3 * kIdleVanishRestBeats; ++i) {
+        shifter.tick(t += kHeartbeatMs);
+        other.tick(t);
+        const bool v = shifter.petVanish().active(), m = shifter.petMimic().active();
+        CHECK(!(v && m));
+        CHECK(!((v || m) && shifter.petCamo().level() > 0));
+        vanished |= v;
+        mimicked |= m;
+        otherShifted |= other.petVanish().active() || other.petMimic().active();
+    }
+    CHECK(vanished);
+    CHECK(mimicked);
+    CHECK(!otherShifted);
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.

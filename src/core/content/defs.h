@@ -220,8 +220,10 @@ enum class RestingTrick : uint8_t {
     None,
     Disguise,   // turns into a prop on the shelf (core/model/idle_disguise.h)
     Harvest,    // pulls in streams of data and holds it encrypted (core/model/idle_harvest.h)
-    Skim,       // chases down envelopes sinking into the habitat and eats them
-                // (core/model/idle_feeding.h)
+    Skim,       // chases down scraps of identity, logs in with them, and sets bait
+                // between (core/model/idle_feeding.h, core/model/idle_lure.h)
+    Shapeshift, // fades into the habitat, and wipes into another family's creature
+                // (core/model/idle_vanish.h, core/model/idle_mimic.h)
 };
 
 // One creature FAMILY: the rows of a single evolution line, which is what
