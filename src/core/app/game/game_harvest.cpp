@@ -4,6 +4,8 @@
 
 #include "core/render/dissolve.h"
 #include "core/render/font.h"
+#include "core/render/font_glyphs.h"
+#include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 
 // game_harvest.cpp: the strands of data a harvesting line pulls in on the idle shelf
@@ -24,11 +26,30 @@ constexpr int kDigitSpacing = 10;
 // they arrive one after another rather than as a ring closing.
 constexpr int kStrandStartPx = 160;
 constexpr int kStrandStaggerBeats = 1;
-// A digit within kCipherPx of the pet is already encrypted; within kAbsorbPx it is gone.
-constexpr int kCipherPx = 56;
+// Within kTearPx of the pet a digit starts to tear, worse the closer it gets; within
+// kAbsorbPx it is gone.
+constexpr int kTearPx = 72;
 constexpr int kAbsorbPx = 14;
+// At the pet's edge a torn scanline shears up to kMaxShearPx and up to kMaxDropPct of a
+// glyph's rows drop out.
+constexpr int kMaxShearPx = 5;
+constexpr int kMaxDropPct = 45;
+constexpr uint8_t kPulseLightAlpha = 140;
 
-constexpr char kCipherGlyphs[] = "0123456789ABCDEF";
+// One digit, scanline by scanline, each row sheared sideways or dropped by `tear`
+// (0 clean, 255 at the pet). The rolls change every beat so a torn digit flickers.
+void drawTornDigit(Framebuffer& fb, int x, int y, char digit, Rgb565 color, int tear,
+                   uint32_t seed) {
+    const uint8_t* g = fontGlyph(digit);
+    for (int r = 0; r < kFontH; ++r) {
+        const uint32_t h = dissolveHash(static_cast<int>(seed), r);
+        if (static_cast<int>(h % 100) * 255 < kMaxDropPct * tear) continue;
+        const int shear = static_cast<int>((h >> 8) % (2 * kMaxShearPx + 1)) - kMaxShearPx;
+        const int dx = shear * tear / 255;
+        for (int c = 0; c < kFontW; ++c)
+            if (g[r] & (1u << (kFontW - 1 - c))) fb.blendPixel(x + c + dx, y + r, color, 255);
+    }
+}
 
 }  // namespace
 
@@ -38,8 +59,8 @@ void Game::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const {
     // The last strand must have swallowed its last digit by the end of the stage.
     const int travelBeats = kIdleHarvestStreamBeats - kStrandStaggerBeats * (kStrandCount - 1);
     const int travelPx = kStrandStartPx - kAbsorbPx + kStrandDigits * kDigitSpacing;
-    const Rgb565 plain = palColor(Pal::INK);
-    const Rgb565 cipher = palColor(Pal::DECRYPTION_GREEN);
+    const Rgb565 green = palColor(Pal::DECRYPTION_GREEN);
+    const Rgb565 light = blend(green, palColor(Pal::INK), kPulseLightAlpha);
     for (int i = 0; i < kStrandCount; ++i) {
         const int age = b - i * kStrandStaggerBeats;
         if (age < 0) continue;
@@ -49,14 +70,12 @@ void Game::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const {
         for (int k = 0; k < kStrandDigits; ++k) {
             const int d = head + k * kDigitSpacing;
             if (d <= kAbsorbPx) continue;
-            const bool encrypted = d < kCipherPx;
-            const char glyph[2] = {
-                encrypted ? kCipherGlyphs[dissolveHash(i * 17 + k, beat_) & 15]
-                          : static_cast<char>((dissolveHash(i, k) & 1) ? '1' : '0'),
-                '\0'};
+            const int tear = d >= kTearPx ? 0 : (kTearPx - d) * 255 / (kTearPx - kAbsorbPx);
+            const char digit = (dissolveHash(i, k) & 1) ? '1' : '0';
+            const Rgb565 color = ((beat_ + i + k) & 1) ? light : green;
             const int x = petCx + static_cast<int>(ca * d) - kFontW / 2;
             const int y = petCy + static_cast<int>(sa * d) - kFontH / 2;
-            drawText(fb, x, y, glyph, encrypted ? cipher : plain);
+            drawTornDigit(fb, x, y, digit, color, tear, dissolveHash(i * 17 + k, beat_));
         }
     }
 }
