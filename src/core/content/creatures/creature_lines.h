@@ -31,7 +31,8 @@ inline constexpr CreatureLine kCreatureLines[] = {
     {"ransomware", kRansomwareCreatures, kRansomwareCreatureCount,
      linePassives(LinePassive::RansomNote), /*raisedAchievement=*/nullptr,
      /*wearsBorrowedColours=*/false, RestingTrick::Harvest},
-    {"phishing", kPhishingCreatures, kPhishingCreatureCount, linePassives(LinePassive::Lure)},
+    {"phishing", kPhishingCreatures, kPhishingCreatureCount, linePassives(LinePassive::Lure),
+     /*raisedAchievement=*/nullptr, /*wearsBorrowedColours=*/false, RestingTrick::Skim},
     // The only line a pet can ARRIVE on mid-raise (the cross-line divert), so it is the
     // only one with an achievement for reaching it.
     {"trojan", kTrojanCreatures, kTrojanCreatureCount,

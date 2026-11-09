@@ -931,6 +931,43 @@ void test_idle_harvest_streams_then_holds_for_harvesters_only() {
     CHECK(!otherHeld);
 }
 
+// The mail skim (core/model/idle_feeding.h): after its rest, letters sink in one at a
+// time; a pet standing where the model says to stand bites each one; and an uneaten
+// letter does not outlive the feed. Driven at the model, with the pet teleported to its
+// stand point, so the gate is about the rules rather than the chase pace.
+void test_idle_feeding_letters_sink_and_get_eaten() {
+    IdleFeeding f;
+    for (int i = 0; i < kIdleFeedRestBeats; ++i) { f.step(true, 0, 0); CHECK(!f.feeding()); }
+    int petX = 0, petY = 0;
+    bool sawBite = false;
+    for (int i = 0; i < kIdleFeedMaxBeats + 10 && (f.feeding() || i == 0); ++i) {
+        f.step(true, petX, petY);
+        if (const Mail* m = f.target()) {
+            petX = IdleFeeding::standX(*m);
+            petY = IdleFeeding::standY(*m);
+        }
+        sawBite |= f.biting();
+    }
+    CHECK(sawBite);
+    CHECK(!f.feeding());   // the feed ended, so every letter went somewhere
+
+    IdleFeeding none;
+    for (int i = 0; i < 1000; ++i) { none.step(false, 0, 0); CHECK(!none.feeding()); }
+
+    Game phish{StartMode::Hatched, "tadpoll"};
+    Game other{StartMode::Hatched, "paypup"};
+    uint32_t t = 0;
+    bool phishFed = false, otherFed = false;
+    for (int i = 0; i < kIdleFeedRestBeats + 2; ++i) {
+        phish.tick(t += kHeartbeatMs);
+        other.tick(t);
+        phishFed |= phish.petFeeding().feeding();
+        otherFed |= other.petFeeding().feeding();
+    }
+    CHECK(phishFed);
+    CHECK(!otherFed);
+}
+
 // The seam, at the engine: a raised pet drifts around its shelf as the heartbeat
 // runs, and an egg does not. An egg sits where it was laid, with its incubation
 // countdown drawn directly above it.

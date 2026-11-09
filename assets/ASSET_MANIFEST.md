@@ -540,6 +540,17 @@ with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each:
 | `SPR_DISGUISE_MONITOR` | Monitor | 24×24 ×5 | A `>_` prompt on the screen, replaced by the eyes | ☑ | `/assets/sprites/SPR_DISGUISE_MONITOR.png` |
 | `SPR_DISGUISE_MALWARIUM` | The device itself | 24×24 ×5 | A square screen over the A/B/C buttons; the eyes look out of its screen | ☑ | `/assets/sprites/SPR_DISGUISE_MALWARIUM.png` |
 
+### C.4c Phishing mail (`SPR_MAIL_ENVELOPE`)
+
+What sinks into a resting Phishing pet's habitat for it to chase and skim
+(`core/model/idle_feeding.h`, drawn by `game_feeding.cpp`). Drawn in `tools/gen_worm_art.py`'s
+vocabulary, 1-bit on `ink`. Three 14×12 frames: **0** level, **1–2** tipped each way, alternated
+as it sinks.
+
+| Asset ID | Element | Logical size | Notes | Status | File |
+|---|---|---|---|---|---|
+| `SPR_MAIL_ENVELOPE` | Envelope | 14×12 ×3 | Outline and flap, no solid mass | ☑ | `/assets/sprites/SPR_MAIL_ENVELOPE.png` |
+
 ### C.5 Isolation Protocol: the Worm egg's hatch minigame
 
 **No art at all, and that is the design.** The Worm egg turns its worm loose in a quarantine buffer

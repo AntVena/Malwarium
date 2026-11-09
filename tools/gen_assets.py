@@ -177,6 +177,9 @@ FRAME_W_OVERRIDES = {
     "SPR_DISGUISE_USB": 24,
     "SPR_DISGUISE_MONITOR": 24,
     "SPR_DISGUISE_MALWARIUM": 24,
+    # 42x12 = the Phishing mail envelope, level and tipped each way
+    # (core/model/idle_feeding.h).
+    "SPR_MAIL_ENVELOPE": 14,
     # The combat screen's strike marks: 56x44 = two 28x44 frames, the pair a source
     # alternates between (tools/gen_fight_art.py). Wider than tall, so without the
     # override each would read as one very wide single frame.

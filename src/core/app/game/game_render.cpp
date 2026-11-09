@@ -237,7 +237,8 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         // every single-row sheet does.
         const AnimClip* clip = nullptr;
         if (pet_) {
-            if (petWander_.travelling()) clip = pet_->clip("walk");
+            if (petFeeding_.biting()) clip = pet_->clip("attack");
+            if (!clip && petWander_.travelling()) clip = pet_->clip("walk");
             if (!clip) clip = pet_->clip("idle");
         }
         const int row = clip ? clip->row : 0;
@@ -287,6 +288,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
                                mirror);
         drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
     }
+    drawFeedingMail(fb);
 
 
     // Boot-Sector incubation prompt (redesign): an unhatched egg shows its

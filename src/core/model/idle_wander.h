@@ -44,6 +44,11 @@ public:
     // that is not moving under its own power on: an unhatched egg sits where it was
     // laid, with its incubation readout drawn directly above it.
     void park();
+    // Head straight for (x, y) at a chase pace instead of taking a trip, turned
+    // `faceRight`, for a flourish that has somewhere the creature must be
+    // (core/model/idle_feeding.h). A floor mover's y stays 0. The next step() rests
+    // wherever this left it and then picks a trip of its own.
+    void chase(Locomotion loco, int x, int y, bool faceRight);
 
     int offsetX() const { return x_; }   // logical px, + right of the anchor
     int offsetY() const { return y_; }   // logical px above the shelf, never below it

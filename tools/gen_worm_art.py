@@ -2071,6 +2071,31 @@ def disguise_malwarium():
     return _disguise_sheet(_malwarium_cell)
 
 
+# ---------------------------------------------------------------------------
+#  Phishing mail: what sinks into a resting Phishing pet's habitat to be skimmed
+#  (core/model/idle_feeding.h). One 3-frame strip: level, then tipped each way, which
+#  the habitat alternates as it sinks so it rocks the way a flake does through water.
+# ---------------------------------------------------------------------------
+BW, BH = 14, 12
+
+
+def _envelope_cell():
+    c = Cell(BW, BH)
+    rect(c.body, 1, 2, 12, 10)
+    line(c.ink, (1, 2), (6, 7))                       # the flap
+    line(c.ink, (7, 7), (12, 2))
+    return c
+
+
+def mail_envelope():
+    sheet = Sheet(3, 1, BW, BH)
+    level = _envelope_cell().bake()
+    sheet.place(0, 0, level)
+    sheet.place(1, 0, lean(level, -1))
+    sheet.place(2, 0, lean(level, 1))
+    return sheet
+
+
 RECIPES = {
     "SPR_PET_NODEATODE": nodeatode,
     "SPR_PET_ROOTGRUB": rootgrub,
@@ -2083,6 +2108,7 @@ RECIPES = {
     "SPR_DISGUISE_USB": disguise_usb,
     "SPR_DISGUISE_MONITOR": disguise_monitor,
     "SPR_DISGUISE_MALWARIUM": disguise_malwarium,
+    "SPR_MAIL_ENVELOPE": mail_envelope,
 }
 
 

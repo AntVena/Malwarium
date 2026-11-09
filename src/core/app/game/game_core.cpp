@@ -207,10 +207,22 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // the same beat, each off its own stream; the ones past the live count are
         // parked so a shrinking family (an evolution, a fresh egg) leaves nothing
         // mid-stride to walk back in.
-        // A pet passing itself off as a prop holds still: a gift box that strolls is no
-        // disguise.
-        if (!pet_) petWander_.park();
-        else if (petDisguise_.stage() == DisguiseStage::Rest) petWander_.step(pet_->locomotion);
+        // A pet passing itself off as a prop holds still: a prop that strolls is no
+        // disguise. One skimming mail goes where the letter it is after is.
+        const CreatureLine* petLine =
+            pet_ ? registry_.creatureLine(pet_->line) : nullptr;
+        const RestingTrick trick =
+            petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
+        petFeeding_.step(trick == RestingTrick::Skim, petWander_.offsetX(),
+                         petWander_.offsetY());
+        if (!pet_) {
+            petWander_.park();
+        } else if (const Mail* m = petFeeding_.target()) {
+            petWander_.chase(pet_->locomotion, IdleFeeding::standX(*m),
+                             IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
+        } else if (petDisguise_.stage() == DisguiseStage::Rest) {
+            petWander_.step(pet_->locomotion);
+        }
         const int companions = idleCompanionCount();
         for (int i = 0; i < kWormReplicaSlots; ++i) {
             if (i < companions) companionWander_[i].step(pet_->locomotion);
@@ -222,10 +234,6 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
         // family's palette now and then and comes back (core/model/idle_camo.h). An egg
         // is left out, because the Metamorphic hatch board (game_chroma.cpp) is a
         // minigame about this effect and the player should first see it there.
-        const CreatureLine* petLine =
-            pet_ ? registry_.creatureLine(pet_->line) : nullptr;
-        const RestingTrick trick =
-            petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
         petDisguise_.step(trick == RestingTrick::Disguise);
         petHarvest_.step(trick == RestingTrick::Harvest);
         petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());

@@ -38,6 +38,7 @@
 #include "core/model/hacker_rank.h"
 #include "core/model/idle_camo.h"
 #include "core/model/idle_disguise.h"
+#include "core/model/idle_feeding.h"
 #include "core/model/idle_fork.h"
 #include "core/model/idle_harvest.h"
 #include "core/model/idle_relay.h"
@@ -1579,6 +1580,9 @@ public:
     // The data a harvesting line pulls in and holds now and then
     // (core/model/idle_harvest.h).
     const IdleHarvest& petHarvest() const { return petHarvest_; }
+    // The mail a skimming line chases down and eats now and then
+    // (core/model/idle_feeding.h).
+    const IdleFeeding& petFeeding() const { return petFeeding_; }
     // The byte the copies pass along between forks (core/model/idle_relay.h).
     const IdleRelay& petRelay() const { return petRelay_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
@@ -2524,6 +2528,7 @@ private:
     void drawIdleReplicas(Framebuffer& fb, int petCx) const;
     void drawDisguiseProp(Framebuffer& fb, int petCx) const;
     void drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const;
+    void drawFeedingMail(Framebuffer& fb) const;
     // A raised pet whose line carries LinePassive::Replication: the one question both
     // the ambient copies and the fork ask.
     bool petReplicates() const;
@@ -3472,6 +3477,7 @@ private:
     IdleRelay petRelay_;
     IdleDisguise petDisguise_;
     IdleHarvest petHarvest_;
+    IdleFeeding petFeeding_;
     // Per-stage tally of care interactions, indexed by DominantSignal, feeding
     // the evolution routing tables. Reset when a new stage begins
     // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot

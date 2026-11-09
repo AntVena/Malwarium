@@ -114,6 +114,22 @@ void IdleWander::retarget() {
     }
 }
 
+void IdleWander::chase(Locomotion loco, int x, int y, bool faceRight) {
+    constexpr int kChaseStepX = 3;
+    constexpr int kChaseStepY = 2;
+    if (loco != loco_) {
+        loco_ = loco;
+        park();
+    }
+    const bool rises = loco_ == Locomotion::Swim || loco_ == Locomotion::Fly;
+    targetX_ = clampTo(x, -kWanderHalfSpanX, kWanderHalfSpanX);
+    targetY_ = rises ? clampTo(y, 0, kWanderRiseMax) : 0;
+    rest_ = 0;
+    headingRight_ = faceRight;
+    x_ += approach(targetX_ - x_, kChaseStepX);
+    y_ += approach(targetY_ - y_, kChaseStepY);
+}
+
 void IdleWander::step(Locomotion loco) {
     if (loco != loco_) {   // a different creature, moving a different way
         loco_ = loco;
