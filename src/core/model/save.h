@@ -333,7 +333,10 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     cell per distinct food plus a bit per pet per food) rather than by slots x foods
 //     x id cells. Pre-v72 -> no favourite (rolled at the pet's next meal) and empty rack
 //     palates, because nothing recorded them.
-constexpr uint16_t kSaveVersion = 72;
+// v73 NO BYTES. Renames one CREATURE id (`placeholder_daemon` -> `leatherbackdoor`, see
+//     `renamedIds`); the version exists so the rename row has a `sinceVersion` to retire
+//     against.
+constexpr uint16_t kSaveVersion = 73;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves

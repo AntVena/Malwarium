@@ -83,7 +83,7 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 
 // The retired-id table. Adding, flattening and retiring a row: save.h's `renamedIds`.
 // std::array rather than a plain C array so a zero-row table is still well-formed.
-constexpr std::array<RenamedId, 2> kRenamedIds{{
+constexpr std::array<RenamedId, 3> kRenamedIds{{
     // v54: the everyday snack lost the ghost cure to Unlinkguine and was renamed with
     // it, so the id stopped describing the row (content_items.cpp). The FIRST item id
     // to be renamed: every row before this one was a creature.
@@ -91,6 +91,8 @@ constexpr std::array<RenamedId, 2> kRenamedIds{{
     // v70: the dish is a bruschetta (a Buguette under oil, garlic and tomato), and its
     // old name's tech half, ChromeOS's Linux container, was too obscure to land.
     {"crostini", "brusshetta", 70},
+    // v73: the Trojan Daemon shipped under a stand-in id before it had a name.
+    {"placeholder_daemon", "leatherbackdoor", 73},
 }};
 
 // The newest version any row still rewrites: a blob at or above it needs no pass.

@@ -108,6 +108,7 @@ struct ArchListView {
     int used = 0;                    // rack slots in use...
     int maxSlots = 0;                // ...of how many
     ArchStatusColumn status = ArchStatusColumn::Frozen;
+    int beat = 0;
 };
 void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const ArchListView& v);
 

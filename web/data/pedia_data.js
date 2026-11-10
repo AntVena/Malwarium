@@ -374,7 +374,7 @@ window.PEDIA_DATA = {
       "stageName": "Script",
       "line": "trojan",
       "evolvesTo": [
-        "placeholder_daemon"
+        "leatherbackdoor"
       ],
       "hint": "A slow, stubborn turtle in a keyboard shell - it passes for one of your fish, but it's logging every key you press.",
       "context": "Keyloggers / Trojan disguise",
@@ -385,19 +385,19 @@ window.PEDIA_DATA = {
       "sheetH": 96
     },
     {
-      "id": "placeholder_daemon",
-      "name": "Trojan Placeholder",
+      "id": "leatherbackdoor",
+      "name": "Leatherbackdoor",
       "stage": 4,
       "stageName": "Daemon",
       "line": "trojan",
       "evolvesTo": [],
-      "hint": "A Trojan still deciding what to impersonate - for now it just wears a name tag that reads 'Placeholder'.",
-      "context": "Trojan payload (placeholder)",
-      "sprite": "assets/sprites/SPR_PET_GENERIC_DAEMON.png",
+      "hint": "It doesn't look like it's going anywhere fast but this is one shell you're going to want to monitor.",
+      "context": "Backdoors / remote access trojans (RATs)",
+      "sprite": "assets/sprites/SPR_PET_LEATHERBACKDOOR.png",
       "cellW": 96,
       "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sheetW": 768,
+      "sheetH": 256
     },
     {
       "id": "coaxeel",

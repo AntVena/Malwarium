@@ -293,6 +293,11 @@ perfectly good reason to drop the rule entirely.
 - **LOCKED:** Malbear (Sulk × Edge, Smooth finish; deep base + acid-bright crown; dorsal crest +
   shoulder plates; idle = a slow shoulder-roll "huff"). Gold standard alongside Paypup.
 - **APPROVED back/shell:** Keyloggerhead (keycap shell + blinking cursor-cap).
+- **APPROVED Daemon:** Leatherbackdoor, Keyloggerhead grown into a leatherback in the 96×64 cell. The
+  keyboard shell survives as the keycap rim under a CRT dome, and its flippers carry the leatherback
+  spotting. Its tell is the pointer on the screen. The downscale smudges a pointer that small, so the
+  sheet's screen is repainted and a 4×6 arrow stamped in the floor ink on every frame after
+  `tools/quantize.py`, moving along a fixed path across the idle row.
 - **APPROVED 1-bit:** Vermicell, Nodeatode, Rootgrub, Shenloop and Threadbore (the whole Worm
   line, its style-instead-of-hue exception above), plus the two Trojan Daemons it diverts into,
   USBasilisk and Coaxeel. Held to the outline + segment-chords + one solid mass vocabulary, not to

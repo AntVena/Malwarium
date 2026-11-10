@@ -25,16 +25,17 @@ namespace {
 // meaning survives in grayscale even where the status word is clipped.
 void rackRow(Framebuffer& fb, int y, bool focused, const SpriteData& slotIcon,
              const char* name, const char* stage, const char* status,
-             Rgb565 statusColor) {
+             Rgb565 statusColor, int beat) {
     if (focused) {
         fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
         drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
     }
     drawSprite(fb, slotIcon, 0, 16, y + (kRowH - kRowIcon) / 2);
-    drawText(fb, 40, y + (kRowH - kFontH) / 2, name, palColor(Pal::INK));
+    const int statusX = kActiveW - kMargin - textWidth(status);
+    drawTextMarquee(fb, 40, y + (kRowH - kFontH) / 2, statusX - kFontAdvance - 40, name,
+                    palColor(Pal::INK), beat, scrollWhen(focused));
     drawText(fb, 40, y + kRowH - kFontH, stage, palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth(status), y + (kRowH - kFontH) / 2,
-             status, statusColor);
+    drawText(fb, statusX, y + (kRowH - kFontH) / 2, status, statusColor);
 }
 
 } // namespace
@@ -231,14 +232,14 @@ void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const ArchL
         switch (r.kind) {
             case ArchRow::Kind::Active:
                 rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT, name, stage, "ACTIVE",
-                        palColor(Pal::ACCENT));
+                        palColor(Pal::ACCENT), v.beat);
                 break;
             case ArchRow::Kind::Stored: {
                 char lv[12];
                 std::snprintf(lv, sizeof(lv), "LV %d", r.level);
                 rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT, name, stage,
                         showLevels ? lv : "FROZEN",
-                        palColor(showLevels ? Pal::INK : Pal::INK_DIM));
+                        palColor(showLevels ? Pal::INK : Pal::INK_DIM), v.beat);
                 break;
             }
             case ArchRow::Kind::Record: {
@@ -246,7 +247,7 @@ void drawArchList(Framebuffer& fb, const std::vector<ArchRow>& rows, const ArchL
                 SaveRecord rec;
                 rec.status = r.status;
                 rackRow(fb, y, i == cursor, ASSET_ICON_ARCH_SLOT_RETIRED, name, stage,
-                        recordStatusTag(rec), palColor(Pal::INK_DIM));
+                        recordStatusTag(rec), palColor(Pal::INK_DIM), v.beat);
                 break;
             }
         }
@@ -265,10 +266,9 @@ void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
     // what stops you. Said plainly here rather than discovered by pressing Store on a
     // pet record and reading the prompt.
     if (active) {
-        char sub[28];
-        std::snprintf(sub, sizeof(sub), "%s IS STORED FIRST", active->displayName);
-        drawText(fb, kMargin, 34, sub, palColor(Pal::INK));
-        drawText(fb, kMargin, 52, "IT KEEPS EVERY STAT IT HAS.", palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 34, active->displayName, palColor(Pal::INK));
+        drawText(fb, kMargin, 44, "IS STORED FIRST.", palColor(Pal::INK));
+        drawText(fb, kMargin, 58, "IT KEEPS EVERY STAT IT HAS.", palColor(Pal::INK_DIM));
     } else {
         drawText(fb, kMargin, 34, "NO ACTIVE PET TO SET ASIDE.", palColor(Pal::INK));
         drawText(fb, kMargin, 52, "THE EGG IS LAID OUTRIGHT.", palColor(Pal::INK_DIM));

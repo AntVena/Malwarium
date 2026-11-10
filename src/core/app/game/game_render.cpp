@@ -724,6 +724,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 v.cursor = listRow_;
                 v.used = static_cast<int>(rack_.size());
                 v.maxSlots = rackSlots();
+                v.beat = beat_;
                 if (archGroup_.kind == ArchGroup::Kind::Sell) v.status = ArchStatusColumn::Level;
                 drawArchList(fb, archRows(), v);
             }

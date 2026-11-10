@@ -300,7 +300,7 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     const CreatureLine* line = creatureLine("trojan");
     CHECK(wing && line && achievementGoal(*wing) == line->count);
 
-    for (const char* id : {"keyloggerhead", "placeholder_daemon", "coaxeel"})
+    for (const char* id : {"keyloggerhead", "leatherbackdoor", "coaxeel"})
         g.debugSeedRack(id);
     g.tick(t += kAchSweepIntervalMs);
     CHECK(!g.hasAchievement("WING_TROJAN"));      // three quarters of a family is none

@@ -170,7 +170,7 @@ void test_trojan_content() {
               m->trapPassiveBonusPct > 0);
     }
     const CreatureDef* kl = r.creature("keyloggerhead");
-    const CreatureDef* dae = r.creature("placeholder_daemon");
+    const CreatureDef* dae = r.creature("leatherbackdoor");
     CHECK(kl && kl->stage == Stage::Script && std::strcmp(kl->line, "trojan") == 0);
     CHECK(dae && dae->stage == Stage::Daemon && std::strcmp(dae->line, "trojan") == 0);
     const CreatureDef* ph = r.creature("phishlet");

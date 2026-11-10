@@ -8,7 +8,8 @@
 // against the creature the player was expecting, which is the only way a disguise can
 // be a disguise. What it inherits is decided by WHERE it was substituted in:
 //
-//   Phishlet (Phishing, Process)   -> Keyloggerhead, a Script, blue like its origin
+//   Phishlet (Phishing, Process)   -> Keyloggerhead, a Script, blue like its origin,
+//                                     which grows into Leatherbackdoor, a Daemon
 //   Rootgrub (Worm,     Script)    -> Coaxeel / USBasilisk, Daemons, 1-bit like theirs
 //
 // so the two arms of the family look nothing alike on purpose. CREATURE_VISUAL_RULES §4
@@ -31,21 +32,23 @@ inline constexpr CreatureDef kTrojanCreatures[] = {
     // Its sheet is two rows of 8 columns, so the resting loop plays row 0 in full and
     // the swing has row 1 to itself.
     {"keyloggerhead", "Keyloggerhead", Stage::Script, "SPR_PET_KEYLOGGERHEAD",
-     "placeholder_daemon", nullptr, nullptr, 100, 100, "trojan",
+     "leatherbackdoor", nullptr, nullptr, 100, 100, "trojan",
      "A slow, stubborn turtle in a keyboard shell - it passes for one of your fish, but it's logging every key you press.",
      "Keyloggers / Trojan disguise",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
      /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/4},
                 {"attack", /*row=*/1, /*frames=*/4}}},
-    // First-cut Trojan Daemon terminus (the name says what it is; a disguise-themed
-    // rename + real sprite are follow-ups). Generic Daemon frame for now.
-    {"placeholder_daemon", "Trojan Placeholder", Stage::Daemon, "SPR_PET_GENERIC_DAEMON",
+    {"leatherbackdoor", "Leatherbackdoor", Stage::Daemon, "SPR_PET_LEATHERBACKDOOR",
      nullptr, nullptr, nullptr, 100, 100, "trojan",
-     "A Trojan still deciding what to impersonate - for now it just wears a name tag that reads 'Placeholder'.",
-     "Trojan payload (placeholder)",
+     "It doesn't look like it's going anywhere fast but this is one shell you're going to want to monitor.",
+     "Backdoors / remote access trojans (RATs)",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Attack, MoveKind::Defend},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/1},
+                {"walk", /*row=*/1, /*frames=*/6, /*holdBeats=*/1},
+                {"attack", /*row=*/2, /*frames=*/3, /*holdBeats=*/1},
+                {"hurt", /*row=*/3, /*frames=*/3, /*holdBeats=*/1}}},
 
     // --- The Worm arm: what Rootgrub's Script->Daemon hop diverts into ---------------
     //
