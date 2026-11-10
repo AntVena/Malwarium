@@ -364,8 +364,8 @@ window.PEDIA_DATA = {
       "sprite": "assets/sprites/SPR_PET_BAITRACUDA.png",
       "cellW": 96,
       "cellH": 64,
-      "sheetW": 96,
-      "sheetH": 64
+      "sheetW": 768,
+      "sheetH": 256
     },
     {
       "id": "keyloggerhead",

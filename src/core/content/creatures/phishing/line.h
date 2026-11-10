@@ -129,7 +129,11 @@ inline constexpr CreatureDef kPhishingCreatures[] = {
      "It's long, it's strong, it's got its email bait kit on! You can't filter what you can't catch!",
      "Aggressive spear-phishing credential theft.",
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
-     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim},
+     /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Swim,
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/1},
+                {"walk", /*row=*/1, /*frames=*/6, /*holdBeats=*/1},
+                {"attack", /*row=*/2, /*frames=*/3, /*holdBeats=*/1},
+                {"hurt", /*row=*/3, /*frames=*/3, /*holdBeats=*/1}}},
 };
 inline constexpr int kPhishingCreatureCount =
     sizeof(kPhishingCreatures) / sizeof(kPhishingCreatures[0]);
