@@ -53,10 +53,8 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      {MoveKind::Attack, MoveKind::Defend, MoveKind::Defend, MoveKind::Attack},
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Walk},
     // Barkmail's two Daemons: the noble line and the one that took it.
-    // Wire Heir's sheet is one row of 8 frames at the 96x64 Daemon cell, so unlike every
-    // 56x48 sheet it needs its frame width declared in gen_assets.py's FRAME_W_OVERRIDES:
-    // 768 is not a whole number of 56px cells, and the default rule would read the strip
-    // as one very wide frame.
+    // Wire Heir's sheet is four rows of 96x64 Daemon cells, so it declares its frame width
+    // and row height in gen_assets.py's FRAME_W_OVERRIDES and ROW_H_OVERRIDES.
     {"wire_heir", "Wire Heir", Stage::Daemon, "SPR_PET_WIRE_HEIR",
      nullptr, nullptr, nullptr, kBranchGoodPowerPct, kBranchGoodFragPct, "ransomware",
      "Roaming the Napstorrent Moors and decrypting hard drives in need, it bears a suspicious resemblance to Prince Sauspionage, the exiled heir to the throne of the Lockshund kingdom...",
@@ -66,7 +64,10 @@ inline constexpr CreatureDef kRansomwareCreatures[] = {
      // shelf bob on top of that lands on a different beat and reads as a bounce. The
      // slower Ground pace suits a long dog on short legs anyway.
      /*evolvesToTrojanId=*/nullptr, /*evolvesToTrojanBadId=*/nullptr, Locomotion::Ground,
-     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2}}},
+     /*clips=*/{{"idle", /*row=*/0, /*frames=*/8, /*holdBeats=*/2},
+                {"walk", /*row=*/1, /*frames=*/6, /*holdBeats=*/1},
+                {"attack", /*row=*/2, /*frames=*/3, /*holdBeats=*/1},
+                {"hurt", /*row=*/3, /*frames=*/3, /*holdBeats=*/1}}},
     {"extorgi", "Extorgi", Stage::Daemon, "SPR_PET_EXTORGI",
      nullptr, nullptr, nullptr, kBranchBadPowerPct, kBranchBadFragPct, "ransomware",
      "Aspiring undemocratically self-elected regent of Castle Rapidscare. Other candidates have been warned to back down once if they want to keep their files, It expects to keep the racket going many terms running.",

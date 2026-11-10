@@ -197,10 +197,9 @@ FRAME_W_OVERRIDES = {
     # needs no row here.
     "ICON_FIGHT_DOT": 8,
     "ICON_FIGHT_STUN": 8,
-    # 768x64 = eight 96x64 frames. An ANIMATED sheet at the oversized Daemon cell needs
-    # the override for the same reason a Script sheet does not: the rule below cuts a
-    # SPR_PET_ sheet on 56px only when the width divides by it, and 768 does not, so
-    # without this the whole strip reads as one very wide single frame.
+    # 768x256 = four rows of eight 96x64 frames: idle, walk, strike, flinch. The rule
+    # below cuts a SPR_PET_ sheet on 56px only when the width divides by it, and 768 does
+    # not, so without this the whole strip reads as one very wide single frame.
     "SPR_PET_WIRE_HEIR": 96,
     # 576x192 = eight 72x64 frames. The cell is 72 rather than 64 because the strike row
     # reaches: an arm thrown clear of the body is 65 px across where the standing pose is
@@ -248,6 +247,7 @@ ROW_H_OVERRIDES = {
     "SPR_PET_SPAMWHALE": 64,
     "SPR_PET_GOLIAUTH": 64,
     "SPR_PET_LEATHERBACKDOOR": 64,
+    "SPR_PET_WIRE_HEIR": 64,
     # The wild malbeasts: two rows of one frame each, the idle then the attack (tools/
     # gen_malbeast_art.py); 56x96 for the 56x48 cell, 64x112 for the apex's 64x56. Not
     # SPR_PET_ sheets, so the stack has to be declared here.

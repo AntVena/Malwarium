@@ -97,8 +97,9 @@
 //             second one a twin, so REIMAGE reads open)
 //        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
 //             stats opens the panel's STATE page, kit its second) ·
-//        simbattle [fight [stats]] (the REAL entry. Buffs carried in from outside,
-//             e.g. armbuffs simbattle fight stats) · malbear
+//        simbattle [fight [stats] [anim:<n>]] (the REAL entry. Buffs carried in from
+//             outside, e.g. armbuffs simbattle fight stats. "anim:<n>" runs the fight n
+//             combat beats further, so anim:0..N renders it frame by frame) · malbear
 //        bruinforce (Good Daemon) · berserkernel (Bad Daemon) · csf (Critical Failure)
 // expl [inside|bossready|endgame] (the nested area/sub-area ladder. One nav
 //        LEVEL per frame: the top-level zone picker, "inside" for area 0's own block,
@@ -968,6 +969,12 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});
             for (int i = 1; i <= 4; ++i)
                 game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
+            int anim = 0;
+            for (int i = 1; i < argc; ++i)
+                if (std::strncmp(argv[i], "anim:", 5) == 0) anim = std::atoi(argv[i] + 5);
+            for (int i = 1; i <= anim; ++i)
+                game.tick(static_cast<uint32_t>(beats + 4) * kHeartbeatMs +
+                          static_cast<uint32_t>(i) * kCombatAnimMs);
             if (hasFlag(argc, argv, "stats"))
                 game.onButton({Button::B, true, false});
         }

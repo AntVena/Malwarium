@@ -86,7 +86,7 @@ window.PEDIA_DATA = {
       "cellW": 96,
       "cellH": 64,
       "sheetW": 768,
-      "sheetH": 64
+      "sheetH": 256
     },
     {
       "id": "extorgi",
