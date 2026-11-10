@@ -134,77 +134,25 @@ Engine slots for most of these exist (they render via placeholder or text today)
 **drop-in the moment they're drawn**. Sizes are logical px; bind colour to `PAL_CORE` tokens.
 Inventory: `assets/ASSET_MANIFEST.md`.
 
-### 2a-i. Template pet sheet: one row per default animation
-
-No starting point exists for a new creature sheet today. `gen_assets.py` already slices a pet sheet
-into independent rows of up to 8 56×48 columns each (`frame_rows`/`PET_ROW_H`), and a creature's
-`CreatureDef::clips` already name an arbitrary row + frame count on its own row, so this is purely
-an authoring aid, no ingestion change needed. A template just needs one labeled row per default
-animation (idle, attack, plus the locomotion cycle §2c wants), each row 8 cells wide with
-placeholder ink or guide marks, so an artist opens one file and knows where "walk" goes without
-reading a content header. Lives beside `CREATURE_VISUAL_RULES.md` (which currently stops at "keep
-them as single frames... start frame sets" with no sheet layout to start from), and the clip rules
-it documents are in `src/core/content/creatures/CREATURE_CONTENT_STANDARD.md` § *Clips*.
-
-MALBEAR is the case that shows why it's wanted: its 8-column sheet declares `idle` as frames 0-2
-and `attack` as all 8 of the same row, because the sheet arrived with no row plan saying which
-columns were which. A template makes that a drawing instruction rather than a guess. Diff **S**.
-
-### 2a-iii. Every limb must end inside its own frame
-
-**A limb cut off by the frame edge reads as a rendering bug on the device, not as a crop.** At
-x1.75 a tentacle or a tail that simply stops on a flat vertical line looks like the blitter
-failed, and no amount of good drawing above it recovers the read. So the rule is: a creature
-must fit, whole, inside its own frame. The FRAME is sized to the creature, never the creature
-trimmed to the frame. The cell may grow (`gen_assets.py` reads any `SPR_PET_` sheet whose width
-is not a multiple of 56 as one oversized frame, up to the 128x64 sprite box), which is the
-release valve that makes the rule always satisfiable.
-
-The bottom edge is exempt and only the bottom edge: that one is the FLOOR, and a creature
-standing on the shelf belongs on it.
-
-Measured over the roster, counting opaque pixels on a frame's left, right and top edges: **26
-sheets are clean, 13 are not**, led by `SPR_PET_BRUINFORCE` (30 px) and a tie between
-`SPR_PET_EGG_WORM_HATCH` and `SPR_PET_CUTTLEFORK` (18). `SPR_PET_GOLIAUTH` (once 109 left, 109
-right) and `SPR_PET_CROAKEN` (33/33/34) are the pattern for the fix: neither was cropped, both
-were re-composed inside a cell chosen to fit them, which is why Goliauth sits in the 96x64
-Daemon box rather than the 56px cell it was overflowing. `SPR_PET_MORPHOPUS` was the worst row
-here at 42 px and is now clean, by the same move at a smaller scale: its cell grew from 66x48
-to 66x52 so the drawing kept every pixel it had. The attempt that shrank the creature to 46
-rows instead cost 12% of its opaque mass, which is the measurement that says which way round
-this rule runs.
-
-**Animating a sheet is what puts a clean row back on this list**, and it is the reason the
-count keeps moving: a redraw resolves the silhouette afresh every frame, so a creature drawn
-with a comfortable margin can still surge into its own top edge on one column of eight. Every
-multi-frame Metamorphic sheet is here for that reason and no other. Re-measure a sheet after
-animating it: the still frame it was approved from proves nothing about the row. Some of it
-is deliberate (a boss filling its cell, a 2px surge bought on purpose), so the sweep is a
-judgement per sheet, not a blanket re-crop, and that is why this is not already a gate. |
-`assets/` + `tools/quantize.py`; the check itself is ~20 lines over `gen_assets.frame_width` /
-`frame_rows`. | M | Do it in the same pass as 2a-ii. Both walk every pixel of every sheet, and
-both end in the same place: a mechanical check in the gates once the roster agrees with itself.
-Until then this is a drawing rule enforced by eye, which is how it got broken twice. |
-
-### 2a-ii. Outline consistency pass over the whole roster
+### 2a. One silhouette ink across the roster, then a frame-edge gate
 
 **The roster does not agree with itself about outlines.** Measured on the silhouette edge
-(every opaque pixel touching transparency) the shipped sprites split three ways:
-`SPR_PET_PAYPUP` is **one tone at 100%**, `SPR_PET_CROAKEN` is one tone at 96%, and
-`SPR_PET_MALBEAR` and `SPR_PET_BRUINFORCE` are ~67% over five or six tones. So the gold
-standard states a rule the rest of the roster only half-follows, and nothing writes it down.
+(every opaque pixel touching transparency) the shipped sprites split several ways:
+`SPR_PET_PAYPUP` is **one tone at 100%**, `SPR_PET_CROAKEN` is one tone at 96%,
+`SPR_PET_SYNCAELIA` 83% over four tones, and `SPR_PET_MALBEAR` and `SPR_PET_BRUINFORCE` ~67%
+over five or six. The convention is a single dark ink on every boundary pixel, as Paypup does.
 
-Two things to settle, in this order. **Pick the convention**: a single dark ink on every
-boundary pixel (what Paypup does) or no forced outline at all. Either is defensible; having
-both is what reads as sloppy at x1.75. `SPR_PET_SYNCAELIA` measures 83% ink over four tones,
-which is a fourth position again and the clearest argument that the rule wants writing down
-rather than inferring from whichever sheet was drawn last. Then **sweep the
-roster to match**, which is mechanical: for each sprite, recolour boundary pixels to the
-line's darkest tone. Worth doing in the same pass as any re-quantise, since both walk every
-pixel of every sheet.
+**Sweep the roster to it**: for each sheet, recolour boundary pixels to the line's darkest
+tone. `tools/quantize.py --outline '#hex'` already does this for one sheet. The sweep must
+count the frame's own left, right and top edges as NOT transparent. Otherwise it paints ink
+over a cut and hides it from the gate below.
 
-The tool for it already exists: `tools/quantize.py --outline '#hex'` forces the convention on
-one sheet. What is left is the DECISION and then the sweep across the roster. Diff **M**.
+**Then gate it**: on a frame's left, right or top edge, any opaque pixel that is not the
+silhouette ink means a cut. The bottom edge is the floor and is exempt. A creature must fit
+whole inside its frame; touching the edge on its outline is fine. The check is ~20 lines over
+`gen_assets.frame_width` / `frame_rows`, and it replaces judging cuts by eye. |
+`assets/`; `tools/quantize.py`. | M | Re-run it after animating any sheet: the still a sheet
+was approved from proves nothing about its rows. |
 
 ### 2b. Placeholder → final art
 
@@ -308,10 +256,3 @@ walk), and `game_config`, `game_pvp`, `game_crew` (one screen each, just over).
   slice off the end. | `combat.cpp`'s `mitigate`. | S, if it is ever needed. | The phase order
   around it is gated (`test_pipeline_*` in `test_combat.cpp`), so a future split has something
   to fail against rather than only a comment to contradict. |
-
----
-
-## If picking up cold
-
-1. **The template pet sheet (§2a-i)**. An authoring aid with no ingestion change behind it:
-   one labeled row per default animation, so a new creature sheet starts from a plan.
