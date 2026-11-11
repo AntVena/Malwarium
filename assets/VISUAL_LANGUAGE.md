@@ -296,6 +296,10 @@ The line naming what the buttons do is drawn one of two ways, one per face:
   `accent` (dimmed when it can't fire right now). It is drawn inline in each `game_*.cpp`
   unit rather than through a widget.
 
+**A's verb is NEXT wherever A moves a cursor**, on a list, a picker or a menu, because
+every one of them steps through the same walk (`game_listnav.cpp`). `A CYCLE` is reserved
+for A changing a VALUE in place: a setting's level, a HackerTag letter.
+
 **The exception rule.** A gesture that an upgrade grants is advertised only once the upgrade
 is owned, so an unowned player's screen is pixel-identical to one where the upgrade never
 existed. The ITEMS list (filter/type hints) and VAULT (bulk open) apply it; a screen whose

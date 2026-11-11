@@ -184,6 +184,11 @@ void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scr
 // (the 5x7 font has no '>'). Left-anchored, tapering to a point at the right.
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 
+// UI_ROW_SEL, the focused row of a full-width list: the `track` fill (separable from
+// `paper` in grayscale) inset 2px inside the row's pitch, with the cursor centred on
+// it. Every list draws focus through this, so a row pitch is all a list says about it.
+void drawRowSelection(Framebuffer& fb, int rowY, int rowH);
+
 // The CANCEL / CONFIRM pair under an inline overwrite confirm (the MOVES and MODS
 // pickers). `choice` 0 focuses CANCEL, 1 CONFIRM; the cursor carries the focus without
 // colour.

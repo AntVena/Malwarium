@@ -42,10 +42,7 @@ void infoLine(Framebuffer& fb, int y, const char* key, const char* val,
 // emphasis MEANS is the screen's business, not the row's.
 void settingsRow(Framebuffer& fb, int y, const CfgRow& row, bool focused,
                  const char* val, Rgb565 valColor) {
-    if (focused) {
-        fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-        drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-    }
+    if (focused) drawRowSelection(fb, y, kRowH);
     if (row.icon)
         drawSprite(fb, *row.icon, 0, 16, y + (kRowH - kRowIcon) / 2);
     drawText(fb, 40, y + (kRowH - kFontH) / 2, row.label, palColor(Pal::INK));
@@ -93,10 +90,7 @@ void radioRow(Framebuffer& fb, int y, const CfgRow& row, bool focused, RadioRowS
               const char* val) {
     const bool on = state != RadioRowState::Off;
     const int textY = y + (kRowH - kFontH) / 2;
-    if (focused) {
-        fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-        drawRowCursor(fb, 8, textY, palColor(Pal::ACCENT));
-    }
+    if (focused) drawRowSelection(fb, y, kRowH);
     if (on)
         drawRadioMark(fb, 18, textY, state,
                       palColor(state == RadioRowState::OnAir ? Pal::ACCENT : Pal::INK));
@@ -252,7 +246,7 @@ void drawCfgList(Framebuffer& fb, int cursor, const char* hackerTag,
     }
 
     drawScrollbar(fb, kRowTop, kVisibleRows * kRowH, n, scrollTop, kVisibleRows);
-    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 namespace {

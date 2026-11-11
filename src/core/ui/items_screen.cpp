@@ -325,10 +325,7 @@ void drawItemTypePicker(Framebuffer& fb, int cursor) {
     constexpr int kPickRowH = 30;
     for (int i = 0; i < kItemPickerTileCount; ++i) {
         const int y = kRowTop + i * kPickRowH;
-        if (i == cursor) {  // UI_ROW_SEL band (grayscale-separable from paper)
-            fb.fillRect(4, y + 2, kActiveW - 8, kPickRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kPickRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == cursor) drawRowSelection(fb, y, kPickRowH);
         drawText(fb, 24, y + (kPickRowH - kFontH) / 2,
                  itemFilterLabel(kItemPickerTiles[i]), palColor(Pal::INK));
     }
@@ -431,10 +428,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const Items
                         palColor(Pal::TRACK));
             continue;
         }
-        if (i == v.cursor) {  // UI_ROW_SEL band (grayscale-separable from paper)
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == v.cursor) drawRowSelection(fb, y, kRowH);
         drawItemRow(fb, r, y, i == v.cursor, v);
     }
 
@@ -628,7 +622,7 @@ void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {
         }
     }
 
-    drawHintBand(fb, "A CYCLE  B SHED  C CANCEL");
+    drawHintBand(fb, "A NEXT  B SHED  C CANCEL");
 }
 
 void drawRepartitionPicker(Framebuffer& fb, const int points[4], int cursor, int from) {
@@ -675,7 +669,7 @@ void drawRepartitionPicker(Framebuffer& fb, const int points[4], int cursor, int
         drawText(fb, kActiveW - kMargin - textWidth(readout), y, readout, c);
     }
 
-    const char* hint = picking ? "A CYCLE  B FROM  C CANCEL" : "A CYCLE  B MOVE  C BACK";
+    const char* hint = picking ? "A NEXT  B FROM  C CANCEL" : "A NEXT  B MOVE  C BACK";
     drawHintBand(fb, hint);
 }
 

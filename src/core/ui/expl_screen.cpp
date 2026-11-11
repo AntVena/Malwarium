@@ -1053,10 +1053,7 @@ void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
     // the same idiom as the sector list / shop row, so it reads in grayscale).
     for (int i = 0; i < keyCount; ++i) {
         const int y = kTrackRowTop + i * kRowH;
-        if (i == cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == cursor) drawRowSelection(fb, y, kRowH);
         drawText(fb, 24, y + (kRowH - kFontH) / 2, keyNames[i],
                  palColor(Pal::INK));
     }

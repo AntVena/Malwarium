@@ -638,10 +638,13 @@ void Game::drawHackerLink(Framebuffer& fb) const {
         drawText(fb, kMargin, kActiveH - 34, "AMBIENT NEEDS AUDIT SCAN",
                  palColor(Pal::WARN));
 
+    // FIGHT is what this screen is for, so it takes the accent verb (VISUAL_LANGUAGE
+    // §4.2) whenever there is someone to fight; with nobody listed, BACK is all there is.
     fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 20, n > 0 ? "A NEXT  B FIGHT" : "A NEXT",
-             palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth("C BACK"), kActiveH - 20, "C BACK",
+    const char* secondary = n > 0 ? "A NEXT  C BACK" : "A NEXT";
+    const char* primary = n > 0 ? "B FIGHT" : "C BACK";
+    drawText(fb, kMargin, kActiveH - 20, secondary, palColor(Pal::INK_DIM));
+    drawText(fb, kActiveW - kMargin - textWidth(primary), kActiveH - 20, primary,
              palColor(Pal::ACCENT));
 }
 

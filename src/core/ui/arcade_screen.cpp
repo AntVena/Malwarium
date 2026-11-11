@@ -40,10 +40,7 @@ void drawArcadeList(Framebuffer& fb, const ContentRegistry& reg, const ArcadeLis
         const int i = v.rows[slot];
         const ArcadeGameDef& d = arcadeGames()[i];
         const int y = kRowTop + slot * kRowH;
-        if (i == v.cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == v.cursor) drawRowSelection(fb, y, kRowH);
         if (const SpriteData* ic = reg.sprite(d.iconName))
             drawSprite(fb, *ic, 0, 16, y + (kRowH - kRowIcon) / 2);
         // The play tally owns the right end: it is the row's one changing fact. Kept

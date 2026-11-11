@@ -132,10 +132,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
 
     for (int i = 0; i < 2; ++i) {
         const int y = kRowTop + i * kRowH;
-        if (i == cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == cursor) drawRowSelection(fb, y, kRowH);
         drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kRowIcon) / 2);
         const int textY = y + (kRowH - kFontH) / 2;
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
@@ -146,7 +143,7 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }
-    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 namespace {
@@ -155,6 +152,20 @@ namespace {
 // stakes and the reward read together before B commits to either.
 void formatPlayTag(char* out, size_t cap, ArcadeDifficulty d) {
     std::snprintf(out, cap, "%s x%d", arcadeDifficultyName(d), arcadeRewardMult(d));
+}
+
+// The payment picker's fences (VISUAL_LANGUAGE §4.1), shared by DEFRAG and AV so the two
+// pages agree however many readout lines and variants each has: the first row sits
+// kPickGapAbove under the last readout, rows keep kPickPitch, and the verdict sits
+// kPickGapBelow under the last row. Both gaps are wider than the pitch, which is what
+// fences the pick off. The fail-cost footnote hangs kFootnoteDy under the verdict.
+constexpr int kPickGapAbove = 22;
+constexpr int kPickPitch = 18;
+constexpr int kPickGapBelow = 28;
+constexpr int kFootnoteDy = 14;
+
+int pickRowY(int lastReadoutY, int row) {
+    return lastReadoutY + kPickGapAbove + row * kPickPitch;
 }
 
 // What a failed QUICK defrag or AV scan costs, said where the gamble is taken: the price
@@ -215,20 +226,19 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     // the readout pitch, above the list, rather than trailing the list at the list's
     // own pitch, where a dim unindented row still reads as a fourth thing to land
     // the cursor on.
+    constexpr int kLastReadoutY = 90;
     std::snprintf(line, sizeof(line), "HELD DEFRAG TOOLS: %d", v.toolCount);
-    drawText(fb, kMargin, 90, line, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, kLastReadoutY, line, palColor(Pal::INK_DIM));
 
     // the three payment VARIANTS as a 3-row pick (A switches, B runs the
     // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
     // guaranteed clean; the played game = the same Bits, then play for it.
     // Grayscale-safe: the cursor marks the focus, and each row spells its terms in
-    // words (n% FAIL / GUARANTEED / NO TOOL / the dial). The 22px above the first row and the 28px
-    // below the last are what fence the pick off from the readouts and the action
-    // line: both wider than the 18px the rows keep between themselves.
-    const int rowY[3] = {112, 130, 148};
-    for (int i = 0; i < 3; ++i) {
+    // words (n% FAIL / GUARANTEED / NO TOOL / the dial).
+    for (int i = 0; i < kDefragVariants; ++i) {
+        const int rowY = pickRowY(kLastReadoutY, i);
         const bool focus = v.variant == i;
-        if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
+        if (focus) drawRowCursor(fb, kMargin, rowY, palColor(Pal::ACCENT));
         const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
         const char* tag;
         Rgb565 tagCol = palColor(Pal::INK_DIM);
@@ -245,8 +255,9 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
             std::snprintf(line, sizeof(line), "%s  -%d B", v.played.name, v.cost);
             tag = playTag;          // never fails; the run sets the size of the clean
         }
-        drawLabelValue(fb, kMargin + 12, rowY[i], line, col, tag, tagCol, 0, Overflow::Clip);
+        drawLabelValue(fb, kMargin + 12, rowY, line, col, tag, tagCol, 0, Overflow::Clip);
     }
+    const int actionY = pickRowY(kLastReadoutY, kDefragVariants - 1) + kPickGapBelow;
 
     // Bottom action line: the gated reason, or the armed action. It names the
     // ACTION, not the buttons: the band below does those, and the AV branch's
@@ -254,19 +265,19 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     const bool toolReady = v.toolCount > 0;
     const bool runnable = afford && (v.variant != 1 || toolReady);
     if (defragGated(m)) {
-        drawText(fb, kMargin, 176, "- NOTHING TO DEFRAGMENT -",
+        drawText(fb, kMargin, actionY, "- NOTHING TO DEFRAGMENT -",
                  palColor(Pal::INK_DIM));
     } else if (!afford) {
-        drawText(fb, kMargin, 176, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
+        drawText(fb, kMargin, actionY, "- NOT ENOUGH BITS -", palColor(Pal::WARN));
     } else if (v.variant == 1 && !toolReady) {
-        drawText(fb, kMargin, 176, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
+        drawText(fb, kMargin, actionY, "- NO DEFRAG TOOL -", palColor(Pal::WARN));
     } else if (runnable) {
-        drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, 176, "RUN", palColor(Pal::ACCENT));
+        drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 12, actionY, "RUN", palColor(Pal::ACCENT));
         // The price of the gamble, as a footnote to the action that takes it, only
         // while QUICK is the armed variant, the one of the three that can fail.
         if (v.variant == 0)
-            drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
+            drawText(fb, kMargin + 12, actionY + kFootnoteDy, failCost, palColor(Pal::INK_DIM));
     }
     drawHintBand(fb, runnable ? "A SWITCH  B RUN  C BACK" : "A SWITCH  C BACK");
 }
@@ -295,16 +306,17 @@ void drawAvAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) 
     }
     char status[16];
     avStatus(m, status, sizeof(status));
+    constexpr int kLastReadoutY = 78;
     std::snprintf(line, sizeof(line), "STATUS: %s", status);
-    drawText(fb, kMargin, 78, line, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin, kLastReadoutY, line, palColor(Pal::INK_DIM));
 
     // The two ways to run the same scan, picked the way DEFRAG's three are. Both
     // free: QUICK rolls for it, the played game cannot fail. A run that stops
     // short still pays its units off the disk.
-    const int rowY[2] = {112, 130};
     for (int i = 0; i < kAvVariants; ++i) {
+        const int rowY = pickRowY(kLastReadoutY, i);
         const bool focus = v.variant == i;
-        if (focus) drawRowCursor(fb, kMargin, rowY[i], palColor(Pal::ACCENT));
+        if (focus) drawRowCursor(fb, kMargin, rowY, palColor(Pal::ACCENT));
         const Rgb565 col = focus ? palColor(Pal::ACCENT) : palColor(Pal::INK);
         char quickTag[16];
         const char* tag = playTag;
@@ -312,17 +324,18 @@ void drawAvAction(Framebuffer& fb, const PetModel& m, const MaintActionView& v) 
             std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", v.failPct);
             tag = quickTag;
         }
-        drawLabelValue(fb, kMargin + 12, rowY[i], i == 0 ? "QUICK" : v.played.name, col,
+        drawLabelValue(fb, kMargin + 12, rowY, i == 0 ? "QUICK" : v.played.name, col,
                        tag, palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
+    const int actionY = pickRowY(kLastReadoutY, kAvVariants - 1) + kPickGapBelow;
 
     if (avGated(m)) {
-        drawText(fb, kMargin, 176, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, actionY, "- SYSTEM CLEAN -", palColor(Pal::INK_DIM));
     } else {
-        drawRowCursor(fb, kMargin, 176, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 12, 176, "SCAN", palColor(Pal::ACCENT));
+        drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 12, actionY, "SCAN", palColor(Pal::ACCENT));
         if (v.variant == 0)
-            drawText(fb, kMargin + 12, 190, failCost, palColor(Pal::INK_DIM));
+            drawText(fb, kMargin + 12, actionY + kFootnoteDy, failCost, palColor(Pal::INK_DIM));
     }
     drawHintBand(fb, avGated(m) ? "A SWITCH  C BACK" : "A SWITCH  B SCAN  C BACK");
 }

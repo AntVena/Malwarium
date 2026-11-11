@@ -1617,10 +1617,10 @@ void drawStatPanel(Framebuffer& fb, const CombatFrame& f) {
 // band must never do.
 void drawCombatHints(Framebuffer& fb, const CombatFrame& f) {
     const Combat& combat = f.combat;
-    const char* pickerHint = combat.overrideAtBands()  ? "A CYCLE B OPEN C CANCEL"
+    const char* pickerHint = combat.overrideAtBands()  ? "A NEXT B OPEN C CANCEL"
                              : combat.overrideBandCount() > 1
-                                 ? "A CYCLE B COMMIT C BACK"
-                                 : "A CYCLE B COMMIT C CANCEL";
+                                 ? "A NEXT B COMMIT C BACK"
+                                 : "A NEXT B COMMIT C CANCEL";
     const char* hint = !f.ongoing             ? "B CONTINUE"
                        : combat.overrideOpen() ? pickerHint
                        : f.v.sides.canRun      ? "A+C CMD B STAT C RUN A SKIP"

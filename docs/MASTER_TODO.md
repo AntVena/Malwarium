@@ -54,6 +54,22 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
+**The ITEMS detail page is the one detail page with no hint band.** `drawItemDetail` leaves
+the band off on purpose ("so the panel gets the room", per the comment over
+`kDetailPanelTop`), while MODS, DEFRAG and AV detail all draw one. The footer's lowest line
+ends at y 204, above where a band starts (208), so the room argument no longer holds at
+today's constants. Decide: add `B <verb>  C BACK` like its siblings, or record the exception
+in VISUAL_LANGUAGE §4.1. | `items_screen.cpp`'s `drawItemDetail`; VISUAL_LANGUAGE §4.1 and
+§4.2. | S | A design call, which is why the design pass left it. |
+
+**The Hacker-face hint line has no widget.** The rule at `kActiveH - 26`, the dim secondary
+verbs left and the accent primary verb right are drawn by hand at eight sites, and the copies
+have already disagreed about which verb takes the accent (PvP had `C BACK` there over its own
+`B FIGHT`). One `drawHackerHint(fb, secondary, primary, VerbState)` beside `drawHintBand`
+makes the slot unarguable. | `game_crew`, `game_hacker`, `game_merge`, `game_peers`,
+`game_pvp`, `rig_shop_screen.cpp`; `core/ui/widgets.h`. | S | Byte-identical against a
+`tools/screens.sh` render taken before. |
+
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date

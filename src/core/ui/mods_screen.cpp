@@ -126,28 +126,26 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 
     for (int i = 0; i < kLoadoutHubRows; ++i) {
         const int y = kRowTop + i * kRowH;
-        if (i == v.cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == v.cursor) drawRowSelection(fb, y, kRowH);
         drawSprite(fb, *icons[i], 0, 16, y + (kRowH - kRowIcon) / 2);
         const int textY = y + (kRowH - kFontH) / 2;
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), v.beat, scrollWhen(i == v.cursor));
-    }
+    }    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const Loadout& load, int cursor, int beat) {
     drawHeaderBand(fb, "MODS");
+    // Each row is two lines, the mod over its slot number, and both have to sit inside
+    // the selection fill (drawRowSelection's 2px inset), the way EXPL's two-line rows do.
+    constexpr int kNameDy = 5;
+    constexpr int kSlotDy = kNameDy + kFontH + 4;
     for (int i = 0; i < kModSlots; ++i) {
         const int y = kRowTop + i * kRowH;
-        if (i == cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == cursor) drawRowSelection(fb, y, kRowH);
         char slotLbl[10];
         std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
         const char* id = load.equipped(i);
@@ -157,20 +155,19 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
             if (icon) drawSprite(fb, *icon, 0, 16, y + (kRowH - kRowIcon) / 2);
             // The effect tag owns the right end; the name yields to it and scrolls when
             // focused, so a long mod name can't print through its own tag.
-            drawLabelValue(fb, 40, y + (kRowH - kFontH) / 2,
+            drawLabelValue(fb, 40, y + kNameDy,
                            m ? m->displayName : id, palColor(Pal::INK),
                            m ? m->effectTag : nullptr, palColor(Pal::ACCENT), beat,
                            scrollWhen(i == cursor));
         } else {
             drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, 16,
                        y + (kRowH - kRowIcon) / 2);
-            drawText(fb, 40, y + (kRowH - kFontH) / 2, "- EMPTY -",
+            drawText(fb, 40, y + kNameDy, "- EMPTY -",
                      palColor(Pal::INK_DIM));
         }
-        // Slot number sits dim under the mod name (a stable per-row anchor).
-        drawText(fb, 40, y + kRowH - kFontH, slotLbl, palColor(Pal::INK_DIM));
+        drawText(fb, 40, y + kSlotDy, slotLbl, palColor(Pal::INK_DIM));
     }
-    drawHintBand(fb, "A CYCLE  B OPEN  C BACK");
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 namespace {
@@ -312,7 +309,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
 
     if (v.confirmActive) drawModReplaceConfirm(fb, reg, load, v);
     drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                     : "A CYCLE  B VIEW  C BACK");
+                                     : "A NEXT  B VIEW  C BACK");
 }
 
 int modDetailProseLines() {

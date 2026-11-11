@@ -375,10 +375,7 @@ void Game::drawTipsList(Framebuffer& fb) const {
     for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
         const int i = scrollTop + v;
         const int y = kRowTop + v * kRowH;
-        if (i == cursor) {
-            fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-        }
+        if (i == cursor) drawRowSelection(fb, y, kRowH);
         drawText(fb, 22, y + (kRowH - kFontH) / 2, tipTitle(tips[i]),
                  i == cursor ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }

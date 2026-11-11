@@ -26,10 +26,7 @@ namespace {
 void rackRow(Framebuffer& fb, int y, bool focused, const SpriteData& slotIcon,
              const char* name, const char* stage, const char* status,
              Rgb565 statusColor, int beat) {
-    if (focused) {
-        fb.fillRect(4, y + 2, kActiveW - 8, kRowH - 4, palColor(Pal::TRACK));
-        drawRowCursor(fb, 8, y + (kRowH - 7) / 2, palColor(Pal::ACCENT));
-    }
+    if (focused) drawRowSelection(fb, y, kRowH);
     drawSprite(fb, slotIcon, 0, 16, y + (kRowH - kRowIcon) / 2);
     const int statusX = kActiveW - kMargin - textWidth(status);
     drawTextMarquee(fb, 40, y + (kRowH - kFontH) / 2, statusX - kFontAdvance - 40, name,
@@ -354,7 +351,7 @@ void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v
         drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
     drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
-                                 : "A CYCLE  B SELECT  C BACK");
+                                 : "A NEXT  B SELECT  C BACK");
 }
 
 void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
@@ -409,7 +406,7 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
         drawConfirmChoices(fb, kConfirmBoxY + 38, sheet.confirmChoice);
     }
     drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
-                                       : "A CYCLE  B TRADE  C BACK");
+                                       : "A NEXT  B TRADE  C BACK");
 }
 
 } // namespace mal

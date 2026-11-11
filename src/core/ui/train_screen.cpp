@@ -301,7 +301,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
 
     if (v.confirmActive) drawMoveReplaceConfirm(fb, reg, v);
     drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                     : "A CYCLE  B VIEW  C BACK");
+                                     : "A NEXT  B VIEW  C BACK");
 }
 
 namespace {

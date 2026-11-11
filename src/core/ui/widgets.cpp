@@ -275,6 +275,11 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
     }
 }
 
+void drawRowSelection(Framebuffer& fb, int rowY, int rowH) {
+    fb.fillRect(4, rowY + 2, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
+    drawRowCursor(fb, 8, rowY + (rowH - 7) / 2, palColor(Pal::ACCENT));
+}
+
 void drawCancelConfirm(Framebuffer& fb, int y, int choice) {
     const int cancelX = 24, confirmX = 120;
     drawRowCursor(fb, (choice == 0 ? cancelX : confirmX) - 12, y, palColor(Pal::ACCENT));
