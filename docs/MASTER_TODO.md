@@ -83,11 +83,6 @@ delete, M to build | Persisting it is a save-format change. |
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
   is "flash, read the boot line, confirm no crash loop": nobody has walked the buttons through
   EXPL/combat/Wi-Fi/rank-up on the real panel in a long time. Diff **M** (harness design).
-- **`tools/screens.sh` misses four screens, so a refactor of them has no pixel check.** The
-  cache-yield reveal (`dump_frame`'s `cache` scene renders the idle habitat instead), the VAULT
-  bulk-open reveal and the ARCH new-egg confirm have no `dump_frame` scene; the Wi-Fi event has
-  one (`wifi new|fond|hometurf`) but no catalogue line. Add the scenes and list all four in
-  `screens.sh`. Diff **S**.
 
 ### 1i. Hacker-face CREW: enlistment shipped, Red/Blue archetype layer open
 

@@ -159,8 +159,10 @@
 //        down the list to reach them) ·
 // hacker merge [recipes] [stock] (the MERGE HUB craft list. The slot is itself a
 //        SHOP purchase, so the scene buys it before entering) ·
-// hacker vault (the VAULT cash-in list, stocked with a Decryptogram ticket and
-//        every container tier) ·
+// hacker vault [bulk] (the VAULT cash-in list, stocked with a Decryptogram ticket and
+//        every container tier; "bulk" holds B on a cache row for the bulk-open reveal) ·
+// cache [epic|rare|common] (one cache opened through the VAULT's reveal; the default
+//        is an uncommon) ·
 // hacker crew [joined] [unset] [netpick] [red|blue [row:<n>] [detail]] (the CREW
 //        screen's four views: the Hub, the home-network picker, one side's roster,
 //        and a crew's own page)
@@ -530,14 +532,14 @@ int main(int argc, char** argv) {
             game.tick(t + kStatIndexHoldMs + kHeartbeatMs);
         }
     } else if (hasFlag(argc, argv, "cache")) {
-        // Cache yield reveal: open a rarity-tiered cache and land on the
-        // Nav::CacheYield screen naming what came out. `epic` = the 2-item tier.
+        // Caches open only from the VAULT, so this drives its open path rather than
+        // ITEMS' Use. `epic` = the 2-item tier.
         const char* id = hasFlag(argc, argv, "epic")   ? "sealed_cache_epic"
                        : hasFlag(argc, argv, "rare")   ? "sealed_cache_rare"
                        : hasFlag(argc, argv, "common") ? "sealed_cache_common"
                                                        : "sealed_cache_uncommon";
         game.inventory().add(id, 1);
-        game.debugUseItem(id);
+        game.debugOpenCache(id);
     } else if (hasFlag(argc, argv, "items")) {
         // "picker" buys the ITEMS Type-Picker first, so ITEMS opens on the category
         // tiles; without it ITEMS opens straight on the list, as an unowned rig does.
@@ -1284,7 +1286,22 @@ int main(int argc, char** argv) {
             game.inventory().add("sealed_cache_uncommon", 2);
             game.inventory().add("commend_cache", 1);
             game.inventory().add("sealed_cache_rare", 2);
+            // "bulk" owns the bulk-open and holds B on the Epic row (the ticket above it
+            // has no bulk gesture), landing on the BULK reveal.
+            const bool bulk = hasFlag(argc, argv, "bulk");
+            if (bulk) {
+                game.debugSetBits(999999);
+                game.debugBuyRigRow(kRigRowBulkOpen);
+            }
             enterHackerSlot(HackerSlotId::Vault);
+            if (bulk) {
+                game.onButton({Button::A, true, false});
+                game.onButton({Button::A, false, false});
+                game.onButton({Button::B, true, false});
+                // B stays down: its release edge would dismiss the reveal.
+                const uint32_t t = static_cast<uint32_t>(beats) * kHeartbeatMs;
+                game.tick(t + kBulkOpenHoldMs + kHeartbeatMs);
+            }
         } else if (hasFlag(argc, argv, "crew")) {
             // CREW: seed known networks (ledger history) plus a live scan sighting, so
             // the home-network picker shows both halves of its merged list. `joined`
