@@ -2536,6 +2536,14 @@ private:
     void returnToLockout() override;
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
+    // drawHabitat's steps, in the order it draws them (back to front).
+    void drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const;
+    void drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const;
+    void drawFailingBanner(Framebuffer& fb) const;
+    void drawHabitatStatusColumn(Framebuffer& fb) const;
+    void drawAuditBadge(Framebuffer& fb) const;
+    void drawExploreStatus(Framebuffer& fb) const;
+    void drawHabitatCarousel(Framebuffer& fb, int cursor) const;
     void drawIdleReplicas(Framebuffer& fb, int petCx) const;
     void drawDisguiseProp(Framebuffer& fb, int petCx) const;
     void drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const;

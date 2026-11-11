@@ -37,7 +37,7 @@ contrast framing ("X, not Y", "rather than", "not just") into a plain statement 
 contrast carries no decision, and delete sentences that add emphasis without a fact. Docs
 first: they are read more often than any one comment.
 
-### Self-architecture review. Last run: 2026-10-17
+### Self-architecture review. Last run: 2026-11-11
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication,
 dead code, and orphaned helpers that should have moved to `game_internal.h` or been deleted. Verify
 actual file sizes, don't trust what a doc says they are. Sources are globbed (`CMakeLists.txt`,

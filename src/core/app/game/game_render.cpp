@@ -229,78 +229,103 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     drawIdleReplicas(fb, kActiveW / 2 + logicalToActive(petWander_.offsetX()));
 
     const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
-    if (pet) {
-        // An authored clip plays its full row in order; otherwise fall back to the
-        // breathe/blink heuristic on row 0. A creature that authored a "walk" takes it
-        // for exactly the beats the wander below is actually moving the anchor, so the
-        // legs and the drift are one motion rather than two that happen to overlap;
-        // one that authored none simply keeps breathing while it slides, which is what
-        // every single-row sheet does.
-        const AnimClip* clip = nullptr;
-        if (pet_) {
-            if (petFeeding_.biting() || petLure_.biting()) clip = pet_->clip("attack");
-            if (!clip && petWander_.travelling()) clip = pet_->clip("walk");
-            if (!clip) clip = pet_->clip("idle");
-        }
-        const int row = clip ? clip->row : 0;
-        const int frame = clip ? clip->frameAt(beat_) : idleFrame(*pet, beat_);
-        // Two motions, and the creature is the only thing on this screen that takes
-        // either. The bob is the pose's own 2px lift on alternate beats, which
-        // animates a single-frame creature. A swimmer skips it, because a bob on top
-        // of a continuous drift reads as jitter. The WANDER moves the whole anchor
-        // around the living box, in logical px (core/model/idle_wander.h): sideways
-        // for every mover, and off the shelf for the ones that don't need the floor.
-        const int bob = (IdleWander::bobs(pet_->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
-        const int petW = pet->frameW * kScaleNum / kScaleDen;
-        const int petH = pet->h * kScaleNum / kScaleDen;
-        const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
-        const int petY =
-            kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
-        // Turned to the way it is actually going. A sheet with no declared facing is
-        // never mirrored, so this only turns the creatures the wander was walking
-        // backwards: the ones drawn in profile instead of §2's turned-to-the-viewer
-        // pose (assets/CREATURE_VISUAL_RULES.md). The habitat has no seat and no
-        // opponent, so unlike the combat stage the direction comes off the trip
-        // itself.
-        const bool mirror = spriteMirrorToFace(*pet, petWander_.headingRight());
-        // Resting colour: a line that wears borrowed colours spends a few seconds now
-        // and then in another family's palette (core/model/idle_camo.h). The level and
-        // the art are the tick's; this ranks that art into the ladder the creature is
-        // repainted through, exactly as the combat screen does. Every other pet, and
-        // this one between drifts, takes the plain blit and pays nothing.
-        const CamoRamp drift =
-            idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
-        if (petDisguise_.showsProp())
-            drawDisguiseProp(fb, petX + petW / 2);
-        else if (petHarvest_.stage() == HarvestStage::Hold)
-            drawSpriteRain(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
-                           palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
-                           mirror);
-        else if (petVanish_.active())
-            drawSpriteCloak(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
-                            petVanish_.amount(), palColor(Pal::INK), beat_, row, mirror);
-        else if (petMimic_.active() && idleMimicWorn_)
-            drawMimic(fb, *pet, frame, row, petX, petY, mirror);
-        else if (petDisguise_.torn())
-            drawSpriteGlitch(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen,
-                             palColor(Pal::INK), palColor(Pal::HOT),
-                             static_cast<uint8_t>(beat_ * 32), row, mirror);
-        else if (petCamo_.level() > 0 && !drift.empty())
-            drawSpriteCamo(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
-                           petCamo_.level(), /*flashColor=*/0, /*flashAmt=*/0, row,
-                           /*from=*/nullptr, mirror);
-        else
-            drawSpriteUpscaled(fb, *pet, frame, petX, petY, kScaleNum, kScaleDen, row,
-                               mirror);
-        drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
-        drawLure(fb, petX + petW / 2, petY + petH / 4);
-    }
+    if (pet) drawHabitatPet(fb, *pet);
     drawFeedingMail(fb);
     // The squat writes on the caption row, so only while that row is free: no menu
     // summoned, no nudge, and no explore readout hanging off the corner beside it.
     if (cursor < 0 && tipSeen(Tip::MenuOpened) && !exploreActive_) drawSquatLogin(fb);
 
+    drawHabitatPrompt(fb, pet);
+    drawFailingBanner(fb);
+    // The one-time menu nudge (game_onboard.cpp): until the carousel has been summoned
+    // once on this device, the habitat says which button does it. It sits on the row a
+    // summoned menu's name would take, which is free at idle by definition, and goes
+    // for good the first time A or C is pressed here.
+    if (nav_ == Nav::Idle && !tipSeen(Tip::MenuOpened)) {
+        const char* nudge = "PRESS A FOR MENU";
+        drawText(fb, (kActiveW - textWidth(nudge)) / 2, kLivingTop + 4, nudge,
+                 palColor(Pal::INK));
+    }
 
+    drawHabitatStatusColumn(fb);
+    drawAuditBadge(fb);
+    if (exploreActive_) drawExploreStatus(fb);
+
+    // The achievement announcement, over everything else in the living area (it is
+    // transient, and the pet is still there underneath when it clears).
+    drawAchievementBanner(fb);
+
+    drawHabitatCarousel(fb, cursor);
+}
+
+void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
+    // An authored clip plays its full row in order; otherwise fall back to the
+    // breathe/blink heuristic on row 0. A creature that authored a "walk" takes it
+    // for exactly the beats the wander below is actually moving the anchor, so the
+    // legs and the drift are one motion rather than two that happen to overlap;
+    // one that authored none simply keeps breathing while it slides, which is what
+    // every single-row sheet does.
+    const AnimClip* clip = nullptr;
+    if (pet_) {
+        if (petFeeding_.biting() || petLure_.biting()) clip = pet_->clip("attack");
+        if (!clip && petWander_.travelling()) clip = pet_->clip("walk");
+        if (!clip) clip = pet_->clip("idle");
+    }
+    const int row = clip ? clip->row : 0;
+    const int frame = clip ? clip->frameAt(beat_) : idleFrame(pet, beat_);
+    // Two motions, and the creature is the only thing on this screen that takes
+    // either. The bob is the pose's own 2px lift on alternate beats, which
+    // animates a single-frame creature. A swimmer skips it, because a bob on top
+    // of a continuous drift reads as jitter. The WANDER moves the whole anchor
+    // around the living box, in logical px (core/model/idle_wander.h): sideways
+    // for every mover, and off the shelf for the ones that don't need the floor.
+    const int bob = (IdleWander::bobs(pet_->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
+    const int petW = pet.frameW * kScaleNum / kScaleDen;
+    const int petH = pet.h * kScaleNum / kScaleDen;
+    const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
+    const int petY =
+        kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
+    // Turned to the way it is actually going. A sheet with no declared facing is
+    // never mirrored, so this only turns the creatures the wander was walking
+    // backwards: the ones drawn in profile instead of §2's turned-to-the-viewer
+    // pose (assets/CREATURE_VISUAL_RULES.md). The habitat has no seat and no
+    // opponent, so unlike the combat stage the direction comes off the trip
+    // itself.
+    const bool mirror = spriteMirrorToFace(pet, petWander_.headingRight());
+    // Resting colour: a line that wears borrowed colours spends a few seconds now
+    // and then in another family's palette (core/model/idle_camo.h). The level and
+    // the art are the tick's; this ranks that art into the ladder the creature is
+    // repainted through, exactly as the combat screen does. Every other pet, and
+    // this one between drifts, takes the plain blit and pays nothing.
+    const CamoRamp drift =
+        idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
+    if (petDisguise_.showsProp())
+        drawDisguiseProp(fb, petX + petW / 2);
+    else if (petHarvest_.stage() == HarvestStage::Hold)
+        drawSpriteRain(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
+                       palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
+                       mirror);
+    else if (petVanish_.active())
+        drawSpriteCloak(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
+                        petVanish_.amount(), palColor(Pal::INK), beat_, row, mirror);
+    else if (petMimic_.active() && idleMimicWorn_)
+        drawMimic(fb, pet, frame, row, petX, petY, mirror);
+    else if (petDisguise_.torn())
+        drawSpriteGlitch(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
+                         palColor(Pal::INK), palColor(Pal::HOT),
+                         static_cast<uint8_t>(beat_ * 32), row, mirror);
+    else if (petCamo_.level() > 0 && !drift.empty())
+        drawSpriteCamo(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
+                       petCamo_.level(), /*flashColor=*/0, /*flashAmt=*/0, row,
+                       /*from=*/nullptr, mirror);
+    else
+        drawSpriteUpscaled(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, row,
+                           mirror);
+    drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
+    drawLure(fb, petX + petW / 2, petY + petH / 4);
+}
+
+void Game::drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const {
     // Boot-Sector incubation prompt (redesign): an unhatched egg shows its
     // state ABOVE the egg sprite, in the gap below the carousel caption band
     // (kLivingTop+4, where a summoned menu name renders) so the two never overlap.
@@ -353,7 +378,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
             drawSprite(fb, icon, 0, kActiveW - icon.frameW - 4, kLivingTop + 4);
         }
     }
+}
 
+void Game::drawFailingBanner(Framebuffer& fb) const {
     // FAILING: a pet at 5/5 errors is lost when kCsfDyingGraceMs of powered-on time
     // runs out (tickLifecycle), and the ways back are a Yubi-Cookie or a stored Daemon
     // sold for a HOTFIX. A banner that counts it down and names the rescue is the least
@@ -375,17 +402,9 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         drawText(fb, (kActiveW - textWidth(rescue)) / 2, by + kFontH + 3, rescue,
                  palColor(Pal::INK));
     }
+}
 
-    // The one-time menu nudge (game_onboard.cpp): until the carousel has been summoned
-    // once on this device, the habitat says which button does it. It sits on the row a
-    // summoned menu's name would take, which is free at idle by definition, and goes
-    // for good the first time A or C is pressed here.
-    if (nav_ == Nav::Idle && !tipSeen(Tip::MenuOpened)) {
-        const char* nudge = "PRESS A FOR MENU";
-        drawText(fb, (kActiveW - textWidth(nudge)) / 2, kLivingTop + 4, nudge,
-                 palColor(Pal::INK));
-    }
-
+void Game::drawHabitatStatusColumn(Framebuffer& fb) const {
     // Where the top-LEFT status column starts. Three unrelated things want this
     // corner. The SD flash, the buff row, and (while the mode runs) the explore
     // status stack drawn further down, so the origin is computed once here and
@@ -439,86 +458,84 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         if (deepWebDepthMultiplier_ > 1) marker("deep_learning_module", "[DEEP]");
         if (pendingDeepWebStartDepth_ != -1) marker("backdoor_bell", "[BELL]");
     }
+}
 
+void Game::drawAuditBadge(Framebuffer& fb) const {
     // Audit capture-phase badge: top-RIGHT, just below the hunger alert. Surfaces
     // the AuditCapture SM phase (ARM / HOT <s>s / COOL <m>m), so the ~2-min hot
     // window AND the ~30-min re-arm cooldown (radio off; a handshake can't be
     // captured then) are visible on screen. The Hot phase is the one worth
     // catching from across the room, so it takes a glyph as well; the word stays
     // either way, which is what keeps the badge grayscale-safe.
-    {
-        char badge[16];
-        if (captureBadge(badge, sizeof badge)) {
-            const int by = kLivingTop + 30;   // clear of the 20px hunger alert slot
-            int bx = kActiveW - textWidth(badge) - 4;
-            if (auditCapture_.phase() == AuditPhase::Hot) {
-                const SpriteData& hot = ASSET_ICON_AUDIT_HOT;
-                bx -= hot.frameW + 2;
-                drawSprite(fb, hot, 0, bx, by - (hot.h - kFontH) / 2);
-                bx += hot.frameW + 2;
-            }
-            drawText(fb, bx, by, badge, palColor(Pal::INK));
+    char badge[16];
+    if (captureBadge(badge, sizeof badge)) {
+        const int by = kLivingTop + 30;   // clear of the 20px hunger alert slot
+        int bx = kActiveW - textWidth(badge) - 4;
+        if (auditCapture_.phase() == AuditPhase::Hot) {
+            const SpriteData& hot = ASSET_ICON_AUDIT_HOT;
+            bx -= hot.frameW + 2;
+            drawSprite(fb, hot, 0, bx, by - (hot.h - kFontH) / 2);
+            bx += hot.frameW + 2;
         }
+        drawText(fb, bx, by, badge, palColor(Pal::INK));
     }
+}
 
+void Game::drawExploreStatus(Framebuffer& fb) const {
     // Explore-mode badge: a status line under the top track while the mode
     // runs. The armed sub-area + WINS n/10 (or BOSS READY). Dual-coded, grayscale-safe.
     // A brief event-flavor tick sits just below it. The badge label is the area's short
     // name + the 1-based sub number (e.g. "CITRUS 3"): compact + collision-free.
-    if (exploreActive_) {
-        // Pick the badge's right-field mode: the endless DeepWeb Dive shows DEPTH; a
-        // re-armed CLEARED sub counts down to the next rung while auto-progress is armed
-        // (NEXT IN n) and otherwise shows FARMING (its boss is done); an unlocked
-        // sub-boss shows BOSS READY; otherwise WINS n/10 progress.
-        ExploreBadgeMode mode;
-        if (inDeepWebDive()) mode = ExploreBadgeMode::DeepDive;
-        else if (subCleared(exploreSector_, exploreSub_))
-            mode = autoProgress_ ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
-        else if (subBossUnlocked(exploreSector_, exploreSub_)) mode = ExploreBadgeMode::BossReady;
-        else mode = ExploreBadgeMode::Wins;
-        char label[20];
-        exploreBadgeLabel(label, sizeof(label));
-        // the FARMING badge shows Bandwidth (the farming pool) in place of the streak:
-        // "FARM n/max" while it lasts (full loot), "FARM LOW" once depleted (decayed).
-        // AUTO-NEXT takes the same slot when the walk is stepping itself, and takes the
-        // streak instead: the pool is spelled out on the status line right below, and
-        // the question a hands-off run leaves open is when it moves on, not what is left
-        // in a shield the operator is not spending by hand.
-        int badgeCount = exploreStreak_, badgeMax = kExploreStreakToBoss;
-        if (mode == ExploreBadgeMode::Farming) {
-            badgeCount = bandwidth_; badgeMax = bandwidthMax();
-        }
-        drawExploreBadge(fb, label, badgeCount, badgeMax, mode);
-        // Bandwidth is the per-fight fragmentation shield, so it drains on every
-        // explore fight. It shows all the time, beyond the Farming badge, so the player
-        // can watch it and decide when to defrag or come home. CALM while it lasts,
-        // WARN + "LOW" once dry (dual-coded).
-        {
-            char bw[20];
-            // Line 2 of the block exploreStatusLines() counts; anything else that
-            // wants this corner starts below the whole block (statusY, above).
-            const int bwLineY = kLivingTop + 4 + kFontH + 2;
-            if (bandwidth_ > 0) {
-                std::snprintf(bw, sizeof(bw), "BW %d/%d", bandwidth_, bandwidthMax());
-                drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::CALM));
-            } else {
-                std::snprintf(bw, sizeof(bw), "BW 0/%d LOW", bandwidthMax());
-                drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::WARN));
-            }
-            // Wrapped, not clipped: a flavor line names the item it found, and the
-            // longest of those is wider than the column. Plain text would cut the tail
-            // with no ellipsis, and the tail says where the reward went.
-            if (exploreFlavor_[0])
-                drawTextWrapped(fb, kExploreStatusX, bwLineY + kFontH + 2,
-                                kExploreStatusW, exploreFlavor_, palColor(Pal::INK_DIM),
-                                kFontH + 2, kExploreFlavorLines);
-        }
+    // Pick the badge's right-field mode: the endless DeepWeb Dive shows DEPTH; a
+    // re-armed CLEARED sub counts down to the next rung while auto-progress is armed
+    // (NEXT IN n) and otherwise shows FARMING (its boss is done); an unlocked
+    // sub-boss shows BOSS READY; otherwise WINS n/10 progress.
+    ExploreBadgeMode mode;
+    if (inDeepWebDive()) mode = ExploreBadgeMode::DeepDive;
+    else if (subCleared(exploreSector_, exploreSub_))
+        mode = autoProgress_ ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
+    else if (subBossUnlocked(exploreSector_, exploreSub_)) mode = ExploreBadgeMode::BossReady;
+    else mode = ExploreBadgeMode::Wins;
+    char label[20];
+    exploreBadgeLabel(label, sizeof(label));
+    // the FARMING badge shows Bandwidth (the farming pool) in place of the streak:
+    // "FARM n/max" while it lasts (full loot), "FARM LOW" once depleted (decayed).
+    // AUTO-NEXT takes the same slot when the walk is stepping itself, and takes the
+    // streak instead: the pool is spelled out on the status line right below, and
+    // the question a hands-off run leaves open is when it moves on, not what is left
+    // in a shield the operator is not spending by hand.
+    int badgeCount = exploreStreak_, badgeMax = kExploreStreakToBoss;
+    if (mode == ExploreBadgeMode::Farming) {
+        badgeCount = bandwidth_; badgeMax = bandwidthMax();
     }
+    drawExploreBadge(fb, label, badgeCount, badgeMax, mode);
+    // Bandwidth is the per-fight fragmentation shield, so it drains on every
+    // explore fight. It shows all the time, beyond the Farming badge, so the player
+    // can watch it and decide when to defrag or come home. CALM while it lasts,
+    // WARN + "LOW" once dry (dual-coded).
+    {
+        char bw[20];
+        // Line 2 of the block exploreStatusLines() counts; anything else that
+        // wants this corner starts below the whole block (statusY, above).
+        const int bwLineY = kLivingTop + 4 + kFontH + 2;
+        if (bandwidth_ > 0) {
+            std::snprintf(bw, sizeof(bw), "BW %d/%d", bandwidth_, bandwidthMax());
+            drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::CALM));
+        } else {
+            std::snprintf(bw, sizeof(bw), "BW 0/%d LOW", bandwidthMax());
+            drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::WARN));
+        }
+        // Wrapped, not clipped: a flavor line names the item it found, and the
+        // longest of those is wider than the column. Plain text would cut the tail
+        // with no ellipsis, and the tail says where the reward went.
+        if (exploreFlavor_[0])
+            drawTextWrapped(fb, kExploreStatusX, bwLineY + kFontH + 2,
+                            kExploreStatusW, exploreFlavor_, palColor(Pal::INK_DIM),
+                            kFontH + 2, kExploreFlavorLines);
+    }
+}
 
-    // The achievement announcement, over everything else in the living area (it is
-    // transient, and the pet is still there underneath when it clears).
-    drawAchievementBanner(fb);
-
+void Game::drawHabitatCarousel(Framebuffer& fb, int cursor) const {
     // Grey out the care/combat slots while the pet is still an egg. EXPL's globe turns
     // while AUTO-PROGRESS is armed: the walk runs in the background, and the shelf is
     // the screen that is always up.

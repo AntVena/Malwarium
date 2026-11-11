@@ -82,7 +82,8 @@ question with the description beneath them, and open the confirm over the descri
 `buffWindowCount` and the draw loop in `drawBuffsScreen` repeat `prose_page.cpp` for a row
 that adds only a timer to the name line. The copies have already needed the same heading
 change made twice. Give `ProseRow` a name-line suffix and draw BUFFS through
-`drawProseRows`. | `stat_screen.cpp`; `core/ui/prose_page.h`. | S | Byte-identical against
+`drawProseRows`, which at five inputs past the framebuffer takes a `ProseView` in the same
+change. | `stat_screen.cpp`; `core/ui/prose_page.h`. | S | Byte-identical against
 a `tools/screens.sh` render taken before. |
 
 ### 1g. Test-infrastructure gaps
@@ -277,19 +278,27 @@ responsibility, and combat.cpp is the turn engine alone.
 The units past 600 are one concern each and stay: `game_render` (one function per screen),
 `game_persist` (the flat save mapping), `game_core` (the tick clocks), `game_combat` (the fight's
 lifecycle, entry to settle, plus the `debug*` combat hooks §1j retires), `game_explore` (the
-walk), and `game_config`, `game_pvp` (one screen each, just over).
-
-Two units have crossed 600 without that judgement. `game_lifecycle` (779) holds the care
-lockout, hatch, evolution, CSF, the device wipe and titles: at least the titles and the
-wipe/reset are separate concerns and split off cleanly. `game_items` (627) is one concern,
-but `applyItemEffects` runs about 210 lines and needs the function rule below applied.
+walk), `game_lifecycle` (one pet's life: hatch, evolution, lockout and CSF), `game_items` (the
+ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), and
+`game_config`, `game_pvp` (one screen each, just over).
 
 `content_items.cpp` (2,021 lines, 231 rows) is past the point CONTENT_STANDARD rule 4 names
 for a folder: 195 of its rows are FOOD, and a reader opens food a family at a time (the
 dishes, their ingredients). Split it the way creatures and areas already are, with one list
 naming the members so no count is kept by hand.
 
-**The function rule.** What is left is a note rather than a task:
+**The function rule.** Long functions that are if-chains rather than a switch over a
+vocabulary (case labels counted, not lines):
+
+- **Accumulated if-chains past ~150 lines.** `Game::onCfgDetail` (264 lines, 25 cases, 72
+  ifs), `drawExplList` (242, 4 cases, 31 ifs), `Combat::resolveTurn` (223, 35 ifs),
+  `Game::tickAnimClocks` (190, 28 ifs) and `Game::tickHeartbeat` (166, 43 ifs) are each
+  several steps with no names. Split each into its named steps, the way `drawHabitat` is.
+  `Game::onButton` (300 lines) is the input-routing half of §1j and goes with it. |
+  `game_config.cpp`, `expl_screen.cpp`, `combat.cpp`, `game_core.cpp`. | M overall, S each |
+  The draw functions verify against a `tools/screens.sh` render taken before; the tick and
+  turn functions against the native suite, whose combat pipeline tests pin the phase order. |
+
 
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
   and the min-1 floor are one negotiation over a single value; splitting them further means
