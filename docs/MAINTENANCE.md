@@ -217,7 +217,7 @@ worth the same trust as the host's; a file lighting up whole means the database 
 wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
 the trap in a mechanical scan is a symbol that only appears in a comment.
 
-### Asset manifest accuracy audit. Last run: 2026-09-23
+### Asset manifest accuracy audit. Last run: 2026-11-11
 Cross-check `assets/ASSET_MANIFEST.md` status markers (☑/▨/☐) against what's actually in
 `assets/` and wired into `embedded_content.cpp`. Flag mismatches in either direction
 (claimed-delivered-but-missing, or shipped-but-still-marked-TODO). Audit the **File** column

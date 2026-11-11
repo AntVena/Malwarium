@@ -196,7 +196,8 @@ high→low value:
   the idle until then.
 - **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
   `SPR_PET_RINGWYRM`.
-- **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, `UI_DIFFICULTY_PIPS`, a boss-tell marker
+- **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, drawn diamonds for `UI_DIFFICULTY_PIPS` (engine squares
+  today), a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, a `SPR_PET_*` attack-pose frame.
 - **Six archetype icons** (`ICON_ARCHETYPE_*`): cosmetic accompaniment to §1i; parked in `_attic/`.
 
