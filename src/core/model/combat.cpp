@@ -1177,7 +1177,23 @@ int Combat::execOverrideChance(const Combatant& trojan) const {
     return pct;
 }
 
+// One fighter's turn, in the order the phases are gated on (test_pipeline_* in
+// test_combat.cpp): the turn-start ticks, the stun, the move pick, a hijack, a wind-up,
+// the cast, and a FAILOVER repeat. Each phase that can end the turn says so.
 void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
+    if (payTurnStartDebts(actor, byPlayer)) return;
+    healAtTurnStart(actor);
+    if (settleRansom(actor, byPlayer)) return;
+    if (spendStun(actor, byPlayer)) return;
+    const TurnCast cast = pickCast(actor, byPlayer);
+    if (hijackCast(actor, target, cast, byPlayer)) return;
+    if (windUpChannel(actor, cast, byPlayer)) return;
+    absorbCast(actor, cast);
+    landCast(actor, target, cast, byPlayer);
+    repeatOnFailover(actor, target, cast, byPlayer);
+}
+
+bool Combat::payTurnStartDebts(Combatant& actor, bool byPlayer) {
     // Load Balancer (mod): the deferred half of an earlier big hit comes due at the start of
     // the victim's turn, before anything else, so a fatal debt ends the turn without the
     // actor getting to act; checkOutcome() after step() then reads the KO.
@@ -1187,7 +1203,7 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         actor.health -= due;
         if (actor.health <= 0) {                          // the debt came due, fatally
             setLast("OVERLOAD", due, byPlayer, /*charge=*/false);
-            return;
+            return true;
         }
     }
 
@@ -1200,10 +1216,13 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         actor.health -= actor.dotPerTurn;
         if (actor.health <= 0) {
             setLast("CORRUPTED", actor.dotPerTurn, byPlayer, /*charge=*/false);
-            return;
+            return true;
         }
     }
+    return false;
+}
 
+void Combat::healAtTurnStart(Combatant& actor) {
     // Regen (mod): last of the three turn-start ticks, and only on a fighter that survived
     // the other two. A heal running first would cancel the rot before it bites, which only
     // Faraday Cage may do. Coming last, regen cannot undo the tick currently killing the
@@ -1226,7 +1245,9 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
         actor.health += heal > 0 ? heal : 1;
         if (actor.health > actor.maxHealth) actor.health = actor.maxHealth;
     }
+}
 
+bool Combat::settleRansom(Combatant& actor, bool byPlayer) {
     // Ransom Note, the WINDOW half. Rolled per TURN rather than per incoming hit, so a
     // linked duel stays in step: the window is fixed by the seed before the turn plays out
     // and can't depend on how the opponent's speed deals actions inside it. An armed window
@@ -1248,17 +1269,20 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
             actor.ransomPool = 0;
             actor.health -= due;
             setLast("RANSOM DUE", due, byPlayer, /*charge=*/false);
-            return;
+            return true;
         }
     }
+    return false;
+}
 
+bool Combat::spendStun(Combatant& actor, bool byPlayer) {
     // STUN: a landed hit's lockTurns rider freezes `actor` for a few of its own turns.
     // A pure skip, no delayed fire.
     if (actor.lockedTurnsLeft > 0) {
         actor.lockedTurnsLeft--;
         setLast("STUN LOCK", 0, byPlayer, /*charge=*/true);
         lastWasStunned_ = true;
-        return;
+        return true;
     }
     // The scramble is measured in the victim's OWN turns, like the stun above, but it
     // never skips one, so it is shed here, where a turn is taken, and not in the
@@ -1267,102 +1291,112 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // Only a turn spent fighting sheds a resist point (one burned to the lock or a ransom
     // bill returned above), so resistance grows through a chain and drains once it breaks.
     if (actor.lockResist > actor.lockResistFloor) actor.lockResist--;
+    return false;
+}
 
-    int moveIdx;
+Combat::TurnCast Combat::pickCast(Combatant& actor, bool byPlayer) {
+    TurnCast cast;
     if (byPlayer && forcedMoveIdx_ >= 0 &&
         forcedMoveIdx_ < static_cast<int>(actor.moves.size())) {
         // A committed override ignores the lean and the no-consecutive rule, so it can
         // chain the same move twice, and it resets any in-progress channel.
-        moveIdx = forcedMoveIdx_;
+        cast.moveIdx = forcedMoveIdx_;
         forcedMoveIdx_ = -1;
         actor.channelMoveIdx = -1;
         actor.channelLeft = 0;
         actor.chainSlot = -1;    // commanding a move breaks a chain mid-flight
     } else if (actor.channelMoveIdx >= 0) {
-        moveIdx = actor.channelMoveIdx;               // committed mid-channel
+        cast.moveIdx = actor.channelMoveIdx;          // committed mid-channel
     } else {
-        moveIdx = chooseMove(actor);
+        cast.moveIdx = chooseMove(actor);
     }
     // A chained move's follow-up step, committed by last turn's entry cast. Overrides the
     // roll so the step lands on the very next turn: the entry already spent its turn on a
     // real move, which separates a chain from a wind-up. `moveIdx` stays the ENTRY's slot, so
     // everything keying off the cast slot still points at what was equipped.
-    const MoveDef* chained = nullptr;
     if (actor.chainSlot >= 0 && actor.chainSlot < static_cast<int>(actor.chainFollow.size())) {
-        chained = actor.chainFollow[actor.chainSlot];
-        if (chained) moveIdx = actor.chainSlot;
+        cast.chained = actor.chainFollow[actor.chainSlot];
+        if (cast.chained) cast.moveIdx = actor.chainSlot;
         actor.chainSlot = -1;
     }
-    const MoveDef* mv = chained ? chained : actor.moves[moveIdx];
+    cast.mv = cast.chained ? cast.chained : actor.moves[cast.moveIdx];
 
     // METAMORPHIC: a wildcard row does not cast itself. It rolls one of the moves this pet
     // could have been. One branch, not a loop, so a nested wildcard resolves as an ordinary
     // move; an empty pool leaves `mv` as the row itself. Unreachable from `chained`, which
     // is a payload rather than a slot and has no pool.
-    const WildPool* wild = nullptr;
-    if (!chained && moveIsWildcard(*mv) && moveIdx >= 0 &&
-        moveIdx < static_cast<int>(actor.wildPools.size())) {
-        wild = &actor.wildPools[moveIdx];
-        if (const MoveDef* drawn = wildPick(*wild, rng())) {
-            mv = drawn;
+    if (!cast.chained && moveIsWildcard(*cast.mv) && cast.moveIdx >= 0 &&
+        cast.moveIdx < static_cast<int>(actor.wildPools.size())) {
+        cast.wild = &actor.wildPools[cast.moveIdx];
+        if (const MoveDef* drawn = wildPick(*cast.wild, rng())) {
+            cast.mv = drawn;
             // What the picker's LOCK band offers. Written on the roll, because an
             // operator locks the move they saw come up.
-            actor.wildPools[moveIdx].lastRolled = drawn;
+            actor.wildPools[cast.moveIdx].lastRolled = drawn;
         }
     }
+    return cast;
+}
 
+bool Combat::hijackCast(Combatant& actor, Combatant& target, const TurnCast& cast,
+                        bool byPlayer) {
     // Execution-Override (Trojan passive): `target`, the side NOT acting, hijacks the
     // actor's freshly-picked move and runs it back at them, consuming their turn.
     // execOverrideChance is 0 for a non-Trojan target, so rng() is only drawn when the
     // passive is live. moveIdx = -1 keeps the hijacked cast out of the Trojan's mod state.
-    if (actor.channelMoveIdx < 0) {
-        const int hijackPct = execOverrideChance(target);
-        if (hijackPct > 0 && static_cast<int>(rng() % 100) < hijackPct) {
-            applyEffect(target, actor, mv, !byPlayer, /*moveIdx=*/-1);
-            actor.lastMoveIdx = moveIdx;              // the actor still "used" it
-            return;
+    if (actor.channelMoveIdx >= 0) return false;
+    const int hijackPct = execOverrideChance(target);
+    if (hijackPct <= 0 || static_cast<int>(rng() % 100) >= hijackPct) return false;
+    applyEffect(target, actor, cast.mv, !byPlayer, /*moveIdx=*/-1);
+    actor.lastMoveIdx = cast.moveIdx;             // the actor still "used" it
+    return true;
+}
+
+bool Combat::windUpChannel(Combatant& actor, const TurnCast& cast, bool byPlayer) {
+    if (cast.mv->channelTurns <= 1) return false;
+    if (actor.channelMoveIdx != cast.moveIdx) {   // begin the wind-up
+        actor.channelMoveIdx = cast.moveIdx;
+        actor.channelLeft = cast.mv->channelTurns - 1;
+        actor.lastMoveIdx = cast.moveIdx;
+        setLast(cast.mv->displayName, 0, byPlayer, /*charge=*/true);
+        return true;
+    }
+    if (actor.channelLeft > 0) {                  // still charging
+        actor.channelLeft--;
+        if (actor.channelLeft > 0) {
+            setLast(cast.mv->displayName, 0, byPlayer, /*charge=*/true);
+            return true;
         }
     }
+    actor.channelMoveIdx = -1;                    // detonate this turn
+    return false;
+}
 
-    if (mv->channelTurns > 1) {
-        if (actor.channelMoveIdx != moveIdx) {        // begin the wind-up
-            actor.channelMoveIdx = moveIdx;
-            actor.channelLeft = mv->channelTurns - 1;
-            actor.lastMoveIdx = moveIdx;
-            setLast(mv->displayName, 0, byPlayer, /*charge=*/true);
-            return;
-        }
-        if (actor.channelLeft > 0) {                  // still charging
-            actor.channelLeft--;
-            if (actor.channelLeft > 0) {
-                setLast(mv->displayName, 0, byPlayer, /*charge=*/true);
-                return;
-            }
-        }
-        actor.channelMoveIdx = -1;                    // detonate this turn
-    }
-
+void Combat::absorbCast(Combatant& actor, const TurnCast& cast) {
     // POLYMORPH, and the identity a borrowed row brings with it. Both run BEFORE the cast
     // resolves, so this move swings with the stats absorbing it just paid, and a Worm row
     // spawns on the same turn it grants Replication.
-    if (wild) actor.linePassives |= wildBorrowedPassives(*wild, mv);
-    polymorphAbsorb(actor, mv);
+    if (cast.wild) actor.linePassives |= wildBorrowedPassives(*cast.wild, cast.mv);
+    polymorphAbsorb(actor, cast.mv);
     // Mutation Engine's axis, recorded on the CAST rather than on whichever riders survived
     // the target's defences: what it reads is the range of things this fighter reached for.
-    if (actor.polymorphic) {
-        const uint32_t before = actor.effectsSeen;
-        actor.effectsSeen |= moveEffectMask(*mv);
-        // Mutation Engine (mod): a rider KIND this fighter has not reached for before pays
-        // the passive's own stat point, the same way an unlearned move does. An amplifier
-        // of Polymorph rather than a flat bonus beside it.
-        if (const int per = actor.mods.mag(ModEffect::PolymorphEffectPct); per > 0) {
-            int fresh = 0;
-            for (uint32_t d = actor.effectsSeen & ~before; d; d &= d - 1) ++fresh;
-            polymorphPay(actor, mv->kind, per * fresh);
-        }
+    if (!actor.polymorphic) return;
+    const uint32_t before = actor.effectsSeen;
+    actor.effectsSeen |= moveEffectMask(*cast.mv);
+    // Mutation Engine (mod): a rider KIND this fighter has not reached for before pays the
+    // passive's own stat point, the same way an unlearned move does. An amplifier of
+    // Polymorph rather than a flat bonus beside it.
+    if (const int per = actor.mods.mag(ModEffect::PolymorphEffectPct); per > 0) {
+        int fresh = 0;
+        for (uint32_t d = actor.effectsSeen & ~before; d; d &= d - 1) ++fresh;
+        polymorphPay(actor, cast.mv->kind, per * fresh);
     }
+}
 
-    applyEffect(actor, target, mv, byPlayer, moveIdx);
+void Combat::landCast(Combatant& actor, Combatant& target, const TurnCast& cast,
+                      bool byPlayer) {
+    const MoveDef* mv = cast.mv;
+    applyEffect(actor, target, mv, byPlayer, cast.moveIdx);
     // Tempo refund (MoveDef::speedRefundPct): part of an action's gauge back to whoever
     // just spent a turn bracing. Here and not in applyEffect, because the refund is the
     // turn, which belongs to `actor`: an Execution-Override hijack calls applyEffect
@@ -1376,30 +1410,34 @@ void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
     // Hand the slot to this move's follow-up step. Set after the entry RESOLVED, so a cast
     // that killed the target commits nothing. `chained` guards the loop: a step never
     // chains onward, so a pair is two turns and not a track a fighter can't get off.
-    if (!chained && moveIdx >= 0 && moveIdx < static_cast<int>(actor.chainFollow.size()) &&
-        actor.chainFollow[moveIdx] && outcome_ == Outcome::Ongoing)
-        actor.chainSlot = moveIdx;
+    if (!cast.chained && cast.moveIdx >= 0 &&
+        cast.moveIdx < static_cast<int>(actor.chainFollow.size()) &&
+        actor.chainFollow[cast.moveIdx] && outcome_ == Outcome::Ongoing)
+        actor.chainSlot = cast.moveIdx;
     // Replication: a cast carrying replicaSpawnPct rolls for a copy once RESOLVED, so a
     // fresh replica joins the next swing rather than the one that spawned it. One site for
     // both kinds: the move's `kind` picks which appears. Guarded on the field AND the
     // line, so no other line draws rng here.
     if (mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, mv);
-    actor.lastMoveIdx = moveIdx;
+    actor.lastMoveIdx = cast.moveIdx;
+}
 
+void Combat::repeatOnFailover(Combatant& actor, Combatant& target, const TurnCast& cast,
+                              bool byPlayer) {
     // FAILOVER (crew Exploit): one charge runs THIS cast a second time against the same
     // target, on the spot. This wraps the cast, not the turn, so the turn-start ticks,
     // the tempo refund and the chain hand-off run once and holding a spare never costs
     // a second DoT tick. What repeats is the swing and the roll hanging off it,
     // rollWormSpawn included.
     //
-    // Every early return above (stunned, mid-channel, hijacked) leaves the charge unspent,
-    // there having been no cast to stand in for. One extra pass, never a loop.
-    if (actor.crewExploit.armed(CrewExploitKind::SpareFailover) && target.health > 0 &&
-        outcome_ == Outcome::Ongoing) {
-        --actor.crewExploit.charges;
-        applyEffect(actor, target, mv, byPlayer, moveIdx);
-        if (mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, mv);
-    }
+    // Every early return in resolveTurn (stunned, mid-channel, hijacked) leaves the charge
+    // unspent, there having been no cast to stand in for. One extra pass, never a loop.
+    if (!actor.crewExploit.armed(CrewExploitKind::SpareFailover) || target.health <= 0 ||
+        outcome_ != Outcome::Ongoing)
+        return;
+    --actor.crewExploit.charges;
+    applyEffect(actor, target, cast.mv, byPlayer, cast.moveIdx);
+    if (cast.mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, cast.mv);
 }
 
 void Combat::checkOutcome() {

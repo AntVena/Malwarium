@@ -770,6 +770,24 @@ private:
     int chooseMove(Combatant& self);                 // autonomous roll (lean + no-repeat)
     int pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat);  // -1 = none
     void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
+    // resolveTurn's phases. A `bool` return means the phase used up the turn.
+    struct TurnCast {
+        int moveIdx = -1;                    // the equipped slot this turn casts from
+        const MoveDef* mv = nullptr;         // what actually resolves (a step, a wild roll)
+        const MoveDef* chained = nullptr;    // the follow-up step, when this turn is one
+        const WildPool* wild = nullptr;      // the wildcard pool `mv` was rolled from
+    };
+    bool payTurnStartDebts(Combatant& actor, bool byPlayer);
+    void healAtTurnStart(Combatant& actor);
+    bool settleRansom(Combatant& actor, bool byPlayer);
+    bool spendStun(Combatant& actor, bool byPlayer);
+    TurnCast pickCast(Combatant& actor, bool byPlayer);
+    bool hijackCast(Combatant& actor, Combatant& target, const TurnCast& cast, bool byPlayer);
+    bool windUpChannel(Combatant& actor, const TurnCast& cast, bool byPlayer);
+    void absorbCast(Combatant& actor, const TurnCast& cast);
+    void landCast(Combatant& actor, Combatant& target, const TurnCast& cast, bool byPlayer);
+    void repeatOnFailover(Combatant& actor, Combatant& target, const TurnCast& cast,
+                          bool byPlayer);
     // The single applier for every CrewExploitKind: a new crew ability is one enum
     // entry (content_crews.h) plus one case here. `self` is the side arming it, so the
     // human's commit and an AI firing its own run the identical code; `byPlayer` only
