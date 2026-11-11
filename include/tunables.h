@@ -880,11 +880,10 @@ constexpr int kSubBossHealthStep = 8;    // per sub-index climb within an area
 constexpr int kSubBossSpeedBase  = 8;    // + areaTier (+2 for the signature sub 5)
 
 // --- Shops as explore events A storefront is a self-contained walk event: each
-//     area's own AreaShopDef (src/core/content/areas/) carries its OWN stock count.
-//     Restocked to that number each visit, at the item's own bitsPrice, and never
-//     persisted (come back, it's refilled). kShopStock is the shared default every
-//     area's shop initializes from; bumping one area's stock is a one-line edit on
-//     that area's own file, not a change here. --------
+//     listing (ShopListingDef, src/core/content/areas/) carries its OWN stock count and
+//     price. Restocked to that count each visit and never persisted (come back, it's
+//     refilled). kShopStock is the shared default every listing is written with;
+//     changing one area's stock is a one-line edit on that area's own file. --------
 constexpr int kShopStock = 5;              // default units in stock per storefront visit
 
 // Wi-Fi network explore event. The event is ROUTED by what the radio actually

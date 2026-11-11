@@ -20,8 +20,8 @@
 #      stdlib, no Pillow): safe to always run.
 #
 #   2. `make pedia` (tools/gen_pedia_data.py): the LIVE firmware content
-#      tables (src/core/content/*, src/core/model/combat.cpp, include/
-#      tunables.h) -> web/data/pedia_data.js, the file the SD-served web
+#      tables (src/core/content/*, src/core/model/combat_factory.cpp,
+#      include/tunables.h) -> web/data/pedia_data.js, the file the SD-served web
 #      'Pedia site actually reads. Independent of step 1 (different source
 #      files) but grouped here for the same reason: it's generated-from-
 #      source housekeeping that's easy to forget before a build, and `make

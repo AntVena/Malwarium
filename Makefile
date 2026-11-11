@@ -6,7 +6,7 @@
 .PHONY: pedia pedia-check pedia-sd pedia-tar dump-content
 
 # Regenerate web/data/pedia_data.js from the live firmware content tables
-# (src/core/content/embedded_content.cpp, src/core/model/combat.cpp, include/tunables.h),
+# (dumped by tools/dump_content.cpp, plus src/core/model/combat_factory.cpp's kWildRoster),
 # and copy every asset that data references into web/assets/ so the served bundle
 # can never point at art the card doesn't carry. Run this + commit whenever a
 # creature/item/move/mod table changes, or whenever an asset it references is redrawn.

@@ -591,7 +591,7 @@ struct ItemDef {
     // This item's own reference price: the 'Pedia's listed price, and the generic
     // "is this shop-sellable at all" signal (0 = not sold anywhere). The price a
     // player actually PAYS at a given storefront is that area's own
-    // AreaShopDef::price/price2 (src/core/content/areas/): deliberately separate,
+    // ShopListingDef::bitsPrice (src/core/content/areas/): deliberately separate,
     // so one shop can charge above/below this item's listed price.
     int bitsPrice = 0;
     WalkWarp walkWarp = WalkWarp::None;  // walk B-warp key (game_explore)

@@ -276,8 +276,8 @@ static void walkToShopNav(Game& g, Game::Nav stopAt) {
 static void walkToShop(Game& g) { walkToShopNav(g, Game::Nav::Shop); }
 static void walkToModShop(Game& g) { walkToShopNav(g, Game::Nav::ModShop); }
 
-// Buying spends the shop's OWN price in Bits (AreaShopDef::price, distinct from
-// the item's own bitsPrice), adds one to the inventory, and draws down the
+// Buying spends the shop's OWN price in Bits (ShopListingDef::bitsPrice, distinct
+// from the item's own ItemDef::bitsPrice), adds one to the inventory, and draws down the
 // per-visit stock; the storefront stays open to buy more, and C leaves back to
 // the Walk.
 void test_shop_event_buy_decrements() {

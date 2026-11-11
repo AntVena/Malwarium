@@ -1063,7 +1063,7 @@ chrome is reused from §F, only the rows below are new, and per-archetype icons 
 
 The AP-hosted 'Pedia is a real static bundle + a live data feed: the site bundle plus the `tools/gen_pedia_data.py` sync generator, which reads the
 content tables through the firmware's own code (`tools/dump_content.cpp`) plus
-`src/core/model/combat.cpp` for the wild roster, via `make pedia` / `make pedia-check`
+`src/core/model/combat_factory.cpp`'s `kWildRoster` for the wild roster, via `make pedia` / `make pedia-check`
 (repo-root `Makefile`).
 
 | Asset | Element | Notes | Status | File |

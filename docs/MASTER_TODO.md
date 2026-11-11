@@ -88,7 +88,7 @@ interface segregation, the Dependency Rule, small functions with few arguments).
 CONTRIBUTING *Structure* section states the rules these rows bring the code up to.
 
 **`Game` holds every feature's state, so every unit can touch every field.** `game.h` is
-about 4,700 lines declaring roughly 1,000 member functions and 640 data members, and 38
+about 4,700 lines declaring roughly 1,000 member functions and 640 data members, and 48
 `game_*.cpp` units implement them. The split into files is physical only. Three problems
 follow from it. Holds are routed by guessing which screen is up, because there is no screen
 object to ask: `tickHeldGestures` is a ladder of guarded `if`s, and on release `game_nav.cpp`
@@ -237,15 +237,20 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (1215), `combat.cpp` (1888), `combat_factory.cpp` (955),
-`expl_screen.cpp` (911) and `cfg_screen.cpp` (799) are each past the number and each still
+rather than by line count. `save.cpp` (1342), `combat.cpp` (1978), `combat_factory.cpp` (1148),
+`expl_screen.cpp` (1112) and `cfg_screen.cpp` (925) are each past the number and each still
 ONE concern at UNIT level: save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
 The units past 600 are one concern each and stay: `game_render` (one function per screen),
 `game_persist` (the flat save mapping), `game_core` (the tick clocks), `game_combat` (the fight's
 lifecycle, entry to settle, plus the `debug*` combat hooks §1j retires), `game_explore` (the
-walk), and `game_config`, `game_pvp`, `game_crew` (one screen each, just over).
+walk), and `game_config`, `game_pvp` (one screen each, just over).
+
+Two units have crossed 600 without that judgement. `game_lifecycle` (779) holds the care
+lockout, hatch, evolution, CSF, the device wipe and titles: at least the titles and the
+wipe/reset are separate concerns and split off cleanly. `game_items` (627) is one concern,
+but `applyItemEffects` runs about 210 lines and needs the function rule below applied.
 
 **The function rule.** What is left is a note rather than a task:
 

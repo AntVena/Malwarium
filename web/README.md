@@ -44,8 +44,8 @@ Open `index.html` from disk and it runs on the sample fixture.
 
 Content tables reach the site through the FIRMWARE'S OWN code: `tools/dump_content.cpp`
 links the real tables and prints them as JSON, and `tools/gen_pedia_data.py` consumes
-that (it still regexes `combat.cpp` for the wild roster, which is a function body rather
-than a table). Descriptions are templates the device expands from each row's magnitudes
+that (it regexes `kWildRoster` out of `combat_factory.cpp` for the wild roster, which no
+content table holds). Descriptions are templates the device expands from each row's magnitudes
 (`core/content/effect_text.h`), so running the device's own expander is what stops the
 site's numbers from disagreeing with the panel's, and each entry carries a `stats`
 field, the derived readout of every magnitude the row hands the engine.

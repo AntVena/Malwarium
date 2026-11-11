@@ -109,7 +109,7 @@ a still and scroll on the device. And a band that ends short of the screen is on
 the group BELOW it has nothing separating it; empty canvas under the last group is just empty
 canvas.
 
-### Stale cross-reference sweep. Last run: 2026-09-10
+### Stale cross-reference sweep. Last run: 2026-11-11
 Grep for links/citations across the docs (file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs), and verify they still resolve to something real. Fix or remove dangling references.
 

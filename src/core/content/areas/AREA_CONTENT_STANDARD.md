@@ -29,10 +29,11 @@ means the place is not authored yet), its 5 sub-area names, its
 5 sub-area bosses (`SubBossDef`. A banner, plus the rounds it is fought as) + area-boss
 banner, its signature boss's threat-move rider
 (`apexThreatMoveId`), its GUARDIAN (`GuardianDef`. Who watches the place, and the one move
-beating it teaches; see *The guardian* below), its storefront (`AreaShopDef`. Name, stocked
-item(s), restock count, and the price charged for each), and its mod-loot pool. `expl_screen.cpp` (the EXPL
-list UI), `combat.cpp` (boss composition), and `game_explore.cpp` (mod-loot rolls + the shop
-event) all read an area through `mal::area(idx)` rather than owning any of this data
+beating it teaches; see *The guardian* below), its storefronts (`shop` and `modShop`, each
+an `AreaStorefrontDef`: a name and its listings, each with a restock count and the price
+charged), and its mod-loot pool. `expl_screen.cpp` (the EXPL list UI), `combat_factory.cpp`
+(boss composition), `game_explore.cpp` (mod-loot rolls) and `game_shop.cpp` (the shop event)
+all read an area through `mal::area(idx)` rather than owning any of this data
 themselves.
 
 **A sub-area boss is a round LIST, and most rows leave it empty.** `{"MYDOOM LICH"}` is the
@@ -250,16 +251,16 @@ another area's content.
 Per `src/core/content/CONTENT_STANDARD.md` rule 2: a magnitude used by every area stays a shared
 tunable, not a per-row duplicate. Boss Health/speed scaling
 (`kSubBossHealthBase/Step`/`kSubBossSpeedBase`), the mod rarity-drop-weight ladder
-(`kModRarityWeight`), and the wild sub-area ramp (`kWildSubAreaHealthStep`, `combat.cpp`'s
+(`kModRarityWeight`), and the wild sub-area ramp (`kWildSubAreaHealthStep`, `combat_factory.cpp`'s
 `applyWildSubAreaRamp`) all read the SAME formula for every area, keyed only by that area's
-own `tier`/index: they live in `tunables.h`/`combat.cpp` and are not duplicated per area.
-The wild-malbeast tier roster (`combat.cpp`'s `wildMalbeast`) is similarly TIER-keyed, not
+own `tier`/index: they live in `tunables.h`/`combat_factory.cpp` and are not duplicated per area.
+The wild-malbeast tier roster (`combat_factory.cpp`'s `wildMalbeast`) is similarly TIER-keyed, not
 per-area, and stays central, including each creature's own signature move, which rides every
 rung in every area. An area states WHERE a fight is happening through its own wild pair; what
 the creature is stays the roster's to say.
 
 An area's difficulty tier is **not on the row at all**: `areaTier(idx)` derives it from
-ladder position (`area_defs.h`), and `combat.cpp`'s boss composition and the EXPL list both
+ladder position (`area_defs.h`), and `combat_factory.cpp`'s boss composition and the EXPL list both
 read that one function. Order is the sole statement of depth: reorder `kAreaList[]`, or
 splice an area into the middle of it, and every enemy above the seam re-scales to its new
 depth with nothing to re-tune. An authored `tier` field would restate the same fact, and the
@@ -271,19 +272,18 @@ in a comment or anywhere else: that is the one fact about an area which its file
 
 ## Shop stock and price
 
-`AreaShopDef::stock`/`price`/`price2` are properties of that area's OWN shop, not a single
-global: bumping one area's stock or price is a one-line edit on that area's own
-`area.cpp`, not a change to shared code or every other shop. `stock` initializes from the
-shared `kShopStock` default (`tunables.h`) since every shop's restock count happens to
-match; an area that needs a different count just sets its own literal instead.
+Each area owns two storefronts, `AreaDef::shop` (items) and `AreaDef::modShop` (mods), both
+`AreaStorefrontDef`: a name and that area's own array of `ShopListingDef` rows. A row carries
+its `id`, its per-visit `stock`, its `bitsPrice` and up to `kMaxShopCostItems` extra item
+`costs`. Changing one area's stock or price is a one-line edit on that area's own `area.cpp`.
+`stock` is written as the shared `kShopStock` default (`tunables.h`) because every shop
+restocks the same count; an area that needs a different count writes its own literal.
 
-`AreaShopDef::price`/`price2` are what a player actually PAYS at that shop: read by
-`game_explore.cpp`'s buy flow and drawn by `drawShop` (`game_render.cpp`). This is
-deliberately a SEPARATE number from `ItemDef::bitsPrice` (`defs.h`), which is the item's own
-reference price: the 'Pedia's listed price, and the generic "is this item shop-sellable at
-all" signal. The two can diverge on purpose (a shop is free to charge above or below an
-item's listed price), so don't expect them to stay equal; there is no rule enforcing that,
-by design.
+`ShopListingDef::bitsPrice` and `costs` are what a player actually PAYS at that shop: read by
+`buyShopItem` (`game_shop.cpp`) and drawn by `drawShop` (`expl_screen.cpp`). This is a
+separate number from `ItemDef::bitsPrice` (`defs.h`), the item's own reference price: the
+'Pedia's listed price, and the generic "is this item shop-sellable at all" signal. The two
+can diverge on purpose, and no rule keeps them equal.
 
 ## DeepWeb Dive is not an AreaDef
 

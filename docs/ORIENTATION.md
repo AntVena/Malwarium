@@ -84,8 +84,8 @@ the system a new screen is authored against: the visual language, the asset mani
 
 - **Build:** PlatformIO + Arduino-ESP32, C++17. Per-board envs in one `platformio.ini`; the normal
   cycle builds `waveshare_s3_154` plus the native gates.
-- **Display:** **LovyanGFX**. `LGFX_Sprite` offscreen buffers, raw buffer access and DMA
-  `pushSprite` fit the hand-rolled framebuffer effects. Arduino_GFX / TFT_eSPI are fallbacks; LVGL
+- **Display:** **LovyanGFX**. The game draws into its own RGB565 framebuffer, and the driver
+  DMA-pushes the active region with `pushImage` (`display_esp32.h`). Arduino_GFX / TFT_eSPI are fallbacks; LVGL
   is overkill for pixel art. The render model itself: `src/core/render/RENDER_PIPELINE.md`.
 - **SD:** `SD_MMC` 4-bit SDIO. The slot is not wired for SPI-SD.
 - **Audio:** I2S (ES8311 + NS4150B), `config.h`-gated so a codec-less board still compiles.

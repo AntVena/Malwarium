@@ -336,7 +336,7 @@ def main():
 
     # ---- wild malbeasts (combat_factory.cpp) ----
     # The roster lives with the encounter FACTORIES, not the turn engine, as one table in
-    # save-bit order (kWildRoster). Fail loudly naming it if it moves again: the
+    # save-bit order (kWildRoster). Fail loudly naming it if it moves: the
     # alternative is a KeyError deep in the parse, or worse an empty roster that generates
     # a 'Pedia quietly missing its malbeasts.
     src_path = repo / "src/core/model/combat_factory.cpp"

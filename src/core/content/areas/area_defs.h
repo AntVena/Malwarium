@@ -56,14 +56,14 @@ constexpr int kMaxShopListings = 6;
 constexpr int kMaxShopCostItems = 3;
 
 // One extra item-cost component on a storefront listing (beyond its bitsPrice):
-// consumed from the player's inventory at purchase (game_explore.cpp's
+// consumed from the player's inventory at purchase (game_shop.cpp's
 // buyShopItem). `itemId` nullptr = unused slot.
 struct ShopItemCost {
     const char* itemId = nullptr;
     int qty = 0;
 };
 
-// One row of a storefront (game_explore.cpp's buyShopItem/shopStatusLine,
+// One row of a storefront (game_shop.cpp's buyShopItem/shopStatusLine,
 // game_render.cpp's drawShopScreen): sells `id`. An ItemDef id in an item shop, a
 // ModDef id in a mod shop; the storefront kind (AreaStorefrontDef, below) picks which
 // registry resolves it. Stocked to `stock` per visit, priced in Bits (`bitsPrice`)
@@ -85,7 +85,7 @@ struct ShopListingDef {
 // (src/core/content/CONTENT_STANDARD.md rule 2. No shared 2-row cap to hand-maintain). Shared
 // shape for both an area's item shop (e.g. Byte to Eat) and its mod shop: `listings`/
 // `listingCount` point at that area's own array in its area.cpp. `stock` refills from
-// the row's own ShopListingDef::stock each visit (game_explore.cpp's
+// the row's own ShopListingDef::stock each visit (game_shop.cpp's
 // startShopEvent/startModShopEvent), not persisted.
 struct AreaStorefrontDef {
     const char* name;

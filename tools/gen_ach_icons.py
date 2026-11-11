@@ -13,7 +13,7 @@ regenerated FROM. Sibling to gen_item_icons.py, same shape:
 Why a tool at all
 -----------------
 The 'Pedia draws achievements as a GRID, and a grid only reads if the rows share a
-grammar. assets/ASSET_MANIFEST.md (§875) states it: one bespoke glyph per row, no
+grammar. assets/ASSET_MANIFEST.md (§S, the Achievement icons row) states it: one bespoke glyph per row, no
 reuse, and most rows are LADDERS: one motif plus a countable tally, so a reader sees
 which rung a row is before they read anything. That is a rule about the SET, which is
 exactly the kind of rule hand-drawing drifts away from one file at a time.
@@ -264,7 +264,7 @@ MOTIFS["enlisted"] = """
 """
 
 # The Metamorphic line's own mark, the bell. The same mark NEVER_SEEN and DEEP_COVER
-# carry (§875: "both the line's bell"). Solid here: the hollow one is spoken for, it
+# carry (ASSET_MANIFEST.md §S: "both the line's bell"). Solid here: the hollow one is spoken for, it
 # means the hatch run that was never spotted.
 MOTIFS["bell"] = """
 ....................
@@ -614,7 +614,7 @@ MOTIFS["cab_cryptogram"] = """
 """
 
 # CHROMATOPHORE: the line's bell, PARTED. The set of three bell glyphs differ only in
-# treatment (ASSET_MANIFEST.md §875): solid is the line, hollow is the hatch run that
+# treatment (ASSET_MANIFEST.md §S): solid is the line, hollow is the hatch run that
 # was never spotted, and parted is the cabinet it is played on.
 MOTIFS["cab_chroma"] = """
 ....................
