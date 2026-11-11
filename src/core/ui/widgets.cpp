@@ -304,6 +304,15 @@ void drawHintBand(Framebuffer& fb, const char* hint) {
     drawText(fb, x < 0 ? 0 : x, kActiveH - kHintBandH + 4, hint, palColor(Pal::INK));
 }
 
+void drawHackerHint(Framebuffer& fb, const char* secondary, const char* primary,
+                    VerbState state) {
+    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
+    if (secondary && secondary[0])
+        drawText(fb, kMargin, kActiveH - 20, secondary, palColor(Pal::INK_DIM));
+    drawText(fb, kActiveW - kMargin - textWidth(primary), kActiveH - 20, primary,
+             palColor(state == VerbState::Ready ? Pal::ACCENT : Pal::INK_DIM));
+}
+
 void drawStageIndicator(Framebuffer& fb, int x, int y, int w, Stage current) {
     // The current node's label is the stage SPELLED OUT, in the accent: this is where
     // STAT names the stage, so the header row above it doesn't have to and the pet's

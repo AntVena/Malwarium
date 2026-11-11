@@ -536,6 +536,7 @@ void Game::drawHackerLink(Framebuffer& fb) const {
     if (pvpPhase_ != PvpPhase::Idle) {
         const char* head = "";
         const char* sub = "";
+        const char* secondary = "";
         const char* hint = "";
         switch (pvpPhase_) {
             case PvpPhase::Inviting:
@@ -543,7 +544,7 @@ void Game::drawHackerLink(Framebuffer& fb) const {
                 break;
             case PvpPhase::Invited:
                 head = "CHALLENGES YOU"; sub = "NO STAKES  NO EXPLOITS";
-                hint = "B FIGHT   C REFUSE";
+                secondary = "C REFUSE"; hint = "B FIGHT";
                 break;
             case PvpPhase::Arming:
                 head = "SYNCING FIGHT"; sub = "AGREEING ON THE SEED"; hint = "C CANCEL";
@@ -561,9 +562,7 @@ void Game::drawHackerLink(Framebuffer& fb) const {
         drawText(fb, kMargin, 56, head, palColor(Pal::INK));
         drawText(fb, kMargin, 56 + kLineH, pvpPeerTag_, palColor(Pal::ACCENT));
         if (sub[0]) drawText(fb, kMargin, 56 + kLineH * 2, sub, palColor(Pal::INK_DIM));
-        if (hint[0])
-            drawText(fb, kMargin, kActiveH - 20, hint, palColor(Pal::ACCENT));
-        fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
+        drawHackerHint(fb, secondary, hint);
         return;
     }
 
@@ -640,12 +639,7 @@ void Game::drawHackerLink(Framebuffer& fb) const {
 
     // FIGHT is what this screen is for, so it takes the accent verb (VISUAL_LANGUAGE
     // §4.2) whenever there is someone to fight; with nobody listed, BACK is all there is.
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    const char* secondary = n > 0 ? "A NEXT  C BACK" : "A NEXT";
-    const char* primary = n > 0 ? "B FIGHT" : "C BACK";
-    drawText(fb, kMargin, kActiveH - 20, secondary, palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth(primary), kActiveH - 20, primary,
-             palColor(Pal::ACCENT));
+    drawHackerHint(fb, n > 0 ? "A NEXT  C BACK" : "A NEXT", n > 0 ? "B FIGHT" : "C BACK");
 }
 
 }  // namespace mal

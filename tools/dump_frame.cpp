@@ -1220,12 +1220,16 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.debugBuyMergeHub(); }
             // "services" buys the two rows that RUN on their own, which is what puts
             // the SERVICES head slot on the list; A-cycling onto it and holding B opens
-            // one service's info page ("info"), the third of the SHOP's screens.
+            // one service's info page ("info"), the third of the SHOP's screens. "ask"
+            // also buys AUTO DIVE GEAR, the askable row.
             const bool services = hasFlag(argc, argv, "services");
             if (services) {
                 game.debugSetBits(999999);
                 game.debugBuyAutoBackup();
                 game.debugBuyRigRow(kRigRowDiskMaintenance);
+                // "ask" adds the three-way service, whose SET verbs are the widest
+                // primary the hint line carries.
+                if (hasFlag(argc, argv, "ask")) game.debugBuyRigRow(kRigRowAutoDiveGear);
             }
             enterHackerSlot(HackerSlotId::Shop);
             if (services) {

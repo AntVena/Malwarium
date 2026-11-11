@@ -366,18 +366,14 @@ void Game::drawHackerVault(Framebuffer& fb) const {
     }
     drawScrollbar(fb, kHackerListTop, kHackerListRows * kHackerListRowH, n, scrollTop,
                   kHackerListRows);
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
     // B does two different things here, so it says which: a cache is DECRYPTED for
     // a draw, a Decryptogram is PLAYED as a board.
     const bool ticket = rows[sel]->use == ItemDef::Use::PlayCryptogram;
-    drawText(fb, kMargin, kActiveH - 20, ticket ? "B PLAY" : "B DECRYPT",
-             palColor(Pal::ACCENT));
     // The bulk-open hint (exception rule, VISUAL_LANGUAGE §4.2), only once owned, so
     // an unowned player is never shown a gesture they don't have. Never on a ticket
     // row, which has no bulk gesture to advertise.
-    if (bulkOpenUnlocked() && !ticket)
-        drawText(fb, kActiveW - kMargin - textWidth("HOLD - OPEN ALL"),
-                 kActiveH - 20, "HOLD - OPEN ALL", palColor(Pal::INK_DIM));
+    drawHackerHint(fb, bulkOpenUnlocked() && !ticket ? "HOLD - OPEN ALL" : nullptr,
+                   ticket ? "B PLAY" : "B DECRYPT");
 }
 
 void Game::drawHackerProfile(Framebuffer& fb) const {

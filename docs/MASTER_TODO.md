@@ -62,14 +62,6 @@ today's constants. Decide: add `B <verb>  C BACK` like its siblings, or record t
 in VISUAL_LANGUAGE §4.1. | `items_screen.cpp`'s `drawItemDetail`; VISUAL_LANGUAGE §4.1 and
 §4.2. | S | A design call, which is why the design pass left it. |
 
-**The Hacker-face hint line has no widget.** The rule at `kActiveH - 26`, the dim secondary
-verbs left and the accent primary verb right are drawn by hand at eight sites, and the copies
-have already disagreed about which verb takes the accent (PvP had `C BACK` there over its own
-`B FIGHT`). One `drawHackerHint(fb, secondary, primary, VerbState)` beside `drawHintBand`
-makes the slot unarguable. | `game_crew`, `game_hacker`, `game_merge`, `game_peers`,
-`game_pvp`, `rig_shop_screen.cpp`; `core/ui/widgets.h`. | S | Byte-identical against a
-`tools/screens.sh` render taken before. |
-
 **ARCH TRADE IN separates its question from its answers with dead space.** "GONE FOR GOOD.
 GET ONE:" points at the offers, but the focused offer's description sits under it and the
 offer rows start at y 148, below a band held empty for the confirm box (`kConfirmBoxY`)

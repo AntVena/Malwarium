@@ -195,13 +195,11 @@ void Game::drawHackerMerge(Framebuffer& fb) const {
         rowY += kRowGap;
     }
 
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 20, "A NEXT", palColor(Pal::INK_DIM));
     // B MERGE dims when the selected recipe can't be crafted right now (locked,
-    // or an ingredient line above is reading WARN): the disabled-button cue.
-    const bool selCraftable = recipeCraftable(hackerMergeRow_);
-    drawText(fb, kActiveW - kMargin - textWidth("B MERGE"), kActiveH - 20, "B MERGE",
-             selCraftable ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+    // or an ingredient line above is reading WARN).
+    drawHackerHint(fb, "A NEXT", "B MERGE",
+                   recipeCraftable(hackerMergeRow_) ? VerbState::Ready
+                                                    : VerbState::Unavailable);
 }
 
 }  // namespace mal

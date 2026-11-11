@@ -285,10 +285,7 @@ void Game::drawHackerPeers(Framebuffer& fb) const {
         drawText(fb, kMargin, kActiveH - 34, "AMBIENT NEEDS AUDIT SCAN",
                  palColor(Pal::WARN));
 
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 20, "A NEXT", palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth("C BACK"), kActiveH - 20, "C BACK",
-             palColor(Pal::ACCENT));
+    drawHackerHint(fb, "A NEXT", "C BACK");
 }
 
 }  // namespace mal

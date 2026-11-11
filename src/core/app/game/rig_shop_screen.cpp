@@ -265,7 +265,6 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
     }
     drawScrollbar(fb, kHackerListTop, kHackerListRows * kHackerListRowH, n, scrollTop,
                   kHackerListRows);
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
     // An askable row's B steps to its next position, so the label names that one.
     const int selRow = rows[sel];
     const ServiceMode mode = host.rigServiceMode(selRow);
@@ -274,10 +273,8 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
                          : mode == ServiceMode::On  ? "B SET ASK"
                          : mode == ServiceMode::Ask ? "B SET NO"
                                                     : "B SET YES";
-    drawText(fb, kMargin, kActiveH - 20, bLabel, palColor(Pal::ACCENT));
-    // The other half of B, stated where the tap is: a held B reads the service out.
-    drawText(fb, kActiveW - kMargin - textWidth("HOLD - WHAT IT DOES"),
-             kActiveH - 20, "HOLD - WHAT IT DOES", palColor(Pal::INK_DIM));
+    // The other half of B, stated beside the tap: a held B reads the service out.
+    drawHackerHint(fb, "HOLD - EXPLAIN", bLabel);
 }
 
 void RigShopScreen::drawRows(Framebuffer& fb, const RigShopHost& host, int beat) const {

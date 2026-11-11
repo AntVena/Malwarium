@@ -291,10 +291,10 @@ The line naming what the buttons do is drawn one of two ways, one per face:
   (`kHintBandH`), the copy centred in `ink`, words run together without dashes
   (`A NEXT  B OPEN  C BACK`). `tools/check_hint_bands.py` measures every band's copy
   against the canvas.
-- **Hacker face: a rule at `kActiveH - 26` and the verbs at `kActiveH - 20`.** No fill; the
-  secondary verbs `ink-dim` at the left, the one verb the screen exists for right-aligned in
-  `accent` (dimmed when it can't fire right now). It is drawn inline in each `game_*.cpp`
-  unit rather than through a widget.
+- **Hacker face: `drawHackerHint`.** A rule at `kActiveH - 26` and the verbs at
+  `kActiveH - 20`. No fill; the secondary verbs `ink-dim` at the left, the one verb the
+  screen exists for right-aligned in `accent` (dimmed when it can't fire right now). A hold
+  hint (`HOLD - OPEN ALL`) is a secondary verb.
 
 **A's verb is NEXT wherever A moves a cursor**, on a list, a picker or a menu, because
 every one of them steps through the same walk (`game_listnav.cpp`). `A CYCLE` is reserved

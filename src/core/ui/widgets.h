@@ -215,6 +215,14 @@ void drawCancelConfirm(Framebuffer& fb, int y, int choice);
 constexpr int kHintBandH = 16;
 void drawHintBand(Framebuffer& fb, const char* hint);
 
+// The Hacker face's hint line (VISUAL_LANGUAGE §4.2): a rule with the secondary verbs
+// left in ink-dim and the one verb the screen exists for right-aligned in the accent.
+// `secondary` may be null or empty. Unavailable dims the primary verb when it cannot
+// fire right now.
+enum class VerbState : uint8_t { Ready, Unavailable };
+void drawHackerHint(Framebuffer& fb, const char* secondary, const char* primary,
+                    VerbState state = VerbState::Ready);
+
 // The derived readout (effect_text.h's specRows) as an aligned grid: label left
 // and magnitude right-aligned in its column, so the numbers in a list line up and
 // compare at a glance.

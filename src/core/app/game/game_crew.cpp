@@ -382,11 +382,7 @@ void Game::drawCrewHub(Framebuffer& fb) const {
             drawText(fb, kActiveW - kMargin - textWidth("YOURS"), y + 2, "YOURS", side);
     }
 
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 20, "A NEXT", palColor(Pal::INK_DIM));
-    const char* verb = homeSel ? "B PICK NET" : "B OPEN";
-    drawText(fb, kActiveW - kMargin - textWidth(verb), kActiveH - 20, verb,
-             palColor(Pal::ACCENT));
+    drawHackerHint(fb, "A NEXT", homeSel ? "B PICK NET" : "B OPEN");
 }
 
 // --- Home-network picker (the modal over the Hub) ------------------------------
@@ -456,11 +452,8 @@ void Game::drawCrewNetPicker(Framebuffer& fb) const {
                       kNetVisibleRows);
     }
 
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
-    drawText(fb, kMargin, kActiveH - 20, "A NEXT", palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth("B SET  C BACK"), kActiveH - 20,
-             "B SET  C BACK",
-             n > 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+    drawHackerHint(fb, "A NEXT", "B SET  C BACK",
+                   n > 0 ? VerbState::Ready : VerbState::Unavailable);
 }
 
 // --- Team roster ---------------------------------------------------------------
