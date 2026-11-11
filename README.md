@@ -559,8 +559,7 @@ is also the way back when Wi-Fi can't reach it. Reach for it when:
   spare app slot and nothing else, so it structurally **cannot** replace the bootloader or
   the partition table;
 - the device won't boot at all. Holding A works even when the firmware on it is the reason
-  the device is unreachable, which is what makes this the escape hatch and not just an
-  alternative;
+  the device is unreachable, so it still works when nothing else does;
 - you'd rather not install a toolchain to update a toy.
 
 <p align="center"><img src="docs/media/screens/flash-qr.png" width="200" alt="The flasher QR on the device"></p>
@@ -614,8 +613,8 @@ the full text is in [`LICENSE`](LICENSE).
 
 In short: the device in your hands is yours. You may use, study, modify and redistribute
 this firmware, and if you hand someone a Malwarium you must let them do the same, which
-includes being able to flash their own build onto it. That is the point rather than the
-price: a containment habitat you can't open isn't one you own.
+includes being able to flash their own build onto it, because a containment habitat you
+can't open isn't one you own.
 
 The QR encoder in `src/core/render/qrcodegen.c` is Project Nayuki's, used under the MIT
 license; its copyright notice stays with the file. The browser flasher drives Espressif's

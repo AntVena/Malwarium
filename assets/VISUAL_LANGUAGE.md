@@ -143,7 +143,7 @@ this to demote text into.
 Hierarchy therefore runs on **weight**, and `FontFace` (`src/core/render/font_glyphs.h`) is
 that axis. `Regular` is what the TTF rasterises to; `Bold` is derived from it in the
 generator, each scanline smeared a column right, so the two share `kFontW` / `kFontH` /
-`kFontAdvance` **exactly**. That is the whole reason it is derived rather than a second TTF: a
+`kFontAdvance` **exactly**. It is derived for that reason, and not sourced as a second TTF: a
 sourced bold arrives with its own advance, and every constant in `src/core/ui/layout.h` is
 built on this one. Switching face moves nothing and costs a layout nothing.
 
@@ -196,7 +196,7 @@ weight consistent across the UI.
 | **20×20** | submenu row glyphs + content icons: `ICON_ITEM_*`, `ICON_MOD_*`, `ICON_SECTOR_*`, `ICON_LINE_*`, `ICON_MAINT_*`, `ICON_TRAIN_SIM`, `ICON_EXPL_*`, `UI_ALERT_HUNGER` |
 | **16×16** | status glyphs: `ICON_SYS_*` (battery/wifi/SD). The parked `ICON_BTN_A/B/C` were drawn to this tier |
 | **12×12** | inline log glyphs: `ICON_LOG_EVENT` (`item`/`warn`/`combat`) |
-| **8×8** | inline TEXT-ROW glyphs: `ICON_FIGHT_*` (the combat VS grid). One `FONT_UI` cell, which is the point: a glyph that names a row of text has to sit IN that row, and every tier above stands taller than the row is, so it would push the row apart rather than label it. Author it as if it were a letter |
+| **8×8** | inline TEXT-ROW glyphs: `ICON_FIGHT_*` (the combat VS grid). One `FONT_UI` cell, because a glyph that names a row of text has to sit IN that row, and every tier above stands taller than the row is, so it would push the row apart rather than label it. Author it as if it were a letter |
 
 ### 3.2 Silhouette + state rules
 

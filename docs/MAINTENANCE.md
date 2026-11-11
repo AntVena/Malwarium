@@ -15,7 +15,7 @@ Maintenance runs keep the docs that way through small, regular passes.
 
 ## The pile
 
-### Docs cleanup / decision-history sweep. Last run: 2026-10-17
+### Docs cleanup / decision-history sweep. Last run: 2026-11-11
 Two surfaces, two rules, and one prose style across both.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",

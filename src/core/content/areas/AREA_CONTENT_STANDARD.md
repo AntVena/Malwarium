@@ -126,8 +126,8 @@ in all four.
 Budget, held by `test_every_guardian_speaks_and_fits_the_panel`: `seen` is **one** panel line and
 `cant` is at most **two**. A stage direction that runs long stops being a glance and starts
 competing with the riddle, which is the thing the player is meant to be reading. No line may be
-shared between two guardians, or between a guardian's `lines` and its `outcomes`: the five
-sounding like five different things is the point of authoring them at all. Both arrays are held to
+shared between two guardians, or between a guardian's `lines` and its `outcomes`: five
+guardians have to sound like five different things. Both arrays are held to
 the same budget, since the hail and the verdict draw the pair in the same places.
 
 **A guardian has no sprite row, and never will.** It is drawn as a flock (`FX_SWARM`,
@@ -291,8 +291,8 @@ The DeepWeb Dive is the always-last endless zone (`kDeepWebSector`, one past the
 ladder): it has no sub-area ladder, no boss, no shop, so an `AreaDef` doesn't fit it. Its
 mod pool (`kAreaModsDeepWeb`), its endless-scaling constants (`kDeepWebEnemyLevelOffset`
 and friends) and its move rungs live in `areas/deepweb_dive/{area.cpp,area.h}`
-instead: moved out of the cross-cutting `tunables.h` since nothing outside the dive reads
-them, following the same "single-entity magnitude lives on that entity" rule as an AreaDef.
+instead of the cross-cutting `tunables.h`, because nothing outside the dive reads them,
+following the same "single-entity magnitude lives on that entity" rule as an AreaDef.
 
 It is also the only zone whose enemies are **rolled rather than authored**. A dive enemy
 takes a body from the tier-3 roster and gets everything else from depth: a BUDGET of stat

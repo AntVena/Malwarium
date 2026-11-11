@@ -199,7 +199,7 @@ the branch is named for concatenation and two things stuck together is the joke 
 inherits. It sits on top of the mother colour rather than replacing it: a cat is green like every
 other ransomware creature, and two-headed like no other line. Draw the second head as a full head on
 the same neck, not a mirrored decal: the silhouette is the read, so it has to survive the §5
-grayscale test on shape alone. The dog branch of the same line has one head, which is the point:
+grayscale test on shape alone. The dog branch of the same line has one head:
 the signature separates branches inside a line that colour cannot, since colour is the line's.
 
 ### The Worm exception: draw it small, and draw it 1-bit

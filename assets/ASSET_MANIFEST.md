@@ -623,8 +623,8 @@ Listed so Design **skips** them; they're implemented per `src/core/render/RENDER
 > rather than from any table, so a line's colours need no entry here and a lineless
 > malbeast still answers with whatever is on it.
 
-> `FX_SWARM` is the one row here that is a CREATURE rather than something done to one, and
-> that is the point of it: a guardian is the only thing in the game that is not shaped like
+> `FX_SWARM` is the one row here that is a CREATURE rather than something done to one,
+> because a guardian is the only thing in the game that is not shaped like
 > the things the pet has met, and drawing it as authored pixels would have made it another
 > animal. So there is no sheet to draw and there is not going to be one: Design skips this
 > the way it skips the rest of the section, and what a guardian looks like is decided by
@@ -803,7 +803,7 @@ blank: that is the prompt to draw one, and `check_orphan_assets.py` catches the 
 > theme can reach, and these sit under rows of list text, which is exactly where a frozen
 > hue would cost contrast. And it costs no flash on screens that already spend a full
 > creature cell: a dozen places is a few hundred bytes each against ~48KB for one 128×128
-> sheet, which is the whole reason a background is a plausible PRIZE. The rule generalises:
+> sheet, so a background is cheap enough to be a PRIZE. The rule generalises:
 > a `BG_*` PNG is for a backdrop the player LOOKS at (`BG_EGG_CLUTCH` is a raft you pick
 > eggs off), and chrome that text has to stay readable on top of is drawn from tokens.
 
