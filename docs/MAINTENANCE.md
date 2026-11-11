@@ -142,7 +142,7 @@ Also check that a doc which ROUTES to another for a process actually finds it th
 line and the section it points at are two places one process is described, and only one of them
 gets updated.
 
-### Test/gate health check. Last run: 2026-10-17
+### Test/gate health check. Last run: 2026-11-11
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt: tests asserting behaviour that no longer occurs in
 real play.

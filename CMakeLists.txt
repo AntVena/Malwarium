@@ -134,6 +134,11 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME hint_bands
              COMMAND ${Python3_EXECUTABLE}
                      ${CMAKE_SOURCE_DIR}/tools/check_hint_bands.py)
+    # Every PNG under assets/ is linked into flash whether or not anything draws it, so
+    # art landed ahead of its content costs flash with no failing build to say so.
+    add_test(NAME orphan_assets
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_SOURCE_DIR}/tools/check_orphan_assets.py)
     # A gate written but never added to the roster doesn't run, and a green suite
     # says nothing about it. The compiler catches the other direction on its own.
     add_test(NAME test_roster

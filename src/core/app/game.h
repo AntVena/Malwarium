@@ -3506,11 +3506,9 @@ private:
     IdleHarvest petHarvest_;
     IdleFeeding petFeeding_;
     IdleLure petLure_;
-    // Per-stage tally of care interactions, indexed by DominantSignal, feeding
-    // the evolution routing tables. Reset when a new stage begins
-    // (hatch / evolution). Runtime-only scaffold: not persisted yet. A reboot
-    // mid-stage restarts the tally, behaviour-neutral while every signal routes
-    // to the same successor. Weighting (1 per action) is a first cut (tunable).
+    // Per-stage tally of care interactions, indexed by DominantSignal, one per action.
+    // Reset when a new stage begins (hatch / evolution) and not persisted. Nothing
+    // routes on it: dominantSignal() is read only by test_dominant_signal_from_care.
     int signalTally_[kNumDominantSignals] = {0};
     Inventory inventory_;
     EventLog log_;

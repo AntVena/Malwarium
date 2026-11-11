@@ -86,6 +86,14 @@ change made twice. Give `ProseRow` a name-line suffix and draw BUFFS through
 change. | `stat_screen.cpp`; `core/ui/prose_page.h`. | S | Byte-identical against
 a `tools/screens.sh` render taken before. |
 
+**The dominant care signal is tallied and never read.** Seven care paths call
+`noteCareSignal`, and `Game::dominantSignal` takes the argmax, but no evolution route keys off
+it: the only caller is `test_dominant_signal_from_care`, which holds logic nothing in play runs.
+Either build the signal-dependent route it was laid down for (and persist the tally, since a
+reboot mid-stage would then change an outcome), or delete the tally, its seven call sites and
+the test. | `game_lifecycle.cpp`'s `dominantSignal`; `DominantSignal` (`defs.h`). | S to
+delete, M to build | Persisting it is a save-format change. |
+
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date

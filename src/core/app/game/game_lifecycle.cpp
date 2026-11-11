@@ -296,7 +296,7 @@ const SpriteData* Game::hatchEggSprite() const {
     return egg ? registry_.creatureSprite(*egg) : nullptr;
 }
 
-// Evolution boundary (stub) -----------------------------------
+// Dominant care signal ------------------------------------------
 
 DominantSignal Game::dominantSignal() const {
     // Argmax of the per-stage interaction tally. `>=` lets the highest index win
