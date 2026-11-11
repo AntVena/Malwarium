@@ -79,7 +79,7 @@ struct SpriteData;
 // Named here only as the return type of the row builders below: the screen header
 // itself stays in game_stat.cpp, per the include note above.
 struct ProseRow;
-struct BuffRow;
+
 // EXPL's list view (core/ui/expl_screen.h). Named here only as explView()'s return
 // type, per the include note above: the screen header stays in the game_*.cpp units
 // that draw and navigate with it.
@@ -3749,7 +3749,7 @@ private:
     // window the page drew or it skips and repeats rows.
     std::vector<ProseRow> statTierRows() const;
     std::vector<ProseRow> statLoadoutRows() const;
-    std::vector<BuffRow> statBuffRows() const;
+    std::vector<ProseRow> statBuffRows() const;
     // The two COLLECTION pages' rows (core/ui/collect_screen.h): every dish laid out in
     // rarity groups against this pet's palate, and every move it could learn against
     // what it has. Marshalled here for the same reason the three above are: Game owns

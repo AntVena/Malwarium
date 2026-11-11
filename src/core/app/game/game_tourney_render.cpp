@@ -209,8 +209,8 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
 
 void Game::drawTourneyBrief(Framebuffer& fb) const {
     drawHeaderBand(fb, kTourneyName, "BRIEF");
-    drawProseRows(fb, tourneyBriefRows(), tourneyScroll_, kDockBriefTop, beat_,
-                  "B MORE   C BACK");
+    drawProseRows(fb, {tourneyBriefRows(), tourneyScroll_, kDockBriefTop, beat_,
+                       "B MORE   C BACK"});
 }
 
 void Game::drawTourneyScout(Framebuffer& fb) const {
@@ -247,8 +247,8 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
     drawTextMarquee(fb, kMargin, kDockSubY + 2 * kLineH, w, state,
                     palColor(Pal::INK_DIM), beat_, Overflow::Scroll);
     fb.fillRect(0, kDockScoutTop - 6, kActiveW, 1, palColor(Pal::TRACK));
-    drawProseRows(fb, tourneyScoutRows(), tourneyScroll_, kDockScoutTop, beat_,
-                  "B MORE   C BACK");
+    drawProseRows(fb, {tourneyScoutRows(), tourneyScroll_, kDockScoutTop, beat_,
+                       "B MORE   C BACK"});
 }
 
 }  // namespace mal

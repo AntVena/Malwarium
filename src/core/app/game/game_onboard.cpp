@@ -308,7 +308,7 @@ void Game::drawTipCard(Framebuffer& fb) const {
     const bool last = tipCardScroll_ + proseRowsFitting(rows, tipCardScroll_, kTipCardTop) >=
                       static_cast<int>(rows.size());
     const char* hint = last ? "B GOT IT" : "B NEXT   C SKIP";
-    drawProseRows(fb, rows, tipCardScroll_, kTipCardTop, beat_, hint);
+    drawProseRows(fb, {rows, tipCardScroll_, kTipCardTop, beat_, hint});
     // The reader draws its band only for a page that overflows; a card that fits in one
     // window still has to say how it is closed.
     drawHintBand(fb, hint);

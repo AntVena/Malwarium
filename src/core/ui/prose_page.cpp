@@ -22,6 +22,39 @@ int proseBodyH(const char* body) {
 // heights are measured per window rather than once for the page.
 int headerLead(int index, int top) { return index == top ? 0 : kProseGroupLead; }
 
+// The heading line: a tag here is a running total for the group (STAT's TIERS page).
+// Both dim, because a heading is a fence and must not out-shout the rows it fences.
+void drawProseHeading(Framebuffer& fb, int y, const ProseRow& r, int beat) {
+    if (r.tag[0])
+        drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK_DIM), r.tag,
+                       palColor(Pal::INK_DIM), beat, Overflow::Clip);
+    else
+        drawText(fb, kMargin, y, r.label, palColor(Pal::INK_DIM));
+    drawHeadingRule(fb, y);
+}
+
+// An entry's name line. Name and tag go through drawLabelValue as a pair so a long
+// name yields to the tag instead of running underneath it. A suffix takes its room out
+// of the name's the same way, so it always lands one space after what was drawn.
+void drawProseName(Framebuffer& fb, int y, const ProseRow& r, int beat) {
+    if (!r.suffix[0]) {
+        drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.tag,
+                       palColor(Pal::INK_DIM), beat, Overflow::Clip);
+        return;
+    }
+    int nameRight = kActiveW - kMargin;
+    if (r.tag[0]) {
+        nameRight -= textWidth(r.tag);
+        drawText(fb, nameRight, y, r.tag, palColor(Pal::INK_DIM));
+        nameRight -= kMargin;
+    }
+    const int room = nameRight - kFontAdvance - textWidth(r.suffix) - kMargin;
+    if (room <= 0) return;
+    drawTextMarquee(fb, kMargin, y, room, r.label, palColor(Pal::INK), beat, Overflow::Clip);
+    drawText(fb, kMargin + std::min(textWidth(r.label), room) + kFontAdvance, y, r.suffix,
+             palColor(Pal::ACCENT));
+}
+
 }  // namespace
 
 std::vector<int> proseRowHeights(const std::vector<ProseRow>& rows, int top) {
@@ -79,50 +112,36 @@ int proseWindowIndex(const std::vector<ProseRow>& rows, int scrollTop, int rowTo
     return n;
 }
 
-void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                   int rowTop, int beat, const char* hint) {
+void drawProseRows(Framebuffer& fb, const ProseView& v) {
+    const std::vector<ProseRow>& rows = v.rows;
+    const int rowTop = v.rowTop;
     if (rows.empty()) return;
     const int total = static_cast<int>(rows.size());
     const bool overflow = proseRowsFitting(rows, 0, rowTop) < total;
-    const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
+    const int top = overflow ? std::max(0, std::min(v.scrollTop, total - 1)) : 0;
     const std::vector<int> heights = proseRowHeights(rows, top);
     const int shown = proseRowsFitting(rows, top, rowTop);
 
     int y = rowTop;
-    for (int v = 0; v < shown; ++v) {
-        const ProseRow& r = rows[top + v];
+    for (int i = 0; i < shown; ++i) {
+        const ProseRow& r = rows[top + i];
         if (r.header) {
-            // A heading may carry a tag of its own: a running total for the group under
-            // it (STAT's TIERS page). Paired with the label rather than placed
-            // independently for the same reason the entry rows are: whichever of the two
-            // grows, they yield to each other instead of overlapping. Both dim, because a
-            // heading is a fence and must not out-shout the rows it fences.
-            const int hy = y + headerLead(top + v, top);
-            if (r.tag[0])
-                drawLabelValue(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM), r.tag,
-                               palColor(Pal::INK_DIM), beat, Overflow::Clip);
-            else
-                drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
-            drawHeadingRule(fb, hy);
+            drawProseHeading(fb, y + headerLead(top + i, top), r, v.beat);
         } else {
-            // Name and tag as a PAIR (drawLabelValue), so a long name yields to the tag
-            // instead of running underneath it: the failure two independent drawText
-            // calls produce every time the copy grows.
-            drawLabelValue(fb, kMargin, y, r.label, palColor(Pal::INK), r.tag,
-                           palColor(Pal::INK_DIM), beat, Overflow::Clip);
+            drawProseName(fb, y, r, v.beat);
             if (!r.body.empty())
                 drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
                                 r.body.c_str(), palColor(Pal::INK_DIM), kProseLineH,
                                 textWrapLines(r.body.c_str(), kProseW));
         }
-        y += heights[top + v];
+        y += heights[top + i];
     }
 
     if (overflow) {
         // In rows, not pixels: a pixel-proportional thumb over rows of wildly different
         // heights would jump unevenly for no reason the reader can see.
         drawScrollbar(fb, rowTop, kProseBottom - rowTop, total, top, shown);
-        if (hint && hint[0]) drawHintBand(fb, hint);
+        if (v.hint && v.hint[0]) drawHintBand(fb, v.hint);
     }
 }
 

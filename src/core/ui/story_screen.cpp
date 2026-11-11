@@ -48,7 +48,7 @@ void drawStoryPage(Framebuffer& fb, const std::vector<ProseRow>& rows,
     // page overflows, and this screen names both keys on every window whether it does
     // or not): a chapter that fits on one screen still has to say that B is what ends
     // it, or the only way off the page is to wait the clock out.
-    drawProseRows(fb, rows, v.scrollTop, kStoryBodyTop, v.beat, /*hint=*/nullptr);
+    drawProseRows(fb, {rows, v.scrollTop, kStoryBodyTop, v.beat, nullptr});
 
     drawStoryClock(fb, v.remainingPct);
     // The LAST window's B finishes the chapter rather than turning a page, so the word

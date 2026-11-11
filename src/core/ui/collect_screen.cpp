@@ -264,7 +264,7 @@ void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
     char score[16];
     std::snprintf(score, sizeof(score), "%d/%d", page.have, page.total);
     drawHeaderBand(fb, "MOVES", score);
-    drawProseRows(fb, rows, page.scrollTop, kGridTop, page.beat, nullptr);
+    drawProseRows(fb, {rows, page.scrollTop, kGridTop, page.beat, nullptr});
     drawStatHintBand(fb, proseWindowIndex(rows, page.scrollTop, kGridTop) + 1,
                      proseWindowCount(rows, kGridTop));
 }

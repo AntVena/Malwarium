@@ -70,14 +70,6 @@ question with the description beneath them, and open the confirm over the descri
 `arch_screen.cpp`'s sale sheet. | S | Check `arch_sale`, `arch_sale_twin` and
 `arch_sale_confirm` on the contact sheet. |
 
-**BUFFS keeps its own copy of the prose flow.** `BuffRow`, `buffRowHeights`, `buffFitCount`,
-`buffWindowCount` and the draw loop in `drawBuffsScreen` repeat `prose_page.cpp` for a row
-that adds only a timer to the name line. The copies have already needed the same heading
-change made twice. Give `ProseRow` a name-line suffix and draw BUFFS through
-`drawProseRows`, which at five inputs past the framebuffer takes a `ProseView` in the same
-change. | `stat_screen.cpp`; `core/ui/prose_page.h`. | S | Byte-identical against
-a `tools/screens.sh` render taken before. |
-
 **The dominant care signal is tallied and never read.** Seven care paths call
 `noteCareSignal`, and `Game::dominantSignal` takes the argmax, but no evolution route keys off
 it: the only caller is `test_dominant_signal_from_care`, which holds logic nothing in play runs.

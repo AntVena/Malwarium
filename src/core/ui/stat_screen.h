@@ -123,22 +123,10 @@ struct StatScreenView {
 };
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v);
 
-// STAT page 3. BUFFS row model: one armed item buff, its effect text (rendered
-// from the item's own ItemDef row. Single source of truth, no duplicated
-// description), and a countdown for the timed ones (Backup Drive).
-struct BuffRow {
-    const char* label;     // the item's displayName
-    EffectText effect;     // the item's description, its magnitudes substituted in
-    bool hasTimer;         // true only for a time-limited buff (Backup Drive)
-    uint32_t remainingMs;  // valid only when hasTimer
-    // A section heading (ARMED / PERMANENT) rather than a buff: no effect text, no
-    // timer, and it opens a window of its own the way a ProseRow header does
-    // (prose_page.h). The two kinds answer different questions (what is running out,
-    // and what this pet simply has now), and the page is unreadable as one flat list
-    // that mixes them.
-    bool header = false;
-};
-
+// Rows sit under two headings, ARMED and PERMANENT, because they answer different
+// questions (what is running out, and what this pet simply has now). The timed buff
+// carries its countdown as the row's suffix.
+//
 // Build the BUFFS page's rows from the armed-buff state Game tracks as plain
 // per-pet flags (game.h): Restore Point's mistake shield, Ambig-USB's forced
 // Trojan divert, Backup Drive's timed combat shield, and the two DeepWeb Dive
@@ -162,7 +150,7 @@ struct BuffRow {
 // they carry no timer and no home-screen icon (the idle status row is for states the
 // operator has to act on); the BUFFS page is where a pet's standing upgrades are
 // readable, which is the only place they belong.
-std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
+std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
                                     bool restorePointArmed,
                                     bool trojanDivertArmed,
                                     bool backupDriveArmed,
@@ -179,13 +167,13 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
 // The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:
 // five buffs can be armed at once and their descriptions run to four lines, which
 // is more than one screen holds.
-int buffRowsFitting(const std::vector<BuffRow>& rows, int top);
+int buffRowsFitting(const std::vector<ProseRow>& rows, int top);
 
 // STAT page 3. BUFFS: the armed-buff list from buildBuffRows, each with its
 // effect text wrapped WHOLE below the name (and a remaining-time readout for the
 // timed ones), scrolling on B like LOADOUT when more are armed than fit. Empty
 // list shows a plain "no active buffs" line.
-void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
+void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat);
 
 // STAT page 4. SPECIES: the pet's own lore, straight off its CreatureDef row

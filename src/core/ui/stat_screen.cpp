@@ -54,9 +54,8 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
     drawText(fb, kNumX, y + 2, num, nc);
 }
 
-// The two pages' own row tops. The flow itself (row heights, the fit count, the
-// scrollbar) is shared; core/ui/prose_page.h, because LOADOUT, BUFFS and the arena's
-// opponent sheet are one page wearing three headers.
+// The flowed pages' own row tops. The flow itself (row heights, the fit count, the
+// scrollbar) is shared in core/ui/prose_page.h.
 constexpr int kLoadoutRowTop = 26;
 constexpr int kBuffRowTop = 28;
 constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as LOADOUT
@@ -76,72 +75,6 @@ constexpr int kIndexRowH = 15;
 constexpr int kIndexLabelX = 20;   // clear of the cursor marker at the left margin
 constexpr int kIndexSubX = 32;     // a section INSIDE a page, indented under it
 constexpr int kIndexVisible = (kProseBottom - kIndexRowTop) / kIndexRowH;
-
-// BUFFS keeps its own heights because a buff row is a name plus a COUNTDOWN rather
-// than a name plus a tag: the timer is live state, re-read every repaint, where a
-// ProseRow's tag is set once when the row is built. Its headings are measured the same
-// way the shared flow measures its own (prose_page.cpp): the lead-in above one is part
-// of its height, and the heading that opens a window takes none.
-std::vector<int> buffRowHeights(const std::vector<BuffRow>& rows, int top) {
-    std::vector<int> h;
-    h.reserve(rows.size());
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const BuffRow& r = rows[i];
-        if (r.header) {
-            h.push_back((i == top ? 0 : kProseGroupLead) + kProseHeaderH);
-            continue;
-        }
-        h.push_back(kFontH + (r.effect.empty()
-                                  ? 0
-                                  : kProseNameGap +
-                                        textWrapLines(r.effect.c_str(), kProseW) *
-                                            kProseLineH) +
-                    kProseRowGap);
-    }
-    return h;
-}
-
-// BUFFS' own fit count, over its own heights: the shared proseRowsFitting takes
-// ProseRows, and this page's rows are not those. Same section rule as the shared flow,
-// including the half-full threshold that keeps a section break from spending a whole
-// screen on a one-row tail.
-int buffFitCount(const std::vector<BuffRow>& rows, int top) {
-    const std::vector<int> heights = buffRowHeights(rows, top);
-    int y = kBuffRowTop;
-    int n = 0;
-    for (int i = top; i < static_cast<int>(heights.size()); ++i) {
-        if (n > 0 && rows[i].header &&
-            y - kBuffRowTop >= (kProseBottom - kBuffRowTop) / 2)
-            break;
-        if (n > 0 && y + heights[i] > kProseBottom) break;
-        y += heights[i];
-        ++n;
-    }
-    return n;
-}
-
-// BUFFS' own window count / position, the same pair the shared flow exports
-// (proseWindowCount / proseWindowIndex) and for the same hint band.
-int buffWindowCount(const std::vector<BuffRow>& rows) {
-    int n = 0;
-    for (int top = 0; top < static_cast<int>(rows.size()); ++n) {
-        const int shown = buffFitCount(rows, top);
-        if (shown <= 0) break;
-        top += shown;
-    }
-    return n;
-}
-
-int buffWindowIndex(const std::vector<BuffRow>& rows, int scrollTop) {
-    int n = 0;
-    for (int top = 0; top < static_cast<int>(rows.size()); ++n) {
-        if (top >= scrollTop) return n;
-        const int shown = buffFitCount(rows, top);
-        if (shown <= 0) break;
-        top += shown;
-    }
-    return n;
-}
 
 // The band every STAT page ends with. Two things belong on it and they are not the
 // same kind of fact: what the key under the reader's thumb does right now, and that
@@ -258,7 +191,7 @@ void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scr
     statHeader(fb, "TIERS", 1);
     // The flow draws no band of its own here (nullptr): every STAT page ends with the
     // same one, and it says more than the flow can know to say.
-    drawProseRows(fb, rows, scrollTop, kTierRowTop, beat, nullptr);
+    drawProseRows(fb, {rows, scrollTop, kTierRowTop, beat, nullptr});
     statProseHint(fb, rows, scrollTop, kTierRowTop);
 }
 
@@ -269,11 +202,11 @@ int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
     statHeader(fb, "LOADOUT", 2);
-    drawProseRows(fb, rows, scrollTop, kLoadoutRowTop, beat, nullptr);
+    drawProseRows(fb, {rows, scrollTop, kLoadoutRowTop, beat, nullptr});
     statProseHint(fb, rows, scrollTop, kLoadoutRowTop);
 }
 
-std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
+std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
                                     bool restorePointArmed,
                                     bool trojanDivertArmed,
                                     bool backupDriveArmed,
@@ -286,28 +219,43 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
                                     int evolveSoakFactor,
                                     bool evolveHoldArmed,
                                     const PetUpgrades& upgrades) {
-    std::vector<BuffRow> out;
+    std::vector<ProseRow> out;
     // The two headings are emitted LAZILY, by the first row that belongs under each:
     // an empty section is not a section, and a page that says PERMANENT over nothing
     // has told the reader something false about the pet.
     auto section = [&](const char* label) {
-        for (const BuffRow& r : out)
+        for (const ProseRow& r : out)
             if (r.header && std::strcmp(r.label, label) == 0) return;
-        BuffRow head{};
+        ProseRow head{};
         head.label = label;
         head.header = true;
         out.push_back(head);
     };
-    auto add = [&](const char* itemId, bool armed, bool timed, uint32_t remain) {
-        if (!armed) return;
-        const ItemDef* d = reg.item(itemId);
-        section("ARMED");
-        out.push_back({d ? d->displayName : itemId, d ? effectText(*d) : EffectText{},
-                       timed, remain, false});
+    auto entry = [&](const ItemDef& d) {
+        ProseRow row{};
+        row.label = d.displayName;
+        row.body = effectText(d);
+        out.push_back(row);
+        return &out.back();
     };
-    add("restore_point", restorePointArmed, false, 0);
-    add("ambig_usb", trojanDivertArmed, false, 0);
-    add("backup_drive", backupDriveArmed, true, backupDriveRemainMs);
+    auto add = [&](const char* itemId, bool armed) -> ProseRow* {
+        if (!armed) return nullptr;
+        section("ARMED");
+        if (const ItemDef* d = reg.item(itemId)) return entry(*d);
+        ProseRow row{};
+        row.label = itemId;
+        out.push_back(row);
+        return &out.back();
+    };
+    add("restore_point", restorePointArmed);
+    add("ambig_usb", trojanDivertArmed);
+    // The one timed buff: its countdown is the row's suffix, read fresh each repaint
+    // because the page rebuilds its rows every draw.
+    if (ProseRow* row = add("backup_drive", backupDriveArmed)) {
+        const uint32_t s = backupDriveRemainMs / 1000u;
+        std::snprintf(row->suffix, sizeof(row->suffix), "%u:%02u LEFT", s / 60u,
+                      static_cast<unsigned>(s % 60u));
+    }
     // The two DeepWeb Dive depth buffs: which ITEM armed them isn't tracked
     // directly (Game only keeps the raw multiplier/depth), so find the item whose
     // effect matches the current state instead of hardcoding an id here.
@@ -319,7 +267,7 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
             for (const ItemEffect& e : d->effects)
                 if (e.kind == kind && (matchAnyMagnitude || e.magnitude == magnitude)) {
                     section(heading);
-                    out.push_back({d->displayName, effectText(*d), false, 0, false});
+                    entry(*d);
                     return;
                 }
     };
@@ -366,9 +314,9 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
         addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true, "PERMANENT");
     if (upgrades.favouriteFound) {
         section("PERMANENT");
-        BuffRow row{};
+        ProseRow row{};
         row.label = "FAVOURITE DISH";
-        std::snprintf(row.effect.buf, sizeof(row.effect.buf),
+        std::snprintf(row.body.buf, sizeof(row.body.buf),
                       "Loves %s. +%d to every combat stat.",
                       upgrades.favouriteFood ? upgrades.favouriteFood->displayName
                                              : "its favourite",
@@ -378,54 +326,20 @@ std::vector<BuffRow> buildBuffRows(const ContentRegistry& reg,
     return out;
 }
 
-int buffRowsFitting(const std::vector<BuffRow>& rows, int top) {
-    return buffFitCount(rows, top);
+int buffRowsFitting(const std::vector<ProseRow>& rows, int top) {
+    return proseRowsFitting(rows, top, kBuffRowTop);
 }
 
-void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scrollTop,
-                     int /*beat*/) {
+void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
+                     int beat) {
     statHeader(fb, "BUFFS", 5);
-
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
         statHintBand(fb, 1, 1);
         return;
     }
-
-    const int total = static_cast<int>(rows.size());
-    const bool overflow = buffFitCount(rows, 0) < total;
-    const int top = overflow ? std::max(0, std::min(scrollTop, total - 1)) : 0;
-    const std::vector<int> heights = buffRowHeights(rows, top);
-    const int shown = buffFitCount(rows, top);
-
-    int y = kBuffRowTop;
-    for (int v = 0; v < shown; ++v) {
-        const BuffRow& r = rows[top + v];
-        if (r.header) {
-            // Drawn as the flow's own headings are (prose_page.cpp): dim, over a rule.
-            const int hy = y + (top + v == top ? 0 : kProseGroupLead);
-            drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
-            drawHeadingRule(fb, hy);
-            y += heights[top + v];
-            continue;
-        }
-        const int nx = drawText(fb, kMargin, y, r.label, palColor(Pal::INK));
-        if (r.hasTimer) {
-            char t[16];
-            const uint32_t s = r.remainingMs / 1000u;
-            std::snprintf(t, sizeof(t), "%u:%02u LEFT", s / 60u,
-                          static_cast<unsigned>(s % 60u));
-            drawText(fb, nx + kFontAdvance, y, t, palColor(Pal::ACCENT));
-        }
-        if (!r.effect.empty())
-            drawTextWrapped(fb, kMargin, y + kFontH + kProseNameGap, kProseW,
-                              r.effect.c_str(), palColor(Pal::INK_DIM), kProseLineH,
-                              textWrapLines(r.effect.c_str(), kProseW));
-        y += heights[top + v];
-    }
-
-    if (overflow) drawScrollbar(fb, kBuffRowTop, kProseBottom - kBuffRowTop, total, top, shown);
-    statHintBand(fb, buffWindowIndex(rows, top) + 1, buffWindowCount(rows));
+    drawProseRows(fb, {rows, scrollTop, kBuffRowTop, beat, nullptr});
+    statProseHint(fb, rows, scrollTop, kBuffRowTop);
 }
 
 void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {

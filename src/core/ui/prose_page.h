@@ -1,6 +1,6 @@
 // prose_page.h: the flowed, scrollable page of NAME + PROSE rows.
 //
-// Four screens now stack rows of the same shape: a name line, an optional short tag
+// Several screens stack rows of the same shape: a name line, an optional short tag
 // right-aligned against it, and the row's own authored text wrapped whole underneath.
 // STAT's LOADOUT and BUFFS pages, ROCK THE DOCK's opponent SCOUT sheet, and its
 // briefing are all that page, so the flow lives here once instead of in each of them.
@@ -47,12 +47,15 @@ class Framebuffer;
 // stored rather than borrowed because most producers FORMAT it. Empty = no tag. A HEADER
 // row may carry one too (a running total for the group it opens), and draws it dim
 // alongside the heading.
+// `suffix` is a live readout drawn in the accent right after the name (BUFFS'
+// countdown). Empty = none. It is ignored on a header row.
 // `body` is the prose, already templated (effect_text.h). Empty on a header row.
 struct ProseRow {
     bool header = false;        // a section heading (MOVES/MODS): dim, no prose
     const char* label = "";
     char tag[12] = {0};
     EffectText body;
+    char suffix[16] = {0};
 };
 
 // Prose-flow geometry. Public because the pages that lay their own header out above
@@ -96,15 +99,22 @@ int proseRowsFitting(const std::vector<ProseRow>& rows, int top, int rowTop);
 int proseWindowCount(const std::vector<ProseRow>& rows, int rowTop);
 int proseWindowIndex(const std::vector<ProseRow>& rows, int scrollTop, int rowTop);
 
-// Draw the window of `rows` starting at `scrollTop`, from `rowTop` down. When the list
-// outruns one screen this also draws the right-edge scrollbar and `hint` in the hint
-// band: a page that gives a key meaning has to name it, and the two only appear
-// together because there is nothing to scroll otherwise.
+// One window of a prose page: the window of `rows` starting at `scrollTop`, drawn from
+// `rowTop` down. When the list outruns one screen the draw also adds the right-edge
+// scrollbar and `hint` in the hint band: a page that gives a key meaning has to name
+// it, and the two only appear together because there is nothing to scroll otherwise.
+// A null `hint` leaves the band to the caller (STAT draws its own).
 //
-// `scrollTop` is CLAMPED here, not wrapped: the wrap belongs to whoever owns the
+// `scrollTop` is CLAMPED by the draw, not wrapped: the wrap belongs to whoever owns the
 // press, which is the only place that knows the total row count as well.
-void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                   int rowTop, int beat, const char* hint = "B SCROLL");
+struct ProseView {
+    const std::vector<ProseRow>& rows;
+    int scrollTop = 0;
+    int rowTop = 0;
+    int beat = 0;
+    const char* hint = "B SCROLL";
+};
+void drawProseRows(Framebuffer& fb, const ProseView& v);
 
 // Set a row's formatted tag. Truncates rather than overflowing; a caller that needs
 // more than this holds is describing something that belongs in the prose instead.

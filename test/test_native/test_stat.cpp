@@ -614,21 +614,21 @@ void test_buffs_page_lists_the_permanent_upgrades() {
 
     // The buffs (not the headings) of a page, in order: what the reader actually sees
     // listed, with the section signage taken back out.
-    auto entries = [](const std::vector<BuffRow>& rows) {
-        std::vector<const BuffRow*> out;
-        for (const BuffRow& row : rows)
+    auto entries = [](const std::vector<ProseRow>& rows) {
+        std::vector<const ProseRow*> out;
+        for (const ProseRow& row : rows)
             if (!row.header) out.push_back(&row);
         return out;
     };
-    auto hasHeading = [](const std::vector<BuffRow>& rows, const char* label) {
-        for (const BuffRow& row : rows)
+    auto hasHeading = [](const std::vector<ProseRow>& rows, const char* label) {
+        for (const ProseRow& row : rows)
             if (row.header && std::strcmp(row.label, label) == 0) return true;
         return false;
     };
 
     PetUpgrades u;
     u.bandwidthRegenMin = 1;
-    const std::vector<BuffRow> one =
+    const std::vector<ProseRow> one =
         buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
                       BranchOverride::None, 1, false, u);
     CHECK(entries(one).size() == 1);
@@ -638,16 +638,16 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     CHECK(!hasHeading(one, "ARMED"));
     const ItemDef* bw = dishFor(ItemEffect::Kind::BandwidthRegenBonusMin);
     CHECK(bw && std::strcmp(entries(one)[0]->label, bw->displayName) == 0);
-    CHECK(!entries(one)[0]->hasTimer);   // it never lapses, so it carries no countdown
+    CHECK(!entries(one)[0]->suffix[0]);   // it never lapses, so it carries no countdown
 
     // Everything at once: the regen shave, one row per off-level stat point, the XP rate.
     for (int& b : u.statBonus) b = 1;
     u.xpRatePct = 25;
-    const std::vector<BuffRow> all =
+    const std::vector<ProseRow> all =
         buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
                       BranchOverride::None, 1, false, u);
     CHECK(entries(all).size() == static_cast<size_t>(2 + kLevelStatCount));
-    for (const BuffRow& row : all) CHECK(!row.hasTimer);
+    for (const ProseRow& row : all) CHECK(!row.suffix[0]);
     // Each stat point is named by its own dish, in stat order.
     const ItemEffect::Kind kStatKinds[kLevelStatCount] = {
         ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
@@ -916,7 +916,7 @@ void test_favourite_food_is_found_by_feeding_it() {
             if (r.favourite[c]) { ++marked; CHECK(r.cells[c] == fav); }
     CHECK(marked == 1);
     bool listed = false;
-    for (const BuffRow& b : buildBuffRows(g.content(), false, false, false, 0, 1, false,
+    for (const ProseRow& b : buildBuffRows(g.content(), false, false, false, 0, 1, false,
                                           false, 0, BranchOverride::None, 1, false,
                                           g.petUpgrades()))
         if (!b.header && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;

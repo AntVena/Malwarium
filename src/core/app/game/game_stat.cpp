@@ -41,7 +41,7 @@ std::vector<ProseRow> Game::statLoadoutRows() const {
                             pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
 }
 
-std::vector<BuffRow> Game::statBuffRows() const {
+std::vector<ProseRow> Game::statBuffRows() const {
     const uint32_t backupRemainMs =
         backupShieldArmed() ? (backupShieldUntilMs_ - lifetimeUptimeMs()) : 0;
     return buildBuffRows(registry_, mistakeShieldActive_, forceTrojanDivert_,
@@ -67,9 +67,9 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
 
     // The BUFFS count is BUFFS, not its rows: the page's headings are signage and
     // counting them would tell the reader they have two more buffs than they do.
-    const std::vector<BuffRow> buffs = statBuffRows();
+    const std::vector<ProseRow> buffs = statBuffRows();
     int armed = 0;
-    for (const BuffRow& b : buffs)
+    for (const ProseRow& b : buffs)
         if (!b.header) ++armed;
 
     // The two collection scores, counted off the very rows their pages draw so the
@@ -118,7 +118,7 @@ Game::StatScrollSpan Game::statScrollSpan() const {
         return {foodRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
     if (statPage_ == 5) {
-        const std::vector<BuffRow> rows = statBuffRows();
+        const std::vector<ProseRow> rows = statBuffRows();
         return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
     }
     return {0, 0};

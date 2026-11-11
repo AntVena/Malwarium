@@ -134,7 +134,7 @@ void Game::drawGameBrief(Framebuffer& fb) const {
             static_cast<int>(rows.size());
         hint = last ? "B PLAY" : "B NEXT   C SKIP";
     }
-    drawProseRows(fb, rows, gameBriefScroll_, kGameBriefReaderTop, beat_, hint);
+    drawProseRows(fb, {rows, gameBriefScroll_, kGameBriefReaderTop, beat_, hint});
 }
 
 // --- The cabinet list (L2) -------------------------------------------------
