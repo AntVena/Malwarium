@@ -2667,6 +2667,19 @@ private:
     void onCfgList(const ButtonEvent& ev);
     void onCfgGroup(const ButtonEvent& ev);        // DISPLAY / RADIO row lists
     void onCfgDetail(const ButtonEvent& ev);
+    // onCfgDetail's screens. The picker is a template defined beside its only callers in
+    // game_config.cpp.
+    template <class Step, class Apply>
+    void onCfgPicker(const ButtonEvent& ev, Step step, Apply apply);
+    void onCfgTravel(const ButtonEvent& ev);
+    void onCfgFormatSd(const ButtonEvent& ev);
+    void onCfgSysInfo(const ButtonEvent& ev);
+    void onCfgHackerTag(const ButtonEvent& ev);
+    void onCfgUpdate(const ButtonEvent& ev);
+    void onCfgUpdateJob(const ButtonEvent& ev);
+    void onCfgUpdateConfirm(const ButtonEvent& ev);
+    void onCfgUpdateRows(const ButtonEvent& ev);
+    void onCfgPediaQr(const ButtonEvent& ev);
     void enterCfgScreen(CfgScreen target);         // open an L3, seeding its picker
     void leaveCfgScreen();                         // back to the group, else the list
     void drawCfg(Framebuffer& fb) const;          // L3 dispatch for the CFG screens

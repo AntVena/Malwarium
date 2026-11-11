@@ -104,243 +104,109 @@ void Game::onCfgGroup(const ButtonEvent& ev) {
     } else if (ev.button == Button::C) leaveCfgScreen();
 }
 
+// The shape every CFG value picker shares: A steps the focus, B applies it and backs out,
+// C backs out with nothing changed. `apply` returns whether to back out, so a row that
+// refuses (a locked set) or moves on to a screen of its own (the AP's QR) stays put.
+template <class Step, class Apply>
+void Game::onCfgPicker(const ButtonEvent& ev, Step step, Apply apply) {
+    if (ev.button == Button::A) step();
+    else if (ev.button == Button::B) { if (apply()) leaveCfgScreen(); }
+    else if (ev.button == Button::C) leaveCfgScreen();
+}
+
 void Game::onCfgDetail(const ButtonEvent& ev) {
     switch (cfgScreen_) {
         case CfgScreen::Device:
-        case CfgScreen::Radio:
-            onCfgGroup(ev);
-            break;
-        case CfgScreen::Travel:
-            // Once the request is latched every button is inert: the device tier is
-            // already landing a save and powering the panel down, and a press that
-            // half-cancelled that would leave the operator guessing which of the two
-            // states they are in. A ordinarily cycles NO/YES, B commits the focused
-            // one, C backs out to the group with nothing asked for.
-            if (travelSleepRequested_) break;
-            if (ev.button == Button::A) cfgTravelPick_ ^= 1;
-            else if (ev.button == Button::B) {
-                if (cfgTravelPick_ == 1) requestTravelSleep();
-                else leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();
-            dirty_ = true;
-            break;
-        case CfgScreen::FormatSd:
-            // Working: every button is inert, as travel's are once latched. The
-            // device tier is mid-format and nothing pressed here could stop it. A
-            // result (Done/Failed) is read, then any button leaves. On the question,
-            // A cycles NO/YES, B commits the focus, C backs out with nothing asked.
-            // YES is refused while an update job runs: it is writing to this card.
-            if (sdFormatRequested()) break;
-            if (sdFormatState_ != SdFormatState::Idle) {
-                sdFormatState_ = SdFormatState::Idle;
-                leaveCfgScreen();
-            } else if (ev.button == Button::A) {
-                cfgSdFormatPick_ ^= 1;
-            } else if (ev.button == Button::B) {
-                if (cfgSdFormatPick_ == 0) leaveCfgScreen();
-                else if (!updateJobLive()) requestSdFormat();
-            } else if (ev.button == Button::C) {
-                leaveCfgScreen();
-            }
-            dirty_ = true;
-            break;
-        case CfgScreen::SysInfo:
-            // A re-checks the card: ask the device tier to unmount + remount so one
-            // inserted after boot is picked up. The result lands on this screen's own
-            // SD line (+ the idle SD-present icon), which is why the action lives
-            // here. B arms the hidden hold-to-reveal (the timer fires in tick); C
-            // backs to the list.
-            if (ev.button == Button::A) requestSdRecheck();
-            else if (ev.button == Button::B) { bHeld_ = true; bDownMs_ = nowMs_; }
-            else if (ev.button == Button::C) leaveCfgScreen();
-            break;
-        case CfgScreen::HackerTag: {
-            // On-device arcade editor: A cycles the focused cell's char, B
-            // advances the caret (and at the ⏎ confirm cell, saves), C deletes the
-            // previous char (or backs out from the first cell).
-            static const char* kAlphabet =
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-            if (ev.button == Button::A) {
-                if (editCaret_ < kHackerTagMax) {
-                    const char cur = editTag_[editCaret_];
-                    const char* pos = std::strchr(kAlphabet, cur);
-                    int idx = pos ? static_cast<int>(pos - kAlphabet) : -1;
-                    idx = (idx + 1) % static_cast<int>(std::strlen(kAlphabet));
-                    editTag_[editCaret_] = kAlphabet[idx];
-                }
-            } else if (ev.button == Button::B) {
-                if (editCaret_ >= kHackerTagMax) saveHackerTag();  // ⏎ confirm
-                else ++editCaret_;
-            } else if (ev.button == Button::C) {
-                if (editCaret_ == 0) leaveCfgScreen();          // back out
-                else { --editCaret_; editTag_[editCaret_] = '_'; } // delete prev
-            }
-            break;
-        }
-        case CfgScreen::Tips: onTipsList(ev); break;
+        case CfgScreen::Radio:      onCfgGroup(ev); break;
+        case CfgScreen::Travel:     onCfgTravel(ev); break;
+        case CfgScreen::FormatSd:   onCfgFormatSd(ev); break;
+        case CfgScreen::SysInfo:    onCfgSysInfo(ev); break;
+        case CfgScreen::HackerTag:  onCfgHackerTag(ev); break;
+        case CfgScreen::Tips:       onTipsList(ev); break;
         case CfgScreen::UiMode:
-            if (ev.button == Button::A) cfgUiPick_ = (cfgUiPick_ + 1) % 3;
-            else if (ev.button == Button::B) {        // apply + back out
-                setUiMode(static_cast<UiMode>(cfgUiPick_));
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev, [&] { cfgUiPick_ = (cfgUiPick_ + 1) % 3; },
+                        [&] { setUiMode(static_cast<UiMode>(cfgUiPick_)); return true; });
             break;
         case CfgScreen::Brightness:
-            // A cycles the level (wrapping); B applies (setBrightness persists +
-            // marks the frame dirty, so the device tier re-reads brightness() and
-            // drives the backlight); C backs out with no change.
-            if (ev.button == Button::A)
-                cfgBrightPick_ = (cfgBrightPick_ + 1) % kBrightnessLevels;
-            else if (ev.button == Button::B) {        // apply + back out
-                setBrightness(cfgBrightPick_);
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            // setBrightness persists and marks the frame dirty, so the device tier
+            // re-reads brightness() and drives the backlight.
+            onCfgPicker(ev, [&] { cfgBrightPick_ = (cfgBrightPick_ + 1) % kBrightnessLevels; },
+                        [&] { setBrightness(cfgBrightPick_); return true; });
             break;
         case CfgScreen::Sound:
-            if (ev.button == Button::A) cfgSoundPick_ = (cfgSoundPick_ + 1) % kSoundModeCount;
-            else if (ev.button == Button::B) {        // apply + back out
-                setSoundMode(static_cast<SoundMode>(cfgSoundPick_));
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev, [&] { cfgSoundPick_ = (cfgSoundPick_ + 1) % kSoundModeCount; },
+                        [&] { setSoundMode(static_cast<SoundMode>(cfgSoundPick_)); return true; });
             break;
         case CfgScreen::Volume:
-            if (ev.button == Button::A) {
-                cfgVolumePick_ = (cfgVolumePick_ + 1) % kVolumeLevels;
-                previewVolume(cfgVolumePick_);
-            } else if (ev.button == Button::B) {      // apply + back out
-                setVolume(cfgVolumePick_);
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev,
+                        [&] {
+                            cfgVolumePick_ = (cfgVolumePick_ + 1) % kVolumeLevels;
+                            previewVolume(cfgVolumePick_);
+                        },
+                        [&] { setVolume(cfgVolumePick_); return true; });
             break;
         case CfgScreen::Theme:
             // A walks EVERY row, locked ones included. The same rule the BACKGROUND
             // picker follows and for the same reason: the line under the header says
             // where the focused set comes from, so walking the ones you have not got is
-            // how an operator finds out there is anything to go and look for. B applies
-            // the focused one and backs out; on a locked row setThemePick refuses and the
-            // screen simply stays, which is the row's own LOCKED tag answering rather
-            // than a second modal.
+            // how an operator finds out there is anything to go and look for. On a locked
+            // row setThemePick refuses and the screen simply stays, which is the row's own
+            // LOCKED tag answering rather than a second modal.
             //
             // Applying is instant and total (every colour on the next repaint comes
             // from the new set), so the screen the operator lands back on IS the
             // confirmation, and there is nothing for a second yes to describe that they
             // cannot already see.
-            if (ev.button == Button::A)
-                cfgThemePick_ = (cfgThemePick_ + 1) % kThemeCount;
-            else if (ev.button == Button::B) {
-                if (setThemePick(palThemeByName(kThemes[cfgThemePick_].palette)))
-                    leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev, [&] { cfgThemePick_ = (cfgThemePick_ + 1) % kThemeCount; },
+                        [&] {
+                            return setThemePick(palThemeByName(kThemes[cfgThemePick_].palette));
+                        });
             break;
         case CfgScreen::Titles:
-            // A cycles the focus over the selectable choices only: NONE (-1) plus
-            // each UNLOCKED sector Title, skipping locked ones. B equips the focus;
-            // C backs out without changing the equip.
-            if (ev.button == Button::A) cfgTitlePick_ = nextSelectableTitle(cfgTitlePick_);
-            else if (ev.button == Button::B) {        // apply + back out
-                equippedTitle_ = cfgTitlePick_;       // -1 (NONE) or an unlocked sector
-                markSaveDirty();
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            // The focus walks the selectable choices only: NONE (-1) plus each UNLOCKED
+            // sector Title, skipping locked ones.
+            onCfgPicker(ev, [&] { cfgTitlePick_ = nextSelectableTitle(cfgTitlePick_); },
+                        [&] {
+                            equippedTitle_ = cfgTitlePick_;   // -1 (NONE) or an unlocked sector
+                            markSaveDirty();
+                            return true;
+                        });
             break;
         case CfgScreen::Background:
             // A walks every row, locked ones included, because the line under the header
             // names how the focused row is earned. That is how the screen teaches the
-            // economy. B uses the focused row and backs out; on a locked row
-            // setBackgroundPick refuses and the screen simply stays, which is the row's
-            // own LOCKED tag answering rather than a second modal.
-            if (ev.button == Button::A)
-                cfgBgPick_ = (cfgBgPick_ + 1) % (kBackgroundCount + 1);
-            else if (ev.button == Button::B) {
-                const SceneId want = cfgBgPick_ == 0 ? SceneId::None
-                                                     : kBackgrounds[cfgBgPick_ - 1].scene;
-                if (setBackgroundPick(want)) leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            // economy. On a locked row setBackgroundPick refuses and the screen simply
+            // stays, which is the row's own LOCKED tag answering rather than a second modal.
+            onCfgPicker(ev, [&] { cfgBgPick_ = (cfgBgPick_ + 1) % (kBackgroundCount + 1); },
+                        [&] {
+                            return setBackgroundPick(cfgBgPick_ == 0
+                                                         ? SceneId::None
+                                                         : kBackgrounds[cfgBgPick_ - 1].scene);
+                        });
             break;
         case CfgScreen::Audit:
-            // Escalating picker: A cycles OFF -> SCAN -> SCAN+CAP -> OFF; B applies.
-            if (ev.button == Button::A) cfgAuditPick_ = (cfgAuditPick_ + 1) % 3;
-            else if (ev.button == Button::B) {        // apply + back out
-                setAuditMode(static_cast<AuditMode>(cfgAuditPick_));
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            // Escalating picker: OFF -> SCAN -> SCAN+CAP -> OFF.
+            onCfgPicker(ev, [&] { cfgAuditPick_ = (cfgAuditPick_ + 1) % 3; },
+                        [&] { setAuditMode(static_cast<AuditMode>(cfgAuditPick_)); return true; });
             break;
         case CfgScreen::PediaAp:
-            if (ev.button == Button::A) cfgApPick_ ^= 1;             // OFF <-> ON
-            else if (ev.button == Button::B) {
-                setApEnabled(cfgApPick_ != 0);
-                // Turning the AP ON leads straight to the QR to connect (also the
-                // "see the QR" path when it's already on). Turning it OFF has no QR
-                // to show, so it just backs out to the list.
-                if (cfgApPick_ != 0) {
-                    cfgScreen_ = CfgScreen::PediaQr;
-                    pediaQrPage_ = 0;             // start on the join-network QR
-                } else {
-                    leaveCfgScreen();
-                }
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev, [&] { cfgApPick_ ^= 1; },
+                        [&] {
+                            setApEnabled(cfgApPick_ != 0);
+                            // Turning the AP ON leads straight to the QR to connect (also
+                            // the "see the QR" path when it's already on). Turning it OFF
+                            // has no QR to show, so it just backs out to the list.
+                            if (cfgApPick_ == 0) return true;
+                            cfgScreen_ = CfgScreen::PediaQr;
+                            pediaQrPage_ = 0;             // start on the join-network QR
+                            return false;
+                        });
             break;
         case CfgScreen::Link:
-            if (ev.button == Button::A) cfgLinkPick_ ^= 1;           // OFF <-> ON
-            else if (ev.button == Button::B) {
-                setLinkEnabled(cfgLinkPick_ != 0);
-                leaveCfgScreen();
-            } else if (ev.button == Button::C) leaveCfgScreen();  // no change
+            onCfgPicker(ev, [&] { cfgLinkPick_ ^= 1; },
+                        [&] { setLinkEnabled(cfgLinkPick_ != 0); return true; });
             break;
-        case CfgScreen::Update:
-            // Three faces on one screen: the row list, the yes/no confirm an
-            // install row opens, and a job's progress. Leaving does not cancel a
-            // job. The job holds the radio, so a download finishes and its
-            // outcome waits here.
-            if (updateJobLive() || installStatus_.state != InstallState::Idle) {
-                if (ev.button == Button::C) {
-                    // Only a finished job's report is cleared on the way out; a live
-                    // one keeps its progress to come back to.
-                    if (!updateJobLive()) installStatus_ = InstallStatus{};
-                    leaveCfgScreen();
-                }
-                break;
-            }
-            if (updateConfirm_ != UpdateTarget::None) {
-                if (ev.button == Button::A) updateConfirmPick_ ^= 1;      // NO <-> YES
-                else if (ev.button == Button::B) {
-                    // The second yes, and the only path to a write.
-                    if (updateConfirmPick_ == 1) requestUpdateInstall(updateConfirm_);
-                    updateConfirm_ = UpdateTarget::None;
-                    updateConfirmPick_ = 0;
-                } else if (ev.button == Button::C) {
-                    updateConfirm_ = UpdateTarget::None;
-                    updateConfirmPick_ = 0;
-                }
-                dirty_ = true;
-                break;
-            }
-            if (ev.button == Button::A) {
-                updateRow_ = (updateRow_ + 1) % updateCheckRows(updateStatus_);
-                dirty_ = true;
-            } else if (ev.button == Button::B) {
-                switch (updateCheckRowKind(updateStatus_, updateRow_)) {
-                    case UpdateRowKind::Check:
-                        requestUpdateCheck();       // no-ops unless ready
-                        updateRow_ = 0;             // a fresh check invalidates the rows
-                        break;
-                    case UpdateRowKind::Install:
-                        updateConfirm_ = updateCheckRowTarget(updateStatus_, updateRow_);
-                        updateConfirmPick_ = 0;     // ask before anything is written,
-                        dirty_ = true;              // ...starting on NO
-                        break;
-                    case UpdateRowKind::FlashQr:
-                        // Needs no radio and no network: the code is drawn from an
-                        // address this device already holds, so it opens even when a
-                        // check cannot run.
-                        if (updateSourceKnown_) {
-                            cfgScreen_ = CfgScreen::UpdateQr;
-                            dirty_ = true;
-                        }
-                        break;
-                }
-            } else if (ev.button == Button::C) leaveCfgScreen();
-            break;
+        case CfgScreen::Update:     onCfgUpdate(ev); break;
         case CfgScreen::UpdateQr:
             // One page, so A does nothing here. C returns to UPDATES with its cursor
             // still on the row that opened this. The 5s auto-defocus and the screen
@@ -348,18 +214,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             // read by a phone, which takes longer than the usual idle window.
             if (ev.button == Button::C) leaveCfgScreen();
             break;
-        case CfgScreen::PediaQr:
-            // Two QR pages: A cycles join-network <-> 'Pedia-URL; C exits. The 5s
-            // auto-defocus + the device screen-sleep are both suspended here
-            // (qrScreenActive), and resume once C exits: scanning/connecting takes
-            // longer than the usual idle window.
-            if (ev.button == Button::A) {
-                const HomeNetwork home =
-                    netProvisioned_ ? HomeNetwork::Saved : HomeNetwork::Unsaved;
-                pediaQrPage_ = (pediaQrPage_ + 1) % pediaQrPages(home);
-                dirty_ = true;
-            } else if (ev.button == Button::C) leaveCfgScreen();
-            break;
+        case CfgScreen::PediaQr:    onCfgPediaQr(ev); break;
         case CfgScreen::FactoryReset:
             if (ev.button == Button::A) factoryScope_ ^= 1;          // cycle scope
             else if (ev.button == Button::B) { bHeld_ = true; bDownMs_ = nowMs_; }  // arm hold-to-commit
@@ -368,6 +223,142 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
         case CfgScreen::ResetHatch:
             break;  // never an L3 screen: handled inline in onCfgList
     }
+}
+
+// Once the request is latched every button is inert: the device tier is already landing
+// a save and powering the panel down, and a press that half-cancelled that would leave
+// the operator guessing which of the two states they are in. A ordinarily cycles NO/YES,
+// B commits the focused one, C backs out to the group with nothing asked for.
+void Game::onCfgTravel(const ButtonEvent& ev) {
+    if (travelSleepRequested_) return;
+    if (ev.button == Button::A) cfgTravelPick_ ^= 1;
+    else if (ev.button == Button::B) {
+        if (cfgTravelPick_ == 1) requestTravelSleep();
+        else leaveCfgScreen();
+    } else if (ev.button == Button::C) leaveCfgScreen();
+    dirty_ = true;
+}
+
+// Working: every button is inert, as travel's are once latched. The device tier is
+// mid-format and nothing pressed here could stop it. A result (Done/Failed) is read,
+// then any button leaves. On the question, A cycles NO/YES, B commits the focus, C backs
+// out with nothing asked. YES is refused while an update job runs: it is writing to this
+// card.
+void Game::onCfgFormatSd(const ButtonEvent& ev) {
+    if (sdFormatRequested()) return;
+    if (sdFormatState_ != SdFormatState::Idle) {
+        sdFormatState_ = SdFormatState::Idle;
+        leaveCfgScreen();
+    } else if (ev.button == Button::A) {
+        cfgSdFormatPick_ ^= 1;
+    } else if (ev.button == Button::B) {
+        if (cfgSdFormatPick_ == 0) leaveCfgScreen();
+        else if (!updateJobLive()) requestSdFormat();
+    } else if (ev.button == Button::C) {
+        leaveCfgScreen();
+    }
+    dirty_ = true;
+}
+
+// A re-checks the card: ask the device tier to unmount + remount so one inserted after
+// boot is picked up. The result lands on this screen's own SD line (+ the idle SD-present
+// icon), which is why the action lives here. B arms the hidden hold-to-reveal (the timer
+// fires in tick); C backs to the list.
+void Game::onCfgSysInfo(const ButtonEvent& ev) {
+    if (ev.button == Button::A) requestSdRecheck();
+    else if (ev.button == Button::B) { bHeld_ = true; bDownMs_ = nowMs_; }
+    else if (ev.button == Button::C) leaveCfgScreen();
+}
+
+// On-device arcade editor: A cycles the focused cell's char, B advances the caret (and
+// at the confirm cell, saves), C deletes the previous char (or backs out from the first
+// cell).
+void Game::onCfgHackerTag(const ButtonEvent& ev) {
+    static const char* kAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+    if (ev.button == Button::A) {
+        if (editCaret_ < kHackerTagMax) {
+            const char cur = editTag_[editCaret_];
+            const char* pos = std::strchr(kAlphabet, cur);
+            int idx = pos ? static_cast<int>(pos - kAlphabet) : -1;
+            idx = (idx + 1) % static_cast<int>(std::strlen(kAlphabet));
+            editTag_[editCaret_] = kAlphabet[idx];
+        }
+    } else if (ev.button == Button::B) {
+        if (editCaret_ >= kHackerTagMax) saveHackerTag();  // the confirm cell
+        else ++editCaret_;
+    } else if (ev.button == Button::C) {
+        if (editCaret_ == 0) leaveCfgScreen();          // back out
+        else { --editCaret_; editTag_[editCaret_] = '_'; } // delete prev
+    }
+}
+
+// Three faces on one screen: a job's progress, the yes/no confirm an install row opens,
+// and the row list. Leaving does not cancel a job. The job holds the radio, so a download
+// finishes and its outcome waits here.
+void Game::onCfgUpdate(const ButtonEvent& ev) {
+    if (updateJobLive() || installStatus_.state != InstallState::Idle) onCfgUpdateJob(ev);
+    else if (updateConfirm_ != UpdateTarget::None) onCfgUpdateConfirm(ev);
+    else onCfgUpdateRows(ev);
+}
+
+void Game::onCfgUpdateJob(const ButtonEvent& ev) {
+    if (ev.button != Button::C) return;
+    // Only a finished job's report is cleared on the way out; a live one keeps its
+    // progress to come back to.
+    if (!updateJobLive()) installStatus_ = InstallStatus{};
+    leaveCfgScreen();
+}
+
+void Game::onCfgUpdateConfirm(const ButtonEvent& ev) {
+    if (ev.button == Button::A) updateConfirmPick_ ^= 1;      // NO <-> YES
+    else if (ev.button == Button::B) {
+        // The second yes, and the only path to a write.
+        if (updateConfirmPick_ == 1) requestUpdateInstall(updateConfirm_);
+        updateConfirm_ = UpdateTarget::None;
+        updateConfirmPick_ = 0;
+    } else if (ev.button == Button::C) {
+        updateConfirm_ = UpdateTarget::None;
+        updateConfirmPick_ = 0;
+    }
+    dirty_ = true;
+}
+
+void Game::onCfgUpdateRows(const ButtonEvent& ev) {
+    if (ev.button == Button::A) {
+        updateRow_ = (updateRow_ + 1) % updateCheckRows(updateStatus_);
+        dirty_ = true;
+    } else if (ev.button == Button::B) {
+        switch (updateCheckRowKind(updateStatus_, updateRow_)) {
+            case UpdateRowKind::Check:
+                requestUpdateCheck();       // no-ops unless ready
+                updateRow_ = 0;             // a fresh check invalidates the rows
+                break;
+            case UpdateRowKind::Install:
+                updateConfirm_ = updateCheckRowTarget(updateStatus_, updateRow_);
+                updateConfirmPick_ = 0;     // ask before anything is written,
+                dirty_ = true;              // ...starting on NO
+                break;
+            case UpdateRowKind::FlashQr:
+                // Needs no radio and no network: the code is drawn from an address this
+                // device already holds, so it opens even when a check cannot run.
+                if (updateSourceKnown_) {
+                    cfgScreen_ = CfgScreen::UpdateQr;
+                    dirty_ = true;
+                }
+                break;
+        }
+    } else if (ev.button == Button::C) leaveCfgScreen();
+}
+
+// Two QR pages: A cycles join-network <-> 'Pedia-URL; C exits. The 5s auto-defocus + the
+// device screen-sleep are both suspended here (qrScreenActive), and resume once C exits:
+// scanning/connecting takes longer than the usual idle window.
+void Game::onCfgPediaQr(const ButtonEvent& ev) {
+    if (ev.button == Button::A) {
+        const HomeNetwork home = netProvisioned_ ? HomeNetwork::Saved : HomeNetwork::Unsaved;
+        pediaQrPage_ = (pediaQrPage_ + 1) % pediaQrPages(home);
+        dirty_ = true;
+    } else if (ev.button == Button::C) leaveCfgScreen();
 }
 
 void Game::executeFactoryReset() {
