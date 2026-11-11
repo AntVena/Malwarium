@@ -3364,6 +3364,24 @@ private:
     bool tickLifecycle(uint32_t nowMs);      // CSF, evolution, Lockout, the autosave
     bool tickHeldGestures(uint32_t nowMs);   // every hold-B second action, and A/C repeat
     bool tickIdleDefocus(uint32_t nowMs);    // the menu tree collapsing back to Idle
+    // tickHeartbeat's steps, one per thing that rides the beat.
+    void stepRestingMotion(RestingTrick trick);
+    void stepRestingTricks(const CreatureLine* petLine, RestingTrick trick);
+    void stepScreenBeat();
+    void stepCombatBeat();
+    void stepWalkPacer();
+    // tickAnimClocks' cadences. Closed: its screen is not up, and its clock is primed.
+    // Open: the screen is up and the cadence is live, so the frame rate stays high.
+    // Fired: it stepped this tick and the screen needs a repaint.
+    enum class Cadence : uint8_t { Closed, Open, Fired };
+    Cadence tickCombatAnim(uint32_t nowMs);
+    void stepCombatCamo();
+    Cadence tickFxSweep(uint32_t nowMs);
+    Cadence tickCryptogramRepeat(uint32_t nowMs);
+    Cadence tickStackerSlide(uint32_t nowMs);
+    Cadence tickFraggerFall(uint32_t nowMs);
+    Cadence tickIsolationCrawl(uint32_t nowMs);
+    Cadence tickChromaSweep(uint32_t nowMs);
 
     // Lockout lifecycle.
     void fireLockout();

@@ -191,368 +191,406 @@ bool Game::tickModelClocks(uint32_t nowMs) {
 // drift, and the per-Nav modal/process/combat timers. One beat repaints, so this always
 // reports a change when it fires.
 bool Game::tickHeartbeat(uint32_t nowMs) {
-    bool changed = false;
-    if (nowMs - lastBeatMs_ >= static_cast<uint32_t>(kHeartbeatMs)) {
-        lastBeatMs_ = nowMs;
-        beat_++;
-        changed = true;
-        // Resting motion: the pet drifts a little way around the habitat's shelf
-        // anchor, the way its species moves (core/model/idle_wander.h). An EGG moves
-        // the way its row says too, which for almost every egg is Locomotion::Static,
-        // so it does not move: it sits where it was laid, with its incubation readout
-        // drawn directly above it. The exception is an egg genuinely adrift in water,
-        // which says Swim and drifts, and the rule is the row rather than the stage so
-        // a hypothetical egg that flies needs no code here either. An empty save
-        // parks, having no pet at all. A worm's ambient copies walk the same shelf on
-        // the same beat, each off its own stream; the ones past the live count are
-        // parked so a shrinking family (an evolution, a fresh egg) leaves nothing
-        // mid-stride to walk back in.
-        // A pet passing itself off as a prop holds still: a prop that strolls is no
-        // disguise, and nor does an angler with its bait out. One skimming mail goes
-        // where the scrap it is after is.
-        const CreatureLine* petLine =
-            pet_ ? registry_.creatureLine(pet_->line) : nullptr;
-        const RestingTrick trick =
-            petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
-        // The skim and the lure take turns: each runs only while the other rests.
-        const bool skims = trick == RestingTrick::Skim;
-        if (!petLure_.active())
-            petFeeding_.step(skims, petWander_.offsetX(), petWander_.offsetY());
-        if (!petFeeding_.active()) petLure_.step(skims);
-        if (!pet_) {
-            petWander_.park();
-        } else if (const Mail* m = petFeeding_.target()) {
-            petWander_.chase(pet_->locomotion, IdleFeeding::standX(*m),
-                             IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
-        } else if (petDisguise_.stage() == DisguiseStage::Rest && !petLure_.active()) {
-            petWander_.step(pet_->locomotion);
-        }
-        const int companions = idleCompanionCount();
-        for (int i = 0; i < kWormReplicaSlots; ++i) {
-            if (i < companions) companionWander_[i].step(pet_->locomotion);
-            else companionWander_[i].park();
-        }
-        petFork_.step(petReplicates());
-        petRelay_.step(petFork_.stage() == ForkStage::Rest ? companions : 0);
-        // Resting colour: a line that wears borrowed colours drifts into another
-        // family's palette now and then and comes back (core/model/idle_camo.h). An egg
-        // is left out, because the Metamorphic hatch board (game_chroma.cpp) is a
-        // minigame about this effect and the player should first see it there.
-        petDisguise_.step(trick == RestingTrick::Disguise);
-        petHarvest_.step(trick == RestingTrick::Harvest);
-        // A shapeshifter's colour drift, vanish and mimic take turns: each runs only while
-        // the others rest. The creature a mimic wears is resolved as it begins, like the
-        // drift's.
-        const bool shifts = trick == RestingTrick::Shapeshift;
-        const bool drifting = petCamo_.level() > 0;
-        if (!drifting && !petMimic_.active()) petVanish_.step(shifts);
-        if (!drifting && !petVanish_.active()) petMimic_.step(shifts);
-        if (!petMimic_.active()) idleMimicWorn_ = nullptr;
-        else if (!idleMimicWorn_) idleMimicWorn_ = idleCamoSprite(petMimic_.slot());
-        if (!petVanish_.active() && !petMimic_.active())
-            petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
-        // The art is resolved once per drift, on the beat the level leaves zero: which
-        // creature answers for a family is a registry walk, and the level moving is not
-        // a change of who is being sampled.
-        if (petCamo_.level() == 0) idleCamoWorn_ = nullptr;
-        else if (!idleCamoWorn_) idleCamoWorn_ = idleCamoSprite(petCamo_.slot());
-        // Modal / process timers run on the heartbeat (their own lifecycle).
-        if (nav_ == Nav::ModalFeeding) {
-            if (++feedBeat_ >= kFeedBeats) endFeeding();
-        } else if (nav_ == Nav::Process && !processResolved_) {
-            if (++processBeat_ >= kProcessBeats) resolveMaint();
-        } else if (nav_ == Nav::ModalEvolve) {
-            // Cinematic advances on the heartbeat: hold -> flash -> reveal, then
-            // it parks at the reveal and waits for B (completeEvolution).
-            if (evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats) evolveBeat_++;
-        } else if (nav_ == Nav::ModalHatchReveal) {
-            // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds
-            // on the last one, then hatches itself. Nothing to press.
-            const SpriteData* egg = hatchEggSprite();
-            const int last = (egg ? egg->frames : 1) - 1;
-            if (++hatchRevealBeat_ >= last + kHatchRevealHoldBeats) completeHatch();
-        } else if (nav_ == Nav::ModalCSF) {
-            // The crash FX holds a few beats, then parks and waits for B.
-            if (csfBeat_ < kCsfHoldBeats) csfBeat_++;
-        } else if (nav_ == Nav::Combat) {
-            // Autonomous auto-battle: one turn every combatBeatsForTurn()
-            // heartbeats so each exchange is readable, paused while the override
-            // picker is open (the fight waits for the human). A same-actor streak
-            // (a lopsided speed edge, e.g. a Phishing speed siphon) shortens that
-            // wait each consecutive hit, so the extra turns it buys visibly speed
-            // up into a feeding frenzy instead of ticking at one flat cadence. The
-            // A "SKIP" fast-forward steps immediately, bypassing this pace. Once
-            // resolved it parks on the result beat.
-            if (combat_.outcome() == Combat::Outcome::Ongoing &&
-                !combat_.overrideOpen()) {
-                if (++combatTurnBeat_ >= combatBeatsForTurn()) advanceCombatTurn();
-            } else if (combat_.outcome() != Combat::Outcome::Ongoing) {
-                // The result beat's own clock, held back while a dissolve is still
-                // playing over the beaten rival: the verdict banner shares that space
-                // and waits for it (drawCombat), so starting the auto-dismiss underneath
-                // would leave the words a fraction of a second before the screen went.
-                if (!combatDissolveRunning()) ++combatBeat_;
-                // Hands-off auto-explore: a wild or boss fight's result is a REVEAL
-                // with no human to press B, so hold it ~3s then auto-dismiss back to
-                // the habitat (finishCombat advances the streak / cancels on a loss)
-                // or straight into the gauntlet's next round (finishBossRound). Sim
-                // fights stay player-driven, with nothing automatic.
-                if (exploreActive_ &&
-                    (combatCaller_ == CombatCaller::Wild ||
-                     combatCaller_ == CombatCaller::Boss) &&
-                    combatBeat_ >= kExploreRevealHoldBeats) {
-                    finishCombat();
-                }
-            }
-        } else if (nav_ == Nav::Wifi && exploreActive_) {
-            // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a
-            // choice. Hold ~3s so it's readable, then auto-play it (an awakened
-            // guardian enters a fight, which then auto-dismisses; the rest resolve to
-            // the habitat). Any button press restarts the hold (onWifi resets it).
-            if (++exploreEventBeat_ >= kExploreRevealHoldBeats) resolveWifiOutcome();
-        } else if (nav_ == Nav::ShiboleetHail && exploreActive_) {
-            // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH,
-            // not a decision, so hold ~5s and then let the meeting go on to whatever the
-            // fluency roll already decided (openShiboleetWelcome). Any press restarts
-            // the hold, so a player reading the greeting is never hurried past it.
-            if (++exploreEventBeat_ >= kShiboleetHailHoldBeats) openShiboleetWelcome();
-        } else if (nav_ == Nav::ShiboleetVerdict && exploreActive_) {
-            // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and
-            // then played out (finishShiboleet. Its fight, or back to the walk). The
-            // consequence is already paid; this hold only decides how long it is read for.
-            if (++exploreEventBeat_ >= kShiboleetVerdictHoldBeats) finishShiboleet();
-        } else if (nav_ == Nav::Shiboleet && exploreActive_) {
-            // Hands-off decision: a guardian asked a question, and silence past
-            // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
-            // restarts the hold (onShiboleet resets it), so a player who is genuinely
-            // reading is never timed out mid-sentence.
-            if (++exploreEventBeat_ >= kShiboleetReplyHoldBeats)
-                answerShiboleet(/*answered=*/false);
-        } else if ((nav_ == Nav::Shop || nav_ == Nav::ModShop) && exploreActive_) {
-            // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so
-            // hold ~10s to let a watching player act; if no button is pressed by then,
-            // auto-leave and keep exploring. Any press restarts the hold (onShop
-            // resets it), so an engaged player is never rushed.
-            if (++exploreEventBeat_ >= kExploreDecisionHoldBeats) {
-                std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "LEFT THE SHOP");
-                returnToExplore();
-            }
-        } else if (nav_ == Nav::Idle && exploreActive_) {
-            // Explore-mode: while resting on the BARE idle habitat,
-            // the game auto-steps a guaranteed event ~every kWalkAutoStepBeats. No
-            // cap, hands-free. Summoning the carousel or opening a submenu leaves
-            // Idle, so stepping PAUSES; it resumes when the player returns here.
-            // doExploreStep() re-arms the pacer, and if it types a full-screen event
-            // (Encounter/Wifi/Shop/Combat) this branch stops firing until it returns.
-            // PAUSE stepping (mode stays armed) once battle fatigue has
-            // fragmented the pet into the danger band: a defrag drops frag below the
-            // gate and stepping resumes. Manual Network Ping (A+C→A) still forces a step.
-            if (model_.fragmentation() >= kBattleFatigueAutoPauseFrag) {
-                std::snprintf(exploreFlavor_, sizeof(exploreFlavor_),
-                              "TOO FRAGMENTED - DEFRAG");
-            } else if (++exploreStepBeat_ >= kWalkAutoStepBeats) {
-                doExploreStep();
-            }
-        }
+    if (nowMs - lastBeatMs_ < static_cast<uint32_t>(kHeartbeatMs)) return false;
+    lastBeatMs_ = nowMs;
+    beat_++;
+    const CreatureLine* petLine = pet_ ? registry_.creatureLine(pet_->line) : nullptr;
+    const RestingTrick trick =
+        petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
+    stepRestingMotion(trick);
+    stepRestingTricks(petLine, trick);
+    stepScreenBeat();
+    return true;
+}
+
+// Resting motion: the pet drifts a little way around the habitat's shelf anchor, the way
+// its species moves (core/model/idle_wander.h). An EGG moves the way its row says too,
+// which for almost every egg is Locomotion::Static, so it does not move: it sits where it
+// was laid, with its incubation readout drawn directly above it. The exception is an egg
+// genuinely adrift in water, which says Swim and drifts, and the rule is the row rather
+// than the stage so a hypothetical egg that flies needs no code here either. An empty
+// save parks, having no pet at all. A worm's ambient copies walk the same shelf on the
+// same beat, each off its own stream; the ones past the live count are parked so a
+// shrinking family (an evolution, a fresh egg) leaves nothing mid-stride to walk back in.
+// A pet passing itself off as a prop holds still: a prop that strolls is no disguise, and
+// nor does an angler with its bait out. One skimming mail goes where the scrap it is
+// after is.
+void Game::stepRestingMotion(RestingTrick trick) {
+    // The skim and the lure take turns: each runs only while the other rests.
+    const bool skims = trick == RestingTrick::Skim;
+    if (!petLure_.active())
+        petFeeding_.step(skims, petWander_.offsetX(), petWander_.offsetY());
+    if (!petFeeding_.active()) petLure_.step(skims);
+    if (!pet_) {
+        petWander_.park();
+    } else if (const Mail* m = petFeeding_.target()) {
+        petWander_.chase(pet_->locomotion, IdleFeeding::standX(*m),
+                         IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
+    } else if (petDisguise_.stage() == DisguiseStage::Rest && !petLure_.active()) {
+        petWander_.step(pet_->locomotion);
     }
+    const int companions = idleCompanionCount();
+    for (int i = 0; i < kWormReplicaSlots; ++i) {
+        if (i < companions) companionWander_[i].step(pet_->locomotion);
+        else companionWander_[i].park();
+    }
+    petFork_.step(petReplicates());
+    petRelay_.step(petFork_.stage() == ForkStage::Rest ? companions : 0);
+}
+
+// The line's resting trick, and the resting colour. A line that wears borrowed colours
+// drifts into another family's palette now and then and comes back
+// (core/model/idle_camo.h). An egg is left out, because the Metamorphic hatch board
+// (game_chroma.cpp) is a minigame about this effect and the player should first see it
+// there.
+void Game::stepRestingTricks(const CreatureLine* petLine, RestingTrick trick) {
+    petDisguise_.step(trick == RestingTrick::Disguise);
+    petHarvest_.step(trick == RestingTrick::Harvest);
+    // A shapeshifter's colour drift, vanish and mimic take turns: each runs only while
+    // the others rest. The creature a mimic wears is resolved as it begins, like the
+    // drift's.
+    const bool shifts = trick == RestingTrick::Shapeshift;
+    const bool drifting = petCamo_.level() > 0;
+    if (!drifting && !petMimic_.active()) petVanish_.step(shifts);
+    if (!drifting && !petVanish_.active()) petMimic_.step(shifts);
+    if (!petMimic_.active()) idleMimicWorn_ = nullptr;
+    else if (!idleMimicWorn_) idleMimicWorn_ = idleCamoSprite(petMimic_.slot());
+    if (!petVanish_.active() && !petMimic_.active())
+        petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
+    // The art is resolved once per drift, on the beat the level leaves zero: which
+    // creature answers for a family is a registry walk, and the level moving is not a
+    // change of who is being sampled.
+    if (petCamo_.level() == 0) idleCamoWorn_ = nullptr;
+    else if (!idleCamoWorn_) idleCamoWorn_ = idleCamoSprite(petCamo_.slot());
+}
+
+// The timer the screen that is up runs on the heartbeat: a modal's or a process's own
+// lifecycle, a fight's turn pace, or one of the walk's hands-off holds. The walk's holds
+// only run while explore mode is armed; any button press on those screens restarts them.
+void Game::stepScreenBeat() {
+    switch (nav_) {
+    case Nav::ModalFeeding:
+        if (++feedBeat_ >= kFeedBeats) endFeeding();
+        break;
+    case Nav::Process:
+        if (!processResolved_ && ++processBeat_ >= kProcessBeats) resolveMaint();
+        break;
+    case Nav::ModalEvolve:
+        // Cinematic advances on the heartbeat: hold -> flash -> reveal, then it parks at
+        // the reveal and waits for B (completeEvolution).
+        if (evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats) evolveBeat_++;
+        break;
+    case Nav::ModalHatchReveal: {
+        // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
+        // last one, then hatches itself. Nothing to press.
+        const SpriteData* egg = hatchEggSprite();
+        const int last = (egg ? egg->frames : 1) - 1;
+        if (++hatchRevealBeat_ >= last + kHatchRevealHoldBeats) completeHatch();
+        break;
+    }
+    case Nav::ModalCSF:
+        // The crash FX holds a few beats, then parks and waits for B.
+        if (csfBeat_ < kCsfHoldBeats) csfBeat_++;
+        break;
+    case Nav::Combat:
+        stepCombatBeat();
+        break;
+    case Nav::Wifi:
+        // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a choice. Hold ~3s
+        // so it's readable, then auto-play it (an awakened guardian enters a fight, which
+        // then auto-dismisses; the rest resolve to the habitat).
+        if (exploreActive_ && ++exploreEventBeat_ >= kExploreRevealHoldBeats)
+            resolveWifiOutcome();
+        break;
+    case Nav::ShiboleetHail:
+        // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH, not
+        // a decision, so hold ~5s and then let the meeting go on to whatever the fluency
+        // roll already decided (openShiboleetWelcome).
+        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetHailHoldBeats)
+            openShiboleetWelcome();
+        break;
+    case Nav::ShiboleetVerdict:
+        // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and then
+        // played out (finishShiboleet. Its fight, or back to the walk). The consequence is
+        // already paid; this hold only decides how long it is read for.
+        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetVerdictHoldBeats)
+            finishShiboleet();
+        break;
+    case Nav::Shiboleet:
+        // Hands-off decision: a guardian asked a question, and silence past
+        // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
+        // restarts the hold (onShiboleet), so a player who is genuinely reading is never
+        // timed out mid-sentence.
+        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetReplyHoldBeats)
+            answerShiboleet(/*answered=*/false);
+        break;
+    case Nav::Shop:
+    case Nav::ModShop:
+        // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so hold
+        // ~10s to let a watching player act; if no button is pressed by then, auto-leave
+        // and keep exploring.
+        if (exploreActive_ && ++exploreEventBeat_ >= kExploreDecisionHoldBeats) {
+            std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "LEFT THE SHOP");
+            returnToExplore();
+        }
+        break;
+    case Nav::Idle:
+        if (exploreActive_) stepWalkPacer();
+        break;
+    default:
+        break;
+    }
+}
+
+// Autonomous auto-battle: one turn every combatBeatsForTurn() heartbeats so each exchange
+// is readable, paused while the override picker is open (the fight waits for the human).
+// A same-actor streak (a lopsided speed edge, e.g. a Phishing speed siphon) shortens that
+// wait each consecutive hit, so the extra turns it buys visibly speed up into a feeding
+// frenzy instead of ticking at one flat cadence. The A "SKIP" fast-forward steps
+// immediately, bypassing this pace. Once resolved it parks on the result beat.
+void Game::stepCombatBeat() {
+    if (combat_.outcome() == Combat::Outcome::Ongoing) {
+        if (!combat_.overrideOpen() && ++combatTurnBeat_ >= combatBeatsForTurn())
+            advanceCombatTurn();
+        return;
+    }
+    // The result beat's own clock, held back while a dissolve is still playing over the
+    // beaten rival: the verdict banner shares that space and waits for it (drawCombat),
+    // so starting the auto-dismiss underneath would leave the words a fraction of a
+    // second before the screen went.
+    if (!combatDissolveRunning()) ++combatBeat_;
+    // Hands-off auto-explore: a wild or boss fight's result is a REVEAL with no human to
+    // press B, so hold it ~3s then auto-dismiss back to the habitat (finishCombat
+    // advances the streak / cancels on a loss) or straight into the gauntlet's next round
+    // (finishBossRound). Sim fights stay player-driven, with nothing automatic.
+    if (exploreActive_ &&
+        (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss) &&
+        combatBeat_ >= kExploreRevealHoldBeats) {
+        finishCombat();
+    }
+}
+
+// Explore-mode: while resting on the BARE idle habitat, the game auto-steps a guaranteed
+// event ~every kWalkAutoStepBeats. No cap, hands-free. Summoning the carousel or opening
+// a submenu leaves Idle, so stepping PAUSES; it resumes when the player returns here.
+// doExploreStep() re-arms the pacer, and if it types a full-screen event
+// (Encounter/Wifi/Shop/Combat) this stops firing until it returns. Stepping PAUSES (mode
+// stays armed) once battle fatigue has fragmented the pet into the danger band: a defrag
+// drops frag below the gate and stepping resumes. Manual Network Ping (A+C then A) still
+// forces a step.
+void Game::stepWalkPacer() {
+    if (model_.fragmentation() >= kBattleFatigueAutoPauseFrag) {
+        std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "TOO FRAGMENTED - DEFRAG");
+    } else if (++exploreStepBeat_ >= kWalkAutoStepBeats) {
+        doExploreStep();
+    }
+}
+
+// The cadences faster than the heartbeat, each gated on the one screen that needs it and
+// each PRIMED to `nowMs` while that screen is closed, so arriving on one never
+// burst-catches-up: combat sprite motion (and the FX_CAMO it drives), the dissolve sweep,
+// the Decryptogram cursor repeat, and the arcade boards that move on their own clock.
+// Zero cost off those screens.
+bool Game::tickAnimClocks(uint32_t nowMs) {
+    // Evaluated left to right: a braced list fixes the order.
+    const Cadence cadences[] = {
+        tickCombatAnim(nowMs),     tickFxSweep(nowMs),       tickCryptogramRepeat(nowMs),
+        tickStackerSlide(nowMs),   tickFraggerFall(nowMs),   tickIsolationCrawl(nowMs),
+        tickChromaSweep(nowMs),
+    };
+    bool changed = false;
+    // Latched into fastCadenceActive_ for Game::highFrameRate() (device CPU-clock
+    // scaling). Each cadence reports its own gate, so this tracks the real fast-frame set
+    // with no parallel list.
+    bool fast = false;
+    for (Cadence c : cadences) {
+        fast = fast || c != Cadence::Closed;
+        changed = changed || c == Cadence::Fired;
+    }
+    fastCadenceActive_ = fast;
     return changed;
 }
 
-// The four cadences faster than the heartbeat, each gated on the one screen that needs
-// it and each PRIMED to `nowMs` while that screen is closed, so arriving on one never
-// burst-catches-up: combat sprite motion (and the FX_CAMO it drives), the dissolve
-// sweep, the Decryptogram cursor repeat, and the three arcade boards that move on their
-// own clock. Zero cost off those screens.
-bool Game::tickAnimClocks(uint32_t nowMs) {
-    bool changed = false;
-    // Set true by whichever cadence below is live this tick, then latched into
-    // fastCadenceActive_ for Game::highFrameRate() (device CPU-clock scaling). Marked at
-    // each cadence's own gate, so it tracks the real fast-frame set with no parallel list.
-    bool fast = false;
-    // Combat sprite motion ticks on its own faster cadence (kCombatAnimMs) instead of
-    // the shared heartbeat above, so a feeding-frenzy streak's accelerated turn pacing
-    // still shows real sprite motion between repaints rather than a stuck pose. Only
-    // runs while a fight is actually on screen: zero cost otherwise.
-    if (nav_ == Nav::Combat) {
-        fast = true;
-        if (nowMs - lastCombatAnimMs_ >= static_cast<uint32_t>(kCombatAnimMs)) {
-            lastCombatAnimMs_ = nowMs;
-            combatAnimBeat_++;
-            combatHitBeat_++;
-            // A guardian's SWARM is a fighter, so it moves on the clock the fighters move
-            // on rather than on the dissolve's: the stage is an ~8fps screen, and a body
-            // stepping four times faster than the creature beside it would read as two
-            // screens composited together. The mood is a health band
-            // (Game::guardianFlockMood), so the flock visibly comes apart as it loses.
-            if (combat_.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
-            // FX_CAMO. Whose colours the pet is in is read fresh every tick rather than
-            // latched at the swing: a borrowed move is still the pet's last cast while
-            // the rival takes its turn, so the colours hold until the pet itself casts
-            // something else. A beat driving this instead would hand the change to
-            // whichever fighter swung last, and a counter-attack would strip it.
-            //
-            // Both seats are passed, because the question is about the PAIR: which source
-            // a cast names depends on what the fighter opposite is carrying (camoTarget).
-            // Only the target is resolved here. Turning it into tones ranks a sprite's
-            // colours, which the draw does once per repaint.
-            const bool flip = combatLocalIsEnemySide();
-            const Combatant& self = flip ? combat_.enemy() : combat_.player();
-            const Combatant& rival = flip ? combat_.player() : combat_.enemy();
-            const SpriteData* wear =
-                camoSpriteForTarget(camoTarget(self, rival), rival.spriteName,
-                                    self.stage);
-            // Trading one borrowed palette for ANOTHER restarts the scatter with the old
-            // one held behind it (drawCombatScreen passes it as camo.h's `from`), so the
-            // change reads as one disguise dissolving into the next. Gated on the art:
-            // consecutive casts that name the same creature (the fighter opposite, or its
-            // line) keep one disguise, and re-running the dissolve into the same colour
-            // would flicker the pet. Only while it is actually wearing something, too:
-            // from bare there is nothing to dissolve out of and the level simply rises.
-            if (wear && wear != combatCamoWorn_ && combatCamoLevel_ > 0) {
-                combatCamoLeaving_ = combatCamoWorn_;
-                combatCamoLevel_ = 0;
-            }
-            if (wear) combatCamoWorn_ = wear;
-            combatCamoLevel_ = camoAdvance(combatCamoLevel_, wear != nullptr);
-            // The palette being left is only true mid-dissolve. Once the front is past
-            // every pixel, or the pet is returning to its own colours, what the unflipped
-            // pixels wear is the creature itself.
-            if (!wear || combatCamoLevel_ == 255) combatCamoLeaving_ = nullptr;
-            changed = true;
-        }
-    } else {
-        lastCombatAnimMs_ = nowMs;   // stay primed so re-entering combat doesn't burst-catch-up
+// Combat sprite motion ticks on its own faster cadence (kCombatAnimMs) instead of the
+// shared heartbeat, so a feeding-frenzy streak's accelerated turn pacing still shows real
+// sprite motion between repaints rather than a stuck pose.
+Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
+    if (nav_ != Nav::Combat) {
+        lastCombatAnimMs_ = nowMs;
         // Off the fight, off the disguise: every fight opens bare.
         combatCamoLevel_ = 0;
         combatCamoWorn_ = nullptr;
         combatCamoLeaving_ = nullptr;
+        return Cadence::Closed;
     }
+    if (nowMs - lastCombatAnimMs_ < static_cast<uint32_t>(kCombatAnimMs)) return Cadence::Open;
+    lastCombatAnimMs_ = nowMs;
+    combatAnimBeat_++;
+    combatHitBeat_++;
+    // A guardian's SWARM is a fighter, so it moves on the clock the fighters move on
+    // rather than on the dissolve's: the stage is an ~8fps screen, and a body stepping
+    // four times faster than the creature beside it would read as two screens composited
+    // together. The mood is a health band (Game::guardianFlockMood), so the flock visibly
+    // comes apart as it loses.
+    if (combat_.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
+    stepCombatCamo();
+    return Cadence::Fired;
+}
 
-    // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the
-    // only one gated on a specific effect being on screen: it runs for the ~2s a sweep
-    // takes and costs nothing the rest of the time. Three hosts, one counter, only one
-    // dissolve is ever up. Each reset its own start (startFeeding / startWifiEvent /
-    // the fight's own combatBeat_ reset), so this only has to decide when to ADVANCE.
-    //
-    // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
-    // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
-    // 4fps a boid moving a pixel a step reads as a blink rather than as flight. It runs
-    // on the two screens that DRAW the body (game_render.cpp) and skips the riddle board
-    // between them, where only the patience bar moves and a 16fps repaint would be
-    // wasted.
-    const bool swarmLive =
-        nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
+// FX_CAMO. Whose colours the pet is in is read fresh every tick rather than latched at
+// the swing: a borrowed move is still the pet's last cast while the rival takes its turn,
+// so the colours hold until the pet itself casts something else. A beat driving this
+// instead would hand the change to whichever fighter swung last, and a counter-attack
+// would strip it.
+//
+// Both seats are passed, because the question is about the PAIR: which source a cast
+// names depends on what the fighter opposite is carrying (camoTarget). Only the target is
+// resolved here. Turning it into tones ranks a sprite's colours, which the draw does once
+// per repaint.
+void Game::stepCombatCamo() {
+    const bool flip = combatLocalIsEnemySide();
+    const Combatant& self = flip ? combat_.enemy() : combat_.player();
+    const Combatant& rival = flip ? combat_.player() : combat_.enemy();
+    const SpriteData* wear =
+        camoSpriteForTarget(camoTarget(self, rival), rival.spriteName, self.stage);
+    // Trading one borrowed palette for ANOTHER restarts the scatter with the old one held
+    // behind it (drawCombatScreen passes it as camo.h's `from`), so the change reads as
+    // one disguise dissolving into the next. Gated on the art: consecutive casts that name
+    // the same creature (the fighter opposite, or its line) keep one disguise, and
+    // re-running the dissolve into the same colour would flicker the pet. Only while it
+    // is actually wearing something, too: from bare there is nothing to dissolve out of
+    // and the level simply rises.
+    if (wear && wear != combatCamoWorn_ && combatCamoLevel_ > 0) {
+        combatCamoLeaving_ = combatCamoWorn_;
+        combatCamoLevel_ = 0;
+    }
+    if (wear) combatCamoWorn_ = wear;
+    combatCamoLevel_ = camoAdvance(combatCamoLevel_, wear != nullptr);
+    // The palette being left is only true mid-dissolve. Once the front is past every
+    // pixel, or the pet is returning to its own colours, what the unflipped pixels wear
+    // is the creature itself.
+    if (!wear || combatCamoLevel_ == 255) combatCamoLeaving_ = nullptr;
+}
+
+// The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the only one
+// gated on a specific effect being on screen: it runs for the ~2s a sweep takes and costs
+// nothing the rest of the time. Three hosts, one counter, only one dissolve is ever up.
+// Each reset its own start (startFeeding / startWifiEvent / the fight's own combatBeat_
+// reset), so this only has to decide when to ADVANCE.
+//
+// The guardian's SWARM rides the same clock, and is the one thing on it that is not a
+// dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
+// 4fps a boid moving a pixel a step reads as a blink rather than as flight. It runs on
+// the two screens that DRAW the body (game_render.cpp) and skips the riddle board between
+// them, where only the patience bar moves and a 16fps repaint would be wasted.
+Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
+    const bool swarmLive = nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
     const bool fxSweeping =
         nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
         (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
-    if (fxSweeping) {
-        fast = true;
-        if (nowMs - lastFxMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
-            lastFxMs_ = nowMs;
-            fxBeat_++;
-            if (swarmLive) guardianFlock_.step(guardianFlockMood());
-            changed = true;
-        }
-    } else {
-        lastFxMs_ = nowMs;   // primed, so opening a sweep doesn't burst-catch-up
+    if (!fxSweeping) {
+        lastFxMs_ = nowMs;
+        return Cadence::Closed;
     }
+    if (nowMs - lastFxMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
+    lastFxMs_ = nowMs;
+    fxBeat_++;
+    if (swarmLive) guardianFlock_.step(guardianFlockMood());
+    return Cadence::Fired;
+}
 
-    // THE DECRYPTOGRAM's cursor repeats while A or C is held, on its own cadence for the
-    // same reason the two below have one: a board opens with thirty-odd closed cells, and
-    // stepping those on the shared 4fps heartbeat would take ten seconds to lap. Exactly
-    // one of the two held. Both held is the drop chord, which has already fired and must
-    // not move the cursor.
-    if (nav_ == Nav::Cryptogram && cryptogram_.running() && (aHeld_ != cHeld_) &&
-        !gameBriefOpen_) {
-        fast = true;
-        const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
-        if (nowMs - downMs >= kCryptogramRepeatDelayMs &&
-            nowMs - cryptoRepeatLastMs_ >= kCryptogramRepeatMs) {
-            cryptoRepeatLastMs_ = nowMs;
-            if (aHeld_) cryptogram_.cycle();
-            else cryptogram_.cycleBack();
-            changed = true;
-        }
-    } else {
-        cryptoRepeatLastMs_ = nowMs;   // primed, so arriving on the board can't burst
+// THE DECRYPTOGRAM's cursor repeats while A or C is held, on its own cadence for the same
+// reason the boards below have one: a board opens with thirty-odd closed cells, and
+// stepping those on the shared 4fps heartbeat would take ten seconds to lap. Exactly one
+// of the two held. Both held is the drop chord, which has already fired and must not move
+// the cursor.
+Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
+    if (nav_ != Nav::Cryptogram || !cryptogram_.running() || aHeld_ == cHeld_ ||
+        gameBriefOpen_) {
+        cryptoRepeatLastMs_ = nowMs;
+        return Cadence::Closed;
     }
+    const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
+    if (nowMs - downMs < kCryptogramRepeatDelayMs ||
+        nowMs - cryptoRepeatLastMs_ < kCryptogramRepeatMs)
+        return Cadence::Open;
+    cryptoRepeatLastMs_ = nowMs;
+    if (aHeld_) cryptogram_.cycle();
+    else cryptogram_.cycleBack();
+    return Cadence::Fired;
+}
 
-    // The Stacker's run slides on its own faster cadence for the same reason combat's
-    // sprites do: the shared 4fps heartbeat is legible for a progress bar and far too
-    // slow for a timing test. Only runs while the board is up, and only while the run is
-    // still live: a finished board holds still.
-    if (nav_ == Nav::Stacker && !gameBriefOpen_) {
-        fast = true;
-        if (nowMs - lastStackerStepMs_ >=
-            static_cast<uint32_t>(playStepMs(kStackerStepMs))) {
-            lastStackerStepMs_ = nowMs;
-            stepStacker();
-            changed = true;
-        }
-    } else {
-        lastStackerStepMs_ = nowMs;   // primed, so entering the game doesn't burst-catch-up
+// The Stacker's run slides on its own faster cadence for the same reason combat's sprites
+// do: the shared 4fps heartbeat is legible for a progress bar and far too slow for a
+// timing test.
+Game::Cadence Game::tickStackerSlide(uint32_t nowMs) {
+    if (nav_ != Nav::Stacker || gameBriefOpen_) {
+        lastStackerStepMs_ = nowMs;
+        return Cadence::Closed;
     }
+    if (nowMs - lastStackerStepMs_ < static_cast<uint32_t>(playStepMs(kStackerStepMs)))
+        return Cadence::Open;
+    lastStackerStepMs_ = nowMs;
+    stepStacker();
+    return Cadence::Fired;
+}
 
-    // FRAGGER's fall, likewise. The model sets its cadence from the run's score, so
-    // the game speeds up as it is played. The dial is not read here: FRAGGER's
-    // difficulty is its lane count (beginFraggerRun).
-    if (nav_ == Nav::Fragger && !gameBriefOpen_) {
-        fast = true;
-        if (nowMs - lastFraggerStepMs_ >= static_cast<uint32_t>(fragger_.stepMs())) {
-            lastFraggerStepMs_ = nowMs;
-            if (fragger_.running()) {
-                stepFragger();
-                changed = true;
-            }
-        }
-    } else {
+// FRAGGER's fall, likewise. The model sets its cadence from the run's score, so the game
+// speeds up as it is played. The dial is not read here: FRAGGER's difficulty is its lane
+// count (beginFraggerRun). A finished board holds still.
+Game::Cadence Game::tickFraggerFall(uint32_t nowMs) {
+    if (nav_ != Nav::Fragger || gameBriefOpen_) {
         lastFraggerStepMs_ = nowMs;
+        return Cadence::Closed;
     }
+    if (nowMs - lastFraggerStepMs_ < static_cast<uint32_t>(fragger_.stepMs()))
+        return Cadence::Open;
+    lastFraggerStepMs_ = nowMs;
+    if (!fragger_.running()) return Cadence::Open;
+    stepFragger();
+    return Cadence::Fired;
+}
 
-    // The Isolation Protocol's worm moves on its own cadence for the same reason, and
-    // more so: it is the one screen where standing still is never an option, so the beat
-    // it walks to IS the difficulty. Only while the run is live: a crashed or finished
-    // board holds still under the verdict.
-    if (nav_ == Nav::Isolation && !gameBriefOpen_) {
-        fast = true;
-        if (nowMs - lastIsolationStepMs_ >=
-            static_cast<uint32_t>(playStepMs(kIsolationStepMs))) {
-            lastIsolationStepMs_ = nowMs;
-            if (isolation_.running()) {   // a parked board must not replay its verdict
-                const int ate = isolation_.dots();
-                isolation_.step();
-                if (isolation_.clean()) playSound(Sound::Clear);
-                else if (!isolation_.running()) playSound(Sound::Crash);
-                else if (isolation_.dots() > ate) playSound(Sound::Point);
-            }
-            changed = true;
-        }
-    } else {
+// The Isolation Protocol's worm moves on its own cadence for the same reason, and more
+// so: it is the one screen where standing still is never an option, so the beat it walks
+// to IS the difficulty. Only while the run is live: a crashed or finished board holds
+// still under the verdict.
+Game::Cadence Game::tickIsolationCrawl(uint32_t nowMs) {
+    if (nav_ != Nav::Isolation || gameBriefOpen_) {
         lastIsolationStepMs_ = nowMs;
+        return Cadence::Closed;
     }
+    if (nowMs - lastIsolationStepMs_ < static_cast<uint32_t>(playStepMs(kIsolationStepMs)))
+        return Cadence::Open;
+    lastIsolationStepMs_ = nowMs;
+    if (isolation_.running()) {   // a parked board must not replay its verdict
+        const int ate = isolation_.dots();
+        isolation_.step();
+        if (isolation_.clean()) playSound(Sound::Clear);
+        else if (!isolation_.running()) playSound(Sound::Crash);
+        else if (isolation_.dots() > ate) playSound(Sound::Point);
+    }
+    return Cadence::Fired;
+}
 
-    // The CHROMATOPHORE's sweep runs on real time because it measures time: how much of
-    // the window a repaint had left to finish in. It ticks at the dissolve cadence
-    // (kFxAnimMs) for the reason a dissolve does: the scatter crossing the creature is
-    // the readout, and at the 4fps heartbeat a kChromaSettleMs change would land on
-    // four frames total. Deltas, not a fixed step, so the model always sees the time
-    // that actually passed.
-    if (nav_ == Nav::Chroma && !gameBriefOpen_ && chroma_.running()) {
-        fast = true;
-        if (nowMs - lastChromaMs_ >= static_cast<uint32_t>(kFxAnimMs)) {
-            const int passed = chroma_.passes();
-            chroma_.tick(nowMs - lastChromaMs_);
-            if (chroma_.clean()) playSound(Sound::Clear);
-            else if (!chroma_.running()) playSound(Sound::Crash);
-            else if (chroma_.passes() > passed) playSound(Sound::Point);
-            lastChromaMs_ = nowMs;
-            changed = true;
-        }
-    } else {
+// The CHROMATOPHORE's sweep runs on real time because it measures time: how much of the
+// window a repaint had left to finish in. It ticks at the dissolve cadence (kFxAnimMs)
+// for the reason a dissolve does: the scatter crossing the creature is the readout, and
+// at the 4fps heartbeat a kChromaSettleMs change would land on four frames total. Deltas,
+// not a fixed step, so the model always sees the time that actually passed.
+Game::Cadence Game::tickChromaSweep(uint32_t nowMs) {
+    if (nav_ != Nav::Chroma || gameBriefOpen_ || !chroma_.running()) {
         lastChromaMs_ = nowMs;
+        return Cadence::Closed;
     }
-    fastCadenceActive_ = fast;
-    return changed;
+    if (nowMs - lastChromaMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
+    const int passed = chroma_.passes();
+    chroma_.tick(nowMs - lastChromaMs_);
+    if (chroma_.clean()) playSound(Sound::Clear);
+    else if (!chroma_.running()) playSound(Sound::Crash);
+    else if (chroma_.passes() > passed) playSound(Sound::Point);
+    lastChromaMs_ = nowMs;
+    return Cadence::Fired;
 }
 
 // The deadlines that end things: the post-encounter readout timing out, the Critical
