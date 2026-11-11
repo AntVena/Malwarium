@@ -95,11 +95,11 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     lastSeizure_ = {};
 }
 
-void Combat::setLast(const char* name, int dmg, bool byPlayer, bool charge,
+void Combat::setLast(const char* name, int dmg, Side side, bool charge,
                      bool ransomed, bool strike) {
     lastMoveName_ = name;
     lastDamage_ = dmg;
-    lastByPlayer_ = byPlayer;
+    lastByPlayer_ = side == Side::Player;
     lastWasCharge_ = charge;
     lastRansomed_ = ransomed;
     lastWasStrike_ = strike;
@@ -381,16 +381,16 @@ static bool replicates(const Combatant& c) {
 // Those constraints are gates now (test_combat.cpp's hit-pipeline order block), so the
 // prose here says what a phase is FOR and the gate says where it has to sit.
 void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
-                         bool byPlayer, int moveIdx) {
+                         Side side, int moveIdx) {
     target.mirrorFired = false;
     target.poolAbsorbedHit = false;
     // Malbeast In The Middle (crew Exploit): while it holds, every SELF-BUFF the OPPOSITE
-    // side casts is copied onto the holder as it lands. `byPlayer` names who is CASTING
-    // (the Trojan hijack passes the flipped flag), so `mirror` is always the watching side.
+    // side casts is copied onto the holder as it lands. `side` names who is CASTING
+    // (the Trojan hijack passes the opposite side), so `mirror` is always the watching side.
     // Read off whichever side holds it: a tournament opponent arms its own Exploits
     // (Combatant::autoExploit). Self-buffs only: copying a siphon's gain half would refund
     // the holder its own stat rather than copy someone else's advantage.
-    Combatant& mirror = byPlayer ? enemy_ : player_;
+    Combatant& mirror = seat(opposite(side));
     const bool mitmCopy = mirror.crewExploit.holds(CrewExploitKind::MirrorEnemyBuffs);
 
     if (mv->armsRansom && hasLinePassive(actor.linePassives, LinePassive::RansomNote)) {
@@ -399,7 +399,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
         if (moveIsPureRider(*mv)) workUp(actor);
     }
     if (mv->kind != MoveDef::Kind::Attack) {
-        applyDefend(actor, mirror, *mv, mitmCopy, moveIdx, byPlayer);
+        applyDefend(actor, mirror, *mv, mitmCopy, moveIdx, side);
         return;
     }
 
@@ -410,10 +410,10 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     const bool swingingSeized = actor.ransomSeizure.holding() && moveIdx >= 0 &&
                                 moveIdx == actor.ransomSeizure.slot;
 
-    int dmg = swingDamage(actor, *mv, byPlayer, swingingSeized);
+    int dmg = swingDamage(actor, *mv, side, swingingSeized);
     // A replica takes the whole hit and the turn ends there: no mitigation, no riders on
     // the worm. The caster's own payout still stands: it dealt damage, just not to Health.
-    if (replicaAte(actor, target, *mv, dmg, byPlayer)) {
+    if (replicaAte(actor, target, *mv, dmg, side)) {
         payCaster(actor, target, mirror, *mv, mitmCopy, dmg, /*reachedHealth=*/false);
         return;
     }
@@ -444,7 +444,7 @@ void Combat::applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
     applyRetaliation(actor, target, dmg, wallAbsorbed);
     payCaster(actor, target, mirror, *mv, mitmCopy, dealt, /*reachedHealth=*/dmg > 0);
     applyDeathBlast(actor, target);
-    setLast(mv->displayName, dmg, byPlayer, false, ransomed > 0, /*strike=*/true);
+    setLast(mv->displayName, dmg, side, false, ransomed > 0, /*strike=*/true);
     applyOnHitRiders(target, *mv);
 }
 
@@ -507,7 +507,7 @@ void Combat::trackFrenzyStreak(Combatant& actor, const MoveDef& mv) {
 // What this swing is worth BEFORE anything on the far side has a say: the actor's leans,
 // its mods, its banked pools and the fight's opening blow. Nothing here reads the target,
 // which is what makes it the first phase rather than part of mitigation.
-int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
+int Combat::swingDamage(Combatant& actor, const MoveDef& mv, Side side,
                         bool swingingSeized) {
     // Base damage scaled by the actor's branch attack-power lean plus any Lockout-track
     // Power stacked this fight. Meltdown Core (mod) adds a comeback bonus while low.
@@ -541,7 +541,7 @@ int Combat::swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer,
     dmg += wormReplicaDamage(actor);
     // Wild-encounter challenge buff. enemyDamageMultPct is 100 for the player, bosses
     // and Sim dummies, so this is a no-op off the wild path.
-    if (!byPlayer) dmg = dmg * actor.enemyDamageMultPct / 100;
+    if (side == Side::Enemy) dmg = dmg * actor.enemyDamageMultPct / 100;
     // Speed T1 (first strike): the fight's opening blow, multiplied for whoever lands
     // it. Claimed here (before mitigation, before the replica branch), so the full
     // attack is doubled before any wall, and a hit a replica takes still counts as
@@ -560,7 +560,7 @@ return dmg;
 // harder to BE the one hit, not tougher. True when a replica took it and the turn is
 // over.
 bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
-                        bool byPlayer) {
+                        Side side) {
     if (target.wormReplicaCount <= 0) return false;
     // A replica is a BODY: it can stand in front of damage, and there is nothing for it to
     // stand in front of when a cast deals none. A pure rider goes past the swarm to the pet
@@ -582,11 +582,11 @@ bool Combat::replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, 
     if (r.health <= 0) {   // packed: the last replica fills the freed slot
         // Recorded before the pack erases it, so the screen can show the kill
         // (WormKill).
-        lastWormKill_ = {/*happened=*/true, /*onPlayer=*/!byPlayer, r.defender};
+        lastWormKill_ = {/*happened=*/true, /*onPlayer=*/side == Side::Enemy, r.defender};
         target.wormReplicas[victim] = target.wormReplicas[target.wormReplicaCount - 1];
         target.wormReplicas[--target.wormReplicaCount] = WormReplica{};
     }
-    setLast(mv.displayName, dealt, byPlayer, /*charge=*/false,
+    setLast(mv.displayName, dealt, side, /*charge=*/false,
             /*ransomed=*/false, /*strike=*/true);
     return true;
 }
@@ -820,7 +820,7 @@ void Combat::applyOnHitRiders(Combatant& target, const MoveDef& mv) {
 // MITM mirror and the slot a seizure would claim, which is why it is one call up there
 // rather than an `else` wrapped round three hundred lines.
 void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
-                         bool mitmCopy, int moveIdx, bool byPlayer) {
+                         bool mitmCopy, int moveIdx, Side side) {
     // Defend: brace against the next hit, scaled by the caster's Defense stat
     // (defenseMultPct), symmetric to Power→attack. An Obfuscation row
     // (MoveDef::shieldPool) pools additively into shieldHp instead: a second health
@@ -890,7 +890,7 @@ void Combat::applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv,
         }
         actor.trojanTraps[actor.trojanTrapCount++] = &mv;
     }
-    setLast(mv.displayName, 0, byPlayer, false);
+    setLast(mv.displayName, 0, side, false);
 }
 
 // Everything the TARGET deals back for having been hit, in the order a fighter holding all of
@@ -1180,20 +1180,20 @@ int Combat::execOverrideChance(const Combatant& trojan) const {
 // One fighter's turn, in the order the phases are gated on (test_pipeline_* in
 // test_combat.cpp): the turn-start ticks, the stun, the move pick, a hijack, a wind-up,
 // the cast, and a FAILOVER repeat. Each phase that can end the turn says so.
-void Combat::resolveTurn(Combatant& actor, Combatant& target, bool byPlayer) {
-    if (payTurnStartDebts(actor, byPlayer)) return;
+void Combat::resolveTurn(Combatant& actor, Combatant& target, Side side) {
+    if (payTurnStartDebts(actor, side)) return;
     healAtTurnStart(actor);
-    if (settleRansom(actor, byPlayer)) return;
-    if (spendStun(actor, byPlayer)) return;
-    const TurnCast cast = pickCast(actor, byPlayer);
-    if (hijackCast(actor, target, cast, byPlayer)) return;
-    if (windUpChannel(actor, cast, byPlayer)) return;
+    if (settleRansom(actor, side)) return;
+    if (spendStun(actor, side)) return;
+    const TurnCast cast = pickCast(actor, side);
+    if (hijackCast(actor, target, cast, side)) return;
+    if (windUpChannel(actor, cast, side)) return;
     absorbCast(actor, cast);
-    landCast(actor, target, cast, byPlayer);
-    repeatOnFailover(actor, target, cast, byPlayer);
+    landCast(actor, target, cast, side);
+    repeatOnFailover(actor, target, cast, side);
 }
 
-bool Combat::payTurnStartDebts(Combatant& actor, bool byPlayer) {
+bool Combat::payTurnStartDebts(Combatant& actor, Side side) {
     // Load Balancer (mod): the deferred half of an earlier big hit comes due at the start of
     // the victim's turn, before anything else, so a fatal debt ends the turn without the
     // actor getting to act; checkOutcome() after step() then reads the KO.
@@ -1202,7 +1202,7 @@ bool Combat::payTurnStartDebts(Combatant& actor, bool byPlayer) {
         lb->pending = 0;
         actor.health -= due;
         if (actor.health <= 0) {                          // the debt came due, fatally
-            setLast("OVERLOAD", due, byPlayer, /*charge=*/false);
+            setLast("OVERLOAD", due, side, /*charge=*/false);
             return true;
         }
     }
@@ -1215,7 +1215,7 @@ bool Combat::payTurnStartDebts(Combatant& actor, bool byPlayer) {
         actor.dotTurnsLeft--;
         actor.health -= actor.dotPerTurn;
         if (actor.health <= 0) {
-            setLast("CORRUPTED", actor.dotPerTurn, byPlayer, /*charge=*/false);
+            setLast("CORRUPTED", actor.dotPerTurn, side, /*charge=*/false);
             return true;
         }
     }
@@ -1247,7 +1247,7 @@ void Combat::healAtTurnStart(Combatant& actor) {
     }
 }
 
-bool Combat::settleRansom(Combatant& actor, bool byPlayer) {
+bool Combat::settleRansom(Combatant& actor, Side side) {
     // Ransom Note, the WINDOW half. Rolled per TURN rather than per incoming hit, so a
     // linked duel stays in step: the window is fixed by the seed before the turn plays out
     // and can't depend on how the opponent's speed deals actions inside it. An armed window
@@ -1268,19 +1268,19 @@ bool Combat::settleRansom(Combatant& actor, bool byPlayer) {
             const int due = actor.ransomPool;
             actor.ransomPool = 0;
             actor.health -= due;
-            setLast("RANSOM DUE", due, byPlayer, /*charge=*/false);
+            setLast("RANSOM DUE", due, side, /*charge=*/false);
             return true;
         }
     }
     return false;
 }
 
-bool Combat::spendStun(Combatant& actor, bool byPlayer) {
+bool Combat::spendStun(Combatant& actor, Side side) {
     // STUN: a landed hit's lockTurns rider freezes `actor` for a few of its own turns.
     // A pure skip, no delayed fire.
     if (actor.lockedTurnsLeft > 0) {
         actor.lockedTurnsLeft--;
-        setLast("STUN LOCK", 0, byPlayer, /*charge=*/true);
+        setLast("STUN LOCK", 0, side, /*charge=*/true);
         lastWasStunned_ = true;
         return true;
     }
@@ -1294,9 +1294,9 @@ bool Combat::spendStun(Combatant& actor, bool byPlayer) {
     return false;
 }
 
-Combat::TurnCast Combat::pickCast(Combatant& actor, bool byPlayer) {
+Combat::TurnCast Combat::pickCast(Combatant& actor, Side side) {
     TurnCast cast;
-    if (byPlayer && forcedMoveIdx_ >= 0 &&
+    if (side == Side::Player && forcedMoveIdx_ >= 0 &&
         forcedMoveIdx_ < static_cast<int>(actor.moves.size())) {
         // A committed override ignores the lean and the no-consecutive rule, so it can
         // chain the same move twice, and it resets any in-progress channel.
@@ -1339,7 +1339,7 @@ Combat::TurnCast Combat::pickCast(Combatant& actor, bool byPlayer) {
 }
 
 bool Combat::hijackCast(Combatant& actor, Combatant& target, const TurnCast& cast,
-                        bool byPlayer) {
+                        Side side) {
     // Execution-Override (Trojan passive): `target`, the side NOT acting, hijacks the
     // actor's freshly-picked move and runs it back at them, consuming their turn.
     // execOverrideChance is 0 for a non-Trojan target, so rng() is only drawn when the
@@ -1347,24 +1347,24 @@ bool Combat::hijackCast(Combatant& actor, Combatant& target, const TurnCast& cas
     if (actor.channelMoveIdx >= 0) return false;
     const int hijackPct = execOverrideChance(target);
     if (hijackPct <= 0 || static_cast<int>(rng() % 100) >= hijackPct) return false;
-    applyEffect(target, actor, cast.mv, !byPlayer, /*moveIdx=*/-1);
+    applyEffect(target, actor, cast.mv, opposite(side), /*moveIdx=*/-1);
     actor.lastMoveIdx = cast.moveIdx;             // the actor still "used" it
     return true;
 }
 
-bool Combat::windUpChannel(Combatant& actor, const TurnCast& cast, bool byPlayer) {
+bool Combat::windUpChannel(Combatant& actor, const TurnCast& cast, Side side) {
     if (cast.mv->channelTurns <= 1) return false;
     if (actor.channelMoveIdx != cast.moveIdx) {   // begin the wind-up
         actor.channelMoveIdx = cast.moveIdx;
         actor.channelLeft = cast.mv->channelTurns - 1;
         actor.lastMoveIdx = cast.moveIdx;
-        setLast(cast.mv->displayName, 0, byPlayer, /*charge=*/true);
+        setLast(cast.mv->displayName, 0, side, /*charge=*/true);
         return true;
     }
     if (actor.channelLeft > 0) {                  // still charging
         actor.channelLeft--;
         if (actor.channelLeft > 0) {
-            setLast(cast.mv->displayName, 0, byPlayer, /*charge=*/true);
+            setLast(cast.mv->displayName, 0, side, /*charge=*/true);
             return true;
         }
     }
@@ -1394,15 +1394,15 @@ void Combat::absorbCast(Combatant& actor, const TurnCast& cast) {
 }
 
 void Combat::landCast(Combatant& actor, Combatant& target, const TurnCast& cast,
-                      bool byPlayer) {
+                      Side side) {
     const MoveDef* mv = cast.mv;
-    applyEffect(actor, target, mv, byPlayer, cast.moveIdx);
+    applyEffect(actor, target, mv, side, cast.moveIdx);
     // Tempo refund (MoveDef::speedRefundPct): part of an action's gauge back to whoever
     // just spent a turn bracing. Here and not in applyEffect, because the refund is the
     // turn, which belongs to `actor`: an Execution-Override hijack calls applyEffect
     // directly and must not pay tempo to a fighter that spent nothing.
     if (mv->kind == MoveDef::Kind::Defend && mv->speedRefundPct > 0) {
-        float& gauge = byPlayer ? plGauge_ : enGauge_;
+        float& gauge = side == Side::Player ? plGauge_ : enGauge_;
         gauge += kSpeedActionThreshold * mv->speedRefundPct / 100.0f;
         // A refund shortens the wait, never grants an action outright.
         if (gauge >= kSpeedActionThreshold) gauge = kSpeedActionThreshold - 1;
@@ -1423,7 +1423,7 @@ void Combat::landCast(Combatant& actor, Combatant& target, const TurnCast& cast,
 }
 
 void Combat::repeatOnFailover(Combatant& actor, Combatant& target, const TurnCast& cast,
-                              bool byPlayer) {
+                              Side side) {
     // FAILOVER (crew Exploit): one charge runs THIS cast a second time against the same
     // target, on the spot. This wraps the cast, not the turn, so the turn-start ticks,
     // the tempo refund and the chain hand-off run once and holding a spare never costs
@@ -1436,7 +1436,7 @@ void Combat::repeatOnFailover(Combatant& actor, Combatant& target, const TurnCas
         outcome_ != Outcome::Ongoing)
         return;
     --actor.crewExploit.charges;
-    applyEffect(actor, target, cast.mv, byPlayer, cast.moveIdx);
+    applyEffect(actor, target, cast.mv, side, cast.moveIdx);
     if (cast.mv->replicaSpawnPct > 0 && replicates(actor)) rollWormSpawn(actor, cast.mv);
 }
 
@@ -1516,25 +1516,22 @@ bool Combat::step() {
     // this hit's own place in the run.
     if (streakCount_ > 0 && playerTurn_ == streakIsPlayer_) ++streakCount_;
     else { streakCount_ = 1; streakIsPlayer_ = playerTurn_; }
-    const bool playerActed = playerTurn_;
+    const Side side = playerTurn_ ? Side::Player : Side::Enemy;
     // An Exploit a side fires itself SPENDS the turn (Combatant::autoExploit), so it is
     // asked before the move roll and short-circuits it. The clock and scheduler below
     // still run: a turn spent arming is still a turn taken.
-    Combatant& actor = playerTurn_ ? player_ : enemy_;
-    if (!fireAutoExploit(actor, playerTurn_)) {
-        if (playerTurn_) resolveTurn(player_, enemy_, /*byPlayer=*/true);
-        else resolveTurn(enemy_, player_, /*byPlayer=*/false);
-    }
+    Combatant& actor = seat(side);
+    if (!fireAutoExploit(actor, side)) resolveTurn(actor, seat(opposite(side)), side);
     ++turnsTaken_;
     checkOutcome();
     // Both sides are offered the turn; each kind takes only the clock it answers to.
-    tickCrewExploitClock(playerActed ? player_ : enemy_, /*actedThisTurn=*/true);
-    tickCrewExploitClock(playerActed ? enemy_ : player_, /*actedThisTurn=*/false);
+    tickCrewExploitClock(seat(side), /*actedThisTurn=*/true);
+    tickCrewExploitClock(seat(opposite(side)), /*actedThisTurn=*/false);
     playerTurn_ = pickNextActor();   // schedule the next actor by relative speed
     return true;
 }
 
-bool Combat::fireAutoExploit(Combatant& actor, bool byPlayer) {
+bool Combat::fireAutoExploit(Combatant& actor, Side side) {
     if (actor.autoExploitFired || !actor.autoExploit.label ||
         actor.autoExploit.kind == CrewExploitKind::None)
         return false;
@@ -1544,10 +1541,10 @@ bool Combat::fireAutoExploit(Combatant& actor, bool byPlayer) {
         const int maxH = c.maxHealth > 0 ? c.maxHealth : 1;
         return c.health * 100 <= actor.autoExploitAtHealthPct * maxH;
     };
-    const Combatant& opponent = byPlayer ? enemy_ : player_;
+    const Combatant& opponent = seat(opposite(side));
     if (!reached(actor) && !(actor.autoExploitEitherSide && reached(opponent))) return false;
     actor.autoExploitFired = true;
-    armCrewExploit(actor, actor.autoExploit, byPlayer);
+    armCrewExploit(actor, actor.autoExploit, side);
     return true;
 }
 
@@ -1800,9 +1797,9 @@ bool Combat::leaveOverrideBand() {
     return true;
 }
 
-void Combat::applyCrewExploit() { armCrewExploit(player_, crewExploit_, /*byPlayer=*/true); }
+void Combat::applyCrewExploit() { armCrewExploit(player_, crewExploit_, Side::Player); }
 
-void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer) {
+void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, Side side) {
     // Each kind meters itself out of the shared CrewExploitState counters; re-arming
     // the same kind stacks. Adding an ability is a case here plus its crewExploitTag().
     // A fighter carries one Exploit, so `kind` is only ever set to what it already is.
@@ -1834,10 +1831,10 @@ void Combat::armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer
             return;
     }
     // "<TAG> xN" popup: bare "<TAG>" for a sticky kind. dmg=0 keeps the red damage number
-    // hidden; the readout rides in the move-name slot. `byPlayer` puts it over the right
+    // hidden; the readout rides in the move-name slot. `side` puts it over the right
     // fighter, so an opponent's Exploit announces itself on its own row.
     crewExploitLabel(itemPopup_, sizeof(itemPopup_), x.kind, x.magnitude);
-    setLast(itemPopup_, 0, byPlayer, /*charge=*/false);
+    setLast(itemPopup_, 0, side, /*charge=*/false);
 }
 
 void Combat::commitOverride() {
@@ -1877,7 +1874,7 @@ void Combat::commitOverride() {
         // "PATCH +N" popup. dmg=0 keeps the red damage number hidden. lastMoveName_ borrows
         // this member buffer, which is why it lives on the Combat object.
         std::snprintf(itemPopup_, sizeof(itemPopup_), "PATCH +%d", it.heal);
-        setLast(itemPopup_, 0, /*byPlayer=*/true, /*charge=*/false);
+        setLast(itemPopup_, 0, Side::Player, /*charge=*/false);
     }
     if (overrideUsesLeft_ > 0) --overrideUsesLeft_;   // spent (a pip greys out)
     overrideOpen_ = false;
@@ -1901,7 +1898,7 @@ void Combat::flee() {
     if (static_cast<int>(rng() % 100) < kFleeChancePct) {
         outcome_ = Outcome::Fled;
     } else {
-        resolveTurn(enemy_, player_, /*byPlayer=*/false);
+        resolveTurn(enemy_, player_, Side::Enemy);
         checkOutcome();
         // The free turn is a turn; both clocks read it as step() would.
         tickCrewExploitClock(enemy_, /*actedThisTurn=*/true);

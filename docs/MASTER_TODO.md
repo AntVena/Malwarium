@@ -272,13 +272,6 @@ ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), 
 **The function rule.** A long function that is an if-chain rather than a switch over a
 vocabulary gets split into its named steps.
 
-- **`Combat`'s turn functions take `bool byPlayer`.** `resolveTurn`, its phases,
-  `applyEffect`, `setLast` and `armCrewExploit` all pass which seat is acting as a bool, which
-  the *Few arguments, and no flags* rule forbids. One `Side` enum read at every call site makes
-  `!byPlayer` (the hijack's reversal) a named flip. | `core/model/combat.h`, `combat.cpp`
-  and the combat tests. | M | The native suite's combat pipeline tests pin
-  the phase order and the RNG draw order. |
-
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
   and the min-1 floor are one negotiation over a single value; splitting them further means
   handing the pieces a struct of each other. If it grows again the split to reach for is

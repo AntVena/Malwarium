@@ -601,6 +601,11 @@ struct Seizure {
     bool onPlayer = false;   // whose pet seized (Combat's slot, not the seat)
 };
 
+// Which of Combat's two slots is acting. The slot, not the seat: in PvP each device is
+// the Player of its own Combat.
+enum class Side : uint8_t { Player, Enemy };
+constexpr Side opposite(Side s) { return s == Side::Player ? Side::Enemy : Side::Player; }
+
 class Combat {
 public:
     enum class Stakes { Live, Safe };       // live = +Frag on loss; safe = nothing
@@ -766,10 +771,12 @@ public:
     int enemyChannelLeft() const { return enemy_.channelLeft; }
 
 private:
+    Combatant& seat(Side s) { return s == Side::Player ? player_ : enemy_; }
+    const Combatant& seat(Side s) const { return s == Side::Player ? player_ : enemy_; }
     uint32_t rng();
     int chooseMove(Combatant& self);                 // autonomous roll (lean + no-repeat)
     int pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat);  // -1 = none
-    void resolveTurn(Combatant& actor, Combatant& target, bool byPlayer);
+    void resolveTurn(Combatant& actor, Combatant& target, Side side);
     // resolveTurn's phases. A `bool` return means the phase used up the turn.
     struct TurnCast {
         int moveIdx = -1;                    // the equipped slot this turn casts from
@@ -777,28 +784,28 @@ private:
         const MoveDef* chained = nullptr;    // the follow-up step, when this turn is one
         const WildPool* wild = nullptr;      // the wildcard pool `mv` was rolled from
     };
-    bool payTurnStartDebts(Combatant& actor, bool byPlayer);
+    bool payTurnStartDebts(Combatant& actor, Side side);
     void healAtTurnStart(Combatant& actor);
-    bool settleRansom(Combatant& actor, bool byPlayer);
-    bool spendStun(Combatant& actor, bool byPlayer);
-    TurnCast pickCast(Combatant& actor, bool byPlayer);
-    bool hijackCast(Combatant& actor, Combatant& target, const TurnCast& cast, bool byPlayer);
-    bool windUpChannel(Combatant& actor, const TurnCast& cast, bool byPlayer);
+    bool settleRansom(Combatant& actor, Side side);
+    bool spendStun(Combatant& actor, Side side);
+    TurnCast pickCast(Combatant& actor, Side side);
+    bool hijackCast(Combatant& actor, Combatant& target, const TurnCast& cast, Side side);
+    bool windUpChannel(Combatant& actor, const TurnCast& cast, Side side);
     void absorbCast(Combatant& actor, const TurnCast& cast);
-    void landCast(Combatant& actor, Combatant& target, const TurnCast& cast, bool byPlayer);
+    void landCast(Combatant& actor, Combatant& target, const TurnCast& cast, Side side);
     void repeatOnFailover(Combatant& actor, Combatant& target, const TurnCast& cast,
-                          bool byPlayer);
+                          Side side);
     // The single applier for every CrewExploitKind: a new crew ability is one enum
     // entry (content_crews.h) plus one case here. `self` is the side arming it, so the
-    // human's commit and an AI firing its own run the identical code; `byPlayer` only
+    // human's commit and an AI firing its own run the identical code; `side` only
     // captions the popup.
-    void armCrewExploit(Combatant& self, const CrewExploit& x, bool byPlayer);
+    void armCrewExploit(Combatant& self, const CrewExploit& x, Side side);
     // The commit-path wrapper: arm the picker's crew row onto the player.
     void applyCrewExploit();
     // `actor` is about to take its turn, if it carries an unfired autoExploit whose
     // Health trigger has come, arm it and report true, which SPENDS the turn. False
     // (the common case) leaves the turn to a move.
-    bool fireAutoExploit(Combatant& actor, bool byPlayer);
+    bool fireAutoExploit(Combatant& actor, Side side);
     // Offer `c` the turn that just resolved, so a turn-metered crew Exploit can burn one
     // off its clock; `actedThisTurn` says which side of the turn `c` was on, the two kinds
     // counting opposite clocks. Called for both fighters and always AFTER checkOutcome, so
@@ -807,7 +814,7 @@ private:
     // `moveIdx` is the actor's slot index for `mv` (into actor.moves): needed by
     // Prowlware to rank that move's Attack power (attackPowerRank).
     void applyEffect(Combatant& actor, Combatant& target, const MoveDef* mv,
-                     bool byPlayer, int moveIdx);
+                     Side side, int moveIdx);
     // The pure rider rule, which the LOADOUT screen relies on.
     //
     //   A cast that deals no damage lands its effect on the enemy pet directly, whatever
@@ -838,11 +845,11 @@ private:
     void trackFrenzyStreak(Combatant& actor, const MoveDef& mv);
     // What the swing is worth before the target has any say: leans, mods, banked pools and
     // the fight's opening blow. Reads the actor only, which is what makes it phase one.
-    int swingDamage(Combatant& actor, const MoveDef& mv, bool byPlayer, bool swingingSeized);
+    int swingDamage(Combatant& actor, const MoveDef& mv, Side side, bool swingingSeized);
     // A worm replica intercepting the hit and eating it whole: a defender biting back at
     // `actor` as it does. True = the turn ended here.
     bool replicaAte(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
-                    bool byPlayer);
+                    Side side);
     // The wall: negate, pierce ladder, brace, the Defence curve and the min-1 floor.
     // `wallAbsorbed` comes back out because Defence T3 pays out of the wall's share alone.
     int mitigate(Combatant& actor, Combatant& target, const MoveDef& mv, int dmg,
@@ -865,7 +872,7 @@ private:
     // The Defend branch, whole: brace or pool or worm body, the Cipher track, the seizure
     // it arms and the Trojan trap it stacks.
     void applyDefend(Combatant& actor, Combatant& mirror, const MoveDef& mv, bool mitmCopy,
-                     int moveIdx, bool byPlayer);
+                     int moveIdx, Side side);
 
     // The steal track's whole family, called by payCaster once a swing dealt damage to
     // anything. Each helper handles one effect family. The mitigation chain above the call
@@ -922,7 +929,7 @@ private:
     // Reads live speed, so a mid-fight speed change (siphon, buff) shifts the tempo at
     // once. Deterministic (no rng), so replays stay reproducible.
     bool pickNextActor();
-    void setLast(const char* name, int dmg, bool byPlayer, bool charge,
+    void setLast(const char* name, int dmg, Side side, bool charge,
                  bool ransomed = false, bool strike = false);
     void checkOutcome();
 
