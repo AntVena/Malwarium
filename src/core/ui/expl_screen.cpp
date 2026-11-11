@@ -467,250 +467,295 @@ void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
+// Breadcrumb header: the nav level, spelled out on the band's title. ONE crumb, always:
+// the open category, or, once inside an area, that area's NAME (which is why the row
+// beneath it is the area's boss and not its name again). The font has no '>', so the row
+// cursor's triangle is the separator.
+void drawExplCrumb(Framebuffer& fb, const ExplListView& v) {
+    drawHeaderBand(fb, "EXPL");
+    const char* crumb = v.navArea >= 0 ? explSectorName(v.navArea) : explCatName(v.cat);
+    drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, kTitleY, palColor(Pal::INK_DIM));
+    drawText(fb, kMargin + textWidth("EXPL") + 16, kTitleY, crumb, palColor(Pal::ACCENT));
+}
+
+// The rows of the open level and the slice of them on screen.
+struct ExplWindow {
+    int rowOf[kLevelRowsMax];   // ladder row for each of the level's slots
+    int rows = 0;
+    int top = 0;                // first slot drawn
+    int visible = 0;            // slots drawn
+    int pitch = kRowMax;
+    bool twoLine = true;        // the pitch leaves room for the detail line
+};
+
+// THE LEVEL IS THE LIST (explRowInLevel): ENDLESS draws its two zones, STORY one row per
+// AREA, and drilling into an area swaps the whole screen for that area's own block. So
+// the drawn list is a handful of rows instead of the full ladder, and the pitch can
+// afford the second line each row carries.
+ExplWindow explWindow(const ExplListView& v) {
+    ExplWindow w;
+    int cursorSlot = 0;
+    for (int r = 0, total = explRowCount(); r < total && w.rows < kLevelRowsMax; ++r) {
+        if (!explRowInLevel(r, v.cat, v.navArea)) continue;
+        if (r == v.cursor) cursorSlot = w.rows;
+        w.rowOf[w.rows++] = r;
+    }
+    // ADAPTIVE pitch (the same idiom as drawShop's window): the level's rows share the
+    // band, capped at the two-line height and floored at one line. Adding areas shrinks
+    // the top level's rows before it ever has to scroll, so the ladder can roughly double
+    // before a player has to move a viewport to see all of it.
+    const int band = kListBottom - kListTop;
+    w.pitch = std::max(kRowMin, std::min(kRowMax, w.rows > 0 ? band / w.rows : kRowMax));
+    w.visible = std::max(1, std::min(w.rows, band / w.pitch));
+    w.twoLine = w.pitch >= 26;
+    // The window keeps a row of LOOKAHEAD on each side of the cursor where there is one:
+    // a cursor pinned to the last visible line hides whatever it is about to step onto,
+    // which is the whole reason to scroll rather than page.
+    if (w.rows > w.visible) {
+        w.top = cursorSlot - w.visible + 2;
+        if (cursorSlot - 1 < w.top) w.top = cursorSlot - 1;
+        w.top = std::max(0, std::min(w.top, w.rows - w.visible));
+    }
+    return w;
+}
+
+// One zone row being drawn: which row, where, and what it says. A row kind's filler
+// draws its own glyph column (and anything else it owns) and writes the words; the
+// shared title line is drawn after, by drawZoneRowText.
+struct ZoneRow {
+    const ContentRegistry& reg;
+    const ExplListView& v;
+    int row;
+    int areaIdx;
+    int sub;
+    ExplRowState st;
+    int y;
+    int pitch;
+    bool twoLine;
+    int detailY;
+    bool focused;
+    Rgb565 zoneInk;             // a focused zone title's pulse
+    int learn;                  // the "?n" lead: moves this zone can still teach the pet
+    // Written by the filler.
+    const char* title = "";
+    Rgb565 titleInk;
+    char detail[40] = {};
+    RowTag tag;
+};
+
+// The two ENDLESS zones: the mid-game Dive, and the terminal Crawl under it. No divider
+// between them: they close the category together, so they read as one pair rather than
+// as two things fenced off from each other. The detail line is the pet's own record, the
+// only progress an endless zone has.
+struct EndlessZone {
+    ExplRowState locked;
+    const char* icon;
+    const char* name;
+    const char* bestFmt;
+    const char* noRun;
+};
+
+void fillEndlessRow(Framebuffer& fb, ZoneRow& r, const EndlessZone& z, int best) {
+    const bool locked = (r.st == z.locked);
+    if (!locked)
+        drawIconSlot(fb, r.reg.sprite(z.icon), kIconX, r.y + (r.pitch - kRowIcon) / 2,
+                     palColor(Pal::INK));
+    r.title = locked ? "??????" : z.name;
+    r.titleInk = locked ? palColor(Pal::INK_DIM) : r.zoneInk;
+    if (locked) return;
+    if (best > 0) std::snprintf(r.detail, sizeof(r.detail), z.bestFmt, best);
+    else std::snprintf(r.detail, sizeof(r.detail), "%s", z.noRun);
+}
+
+// TOP level: the area itself, as a zone to pick. Its tier is the ladder depth (areaTier)
+// (how hard, before you commit) over its clear count.
+void fillAreaRow(Framebuffer& fb, ZoneRow& r) {
+    const bool locked = (r.st == ExplRowState::AreaLocked);
+    if (!locked)
+        drawIconSlot(fb, sectorIcon(r.reg, r.areaIdx), kIconX, r.y + (r.pitch - kRowIcon) / 2,
+                     palColor(Pal::INK));
+    r.title = locked ? "??????" : explSectorName(r.areaIdx);
+    r.titleInk = locked ? palColor(Pal::INK_DIM) : r.zoneInk;
+    if (locked || !r.twoLine) return;
+    // Drawn here, beside the pips, so the detail line is left empty for drawZoneRowText.
+    drawDifficulty(fb, kTextX, r.detailY, explSectorTier(r.areaIdx), kExplSectors);
+    char cleared[40];
+    std::snprintf(cleared, sizeof(cleared), "%d/%d CLEARED",
+                  clearedSubCount(r.v.subCleared, r.areaIdx), kExplSubAreas);
+    drawText(fb, kTextX + kExplSectors * 8 + 8, r.detailY, cleared, palColor(Pal::INK_DIM));
+}
+
+// INSIDE an area: the header row IS the area gauntlet. The breadcrumb already names the
+// area, so this row spends its title on the BOSS: named only once it's reachable, so the
+// marquee fight stays a reveal rather than a spoiler on a row you can't press yet.
+void fillGauntletRow(Framebuffer& fb, ZoneRow& r) {
+    drawIconSlot(fb, sectorIcon(r.reg, r.areaIdx), kIconX, r.y + (r.pitch - kRowIcon) / 2,
+                 palColor(Pal::INK));
+    const bool named = (r.st == ExplRowState::AreaBossReady || r.st == ExplRowState::AreaCleared);
+    r.title = named ? area(r.areaIdx).areaBossName : "AREA GAUNTLET";
+    r.titleInk = named ? r.zoneInk : palColor(Pal::INK_DIM);
+    fb.fillRect(8, r.y + r.pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
+    if (r.st == ExplRowState::AreaCleared) {
+        // A cleared gauntlet stays RE-RUNNABLE, the same way a cleared sub-area stays
+        // re-farmable, so inside the area this row is an action, not a verdict, and its
+        // tag has to say so. At the TOP level the identical state means "this zone is
+        // done" and keeps rowTag's plain CLEARED.
+        r.tag = {"> RERUN", palColor(Pal::ACCENT)};
+        std::snprintf(r.detail, sizeof(r.detail), "TITLE: %s", sectorTitle(r.areaIdx));
+    } else if (r.st == ExplRowState::AreaBossReady) {
+        std::snprintf(r.detail, sizeof(r.detail), "ALL %d BOSSES, NO HEAL", kExplSubAreas);
+    } else {
+        std::snprintf(r.detail, sizeof(r.detail), "%d/%d SUB-AREAS CLEARED",
+                      clearedSubCount(r.v.subCleared, r.areaIdx), kExplSubAreas);
+    }
+}
+
+// SUB-AREA: the number takes the glyph column, and the detail line answers "what do I
+// get / how far off is it" for whichever state the row is in.
+void fillSubAreaRow(Framebuffer& fb, ZoneRow& r) {
+    const bool locked = (r.st == ExplRowState::SubLocked);
+    char num[4];
+    std::snprintf(num, sizeof(num), "%d", r.sub + 1);
+    drawText(fb, kIconX + (kRowIcon - textWidth(num)) / 2, r.y + (r.pitch - kFontH) / 2, num,
+             palColor(Pal::INK_DIM));
+    r.title = locked ? "??????" : explSubAreaName(r.areaIdx, r.sub);
+    r.titleInk = locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
+    switch (r.st) {
+        case ExplRowState::SubBossReady:
+            std::snprintf(r.detail, sizeof(r.detail), "BOSS: %s",
+                          area(r.areaIdx).subBosses[r.sub].name);
+            break;
+        case ExplRowState::SubExploring:
+            std::snprintf(r.detail, sizeof(r.detail), "WINS %d/%d", r.v.streakWins,
+                          r.v.winsToBoss);
+            break;
+        case ExplRowState::SubCleared:
+            std::snprintf(r.detail, sizeof(r.detail), "RE-ARM TO FARM");
+            break;
+        case ExplRowState::SubOpen:
+            std::snprintf(r.detail, sizeof(r.detail), "BOSS AT %d WINS", r.v.winsToBoss);
+            break;
+        default: break;                      // locked: the tag says it all
+    }
+}
+
+// The title line every row kind shares, and the detail line under it.
+//
+// The "?n" LEAD sits between the name and the state tag: how many moves this zone can
+// still teach THIS pet. N things down there it has not seen. The QUESTION MARK is the
+// list's own word for that, since "??????" is what it draws a zone the player has not
+// reached as; a plus would read as a modifier, which is what a signed number means
+// everywhere else on the device. CALM is only emphasis: it says the unknown is a prize
+// rather than a lock, the way the combat KIT page's prize gutter does (RivalPrizes,
+// core/ui/combat_screen.h). The number is the non-colour channel: a zone with nothing
+// left draws no lead at all, which is the state a player is scanning for.
+//
+// Title and detail are both held to the room their row actually leaves: the tag's and the
+// lead's widths both vary by state, so the budget is computed here rather than assumed.
+// The focused row scrolls what doesn't fit; the rest clip (widgets.h).
+void drawZoneRowText(Framebuffer& fb, const ZoneRow& r) {
+    const int titleY = r.twoLine ? r.y + 5 : r.y + (r.pitch - kFontH) / 2;
+    char lead[8];
+    lead[0] = '\0';
+    if (r.learn) std::snprintf(lead, sizeof(lead), "?%d", r.learn);
+    const int tagW = r.tag.text[0] ? textWidth(r.tag.text) + kMargin : 0;
+    const int leadW = lead[0] ? textWidth(lead) + kMargin : 0;
+    drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - leadW - kTextX, r.title,
+                    r.titleInk, r.v.beat, scrollWhen(r.focused));
+    if (lead[0])
+        drawText(fb, kActiveW - kMargin - tagW - textWidth(lead), titleY, lead,
+                 palColor(Pal::CALM));
+    if (r.tag.text[0])
+        drawText(fb, kActiveW - kMargin - textWidth(r.tag.text), titleY, r.tag.text, r.tag.col);
+    if (r.twoLine && r.detail[0])
+        drawTextMarquee(fb, kTextX, r.detailY, kActiveW - kMargin - kTextX, r.detail,
+                        palColor(Pal::INK_DIM), r.v.beat, scrollWhen(r.focused));
+}
+
+void drawZoneRow(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v,
+                 const ExplWindow& w, int slot) {
+    const int row = w.rowOf[slot];
+    const ExplRowState st = explRowState(row, v.areaCleared, v.subCleared,
+                                         v.subBossUnlocked, v.exploringSector,
+                                         v.exploringSub, v.tourneyRunning);
+    const bool focused = (row == v.cursor);
+    const int y = kListTop + (slot - w.top) * w.pitch;
+    if (focused) {
+        fb.fillRect(2, y, kActiveW - 4, w.pitch - 2, palColor(Pal::TRACK));
+        drawRowCursor(fb, 3, y + (w.pitch - 7) / 2, palColor(Pal::ACCENT));
+    }
+    // A focused ZONE title (an area, the area-boss row, the DeepWeb row) pulses
+    // INK <-> ACCENT at the ~1Hz care-pip cadence. A zone title reads like a heading, not
+    // a thing you can press: most of the ladder is "??????" early on, so the band alone
+    // doesn't say "this one is armed and B enters it". The steady cursor caret is still
+    // the non-colour channel; the pulse only draws the eye to it.
+    const Rgb565 zoneInk =
+        (focused && ((v.beat / 2) & 1) == 0) ? palColor(Pal::ACCENT) : palColor(Pal::INK);
+    // What this zone can still teach comes FIRST: it decides the lead and whether a beaten
+    // row has earned the word DONE, so the tag cannot be settled without it.
+    const int learn = rowMovesToLearn(row, st, v);
+    ZoneRow r{reg, v, row, explRowArea(row), explRowSub(row), st, y, w.pitch, w.twoLine,
+              y + 18, focused, zoneInk, learn};
+    r.titleInk = palColor(Pal::INK);
+    r.tag = rowTag(st, learn);
+    if (explRowIsDeepWeb(row)) {
+        fillEndlessRow(fb, r, {ExplRowState::DeepWebLocked, kDeepWebIcon, kDeepWebName,
+                               "ENDLESS - BEST DEPTH %d", "ENDLESS - NO DIVE YET"},
+                       v.bestDeepWebDepth);
+    } else if (explRowIsDarkWeb(row)) {
+        fillEndlessRow(fb, r, {ExplRowState::DarkWebLocked, kDarkWebIcon, kDarkWebName,
+                               "NOTHING IS NAMED - BEST %d", "NOTHING DOWN HERE IS NAMED"},
+                       v.bestDarkWebDepth);
+    } else if (r.sub < 0 && v.navArea < 0) {
+        fillAreaRow(fb, r);
+    } else if (r.sub < 0) {
+        fillGauntletRow(fb, r);
+    } else {
+        fillSubAreaRow(fb, r);
+    }
+    drawZoneRowText(fb, r);
+}
+
+// The footer names what B does HERE. A category's own level: A cycles the zones; B
+// DIVEs/CRAWLs an endless row or ENTERs an area's sub-areas, and C pops back to the
+// activity picker. INSIDE an area: B acts on the focused sub/boss and C pops back out to
+// the area list.
+const char* explListHint(const ExplListView& v) {
+    const ExplRowState focus =
+        (v.cursor >= 0 && v.cursor < explRowCount())
+            ? explRowState(v.cursor, v.areaCleared, v.subCleared, v.subBossUnlocked,
+                           v.exploringSector, v.exploringSub)
+            : ExplRowState::AreaProgress;
+    if (v.navArea < 0) {
+        if (focus == ExplRowState::DeepWebOpen || focus == ExplRowState::DeepWebDiving)
+            return "A ZONE  B DIVE  C BACK";
+        if (focus == ExplRowState::DarkWebOpen || focus == ExplRowState::DarkWebCrawling)
+            return "A ZONE  B CRAWL  C BACK";
+        return "A ZONE  B ENTER  C BACK";
+    }
+    switch (focus) {
+        case ExplRowState::SubBossReady:  return "A NEXT  B FIGHT BOSS  C BACK";
+        case ExplRowState::AreaBossReady: return "A NEXT  B AREA BOSS  C BACK";
+        case ExplRowState::AreaCleared:   return "A NEXT  B RERUN BOSS  C BACK";
+        case ExplRowState::SubCleared:    return "A NEXT  B FARM  C BACK";
+        default:                          return "A NEXT  B EXPLORE  C BACK";
+    }
+}
+
 }  // namespace
 
 void drawExplList(Framebuffer& fb, const ContentRegistry& reg, const ExplListView& v) {
     // No category open -> EXPL's own top level is the ACTIVITY PICKER, and `v.cursor`
     // indexes its four rows rather than the ladder's row space.
     if (v.cat == ExplCat::None) { drawExplCategories(fb, reg, v); return; }
-
-    // Breadcrumb header: the nav level, spelled out on the band's title. ONE crumb,
-    // always: the open category, or, once inside an area, that area's NAME (which is
-    // why the row beneath it is the area's boss and not its name again). The font has
-    // no '>', so the row cursor's triangle is the separator.
-    drawHeaderBand(fb, "EXPL");
-    const char* crumb = v.navArea >= 0 ? explSectorName(v.navArea) : explCatName(v.cat);
-    drawRowCursor(fb, kMargin + textWidth("EXPL") + 6, kTitleY, palColor(Pal::INK_DIM));
-    drawText(fb, kMargin + textWidth("EXPL") + 16, kTitleY, crumb, palColor(Pal::ACCENT));
-
-    // THE LEVEL IS THE LIST (explRowInLevel): ENDLESS draws its two zones, STORY one row
-    // per AREA, and drilling into an area swaps the whole screen for that area's own
-    // block. So the drawn list is a handful of rows instead of the full ladder, and the
-    // pitch below can afford the second line each row carries.
-    int rowOf[kLevelRowsMax];
-    int rows = 0, cursorSlot = 0;
-    for (int r = 0, total = explRowCount(); r < total && rows < kLevelRowsMax; ++r) {
-        if (!explRowInLevel(r, v.cat, v.navArea)) continue;
-        if (r == v.cursor) cursorSlot = rows;
-        rowOf[rows++] = r;
-    }
-
-    // ADAPTIVE pitch (the same idiom as drawShop's window): the level's rows share the
-    // band, capped at the two-line height and floored at one line. Adding areas shrinks
-    // the top level's rows before it ever has to scroll, so the ladder can roughly
-    // double before a player has to move a viewport to see all of it.
-    const int band = kListBottom - kListTop;
-    const int pitch = std::max(kRowMin, std::min(kRowMax, rows > 0 ? band / rows : kRowMax));
-    const int visible = std::max(1, std::min(rows, band / pitch));
-    const bool twoLine = pitch >= 26;
-    // The window keeps a row of LOOKAHEAD on each side of the cursor where there is one:
-    // a cursor pinned to the last visible line hides whatever it is about to step onto,
-    // which is the whole reason to scroll rather than page.
-    int top = 0;
-    if (rows > visible) {
-        top = cursorSlot - visible + 2;
-        if (cursorSlot - 1 < top) top = cursorSlot - 1;
-        top = std::max(0, std::min(top, rows - visible));
-    }
-
-    for (int slot = top; slot < top + visible && slot < rows; ++slot) {
-        const int row = rowOf[slot];
-        const int areaIdx = explRowArea(row);
-        const int sub = explRowSub(row);
-        const ExplRowState st = explRowState(row, v.areaCleared, v.subCleared,
-                                             v.subBossUnlocked, v.exploringSector,
-                                             v.exploringSub, v.tourneyRunning);
-        const bool focused = (row == v.cursor);
-        const int y = kListTop + (slot - top) * pitch;
-        // One line centres in the row; two put the title above the detail line.
-        const int titleY = twoLine ? y + 5 : y + (pitch - kFontH) / 2;
-        const int detailY = y + 18;
-        if (focused) {
-            fb.fillRect(2, y, kActiveW - 4, pitch - 2, palColor(Pal::TRACK));
-            drawRowCursor(fb, 3, y + (pitch - 7) / 2, palColor(Pal::ACCENT));
-        }
-        // A focused ZONE title (an area, the area-boss row, the DeepWeb row) pulses
-        // INK <-> ACCENT at the ~1Hz care-pip cadence. A zone title reads like a heading,
-        // not a thing you can press: most of the ladder is "??????" early on, so the
-        // band alone doesn't say "this one is armed and B enters it". The steady cursor
-        // caret is still the non-colour channel; the pulse only draws the eye to it.
-        const Rgb565 zoneInk = (focused && ((v.beat / 2) & 1) == 0)
-                                   ? palColor(Pal::ACCENT) : palColor(Pal::INK);
-        char detail[40];
-        detail[0] = '\0';
-        const char* title = "";
-        Rgb565 titleInk = palColor(Pal::INK);
-        // What this zone can still teach comes FIRST: it decides the lead drawn below and
-        // whether a beaten row has earned the word DONE, so the tag cannot be settled
-        // without it.
-        const int learn = rowMovesToLearn(row, st, v);
-        RowTag tag = rowTag(st, learn);
-
-        if (explRowIsDeepWeb(row)) {
-            // The mid-game farm, and the first of ENDLESS's two rows. No divider under
-            // it: the CRAWL below closes the category, so the two read as one pair
-            // rather than as two things fenced off from each other. Its detail line is
-            // the pet's own record, the only progress an endless zone has.
-            const bool locked = (st == ExplRowState::DeepWebLocked);
-            if (!locked)
-                drawIconSlot(fb, reg.sprite(kDeepWebIcon), kIconX,
-                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : kDeepWebName;
-            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
-            if (!locked && v.bestDeepWebDepth > 0)
-                std::snprintf(detail, sizeof(detail), "ENDLESS - BEST DEPTH %d",
-                              v.bestDeepWebDepth);
-            else if (!locked)
-                std::snprintf(detail, sizeof(detail), "ENDLESS - NO DIVE YET");
-        } else if (explRowIsDarkWeb(row)) {
-            // The TERMINAL zone, under the dive: the second and last of ENDLESS's rows,
-            // so nothing is fenced off from anything and it needs no divider of its own.
-            const bool locked = (st == ExplRowState::DarkWebLocked);
-            if (!locked)
-                drawIconSlot(fb, reg.sprite(kDarkWebIcon), kIconX,
-                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : kDarkWebName;
-            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
-            if (!locked && v.bestDarkWebDepth > 0)
-                std::snprintf(detail, sizeof(detail), "NOTHING IS NAMED - BEST %d",
-                              v.bestDarkWebDepth);
-            else if (!locked)
-                std::snprintf(detail, sizeof(detail), "NOTHING DOWN HERE IS NAMED");
-        } else if (sub < 0 && v.navArea < 0) {
-            // TOP level: the area itself, as a zone to pick. Its tier is the ladder depth
-            // (areaTier) (how hard, before you commit) over its clear count.
-            const bool locked = (st == ExplRowState::AreaLocked);
-            if (!locked)
-                drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX,
-                             y + (pitch - kRowIcon) / 2, palColor(Pal::INK));
-            title = locked ? "??????" : explSectorName(areaIdx);
-            titleInk = locked ? palColor(Pal::INK_DIM) : zoneInk;
-            if (!locked && twoLine) {
-                drawDifficulty(fb, kTextX, detailY, explSectorTier(areaIdx), kExplSectors);
-                std::snprintf(detail, sizeof(detail), "%d/%d CLEARED",
-                              clearedSubCount(v.subCleared, areaIdx), kExplSubAreas);
-                drawText(fb, kTextX + kExplSectors * 8 + 8, detailY, detail,
-                         palColor(Pal::INK_DIM));
-                detail[0] = '\0';                    // already drawn, beside the pips
-            }
-        } else if (sub < 0) {
-            // INSIDE an area: the header row IS the area gauntlet. The breadcrumb already
-            // names the area, so this row spends its title on the BOSS: named only once
-            // it's reachable, so the marquee fight stays a reveal rather than a spoiler
-            // on a row you can't press yet.
-            drawIconSlot(fb, sectorIcon(reg, areaIdx), kIconX, y + (pitch - kRowIcon) / 2,
-                         palColor(Pal::INK));
-            const bool named = (st == ExplRowState::AreaBossReady ||
-                                st == ExplRowState::AreaCleared);
-            title = named ? area(areaIdx).areaBossName : "AREA GAUNTLET";
-            titleInk = named ? zoneInk : palColor(Pal::INK_DIM);
-            fb.fillRect(8, y + pitch - 1, kActiveW - 16, 1, palColor(Pal::TRACK));
-            if (st == ExplRowState::AreaCleared) {
-                // A cleared gauntlet stays RE-RUNNABLE, the same way a cleared sub-area
-                // stays re-farmable, so inside the area this row is an action, not a
-                // verdict, and its tag has to say so. At the TOP level the identical
-                // state means "this zone is done" and keeps rowTag's plain CLEARED.
-                tag = {"> RERUN", palColor(Pal::ACCENT)};
-                std::snprintf(detail, sizeof(detail), "TITLE: %s", sectorTitle(areaIdx));
-            }
-            else if (st == ExplRowState::AreaBossReady)
-                std::snprintf(detail, sizeof(detail), "ALL %d BOSSES, NO HEAL",
-                              kExplSubAreas);
-            else
-                std::snprintf(detail, sizeof(detail), "%d/%d SUB-AREAS CLEARED",
-                              clearedSubCount(v.subCleared, areaIdx), kExplSubAreas);
-        } else {
-            // SUB-AREA: the number takes the glyph column, and the detail line answers
-            // "what do I get / how far off is it" for whichever state the row is in.
-            const bool locked = (st == ExplRowState::SubLocked);
-            char num[4];
-            std::snprintf(num, sizeof(num), "%d", sub + 1);
-            drawText(fb, kIconX + (kRowIcon - textWidth(num)) / 2,
-                     y + (pitch - kFontH) / 2, num, palColor(Pal::INK_DIM));
-            title = locked ? "??????" : explSubAreaName(areaIdx, sub);
-            titleInk = locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
-            switch (st) {
-                case ExplRowState::SubBossReady:
-                    std::snprintf(detail, sizeof(detail), "BOSS: %s",
-                                  area(areaIdx).subBosses[sub].name);
-                    break;
-                case ExplRowState::SubExploring:
-                    std::snprintf(detail, sizeof(detail), "WINS %d/%d", v.streakWins,
-                                  v.winsToBoss);
-                    break;
-                case ExplRowState::SubCleared:
-                    std::snprintf(detail, sizeof(detail), "RE-ARM TO FARM");
-                    break;
-                case ExplRowState::SubOpen:
-                    std::snprintf(detail, sizeof(detail), "BOSS AT %d WINS",
-                                  v.winsToBoss);
-                    break;
-                default: break;                      // locked: the tag says it all
-            }
-        }
-
-        // The "?n" LEAD, between the name and the state tag: how many moves this zone can
-        // still teach THIS pet. N things down there it has not seen. The QUESTION MARK
-        // is the list's own word for that, since "??????" is what it draws a zone the
-        // player has not reached as; a plus would read as a modifier, which is what a
-        // signed number means everywhere else on the device. CALM is only emphasis: it
-        // says the unknown is a prize rather than a lock, the way the combat KIT page's
-        // prize gutter does (RivalPrizes, core/ui/combat_screen.h). The number is the
-        // non-colour channel: a zone with nothing left draws no lead at all, which is
-        // the state a player is scanning for.
-        char lead[8];
-        lead[0] = '\0';
-        if (learn) std::snprintf(lead, sizeof(lead), "?%d", learn);
-
-        // Title and detail are both held to the room their row actually leaves: the
-        // tag's and the lead's widths both vary by state, so the budget is computed here
-        // rather than assumed. The focused row scrolls what doesn't fit; the rest clip
-        // (widgets.h).
-        const int tagW = tag.text[0] ? textWidth(tag.text) + kMargin : 0;
-        const int leadW = lead[0] ? textWidth(lead) + kMargin : 0;
-        drawTextMarquee(fb, kTextX, titleY, kActiveW - kMargin - tagW - leadW - kTextX,
-                        title, titleInk, v.beat, scrollWhen(focused));
-        if (lead[0])
-            drawText(fb, kActiveW - kMargin - tagW - textWidth(lead), titleY, lead,
-                     palColor(Pal::CALM));
-        if (tag.text[0])
-            drawText(fb, kActiveW - kMargin - textWidth(tag.text), titleY, tag.text,
-                     tag.col);
-        if (twoLine && detail[0])
-            drawTextMarquee(fb, kTextX, detailY, kActiveW - kMargin - kTextX, detail,
-                            palColor(Pal::INK_DIM), v.beat, scrollWhen(focused));
-    }
-
+    drawExplCrumb(fb, v);
+    const ExplWindow w = explWindow(v);
+    for (int slot = w.top; slot < w.top + w.visible && slot < w.rows; ++slot)
+        drawZoneRow(fb, reg, v, w, slot);
     // The non-colour "there's more" channel. Only a ladder long enough to outgrow even
     // the packed pitch ever draws it.
-    drawScrollbar(fb, kListTop, visible * pitch, rows, top, visible);
-
-    // Footer hint: context-sensitive B on the focused row (grayscale-safe).
-    const ExplRowState focus =
-        (v.cursor >= 0 && v.cursor < explRowCount())
-            ? explRowState(v.cursor, v.areaCleared, v.subCleared, v.subBossUnlocked,
-                           v.exploringSector, v.exploringSub)
-            : ExplRowState::AreaProgress;
-    // The footer names what B does HERE. A category's own level: A cycles the zones; B
-    // DIVEs/CRAWLs an endless row or ENTERs an area's sub-areas, and C pops back to the
-    // activity picker. INSIDE an area: B acts on the focused sub/boss and C pops back
-    // out to the area list.
-    const char* hint;
-    if (v.navArea < 0) {
-        if (focus == ExplRowState::DeepWebOpen || focus == ExplRowState::DeepWebDiving)
-            hint = "A ZONE  B DIVE  C BACK";
-        else if (focus == ExplRowState::DarkWebOpen || focus == ExplRowState::DarkWebCrawling)
-            hint = "A ZONE  B CRAWL  C BACK";
-        else
-            hint = "A ZONE  B ENTER  C BACK";
-    } else {
-        hint = "A NEXT  B EXPLORE  C BACK";
-        if (focus == ExplRowState::SubBossReady) hint = "A NEXT  B FIGHT BOSS  C BACK";
-        else if (focus == ExplRowState::AreaBossReady) hint = "A NEXT  B AREA BOSS  C BACK";
-        else if (focus == ExplRowState::AreaCleared) hint = "A NEXT  B RERUN BOSS  C BACK";
-        else if (focus == ExplRowState::SubCleared) hint = "A NEXT  B FARM  C BACK";
-    }
-    drawHintBand(fb, hint);
+    drawScrollbar(fb, kListTop, w.visible * w.pitch, w.rows, w.top, w.visible);
+    drawHintBand(fb, explListHint(v));
 }
 
 // Explore-mode idle badge: a thin status line under the top track. A
