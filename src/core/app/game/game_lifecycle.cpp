@@ -369,7 +369,7 @@ uint32_t Game::evolveDwellMs() const {
     // stage cannot change while it is in.
     //
     // Nothing overflows: the longest stage is 32h, the deepest soak x8 (the Hypervisor-USB,
-    // content_items.cpp), doubled on a Script = x16, so 512h in ms. Under half of what a
+    // items/rare_kit.h), doubled on a Script = x16, so 512h in ms. Under half of what a
     // u32 holds.
     const Stage stage = pet_ ? pet_->stage : Stage::Process;
     const uint32_t base = evolveStageDurationMs(stage);

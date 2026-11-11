@@ -7,6 +7,7 @@ a magnitude only one entity reads lives **on that row**, never in `tunables.h`.
 | Before you… | Read |
 |---|---|
 | Add or edit any row, or add a new content type | [CONTENT_STANDARD.md](CONTENT_STANDARD.md): effect vocabulary · magnitudes-on-the-row · one-file-per-type · why ids stay readable words |
+| Add or move an item, or find which file one is in | [items/ITEM_CONTENT_STANDARD.md](items/ITEM_CONTENT_STANDARD.md): the item families (kit, pantry, dishes, rare kit), the reward pools, and how to read the table without a flat array |
 | Name a creature | [CREATURE_NAMING.md](CREATURE_NAMING.md): the phonetic-integration standard; run every candidate through its four-point checklist |
 | Name an item | [ITEM_NAMING.md](ITEM_NAMING.md): the functional-clarity standard |
 | Give a line its combat identity, or add a move to one | [LINE_MOVE_IDENTITIES.md](LINE_MOVE_IDENTITIES.md): what each family's kit is *for* |

@@ -66,7 +66,7 @@ const MergeRecipe kMergeRecipes[] = {
      {{"null_noodles", 2}, {"regeggs", 1}, {"data_leek", 1}, {"kernel_oil", 1}},
      "ramen", 1, /*wire=*/13, "MERGED RAMEN"},
     // The first of the six EPIC methods, and every one of them wants a staple off the
-    // scarce shelf (content_items.cpp's kRareStapleWalkWeight): a dish that hands a pet
+    // scarce shelf (items/pools.h's kRareStapleWalkWeight): a dish that hands a pet
     // something for life must be limited by an INGREDIENT rather than by a cooldown,
     // because the recipe is permanent once won and nothing else throttles it. Honeypot
     // Yogurt is the mascarpone this was missing.

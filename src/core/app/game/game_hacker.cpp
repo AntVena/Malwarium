@@ -139,7 +139,7 @@ int Game::vaultOwnedRows(const ItemDef** rows, int max) const {
         if (d && vaultCashable(*d) && n < max) rows[n++] = d;
     }
     // Tickets above caches, then richest draw first: a cache's rarity IS its payout
-    // tier (content_items.cpp grades bits/draws/pool by it), so the top cache row is
+    // tier (its row grades bits/draws/pool by it), so the top cache row is
     // always the best thing to open, and a Decryptogram outranks all of them because it
     // is the only row here that is a GAME rather than a draw. Inventory order is
     // insertion order, which says nothing a player cares about.

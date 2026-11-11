@@ -85,7 +85,7 @@ void writeStored(Writer& w, const SaveStoredPet& p) {
 // std::array rather than a plain C array so a zero-row table is still well-formed.
 constexpr std::array<RenamedId, 3> kRenamedIds{{
     // v54: the everyday snack lost the ghost cure to Unlinkguine and was renamed with
-    // it, so the id stopped describing the row (content_items.cpp). The FIRST item id
+    // it, so the id stopped describing the row (items/kit.h). The FIRST item id
     // to be renamed: every row before this one was a creature.
     {"airgap_snack", "dyno_nuggets", 54},
     // v70: the dish is a bruschetta (a Buguette under oil, garlic and tomato), and its

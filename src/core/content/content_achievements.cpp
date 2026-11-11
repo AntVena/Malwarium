@@ -16,7 +16,7 @@
 // REWARD CONVENTION (keep a new ladder in step with the ones here):
 //   entry rung  ~25 Bits · mid rung ~60 Bits + a Common Cache · deep rung ~150 Bits + a
 //   Rare Cache · capstone ~400 Bits + a Commendation Cache (the earned-only container,
-//   content_items.cpp). A one-off Event row pays like the rung it feels like.
+//   items/rare_kit.h). A one-off Event row pays like the rung it feels like.
 //
 // ICONS: one bespoke ICON_ACH_* per row, never a borrowed one (assets/ASSET_MANIFEST.md,
 // the Achievement icons row). The 'Pedia draws these as a GRID, and a grid only reads if a row's rung is

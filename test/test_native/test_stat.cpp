@@ -4,6 +4,7 @@
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
+#include "core/content/items/item_families.h"
 
 // STAT is kStatPages paged screens; 0 pet VITALS (the landing, + an XP bar), 1 TIERS
 // (the investment ladder: which stat tiers this pet holds and what the next costs),
@@ -147,7 +148,7 @@ void test_effect_text_templates_resolve() {
         return std::strchr(t.c_str(), '{') == nullptr &&
                std::strchr(t.c_str(), '}') == nullptr;
     };
-    for (int i = 0; i < kItemsCount; ++i) CHECK(clean(effectText(kItems[i])));
+    forEachItem([&](const ItemDef& d) { CHECK(clean(effectText(d))); });
     for (int i = 0; i < kModsCount; ++i) CHECK(clean(effectText(kMods[i])));
     for (int i = 0; i < kMovesCount; ++i) CHECK(clean(effectText(kMoves[i])));
 
@@ -164,9 +165,7 @@ void test_effect_text_templates_resolve() {
     // Every structured magnitude a row carries reaches the player through the stat
     // line whether or not the prose mentions it: the Tor-Tilla Chip's description is
     // pure flavour, so its Happiness 10 has to come from here.
-    const ItemDef* chip = nullptr;
-    for (int i = 0; i < kItemsCount; ++i)
-        if (std::strcmp(kItems[i].id, "tortilla_chip") == 0) chip = &kItems[i];
+    const ItemDef* chip = ContentRegistry::embedded().item("tortilla_chip");
     CHECK(chip && std::strstr(effectText(*chip).c_str(), "10") == nullptr);
     CHECK(chip && std::strcmp(statLine(*chip).c_str(), "HAPPY +10") == 0);
 
@@ -179,7 +178,7 @@ void test_effect_text_templates_resolve() {
             if (static_cast<unsigned char>(*p) > 127) return false;
         return true;
     };
-    for (int i = 0; i < kItemsCount; ++i) CHECK(ascii(kItems[i].effect));
+    forEachItem([&](const ItemDef& d) { CHECK(ascii(d.effect)); });
     for (int i = 0; i < kModsCount; ++i) CHECK(ascii(kMods[i].effect));
     for (int i = 0; i < kMovesCount; ++i) CHECK(ascii(kMoves[i].effect));
     // The stat-tier ladder is drawn with the same font on the same page as the loadout
@@ -193,7 +192,7 @@ void test_effect_text_templates_resolve() {
         }
 
     // {|token|} renders the magnitude unsigned, for prose that carries the sign.
-    ItemDef probe = kItems[0];
+    ItemDef probe = kItemFamilies[0].rows[0];
     probe.effect = "{hunger} then {|hunger|}";
     probe.effects[0] = {ItemEffect::Kind::Hunger, -15};
     probe.effects[1] = {};
@@ -250,8 +249,7 @@ void test_effect_text_fits_its_screen_budget() {
         return labelsIntact(s) &&
                gridLines(kMaxW, s.rows, s.count) + proseLines(prose) <= kDetailPanelLines;
     };
-    for (int i = 0; i < kItemsCount; ++i)
-        CHECK(panelFits(specRows(kItems[i]), effectText(kItems[i])));
+    forEachItem([&](const ItemDef& d) { CHECK(panelFits(specRows(d), effectText(d))); });
     // MODS budgets its panel differently: its floor grows with the readout, so the
     // prose gets a FIXED number of lines whatever the grid costs. Held to that number
     // rather than to the ITEMS band, which would pass a mod whose tail is being cut.
@@ -268,7 +266,7 @@ void test_effect_text_fits_its_screen_budget() {
     // Prose is capped by EffectText's own buffer before any screen sees it, so a row
     // that reaches the cap has already lost its tail: catch that at the source rather
     // than wondering why a sentence stops mid-word on the device.
-    for (int i = 0; i < kItemsCount; ++i) CHECK(!effectText(kItems[i]).atCap());
+    forEachItem([&](const ItemDef& d) { CHECK(!effectText(d).atCap()); });
     for (int i = 0; i < kModsCount; ++i) CHECK(!effectText(kMods[i]).atCap());
     for (int i = 0; i < kMovesCount; ++i) CHECK(!effectText(kMoves[i]).atCap());
 

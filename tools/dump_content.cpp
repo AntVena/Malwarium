@@ -27,6 +27,7 @@
 #include "core/content/content_recipes.h"
 #include "core/content/content_tables.h"
 #include "core/content/creatures/creature_lines.h"
+#include "core/content/items/item_families.h"
 #include "core/content/effect_text.h"
 
 using namespace mal;
@@ -159,8 +160,8 @@ void dumpEggLines() {
 
 void dumpItems() {
     std::fputs("\"items\": [\n", stdout);
-    for (int i = 0; i < kItemsCount; ++i) {
-        const ItemDef& d = kItems[i];
+    int i = 0;
+    forEachItem([&](const ItemDef& d) {
         std::fputs("  {", stdout);
         field("id", d.id);
         field("name", d.displayName);
@@ -175,8 +176,8 @@ void dumpItems() {
         fieldInt("bits", d.bitsPrice);
         fieldInt("combatHeal", d.combatHeal);
         fieldInt("preEncounterXp", d.preEncounterXp, /*comma=*/false);
-        std::fputs(i + 1 < kItemsCount ? "},\n" : "}\n", stdout);
-    }
+        std::fputs(++i < kItemCount ? "},\n" : "}\n", stdout);
+    });
     std::fputs("],\n", stdout);
 }
 

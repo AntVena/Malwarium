@@ -15,6 +15,7 @@
 #include "core/model/chromatophore.h"     // kChromaSkins: the camo ladder's length
 #include "core/model/disk_decryption.h"   // kDecryptionColours, and the code ladder's
 #include "core/ui/layout.h"               // kMargin: the picker row's own text budget
+#include "core/content/items/item_families.h"
 
 namespace {
 
@@ -156,9 +157,10 @@ void test_theme_table_covers_the_palette() {
         // tools/gen_item_icons.py fails here rather than on the ITEMS row.
         CHECK(itemIcon(ContentRegistry::embedded(), d->id) != nullptr);
         bool pooled = false;
-        for (int k = 0; k < kItemsCount && !pooled; ++k)
-            for (int e = 0; e < kItems[k].cache.poolSize; ++e)
-                if (std::strcmp(kItems[k].cache.pool[e].id, d->id) == 0) { pooled = true; break; }
+        forEachItem([&](const ItemDef& c) {
+            for (int e = 0; e < c.cache.poolSize; ++e)
+                if (std::strcmp(c.cache.pool[e].id, d->id) == 0) pooled = true;
+        });
         CHECK(pooled);
     }
     // Every device has at least one set that is not behind a draw, and the accessible

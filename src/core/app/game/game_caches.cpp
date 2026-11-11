@@ -50,7 +50,7 @@ const ItemDef* Game::drawCacheItem(const LootEntry* pool, int poolSize) {
 
 void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** itemsOut,
                             int& itemCountOut, int maxItems) {
-    // Everything a cache pays is on its own row (ItemDef::cache, content_items.cpp):
+    // Everything a cache pays is on its own row (ItemDef::cache):
     // purse, draw count, pool, and whether it also rolls a mod. One uniform payout, so
     // adding a container is a row rather than a branch here.
     const CacheDef& c = d.cache;

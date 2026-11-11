@@ -11,7 +11,7 @@ namespace mal {
 namespace {
 // This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
-// content_items.cpp). The first four are the staple set every area shares: two
+// items/pools.h). The first four are the staple set every area shares: two
 // snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 // Plus this area's exclusive Merge Hub ingredient, so a wild win here is a second,

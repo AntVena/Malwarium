@@ -10,7 +10,7 @@ namespace mal {
 namespace {
 // This area's WILD-win drop table: what a won wild encounter here hands over.
 // Rows draw at each item's own dropWeight (a bare id is the rule; see
-// content_items.cpp). The first four are the staple set every area shares: two
+// items/pools.h). The first four are the staple set every area shares: two
 // snacks, the combat shield, and the cleaner. Fighting fragments the pet, so a
 // wild win is where you top the cleaner up.
 const LootEntry kWildLoot[] = {
@@ -37,7 +37,7 @@ const char* const kModPool[] = {"tpm_chip", "solid_state_cache", "firewall_patch
 // pattern as the mod storefront below.
 // The Desalinated C-Salt row is a TRADE, not a sale: no Bits, just the Spoiled Macrol
 // nobody else wants. It's the only reliable source of the salt: finding one on a walk
-// is deliberately rarer than catching a fish and letting it turn (content_items.cpp).
+// is deliberately rarer than catching a fish and letting it turn (items/pantry.h).
 const ShopListingDef kShopListings[] = {
     {"r007_b33r", 8, 5},
     {"boot_accelerator", 3, 1024},

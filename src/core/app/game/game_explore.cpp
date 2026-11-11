@@ -7,6 +7,7 @@
 #include "core/content/areas/darkweb_crawl/area.h"
 #include "core/content/areas/deepweb_dive/area.h"
 #include "core/content/content_tables.h"
+#include "core/content/items/pools.h"
 #include "core/ui/expl_screen.h"
 
 namespace mal {
@@ -661,8 +662,6 @@ void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
     const bool dropItem =
         static_cast<int>((rng_ >> 16) % 100) < kLootItemChancePct;
     if (dropItem) {
-        // kLootPool is content (content_items.cpp, declared in content_tables.h): it
-        // travels with its own count, since sizeof only works in the defining unit.
         // Weighted through the same draw a container uses (Game::drawCacheItem), so a
         // staple that is common in the caches is common on the walk too.
         drawCacheItem(kLootPool, kLootPoolCount);

@@ -51,10 +51,11 @@ thing and every lever it pulls**. Hold all content to it.
    `content_<type>.cpp` + one `extern` pair in `content_tables.h` + one accessor in
    `embedded_content.cpp`. Adding a row = edit that one table.
    - *Types that outgrew one file:* EXPL areas (one folder per area,
-     `areas/AREA_CONTENT_STANDARD.md`) and creatures (one folder per evolution line,
-     `creatures/CREATURE_CONTENT_STANDARD.md`). Both keep a single list naming the members
-     (`kAreaList` / `kCreatureLines`) from which every count derives, so the split never adds a
-     number to keep in sync. Reach for it when one file stops being skimmable, not before.
+     `areas/AREA_CONTENT_STANDARD.md`), creatures (one folder per evolution line,
+     `creatures/CREATURE_CONTENT_STANDARD.md`) and items (one header per family in `items/`,
+     `items/ITEM_CONTENT_STANDARD.md`, since no item family holds more than its rows). Each keeps
+     a single list naming the members (`kAreaList` / `kCreatureLines` / `kItemFamilies`) from
+     which every count derives, so the split never adds a number to keep in sync. Reach for it when one file stops being skimmable, not before.
    - *Downstream:* the web 'Pedia reads these tables through the firmware's own code.
      `tools/dump_content.cpp` links them and prints JSON, which `tools/gen_pedia_data.py`
      consumes. So a struct-shape change needs no matching edit in the generator; run
@@ -103,7 +104,7 @@ None outstanding.
   `test_mod_equip_ladder_is_ordered_and_dense` is what fails if the ladder grows a hole.
 - New balance number → ask "does more than one entity read this?" No → on the row. Yes →
   `tunables.h`.
-- New item that should turn up in the world → add it to a pool (`content_items.cpp`'s
+- New item that should turn up in the world → add it to a pool (`items/pools.h`'s
   `kLootPool` / the `kCachePool*` sets) as a bare `{"id"}` and stop. Reach for
   `ItemDef::dropWeight` only when this item should be scarcer or commoner than its
   RARITY-mates everywhere, and for a `LootEntry` weight only when it should differ in

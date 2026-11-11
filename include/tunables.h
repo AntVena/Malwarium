@@ -53,7 +53,7 @@ constexpr int kMaintFailPenalty = 15;  // +15 Fragmentation on a failed run
 constexpr int kDefragCostStart = 8;
 // Three defrag variants share the stage-scaled Bits cost above, differing only in what
 // ELSE they ask for: QUICK is Bits-only with the normal success roll (luck), TOOL
-// additionally spends one Defrag Tool item (kDefragToolId, content_items.cpp) for a
+// additionally spends one Defrag Tool item (kDefragToolId) for a
 // guaranteed clean (an item), and STACKER plays the minigame in core/model/stacker.h for
 // one (skill). The per-pet `defragCount_` tallies successful defrags and persists through
 // ARCH freeze/thaw (save v16); it's surfaced on the defrag screen and has no other effect.
@@ -402,8 +402,8 @@ constexpr int modCopyCap(int tier) {
 // A mod earned is permanent, so sources are milestone/rare, never common wild drops.
 constexpr int kModSubBossDropPct = 35;            // sub-area boss FIRST clear: mod-drop chance
 constexpr int kModDeepWebDropPct = 4;             // DeepWeb wild win: rare tier-4 mod roll
-// A container's own chance to also yield a mod is on its row (ItemDef::cache.modChancePct,
-// content_items.cpp): it belongs to that cache alone. Rarity → relative draw weight when
+// A container's own chance to also yield a mod is on its row (ItemDef::cache.modChancePct):
+// it belongs to that cache alone. Rarity → relative draw weight when
 // rolling an area's mod loot table. Rarer = scarcer.
 constexpr int kModRarityWeight[4] = {50, 30, 15, 5};  // Common, Uncommon, Rare, Epic
 
@@ -771,15 +771,15 @@ constexpr int kExploreKeyPct   = 6;    // guaranteed-event roll: Key-item find (
 constexpr int kExploreStreakToBoss = 10;
 constexpr int kLootBitsReward = 10;    // flat Bits on a loot-cache event (TBD)
 // How deep a Safe-Mode Key's rest de-frags is NOT here: it belongs to that one key,
-// so it is a negative Frag effect on its own row (content_items.cpp), applied by
+// so it is a negative Frag effect on its own row (items/rare_kit.h), applied by
 // Game::resolveSafeRestEvent.
 constexpr int kLootItemChancePct = 30; // chance a loot cache also drops an item
 
 // Sealed caches. A cache find rolls one of the findable containers,
 //     weighted; each Opens for a draw from its own pool. Everything about a cache
 //     (its purse, its draw count, its pool, how often the walk drops it, whether it
-//     also yields a mod) is on its own item row (ItemDef::cache,
-//     content_items.cpp), so none of it is here.
+//     also yields a mod) is on its own item row (ItemDef::cache),
+//     so none of it is here.
 // Wild-win Bits are the formula normalBitsReward(R), keyed to the opponent's
 // stage-rank R (game.cpp), not a flat number here.
 constexpr int kWildWinXpReward = 15;   // BASE wild-win XP (scaled by level diff)

@@ -329,7 +329,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     then one length-prefixed bitset per rack pet over that dictionary's order. The
 //     dictionary is what keeps a bitset from being positional over the food table: the
 //     blob names its own columns, so a food added, removed or reordered in
-//     content_items.cpp moves nothing, and the cost is bounded by the roster (one id
+//     the item table moves nothing, and the cost is bounded by the roster (one id
 //     cell per distinct food plus a bit per pet per food) rather than by slots x foods
 //     x id cells. Pre-v72 -> no favourite (rolled at the pet's next meal) and empty rack
 //     palates, because nothing recorded them.

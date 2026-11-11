@@ -290,11 +290,6 @@ walk), `game_lifecycle` (one pet's life: hatch, evolution, lockout and CSF), `ga
 ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), and
 `game_config`, `game_pvp` (one screen each, just over).
 
-`content_items.cpp` (2,021 lines, 231 rows) is past the point CONTENT_STANDARD rule 4 names
-for a folder: 195 of its rows are FOOD, and a reader opens food a family at a time (the
-dishes, their ingredients). Split it the way creatures and areas already are, with one list
-naming the members so no count is kept by hand.
-
 **The function rule.** Long functions that are if-chains rather than a switch over a
 vocabulary (case labels counted, not lines):
 

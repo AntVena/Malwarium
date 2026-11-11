@@ -837,7 +837,7 @@ void test_hacker_shop_bulk_open_buy() {
 // 4 headers, per test_inventory_rows_grouped): Tor-Tilla Chip is Food AND a Nachos
 // ingredient (content_recipes.cpp), so the Food filter still splits into its own
 // FOOD/INGREDIENTS pair even though the filter itself doesn't narrow by that axis.
-// Backup Drive is a Buff (its combat shield, content_items.cpp), not a Quest item.
+// Backup Drive is a Buff (its combat shield), not a Quest item.
 void test_item_filter_narrows_rows() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();

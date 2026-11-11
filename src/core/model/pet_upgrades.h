@@ -2,7 +2,7 @@
 //
 // Everything else an item arms on a pet lapses: a shield is spent, a dive buff is
 // consumed, a timer runs out. These do not. They are granted ONCE per pet by an Epic
-// dish out of the MERGE HUB (content_items.cpp's cooked-dish block), they belong to the
+// dish out of the MERGE HUB (items/dishes.h), they belong to the
 // CREATURE rather than to the run, so an ARCH freeze/thaw keeps them (SaveStoredPet),
 // and the only way to have one twice is to raise a second pet.
 //

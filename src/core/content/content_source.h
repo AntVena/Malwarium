@@ -18,7 +18,8 @@ struct ContentSource {
     // ships all of it. The registry flattens on read, so nothing downstream cares.
     virtual const CreatureLine* creatureLines(int& count) const = 0;
     virtual const EggLineDef* eggLines(int& count) const = 0;
-    virtual const ItemDef* items(int& count) const = 0;
+    // Items arrive the same way, grouped into ItemFamily.
+    virtual const ItemFamily* itemFamilies(int& count) const = 0;
     virtual const ModDef* mods(int& count) const = 0;
     virtual const MoveDef* moves(int& count) const = 0;
     // Chained-move follow-up steps. DEFAULTED rather than pure: a pack that ships no

@@ -12,8 +12,8 @@ void ContentRegistry::addSource(const ContentSource& src) {
     for (int l = 0; l < n; ++l) creatures_.merge(lines[l].rows, lines[l].count);
     const EggLineDef* eggs = src.eggLines(n);
     eggLines_.merge(eggs, n);
-    const ItemDef* items = src.items(n);
-    items_.merge(items, n);
+    const ItemFamily* families = src.itemFamilies(n);
+    for (int f = 0; f < n; ++f) items_.merge(families[f].rows, families[f].count);
     const ModDef* mods = src.mods(n);
     mods_.merge(mods, n);
     const MoveDef* moves = src.moves(n);

@@ -11,6 +11,7 @@
 #include "core/content/content_source.h"
 #include "core/content/content_tables.h"
 #include "core/content/creatures/creature_lines.h"
+#include "core/content/items/item_families.h"
 #include "generated/assets.h"
 
 namespace mal {
@@ -27,9 +28,9 @@ public:
         count = kEggLinesCount;
         return kEggLines;
     }
-    const ItemDef* items(int& count) const override {
-        count = kItemsCount;
-        return kItems;
+    const ItemFamily* itemFamilies(int& count) const override {
+        count = kItemFamilyCount;
+        return kItemFamilies;
     }
     const ModDef* mods(int& count) const override {
         count = kModsCount;

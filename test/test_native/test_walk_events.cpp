@@ -4,6 +4,7 @@
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
+#include "core/content/items/pools.h"
 
 // Same search, but keeps re-rolling (resolving each non-matching outcome via
 // B, or riding out+dismissing an awakened-guardian fight) until the specific

@@ -4,6 +4,7 @@
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
+#include "core/content/items/item_families.h"
 
 // --- Achievement catalogue + machinery ------------------------------------------
 
@@ -61,7 +62,7 @@ void test_display_names_are_unique_across_kinds() {
             }
         seen.emplace_back(key, std::string(kind) + ":" + id);
     };
-    for (int i = 0; i < kItemsCount; ++i) add("item", kItems[i].id, kItems[i].displayName);
+    forEachItem([&](const ItemDef& d) { add("item", d.id, d.displayName); });
     for (int i = 0; i < kModsCount; ++i) add("mod", kMods[i].id, kMods[i].displayName);
     for (int i = 0; i < kMovesCount; ++i) add("move", kMoves[i].id, kMoves[i].displayName);
     for (int i = 0; i < kAchievementCount; ++i)

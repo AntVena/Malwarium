@@ -24,8 +24,9 @@
 #include "core/content/content_achievements.h"
 #include "core/content/content_quotes.h"       // quoteCount(): the DECRYPTOGRAM roster
 #include "core/content/content_recipes.h"      // kMergeRecipeCount
-#include "core/content/content_tables.h"       // kItems
+#include "core/content/content_tables.h"
 #include "core/content/creatures/creature_lines.h"  // kCreatureCount / creatureLine()
+#include "core/content/items/item_families.h"  // forEachItem
 #include "core/content/effect_text.h"
 #include "core/model/combat.h"                 // kWildMalbeastCount
 
@@ -97,8 +98,7 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         // number on both rows even though they count different things toward it.
         case AchSeries::PetFoodsEaten: {
             int n = 0;
-            for (int i = 0; i < kItemsCount; ++i)
-                if (kItems[i].type == ItemDef::Type::Food) ++n;
+            forEachItem([&](const ItemDef& d) { n += d.type == ItemDef::Type::Food; });
             return n;
         }
         // The WHOLE move roster, not one line's slice of it: this total is pure over
@@ -107,8 +107,7 @@ inline int achievementSeriesTotal(AchSeries series, const char* key, int param) 
         case AchSeries::PetMovesKnown: return kMovesCount;
         case AchSeries::RarityCollected: {
             int n = 0;
-            for (int i = 0; i < kItemsCount; ++i)
-                if (static_cast<int>(kItems[i].rarity) == param) ++n;
+            forEachItem([&](const ItemDef& d) { n += static_cast<int>(d.rarity) == param; });
             return n;
         }
         case AchSeries::ItemCollected:

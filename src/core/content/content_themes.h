@@ -55,7 +55,7 @@ struct ThemeDef {
     // background's line there is no deed here to name: the deed is finishing any ladder.
     const char* earnedBy;
     ThemeSource source;
-    // Chip: the item id whose ever-held-ness unlocks this set (content_items.cpp).
+    // Chip: the item id whose ever-held-ness unlocks this set (items/rare_kit.h).
     // Others: unused. The gate checks the id resolves and that the item is actually in a
     // container's pool, so a set can never be unlockable by an object nothing hands out.
     const char* earnedById = nullptr;

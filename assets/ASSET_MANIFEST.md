@@ -705,7 +705,7 @@ on placeholder palette.
 
 **No per-item roster.** An item's glyph id is *derived*, not recorded: `itemIcon()`
 (`src/core/content/effect_text.cpp`) uppercases the item id into `ICON_ITEM_<ID>` and looks that
-up. So the item list is `content_items.cpp`, the icon list is `assets/icons/`, and a table pairing
+up. So the item list is `src/core/content/items/`, the icon list is `assets/icons/`, and a table pairing
 them here would be a third copy that can disagree with both. A row added without art draws a
 blank: that is the prompt to draw one, and `check_orphan_assets.py` catches the reverse.
 
@@ -730,8 +730,7 @@ blank: that is the prompt to draw one, and `check_orphan_assets.py` catches the 
   (one bar, two bars, a disc over a horizon, a ring, a split field, a chevron), rather than six
   attempts at painting a theme in a 8×12 window, which at this size would be six smudges. Recipes
   live with the pantry's in `tools/gen_item_icons.py`.
-- **The pantry was drawn as one batch.** The staple ingredients (`content_items.cpp`'s STAPLE
-  INGREDIENTS block) plus the two dishes cooked from them are one coherent 20×20 food set, so the
+- **The pantry was drawn as one batch.** The staple ingredients (`items/pantry.h`) plus the two dishes cooked from them are one coherent 20×20 food set, so the
   shelf reads as a pantry rather than twenty unrelated glyphs. Three are legible AS PAIRS: Fresh
   Macrol is a whole fish where Spoiled Macrol is its skeleton; C-Salt and Desalinated C-Salt share
   a cap and differ only in whether the body has anything in it; the two Browns are the same branded

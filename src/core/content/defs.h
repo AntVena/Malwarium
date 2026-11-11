@@ -607,6 +607,16 @@ struct ItemDef {
     SpoilDef spoil = {};                 // perishable rows only: what it turns into, and how often
 };
 
+// One item FAMILY: rows a reader opens together (the pantry, the dishes). Each is defined
+// in src/core/content/items/<id>.h and listed once in items/item_families.h; the registry
+// reads items family by family, so a family is a header plus one line, with no count to
+// bump anywhere. Nothing keys off the family id: a row is found and saved by its own id.
+struct ItemFamily {
+    const char* id;
+    const ItemDef* rows;
+    int count;
+};
+
 // Does this effect cap at ONE use per PET LIFETIME? These are the only per-pet gates the
 // player cannot get back by any means: a new egg clears them and nothing else does. Named
 // here rather than as a list of item ids so a new item carrying one of these effects is
@@ -633,7 +643,7 @@ constexpr bool isOncePerPetLifetime(ItemEffect::Kind k) {
 // eats? Every USB item steers the same boundary (the next evolution), which is why the
 // soak pair can lock the port against the rest of the family: a stage cannot be both
 // stretched and diverted by two devices at once. Named off the effect vocabulary rather
-// than as a list of ids, so a future USB is one row in content_items.cpp and nothing else.
+// than as a list of ids, so a future USB is one row in items/rare_kit.h and nothing else.
 constexpr bool isUsbEffect(ItemEffect::Kind k) {
     return k == ItemEffect::Kind::ForceTrojanDivert ||
            k == ItemEffect::Kind::ForceEvolveBranchGood ||

@@ -6,6 +6,7 @@
 #include "test_gates.h"
 
 #include "core/content/content_recipes.h"   // itemIsRecipeIngredient
+#include "core/content/items/pools.h"
 
 void test_inventory() {
     Inventory inv;
@@ -480,7 +481,7 @@ void test_backup_drive_arms_and_lapses() {
     CHECK(g.inventory().count("backup_drive") == 0);       // consumed on Use
     CHECK(g.backupShieldArmed());
     // Ticking less than the 1h window leaves it armed; crossing it lapses it unused
-    // (the item row's magnitude (content_items.cpp's ArmCombatShieldBuff) is 60 min).
+    // (the item row's magnitude (ArmCombatShieldBuff) is 60 min).
     // Game::tick(nowMs) takes an ABSOLUTE clock reading, not a delta.
     const uint32_t oneHourMs = 60u * 60u * 1000u;
     g.tick(oneHourMs / 2);
@@ -1767,7 +1768,7 @@ void test_every_permanent_grant_is_one_epic_dish() {
             // THE THROTTLE. A recipe is permanent once won and has no cooldown, so the
             // only thing limiting how many permanent upgrades a player can hand out is
             // what the dish is made OF. Every Epic method must therefore want at least
-            // one ingredient off the scarce shelf (content_items.cpp's
+            // one ingredient off the scarce shelf (items/pools.h's
             // kRareStapleWalkWeight): without this a six-Common recipe would make the
             // whole tier farmable in an afternoon.
             int scarce = 0;
