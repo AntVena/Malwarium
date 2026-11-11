@@ -278,8 +278,8 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `save.cpp` (1342), `combat.cpp` (1978), `combat_factory.cpp` (1148),
-`expl_screen.cpp` (1112) and `cfg_screen.cpp` (925) are each past the number and each still
+rather than by line count. `save.cpp` (1342), `combat.cpp` (2016), `combat_factory.cpp` (1148),
+`expl_screen.cpp` (1154) and `cfg_screen.cpp` (919) are each past the number and each still
 ONE concern at UNIT level: save.cpp is long because the format is flat, which is not a second
 responsibility, and combat.cpp is the turn engine alone.
 
@@ -290,18 +290,15 @@ walk), `game_lifecycle` (one pet's life: hatch, evolution, lockout and CSF), `ga
 ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), and
 `game_config`, `game_pvp` (one screen each, just over).
 
-**The function rule.** Long functions that are if-chains rather than a switch over a
-vocabulary (case labels counted, not lines):
+**The function rule.** A long function that is an if-chain rather than a switch over a
+vocabulary gets split into its named steps.
 
-- **Accumulated if-chains past ~150 lines.** `Game::onCfgDetail` (264 lines, 25 cases, 72
-  ifs), `drawExplList` (242, 4 cases, 31 ifs), `Combat::resolveTurn` (223, 35 ifs),
-  `Game::tickAnimClocks` (190, 28 ifs) and `Game::tickHeartbeat` (166, 43 ifs) are each
-  several steps with no names. Split each into its named steps, the way `drawHabitat` is.
-  `Game::onButton` (300 lines) is the input-routing half of §1j and goes with it. |
-  `game_config.cpp`, `expl_screen.cpp`, `combat.cpp`, `game_core.cpp`. | M overall, S each |
-  The draw functions verify against a `tools/screens.sh` render taken before; the tick and
-  turn functions against the native suite, whose combat pipeline tests pin the phase order. |
-
+- **`Combat`'s turn functions take `bool byPlayer`.** `resolveTurn`, its phases,
+  `applyEffect`, `setLast` and `armCrewExploit` all pass which seat is acting as a bool, which
+  the *Few arguments, and no flags* rule forbids. One `Side` enum read at every call site makes
+  `!byPlayer` (the hijack's reversal) a named flip. | `core/model/combat.h`, `combat.cpp`
+  and the combat tests. | M | The native suite's combat pipeline tests pin
+  the phase order and the RNG draw order. |
 
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
   and the min-1 floor are one negotiation over a single value; splitting them further means
