@@ -398,7 +398,7 @@ constexpr int modCopyCap(int tier) {
     const int t = tier < kModStorageMaxTier ? tier : kModStorageMaxTier;
     return kModStorageCapByTier[t - 1];
 }
-// Drop cadence (Q4: sub-boss roll + area-boss guaranteed + DeepWeb rare + Epic caches).
+// Drop cadence (sub-boss roll + area-boss guaranteed + DeepWeb rare + Epic caches).
 // A mod earned is permanent, so sources are milestone/rare, never common wild drops.
 constexpr int kModSubBossDropPct = 35;            // sub-area boss FIRST clear: mod-drop chance
 constexpr int kModDeepWebDropPct = 4;             // DeepWeb wild win: rare tier-4 mod roll
@@ -424,12 +424,11 @@ constexpr int kBattleFatigueAutoPauseFrag = 80; // hands-off auto-explore pauses
 //     combat XP raises a LEVEL (starts at 0); each level-up grants +1 to ONE
 //     randomly-chosen combat stat (power / defense / speed / max-Health). XP-to-
 //     next is GEOMETRIC; round(kLevelXpBase * (kLevelXpGrowthPct/100)^level).
-// ~10% dearer each level (base + growth stay tunable). The per-point
-//     magnitudes map an earned point into the combat maths (first-cut balance,
-// ): power = +% attack lean, defense = +DEF rating (hits land at 100/(100+DEF),
-//     so no amount of it nulls a hit), speed = +initiative,
-//     max-Health = +% of the pet's body. Level == the sum of earned points (an invariant Rollback
-//     preserves: −1 point ⇒ −1 level). ------------------------------------------
+//     ~10% dearer each level (base + growth stay tunable). The per-point magnitudes map
+//     an earned point into the combat maths: power = +% attack lean, defense = +DEF
+//     rating (hits land at 100/(100+DEF), so no amount of it nulls a hit), speed =
+//     +initiative, max-Health = +% of the pet's body. Level == the sum of earned points
+//     (an invariant Rollback preserves: −1 point ⇒ −1 level). -------------------------
 constexpr int kLevelXpBase = 100;          // XP to reach level 1 (round(100*1.1^0))
 constexpr int kLevelXpGrowthPct = 110;     // each level costs 1.1x the previous
 constexpr int kLevelStatCount = 4;         // power / defense / speed / max-Health

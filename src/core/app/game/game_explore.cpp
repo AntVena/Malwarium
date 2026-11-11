@@ -629,17 +629,19 @@ void Game::resolveKeyItemEvent() {
     // A Key-item find is NON-INTERRUPTING like the Sealed Cache: it drops a
     // random warp key into the inventory and explore-mode keeps stepping. The player
     // spends it later via the A+C control chord's Warp picker to jump to a
-    // shop / safe rest.
-    static const char* kKeyPool[] = {"access_token", "safe_mode_key"};
+    // shop / safe rest. The pool is every row that declares a walkWarp, in source order.
+    std::vector<const ItemDef*> pool;
+    for (const ItemDef* k : registry_.allItems())
+        if (k->walkWarp != ItemDef::WalkWarp::None) pool.push_back(k);
+    if (pool.empty()) return;
     rng_ = rng_ * 1664525u + 1013904223u;
-    const char* id = kKeyPool[(rng_ >> 16) % 2];
-    inventory_.add(id, 1);
-    const ItemDef* d = registry_.item(id);
+    const ItemDef& d = *pool[(rng_ >> 16) % pool.size()];
+    inventory_.add(d.id, 1);
     char buf[32];
-    std::snprintf(buf, sizeof(buf), "FOUND %s", d ? d->displayName : id);
+    std::snprintf(buf, sizeof(buf), "FOUND %s", d.displayName);
     log_.push(LogEventType::ItemGained, buf);
     std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s - WARP KEY (A+C)",
-                 d ? d->displayName : id);
+                  d.displayName);
     markSaveDirty();
 }
 

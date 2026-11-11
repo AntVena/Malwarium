@@ -587,7 +587,7 @@ struct ItemDef {
     //     plain feed/buff row lists only its effects[] above. ---------------------------
     int combatHeal = 0;                  // combat Exploit picker → transient Health
                                          //   (game_combat/combat; >0 also = combat-usable)
-    int preEncounterXp = 0;              // Sinkhole Trap bypass → XP lump (game_combat)
+    int preEncounterXp = 0;              // >0: held, bypasses a wild encounter for this XP (game_combat)
     // This item's own reference price: the 'Pedia's listed price, and the generic
     // "is this shop-sellable at all" signal (0 = not sold anywhere). The price a
     // player actually PAYS at a given storefront is that area's own

@@ -1082,7 +1082,7 @@ void Game::drawEncounterScreen(Framebuffer& fb) const {
     v.enemySprite = registry_.sprite(encounterEnemy_.spriteName);
     v.level = encounterEnemy_.level;
     v.diffPips = encounterEnemy_.diffPips;
-    v.sinkholeAvailable = encounterSinkhole_;
+    v.sinkholeAvailable = encounterBypass_ != nullptr;
     v.choice = encounterChoice_;
     v.beat = beat_;
     drawEncounterIntro(fb, v);

@@ -758,7 +758,7 @@ void Game::startEncounter() {
     if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
     rollWild();
     encounterChoice_ = 0;
-    encounterSinkhole_ = inventory_.count("sinkhole_trap") > 0;
+    encounterBypass_ = heldEncounterBypass();
     // Auto-explore is a hands-off background mode: a wild encounter resolves
     // itself. There's no human at the intro to press Fight, and Flee is pointless
     // since a loss already cancels the mode + zeroes the streak (finishCombat). A
@@ -766,7 +766,7 @@ void Game::startEncounter() {
     // otherwise the fight auto-starts. The Fight/Flee/Sinkhole intro stands only for a
     // (currently unused) manual encounter path.
     if (exploreActive_) {
-        if (encounterSinkhole_) resolveSinkhole();
+        if (encounterBypass_) resolveSinkhole();
         else startWildCombat(/*forceEnemyFirst=*/false);
         return;
     }
@@ -774,7 +774,7 @@ void Game::startEncounter() {
 }
 
 void Game::onEncounter(const ButtonEvent& ev) {
-    const int options = encounterSinkhole_ ? 3 : 2;
+    const int options = encounterBypass_ ? 3 : 2;
     if (ev.button == Button::A) {
         encounterChoice_ = (encounterChoice_ + 1) % options;
     } else if (ev.button == Button::B) {
@@ -799,14 +799,20 @@ void Game::resolveFlee() {
     }
 }
 
+const ItemDef* Game::heldEncounterBypass() const {
+    for (const ItemDef* d : registry_.allItems())
+        if (d->preEncounterXp > 0 && inventory_.count(d->id) > 0) return d;
+    return nullptr;
+}
+
 void Game::resolveSinkhole() {
-    // The bypass XP lump is the Sinkhole Trap's own preEncounterXp (defs.h row),
-    // because one item's magnitude lives on that item.
-    const ItemDef* d = registry_.item("sinkhole_trap");
-    const int xp = d ? d->preEncounterXp : 0;
-    inventory_.remove("sinkhole_trap", 1);
+    const ItemDef& d = *encounterBypass_;
+    const int xp = d.preEncounterXp;
+    inventory_.remove(d.id, 1);
     addCombatXp(xp);
-    log_.push(LogEventType::ItemUsed, "USED SINKHOLE TRAP");
+    char used[36];
+    std::snprintf(used, sizeof(used), "USED %s", d.displayName);
+    log_.push(LogEventType::ItemUsed, used);
     std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "SINKHOLE +%d XP", xp);
     // Persist now: the debounced autosave can lose a level-up to a reboot. Every other XP
     // grant (finishCombat, finishBossRound) does the same, and this source skips combat,

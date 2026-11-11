@@ -2932,7 +2932,8 @@ private:
     void rollWild();                                // encounterEnemy_ for this zone, scaled
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll
-    void resolveSinkhole();                         // consume Sinkhole Trap -> XP lump
+    const ItemDef* heldEncounterBypass() const;
+    void resolveSinkhole();                         // spend encounterBypass_ -> XP lump
     void startWildCombat(bool forceEnemyFirst);     // live-stakes combat from an encounter
     // The tail both debug combat hooks share once the player is built: roll the fight
     // open against `spec` and hand the screen to it (debugStartCombat / ...Vs).
@@ -3953,7 +3954,9 @@ private:
     char exploreFlavor_[48] = "";
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
-    bool encounterSinkhole_ = false;
+    // The held item that can bypass this encounter (any row with a preEncounterXp), or
+    // nullptr; it is what the intro's third option spends.
+    const ItemDef* encounterBypass_ = nullptr;
     enum class CombatCaller { Sim, Wild, Boss, Tourney, Duel };
     CombatCaller combatCaller_ = CombatCaller::Sim;
 

@@ -283,6 +283,11 @@ lockout, hatch, evolution, CSF, the device wipe and titles: at least the titles 
 wipe/reset are separate concerns and split off cleanly. `game_items` (627) is one concern,
 but `applyItemEffects` runs about 210 lines and needs the function rule below applied.
 
+`content_items.cpp` (2,021 lines, 231 rows) is past the point CONTENT_STANDARD rule 4 names
+for a folder: 195 of its rows are FOOD, and a reader opens food a family at a time (the
+dishes, their ingredients). Split it the way creatures and areas already are, with one list
+naming the members so no count is kept by hand.
+
 **The function rule.** What is left is a note rather than a task:
 
 - **`Combat::mitigate` (80 lines) keeps its locals, and should.** The pierce ladder, the brace
