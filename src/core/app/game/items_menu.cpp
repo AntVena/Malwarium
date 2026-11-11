@@ -1,6 +1,5 @@
 #include "core/app/game/items_menu.h"
 
-#include "core/content/registry.h"
 #include "core/model/inventory.h"
 #include "core/ui/items_screen.h"
 

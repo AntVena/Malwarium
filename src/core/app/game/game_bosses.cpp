@@ -5,9 +5,6 @@
 
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"
-#include "core/content/areas/darkweb_crawl/area.h"
-#include "core/content/areas/deepweb_dive/area.h"
-#include "core/content/content_tables.h"
 #include "core/ui/expl_screen.h"
 
 namespace mal {

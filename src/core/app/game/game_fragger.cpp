@@ -1,6 +1,5 @@
 #include "core/app/game.h"
 
-#include "tunables.h"
 #include "core/ui/maint_screen.h"
 
 // game_fragger.cpp: FRAGGER, a played MAINT run and a GAMES cabinet.

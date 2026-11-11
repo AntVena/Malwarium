@@ -14,7 +14,6 @@
 
 #include "tunables.h"
 #include "core/ui/carousel.h"     // carouselSlots: the slot table the cursor walks
-#include "core/ui/items_screen.h" // buildInventoryRows: the ITEMS list under the cursor
 
 namespace mal {
 

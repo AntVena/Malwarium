@@ -18,7 +18,7 @@
 #include "core/ui/expl_screen.h"  // sectorTitle, kExplSectors
 #include "core/ui/layout.h"
 #include "core/ui/widgets.h"
-#include "dev_config.h"
+#include "dev_config.h"   // DEV_CFG_RESET_ROW, read only by #ifdef, which the include scan does not count
 #include "generated/assets.h"
 
 namespace mal {

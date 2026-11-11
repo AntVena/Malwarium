@@ -3,8 +3,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "tunables.h"
-#include "core/content/content_tables.h"
 #include "core/content/content_themes.h"
 
 namespace mal {

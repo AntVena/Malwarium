@@ -1,10 +1,8 @@
 #include "core/app/game.h"
-#include "core/app/game_internal.h"
 
 #include <cstdio>
 
 #include "tunables.h"
-#include "core/content/content_tables.h"
 #include "core/content/content_themes.h"   // themeForChip: a chip is inert here, and loot once
 #include "core/ui/items_screen.h"
 

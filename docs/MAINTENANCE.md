@@ -168,7 +168,7 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature. Inline it onto that row. Verify claims against code.
 
-### Unused-include sweep. Last run: 2026-09-23
+### Unused-include sweep. Last run: 2026-11-11
 The clangd "included header X is not used directly" warnings are noise we burn tokens reading
 past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render
 header block copied from `game_render.cpp`, most of which a given unit doesn't use.
