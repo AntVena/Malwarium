@@ -402,9 +402,10 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<BuffRow>& rows, int scro
     for (int v = 0; v < shown; ++v) {
         const BuffRow& r = rows[top + v];
         if (r.header) {
-            // Dim, like the flow's own headings: a fence, not a row.
-            drawText(fb, kMargin, y + (top + v == top ? 0 : kProseGroupLead), r.label,
-                     palColor(Pal::INK_DIM));
+            // Drawn as the flow's own headings are (prose_page.cpp): dim, over a rule.
+            const int hy = y + (top + v == top ? 0 : kProseGroupLead);
+            drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
+            drawHeadingRule(fb, hy);
             y += heights[top + v];
             continue;
         }

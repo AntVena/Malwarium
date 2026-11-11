@@ -275,6 +275,11 @@ void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c) {
     }
 }
 
+void drawHeadingRule(Framebuffer& fb, int labelY) {
+    fb.fillRect(kMargin, labelY + kFontH + 2, kActiveW - 2 * kMargin - 4, 1,
+                palColor(Pal::TRACK));
+}
+
 void drawRowSelection(Framebuffer& fb, int rowY, int rowH) {
     fb.fillRect(4, rowY + 2, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
     drawRowCursor(fb, 8, rowY + (rowH - 7) / 2, palColor(Pal::ACCENT));

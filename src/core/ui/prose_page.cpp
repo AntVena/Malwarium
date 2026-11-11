@@ -103,6 +103,7 @@ void drawProseRows(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
                                palColor(Pal::INK_DIM), beat, Overflow::Clip);
             else
                 drawText(fb, kMargin, hy, r.label, palColor(Pal::INK_DIM));
+            drawHeadingRule(fb, hy);
         } else {
             // Name and tag as a PAIR (drawLabelValue), so a long name yields to the tag
             // instead of running underneath it: the failure two independent drawText

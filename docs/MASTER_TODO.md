@@ -70,6 +70,21 @@ makes the slot unarguable. | `game_crew`, `game_hacker`, `game_merge`, `game_pee
 `game_pvp`, `rig_shop_screen.cpp`; `core/ui/widgets.h`. | S | Byte-identical against a
 `tools/screens.sh` render taken before. |
 
+**ARCH TRADE IN separates its question from its answers with dead space.** "GONE FOR GOOD.
+GET ONE:" points at the offers, but the focused offer's description sits under it and the
+offer rows start at y 148, below a band held empty for the confirm box (`kConfirmBoxY`)
+that only opens on B. The page reads as two islands. Put the offers directly under the
+question with the description beneath them, and open the confirm over the description. |
+`arch_screen.cpp`'s sale sheet. | S | Check `arch_sale`, `arch_sale_twin` and
+`arch_sale_confirm` on the contact sheet. |
+
+**BUFFS keeps its own copy of the prose flow.** `BuffRow`, `buffRowHeights`, `buffFitCount`,
+`buffWindowCount` and the draw loop in `drawBuffsScreen` repeat `prose_page.cpp` for a row
+that adds only a timer to the name line. The copies have already needed the same heading
+change made twice. Give `ProseRow` a name-line suffix and draw BUFFS through
+`drawProseRows`. | `stat_screen.cpp`; `core/ui/prose_page.h`. | S | Byte-identical against
+a `tools/screens.sh` render taken before. |
+
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date

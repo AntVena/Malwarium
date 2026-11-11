@@ -424,8 +424,7 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const Items
         if (r.header) {
             drawText(fb, kMargin, y + 8, r.label,
                      r.notice ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-            fb.fillRect(kMargin, y + 18, kActiveW - 2 * kMargin - 4, 1,
-                        palColor(Pal::TRACK));
+            drawHeadingRule(fb, y + 8);
             continue;
         }
         if (i == v.cursor) drawRowSelection(fb, y, kRowH);

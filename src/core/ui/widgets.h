@@ -184,6 +184,11 @@ void drawScrollbar(Framebuffer& fb, int trackTop, int trackH, int total, int scr
 // (the 5x7 font has no '>'). Left-anchored, tapering to a point at the right.
 void drawRowCursor(Framebuffer& fb, int x, int y, Rgb565 c);
 
+// The rule under a section heading, which fences the heading off from the rows it names
+// (the ITEMS list's groups, the prose pages' MOVES/MODS and stat headings). `labelY` is
+// the heading text's y; the rule stops short of the scrollbar.
+void drawHeadingRule(Framebuffer& fb, int labelY);
+
 // UI_ROW_SEL, the focused row of a full-width list: the `track` fill (separable from
 // `paper` in grayscale) inset 2px inside the row's pitch, with the cursor centred on
 // it. Every list draws focus through this, so a row pitch is all a list says about it.

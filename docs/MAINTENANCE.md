@@ -78,7 +78,7 @@ Spot-check shipped screens against the system they're authored to (`assets/VISUA
 problem differently from its siblings. Fix the standard to match reality, or if the drift looks
 like an undocumented real decision, surface it explicitly.
 
-### Screen separation pass. Last run: 2026-09-23
+### Screen separation pass. Last run: 2026-11-11
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
 stacks **multiple distinct row groups**, asking one question: can a reader tell where one group
 ends and the next begins, without reading the words?

@@ -63,13 +63,15 @@ constexpr int kProseNameGap = 3;   // name line -> its first prose line
 constexpr int kProseRowGap = 8;    // last prose line -> the next row's name
 // A section header belongs to the block UNDER it, so it takes its air from ABOVE: a
 // wide lead-in fences one group off from the last, and a tight tail keeps the label
-// attached to the entry it names. The two have to stay ordered
+// attached to the entry it names. The tail holds the heading's rule (drawHeadingRule),
+// which is what tells the heading from the entry's own first line where the lead-in is
+// suppressed; without it the tail equals kProseNameGap and the two read alike. The two have to stay ordered
 // kProseHeaderTail < kProseRowGap < kProseGroupLead or the page loses its grouping:
 // two pixels of difference cannot say "new section", and the dim heading would be left
 // carrying the grouping alone. The lead is suppressed on the FIRST row: the header
 // band above it is already the fence.
 constexpr int kProseGroupLead = 14;
-constexpr int kProseHeaderTail = 3;
+constexpr int kProseHeaderTail = 5;
 constexpr int kProseHeaderH = kFontH + kProseHeaderTail;
 // The foot of the flow: the hint band's strip is reserved whether or not a hint is
 // drawn, so a page can never discover it after a row is already using the space.
