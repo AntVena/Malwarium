@@ -155,6 +155,7 @@ void Game::layEgg(const EggLineDef* line) {
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass: a fresh egg has never dived and carries nothing armed.
     pet_.bestDeepWebDepth = 0;
+    pet_.bestDarkWebDepth = 0;
     clearDiveDepthBuffs();
     pet_.armed.deepWebStartDepth = -1;
     pet_.armed.pendingDiveStartBonusPct = 0;

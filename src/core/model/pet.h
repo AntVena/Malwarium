@@ -4,7 +4,8 @@
 //
 // The part a field sits in decides what moving the pet does to it: storing a pet on the
 // rack keeps the lifetime and current-life parts and clears PetArmed, since everything in
-// it can be armed again.
+// it can be armed again. Pet::stored and Pet::thawed are that move, and the only mapping
+// between a Pet and its rack record.
 #pragma once
 
 #include <cstdint>
@@ -19,6 +20,9 @@
 #include "core/model/pet_upgrades.h"
 
 namespace mal {
+
+class ContentRegistry;
+struct SaveStoredPet;
 
 // A move slot's stamped kind: Unset until Game::stampSlotKinds first fills it, then
 // locked for the pet's life.
@@ -124,6 +128,12 @@ struct Pet {
 
     // --- Armed for now -----------------------------------------------------------
     PetArmed armed;
+
+    // This pet as a rack record, at game-ms `nowMs`. PetArmed is left behind.
+    SaveStoredPet stored(uint32_t nowMs) const;
+    // The pet a rack record thaws into, at game-ms `nowMs`, with nothing armed. Ids the
+    // running content no longer defines are dropped, as a save load drops them.
+    static Pet thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t nowMs);
 };
 
 }  // namespace mal

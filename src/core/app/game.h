@@ -1567,6 +1567,7 @@ public:
         return rigUpgradeCost(kDefragCostStart, pet_.defragCount, RigCostCurve::kLogStep);
     }
     const CreatureDef* pet() const { return pet_.creature; }   // null while the save is empty (Hatch)
+    const Pet& petRecord() const { return pet_; }
     // Where the habitat is currently standing its occupant, in logical px off the
     // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
     // exposed so the resting motion can be inspected without a framebuffer.
@@ -2328,6 +2329,7 @@ public:
     // path: winning at that depth (game_combat.cpp). A gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
     void debugSetBestDeepWebDepth(int depth) { pet_.bestDeepWebDepth = depth < 0 ? 0 : depth; }
+    void debugSetBestDarkWebDepth(int depth) { pet_.bestDarkWebDepth = depth < 0 ? 0 : depth; }
     void debugStartDarkWebCrawl() { startDarkWebCrawl(); }
     // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test

@@ -637,6 +637,19 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const SaveStoredPet& p : d.rack)
         for (uint16_t bp : p.bondBp) w.u16(bp);
+
+    // v75: the rack's remaining kept fields, in rack order.
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const SaveStoredPet& p : d.rack) {
+        w.i32(p.bestDarkWebDepth);
+        w.u8(p.shieldActive);
+        w.u8(p.shieldSpent);
+        w.u8(p.yubiSpent);
+        w.u8(p.usbBranch);
+        w.u8(p.usbSoak);
+        w.u8(p.usbHold);
+        w.u32(p.bootHatchRemainMs);
+    }
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1345,6 +1358,32 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
                 const uint16_t bp = r.u16();
                 if (i < d.rack.size()) d.rack[i].bondBp[k] = bp;
             }
+    }
+
+    // v75 tail: the rack's remaining kept fields. Absent in an older blob -> defaults.
+    if (version >= 75) {
+        const uint16_t nKept = r.u16();
+        for (uint16_t i = 0; i < nKept && r.ok; ++i) {
+            SaveStoredPet k;
+            k.bestDarkWebDepth = r.i32();
+            k.shieldActive = r.u8();
+            k.shieldSpent = r.u8();
+            k.yubiSpent = r.u8();
+            k.usbBranch = r.u8();
+            k.usbSoak = r.u8();
+            k.usbHold = r.u8();
+            k.bootHatchRemainMs = r.u32();
+            if (i >= d.rack.size()) continue;
+            SaveStoredPet& p = d.rack[i];
+            p.bestDarkWebDepth = k.bestDarkWebDepth;
+            p.shieldActive = k.shieldActive;
+            p.shieldSpent = k.shieldSpent;
+            p.yubiSpent = k.yubiSpent;
+            p.usbBranch = k.usbBranch;
+            p.usbSoak = k.usbSoak;
+            p.usbHold = k.usbHold;
+            p.bootHatchRemainMs = k.bootHatchRemainMs;
+        }
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

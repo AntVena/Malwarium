@@ -108,8 +108,8 @@ void Game::captureHistory(SaveData& d) const {
     d.records = records_;                             // v3: ARCH RETIRED/CORRUPTED records
 }
 
-// The rack pets' own copies of the per-pet fields here ride on d.rack, stamped by
-// game_arch.cpp's freezePet.
+// The rack pets' own copies of the per-pet fields here ride on d.rack, written by
+// Pet::stored.
 void Game::capturePetProgress(SaveData& d) const {
     // v2: the move loadout (owned + per-slot equipped) + combat XP/level. Health is
     // transient (resets each fight) and is deliberately NOT captured.

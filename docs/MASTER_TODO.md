@@ -108,41 +108,16 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 
 #### Records
 
-**The `Pet` record.** The active pet is about 15 `Game` fields: `pet_`, `model_`, `generation_`,
-`defragCount_`, `combatLevel_`, `combatXp_`, `statPoints_`, `slotKinds_`, `moveLoadout_`,
-`loadout_`, `stageEnteredMs_`, `bestDeepWebDepth_`, `dyingElapsedMs_`, `upgrades_`,
-`petFoodsEaten_`, and the per-pet evolve state (`evolveBranchOverride_`, `evolveSoakFactor_`,
-`evolveHold_`). `freezePet` in `game_arch.cpp` takes 15 arguments to copy them onto the rack,
-and every new per-pet field needs a hand-written copy in the save, the load, the freeze and the
-thaw. Gather them into `Pet` with `Pet::save`/`Pet::load` against `SaveStoredPet`, so the
-active pet and a stored one use one mapping, and a new egg replaces the `Pet`.
-
-The pet's armed and once-per-life state goes in too, as the record's armed part: the Restore
-Point shield (`mistakeShieldActive_`), the Ambig-USB divert (`forceTrojanDivert_`), the Backup
-Drive deadline (`backupShieldUntilMs_`), the DeepWeb arming (`deepWebDepthMultiplier_`,
-`pendingDeepWebStartDepth_`, `pendingDiveStartBonusPct_`), the Lockout (`lockoutActive_`,
-`lockoutDeadlineMs_`, `lockoutReminded_`), the stacking-food run (`stackingFoodRun_`) and the
-spent once-per-life grants (`yubiConsumed_`, `shieldItemConsumed_`). A new egg clears them
-(`resetToHatch`) but ARCH neither carries nor clears them, so a pet deployed from the rack takes
-over whatever the outgoing pet had armed or spent. The USB port (the evolve fields above) is
-cleared on every swap (`archDeployStored`).
-Moving them onto `Pet` fixes that. The rack then:
-
-- **keeps** what came from a once-per-life item or a USB patch: the Restore Point shield and
-  both spent flags, and the USB port's override, soak and hold. A USB device is applied to the
-  pet, like an injection, so the patch stays with it on the shelf.
-- **clears** the armed buffs a player can buy again: the Backup Drive, the Ambig-USB divert,
-  the DeepWeb arming, the stacking-food run and any Lockout (which its modal already keeps
-  ARCH out of).
-
-These are the row's behaviour changes, each with a gate: a shield and a USB soak survive a
-store and deploy, a Backup Drive does not, and a deployed pet starts with nothing the outgoing
-pet had. Carrying the shield and the USB fields grows `SaveStoredPet` (a save bump), and
-`archDeployStored` stops calling `clearUsbPort`: Eject-USB becomes the only way to remove a
-patch. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
-`capturePetProgress`/`restorePetProgress` and `captureActivePet`/`restoreActivePet`;
-`game_lifecycle.cpp`'s reset | L | A pure move apart from the rack rules above. Plus a save
-round-trip test on a v74 and a new blob, active pet and rack. |
+**The active pet's save mapping, and the new-egg reset.** `Pet` (`core/model/pet.h`) holds
+the active pet, and `Pet::stored` / `Pet::thawed` are the rack's only mapping. The active pet
+still maps field by field in `game_persist.cpp` (`capturePetProgress`/`restorePetProgress`,
+`captureActivePet`/`restoreActivePet` and parts of the other pairs) into `SaveData`'s flat
+fields, so a new per-pet field needs a second mapping there. Store the active pet as a
+`SaveStoredPet` and load it through `Pet::thawed`, which leaves one mapping. `layEgg` likewise
+resets each field by hand; a fresh `Pet` built for the egg replaces that, with the starting
+moves and the first egg's sample mods as its two inputs. | `game_persist.cpp`,
+`game_lifecycle.cpp`'s `layEgg`, `core/model/save.*` | L | A save format change: a migration
+from the flat fields and a round-trip test on an old and a new blob. |
 
 **STAT as a list of pages, over `const Pet&`.** STAT's pages are a `StatPage` enum read by a
 draw switch, a scroll switch (`Game::statScrollSpan`), the index builder, each page's header
@@ -153,7 +128,7 @@ rows; a `StatReader` screen holds one ordered table of them and the cursor, scro
 state (`statPage_`, `statScroll_`, `statScreen_`, `statIndexRow_`). TIERS, LOADOUT and BUFFS
 are one flowed-page class over a row builder and a row top. `dump_frame` and the tests find a
 page by its title. | `core/ui/stat_screen.*`, `collect_screen.*`, `game_stat.cpp`,
-`tools/dump_frame.cpp`, `test_stat.cpp` | M | After the `Pet` row. Deletes the `StatPage` enum,
+`tools/dump_frame.cpp`, `test_stat.cpp` | M | Deletes the `StatPage` enum,
 `statScrollSpan` and the `*RowsFitting` exports. |
 
 **The `Operator` record.** Everything the player keeps across pets, tagged PLAYER-LEVEL in

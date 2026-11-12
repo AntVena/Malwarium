@@ -1,11 +1,9 @@
 // game_arch.cpp (the ARCH rack): freezing a pet, thawing one back, and the two
 // screens that drive it (part of the Game unit split, core/app/game.h).
 //
-// ARCH is cold storage for pets. The rack holds live pets frozen mid-lifecycle
-// (every stat comes back on thaw). The RECORD rows below are read-only entries for
-// pets that retired or corrupted. Freezing and thawing are the whole subsystem: what
-// a rack slot must carry is exactly what PetModel cannot be rebuilt without, which
-// is why freezePet lives here rather than on the model.
+// ARCH is cold storage for pets. The rack holds live pets frozen mid-lifecycle; what
+// a rack slot keeps is the Pet record's decision (Pet::stored / Pet::thawed). The
+// RECORD rows below are read-only entries for pets that retired or corrupted.
 //
 // Split out of game_config.cpp, which owns navigating the CFG screens; a rack is
 // storage, not a setting, and the two only ever met because both hang off the same
@@ -192,59 +190,6 @@ void Game::onArchRecord(const ButtonEvent& ev) {
 // loadout (owned/equipped moves, installed mod slots) (a pet's MOVES/MODS state
 // travels with it through the rack, like its level), plus everything an Epic dish has
 // permanently given it (core/model/pet_upgrades.h).
-static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int gen,
-                               int defragCount, int combatLevel, int combatXp,
-                               const int (&statPoints)[kLevelStatCount],
-                               const Game::SlotKind (&slotKinds)[kMaxMoveSlots],
-                               const MoveLoadout& moveLoadout, const ModSlots& loadout,
-                               uint32_t timeInStageMs, int bestDeepWebDepth,
-                               uint32_t dyingElapsedMs, const PetUpgrades& upgrades,
-                               const std::vector<const ItemDef*>& foodsEaten) {
-    SaveStoredPet p;
-    std::strncpy(p.id, pet->id, kSaveIdCap - 1);
-    p.hunger = m.hunger();
-    p.frag = m.fragmentation();
-    p.happy = m.happiness();
-    p.mistakes = m.careMistakes();
-    p.debuffs = m.debuffs();
-    p.ghost = m.hasGhost() ? 1 : 0;
-    p.generation = gen;
-    p.defragCount = defragCount;   // the defrag tally survives freeze/thaw
-    p.combatLevel = combatLevel;
-    p.combatXp = combatXp;
-    for (int i = 0; i < kLevelStatCount; ++i) p.statPoints[i] = statPoints[i];
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        p.slotKinds[i] = static_cast<uint8_t>(slotKinds[i]);
-    for (const char* mv : moveLoadout.owned()) {
-        SaveId id; std::strncpy(id.id, mv, kSaveIdCap - 1);
-        p.ownedMoves.push_back(id);
-    }
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        if (const char* e = moveLoadout.equipped(i)) std::strncpy(p.equippedMoves[i].id, e, kSaveIdCap - 1);
-    for (int i = 0; i < kModSlots; ++i)
-        if (const char* e = loadout.equipped(i)) std::strncpy(p.equippedMods[i].id, e, kSaveIdCap - 1);
-    p.timeInStageMs = timeInStageMs;   // evolution-timer progress survives freeze/thaw
-    p.bestDeepWebDepth = bestDeepWebDepth;  // this pet's own DeepWeb record survives freeze/thaw
-    p.dyingElapsedMs = dyingElapsedMs;      // a 5/5 pet thaws mid-window, not with a fresh one
-    // The Epic-dish upgrades belong to the CREATURE, so the rack keeps them: storing a
-    // pet must never cost it an upgrade it was fed.
-    p.bandwidthRegenBonusMin = upgrades.bandwidthRegenMin;
-    for (int i = 0; i < kLevelStatCount; ++i) p.statBonus[i] = upgrades.statBonus[i];
-    p.xpRateBonusPct = upgrades.xpRatePct;
-    for (int k = 0; k < kBondSources; ++k)
-        p.bondBp[k] = static_cast<uint16_t>(upgrades.bondBp[k]);
-    // The palate and the favourite are the creature's too: a pet that went onto the shelf
-    // having eaten something comes back having eaten it, and still loving the same dish.
-    for (const ItemDef* d : foodsEaten) {
-        SaveId id; std::strncpy(id.id, d->id, kSaveIdCap - 1);
-        p.foodsEaten.push_back(id);
-    }
-    if (upgrades.favouriteFood)
-        std::strncpy(p.favouriteFood, upgrades.favouriteFood->id, kSaveIdCap - 1);
-    p.favouriteFound = upgrades.favouriteFound ? 1 : 0;
-    return p;
-}
-
 void Game::noteRackDuplicates() {
     // SECOND_INSTANCE: the rack is holding two of one species at once. Called after
     // every mutation that can create such a pair: a freeze into a free slot, and the
@@ -269,10 +214,7 @@ void Game::archStoreActive() {
     // contextual new-egg Hatch fires. Persist immediately so the stored pet
     // survives a reboot during the egg timer (the save now has an empty active +
     // a populated rack).
-    rack_.push_back(freezePet(pet_.creature, pet_.model, pet_.generation, pet_.defragCount, pet_.level,
-                               pet_.xp, pet_.statPoints, pet_.slotKinds, pet_.moves, pet_.mods,
-                               nowMs_ - pet_.stageEnteredMs, pet_.bestDeepWebDepth,
-                               pet_.dyingElapsedMs, pet_.upgrades, pet_.foodsEaten));
+    rack_.push_back(pet_.stored(nowMs_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     // ...and the shelf with nothing free left on it. Fired at the freeze instead of
     // swept off a count, because "full" compares against rackSlots(), which the player
@@ -296,84 +238,13 @@ void Game::archDeployStored(int storedIdx) {
     const SaveStoredPet incoming = rack_[storedIdx];
     const CreatureDef* next = registry_.creature(incoming.id);
     if (!next) return;                              // unknown id: abort the swap
-    if (pet_.creature) {
-        rack_[storedIdx] = freezePet(pet_.creature, pet_.model, pet_.generation, pet_.defragCount, pet_.level,
-                                      pet_.xp, pet_.statPoints, pet_.slotKinds, pet_.moves,
-                                      pet_.mods, nowMs_ - pet_.stageEnteredMs, pet_.bestDeepWebDepth,
-                                      pet_.dyingElapsedMs, pet_.upgrades, pet_.foodsEaten);
-    } else {
-        rack_.erase(rack_.begin() + storedIdx);
-    }
+    if (pet_.creature) rack_[storedIdx] = pet_.stored(nowMs_);
+    else rack_.erase(rack_.begin() + storedIdx);
 
+    // The whole incoming pet replaces the outgoing one, so nothing the outgoing pet had
+    // armed or spent carries over. The spare mod pool is the player's and stays.
+    pet_ = Pet::thawed(incoming, registry_, nowMs_);
     installPet(next);
-    pet_.model = PetModel();
-    pet_.model.setHunger(incoming.hunger);
-    pet_.model.setFragmentation(incoming.frag);
-    pet_.model.setHappiness(incoming.happy);
-    pet_.model.setCareMistakes(incoming.mistakes);
-    pet_.model.setDebuffs(incoming.debuffs);
-    pet_.model.setGhost(incoming.ghost != 0);
-    pet_.generation = incoming.generation;
-    pet_.defragCount = incoming.defragCount;            // thaw the defrag tally
-    // The USB port empties on a pet swap. It is not frozen with either pet, because a
-    // device is plugged into the rig, but it steers a boundary the incoming pet is
-    // standing at a different distance from, and a soak is Process-only by gate
-    // (Game::itemUsable), which a swap would otherwise walk straight around. Emptying
-    // fits both cases: the device was plugged in for the pet that just went into the
-    // rack. The hold included, which is also the way out of a pet parked at a stage by a
-    // player who has no Eject-USB to hand.
-    clearUsbPort();
-    // The incoming pet's own palate. A food the build no longer has is dropped, the way
-    // applySave drops one.
-    pet_.foodsEaten.clear();
-    for (const SaveId& s : incoming.foodsEaten)
-        if (const ItemDef* d = registry_.item(s.id)) pet_.foodsEaten.push_back(d);
-    pet_.bestDeepWebDepth = incoming.bestDeepWebDepth;  // thaw this pet's own DeepWeb record
-    // Thaw the incoming pet's dying window mid-flight. pet_.dyingArmed is deliberately NOT
-    // restored: it anchors against nowMs_, so the next tick re-arms it against the
-    // current clock while this accumulator carries the only figure that means anything.
-    pet_.dyingElapsedMs = incoming.dyingElapsedMs;
-    pet_.dyingArmed = false;
-    // ...and the incoming pet's own permanent upgrades, which is why the rig regenerates
-    // at different speeds (and the same rig fights at different strengths) under
-    // different pets.
-    pet_.upgrades.bandwidthRegenMin = incoming.bandwidthRegenBonusMin;
-    for (int i = 0; i < kLevelStatCount; ++i)
-        pet_.upgrades.statBonus[i] = incoming.statBonus[i];
-    pet_.upgrades.xpRatePct = incoming.xpRateBonusPct;
-    pet_.upgrades.favouriteFood = registry_.item(incoming.favouriteFood);
-    pet_.upgrades.favouriteFound = incoming.favouriteFound != 0;
-    for (int k = 0; k < kBondSources; ++k)
-        pet_.upgrades.bondBp[k] = std::min<int>(incoming.bondBp[k], kBondSourceCapBp);
-    // v26: thaw the incoming pet's creature-level state. Without it the deployed pet
-    // silently inherits the outgoing pet's level.
-    pet_.level = incoming.combatLevel;
-    pet_.xp = incoming.combatXp;
-    for (int i = 0; i < kLevelStatCount; ++i) pet_.statPoints[i] = incoming.statPoints[i];
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        pet_.slotKinds[i] = static_cast<SlotKind>(incoming.slotKinds[i]);
-    // The incoming pet's own move + mod loadout: has-a, not shared. Empty ownedMoves
-    // marks a pre-v29 stored pet with no recorded move state, so it seeds its line's
-    // starting kit instead. The spare mod pool is player-level, like the ITEMS
-    // inventory, and stays; only the installed slots are per pet.
-    if (!incoming.ownedMoves.empty()) {
-        pet_.moves = MoveLoadout{};
-        for (const auto& mv : incoming.ownedMoves)
-            if (const MoveDef* def = registry_.move(mv.id)) pet_.moves.grant(def->id);
-        for (int i = 0; i < kMaxMoveSlots; ++i)
-            if (const MoveDef* def = registry_.move(incoming.equippedMoves[i].id))
-                pet_.moves.equip(i, def->id);
-    } else {
-        pet_.moves = MoveLoadout::startingForLine(registry_, next->line);
-    }
-    pet_.mods.resetSlots();
-    for (int i = 0; i < kModSlots; ++i)
-        if (const ModDef* def = registry_.mod(incoming.equippedMods[i].id))
-            pet_.mods.setEquipped(i, def->id);
-    // the re-farm curve is per-pet: a swapped-in pet farms cleared areas
-    // fresh (it isn't carried in the rack blob; a redeployed pet starts undepleted).
-    for (auto& row : pet_.armed.subRefarmCount) for (auto& c : row) c = 0;
-    pet_.stageEnteredMs = nowMs_ - incoming.timeInStageMs;  // thaw the evolution-timer progress
     lastModelMs_ = nowMs_;                          // no decay jump on the swap
     // Backfill any still-Unset slot from the newly-active pet's layout (covers a
     // pre-v26 stored pet with no recorded slot typing), then drop any equip that no

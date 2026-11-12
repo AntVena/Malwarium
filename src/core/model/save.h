@@ -339,7 +339,12 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v74 APPEND the per-pet BOND (PetUpgrades::bondBp), one tail after v72's: the active
 //     pet's three sources as u16 basis points, then a parallel list onto d.rack. Pre-v74
 //     -> 0 everywhere, because nothing recorded it.
-constexpr uint16_t kSaveVersion = 74;
+// v75 APPEND, for each rack pet in rack order, what Pet::stored keeps that no earlier
+//     tail carried: bestDarkWebDepth (i32), the shield and the two spent grants (u8
+//     each), the USB patch's branch, soak and hold (u8 each), and the egg incubation
+//     clock (u32). Pre-v75 -> no grants, an empty USB port, no crawl record and a zero
+//     clock, which is what a deploy handed over before the rack kept them.
+constexpr uint16_t kSaveVersion = 75;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -466,6 +471,12 @@ struct SaveStoredPet {
     uint8_t favouriteFound = 0;
     // v74: this pet's Bond per source (BondSource order), frozen with the pet.
     uint16_t bondBp[kBondSources] = {0};
+    // v75: the rest of what the rack keeps (Pet::stored). The once-per-life grants and
+    // the shield one of them arms, the USB patch (soak 1 = none), and an egg's
+    // incubation clock. bestDarkWebDepth above is written from v75 on too.
+    uint8_t shieldActive = 0, shieldSpent = 0, yubiSpent = 0;
+    uint8_t usbBranch = 0, usbSoak = 1, usbHold = 0;
+    uint32_t bootHatchRemainMs = 0;
 };
 
 // The permanent status of an ARCH record: a greyed, read-only entry that

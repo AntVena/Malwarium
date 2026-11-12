@@ -842,26 +842,96 @@ void test_eject_usb_pulls_whatever_is_armed() {
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
 }
 
-// A device is plugged into the RIG, not frozen into the creature, so a rack swap empties
-// the port rather than handing the incoming pet an ending the outgoing one paid for, or
-// carrying a Process-only soak into a stage its own gate forbids.
-void test_usb_port_empties_on_a_rack_swap() {
+// A USB device is applied to the pet, like an injection, so its patch is the pet's: it
+// stays with the pet on the rack and comes back with it, and the new egg that takes the
+// pet's place carries none of it.
+void test_usb_patch_travels_with_the_pet() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("sandbox_usb", 2);
     g.debugUseItem("sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
+    const uint32_t soakedRemain = g.evolveRemainMs();
 
     // Store the soaked Paypup (a fresh egg lands), then deploy it straight back out:
     // driven through ARCH the way a player would, since that is the seam being tested.
     enterArchNewEgg(g);                                    // ARCH's NEW EGG row
     pickFirstEggLine(g);
     CHECK(g.rackCount() == 1 && g.inEggPhase());
+    CHECK(g.evolveSoakFactor() == 1);                     // the egg has no patch
     enterArchStoredPet(g, "paypup");
     archConfirmAction(g);                                  // Deploy -> confirm -> commit
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
-    CHECK(g.evolveSoakFactor() == 1);
-    CHECK(g.evolveBranchOverride() == BranchOverride::None);
-    CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs);
+    CHECK(g.evolveSoakFactor() == 2);
+    CHECK(g.evolveRemainMs() == soakedRemain);
+}
+
+// The rack keeps what a pet was given once in its life and clears what it had armed for
+// now: a Restore Point shield and its spent flag come back with the pet, a Backup Drive
+// and an Ambig-USB divert do not. Both ways round: the pet deployed in its place starts
+// with nothing the outgoing pet had.
+void test_rack_keeps_grants_and_clears_armed_buffs() {
+    Game g{StartMode::Hatched, "paypup"};
+    g.inventory().add("restore_point", 2);
+    g.debugUseItem("restore_point");
+    g.inventory().add("backup_drive", 2);
+    g.debugUseItem("backup_drive");
+    g.inventory().add("ambig_usb", 2);
+    g.debugUseItem("ambig_usb");
+    g.debugSetBestDarkWebDepth(7);
+    CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.shieldSpent);
+    CHECK(g.backupShieldArmed());
+    CHECK(g.petRecord().armed.trojanDivert);
+
+    enterArchNewEgg(g);
+    pickFirstEggLine(g);
+    CHECK(g.inEggPhase());
+    CHECK(!g.petRecord().grants.shieldActive && !g.petRecord().grants.shieldSpent);
+    CHECK(!g.backupShieldArmed());
+    CHECK(g.bestDarkWebDepth() == 0);
+
+    enterArchStoredPet(g, "paypup");
+    archConfirmAction(g);
+    CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
+    CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.shieldSpent);
+    CHECK(!g.backupShieldArmed());
+    CHECK(!g.petRecord().armed.trojanDivert);
+    CHECK(g.bestDarkWebDepth() == 7);
+
+    // Arm the Backup Drive again, then swap the egg back in: it must not inherit it.
+    g.debugUseItem("backup_drive");
+    CHECK(g.backupShieldArmed());
+    char egg[kSaveIdCap];
+    std::strncpy(egg, g.rack()[0].id, sizeof(egg));
+    enterArchStoredPet(g, egg);
+    archConfirmAction(g);
+    CHECK(g.inEggPhase());
+    CHECK(!g.backupShieldArmed());
+    CHECK(!g.petRecord().grants.shieldActive);
+}
+
+// v75: the rack fields Pet::stored keeps round-trip, positionally per stored pet, and an
+// older record reads as an empty USB port (soak 1) rather than a soak of 0.
+void test_save_v75_rack_kept_fields() {
+    SaveData a;
+    SaveStoredPet p1; std::strcpy(p1.id, "paypup");
+    p1.bestDarkWebDepth = 9;
+    p1.shieldActive = 1; p1.shieldSpent = 1; p1.yubiSpent = 1;
+    p1.usbBranch = static_cast<uint8_t>(BranchOverride::Bad);
+    p1.usbSoak = 4; p1.usbHold = 1;
+    p1.bootHatchRemainMs = 12345;
+    SaveStoredPet p2; std::strcpy(p2.id, "malbear");
+    a.rack = {p1, p2};
+
+    SaveData b;
+    CHECK(deserializeSave(serializeSave(a), b));
+    CHECK(b.rack.size() == 2);
+    if (b.rack.size() != 2) return;
+    CHECK(b.rack[0].bestDarkWebDepth == 9);
+    CHECK(b.rack[0].shieldActive == 1 && b.rack[0].shieldSpent == 1 && b.rack[0].yubiSpent == 1);
+    CHECK(b.rack[0].usbBranch == static_cast<uint8_t>(BranchOverride::Bad));
+    CHECK(b.rack[0].usbSoak == 4 && b.rack[0].usbHold == 1);
+    CHECK(b.rack[0].bootHatchRemainMs == 12345);
+    CHECK(b.rack[1].usbSoak == 1 && b.rack[1].shieldActive == 0);
 }
 
 // A soak is a decision about the PROCESS stage, so it only goes in there: an egg has no

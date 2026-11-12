@@ -6,9 +6,9 @@
 // CREATURE rather than to the run, so an ARCH freeze/thaw keeps them (SaveStoredPet),
 // and the only way to have one twice is to raise a second pet.
 //
-// Grouped because they travel together everywhere: Game holds one of these, freezePet
-// (game_arch.cpp) puts one on the shelf, the save codec writes one, and STAT's BUFFS
-// page reads one to list what a pet is permanently carrying.
+// Grouped because they travel together everywhere: the Pet record holds one, Pet::stored
+// puts it on the shelf, the save codec writes one, and STAT's BUFFS page reads one to
+// list what a pet is permanently carrying.
 //
 // Adding one: a field here, its ItemEffect::Kind + applier case (defs.h /
 // Game::applyItemEffects), its line in the save codec's tail, and a BUFFS row.
