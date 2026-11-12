@@ -5,6 +5,7 @@
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_crews.h"
 #include "core/content/content_tables.h"   // kModWireCap
+#include "core/content/defs.h"
 #include "core/content/registry.h"
 
 namespace mal {
@@ -20,6 +21,36 @@ SaveId saveId(const char* id) {
 // Copy what overlaps of a length-prefixed set and leave the rest zero. A shorter set is
 // an older save, and a longer one a build with a bigger catalogue: the bits this build
 // can name come back, and the rest return on the build that has them.
+template <typename Def>
+void saveIds(std::vector<SaveId>& out, const std::vector<const Def*>& defs) {
+    out.reserve(defs.size());
+    for (const Def* def : defs) out.push_back(saveId(def->id));
+}
+
+// One byte per area for the v8 clears, and a bitmask byte per area (bit s = sub-area s)
+// for the v13 sub-area flags. The v12 per-area boss byte is still written because the
+// stream is version-layered, derived as "any sub-area boss unlocked" so it stays
+// consistent with the flags that replaced it.
+void saveWorld(const OperatorWorld& w, SaveOperator& s) {
+    s.sectorCleared.assign(kAreaCount, 0);
+    s.bossUnlocked.assign(kAreaCount, 0);
+    s.subCleared.assign(kAreaCount, 0);
+    s.subBossUnlocked.assign(kAreaCount, 0);
+    for (int a = 0; a < kAreaCount; ++a) {
+        s.sectorCleared[a] = w.sectorCleared[a] ? 1 : 0;
+        for (int sub = 0; sub < kSubAreasPerArea; ++sub) {
+            const uint8_t bit = static_cast<uint8_t>(1u << sub);
+            if (w.subCleared[a][sub]) s.subCleared[a] |= bit;
+            if (w.subBossUnlocked[a][sub]) {
+                s.subBossUnlocked[a] |= bit;
+                s.bossUnlocked[a] = 1;
+            }
+        }
+    }
+    s.titlesUnlocked = w.titlesUnlocked;
+    s.equippedTitle = w.equippedTitle;
+}
+
 template <size_t N>
 void loadBits(uint8_t (&out)[N], const std::vector<uint8_t>& in) {
     for (size_t i = 0; i < N; ++i) out[i] = i < in.size() ? in[i] : 0;
@@ -40,6 +71,46 @@ bool RigAccount::toggleService(int row) {
         case ServiceMode::Ask: servicesAsk &= ~bit; servicesOff |= bit; break;
         case ServiceMode::Off: servicesOff &= ~bit; break;
     }
+    return true;
+}
+
+bool OperatorShelves::itemCollected(const char* id) const {
+    if (!id) return false;
+    for (const ItemDef* d : collectedItems)
+        if (std::strcmp(d->id, id) == 0) return true;
+    return false;
+}
+
+bool OperatorShelves::creatureRaised(const char* id) const {
+    if (!id) return false;
+    for (const CreatureDef* c : raisedCreatures)
+        if (std::strcmp(c->id, id) == 0) return true;
+    return false;
+}
+
+int OperatorShelves::deepestDive(const char* creatureId) const {
+    if (!creatureId) return 0;
+    for (const SpeciesDive& s : speciesDives)
+        if (s.def && std::strcmp(s.def->id, creatureId) == 0) return s.depth;
+    return 0;
+}
+
+int OperatorShelves::deepestDiveEver() const {
+    int best = 0;
+    for (const SpeciesDive& s : speciesDives)
+        if (s.depth > best) best = s.depth;
+    return best;
+}
+
+bool OperatorShelves::recordDive(const CreatureDef* c, int depth) {
+    if (!c || depth <= 0) return false;
+    for (SpeciesDive& s : speciesDives) {
+        if (s.def != c) continue;
+        if (depth <= s.depth) return false;
+        s.depth = depth;
+        return true;
+    }
+    speciesDives.push_back({c, depth});
     return true;
 }
 
@@ -116,6 +187,22 @@ SaveOperator Operator::saved(const ContentRegistry& reg, uint32_t nowMs) const {
     // AUTO writes 0, which is also what a pick with no row writes, since AUTO is the safe
     // reading.
     if (const BackgroundDef* b = backgroundFor(backgroundPick)) s.backgroundPick = b->wire;
+
+    saveWorld(world, s);
+    saveIds(s.collectedItems, shelves.collectedItems);
+    s.speciesDiveIds.reserve(shelves.speciesDives.size());
+    s.speciesDiveDepths.reserve(shelves.speciesDives.size());
+    for (const SpeciesDive& d : shelves.speciesDives) {
+        if (!d.def) continue;
+        s.speciesDiveIds.push_back(saveId(d.def->id));
+        s.speciesDiveDepths.push_back(d.depth);
+    }
+    saveIds(s.raisedCreatures, shelves.raisedCreatures);
+    s.cantSigils = cant.sigils;
+    s.handshakesSeen = cant.handshakesSeen;
+    s.shakesSpent = cant.shakesSpent;
+    s.rack = arch.rack;
+    s.records = arch.records;
     return s;
 }
 
@@ -232,6 +319,85 @@ OperatorTallies loadedTallies(const SaveOperator& s) {
     return t;
 }
 
+// Extra entries from a build with more areas are ignored, and a short list reads as not
+// cleared. A pre-v13 blob has no sub-area flags: a cleared area had every sub-area
+// beaten, so all five read as cleared and unlocked. Its v12 per-area boss byte names no
+// sub-area, so an unlock in flight is dropped rather than credited to the wrong one.
+OperatorWorld loadedWorld(const SaveOperator& s) {
+    OperatorWorld w;
+    const auto at = [](const std::vector<uint8_t>& v, int i) -> uint8_t {
+        return i < static_cast<int>(v.size()) ? v[i] : 0;
+    };
+    const bool haveSub = !s.subCleared.empty() || !s.subBossUnlocked.empty();
+    for (int a = 0; a < kAreaCount; ++a) {
+        w.sectorCleared[a] = at(s.sectorCleared, a) != 0;
+        for (int sub = 0; sub < kSubAreasPerArea; ++sub) {
+            const uint8_t bit = static_cast<uint8_t>(1u << sub);
+            w.subCleared[a][sub] = haveSub ? (at(s.subCleared, a) & bit) != 0
+                                           : w.sectorCleared[a];
+            w.subBossUnlocked[a][sub] = haveSub ? (at(s.subBossUnlocked, a) & bit) != 0
+                                                : w.sectorCleared[a];
+        }
+    }
+    // Bits past the live area count, and an equip naming a Title that is not unlocked,
+    // would make the CFG picker show a Title nobody earned.
+    w.titlesUnlocked = s.titlesUnlocked & ((1u << kAreaCount) - 1u);
+    w.equippedTitle = w.titleUnlocked(s.equippedTitle) ? s.equippedTitle : -1;
+    return w;
+}
+
+// Pre-v40 nothing counted boss rounds, but the clear flags prove a floor: every cleared
+// sub-area and area had its boss beaten at least once. Seeding from them spares an
+// established device re-beating finished content for the early rungs, and can only
+// undercount.
+int seededBossWins(const OperatorWorld& w) {
+    int n = 0;
+    for (int a = 0; a < kAreaCount; ++a) {
+        if (w.sectorCleared[a]) ++n;
+        for (int sub = 0; sub < kSubAreasPerArea; ++sub)
+            if (w.subCleared[a][sub]) ++n;
+    }
+    return n;
+}
+
+// Deduplicated for the reason loadedReveals gives. The rack and records are not folded
+// into the raised species here: Game does that through markCreatureRaised, which also
+// announces a background the blob's tally missed.
+OperatorShelves loadedShelves(const SaveOperator& s, const ContentRegistry& reg) {
+    OperatorShelves v;
+    for (const SaveId& id : s.collectedItems)
+        if (const ItemDef* it = reg.item(id.id)) v.collectedItems.push_back(it);
+    for (size_t i = 0; i < s.speciesDiveIds.size(); ++i) {
+        const int depth = i < s.speciesDiveDepths.size() ? s.speciesDiveDepths[i] : 0;
+        if (const CreatureDef* c = reg.creature(s.speciesDiveIds[i].id))
+            v.speciesDives.push_back({c, depth});
+    }
+    for (const SaveId& id : s.raisedCreatures)
+        if (const CreatureDef* c = reg.creature(id.id))
+            if (!v.creatureRaised(c->id)) v.raisedCreatures.push_back(c);
+    return v;
+}
+
+// A blob claiming more spent than were ever captured reads back as an empty purse, so
+// the next save writes the corrected figure.
+OperatorCant loadedCant(const SaveOperator& s) {
+    OperatorCant c;
+    c.sigils = s.cantSigils;
+    c.handshakesSeen = s.handshakesSeen;
+    c.shakesSpent = s.shakesSpent < 0 ? 0
+                  : (s.shakesSpent > s.handshakesSeen ? s.handshakesSeen : s.shakesSpent);
+    return c;
+}
+
+// A rack pet whose species the running content no longer defines cannot be deployed.
+OperatorArch loadedArch(const SaveOperator& s, const ContentRegistry& reg) {
+    OperatorArch v;
+    for (const SaveStoredPet& p : s.rack)
+        if (reg.creature(p.id)) v.rack.push_back(p);
+    v.records = s.records;
+    return v;
+}
+
 }  // namespace
 
 Operator Operator::loaded(const SaveOperator& s, const SaveId (&activeMods)[kModSlots],
@@ -256,6 +422,11 @@ Operator Operator::loaded(const SaveOperator& s, const SaveId (&activeMods)[kMod
     o.rig = loadedRig(s);
     o.reveals = loadedReveals(s, reg);
     o.tallies = loadedTallies(s);
+    o.world = loadedWorld(s);
+    if (o.tallies.bossWins == 0) o.tallies.bossWins = seededBossWins(o.world);
+    o.shelves = loadedShelves(s, reg);
+    o.cant = loadedCant(s);
+    o.arch = loadedArch(s, reg);
     // Ownership is the game's to check (Game::restoreBackgroundPick); a wire from a newer
     // build has no row here and reads as AUTO.
     const BackgroundDef* b = backgroundByWire(s.backgroundPick);

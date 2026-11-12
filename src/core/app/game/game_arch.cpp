@@ -19,7 +19,8 @@
 namespace mal {
 
 std::vector<ArchRow> Game::archRows() const {
-    return buildArchRows(registry_, archGroup_, pet_.creature, pet_.generation, rack_, records_);
+    return buildArchRows(registry_, archGroup_, pet_.creature, pet_.generation, op_.arch.rack,
+                         op_.arch.records);
 }
 
 ArchRow Game::archFocusedRow() const {
@@ -32,7 +33,8 @@ void Game::onArchPicker(const ButtonEvent& ev) {
     // The L2 group picker: NEW EGG, ACTIVE, one row per creature family, RECORDS. A
     // walks (wraps), B opens, C backs out: the ITEMS type-picker's gestures, because
     // this is the same kind of screen one level up.
-    const auto tiles = buildArchPickerRows(registry_, pet_.creature, rack_, records_);
+    const auto tiles =
+        buildArchPickerRows(registry_, pet_.creature, op_.arch.rack, op_.arch.records);
     const int n = static_cast<int>(tiles.size());
     if (n <= 0) { if (ev.button == Button::C) nav_ = Nav::Cursor; return; }
     if (archPickRow_ < 0 || archPickRow_ >= n) archPickRow_ = 0;
@@ -65,7 +67,7 @@ void Game::onArchPicker(const ButtonEvent& ev) {
         // it only skips straight to layEgg with ONE unlocked line, and with one line
         // there is no line-select to have been backed out of, so this state needs the
         // modal, which means two or more lines.
-        if (!pet_.creature && !rack_.empty()) startHatch();
+        if (!pet_.creature && !op_.arch.rack.empty()) startHatch();
         else nav_ = Nav::Cursor;
     }
 }
@@ -117,7 +119,8 @@ void Game::archReturnFromLineSelect() {
 void Game::onArchRecord(const ButtonEvent& ev) {
     // The NEW EGG confirm is its own L3: no action set to cycle, just the prompt.
     if (archOnNewEgg()) {
-        const bool rackFull = pet_.creature && static_cast<int>(rack_.size()) >= rackSlots();
+        const bool rackFull =
+            pet_.creature && static_cast<int>(op_.arch.rack.size()) >= rackSlots();
         if (archConfirm_) {
             if (ev.button == Button::A) archConfirmChoice_ ^= 1;
             else if (ev.button == Button::B) {
@@ -175,7 +178,7 @@ void Game::onArchRecord(const ButtonEvent& ev) {
                                                             : ArchAction::Deploy;
     } else if (ev.button == Button::B) {
         if (archAction_ == ArchAction::Store &&
-            static_cast<int>(rack_.size()) >= rackSlots())
+            static_cast<int>(op_.arch.rack.size()) >= rackSlots())
             return;                                     // rack full -> blocked (gate shown)
         archConfirm_ = true;                            // Store/Deploy/Release -> confirm
         archConfirmChoice_ = 0;                         // default Cancel
@@ -200,26 +203,26 @@ void Game::noteRackDuplicates() {
     // must not take the line back off line-select. archStoreActive calls this before
     // startHatch() for the same reason: the freeze that earns a line is usually the
     // one whose line-select should offer it.
-    for (size_t i = 0; i + 1 < rack_.size(); ++i)
-        for (size_t j = i + 1; j < rack_.size(); ++j)
-            if (std::strcmp(rack_[i].id, rack_[j].id) == 0) {
+    for (size_t i = 0; i + 1 < op_.arch.rack.size(); ++i)
+        for (size_t j = i + 1; j < op_.arch.rack.size(); ++j)
+            if (std::strcmp(op_.arch.rack[i].id, op_.arch.rack[j].id) == 0) {
                 unlockAchievement(ach::kSecondInstance);
                 return;
             }
 }
 
 void Game::archStoreActive() {
-    if (!pet_.creature || static_cast<int>(rack_.size()) >= rackSlots()) return;
+    if (!pet_.creature || static_cast<int>(op_.arch.rack.size()) >= rackSlots()) return;
     // Set the active pet aside into a free slot, then vacate the active save → the
     // contextual new-egg Hatch fires. Persist immediately so the stored pet
     // survives a reboot during the egg timer (the save now has an empty active +
     // a populated rack).
-    rack_.push_back(pet_.stored(nowMs_));
+    op_.arch.rack.push_back(pet_.stored(nowMs_));
     noteRackDuplicates();   // before startHatch: a line earned HERE belongs on THIS menu
     // ...and the shelf with nothing free left on it. Fired at the freeze instead of
     // swept off a count, because "full" compares against rackSlots(), which the player
     // can raise. A slot bought later must not un-earn the row.
-    if (static_cast<int>(rack_.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
+    if (static_cast<int>(op_.arch.rack.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
     archConfirm_ = false;
     listRow_ = 0;
     startHatch();        // pet_.creature = nullptr -> line-select, then a fresh egg
@@ -227,7 +230,7 @@ void Game::archStoreActive() {
 }
 
 void Game::archDeployStored(int storedIdx) {
-    if (storedIdx < 0 || storedIdx >= static_cast<int>(rack_.size())) return;
+    if (storedIdx < 0 || storedIdx >= static_cast<int>(op_.arch.rack.size())) return;
     // Slot-neutral swap: the deployed pet becomes active; the current active freezes into
     // the slot it vacated.
     //
@@ -235,11 +238,11 @@ void Game::archDeployStored(int storedIdx) {
     // between an ARCH Store and the next egg, because line-select can be backed out of
     // (game_nav.cpp). There is nothing to freeze into the slot, and leaving the pet's
     // own frozen copy behind would duplicate it.
-    const SaveStoredPet incoming = rack_[storedIdx];
+    const SaveStoredPet incoming = op_.arch.rack[storedIdx];
     const CreatureDef* next = registry_.creature(incoming.id);
     if (!next) return;                              // unknown id: abort the swap
-    if (pet_.creature) rack_[storedIdx] = pet_.stored(nowMs_);
-    else rack_.erase(rack_.begin() + storedIdx);
+    if (pet_.creature) op_.arch.rack[storedIdx] = pet_.stored(nowMs_);
+    else op_.arch.rack.erase(op_.arch.rack.begin() + storedIdx);
 
     // The whole incoming pet replaces the outgoing one, so nothing the outgoing pet had
     // armed or spent carries over. The spare mod pool is the player's and stays.
@@ -262,8 +265,8 @@ void Game::archReleaseStored(int storedIdx) {
     // A no-reward Release valve: drop a stored pet from the rack entirely to free a
     // slot (e.g. a full rack of non-Daemon pets that can't be Sold). Leaves no
     // record: a plain release, unlike a CSF or a sale.
-    if (storedIdx < 0 || storedIdx >= static_cast<int>(rack_.size())) return;
-    rack_.erase(rack_.begin() + storedIdx);
+    if (storedIdx < 0 || storedIdx >= static_cast<int>(op_.arch.rack.size())) return;
+    op_.arch.rack.erase(op_.arch.rack.begin() + storedIdx);
     archConfirm_ = false;
     listRow_ = 0;
     nav_ = Nav::Submenu;   // back to the (now shorter) rack list
@@ -272,14 +275,14 @@ void Game::archReleaseStored(int storedIdx) {
 
 void Game::debugSeedRack(const char* creatureId, int combatLevel) {
     const CreatureDef* c = registry_.creature(creatureId);
-    if (!c || static_cast<int>(rack_.size()) >= rackSlots()) return;
+    if (!c || static_cast<int>(op_.arch.rack.size()) >= rackSlots()) return;
     SaveStoredPet p;
     std::strncpy(p.id, c->id, kSaveIdCap - 1);
     p.hunger = 60; p.frag = 10; p.happy = 70; p.mistakes = 1;
     p.debuffs = 0; p.ghost = 0; p.generation = 1;
     p.combatLevel = combatLevel;
     p.statPoints[0] = combatLevel;
-    rack_.push_back(p);
+    op_.arch.rack.push_back(p);
 }
 
 }  // namespace mal

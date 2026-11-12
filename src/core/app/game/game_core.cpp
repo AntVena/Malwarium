@@ -706,7 +706,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // change, plus a slower periodic write so passive decay is captured. Only
     // once there's something worth saving (a raised pet or a populated rack): a
     // bare first-boot Hatch leaves the save empty, so the next boot re-hatches.
-    if (store_ && (pet_.creature || !rack_.empty())) {
+    if (store_ && (pet_.creature || !op_.arch.rack.empty())) {
         const bool debounced = saveDirty_ && nowMs_ - lastSaveMs_ >= kSaveDebounceMs;
         const bool periodic = nowMs_ - lastSaveMs_ >= kSaveAutosaveMs;
         if (debounced || periodic) persistSave();

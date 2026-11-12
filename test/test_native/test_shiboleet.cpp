@@ -605,7 +605,7 @@ void test_cant_persists_across_a_reboot() {
     // A blob written before v59 reads back as an unlearned Cant with a FULL purse:
     // every shake such a save ever captured is still there to spend.
     SaveData d{};
-    d.handshakesSeen = 7;
-    CHECK(d.cantSigils == 0);
-    CHECK(d.shakesSpent == 0);
+    d.op.handshakesSeen = 7;
+    CHECK(d.op.cantSigils == 0);
+    CHECK(d.op.shakesSpent == 0);
 }

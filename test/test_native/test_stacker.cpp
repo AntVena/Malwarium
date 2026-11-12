@@ -747,7 +747,7 @@ void test_save_v39_raised_tally_roundtrip() {
       g.tick(t += kSaveDebounceMs + kHeartbeatMs); }   // flush the debounced save
     SaveData out;
     CHECK(deserializeSave(store.bytes(), out));
-    CHECK(out.raisedCreatures.size() == 2);
+    CHECK(out.op.raisedCreatures.size() == 2);
     Game g2(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored
     CHECK(g2.pet() && std::strcmp(g2.pet()->id, "malbear") == 0);
     CHECK(g2.creatureRaised("pingcub"));               // nothing HOLDS pingcub
@@ -766,7 +766,7 @@ void test_full_pedia_achievement_reads_the_raised_tally() {
             std::strcmp(c->id, "malbear") != 0) {      // the one still to be raised
             SaveId s{};
             std::strncpy(s.id, c->id, kSaveIdCap - 1);
-            a.raisedCreatures.push_back(s);
+            a.op.raisedCreatures.push_back(s);
         }
     MemSaveStore store; store.save(serializeSave(a));
     Game g(StartMode::Hatched, "pingcub", &store);

@@ -437,12 +437,11 @@ public:
     bool inEndlessZone() const { return inDeepWebDive() || inDarkWebCrawl(); }
     // The crawl's unlock: the area whose shrine holds the portal has been CLEARED.
     bool darkWebUnlocked() const {
-        const int a = areaIndexById(kDarkWebUnlockAreaId);
-        return a >= 0 && a < kAreaCount && sectorCleared_[a];
+        return op_.world.areaCleared(areaIndexById(kDarkWebUnlockAreaId));
     }
     int bestDarkWebDepth() const { return pet_.bestDarkWebDepth; }
     // The DeepWeb Dive's unlock: has the ladder reached kDeepWebUnlockAreaId? The SAME
-    // linear gate every area answers to (explSectorOpen over sectorCleared_), asked of
+    // linear gate every area answers to (explSectorOpen over the cleared areas), asked of
     // one named rung, so the dive needs no unlock flag of its own. The arena works the
     // same way. An id that resolves to nothing leaves the zone locked rather than opening
     // it by accident, which is the safe direction for a typo to fail in.
@@ -450,7 +449,7 @@ public:
         const int a = areaIndexById(kDeepWebUnlockAreaId);
         if (a < 0) return false;
         if (a == 0) return true;
-        return sectorCleared_[a - 1];
+        return op_.world.areaCleared(a - 1);
     }
     // is hands-off auto-explore paused because the pet is too fragmented
     // (battle fatigue climbed frag into the danger band)? The mode stays armed; a
@@ -460,15 +459,9 @@ public:
     }
     // Has sub-area (`area`,`sub`)'s boss been UNLOCKED by a 10-win streak? A per-sub
     // flag, persisted (save v13). The streak is separate and not saved.
-    bool subBossUnlocked(int area, int sub) const {
-        return area >= 0 && area < kAreaCount && sub >= 0 &&
-               sub < kSubAreasPerArea && subBossUnlocked_[area][sub];
-    }
+    bool subBossUnlocked(int area, int sub) const { return op_.world.subBossReady(area, sub); }
     // Has sub-area (`area`,`sub`)'s boss been BEATEN? Durable (save v13).
-    bool subCleared(int area, int sub) const {
-        return area >= 0 && area < kAreaCount && sub >= 0 &&
-               sub < kSubAreasPerArea && subCleared_[area][sub];
-    }
+    bool subCleared(int area, int sub) const { return op_.world.subAreaCleared(area, sub); }
     // Is the AREA boss reachable? All 5 sub-areas cleared, area not yet.
     bool areaBossReady(int area) const;
 
@@ -702,7 +695,7 @@ public:
     // EXPL sector-clear flags: has sector `idx`'s boss/gauntlet
     // been cleared? Drives the linear unlock (sector N+1 opens when N clears).
     bool sectorCleared(int idx) const {
-        return idx >= 0 && idx < kAreaCount && sectorCleared_[idx];
+        return op_.world.areaCleared(idx);
     }
 
     // Power/battery status pushed from the platform tier (device reads the ADC +
@@ -1336,20 +1329,17 @@ public:
     // Lifetime count of distinct WPA handshakes captured (SHAKES on CFG). Deduped
     // by BSSID so a repeat capture of a known network never re-credits, until the
     // dedup set rotates that BSSID out at its cap (core/net/handshake_ledger.h).
-    int handshakesSeen() const { return handshakesSeen_; }
+    int handshakesSeen() const { return op_.cant.handshakesSeen; }
     // SHAKES not yet spent on a sigil of the CANT. A captured handshake is what buys
     // a guardian's answer (game_shiboleet.cpp). The lifetime tally above counts
     // every capture and this counts the ones left to spend; they show together as
     // "unspent/lifetime". Never negative: spending is the only thing that moves it,
     // and it checks first.
-    int shakesUnspent() const {
-        const int n = handshakesSeen_ - shakesSpent_;
-        return n > 0 ? n : 0;
-    }
+    int shakesUnspent() const { return op_.cant.shakesUnspent(); }
     // The letters of the Cant this device can read (core/model/cant.h). The one
     // durable half of the whole guardian system.
-    SigilSet cantSigils() const { return cantSigils_; }
-    int sigilsKnown() const { return sigilCount(cantSigils_); }
+    SigilSet cantSigils() const { return op_.cant.sigils; }
+    int sigilsKnown() const { return sigilCount(op_.cant.sigils); }
     // The guardian encounter's live state, for the screen and for tests: which band the
     // fluency roll landed in, how the riddle ended, and the riddle itself already drawn
     // in the Cant. `shiboleetReplyText` fills `out` with the reply on shown row `row`.
@@ -1701,7 +1691,7 @@ public:
     // One bit per kThemes row, for the picker. Built on demand for the same reason the
     // backgrounds' mask is: ownership is derived, so a held copy could only ever go stale.
     uint32_t themesUnlockedMask() const;
-    // Has this DEVICE ever held `id`? The ever-held shelf (collectedItems_), which the
+    // Has this DEVICE ever held `id`? The ever-held shelf (OperatorShelves), which the
     // 'Pedia already draws from and a palette chip's unlock is read out of.
     bool hasCollectedItem(const char* id) const;
     bool inEvolve() const { return nav_ == Nav::ModalEvolve; }
@@ -1712,8 +1702,8 @@ public:
     bool hasNextEvolution() const;
     uint32_t evolveRemainMs() const;
     bool inCSF() const { return nav_ == Nav::ModalCSF; }
-    const std::vector<SaveRecord>& records() const { return records_; }
-    int recordCount() const { return static_cast<int>(records_.size()); }
+    const std::vector<SaveRecord>& records() const { return op_.arch.records; }
+    int recordCount() const { return static_cast<int>(op_.arch.records.size()); }
 
     // --- Persisted identity / lifetime (STAT footer, ARCH, CFG) -------------
     int generation() const { return pet_.generation; }          // active pet's generation
@@ -1731,8 +1721,8 @@ public:
     // on-device arcade editor cycles through), then commit + persist. Returns
     // false (no mutation) on an invalid tag.
     bool setHackerTag(const char* s);
-    const std::vector<SaveStoredPet>& rack() const { return rack_; }
-    int rackCount() const { return static_cast<int>(rack_.size()); }
+    const std::vector<SaveStoredPet>& rack() const { return op_.arch.rack; }
+    int rackCount() const { return static_cast<int>(op_.arch.rack.size()); }
     // Where the ARCH cursor is, for the screens that draw it and the gates that drive
     // it. The same read-only surface ITEMS and GAMES already expose (itemsScreen,
     // arcadeRow): enough to say which shelf is open and what is focused, without
@@ -1742,7 +1732,8 @@ public:
     int archPickRow() const { return archPickRow_; }
     int archPickRowCount() const {
         return static_cast<int>(
-            buildArchPickerRows(registry_, pet_.creature, rack_, records_).size());
+            buildArchPickerRows(registry_, pet_.creature, op_.arch.rack, op_.arch.records)
+                .size());
     }
     int archRowCount() const { return static_cast<int>(archRows().size()); }
     // The species id under the ARCH cursor, or nullptr on an empty group, a record with
@@ -1758,12 +1749,9 @@ public:
     // Zone-completion Titles --------------------------------
     // Player-level, persisted (survive a pet reset, like the sector-clear flags).
     // A cleared sector's Title unlocks; one may be equipped for display.
-    bool titleUnlocked(int sector) const {
-        return sector >= 0 && sector < kAreaCount &&
-               (titlesUnlocked_ & (1u << sector)) != 0;
-    }
+    bool titleUnlocked(int sector) const { return op_.world.titleUnlocked(sector); }
     int titlesUnlockedCount() const;
-    int equippedTitle() const { return equippedTitle_; }   // sector index, or -1
+    int equippedTitle() const { return op_.world.equippedTitle; }   // sector index, or -1
     // The equipped Title's display name, or "NONE" when nothing is equipped.
     const char* equippedTitleName() const;
 
@@ -1887,9 +1875,9 @@ public:
     // 'Pedia's "hatched" reveal and FULL_PEDIA_L1 read: what's currently HELD is a
     // snapshot, and a species evolved past leaves nothing holding it. Idempotent.
     void markCreatureRaised(const char* id);
-    bool creatureRaised(const char* id) const;
+    bool creatureRaised(const char* id) const { return op_.shelves.creatureRaised(id); }
     // How many DISTINCT species this device has raised (PROFILE's SPECIES row).
-    int speciesRaised() const { return static_cast<int>(raisedCreatures_.size()); }
+    int speciesRaised() const { return static_cast<int>(op_.shelves.raisedCreatures.size()); }
     // The fixed wild-malbeast roster's (combat.h kWildMalbeastIds) seen/defeated
     // state, set by a real wild encounter roll (seen) / a won live wild fight
     // (defeated): see Game::startEncounter / Game::finishCombat.
@@ -1916,8 +1904,8 @@ public:
     // cuisine/rarity achievements. Anything asking what the player has seen reads
     // this; the bag holds only what is left. Written by a sweep over the live
     // inventory, so every path that grants an item is covered by construction.
-    bool itemCollected(const char* id) const;
-    int itemsCollected() const { return static_cast<int>(collectedItems_.size()); }
+    bool itemCollected(const char* id) const { return op_.shelves.itemCollected(id); }
+    int itemsCollected() const { return static_cast<int>(op_.shelves.collectedItems.size()); }
     // The PET's palate, beside the operator's collection above: has this pet been fed
     // `id`, and how many distinct dishes has it tasted. Cleared with the pet, so each
     // new pet fills the FOODS grid from empty.
@@ -1932,9 +1920,11 @@ public:
     // The deepest DeepWeb Dive this SPECIES has ever reached on this device (save v40),
     // 0 if it never dived. Per-species rather than per-pet, so the record outlives the
     // individual: the pet's own in-progress best is bestDeepWebDepth() above.
-    int speciesDeepestDive(const char* creatureId) const;
+    int speciesDeepestDive(const char* creatureId) const {
+        return op_.shelves.deepestDive(creatureId);
+    }
     // The deepest dive on the device, by anyone: the max over every species record.
-    int deepestDiveEver() const;
+    int deepestDiveEver() const { return op_.shelves.deepestDiveEver(); }
 
     // --- Dev shortcuts (host key / device dev gesture / tests) --------------
     // Wipe back to a fresh empty save and re-enter the Decryption Hatch, so the
@@ -1982,14 +1972,14 @@ public:
     // sigils of the Cant, and earning one takes a real WPA capture on hardware, which no
     // native run can do.
     void debugAddHandshakes(int n) {
-        handshakesSeen_ += n;
+        op_.cant.handshakesSeen += n;
         markSaveDirty();
     }
     // Learn `n` sigils outright, so a test can stand at a fluency rather than winning its
     // way there. Follows the same fixed reveal order the real path does (learnSigil), so
     // "four sigils" means the same four letters here as in play.
     void debugLearnSigils(int n) {
-        for (int i = 0; i < n; ++i) cantSigils_ = learnSigil(cantSigils_);
+        for (int i = 0; i < n; ++i) op_.cant.sigils = learnSigil(op_.cant.sigils);
         markSaveDirty();
     }
     // Credit boss rounds without fighting them (tests / headless runs): reaching the
@@ -2187,18 +2177,18 @@ public:
     // + FIGHT BOSS. Marks the save dirty so a follow-on persist captures it.
     void debugSetSubCleared(int area, int sub, bool v) {
         if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
-            subCleared_[area][sub] = v; markSaveDirty();
+            op_.world.subCleared[area][sub] = v; markSaveDirty();
         }
     }
     void debugSetSubBossUnlocked(int area, int sub, bool v) {
         if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
-            subBossUnlocked_[area][sub] = v; markSaveDirty();
+            op_.world.subBossUnlocked[area][sub] = v; markSaveDirty();
         }
     }
     // Set an AREA's cleared flag directly (tests): reach the "all areas cleared" state
     // (the DeepWeb Dive unlock) without grinding every gauntlet. Real path: area boss.
     void debugSetSectorCleared(int area, bool v) {
-        if (area >= 0 && area < kAreaCount) { sectorCleared_[area] = v; markSaveDirty(); }
+        if (area >= 0 && area < kAreaCount) { op_.world.sectorCleared[area] = v; markSaveDirty(); }
     }
     // The level stamped on the last rolled wild encounter (DeepWeb scaling test).
     int debugEncounterEnemyLevel() const { return encounterEnemy_.level; }
@@ -2295,7 +2285,7 @@ public:
     // boss's final win and awardTourneyPurse.
     void debugClearSector(int area) {
         if (area < 0 || area >= kAreaCount) return;
-        sectorCleared_[area] = true;
+        op_.world.sectorCleared[area] = true;
         markSaveDirty();
     }
     void debugAddTourneyWin() { ++op_.tallies.tourneyWins; markSaveDirty(); }
@@ -2860,10 +2850,10 @@ private:
     // Boss ladder. Two confrontations share the carried-Health round plumbing
     // (build a gauntlet, run its rounds back-to-back with no heal between):
     //   • startSubAreaBoss(area,sub). A single strong malbeast unlocked by a 10-win
-    // streak (subBossUnlocked_); a full clear marks the SUB-AREA cleared.
+    // streak (OperatorWorld::subBossUnlocked); a full clear marks the SUB-AREA cleared.
     //   • startAreaBoss(area): a 5-stage gauntlet of the area's sub-area bosses,
     //     reachable once all 5 sub-areas are cleared; a full clear marks the AREA
-    // cleared (sectorCleared_ → next area) + grants the Title.
+    // cleared (OperatorWorld::sectorCleared → next area) + grants the Title.
     // bossSub_ (>=0 = a sub-area boss for that sub · -1 = the area boss) tells
     // finishBossRound() which clear to record. startBossRound(carryHealth) begins one
     // round; finishBossRound() advances/clears/fails it. Always a MANUAL trigger.
@@ -3102,23 +3092,17 @@ private:
     void captureBag(SaveData& d) const;
     void captureHistory(SaveData& d) const;
     void captureRadio(SaveData& d) const;
-    void captureWorldProgress(SaveData& d) const;
     void captureOperator(SaveData& d) const;
     void captureTourneyRun(SaveData& d) const;
-    void captureShelves(SaveData& d) const;
     void captureActivePet(SaveData& d) const;
     void captureSettings(SaveData& d) const;
-    void captureCant(SaveData& d) const;
     void restoreBag(const SaveData& d);
     void restoreHistory(const SaveData& d);
     void restoreRadio(const SaveData& d);
-    void restoreWorldProgress(const SaveData& d);
     void restoreOperator(const SaveData& d);
     void restoreTourneyRun(const SaveData& d);
-    void restoreShelves(const SaveData& d);
     void restoreActivePet(const SaveData& d);
     void restoreSettings(const SaveData& d);
-    void restoreCant(const SaveData& d);
     void settleBackgroundPick();
     void persistSave();                            // serialize + write via store_
     void markSaveDirty() { saveDirty_ = true; }    // schedule a debounced write
@@ -3585,11 +3569,10 @@ private:
     char editTag_[kHackerTagMax + 1] = {0};
     int editCaret_ = 0;
 
-    // ARCH submenu: the focused record action + the rack of frozen stored
-    // pets (persisted). archConfirm_ is the inline confirm for Store/Deploy.
+    // ARCH submenu: the focused record action. The rack itself is the Operator's
+    // (OperatorArch). archConfirm_ is the inline confirm for Store/Deploy.
     ArchAction archAction_ = ArchAction::Store;
     SaleOffer archSaleOffer_ = SaleOffer::Bits;    // the SELL sheet's focused offer
-    std::vector<SaveStoredPet> rack_;
     bool archConfirm_ = false;
     int archConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
     // Which of ARCH's two L2 screens is showing, which group the list is showing, and
@@ -3757,39 +3740,23 @@ private:
     int postEncStatGain_[kLevelStatCount] = {0};
     int postEncLevelAfter_ = 0;
 
-    // Boss ladder state. Durable + persisted (save v8/v13):
-    //   sectorCleared_[area]:        the AREA's 5-stage gauntlet beaten (gates the
-    // linear area ladder + the Title, v8).
-    //   subCleared_[area][sub]:      that SUB-AREA's boss beaten (v13).
-    //   subBossUnlocked_[area][sub]: a 10-win streak unlocked that sub-area's manual
-    //                                 boss trigger (v13; distinct from exploreStreak_).
-    // The rest is transient run state: bossGauntlet_ is the active gauntlet's rounds,
-    // bossRound_ the current round, bossSector_ which area it belongs to, bossSub_ the
-    // sub-area (>=0) or -1 for the area boss (tells finishBossRound which clear to
-    // record), bossBitsAccrued_ the banked lump paid on a full clear.
-    bool sectorCleared_[kAreaCount] = {};
-    bool subCleared_[kAreaCount][kSubAreasPerArea] = {};
-    bool subBossUnlocked_[kAreaCount][kSubAreasPerArea] = {};
+    // The boss gauntlet in play. Which bosses have been beaten is the Operator's
+    // (OperatorWorld). bossGauntlet_ is the active gauntlet's rounds, bossRound_ the
+    // current round, bossSector_ which area it belongs to, bossSub_ the sub-area (>=0) or
+    // -1 for the area boss (tells finishBossRound which clear to record),
+    // bossBitsAccrued_ the banked lump paid on a full clear.
     BossGauntlet bossGauntlet_{"", 0, {}};
     int bossRound_ = 0;
     int bossSector_ = 0;
     int bossSub_ = -1;
     int bossBitsAccrued_ = 0;
 
-    // Zone-completion Titles. Player-level, persisted (save v10) so
-    // they survive a pet reset like sectorCleared_. titlesUnlocked_ is a bitmask
-    // (bit i = sector i's Title earned); equippedTitle_ is the shown Title's sector
-    // index, or -1 for none. unlockTitle() is called from the sector-clear path.
-    uint32_t titlesUnlocked_ = 0;
-    int equippedTitle_ = -1;
+    // Grant an area's Title (OperatorWorld::titlesUnlocked). Called from the sector-clear
+    // path.
     void unlockTitle(int sector);
     // The next selectable Title after `cur` (wraps): NONE (-1) plus each UNLOCKED
     // sector, in order. Locked sectors are skipped. Drives the CFG picker's A-cycle.
     int nextSelectableTitle(int cur) const;
-
-    // The raised tally (save v39): borrowed registry pointers, resolved through the
-    // registry on load. Player-level: nothing but a wipe clears it.
-    std::vector<const CreatureDef*> raisedCreatures_;
 
     // --- Achievements (game_pedia.cpp) -----------------------------------------------
     // The earned and notified bitsets are the Operator's (OperatorReveals).
@@ -3819,10 +3786,6 @@ private:
                                     // starts its marquee at the head of the line rather
                                     // than wherever the free-running beat happens to be
 
-    // Every item id that has ever been in the bag (save v40): borrowed registry
-    // pointers, like OperatorReveals::seenCreatures. Player-level: spending an item never
-    // un-collects it.
-    std::vector<const ItemDef*> collectedItems_;
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
     // that is not a Food: a Buff drunk from the bag is not a meal. Also where a
     // favourite dish is found.
@@ -3832,22 +3795,15 @@ private:
     // one the same way a new egg does. Draws off a hash rather than advancing rng_, so
     // feeding never shifts the shared sequence the spoilage and combat rolls read.
     void ensureFavouriteFood();
-    // Fold the live inventory into collectedItems_. Called from the sweep rather than
-    // wired into each grant site: every path that adds an item necessarily leaves it in
-    // the bag for a tick, so one pass over the stacks catches all of them, including
-    // the items an upgraded save was already holding.
+    // Fold the live inventory into the collected-items shelf. Called from the sweep
+    // rather than wired into each grant site: every path that adds an item necessarily
+    // leaves it in the bag for a tick, so one pass over the stacks catches all of them,
+    // including the items an upgraded save was already holding.
     void sweepCollectedItems();
-    // The deepest DeepWeb Dive reached BY SPECIES (save v40). A per-species record rather
-    // than one device high-water mark, so "take three different species deep" is
-    // answerable and a line's own record is the max over its members. Borrowed registry
-    // pointers, like OperatorReveals::seenCreatures.
-    struct SpeciesDive {
-        const CreatureDef* def = nullptr;
-        int depth = 0;
-    };
-    std::vector<SpeciesDive> speciesDives_;
     // Record `depth` against the species if it beats that species' standing record.
-    void recordSpeciesDive(const CreatureDef* c, int depth);
+    void recordSpeciesDive(const CreatureDef* c, int depth) {
+        if (op_.shelves.recordDive(c, depth)) markSaveDirty();
+    }
     // Seat `c` as the active pet. THE one place pet_.creature is assigned, so that becoming
     // this device's pet and being tallied as raised cannot come apart: every path
     // that installs a pet (a laid egg, a hatch, an evolution, an ARCH Deploy, a save
@@ -3874,15 +3830,10 @@ private:
 
     // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp, core/model/cant.h).
     //
-    // Only ONE of these is durable. `cantSigils_` is the set of letters of the Cant this
-    // device has learned to read (save v59), and `shakesSpent_` is how many of its SHAKES
-    // have been paid out for them: a sigil costs a captured handshake, so the two
-    // together are the whole of what the ladder remembers. Everything below them
+    // What the ladder remembers is the Operator's (OperatorCant). Everything here
     // describes ONE encounter and is rebuilt every time a guardian speaks, which is why
     // the cipher in particular is not persisted: a mapping that survived a reboot would
     // be a mapping worth memorising instead of learning.
-    SigilSet cantSigils_ = 0;
-    int shakesSpent_ = 0;
 
     ShiboleetWelcome shibWelcome_ = ShiboleetWelcome::Riddle;
     ShiboleetReply shibReply_ = ShiboleetReply::Pending;
@@ -4233,13 +4184,10 @@ private:
     // (hot-broadcast window + re-arm cooldown); only its enabled() toggle intent is
     // persisted (save v6). Ticked each beat; the device tier feeds it handshakes.
     AuditCapture auditCapture_;
-    // SHAKES: the lifetime count of distinct captured handshakes. registerHandshake()
-    // bumps it once per new BSSID (save v7). A separate tally from the network
-    // discovery NETS above.
-    int handshakesSeen_ = 0;
-    // Per-BSSID dedup for that credit. SD-backed (loadHandshakeLedger at boot) so the
-    // full rotating history lives on the card, with a smaller save-blob fallback
-    // (Game::toSave) for a card-less reboot. See core/net/handshake_ledger.h.
+    // Per-BSSID dedup for the SHAKES credit (OperatorCant::handshakesSeen), which
+    // registerHandshake() bumps once per new BSSID. SD-backed (loadHandshakeLedger at
+    // boot) so the full rotating history lives on the card, with a smaller save-blob
+    // fallback (captureRadio) for a card-less reboot. See core/net/handshake_ledger.h.
     HandshakeLedger handshakeLedger_;
 
     SdStatus sdStatus_;  // last microSD reading from the platform tier (CFG "SD")
@@ -4372,15 +4320,13 @@ private:
 
     // Critical System Failure. pet_.dyingArmed latches when the pet enters the
     // 5/5 dying state and pet_.dyingEnteredMs is the anchor it clocks from; csfBeat_
-    // paces the crash-FX hold before B acknowledges. records_ (persisted, v3) is the
-    // ARCH rack of RETIRED/CORRUPTED records: greyed, read-only, no live slot.
+    // paces the crash-FX hold before B acknowledges into an ARCH record (OperatorArch).
     //
     // pet_.dyingElapsedMs is the total burned so far and the ONLY one of the three that
     // persists (save v42), which is what stops a power cycle from refunding the
     // window. The pair splits because the anchor is in monotonic game-ms, meaningless
     // across a boot, while the accumulator is a duration and survives one intact.
     int csfBeat_ = 0;
-    std::vector<SaveRecord> records_;
 
     // Persistence plumbing. store_ is the platform save sink (nullptr = none).
     // saveDirty_ schedules a debounced write; lastSaveMs_ paces autosaves.

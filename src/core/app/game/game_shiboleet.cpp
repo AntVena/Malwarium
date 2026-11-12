@@ -104,7 +104,7 @@ void Game::startShiboleet() {
     // move in opposite directions as the Cant is learned (refusal thins out, a quiet
     // word thickens), so a pet with no sigils is still mostly asked, which gives the
     // ladder its first rung. See tunables.h.
-    const int fluency = cantFluencyPct(cantSigils_);
+    const int fluency = cantFluencyPct(op_.cant.sigils);
     const int affront = kShiboleetAffrontBasePct * (100 - fluency) / 100;
     const int boon = kShiboleetBoonMaxPct * fluency / 100;
     rng_ = rng_ * 1664525u + 1013904223u;
@@ -148,7 +148,7 @@ void Game::startShiboleet() {
     // replies, and whatever the guardian says about the answer at the end are all drawn
     // in it, so a letter the pet cannot read is the same letter on every screen. Built
     // for every band and not just the asking one: a refusal is still spoken in the Cant.
-    shibCipher_.build(cantSigils_, cipherSeed(rng_, exploreSector_, exploreSteps_));
+    shibCipher_.build(op_.cant.sigils, cipherSeed(rng_, exploreSector_, exploreSteps_));
 
     // The BODY. Reset per meeting and seeded off the same walk position the cipher is,
     // so a guardian re-renders identically while it is on screen and takes a different
@@ -369,8 +369,8 @@ void Game::finishShiboleet() {
 bool Game::buySigil() {
     if (sigilsKnown() >= kCantSigils) return false;   // nothing left to learn
     if (shakesUnspent() <= 0) return false;           // nothing to trade
-    ++shakesSpent_;
-    cantSigils_ = learnSigil(cantSigils_);
+    ++op_.cant.shakesSpent;
+    op_.cant.sigils = learnSigil(op_.cant.sigils);
     log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
     markSaveDirty();
     return true;

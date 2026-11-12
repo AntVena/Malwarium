@@ -37,7 +37,7 @@ void Game::enterCfgScreen(CfgScreen target) {
         case CfgScreen::Sound: cfgSoundPick_ = static_cast<int>(soundMode_); break;
         case CfgScreen::Volume: cfgVolumePick_ = volume_; break;          // ...likewise
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
-        case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
+        case CfgScreen::Titles: cfgTitlePick_ = equippedTitle(); break;     // the equipped one
         case CfgScreen::Background: {                                      // ...likewise
             const BackgroundDef* b = backgroundFor(op_.backgroundPick);
             cfgBgPick_ = 0;
@@ -167,7 +167,8 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
             // sector Title, skipping locked ones.
             onCfgPicker(ev, [&] { cfgTitlePick_ = nextSelectableTitle(cfgTitlePick_); },
                         [&] {
-                            equippedTitle_ = cfgTitlePick_;   // -1 (NONE) or an unlocked sector
+                            // -1 (NONE) or an unlocked sector
+                            op_.world.equippedTitle = cfgTitlePick_;
                             markSaveDirty();
                             return true;
                         });
@@ -434,7 +435,7 @@ uint32_t Game::themesUnlockedMask() const {
 
 bool Game::hasCollectedItem(const char* id) const {
     if (!id) return false;
-    for (const ItemDef* d : collectedItems_)
+    for (const ItemDef* d : op_.shelves.collectedItems)
         if (d && std::strcmp(d->id, id) == 0) return true;
     return false;
 }
@@ -487,7 +488,7 @@ void Game::drawCfg(Framebuffer& fb) const {
             v.networksSeen = op_.networksSeen;
             v.equippedTitle = equippedTitleName();
             v.captureEnabled = auditCapture_.enabled();
-            v.handshakesSeen = handshakesSeen_;
+            v.handshakesSeen = op_.cant.handshakesSeen;
             if (bHeld_)
                 v.holdFrac = static_cast<float>(nowMs_ - bDownMs_) / kFactoryRevealMs;
             drawSysInfo(fb, v);
@@ -535,7 +536,8 @@ void Game::drawCfg(Framebuffer& fb) const {
         }
         case CfgScreen::HackerTag: drawHackerTag(fb, editTag_, editCaret_); break;
         case CfgScreen::Titles:
-            drawTitles(fb, cfgTitlePick_, titlesUnlocked_, equippedTitle_, beat_); break;
+            drawTitles(fb, cfgTitlePick_, op_.world.titlesUnlocked, op_.world.equippedTitle, beat_);
+            break;
         case CfgScreen::Background: {
             // Ownership is derived, so the mask is built here for the draw rather than
             // held anywhere: one bit per row, in the table's own order.
@@ -660,12 +662,12 @@ bool Game::backgroundOwned(SceneId s) const {
             // the roster rather than recorded on the way past, so the answer keeps up
             // with the homes table: move a line's place and every operator who raised
             // that line already owns the new one.
-            for (const CreatureDef* c : raisedCreatures_)
+            for (const CreatureDef* c : op_.shelves.raisedCreatures)
                 if (sceneForCreature(*c) == s) return true;
             return false;
         case BackgroundSource::Clear:
             for (int a = 0; a < kAreaCount; ++a)
-                if (area(a).scene == s) return sectorCleared_[a];
+                if (area(a).scene == s) return op_.world.sectorCleared[a];
             return false;
         case BackgroundSource::Bracket:
             return op_.tallies.tourneyWins >= b->rung;

@@ -148,7 +148,7 @@ void Game::onCombat(const ButtonEvent& ev) {
         // scrambled move the pet can read (MoveDef::scrambleTurns) and Combat has no
         // other source for it. The sigils are the device's, not the fight's.
         if (!duel)
-            combat_.openOverride(combatItemOptions(), crewExploitOption(), cantSigils_);
+            combat_.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
         return;
     }
     if (combat_.overrideOpen()) {                 // standard A/B/C inside the picker
@@ -383,7 +383,7 @@ void Game::applyCombatResult() {
     const bool refarm =
         exploreSector_ >= 0 && exploreSector_ < kExplSectors &&
         exploreSub_ >= 0 && exploreSub_ < kExplSubAreas &&
-        subCleared_[exploreSector_][exploreSub_];
+        op_.world.subCleared[exploreSector_][exploreSub_];
     // a resolved WILD (live, non-boss) fight fatigues the pet: a per-fight frag
     // (corruption) tax, win or lose (boss rounds never reach here; safe Sim is exempt). A
     // flee (Fled) isn't a fought battle, so it's excluded. Bandwidth is a per-fight
@@ -554,8 +554,8 @@ void Game::finishCombat() {
                 if (exploreStreak_ >= kExploreStreakToBoss &&
                     exploreSector_ >= 0 && exploreSector_ < kExplSectors &&
                     exploreSub_ >= 0 && exploreSub_ < kExplSubAreas &&
-                    !subCleared_[exploreSector_][exploreSub_])
-                    subBossUnlocked_[exploreSector_][exploreSub_] = true;
+                    !op_.world.subCleared[exploreSector_][exploreSub_])
+                    op_.world.subBossUnlocked[exploreSector_][exploreSub_] = true;
                 // In the endless DeepWeb Dive the streak IS the DEPTH. Two records get
                 // it: the pet's own (read back by the Checkpoint Bell) and its species'
                 // record, which outlives the pet and feeds the depth achievements
@@ -574,7 +574,7 @@ void Game::finishCombat() {
                     if (kDarkWebSigilEveryN > 0 && exploreStreak_ > 0 &&
                         exploreStreak_ % kDarkWebSigilEveryN == 0 &&
                         sigilsKnown() < kCantSigils) {
-                        cantSigils_ = learnSigil(cantSigils_);
+                        op_.cant.sigils = learnSigil(op_.cant.sigils);
                         log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
                     }
                 }

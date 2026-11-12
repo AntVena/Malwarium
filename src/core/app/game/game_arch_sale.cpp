@@ -76,7 +76,7 @@ const char* Game::archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) co
 }
 
 bool Game::daemonOnRack() const {
-    for (const SaveStoredPet& p : rack_) {
+    for (const SaveStoredPet& p : op_.arch.rack) {
         const CreatureDef* c = registry_.creature(p.id);
         if (c && c->stage == Stage::Daemon) return true;
     }
@@ -87,9 +87,9 @@ ArchSaleSheet Game::archSaleSheet() const {
     ArchSaleSheet sh;
     const ArchRow row = archFocusedRow();
     if (!row.def || row.kind != ArchRow::Kind::Stored || row.index < 0 ||
-        row.index >= static_cast<int>(rack_.size()))
+        row.index >= static_cast<int>(op_.arch.rack.size()))
         return sh;
-    const SaveStoredPet& sold = rack_[row.index];
+    const SaveStoredPet& sold = op_.arch.rack[row.index];
     sh.daemon = row.def;
     sh.level = sold.combatLevel;
     sh.generation = sold.generation;
@@ -142,7 +142,7 @@ void Game::onArchSale(const ButtonEvent& ev) {
         archSaleOffer_ = static_cast<SaleOffer>(
             (static_cast<int>(archSaleOffer_) + 1) % kSaleOfferCount);
     } else if (ev.button == Button::B) {
-        if (archSaleBlocker(archSaleOffer_, rack_[row.index])) return;   // row says why
+        if (archSaleBlocker(archSaleOffer_, op_.arch.rack[row.index])) return;   // row says why
         archConfirm_ = true;
         archConfirmChoice_ = 0;                                         // default Cancel
     } else if (ev.button == Button::C) {
@@ -187,8 +187,8 @@ void Game::reimageActivePet() {
 }
 
 void Game::archSellStored(int storedIdx, SaleOffer offer) {
-    if (storedIdx < 0 || storedIdx >= static_cast<int>(rack_.size())) return;
-    const SaveStoredPet sold = rack_[storedIdx];
+    if (storedIdx < 0 || storedIdx >= static_cast<int>(op_.arch.rack.size())) return;
+    const SaveStoredPet sold = op_.arch.rack[storedIdx];
     const CreatureDef* d = registry_.creature(sold.id);
     if (!d || d->stage != Stage::Daemon || archSaleBlocker(offer, sold)) return;
 
@@ -198,12 +198,12 @@ void Game::archSellStored(int storedIdx, SaleOffer offer) {
         case SaleOffer::Hotfix:  pet_.model.setCareMistakes(0); break;
     }
 
-    rack_.erase(rack_.begin() + storedIdx);
+    op_.arch.rack.erase(op_.arch.rack.begin() + storedIdx);
     SaveRecord rec;
     std::strncpy(rec.id, sold.id, kSaveIdCap - 1);
     rec.status = static_cast<uint8_t>(RecordStatus::Retired);
     rec.generation = sold.generation;
-    records_.push_back(rec);
+    op_.arch.records.push_back(rec);
 
     archConfirm_ = false;
     archSaleOffer_ = SaleOffer::Bits;

@@ -45,9 +45,9 @@ public:
     // to kHandshakeDedupCap and does not write through (no path is set yet).
     void seed(const std::vector<uint64_t>& keys);
 
-    // Forget every key and truncate the backing file. SHAKES is pet-level
-    // (Game::resetForNewPet clears handshakesSeen_), so its dedup set resets with the
-    // pet, unlike the device-level NetworkLedger which a wipe leaves alone.
+    // Forget every key and truncate the backing file. A WIPE EVERYTHING reset replaces
+    // the Operator record and its SHAKES count with it, so the dedup set resets too,
+    // unlike the device-level NetworkLedger which a wipe leaves alone.
     void clear();
 
     const std::vector<uint64_t>& keys() const { return keys_; }   // oldest first

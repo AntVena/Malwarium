@@ -12,22 +12,6 @@ namespace mal {
 
 // Persistence ----------------------------------------
 
-namespace {
-
-SaveId saveId(const char* id) {
-    SaveId s;
-    if (id) std::strncpy(s.id, id, kSaveIdCap - 1);
-    return s;
-}
-
-template <typename Def>
-void captureIds(std::vector<SaveId>& out, const std::vector<const Def*>& defs) {
-    out.reserve(defs.size());
-    for (const Def* def : defs) out.push_back(saveId(def->id));
-}
-
-}  // namespace
-
 // Every collection below is reserved to the exact count before it is filled. The
 // count is always known from the live container, and a vector that grows into place
 // instead allocates a whole doubling ladder, which costs nothing in total but leaves
@@ -42,13 +26,10 @@ SaveData Game::captureSave() const {
     captureBag(d);
     captureHistory(d);
     captureRadio(d);
-    captureWorldProgress(d);
     captureOperator(d);
     captureTourneyRun(d);
-    captureShelves(d);
     captureActivePet(d);
     captureSettings(d);
-    captureCant(d);
     return d;
 }
 
@@ -72,8 +53,6 @@ void Game::captureHistory(SaveData& d) const {
         std::strncpy(se.text, e.text, kSaveTextCap - 1);
         d.log.push_back(se);
     }
-    d.rack = rack_;
-    d.records = records_;                             // v3: ARCH RETIRED/CORRUPTED records
 }
 
 // The radio toggles persist as intent only: hot/cooldown timers are runtime-only (no RTC).
@@ -94,36 +73,6 @@ void Game::captureRadio(SaveData& d) const {
                             ? shakeKeys.size()
                             : static_cast<size_t>(kHandshakeDedupSaveCap);
     d.seenHandshakeBssids.assign(shakeKeys.end() - keep, shakeKeys.end());
-    d.handshakesSeen = handshakesSeen_;
-}
-
-void Game::captureWorldProgress(SaveData& d) const {
-    // v8: the EXPL AREA-clear flags, one byte per area so the linear
-    // complete-to-advance ladder survives a reboot.
-    d.sectorCleared.assign(kAreaCount, 0);
-    for (int i = 0; i < kAreaCount; ++i)
-        d.sectorCleared[i] = sectorCleared_[i] ? 1 : 0;
-
-    // v12: the legacy per-sector boss-unlock byte. Superseded at runtime by the v13
-    // per-sub flags, but still written (the stream is version-layered), derived as
-    // "any sub-area boss unlocked in this area" so it stays self-consistent.
-    d.bossUnlocked.assign(kAreaCount, 0);
-    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks, one byte per
-    // area, bit s = sub-area s.
-    d.subCleared.assign(kAreaCount, 0);
-    d.subBossUnlocked.assign(kAreaCount, 0);
-    for (int a = 0; a < kAreaCount; ++a)
-        for (int s = 0; s < kSubAreasPerArea; ++s) {
-            if (subCleared_[a][s]) d.subCleared[a] |= static_cast<uint8_t>(1u << s);
-            if (subBossUnlocked_[a][s]) {
-                d.subBossUnlocked[a] |= static_cast<uint8_t>(1u << s);
-                d.bossUnlocked[a] = 1;              // legacy v12: any sub unlocked
-            }
-        }
-
-    // v10: the zone-completion Titles, the unlocked bitmask + the equipped index.
-    d.titlesUnlocked = titlesUnlocked_;
-    d.equippedTitle = equippedTitle_;
 }
 
 void Game::captureOperator(SaveData& d) const { d.op = op_.saved(registry_, nowMs_); }
@@ -135,18 +84,6 @@ void Game::captureTourneyRun(SaveData& d) const {
     d.tourneyAlive = tourneyAlive_;
     d.tourneyRound = tourneyRound_;
     d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
-}
-
-void Game::captureShelves(SaveData& d) const {
-    captureIds(d.collectedItems, collectedItems_);
-    d.speciesDiveIds.reserve(speciesDives_.size());
-    d.speciesDiveDepths.reserve(speciesDives_.size());
-    for (const SpeciesDive& s : speciesDives_) {
-        if (!s.def) continue;
-        d.speciesDiveIds.push_back(saveId(s.def->id));
-        d.speciesDiveDepths.push_back(s.depth);
-    }
-    captureIds(d.raisedCreatures, raisedCreatures_);   // v39
 }
 
 void Game::captureActivePet(SaveData& d) const {
@@ -166,13 +103,6 @@ void Game::captureSettings(SaveData& d) const {
     std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
 }
 
-void Game::captureCant(SaveData& d) const {
-    // v59: the CANT. The learned mask and what was paid for it; how many shakes are
-    // still SPENDABLE is derived from this and the v7 lifetime count, never stored.
-    d.cantSigils = cantSigils_;
-    d.shakesSpent = shakesSpent_;
-}
-
 void Game::restoreBag(const SaveData& d) {
     // Inventory: resolve each saved id to the registry's stable pointer (the
     // borrowed-id contract); drop ids no longer present in content.
@@ -188,14 +118,6 @@ void Game::restoreHistory(const SaveData& d) {
     log_ = EventLog{};
     for (const auto& e : d.log)
         log_.push(static_cast<LogEventType>(e.type), e.text);
-    // Rack: only entries whose creature still exists.
-    rack_.clear();
-    for (const auto& p : d.rack)
-        if (registry_.creature(p.id)) rack_.push_back(p);
-    // ARCH records (v3): historical RETIRED/CORRUPTED entries. Kept even if the
-    // creature id is gone from content (a record is a name + status, not a live
-    // pet); the UI resolves an unknown id to "?".
-    records_ = d.records;
 }
 
 void Game::restoreRadio(const SaveData& d) {
@@ -230,71 +152,28 @@ void Game::restoreRadio(const SaveData& d) {
     // match rather than run capture without its discovery feed.
     if (auditCapture_.enabled() && !netScanEnabled_) netScanEnabled_ = true;
 
-    // Audit SHAKES dedup ledger (v7). Restore the seen-handshake-BSSID set + the
-    // lifetime handshake count so a reboot never re-credits a handshake already
+    // Audit SHAKES dedup ledger (v7), so a reboot never re-credits a handshake already
     // counted. A pre-v7 blob carries an empty ledger (dedup rebuilds from scratch
     // that session). (v33 dropped the NETS/seenBssids set; see save.h.)
     handshakeLedger_.seed(d.seenHandshakeBssids);
-    handshakesSeen_ = d.handshakesSeen;
-}
-
-// Areas, sub-areas, re-farm counts and the zone Titles they award.
-void Game::restoreWorldProgress(const SaveData& d) {
-    // Area-clear flags (v8). A pre-v8 blob carries an empty vector → nothing cleared
-    // (only area 0 open: the correct default for a save that predates linear gating).
-    // Extra saved entries (a future area shrink) are ignored.
-    for (int i = 0; i < kAreaCount; ++i)
-        sectorCleared_[i] = i < static_cast<int>(d.sectorCleared.size()) &&
-                            d.sectorCleared[i] != 0;
-
-    // Per-sub-area clear + boss-unlock flags (v13). A v13+ blob restores the per-area
-    // bitmasks verbatim. A pre-v13 blob carries empty vectors → MIGRATE: a cleared
-    // AREA had every sub-area beaten, so mark all 5 sub-areas cleared + their bosses
-    // unlocked; an uncleared area's sub-areas all default false. The legacy
-    // per-sector bossUnlocked byte doesn't map to a specific sub-area, so an
-    // in-flight unlock is dropped rather than mis-attributed).
-    const bool haveSub = !d.subCleared.empty() || !d.subBossUnlocked.empty();
-    for (int a = 0; a < kAreaCount; ++a) {
-        const uint8_t cm = a < static_cast<int>(d.subCleared.size())
-                               ? d.subCleared[a] : 0;
-        const uint8_t bm = a < static_cast<int>(d.subBossUnlocked.size())
-                               ? d.subBossUnlocked[a] : 0;
-        for (int s = 0; s < kSubAreasPerArea; ++s) {
-            if (haveSub) {
-                subCleared_[a][s] = (cm & (1u << s)) != 0;
-                subBossUnlocked_[a][s] = (bm & (1u << s)) != 0;
-            } else {
-                subCleared_[a][s] = sectorCleared_[a];       // cleared area → all sub cleared
-                subBossUnlocked_[a][s] = sectorCleared_[a];  // ...and all bosses unlocked
-            }
-        }
-    }
-
-    // Zone-completion Titles (v10). A pre-v10 blob carries 0 unlocked / -1 equipped
-    // (nothing earned: the correct default for a save that predates Titles). Mask
-    // off bits above the live sector count, and drop a stale equip whose Title isn't
-    // actually unlocked (a future sector shrink), so equippedTitleName() stays honest.
-    titlesUnlocked_ = d.titlesUnlocked & ((1u << kAreaCount) - 1u);
-    equippedTitle_ = d.equippedTitle;
-    if (!titleUnlocked(equippedTitle_)) equippedTitle_ = -1;
 }
 
 // The player across every pet, through the record's own mapping. A Store-vacated save (no
-// active pet) still carries all of it. Runs after restoreWorldProgress, which the boss
-// tally seeds from.
+// active pet) still carries all of it. What follows the load reads state outside the
+// record: the bag, the active pet's save, and the background a raised species brings.
 void Game::restoreOperator(const SaveData& d) {
     op_ = Operator::loaded(d.op, d.active.equippedMods, registry_);
-    if (op_.tallies.bossWins == 0) {
-        // Pre-v40 nothing counted boss rounds, but the clear flags prove a floor: every
-        // cleared sub-area and every cleared area had its boss beaten at least once.
-        // Seeding from them means an established device doesn't have to re-beat content
-        // it has already finished to earn the early rungs, and it can only undercount.
-        for (int a = 0; a < kAreaCount; ++a) {
-            if (sectorCleared_[a]) ++op_.tallies.bossWins;
-            for (int s = 0; s < kSubAreasPerArea; ++s)
-                if (subCleared_[a][s]) ++op_.tallies.bossWins;
-        }
-    }
+    sweepCollectedItems();     // fold in whatever the bag holds: seeds a pre-v40 save
+    if (d.op.speciesDiveIds.empty() && d.active.bestDeepWebDepth > 0)
+        // Pre-v40: one pet's own record is the only dive history that was ever kept, so
+        // credit it to that pet's species. Deeper dives by earlier pets were never
+        // recorded, so they cannot be recovered.
+        op_.shelves.recordDive(registry_.creature(d.active.id), d.active.bestDeepWebDepth);
+    // Every species the rack or the records still point at was raised to get there, so
+    // it belongs in the tally whatever the blob says. That rebuilds a pre-v39 save, which
+    // carries no tally at all. The active pet is covered by installPet.
+    for (const SaveStoredPet& p : op_.arch.rack) markCreatureRaised(p.id);
+    for (const SaveRecord& r : op_.arch.records) markCreatureRaised(r.id);
     achBannerWire_ = -1;
     achBannerCount_ = 0;
     // Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool to the
@@ -316,41 +195,9 @@ void Game::restoreTourneyRun(const SaveData& d) {
                         : TourneyPhase::Ready;
 }
 
-// The collected-items shelf, the palate, the dive records and the raised-species tally.
-void Game::restoreShelves(const SaveData& d) {
-    collectedItems_.clear();
-    for (const auto& s : d.collectedItems)
-        if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);
-    sweepCollectedItems();     // fold in whatever the bag holds: seeds a pre-v40 save
-    speciesDives_.clear();
-    for (size_t i = 0; i < d.speciesDiveIds.size(); ++i) {
-        const int depth = i < d.speciesDiveDepths.size() ? d.speciesDiveDepths[i] : 0;
-        if (const CreatureDef* c = registry_.creature(d.speciesDiveIds[i].id))
-            speciesDives_.push_back({c, depth});
-    }
-    if (d.speciesDiveIds.empty() && d.active.bestDeepWebDepth > 0)
-        // Pre-v40: one pet's own record is the only dive history that was ever kept, so
-        // credit it to that pet's species. Deeper dives by earlier pets were never
-        // recorded, so they cannot be recovered.
-        if (const CreatureDef* c = registry_.creature(d.active.id))
-            speciesDives_.push_back({c, d.active.bestDeepWebDepth});
-
-    // v39: the raised-species tally, resolved the same way. Then union in every
-    // species the save still POINTS at: every pet in the ARCH rack or records was
-    // raised to get there, so it belongs in the tally whatever the blob says. That
-    // is what rebuilds a pre-v39 save (which carries no tally at all) and what
-    // keeps a native one honest. The active pet is covered by installPet below.
-    raisedCreatures_.clear();
-    for (const auto& s : d.raisedCreatures)
-        if (const CreatureDef* c = registry_.creature(s.id))
-            if (!creatureRaised(c->id)) raisedCreatures_.push_back(c);
-    for (const auto& p : d.rack) markCreatureRaised(p.id);
-    for (const auto& r : d.records) markCreatureRaised(r.id);
-}
-
 // The active pet, through the same mapping as a rack Deploy, then what the save keeps of
-// its armed part. Runs after restoreShelves, which clears the raised-species tally that
-// installPet adds to.
+// its armed part. Runs after restoreOperator, which replaces the raised-species tally
+// that installPet adds to.
 void Game::restoreActivePet(const SaveData& d) {
     pet_ = Pet::thawed(d.active, registry_, nowMs_);
     pet_.armed = PetArmed::loaded(d.activeArmed);
@@ -366,7 +213,7 @@ void Game::restoreActivePet(const SaveData& d) {
     }
 }
 
-// CFG preferences. Runs after restoreShelves because setThemePick validates the
+// CFG preferences. Runs after restoreOperator because setThemePick validates the
 // theme against the collected-items shelf: applied any earlier, an earned set reads
 // as locked and the load falls back to base.
 void Game::restoreSettings(const SaveData& d) {
@@ -394,16 +241,6 @@ void Game::restoreSettings(const SaveData& d) {
     setThemePick(palThemeByName(d.theme));
 }
 
-void Game::restoreCant(const SaveData& d) {
-    // v59: the CANT. `shakesSpent` is clamped to the lifetime handshake count restored
-    // above, so a blob that somehow claims more spent than were ever captured reads back
-    // as an empty purse: shakesUnspent() would floor it anyway, and clamping here means
-    // the next save writes the corrected figure.
-    cantSigils_ = d.cantSigils;
-    shakesSpent_ = d.shakesSpent < 0 ? 0
-                 : (d.shakesSpent > handshakesSeen_ ? handshakesSeen_ : d.shakesSpent);
-}
-
 // The chosen background, validated rather than trusted: one the operator does not own is
 // not a state this game should be able to boot into, so it lands on AUTO. Ownership is
 // derived from the raised species, the cleared areas and the bracket tally, and the first
@@ -414,19 +251,16 @@ void Game::settleBackgroundPick() {
 }
 
 void Game::applySave(const SaveData& d) {
-    // Order matters where a step validates against an earlier one: the boss tally seeds
-    // from world progress, installPet tallies into the raised species, and the settings
-    // and background validate against what everything above restored.
+    // Order matters where a step validates against an earlier one: the collected shelf
+    // folds in the bag, installPet tallies into the raised species, and the settings and
+    // background validate against what everything above restored.
     restoreBag(d);
     restoreHistory(d);
     restoreRadio(d);
-    restoreWorldProgress(d);
     restoreOperator(d);
     restoreTourneyRun(d);
-    restoreShelves(d);
     restoreActivePet(d);
     restoreSettings(d);
-    restoreCant(d);
     settleBackgroundPick();
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;

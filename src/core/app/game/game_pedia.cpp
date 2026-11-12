@@ -28,26 +28,17 @@
 namespace mal {
 
 void Game::markCreatureRaised(const char* id) {
-    if (!id) return;
-    for (const CreatureDef* c : raisedCreatures_)
-        if (std::strcmp(c->id, id) == 0) return;    // already tallied: idempotent
+    if (!id || op_.shelves.creatureRaised(id)) return;   // already tallied: idempotent
     if (const CreatureDef* def = registry_.creature(id)) {
         // Raising a creature is also how its HOME becomes a background the operator may
         // choose (content/content_backgrounds.h). Ownership is derived from this very
         // list, so whether it is new has to be asked before the push.
         const SceneId home = sceneForCreature(*def);
         const bool had = backgroundOwned(home);
-        raisedCreatures_.push_back(def);
+        op_.shelves.raisedCreatures.push_back(def);
         if (!had) announceBackground(home);
         markSaveDirty();
     }
-}
-
-bool Game::creatureRaised(const char* id) const {
-    if (!id) return false;
-    for (const CreatureDef* c : raisedCreatures_)
-        if (std::strcmp(c->id, id) == 0) return true;
-    return false;
 }
 
 void Game::markCreatureSeen(const char* id) {
@@ -64,13 +55,6 @@ bool Game::creatureSeen(const char* id) const {
     if (!id) return false;
     for (const CreatureDef* c : op_.reveals.seenCreatures)
         if (std::strcmp(c->id, id) == 0) return true;
-    return false;
-}
-
-bool Game::itemCollected(const char* id) const {
-    if (!id) return false;
-    for (const ItemDef* d : collectedItems_)
-        if (std::strcmp(d->id, id) == 0) return true;
     return false;
 }
 
@@ -136,35 +120,10 @@ void Game::sweepCollectedItems() {
     for (const auto& s : inventory_.stacks()) {
         if (s.qty <= 0 || itemCollected(s.id)) continue;
         if (const ItemDef* d = registry_.item(s.id)) {
-            collectedItems_.push_back(d);
+            op_.shelves.collectedItems.push_back(d);
             markSaveDirty();
         }
     }
-}
-
-int Game::speciesDeepestDive(const char* creatureId) const {
-    if (!creatureId) return 0;
-    for (const SpeciesDive& s : speciesDives_)
-        if (s.def && std::strcmp(s.def->id, creatureId) == 0) return s.depth;
-    return 0;
-}
-
-int Game::deepestDiveEver() const {
-    int best = 0;
-    for (const SpeciesDive& s : speciesDives_)
-        if (s.depth > best) best = s.depth;
-    return best;
-}
-
-void Game::recordSpeciesDive(const CreatureDef* c, int depth) {
-    if (!c || depth <= 0) return;
-    for (SpeciesDive& s : speciesDives_) {
-        if (s.def != c) continue;
-        if (depth > s.depth) { s.depth = depth; markSaveDirty(); }
-        return;
-    }
-    speciesDives_.push_back({c, depth});
-    markSaveDirty();
 }
 
 // --- Achievements ----------------------------------------------------------------
@@ -223,7 +182,7 @@ int Game::achValue(const AchievementDef& d) const {
             return deepestDiveEver();
         case AchSeries::DeepWebDepthLine: {
             int best = 0;
-            for (const SpeciesDive& s : speciesDives_)
+            for (const SpeciesDive& s : op_.shelves.speciesDives)
                 if (s.def && s.def->line && d.key &&
                     std::strcmp(s.def->line, d.key) == 0 && s.depth > best)
                     best = s.depth;
@@ -231,7 +190,7 @@ int Game::achValue(const AchievementDef& d) const {
         }
         case AchSeries::SpeciesAtDepth: {
             int n = 0;
-            for (const SpeciesDive& s : speciesDives_)
+            for (const SpeciesDive& s : op_.shelves.speciesDives)
                 if (s.depth >= d.param) ++n;
             return n;
         }
@@ -239,13 +198,13 @@ int Game::achValue(const AchievementDef& d) const {
             return op_.tallies.bossWins;
         case AchSeries::AreasCleared: {
             int n = 0;
-            for (int i = 0; i < kAreaCount; ++i) n += sectorCleared_[i] ? 1 : 0;
+            for (int i = 0; i < kAreaCount; ++i) n += op_.world.sectorCleared[i] ? 1 : 0;
             return n;
         }
         case AchSeries::SubAreasCleared: {
             int n = 0;
             for (int a = 0; a < kAreaCount; ++a)
-                for (int s = 0; s < kSubAreasPerArea; ++s) n += subCleared_[a][s] ? 1 : 0;
+                for (int s = 0; s < kSubAreasPerArea; ++s) n += op_.world.subCleared[a][s] ? 1 : 0;
             return n;
         }
         case AchSeries::MalbeastsDefeated: {
@@ -259,13 +218,13 @@ int Game::achValue(const AchievementDef& d) const {
             // Read off the RAISED tally, not what is held: a line is walked one stage at
             // a time, so nobody ever holds all of it at once.
             int n = 0;
-            for (const CreatureDef* c : raisedCreatures_)
+            for (const CreatureDef* c : op_.shelves.raisedCreatures)
                 if (c->line && d.key && std::strcmp(c->line, d.key) == 0) ++n;
             return n;
         }
         case AchSeries::FoodsCollected: {
             int n = 0;
-            for (const ItemDef* it : collectedItems_)
+            for (const ItemDef* it : op_.shelves.collectedItems)
                 if (it->type == ItemDef::Type::Food) ++n;
             return n;
         }
@@ -283,7 +242,7 @@ int Game::achValue(const AchievementDef& d) const {
         }
         case AchSeries::RarityCollected: {
             int n = 0;
-            for (const ItemDef* it : collectedItems_)
+            for (const ItemDef* it : op_.shelves.collectedItems)
                 if (static_cast<int>(it->rarity) == d.param) ++n;
             return n;
         }
@@ -313,7 +272,7 @@ int Game::achValue(const AchievementDef& d) const {
         case AchSeries::NetworksSeen:
             return op_.networksSeen;
         case AchSeries::Handshakes:
-            return handshakesSeen_;
+            return op_.cant.handshakesSeen;
         case AchSeries::BitsHeld:
             return op_.bits;
         case AchSeries::PetsRaised:
@@ -359,10 +318,10 @@ int Game::achValue(const AchievementDef& d) const {
         // worth allocating would cost more than it saves.
         case AchSeries::RackSpecies: {
             int n = 0;
-            for (size_t i = 0; i < rack_.size(); ++i) {
+            for (size_t i = 0; i < op_.arch.rack.size(); ++i) {
                 bool dupe = false;
                 for (size_t j = 0; j < i && !dupe; ++j)
-                    dupe = std::strcmp(rack_[i].id, rack_[j].id) == 0;
+                    dupe = std::strcmp(op_.arch.rack[i].id, op_.arch.rack[j].id) == 0;
                 if (!dupe) ++n;
             }
             return n;
@@ -372,7 +331,7 @@ int Game::achValue(const AchievementDef& d) const {
             // measures the same set achievementSeriesTotal does (kCreatureLineCount).
             int n = 0;
             for (int i = 0; i < kCreatureLineCount; ++i) {
-                for (const SaveStoredPet& p : rack_) {
+                for (const SaveStoredPet& p : op_.arch.rack) {
                     const CreatureDef* c = registry_.creature(p.id);
                     if (c && c->line && std::strcmp(c->line, kCreatureLines[i].id) == 0) {
                         ++n;
@@ -386,22 +345,22 @@ int Game::achValue(const AchievementDef& d) const {
             // DISTINCT creatures of one line: a shelf of five Pingcubs is one of the
             // Ransomware line's thirteen, not five of them.
             int n = 0;
-            for (size_t i = 0; i < rack_.size(); ++i) {
-                const CreatureDef* c = registry_.creature(rack_[i].id);
+            for (size_t i = 0; i < op_.arch.rack.size(); ++i) {
+                const CreatureDef* c = registry_.creature(op_.arch.rack[i].id);
                 if (!c || !c->line || !d.key || std::strcmp(c->line, d.key) != 0) continue;
                 bool dupe = false;
                 for (size_t j = 0; j < i && !dupe; ++j)
-                    dupe = std::strcmp(rack_[i].id, rack_[j].id) == 0;
+                    dupe = std::strcmp(op_.arch.rack[i].id, op_.arch.rack[j].id) == 0;
                 if (!dupe) ++n;
             }
             return n;
         }
         case AchSeries::RackTwins: {
             int best = 0;
-            for (size_t i = 0; i < rack_.size(); ++i) {
+            for (size_t i = 0; i < op_.arch.rack.size(); ++i) {
                 int n = 0;
-                for (size_t j = 0; j < rack_.size(); ++j)
-                    if (std::strcmp(rack_[i].id, rack_[j].id) == 0) ++n;
+                for (size_t j = 0; j < op_.arch.rack.size(); ++j)
+                    if (std::strcmp(op_.arch.rack[i].id, op_.arch.rack[j].id) == 0) ++n;
                 if (n > best) best = n;
             }
             return best;

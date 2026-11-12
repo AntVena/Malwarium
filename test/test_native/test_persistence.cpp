@@ -83,17 +83,17 @@ void test_save_roundtrip() {
     std::strcpy(le.text, "USED YUBI-COOKIE"); a.log.push_back(le);
     SaveStoredPet sp; std::strcpy(sp.id, "cryptoshell");
     sp.hunger = 60; sp.generation = 2; sp.defragCount = 9;  // v16: rack pet's tally
-    a.rack.push_back(sp);
+    a.op.rack.push_back(sp);
     a.active.ownedMoves.push_back(SaveId{"packet_storm"});
     a.active.ownedMoves.push_back(SaveId{"fork_bomb"});
     a.active.equippedMoves[0] = SaveId{"packet_storm"};
     a.active.combatXp = 35; a.active.combatLevel = 2;
-    a.sectorCleared = {1, 0};                 // v8: sector 0 cleared, sector 1 not
+    a.op.sectorCleared = {1, 0};                 // v8: sector 0 cleared, sector 1 not
     a.active.bootHatchRemainMs = 424242;             // v9: an egg mid-incubation
-    a.titlesUnlocked = 0x3; a.equippedTitle = 1;  // v10: both Titles, sector 1 equipped
-    a.bossUnlocked = {1, 1};                   // v12: both sectors' bosses unlocked
-    a.subCleared = {0x07, 0x00};               // v13: area 0 subs 1-3 cleared, area 1 none
-    a.subBossUnlocked = {0x0F, 0x01};          // v13: area 0 subs 1-4 unlocked, area 1 sub 1
+    a.op.titlesUnlocked = 0x3; a.op.equippedTitle = 1;  // v10: both Titles, sector 1 equipped
+    a.op.bossUnlocked = {1, 1};                   // v12: both sectors' bosses unlocked
+    a.op.subCleared = {0x07, 0x00};               // v13: area 0 subs 1-3 cleared, area 1 none
+    a.op.subBossUnlocked = {0x0F, 0x01};          // v13: area 0 subs 1-4 unlocked, area 1 sub 1
     a.brightness = 2;                          // v14: a non-default backlight level
     a.activeArmed.subRefarm.assign(kExplSectors * kExplSubAreas, 0);  // v15: per-sub re-farm counts
     a.activeArmed.subRefarm[2] = 7; a.activeArmed.subRefarm[9] = 3;
@@ -115,26 +115,26 @@ void test_save_roundtrip() {
     CHECK(std::strcmp(b.active.equippedMods[0].id, "firewall_patch") == 0 && b.active.equippedMods[1].id[0] == '\0');
     CHECK(b.op.hasPermanentModData);   // v17: the permanent-mod semantics marker
     CHECK(b.log.size() == 1 && std::strcmp(b.log[0].text, "USED YUBI-COOKIE") == 0);
-    CHECK(b.rack.size() == 1 && std::strcmp(b.rack[0].id, "cryptoshell") == 0 &&
-          b.rack[0].generation == 2);
+    CHECK(b.op.rack.size() == 1 && std::strcmp(b.op.rack[0].id, "cryptoshell") == 0 &&
+          b.op.rack[0].generation == 2);
     CHECK(b.active.ownedMoves.size() == 2 && std::strcmp(b.active.ownedMoves[0].id, "packet_storm") == 0);
     CHECK(std::strcmp(b.active.equippedMoves[0].id, "packet_storm") == 0 &&
           b.active.equippedMoves[1].id[0] == '\0');
     CHECK(b.active.combatXp == 35 && b.active.combatLevel == 2);
-    CHECK(b.sectorCleared.size() == 2 && b.sectorCleared[0] == 1 &&
-          b.sectorCleared[1] == 0);
+    CHECK(b.op.sectorCleared.size() == 2 && b.op.sectorCleared[0] == 1 &&
+          b.op.sectorCleared[1] == 0);
     CHECK(b.active.bootHatchRemainMs == 424242u);
-    CHECK(b.titlesUnlocked == 0x3u && b.equippedTitle == 1);
-    CHECK(b.bossUnlocked.size() == 2 && b.bossUnlocked[0] == 1 &&
-          b.bossUnlocked[1] == 1);
-    CHECK(b.subCleared.size() == 2 && b.subCleared[0] == 0x07 && b.subCleared[1] == 0x00);
-    CHECK(b.subBossUnlocked.size() == 2 && b.subBossUnlocked[0] == 0x0F &&
-          b.subBossUnlocked[1] == 0x01);
+    CHECK(b.op.titlesUnlocked == 0x3u && b.op.equippedTitle == 1);
+    CHECK(b.op.bossUnlocked.size() == 2 && b.op.bossUnlocked[0] == 1 &&
+          b.op.bossUnlocked[1] == 1);
+    CHECK(b.op.subCleared.size() == 2 && b.op.subCleared[0] == 0x07 && b.op.subCleared[1] == 0x00);
+    CHECK(b.op.subBossUnlocked.size() == 2 && b.op.subBossUnlocked[0] == 0x0F &&
+          b.op.subBossUnlocked[1] == 0x01);
     CHECK(b.brightness == 2);                  // v14: the backlight level round-trips
     CHECK(b.activeArmed.subRefarm.size() == static_cast<size_t>(kExplSectors * kExplSubAreas) &&
           b.activeArmed.subRefarm[2] == 7 && b.activeArmed.subRefarm[9] == 3);   // v15: re-farm counts round-trip
     CHECK(b.active.defragCount == 12);                          // v16: active defrag tally
-    CHECK(b.rack.size() == 1 && b.rack[0].defragCount == 9);  // v16: rack pet tally
+    CHECK(b.op.rack.size() == 1 && b.op.rack[0].defragCount == 9);  // v16: rack pet tally
     CHECK(b.op.bwUpgradeCount == 5);                         // v19: SHOP bandwidth upgrades
     CHECK(b.apEnabled == 1);                              // v20: 'Pedia AP toggle round-trips
 }
@@ -388,8 +388,8 @@ void test_save_active_pet_round_trips_through_a_reboot() {
     const Pet& after = g.petRecord();
     // Stored at each pet's own stage start, so the two clocks line up.
     SaveData x, y;
-    x.rack = {before.stored(before.stageEnteredMs)};
-    y.rack = {after.stored(after.stageEnteredMs)};
+    x.op.rack = {before.stored(before.stageEnteredMs)};
+    y.op.rack = {after.stored(after.stageEnteredMs)};
     CHECK(serializeSave(x) == serializeSave(y));
     CHECK(after.armed.trojanDivert);
     CHECK(after.armed.backupShieldUntilMs == before.armed.backupShieldUntilMs);
@@ -472,12 +472,14 @@ static const char* const kOperatorV75Blob =
     "0000010202000008000100000000000000000000000000000000000000000000"
     "00000000000000000000000000000000000000";
 
-static std::vector<uint8_t> operatorV75Blob() {
+static std::vector<uint8_t> blobFromHex(const char* hex) {
     std::vector<uint8_t> out;
-    for (const char* p = kOperatorV75Blob; p[0] && p[1]; p += 2)
+    for (const char* p = hex; p[0] && p[1]; p += 2)
         out.push_back(static_cast<uint8_t>(std::stoi(std::string(p, 2), nullptr, 16)));
     return out;
 }
+
+static std::vector<uint8_t> operatorV75Blob() { return blobFromHex(kOperatorV75Blob); }
 
 // The v75 blob reads into SaveData::op field by field, and writes back with the same bytes
 // up to its end: the fields moved in SaveData, not on the wire.
@@ -564,6 +566,118 @@ void test_save_operator_loads_from_a_v75_blob() {
     CHECK(o.tallies.quoteStates[0] == 0x1B && o.tallies.quoteStates[2] == 0x03);
 }
 
+// A v75 blob from the same build with the rest of the player-level fields set: the ARCH
+// rack and records, the SHAKES count, world progress, the shelves and the Cant. Its
+// bossWins is 0, so loading seeds it from the clears.
+static const char* const kOperatorWorldV75Blob =
+    "4d414c314b007061797075700000000000000000000000000000000000003200"
+    "0000000000003200000000000000000000000000000000030000000000000000"
+    "0000000000000000000000000000000000000000000000000000000003000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000020070686973686c65740000000000000000000000000000"
+    "00003c0000000a00000046000000010000000000000000010000006b616c6963"
+    "6f00000000000000000000000000000000000028000000000000000000000000"
+    "0000000000000000020000000000040000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000002006d616c626561"
+    "7200000000000000000000000000000000000101000000627275696e666f7263"
+    "6500000000000000000000000000000002000000000000000000000000000900"
+    "0000000004000100010000000000050000000200000004000000000000000000"
+    "000000000000000004000101000004001f051f0004001f0a1f00030000000000"
+    "0000000002000000000000000000000000000000000000000000000004000000"
+    "0000000000000000000000000200040000000000000004000000000000000000"
+    "0000000000000000000002000000000000000000000002000000000000000000"
+    "0000000000000000000000000000000000000002000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000020000000000000000000000"
+    "0000020006000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000100636f6e6b697474656e617465000000"
+    "0000000000000000000000000000000000020064796e6f5f6e75676765747300"
+    "0000000000000000000000726f6c6c6261636b00000000000000000000000000"
+    "000000020070686973686c657400000000000000000000000000000000636f6e"
+    "6b697474656e6174650000000000000000000000000c00000005000000000000"
+    "0002000000000000000000000000000000000000000000000002000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000020000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000015000000040000"
+    "0000010000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000010202000000000100000000000000000000000000"
+    "0000000000000000000000000200000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000020000000000000000000000020000000000000000000000000002000000"
+    "0000000000000100000000000000000000000000010000000000";
+
+// It reads into SaveData::op field by field, and writes back with the same bytes up to
+// its end.
+void test_save_operator_world_reads_from_a_v75_blob() {
+    const std::vector<uint8_t> blob = blobFromHex(kOperatorWorldV75Blob);
+    CHECK(blob.size() > 6 && blob[4] == 75 && blob[5] == 0);
+    SaveData d;
+    CHECK(deserializeSave(blob, d));
+    const SaveOperator& o = d.op;
+    CHECK(o.rack.size() == 2 && std::strcmp(o.rack[0].id, "phishlet") == 0);
+    CHECK(o.rack[0].combatLevel == 4 && o.rack[0].bestDeepWebDepth == 6);
+    CHECK(std::strcmp(o.rack[1].id, "kalico") == 0 && o.rack[1].statPoints[1] == 2);
+    CHECK(o.records.size() == 2 && std::strcmp(o.records[0].id, "malbear") == 0);
+    CHECK(o.records[0].status == 1 && o.records[1].generation == 2);
+    CHECK(o.handshakesSeen == 9);
+    CHECK(o.sectorCleared.size() == 4 && o.sectorCleared[0] == 1 && o.sectorCleared[2] == 1);
+    CHECK(o.titlesUnlocked == 0x5u && o.equippedTitle == 2);
+    CHECK(o.bossUnlocked.size() == 4 && o.bossUnlocked[1] == 1);
+    CHECK(o.subCleared.size() == 4 && o.subCleared[1] == 0x05);
+    CHECK(o.subBossUnlocked.size() == 4 && o.subBossUnlocked[1] == 0x0A);
+    CHECK(o.raisedCreatures.size() == 1 &&
+          std::strcmp(o.raisedCreatures[0].id, "conkittenate") == 0);
+    CHECK(o.collectedItems.size() == 2 && std::strcmp(o.collectedItems[1].id, "rollback") == 0);
+    CHECK(o.speciesDiveIds.size() == 2 && std::strcmp(o.speciesDiveIds[0].id, "phishlet") == 0);
+    CHECK(o.speciesDiveDepths.size() == 2 && o.speciesDiveDepths[0] == 12);
+    CHECK(o.cantSigils == 0x15u && o.shakesSpent == 4);
+
+    const std::vector<uint8_t> again = serializeSave(d);
+    CHECK(again.size() >= blob.size());
+    CHECK(std::equal(blob.begin() + 6, blob.end(), again.begin() + 6));
+}
+
+// ...and boots into the record's parts, with the steps that read outside the record
+// (the rack and records folded into the raised species, the active pet tallied) applied.
+void test_save_operator_world_loads_from_a_v75_blob() {
+    MemSaveStore store;
+    store.save(blobFromHex(kOperatorWorldV75Blob));
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    const Operator& o = g.operatorRecord();
+    const ContentRegistry& reg = g.content();
+    CHECK(o.world.sectorCleared[0] && !o.world.sectorCleared[1] && o.world.sectorCleared[2]);
+    CHECK(o.world.subCleared[1][0] && !o.world.subCleared[1][1] && o.world.subCleared[1][2]);
+    CHECK(o.world.subBossUnlocked[1][1] && o.world.subBossUnlocked[1][3]);
+    CHECK(!o.world.subBossUnlocked[1][0]);
+    CHECK(o.world.titlesUnlocked == 0x5u && o.world.equippedTitle == 2);
+    // Two cleared areas and twelve cleared sub-areas.
+    CHECK(o.tallies.bossWins == 14);
+    CHECK(o.shelves.collectedItems.size() == 2 && o.shelves.itemCollected("rollback"));
+    CHECK(o.shelves.deepestDive("phishlet") == 12 && o.shelves.deepestDive("conkittenate") == 5);
+    const char* raised[] = {"conkittenate", "phishlet", "kalico", "malbear", "bruinforce",
+                            "paypup"};
+    CHECK(o.shelves.raisedCreatures.size() == 6);
+    for (size_t i = 0; i < 6 && i < o.shelves.raisedCreatures.size(); ++i)
+        CHECK(o.shelves.raisedCreatures[i] == reg.creature(raised[i]));
+    CHECK(o.cant.sigils == 0x15u && o.cant.handshakesSeen == 9 && o.cant.shakesSpent == 4);
+    CHECK(g.shakesUnspent() == 5);
+    CHECK(o.arch.rack.size() == 2 && std::strcmp(o.arch.rack[1].id, "kalico") == 0);
+    CHECK(o.arch.records.size() == 2 && std::strcmp(o.arch.records[1].id, "bruinforce") == 0);
+}
+
 // An Operator with something in every part maps to the save and back unchanged.
 void test_save_operator_round_trips_through_its_mapping() {
     Game g{StartMode::Hatched, "paypup"};
@@ -601,6 +715,25 @@ void test_save_operator_round_trips_through_its_mapping() {
     o.tallies.arcadeBest[1] = 55;
     o.tallies.quoteStates[0] = 0x0C;
     o.backgroundPick = kBackgrounds[1].scene;
+    o.world.sectorCleared[1] = true;
+    o.world.subCleared[2][3] = true;
+    o.world.subBossUnlocked[2][4] = true;
+    o.world.titlesUnlocked = 0x2;
+    o.world.equippedTitle = 1;
+    o.shelves.collectedItems.push_back(reg.item("rollback"));
+    o.shelves.speciesDives.push_back({reg.creature("phishlet"), 8});
+    o.shelves.raisedCreatures.push_back(reg.creature("malbear"));
+    o.cant.sigils = 0x3;
+    o.cant.handshakesSeen = 7;
+    o.cant.shakesSpent = 2;
+    SaveStoredPet stored;
+    std::strcpy(stored.id, "kalico");
+    stored.combatLevel = 3;
+    o.arch.rack.push_back(stored);
+    SaveRecord record;
+    std::strcpy(record.id, "paypup");
+    record.status = static_cast<uint8_t>(RecordStatus::Corrupted);
+    o.arch.records.push_back(record);
 
     SaveData x;
     x.op = o.saved(reg, 0);

@@ -203,15 +203,15 @@ void test_save_v74_bond() {
     SaveStoredPet p1; std::strcpy(p1.id, "malbear");
     p1.bondBp[2] = 1234;
     SaveStoredPet p2; std::strcpy(p2.id, "cryptoshell");
-    a.rack = {p1, p2};
+    a.op.rack = {p1, p2};
 
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
     CHECK(b.active.bondBp[0] == 100 && b.active.bondBp[1] == 50 && b.active.bondBp[2] == 10000);
-    CHECK(b.rack.size() == 2);
-    if (b.rack.size() != 2) return;
-    CHECK(b.rack[0].bondBp[2] == 1234 && b.rack[0].bondBp[0] == 0);
-    CHECK(b.rack[1].bondBp[2] == 0);
+    CHECK(b.op.rack.size() == 2);
+    if (b.op.rack.size() != 2) return;
+    CHECK(b.op.rack[0].bondBp[2] == 1234 && b.op.rack[0].bondBp[0] == 0);
+    CHECK(b.op.rack[1].bondBp[2] == 0);
 }
 
 // Battery SoC mapping (CFG "BATT" line): the portable helper the device reader

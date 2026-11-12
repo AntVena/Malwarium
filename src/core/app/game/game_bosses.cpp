@@ -175,8 +175,8 @@ void Game::finishBossRound() {
         op_.bits += applyCombatBitsBonus(bossBitsAccrued_);   // Scraping Cluster Expansion
         addFightXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
         if (bossSub_ >= 0 && bossSub_ < kExplSubAreas) {
-            const bool firstClear = !subCleared_[bossSector_][bossSub_];
-            subCleared_[bossSector_][bossSub_] = true;
+            const bool firstClear = !op_.world.subCleared[bossSector_][bossSub_];
+            op_.world.subCleared[bossSector_][bossSub_] = true;
             log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
             // a sub-area boss's FIRST clear has a chance to drop one of the
             // area's mods (rarity-weighted). Re-clears never re-roll: permanent items
@@ -189,10 +189,10 @@ void Game::finishBossRound() {
             }
         } else {
             clearedArea = true;
-            const bool firstClear = !sectorCleared_[bossSector_];
+            const bool firstClear = !op_.world.sectorCleared[bossSector_];
             const SceneId placeWon = area(bossSector_).scene;
             const bool hadPlace = backgroundOwned(placeWon);
-            sectorCleared_[bossSector_] = true;
+            op_.world.sectorCleared[bossSector_] = true;
             unlockTitle(bossSector_);       // clearing the area grants its Title
             // ...and the AREA ITSELF, as a background the operator may stand their pet
             // in. The Title says where they have been; this is a piece of it to keep.

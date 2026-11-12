@@ -729,17 +729,20 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             break;
         case SubmenuId::Arch:
             if (archScreen_ == ArchScreen::Picker) {
-                drawArchPicker(fb, buildArchPickerRows(registry_, pet_.creature, rack_, records_),
-                               archPickRow_, static_cast<int>(rack_.size()), rackSlots());
+                drawArchPicker(fb,
+                               buildArchPickerRows(registry_, pet_.creature, op_.arch.rack,
+                                                   op_.arch.records),
+                               archPickRow_, static_cast<int>(op_.arch.rack.size()), rackSlots());
             } else {
                 // The group's own name is the list's title, which is the whole reason
                 // the picker exists: the header says which shelf this is.
-                const auto tiles = buildArchPickerRows(registry_, pet_.creature, rack_, records_);
+                const auto tiles = buildArchPickerRows(registry_, pet_.creature, op_.arch.rack,
+                                                       op_.arch.records);
                 ArchListView v;
                 for (const ArchPickRow& t : tiles)
                     if (t.group == archGroup_) { v.title = t.label; break; }
                 v.cursor = listRow_;
-                v.used = static_cast<int>(rack_.size());
+                v.used = static_cast<int>(op_.arch.rack.size());
                 v.maxSlots = rackSlots();
                 v.beat = beat_;
                 if (archGroup_.kind == ArchGroup::Kind::Sell) v.status = ArchStatusColumn::Level;
@@ -855,7 +858,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             drawCfg(fb);
             break;
         case SubmenuId::Arch: {
-            const bool rackFull = static_cast<int>(rack_.size()) >= rackSlots();
+            const bool rackFull = static_cast<int>(op_.arch.rack.size()) >= rackSlots();
             // NEW EGG is an action rather than a row, so its L3 is its own screen: the
             // one place that says what laying an egg costs before it is laid.
             ArchConfirmView v;
@@ -873,8 +876,8 @@ void Game::drawDetail(Framebuffer& fb) const {
             }
             const ArchRow row = archFocusedRow();
             if (row.kind == ArchRow::Kind::Record) {
-                if (row.index >= 0 && row.index < static_cast<int>(records_.size()))
-                    drawArchRecordDetail(fb, registry_, records_[row.index]);
+                if (row.index >= 0 && row.index < static_cast<int>(op_.arch.records.size()))
+                    drawArchRecordDetail(fb, registry_, op_.arch.records[row.index]);
                 break;
             }
             v.pet = row.def;
@@ -1153,7 +1156,7 @@ void Game::drawShiboleetScreen(Framebuffer& fb) const {
     GuardianView g;
     g.name = guardianName();
     g.demeanour = guardianDemeanour();
-    g.sigils = cantSigils_;
+    g.sigils = op_.cant.sigils;
     drawShiboleet(fb, g, r);
 }
 
@@ -1164,7 +1167,7 @@ void Game::drawShiboleetHailScreen(Framebuffer& fb) const {
     GuardianView g;
     g.name = guardianName();
     g.demeanour = guardianDemeanour();
-    g.sigils = cantSigils_;
+    g.sigils = op_.cant.sigils;
     g.swarm = &swarm;
     drawShiboleetHail(fb, g, greeting, shakesUnspent());
 }
@@ -1193,7 +1196,7 @@ void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
     GuardianView g;
     g.name = guardianName();
     g.demeanour = shiboleetOutcomeSeen();
-    g.sigils = cantSigils_;
+    g.sigils = op_.cant.sigils;
     g.swarm = &swarm;
     drawShiboleetVerdict(fb, g, v);
 }

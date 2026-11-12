@@ -28,7 +28,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //
 // Three shapes recur, and an entry names which it used:
 //   APPEND:          new fields at the end of the stream; a pre-vN blob stops short.
-//   PARALLEL TAIL:   a per-stored-pet field written as a list mapped onto d.rack by index,
+//   PARALLEL TAIL:   a per-stored-pet field written as a list mapped onto the rack by index,
 //                     so the mid-stream rack records stay byte-compatible (first used by v16).
 //   NO BYTES:        a marker version: the format is unchanged and the number exists only
 //                     to gate a migration pass (a rename, a ladder splice) for older blobs.
@@ -236,7 +236,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     trace once its run is dismissed, a duel pays nothing, and a cooked dish is
 //     indistinguishable from a dropped one the moment it is eaten. Pre-v56 → 0.
 // v57 APPEND the rest of the per-pet EPIC-DISH grants in v50's shape: the active pet's
-//     off-level stat points and XP rate, then a parallel list onto d.rack. A second tail
+//     off-level stat points and XP rate, then a parallel list onto the rack. A second tail
 //     rather than a widening of v50's, because a tail is what a pre-v57 build can stop
 //     before. Pre-v57 → 0.
 // v58 APPEND ONE BYTE: which background the operator has chosen (content_backgrounds.h) as
@@ -327,7 +327,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     SOUND. Pre-v71 -> 1, which is how every device sounded before it was stored.
 // v72 APPEND the per-pet FAVOURITE FOOD and the RACK'S PALATES, one tail after v71's.
 //     The favourite is an item id cell plus a found byte: the active pet's, then a
-//     parallel list onto d.rack (v50's shape). The palates are each stored pet's
+//     parallel list onto the rack (v50's shape). The palates are each stored pet's
 //     `foodsEaten`, written as a DICTIONARY of every food id any rack pet has tasted,
 //     then one length-prefixed bitset per rack pet over that dictionary's order. The
 //     dictionary is what keeps a bitset from being positional over the food table: the
@@ -340,7 +340,7 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     `renamedIds`); the version exists so the rename row has a `sinceVersion` to retire
 //     against.
 // v74 APPEND the per-pet BOND (PetUpgrades::bondBp), one tail after v72's: the active
-//     pet's three sources as u16 basis points, then a parallel list onto d.rack. Pre-v74
+//     pet's three sources as u16 basis points, then a parallel list onto the rack. Pre-v74
 //     -> 0 everywhere, because nothing recorded it.
 // v75 APPEND, for each rack pet in rack order, what Pet::stored keeps that no earlier
 //     tail carried: bestDarkWebDepth (i32), the shield and the two spent grants (u8
@@ -709,51 +709,15 @@ struct SaveOperator {
 
     // --- v69: which askable SERVICES sit at ASK (RigAccount::serviceMode) ---
     uint32_t rigServicesAsk = 0;
-};
 
-// The full snapshot. Defaults describe an empty save (no active pet).
-struct SaveData {
-    // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
-    // one save mapping. An empty id is a save vacated by an ARCH Store. Its fields sit
-    // at the stream positions each version gave them (serializeSaveInto), not in a
-    // record of their own: an older build reading this blob after an OTA rollback finds
-    // the pet where it always was.
-    SaveStoredPet active;
-    SaveArmedPet activeArmed;
-    SaveOperator op;
-
-    // Collections.
-    std::vector<SaveStack> items;
-    std::vector<SaveLogEntry> log;    // chronological, oldest first
+    // The ARCH rack, each pet as Pet::stored writes it, and (v3) the RETIRED/CORRUPTED
+    // records, which hold no rack slot.
     std::vector<SaveStoredPet> rack;
+    std::vector<SaveRecord> records;
 
-    // v3: ARCH records -------------------------------
-    std::vector<SaveRecord> records;   // RETIRED/CORRUPTED greyed records (no slot)
-
-    // v5: Audit-mode passive-scan runtime toggle -------- The authorized-use
-    // opt-in the player flips in CFG (default OFF). Persisted so the choice
-    // survives a reboot; drives whether the device-tier radio does any passive
-    // WiFi.scanNetworks() at all. No hacker XP field: XP is derived
-    // (networksSeen * kHackerRankXpPerNetwork), so it needs no field of its own.
-    uint8_t netScanEnabled = 0;
-
-    // v6: Audit-mode handshake-CAPTURE runtime toggle ----
-    // The authorized-use opt-in for the passive WPA-handshake -> .pcap capture
-    // path (a sibling of netScanEnabled). Default OFF; persisted so the choice
-    // survives a reboot. Only the toggle intent is stored: the hot-broadcast /
-    // re-arm-cooldown timers are runtime-only (no RTC; reset on reboot).
-    uint8_t auditCaptureEnabled = 0;
-
-    // v7: Audit dedup ledgers -------------------
-    // SHAKES (seenHandshakeBssids + handshakesSeen) does not re-credit a handshake
-    // already captured, so leaving and returning to a known place grants nothing new,
-    // until that BSSID rotates off the capped set (core/net/handshake_ledger.h). This
-    // field is the card-less FALLBACK mirror: the full rotating set lives on the SD
-    // card, and only the most-recent kHandshakeDedupSaveCap keys land here. Each entry
-    // is a 48-bit packed BSSID (6 bytes). Empty on a pre-v7 blob. (The sibling
-    // NETS/seenBssids dedup set was REMOVED as of v33: see the v33 note above.)
-    std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup fallback (per-network handshake)
-    int32_t handshakesSeen = 0;                 // lifetime unique handshakes captured
+    // v7: lifetime unique handshakes captured (SHAKES). The dedup set it is counted
+    // against is SaveData::seenHandshakeBssids, the card ledger's fallback mirror.
+    int32_t handshakesSeen = 0;
 
     // v8: EXPL sector-clear flags -----------------------
     // One byte per sector (1 = its boss/gauntlet has been cleared). Drives the
@@ -787,6 +751,71 @@ struct SaveData {
     std::vector<uint8_t> subCleared;
     std::vector<uint8_t> subBossUnlocked;
 
+    // --- v39: the device's raised-species tally ------------------------------
+    // Every creature id the operator has ever raised, whether or not anything still
+    // points at it. Player-level (survives a pet reset, like seenCreatures above).
+    // Pre-v39 → seeded by the loader from the active pet + rack + records.
+    std::vector<SaveId> raisedCreatures;
+
+    // --- v40: the collected-items shelf and the per-species dive records ---
+    // Every item id that has ever been held. Not "in the bag now" (which the 'Pedia's
+    // items{} map already reports): this is what the collection achievements count, and
+    // spending an item must not un-collect it. Pre-v40 → seeded from the held stacks.
+    std::vector<SaveId> collectedItems;
+    // The deepest DeepWeb Dive reached by each SPECIES: parallel id/depth lists, so a
+    // record outlives the individual pet that set it. Distinct from bestDeepWebDepth
+    // (v35), which is one pet's own and is what the Checkpoint Bell warps to. Pre-v40 →
+    // seeded from the active pet's own record.
+    std::vector<SaveId> speciesDiveIds;
+    std::vector<int32_t> speciesDiveDepths;
+
+    // --- v59: the CANT -------------------------------------------------------
+    // Player-level, not per-pet: the operator's device learned this language, and it
+    // outlives a pet the way the HackerTag, the Titles and the network ledger do. See
+    // the version note above for why SPENT rather than UNSPENT is the field.
+    uint32_t cantSigils = 0;
+    int32_t shakesSpent = 0;
+};
+
+// The full snapshot. Defaults describe an empty save (no active pet).
+struct SaveData {
+    // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
+    // one save mapping. An empty id is a save vacated by an ARCH Store. Its fields sit
+    // at the stream positions each version gave them (serializeSaveInto), not in a
+    // record of their own: an older build reading this blob after an OTA rollback finds
+    // the pet where it always was.
+    SaveStoredPet active;
+    SaveArmedPet activeArmed;
+    SaveOperator op;
+
+    // Collections.
+    std::vector<SaveStack> items;
+    std::vector<SaveLogEntry> log;    // chronological, oldest first
+
+    // v5: Audit-mode passive-scan runtime toggle -------- The authorized-use
+    // opt-in the player flips in CFG (default OFF). Persisted so the choice
+    // survives a reboot; drives whether the device-tier radio does any passive
+    // WiFi.scanNetworks() at all. No hacker XP field: XP is derived
+    // (networksSeen * kHackerRankXpPerNetwork), so it needs no field of its own.
+    uint8_t netScanEnabled = 0;
+
+    // v6: Audit-mode handshake-CAPTURE runtime toggle ----
+    // The authorized-use opt-in for the passive WPA-handshake -> .pcap capture
+    // path (a sibling of netScanEnabled). Default OFF; persisted so the choice
+    // survives a reboot. Only the toggle intent is stored: the hot-broadcast /
+    // re-arm-cooldown timers are runtime-only (no RTC; reset on reboot).
+    uint8_t auditCaptureEnabled = 0;
+
+    // v7: Audit dedup ledgers -------------------
+    // SHAKES (SaveOperator::handshakesSeen) does not re-credit a handshake already
+    // captured, so leaving and returning to a known place grants nothing new,
+    // until that BSSID rotates off the capped set (core/net/handshake_ledger.h). This
+    // field is the card-less FALLBACK mirror: the full rotating set lives on the SD
+    // card, and only the most-recent kHandshakeDedupSaveCap keys land here. Each entry
+    // is a 48-bit packed BSSID (6 bytes). Empty on a pre-v7 blob. (The sibling
+    // NETS/seenBssids dedup set was REMOVED as of v33: see the v33 note above.)
+    std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup fallback (per-network handshake)
+
     // v14: CFG screen-brightness level ------------------------
     // The persisted backlight level as a 0-based index (0..kBrightnessLevels-1).
     // A pre-v14 blob defaults to kBrightnessDefault (brightest) so a migrated save
@@ -815,24 +844,6 @@ struct SaveData {
     // left to persist. Kept as a placeholder because the v39+ tail sits behind it.
     bool netReserved = false;
 
-    // --- v39: the device's raised-species tally ------------------------------
-    // Every creature id the operator has ever raised, whether or not anything still
-    // points at it. Player-level (survives a pet reset, like seenCreatures above).
-    // Pre-v39 → seeded by the loader from the active pet + rack + records.
-    std::vector<SaveId> raisedCreatures;
-
-    // --- v40: the collected-items shelf and the per-species dive records ---
-    // Every item id that has ever been held. Not "in the bag now" (which the 'Pedia's
-    // items{} map already reports): this is what the collection achievements count, and
-    // spending an item must not un-collect it. Pre-v40 → seeded from the held stacks.
-    std::vector<SaveId> collectedItems;
-    // The deepest DeepWeb Dive reached by each SPECIES: parallel id/depth lists, so a
-    // record outlives the individual pet that set it. Distinct from bestDeepWebDepth
-    // (v35), which is one pet's own and is what the Checkpoint Bell warps to. Pre-v40 →
-    // seeded from the active pet's own record.
-    std::vector<SaveId> speciesDiveIds;
-    std::vector<int32_t> speciesDiveDepths;
-
     // --- v53: ROCK THE DOCK's run in play ----------------------------------------
     // The whole bracket, because the seed IS the bracket (core/model/tournament.h):
     // `tourneySeed` 0 means no run, `tourneyAlive` is one bit per original slot,
@@ -844,13 +855,6 @@ struct SaveData {
     uint8_t tourneyAlive = 0;
     uint8_t tourneyRound = 0;
     uint8_t tourneyPhase = 0;
-
-    // --- v59: the CANT -------------------------------------------------------
-    // Player-level, not per-pet: the operator's device learned this language, and it
-    // outlives a pet the way the HackerTag, the Titles and the network ledger do. See
-    // the version note above for why SPENT rather than UNSPENT is the field.
-    uint32_t cantSigils = 0;
-    int32_t shakesSpent = 0;
 
     // --- v64: the chosen PAL_CORE theme --------------------------------------
     // The set's name (kPalThemeNames), empty for the base set. A NAME and not the

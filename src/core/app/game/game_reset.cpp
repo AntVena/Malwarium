@@ -10,35 +10,18 @@
 namespace mal {
 
 void Game::wipeDeviceProgress() {
-    // Everything the device knows that OUTLIVES a pet: the whole Operator record, earned
-    // Titles, world progress, the collected-items and dive shelves, the Cant, and every
+    // Everything the device knows that OUTLIVES a pet is the Operator record, and every
     // radio consent (out of the box, all three are off). resetToHatch() clears the
     // per-pet half; together they are a device with no history. Not cleared: the device
     // preferences (brightness, UI mode, sound), which are settings rather than progress,
-    // and the device-level SD-backed ledgers (core/net/network_ledger.h, peer_ledger.h),
-    // which are files on a card the operator can remove. A save wipe has no business
-    // deleting them. The SHAKES handshake ledger is SD-backed too but pet-level (it
-    // follows handshakesSeen_ below), so it IS cleared here, which truncates its card
-    // file.
+    // and the SD-backed network and peer ledgers (core/net/network_ledger.h,
+    // peer_ledger.h), which are files on a card the operator can remove. The SHAKES
+    // handshake ledger is cleared, truncating its card file, because it is the dedup set
+    // for the record's handshake count.
     op_ = Operator{};
-    raisedCreatures_.clear();
+    handshakeLedger_.clear();
     achBannerWire_ = -1;
     achBannerCount_ = 0;
-    collectedItems_.clear();
-    speciesDives_.clear();
-    handshakesSeen_ = 0;
-    handshakeLedger_.clear();
-    cantSigils_ = 0;      // the Cant is unlearned again, and the purse it was bought
-    shakesSpent_ = 0;     // with is empty: both follow the handshakes they came from
-    titlesUnlocked_ = 0;
-    equippedTitle_ = -1;
-    for (int a = 0; a < kAreaCount; ++a) {
-        sectorCleared_[a] = false;
-        for (int s = 0; s < kSubAreasPerArea; ++s) {
-            subCleared_[a][s] = false;
-            subBossUnlocked_[a][s] = false;
-        }
-    }
     setAuditMode(AuditMode::Off);      // seals capture with the scan, per the ladder
     setApEnabled(false);
     setLinkEnabled(false);
@@ -74,8 +57,8 @@ void Game::resetToHatch() {
     // A full wipe: clear the persisted save + the rack + lifetime/identity state,
     // so the next boot is a genuine first boot. The scope
     // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
-    rack_.clear();
-    records_.clear();
+    op_.arch.rack.clear();
+    op_.arch.records.clear();
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;

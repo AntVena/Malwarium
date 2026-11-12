@@ -977,13 +977,13 @@ void test_audit_ledgers_persist_no_recredit() {
 void test_save_v7_ledger_roundtrip() {
     SaveData a;
     std::strcpy(a.active.id, "paypup");
-    a.handshakesSeen = 3;
+    a.op.handshakesSeen = 3;
     a.seenHandshakeBssids = {0xABCDEFULL, 0x010203040506ULL};
     auto blob = serializeSave(a);
 
     SaveData out;
     CHECK(deserializeSave(blob, out));
-    CHECK(out.handshakesSeen == 3);
+    CHECK(out.op.handshakesSeen == 3);
     CHECK(out.seenHandshakeBssids == a.seenHandshakeBssids);
 }
 

@@ -374,7 +374,7 @@ bool Game::registerHandshake(const uint8_t* bssid) {
     // crediting fresh captures instead of going dead.
     auditCapture_.noteHandshake(nowMs_);
     if (!handshakeLedger_.insert(packBssid(bssid))) return false;  // already credited this AP
-    ++handshakesSeen_;
+    ++op_.cant.handshakesSeen;
     // A new captured handshake is rarer and harder to earn, so it pays a richer
     // Sealed Cache than the plain-discovery reward above (no Common tier).
     rng_ = rng_ * 1664525u + 1013904223u;

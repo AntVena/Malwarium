@@ -920,18 +920,18 @@ void test_save_v75_rack_kept_fields() {
     p1.usbSoak = 4; p1.usbHold = 1;
     p1.bootHatchRemainMs = 12345;
     SaveStoredPet p2; std::strcpy(p2.id, "malbear");
-    a.rack = {p1, p2};
+    a.op.rack = {p1, p2};
 
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
-    CHECK(b.rack.size() == 2);
-    if (b.rack.size() != 2) return;
-    CHECK(b.rack[0].bestDarkWebDepth == 9);
-    CHECK(b.rack[0].shieldActive == 1 && b.rack[0].shieldSpent == 1 && b.rack[0].yubiSpent == 1);
-    CHECK(b.rack[0].usbBranch == static_cast<uint8_t>(BranchOverride::Bad));
-    CHECK(b.rack[0].usbSoak == 4 && b.rack[0].usbHold == 1);
-    CHECK(b.rack[0].bootHatchRemainMs == 12345);
-    CHECK(b.rack[1].usbSoak == 1 && b.rack[1].shieldActive == 0);
+    CHECK(b.op.rack.size() == 2);
+    if (b.op.rack.size() != 2) return;
+    CHECK(b.op.rack[0].bestDarkWebDepth == 9);
+    CHECK(b.op.rack[0].shieldActive == 1 && b.op.rack[0].shieldSpent == 1 && b.op.rack[0].yubiSpent == 1);
+    CHECK(b.op.rack[0].usbBranch == static_cast<uint8_t>(BranchOverride::Bad));
+    CHECK(b.op.rack[0].usbSoak == 4 && b.op.rack[0].usbHold == 1);
+    CHECK(b.op.rack[0].bootHatchRemainMs == 12345);
+    CHECK(b.op.rack[1].usbSoak == 1 && b.op.rack[1].shieldActive == 0);
 }
 
 // A soak is a decision about the PROCESS stage, so it only goes in there: an egg has no
@@ -1554,15 +1554,15 @@ void test_save_v50_bandwidth_regen_upgrade() {
     SaveStoredPet stored;
     std::strcpy(stored.id, "cryptoshell");
     stored.bandwidthRegenBonusMin = 1;
-    a.rack.push_back(stored);
-    a.rack.push_back(SaveStoredPet{});          // an un-upgraded shelf-mate
+    a.op.rack.push_back(stored);
+    a.op.rack.push_back(SaveStoredPet{});          // an un-upgraded shelf-mate
 
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
     CHECK(out.active.bandwidthRegenBonusMin == 1);
-    CHECK(out.rack.size() == 2);
-    CHECK(out.rack[0].bandwidthRegenBonusMin == 1);
-    CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
+    CHECK(out.op.rack.size() == 2);
+    CHECK(out.op.rack[0].bandwidthRegenBonusMin == 1);
+    CHECK(out.op.rack[1].bandwidthRegenBonusMin == 0);
 }
 
 // THE EPIC TIER: the five dishes beyond Tiramisudo that permanently upgrade the pet
@@ -1767,26 +1767,26 @@ void test_save_v72_rack_palates_and_favourites() {
     p2.foodsEaten = {SaveId{"brusshetta"}};
     p2.favouriteFound = 1;
     SaveStoredPet p3; std::strcpy(p3.id, "paypup");   // nothing eaten, nothing rolled
-    a.rack = {p1, p2, p3};
+    a.op.rack = {p1, p2, p3};
 
     SaveData b;
     const std::vector<uint8_t> blob = serializeSave(a);
     CHECK(deserializeSave(blob, b));
     CHECK(std::strcmp(b.active.favouriteFood, "racelette") == 0 && b.active.favouriteFound == 1);
-    CHECK(b.rack.size() == 3);
-    if (b.rack.size() != 3) return;
-    CHECK(b.rack[0].foodsEaten.size() == 2);
-    CHECK(std::strcmp(b.rack[0].favouriteFood, "profilerole") == 0);
-    CHECK(b.rack[0].favouriteFound == 0);
-    CHECK(b.rack[1].foodsEaten.size() == 1 &&
-          std::strcmp(b.rack[1].foodsEaten[0].id, "brusshetta") == 0);
-    CHECK(b.rack[1].favouriteFood[0] == '\0' && b.rack[1].favouriteFound == 1);
-    CHECK(b.rack[2].foodsEaten.empty());
+    CHECK(b.op.rack.size() == 3);
+    if (b.op.rack.size() != 3) return;
+    CHECK(b.op.rack[0].foodsEaten.size() == 2);
+    CHECK(std::strcmp(b.op.rack[0].favouriteFood, "profilerole") == 0);
+    CHECK(b.op.rack[0].favouriteFound == 0);
+    CHECK(b.op.rack[1].foodsEaten.size() == 1 &&
+          std::strcmp(b.op.rack[1].foodsEaten[0].id, "brusshetta") == 0);
+    CHECK(b.op.rack[1].favouriteFood[0] == '\0' && b.op.rack[1].favouriteFound == 1);
+    CHECK(b.op.rack[2].foodsEaten.empty());
 
     // The shared dish is written once: one more meal on the second pet of a dish the
     // first already ate costs a bit, not another id cell.
     SaveData c = a;
-    c.rack[1].foodsEaten.push_back(SaveId{"dyno_nuggets"});
+    c.op.rack[1].foodsEaten.push_back(SaveId{"dyno_nuggets"});
     CHECK(serializeSave(c).size() == blob.size());
 }
 
@@ -1800,18 +1800,18 @@ void test_save_v57_permanent_grants() {
     std::strcpy(stored.id, "cryptoshell");
     stored.statBonus[2] = 1;
     stored.xpRateBonusPct = 25;
-    a.rack.push_back(stored);
-    a.rack.push_back(SaveStoredPet{});          // an ungranted shelf-mate
+    a.op.rack.push_back(stored);
+    a.op.rack.push_back(SaveStoredPet{});          // an ungranted shelf-mate
 
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
     for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.active.statBonus[i] == i);
     CHECK(out.active.xpRateBonusPct == 25);
-    CHECK(out.rack.size() == 2);
-    CHECK(out.rack[0].statBonus[2] == 1);
-    CHECK(out.rack[0].xpRateBonusPct == 25);
-    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.rack[1].statBonus[i] == 0);
-    CHECK(out.rack[1].xpRateBonusPct == 0);
+    CHECK(out.op.rack.size() == 2);
+    CHECK(out.op.rack[0].statBonus[2] == 1);
+    CHECK(out.op.rack[0].xpRateBonusPct == 25);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.op.rack[1].statBonus[i] == 0);
+    CHECK(out.op.rack[1].xpRateBonusPct == 0);
 }
 
 // One grant, one dish, one Epic row. The mechanic's scarcity IS the design (a second
@@ -1917,7 +1917,7 @@ void test_save_v54_renames_the_snack_item_id() {
     a.items.push_back(SaveStack{"tortilla_chip", 1});   // a neighbour must not move
     SaveId collected;
     std::strcpy(collected.id, "airgap_snack");
-    a.collectedItems.push_back(collected);
+    a.op.collectedItems.push_back(collected);
 
     // Stamp it back to the last version that still WROTE the old id. The row only
     // applies below its sinceVersion, so a v54 blob must be left alone, which the
@@ -1933,8 +1933,8 @@ void test_save_v54_renames_the_snack_item_id() {
     CHECK(std::strcmp(out.items[0].id, "dyno_nuggets") == 0);
     CHECK(out.items[0].qty == 3);                       // the count rides across intact
     CHECK(std::strcmp(out.items[1].id, "tortilla_chip") == 0);
-    CHECK(out.collectedItems.size() == 1);
-    CHECK(std::strcmp(out.collectedItems[0].id, "dyno_nuggets") == 0);
+    CHECK(out.op.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.op.collectedItems[0].id, "dyno_nuggets") == 0);
 
     // A CURRENT blob carries the new id already and must round-trip untouched: a
     // rename row that also fires at or above its own version would be rewriting
@@ -1955,7 +1955,7 @@ void test_save_v70_renames_crostini() {
     a.items.push_back(SaveStack{"crostini", 2});
     SaveId collected;
     std::strcpy(collected.id, "crostini");
-    a.collectedItems.push_back(collected);
+    a.op.collectedItems.push_back(collected);
     auto blob = serializeSave(a);
     const uint16_t before = 69;
     blob[4] = static_cast<uint8_t>(before);
@@ -1965,8 +1965,8 @@ void test_save_v70_renames_crostini() {
     CHECK(out.items.size() == 1);
     CHECK(std::strcmp(out.items[0].id, "brusshetta") == 0);
     CHECK(out.items[0].qty == 2);
-    CHECK(out.collectedItems.size() == 1);
-    CHECK(std::strcmp(out.collectedItems[0].id, "brusshetta") == 0);
+    CHECK(out.op.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.op.collectedItems[0].id, "brusshetta") == 0);
 
     SaveData b;
     b.items.push_back(SaveStack{"brusshetta", 1});

@@ -133,13 +133,13 @@ void renameId(char* id, uint16_t version) {
 // is enough.
 void renameRetiredIds(SaveData& d, uint16_t version) {
     renameId(d.active.id, version);
-    for (SaveStoredPet& p : d.rack) renameId(p.id, version);
-    for (SaveRecord& r : d.records) renameId(r.id, version);
+    for (SaveStoredPet& p : d.op.rack) renameId(p.id, version);
+    for (SaveRecord& r : d.op.records) renameId(r.id, version);
     for (SaveId& s : d.op.seenCreatures) renameId(s.id, version);
-    for (SaveId& s : d.raisedCreatures) renameId(s.id, version);
-    for (SaveId& s : d.speciesDiveIds) renameId(s.id, version);
+    for (SaveId& s : d.op.raisedCreatures) renameId(s.id, version);
+    for (SaveId& s : d.op.speciesDiveIds) renameId(s.id, version);
     for (SaveStack& s : d.items) renameId(s.id, version);
-    for (SaveId& s : d.collectedItems) renameId(s.id, version);
+    for (SaveId& s : d.op.collectedItems) renameId(s.id, version);
     for (SaveId& s : d.active.foodsEaten) renameId(s.id, version);
 }
 
@@ -165,10 +165,10 @@ void openLadderRung(SaveData& d, int at) {
     auto openByte = [at](std::vector<uint8_t>& v) {
         if (at <= static_cast<int>(v.size())) v.insert(v.begin() + at, 0);
     };
-    openByte(d.sectorCleared);
-    openByte(d.bossUnlocked);
-    openByte(d.subCleared);        // one bitmask byte per area, so still one cell
-    openByte(d.subBossUnlocked);
+    openByte(d.op.sectorCleared);
+    openByte(d.op.bossUnlocked);
+    openByte(d.op.subCleared);        // one bitmask byte per area, so still one cell
+    openByte(d.op.subBossUnlocked);
     // subRefarm is row-major with kSubAreasPerArea counts per area: a whole ROW opens.
     const size_t row = static_cast<size_t>(at) * kSubAreasPerArea;
     std::vector<uint16_t>& refarm = d.activeArmed.subRefarm;
@@ -176,12 +176,12 @@ void openLadderRung(SaveData& d, int at) {
     // titlesUnlocked is a bitmask indexed by rung: everything at or above `at` moves up
     // one bit, leaving the new rung's Title correctly unearned.
     if (at < 32) {
-        const uint32_t below = d.titlesUnlocked & ((1u << at) - 1u);
-        const uint32_t atOrAbove = d.titlesUnlocked & ~((1u << at) - 1u);
-        d.titlesUnlocked = below | (atOrAbove << 1);
+        const uint32_t below = d.op.titlesUnlocked & ((1u << at) - 1u);
+        const uint32_t atOrAbove = d.op.titlesUnlocked & ~((1u << at) - 1u);
+        d.op.titlesUnlocked = below | (atOrAbove << 1);
     }
     // equippedTitle is a rung index (or -1 for none), so it moves with the Title it names.
-    if (d.equippedTitle >= at) ++d.equippedTitle;
+    if (d.op.equippedTitle >= at) ++d.op.equippedTitle;
 }
 
 void applyLadderInserts(SaveData& d, uint16_t version) {
@@ -256,8 +256,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (const SaveId& e : a.equippedMods) writeId(w, e);
     w.u16(static_cast<uint16_t>(d.log.size()));
     for (const auto& e : d.log) writeLog(w, e);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) writeStored(w, p);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) writeStored(w, p);
 
     // v2: the move loadout + combat XP/level (appended after the v1 stream).
     w.u16(static_cast<uint16_t>(a.ownedMoves.size()));
@@ -268,8 +268,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.i32(a.combatLevel);
 
     // v3: the ARCH records (RETIRED/CORRUPTED), appended after the v2 tail.
-    w.u16(static_cast<uint16_t>(d.records.size()));
-    for (const auto& rec : d.records) {
+    w.u16(static_cast<uint16_t>(op.records.size()));
+    for (const auto& rec : op.records) {
         w.bytes(rec.id, kSaveIdCap);
         w.u8(rec.status);
         w.i32(rec.generation);
@@ -289,7 +289,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v7: the real-radio Audit SHAKES ledger + the lifetime handshake count. Each
     // BSSID is a 48-bit key (low u32 + mid u16). (The sibling NETS/seenBssids vector
     // this tail used to carry was removed as of v33: see save.h.)
-    w.i32(d.handshakesSeen);
+    w.i32(op.handshakesSeen);
     w.u16(static_cast<uint16_t>(d.seenHandshakeBssids.size()));
     for (uint64_t k : d.seenHandshakeBssids) {
         w.u32(static_cast<uint32_t>(k));
@@ -297,15 +297,15 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     }
 
     // v8: the EXPL sector-clear flags (one byte per sector), length-prefixed.
-    w.u16(static_cast<uint16_t>(d.sectorCleared.size()));
-    for (uint8_t c : d.sectorCleared) w.u8(c);
+    w.u16(static_cast<uint16_t>(op.sectorCleared.size()));
+    for (uint8_t c : op.sectorCleared) w.u8(c);
 
     // v9: the Boot-Sector incubation timer (remaining decrypt clock).
     w.u32(a.bootHatchRemainMs);
 
     // v10: the zone-completion Titles. Unlocked bitmask + equipped index.
-    w.u32(d.titlesUnlocked);
-    w.i32(d.equippedTitle);
+    w.u32(op.titlesUnlocked);
+    w.i32(op.equippedTitle);
 
     // v11: the creature-level stat points, length-prefixed so the count is
     // self-describing (kLevelStatCount today). Sum equals combatLevel (the invariant).
@@ -313,15 +313,15 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (int32_t p : a.statPoints) w.i32(p);
 
     // v12: the EXPL per-sector boss-unlock flags, length-prefixed.
-    w.u16(static_cast<uint16_t>(d.bossUnlocked.size()));
-    for (uint8_t b : d.bossUnlocked) w.u8(b);
+    w.u16(static_cast<uint16_t>(op.bossUnlocked.size()));
+    for (uint8_t b : op.bossUnlocked) w.u8(b);
 
     // v13: the EXPL per-sub-area clear + boss-unlock bitmasks. One byte per
     // area (bit s = sub-area s), each length-prefixed.
-    w.u16(static_cast<uint16_t>(d.subCleared.size()));
-    for (uint8_t b : d.subCleared) w.u8(b);
-    w.u16(static_cast<uint16_t>(d.subBossUnlocked.size()));
-    for (uint8_t b : d.subBossUnlocked) w.u8(b);
+    w.u16(static_cast<uint16_t>(op.subCleared.size()));
+    for (uint8_t b : op.subCleared) w.u8(b);
+    w.u16(static_cast<uint16_t>(op.subBossUnlocked.size()));
+    for (uint8_t b : op.subBossUnlocked) w.u8(b);
 
     // v14: the CFG screen-brightness level.
     w.i32(d.brightness);
@@ -332,11 +332,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (uint16_t c : armed.subRefarm) w.u16(c);
 
     // v16: the per-pet defrag count. The active pet's tally, then a parallel
-    // length-prefixed list of the rack pets' tallies (same order as d.rack), so the
+    // length-prefixed list of the rack pets' tallies (same order as op.rack), so the
     // count survives ARCH freeze/thaw without touching the mid-stream rack records.
     w.i32(a.defragCount);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) w.i32(p.defragCount);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) w.i32(p.defragCount);
 
     // v18: the per-spare rolled equip-level gates, parallel to ownedMods. Empty from
     // v45 on (the roll is gone), and written for the same append-only reason as the
@@ -390,11 +390,11 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // consults it when the v40 bitset is absent.
     w.u32(op.achievementsMask);
 
-    // v26: per-stored-pet creature-level state, parallel to d.rack (mirrors
+    // v26: per-stored-pet creature-level state, parallel to op.rack (mirrors
     // defragCount's v16 pattern) so a rack pet's level/stat points/slot typing
     // survive an ARCH Store/Deploy cycle instead of being silently dropped.
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) {
         w.i32(p.combatLevel);
         w.i32(p.combatXp);
         for (int i = 0; i < kLevelStatCount; ++i) w.i32(p.statPoints[i]);
@@ -411,10 +411,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // ignores it; a pre-v28 blob reads back as false (no divert armed).
     w.u8(armed.trojanDivert);
 
-    // v29: per-stored-pet move + mod loadout, parallel to d.rack (mirrors v26's
+    // v29: per-stored-pet move + mod loadout, parallel to op.rack (mirrors v26's
     // pattern) so a rack pet's MOVES/MODS state survives an ARCH Store/Deploy cycle.
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) {
         w.u16(static_cast<uint16_t>(p.ownedMoves.size()));
         for (const auto& m : p.ownedMoves) writeId(w, m);
         for (int i = 0; i < kMaxMoveSlots; ++i) writeId(w, p.equippedMoves[i]);
@@ -434,17 +434,17 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(op.rigLevelsExt.size()));
     for (uint16_t lvl : op.rigLevelsExt) w.u16(lvl);
 
-    // v34: per-stored-pet evolution-timer elapsed-in-stage, parallel to d.rack
+    // v34: per-stored-pet evolution-timer elapsed-in-stage, parallel to op.rack
     // (mirrors defragCount's v16 pattern) so it survives an ARCH Store/Deploy cycle.
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) w.u32(p.timeInStageMs);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) w.u32(p.timeInStageMs);
 
     // v35: this pet's own best-ever DeepWeb Dive depth. The active pet's tally,
-    // then a parallel list mapped onto d.rack by index (mirrors defragCount's v16
+    // then a parallel list mapped onto op.rack by index (mirrors defragCount's v16
     // pattern) so it survives an ARCH Store/Deploy cycle.
     w.i32(a.bestDeepWebDepth);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) w.i32(p.bestDeepWebDepth);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) w.i32(p.bestDeepWebDepth);
 
     // v36: the Hacker CREW allegiance + the home network it hangs off. Player-level;
     // the crew rides as its content ID so the table can be reordered.
@@ -461,8 +461,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u8(0);
 
     // v39: the raised-species tally, length-prefixed like seenCreatures.
-    w.u16(static_cast<uint16_t>(d.raisedCreatures.size()));
-    for (const auto& s : d.raisedCreatures) writeId(w, s);
+    w.u16(static_cast<uint16_t>(op.raisedCreatures.size()));
+    for (const auto& s : op.raisedCreatures) writeId(w, s);
 
     // v40: the achievement bitsets (indexed by wire number, length-prefixed so the
     // catalogue can grow without another version) + the counters the countable rows are
@@ -472,21 +472,21 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.u16(static_cast<uint16_t>(op.achievementNotified.size()));
     for (uint8_t b : op.achievementNotified) w.u8(b);
     w.i32(op.bossWins);
-    w.u16(static_cast<uint16_t>(d.collectedItems.size()));
-    for (const auto& s : d.collectedItems) writeId(w, s);
+    w.u16(static_cast<uint16_t>(op.collectedItems.size()));
+    for (const auto& s : op.collectedItems) writeId(w, s);
     // Parallel id/depth lists: same shape the rack's parallel tails use, so the ids stay
     // a plain SaveId run and the depths a plain i32 run.
-    w.u16(static_cast<uint16_t>(d.speciesDiveIds.size()));
-    for (const auto& s : d.speciesDiveIds) writeId(w, s);
-    for (int32_t v : d.speciesDiveDepths) w.i32(v);
+    w.u16(static_cast<uint16_t>(op.speciesDiveIds.size()));
+    for (const auto& s : op.speciesDiveIds) writeId(w, s);
+    for (int32_t v : op.speciesDiveDepths) w.i32(v);
 
     // v42: time already burned in the 5/5 recovery window, so neither a power cycle
     // nor an ARCH freeze can refund it. Awake-ms only; save.h's version note explains
     // why for a board with no RTC. The active pet's value, then a parallel list
-    // mapped onto d.rack by index.
+    // mapped onto op.rack by index.
     w.u32(a.dyingElapsedMs);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) w.u32(p.dyingElapsedMs);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) w.u32(p.dyingElapsedMs);
 
     // v44: Stacker boards cleared by hand, lifetime.
     w.i32(op.stackerWins);
@@ -515,8 +515,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v50: the per-pet Bandwidth-regen upgrade. The active pet's minutes, then a
     // parallel list mapped onto the rack by index (the v42 dying-window shape).
     w.i32(a.bandwidthRegenBonusMin);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) w.i32(p.bandwidthRegenBonusMin);
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) w.i32(p.bandwidthRegenBonusMin);
 
     // v51: the whole owned-recipe bitset, length-prefixed like the v40 achievement
     // masks. Its first four bytes are also written above as the v31 u32, so a reader
@@ -552,8 +552,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // that stops at v56 still reads every field it knows.
     for (int32_t v : a.statBonus) w.i32(v);
     w.i32(a.xpRateBonusPct);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const auto& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const auto& p : op.rack) {
         for (int32_t v : p.statBonus) w.i32(v);
         w.i32(p.xpRateBonusPct);
     }
@@ -565,8 +565,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v59: the CANT. The learned-sigil mask and the shakes paid for it. Its own tail
     // after v58's, so a build that stops at either still reads every field it knows.
-    w.u32(d.cantSigils);
-    w.i32(d.shakesSpent);
+    w.u32(op.cantSigils);
+    w.i32(op.shakesSpent);
 
     // v60: the USB port's three per-pet slots. The forced evolution branch, the armed
     // soak factor and the evolution hold. Its own tail after v59's, so a build that stops
@@ -620,8 +620,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // the rack's palates as a food-id dictionary plus a bitset per pet over it.
     w.bytes(a.favouriteFood, kSaveIdCap);
     w.u8(a.favouriteFound);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const SaveStoredPet& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const SaveStoredPet& p : op.rack) {
         w.bytes(p.favouriteFood, kSaveIdCap);
         w.u8(p.favouriteFound);
     }
@@ -631,13 +631,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
             if (std::strncmp(dict[i]->id, s.id, kSaveIdCap) == 0) return static_cast<int>(i);
         return -1;
     };
-    for (const SaveStoredPet& p : d.rack)
+    for (const SaveStoredPet& p : op.rack)
         for (const SaveId& s : p.foodsEaten)
             if (dictIndex(s) < 0) dict.push_back(&s);
     w.u16(static_cast<uint16_t>(dict.size()));
     for (const SaveId* s : dict) writeId(w, *s);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const SaveStoredPet& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const SaveStoredPet& p : op.rack) {
         std::vector<uint8_t> bits((dict.size() + 7) / 8, 0);
         for (const SaveId& s : p.foodsEaten) {
             const int i = dictIndex(s);
@@ -649,13 +649,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v74: Bond, the active pet's then the rack's in rack order.
     for (uint16_t bp : a.bondBp) w.u16(bp);
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const SaveStoredPet& p : d.rack)
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const SaveStoredPet& p : op.rack)
         for (uint16_t bp : p.bondBp) w.u16(bp);
 
     // v75: the rack's remaining kept fields, in rack order.
-    w.u16(static_cast<uint16_t>(d.rack.size()));
-    for (const SaveStoredPet& p : d.rack) {
+    w.u16(static_cast<uint16_t>(op.rack.size()));
+    for (const SaveStoredPet& p : op.rack) {
         w.i32(p.bestDarkWebDepth);
         w.u8(p.shieldActive);
         w.u8(p.shieldSpent);
@@ -751,7 +751,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         p.mistakes = r.i32(); p.debuffs = r.i32();
         p.ghost = r.u8();
         p.generation = r.i32();
-        d.rack.push_back(p);
+        op.rack.push_back(p);
     }
 
     // v2 tail: the move loadout + combat XP/level. Absent in a v1 blob: the owned list
@@ -774,7 +774,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             SaveRecord rec; r.bytes(rec.id, kSaveIdCap); rec.id[kSaveIdCap - 1] = '\0';
             rec.status = r.u8();
             rec.generation = r.i32();
-            d.records.push_back(rec);
+            op.records.push_back(rec);
         }
     }
 
@@ -802,7 +802,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // Absent in a v1..v6 blob. The ledger stays empty (the pre-v7 behaviour: a
     // reboot re-builds the dedup set from scratch, which could re-count).
     if (version >= 7) {
-        d.handshakesSeen = r.i32();
+        op.handshakesSeen = r.i32();
         const uint16_t nHs = r.u16();
         for (uint16_t i = 0; i < nHs && r.ok; ++i) {
             uint64_t k = r.u32();
@@ -817,7 +817,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 8) {
         const uint16_t nSec = r.u16();
         for (uint16_t i = 0; i < nSec && r.ok; ++i)
-            d.sectorCleared.push_back(r.u8());
+            op.sectorCleared.push_back(r.u8());
     }
 
     // v9 tail: the Boot-Sector incubation timer. Absent in a v1..v8 blob. It stays
@@ -829,8 +829,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v10 tail: the zone-completion Titles. Absent in a v1..v9 blob: nothing
     // unlocked, none equipped (a save that predates Titles has earned none).
     if (version >= 10) {
-        d.titlesUnlocked = r.u32();
-        d.equippedTitle = r.i32();
+        op.titlesUnlocked = r.u32();
+        op.equippedTitle = r.i32();
     }
 
     // v11 tail: the creature-level stat points. Every accepted blob has it.
@@ -848,7 +848,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 12) {
         const uint16_t nBoss = r.u16();
         for (uint16_t i = 0; i < nBoss && r.ok; ++i)
-            d.bossUnlocked.push_back(r.u8());
+            op.bossUnlocked.push_back(r.u8());
     }
 
     // v13 tail: the EXPL per-sub-area clear + boss-unlock bitmasks. Absent in
@@ -857,10 +857,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 13) {
         const uint16_t nSubC = r.u16();
         for (uint16_t i = 0; i < nSubC && r.ok; ++i)
-            d.subCleared.push_back(r.u8());
+            op.subCleared.push_back(r.u8());
         const uint16_t nSubB = r.u16();
         for (uint16_t i = 0; i < nSubB && r.ok; ++i)
-            d.subBossUnlocked.push_back(r.u8());
+            op.subBossUnlocked.push_back(r.u8());
     }
 
     // v14 tail: the CFG screen-brightness level. Absent in a v1..v13 blob:
@@ -887,7 +887,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nDc = r.u16();
         for (uint16_t i = 0; i < nDc && r.ok; ++i) {
             const int32_t c = r.i32();
-            if (i < d.rack.size()) d.rack[i].defragCount = c;
+            if (i < op.rack.size()) op.rack[i].defragCount = c;
         }
     }
 
@@ -961,7 +961,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         op.achievementsMask = r.u32();
     }
 
-    // v26 tail: per-stored-pet creature-level state, parallel to d.rack. Absent in a
+    // v26 tail: per-stored-pet creature-level state, parallel to op.rack. Absent in a
     // v1..v25 blob. Every rack pet keeps its SaveStoredPet default (level 0, all-Unset
     // slots): no level history was ever recorded for a stored pet before this version.
     if (version >= 26) {
@@ -973,11 +973,11 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             for (int j = 0; j < kLevelStatCount; ++j) stats[j] = r.i32();
             uint8_t slots[kMaxMoveSlots];
             for (int j = 0; j < kMaxMoveSlots; ++j) slots[j] = r.u8();
-            if (i < d.rack.size()) {
-                d.rack[i].combatLevel = lvl;
-                d.rack[i].combatXp = xp;
-                for (int j = 0; j < kLevelStatCount; ++j) d.rack[i].statPoints[j] = stats[j];
-                for (int j = 0; j < kMaxMoveSlots; ++j) d.rack[i].slotKinds[j] = slots[j];
+            if (i < op.rack.size()) {
+                op.rack[i].combatLevel = lvl;
+                op.rack[i].combatXp = xp;
+                for (int j = 0; j < kLevelStatCount; ++j) op.rack[i].statPoints[j] = stats[j];
+                for (int j = 0; j < kMaxMoveSlots; ++j) op.rack[i].slotKinds[j] = slots[j];
             }
         }
     }
@@ -994,7 +994,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // stays false (no divert armed).
     if (version >= 28) armed.trojanDivert = r.u8();
 
-    // v29 tail: per-stored-pet move + mod loadout, parallel to d.rack. Absent in a
+    // v29 tail: per-stored-pet move + mod loadout, parallel to op.rack. Absent in a
     // v1..v28 blob: every rack pet keeps its SaveStoredPet default (empty
     // ownedMoves/equippedMoves/equippedMods), which Game::archDeployStored reads as
     // "no data" and re-seeds from the pet's line, same as a pre-v2 active pet did.
@@ -1017,10 +1017,11 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
                 r.bytes(equippedMods[j].id, kSaveIdCap);
                 equippedMods[j].id[kSaveIdCap - 1] = '\0';
             }
-            if (i < d.rack.size()) {
-                d.rack[i].ownedMoves = std::move(owned);
-                for (int j = 0; j < kMaxMoveSlots; ++j) d.rack[i].equippedMoves[j] = equippedMoves[j];
-                for (int j = 0; j < kModSlots; ++j) d.rack[i].equippedMods[j] = equippedMods[j];
+            if (i < op.rack.size()) {
+                op.rack[i].ownedMoves = std::move(owned);
+                for (int j = 0; j < kMaxMoveSlots; ++j)
+                    op.rack[i].equippedMoves[j] = equippedMoves[j];
+                for (int j = 0; j < kModSlots; ++j) op.rack[i].equippedMods[j] = equippedMods[j];
             }
         }
     }
@@ -1044,7 +1045,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             op.rigLevelsExt.push_back(r.u16());
     }
 
-    // v34 tail: per-stored-pet evolution-timer elapsed-in-stage, parallel to d.rack.
+    // v34 tail: per-stored-pet evolution-timer elapsed-in-stage, parallel to op.rack.
     // Absent in a v1..v33 blob → every rack pet keeps its SaveStoredPet default (0),
     // so a migrated save's stored pets thaw with a fresh in-stage clock (the old
     // Deploy behavior), not lost progress.
@@ -1052,7 +1053,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nTs = r.u16();
         for (uint16_t i = 0; i < nTs && r.ok; ++i) {
             const uint32_t t = r.u32();
-            if (i < d.rack.size()) d.rack[i].timeInStageMs = t;
+            if (i < op.rack.size()) op.rack[i].timeInStageMs = t;
         }
     }
 
@@ -1064,7 +1065,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nBd = r.u16();
         for (uint16_t i = 0; i < nBd && r.ok; ++i) {
             const int32_t v = r.i32();
-            if (i < d.rack.size()) d.rack[i].bestDeepWebDepth = v;
+            if (i < op.rack.size()) op.rack[i].bestDeepWebDepth = v;
         }
     }
 
@@ -1093,7 +1094,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nRaised = r.u16();
         for (uint16_t i = 0; i < nRaised && r.ok; ++i) {
             SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            d.raisedCreatures.push_back(s);
+            op.raisedCreatures.push_back(s);
         }
     }
 
@@ -1113,15 +1114,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nColl = r.u16();
         for (uint16_t i = 0; i < nColl && r.ok; ++i) {
             SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            d.collectedItems.push_back(s);
+            op.collectedItems.push_back(s);
         }
         const uint16_t nDive = r.u16();
         for (uint16_t i = 0; i < nDive && r.ok; ++i) {
             SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            d.speciesDiveIds.push_back(s);
+            op.speciesDiveIds.push_back(s);
         }
         for (uint16_t i = 0; i < nDive && r.ok; ++i)
-            d.speciesDiveDepths.push_back(r.i32());
+            op.speciesDiveDepths.push_back(r.i32());
     }
 
     // v42 tail: the 5/5 recovery window already burned. The active pet's, then a
@@ -1134,7 +1135,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nDy = r.u16();
         for (uint16_t i = 0; i < nDy && r.ok; ++i) {
             const uint32_t v = r.u32();
-            if (i < d.rack.size()) d.rack[i].dyingElapsedMs = v;
+            if (i < op.rack.size()) op.rack[i].dyingElapsedMs = v;
         }
     }
 
@@ -1182,7 +1183,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t nBw = r.u16();
         for (uint16_t i = 0; i < nBw && r.ok; ++i) {
             const int32_t v = r.i32();
-            if (i < d.rack.size()) d.rack[i].bandwidthRegenBonusMin = v;
+            if (i < op.rack.size()) op.rack[i].bandwidthRegenBonusMin = v;
         }
     }
 
@@ -1232,9 +1233,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             int32_t bonus[kLevelStatCount];
             for (int32_t& v : bonus) v = r.i32();
             const int32_t rate = r.i32();
-            if (i < d.rack.size()) {
-                for (int j = 0; j < kLevelStatCount; ++j) d.rack[i].statBonus[j] = bonus[j];
-                d.rack[i].xpRateBonusPct = rate;
+            if (i < op.rack.size()) {
+                for (int j = 0; j < kLevelStatCount; ++j) op.rack[i].statBonus[j] = bonus[j];
+                op.rack[i].xpRateBonusPct = rate;
             }
         }
     }
@@ -1246,8 +1247,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v59 tail: the CANT. Absent in a v1..v58 blob → no sigils learned and nothing
     // spent, so every SHAKE such a save captured is still unspent.
     if (version >= 59) {
-        d.cantSigils = r.u32();
-        d.shakesSpent = r.i32();
+        op.cantSigils = r.u32();
+        op.shakesSpent = r.i32();
     }
 
     // v60 tail: the USB port. Absent in a v1..v59 blob → the struct's own defaults, an
@@ -1332,9 +1333,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             r.bytes(id, kSaveIdCap);
             id[kSaveIdCap - 1] = '\0';
             const uint8_t found = r.u8();
-            if (i < d.rack.size()) {
-                std::memcpy(d.rack[i].favouriteFood, id, kSaveIdCap);
-                d.rack[i].favouriteFound = found;
+            if (i < op.rack.size()) {
+                std::memcpy(op.rack[i].favouriteFood, id, kSaveIdCap);
+                op.rack[i].favouriteFound = found;
             }
         }
         std::vector<SaveId> dict;
@@ -1350,8 +1351,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
                 const uint8_t byte = r.u8();
                 for (int bit = 0; bit < 8; ++bit) {
                     const size_t k = static_cast<size_t>(b) * 8 + bit;
-                    if (((byte >> bit) & 1) && k < dict.size() && i < d.rack.size())
-                        d.rack[i].foodsEaten.push_back(dict[k]);
+                    if (((byte >> bit) & 1) && k < dict.size() && i < op.rack.size())
+                        op.rack[i].foodsEaten.push_back(dict[k]);
                 }
             }
         }
@@ -1364,7 +1365,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         for (uint16_t i = 0; i < nBond && r.ok; ++i)
             for (int k = 0; k < kBondSources; ++k) {
                 const uint16_t bp = r.u16();
-                if (i < d.rack.size()) d.rack[i].bondBp[k] = bp;
+                if (i < op.rack.size()) op.rack[i].bondBp[k] = bp;
             }
     }
 
@@ -1381,8 +1382,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             k.usbSoak = r.u8();
             k.usbHold = r.u8();
             k.bootHatchRemainMs = r.u32();
-            if (i >= d.rack.size()) continue;
-            SaveStoredPet& p = d.rack[i];
+            if (i >= op.rack.size()) continue;
+            SaveStoredPet& p = op.rack[i];
             p.bestDarkWebDepth = k.bestDarkWebDepth;
             p.shieldActive = k.shieldActive;
             p.shieldSpent = k.shieldSpent;

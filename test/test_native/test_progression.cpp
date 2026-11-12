@@ -1637,13 +1637,13 @@ void test_save_records_roundtrip() {
     std::strncpy(rec.id, "berserkernel", kSaveIdCap - 1);
     rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
     rec.generation = 3;
-    d.records.push_back(rec);
+    d.op.records.push_back(rec);
     SaveData out;
     CHECK(deserializeSave(serializeSave(d), out));
-    CHECK(out.records.size() == 1);
-    CHECK(std::strcmp(out.records[0].id, "berserkernel") == 0);
-    CHECK(out.records[0].generation == 3);
-    CHECK(static_cast<RecordStatus>(out.records[0].status) == RecordStatus::Corrupted);
+    CHECK(out.op.records.size() == 1);
+    CHECK(std::strcmp(out.op.records[0].id, "berserkernel") == 0);
+    CHECK(out.op.records[0].generation == 3);
+    CHECK(static_cast<RecordStatus>(out.op.records[0].status) == RecordStatus::Corrupted);
 }
 
 // Save v4 round-trips Hacker Rank: the counter, the derived

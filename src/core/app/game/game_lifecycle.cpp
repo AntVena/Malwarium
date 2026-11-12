@@ -525,7 +525,7 @@ void Game::acknowledgeCSF() {
         std::strncpy(rec.id, pet_.creature->id, kSaveIdCap - 1);
         rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
         rec.generation = pet_.generation;
-        records_.push_back(rec);
+        op_.arch.records.push_back(rec);
     }
     csfBeat_ = 0;
     pet_.dyingArmed = false;

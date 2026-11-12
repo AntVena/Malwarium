@@ -206,8 +206,8 @@ paged through while nobody was watching is still there to read.
    `area_defs.h`, at the ladder position the new area unlocks at.
 3. That's it for identity/content. `kAreaCount`, `kExplSectors` (expl_screen.h),
    `kModPowerTiers`, the area's difficulty (`areaTier`), and every fixed-size save-flag
-   array in `game.h` (`sectorCleared_`, `subCleared_`, …) all follow automatically: there
-   is no second count anywhere to remember to bump.
+   array on the Operator record (`OperatorWorld::sectorCleared`, …) all follow
+   automatically: there is no second count anywhere to remember to bump.
 4. Add art (`ICON_SECTOR_<AREA_ID>`, `assets/ASSET_MANIFEST.md` §J), name the glyph in the
    row's `icon` field, and check the naming rules before claiming a brand: `AREA_NAMING.md`.
 5. Author its four `story` chapters (see *The story* above), or leave the row zeroed and

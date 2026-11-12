@@ -413,18 +413,18 @@ void test_save_v40_achievements_roundtrip() {
     a.op.achievementNotified.assign(8, 0);
     a.op.achievementNotified[0] = 0x01;          // wire 0 announced, wire 2 not
     a.op.bossWins = 37;
-    a.collectedItems.push_back(SaveId{"osi_dip"});
-    a.speciesDiveIds.push_back(SaveId{"malbear"});
-    a.speciesDiveDepths.push_back(312);
+    a.op.collectedItems.push_back(SaveId{"osi_dip"});
+    a.op.speciesDiveIds.push_back(SaveId{"malbear"});
+    a.op.speciesDiveDepths.push_back(312);
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
     CHECK(out.op.achievementEarned.size() == 8 && out.op.achievementEarned[0] == 0x05);
     CHECK(out.op.achievementNotified.size() == 8 && out.op.achievementNotified[0] == 0x01);
     CHECK(out.op.bossWins == 37);
-    CHECK(out.collectedItems.size() == 1);
-    CHECK(std::strcmp(out.collectedItems[0].id, "osi_dip") == 0);
-    CHECK(out.speciesDiveIds.size() == 1 && out.speciesDiveDepths.size() == 1);
-    CHECK(out.speciesDiveDepths[0] == 312);
+    CHECK(out.op.collectedItems.size() == 1);
+    CHECK(std::strcmp(out.op.collectedItems[0].id, "osi_dip") == 0);
+    CHECK(out.op.speciesDiveIds.size() == 1 && out.op.speciesDiveDepths.size() == 1);
+    CHECK(out.op.speciesDiveDepths[0] == 312);
 }
 
 // v56's three lifetime tallies survive a round trip, and a blob written without them
@@ -495,11 +495,11 @@ void test_pedia_state_json_rack_and_record_hatched() {
     std::strcpy(a.active.id, "paypup");
     a.active.generation = 3;
     SaveStoredPet stored; std::strcpy(stored.id, "pingcub");
-    a.rack.push_back(stored);
+    a.op.rack.push_back(stored);
     SaveRecord rec; std::strcpy(rec.id, "malbear");
     rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
     rec.generation = 2;
-    a.records.push_back(rec);
+    a.op.records.push_back(rec);
     MemSaveStore store; store.save(serializeSave(a));
     Game g(StartMode::Hatched, "paypup", &store);
     CHECK(g.rack().size() == 1 && g.records().size() == 1);

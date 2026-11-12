@@ -252,7 +252,7 @@ void Game::onButton(const ButtonEvent& ev) {
             const int n = static_cast<int>(lines.size());
             if (ev.button == Button::A) lineSelectRow_ = (lineSelectRow_ + 1) % n;
             else if (ev.button == Button::B) layEgg(lines[lineSelectRow_ % n]);
-            else if (ev.button == Button::C && !rack_.empty()) archReturnFromLineSelect();
+            else if (ev.button == Button::C && !op_.arch.rack.empty()) archReturnFromLineSelect();
             break;
         }
         case Nav::Decryption: onDecryption(ev); break;

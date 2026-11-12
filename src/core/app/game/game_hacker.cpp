@@ -250,7 +250,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     y += kFontH + 4;
 
     // Equipped Title: its real home is the Hacker face. NONE → greyed.
-    if (equippedTitle_ >= 0) {
+    if (op_.world.equippedTitle >= 0) {
         char t[28];
         std::snprintf(t, sizeof(t), "* %s", equippedTitleName());
         drawText(fb, kMargin, y, t, palColor(Pal::ACCENT));
@@ -272,7 +272,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     std::snprintf(nets, sizeof(nets), "NETS %d", op_.networksSeen);
     drawText(fb, kMargin, y, nets, palColor(Pal::INK_DIM));
     char shakes[20];
-    std::snprintf(shakes, sizeof(shakes), "SHAKES %d", handshakesSeen_);
+    std::snprintf(shakes, sizeof(shakes), "SHAKES %d", op_.cant.handshakesSeen);
     drawText(fb, kActiveW - kMargin - textWidth(shakes), y, shakes,
              palColor(Pal::INK_DIM));
     y += kFontH + 4;
@@ -401,9 +401,9 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
                     c ? palColor(Pal::INK) : palColor(Pal::INK_DIM), beat_, Overflow::Scroll);
     char titleTag[24];
     std::snprintf(titleTag, sizeof(titleTag), "* %s",
-                  equippedTitle_ >= 0 ? equippedTitleName() : "NO TITLE");
+                  op_.world.equippedTitle >= 0 ? equippedTitleName() : "NO TITLE");
     drawTextMarquee(fb, kMargin, 58, kActiveW - 2 * kMargin, titleTag,
-                    palColor(equippedTitle_ >= 0 ? Pal::ACCENT : Pal::INK_DIM), beat_,
+                    palColor(op_.world.equippedTitle >= 0 ? Pal::ACCENT : Pal::INK_DIM), beat_,
                     Overflow::Scroll);
     fb.fillRect(0, 68, kActiveW, 1, palColor(Pal::TRACK));
 
@@ -436,7 +436,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     // standing in front of a guardian is what is left to spend, and the lifetime tally
     // is still the brag it always was, right beside it.
     char shakes[16];
-    std::snprintf(shakes, sizeof(shakes), "%d/%d", shakesUnspent(), handshakesSeen_);
+    std::snprintf(shakes, sizeof(shakes), "%d/%d", shakesUnspent(), op_.cant.handshakesSeen);
     statRow(108, "SHAKES", shakes, palColor(Pal::INK));
     // SIGILS: how much of the guardians' language this device can read. Dim at zero,
     // because none of it is a real state rather than a missing one, and ACCENT once the

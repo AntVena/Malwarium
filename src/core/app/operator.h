@@ -1,6 +1,7 @@
 // operator.h: the Operator record (CONTRIBUTING, "Where state lives"). The player, across
 // every pet: who they are on the 'net, their wallet and spare mods, the Rig Shop account,
-// and what they have earned, played and been shown. Game holds it as Game::op_ and reads
+// what they have earned, played and been shown, how far up the EXPL ladder they are, the
+// Cant, and the ARCH shelf of stored pets and records. Game holds it as Game::op_ and reads
 // it through Game::operatorRecord().
 //
 // Every part lasts until a WIPE EVERYTHING factory reset, which replaces the whole record
@@ -19,8 +20,10 @@
 #include "core/content/content_achievements.h"   // kAchievementWireCap
 #include "core/content/content_arcade.h"         // kArcadeMaxCabinets
 #include "core/content/content_quotes.h"         // kQuoteStateBytes
+#include "core/content/areas/area_defs.h"        // kAreaCount, kSubAreasPerArea
 #include "core/content/recipe_wire.h"            // kMergeRecipeWireBytes
 #include "core/content/story.h"                  // kStoryWireCap
+#include "core/model/cant.h"                     // SigilSet
 #include "core/model/loadout.h"
 #include "core/model/save.h"
 #include "core/render/scene_id.h"
@@ -29,6 +32,7 @@ namespace mal {
 
 class ContentRegistry;
 struct CreatureDef;
+struct ItemDef;
 
 // The one-time onboarding tips: the briefing in front of each egg line's hatch game, and
 // the idle nudge that says which button opens the menu. A Tip's value is its bit in
@@ -171,6 +175,76 @@ struct OperatorReveals {
     uint8_t tipsSeen[kTipWireCap / 8] = {};      // one bit per Tip
 };
 
+// How far up the EXPL ladder the operator has fought, and the Titles that awards.
+struct OperatorWorld {
+    bool sectorCleared[kAreaCount] = {};   // the area's gauntlet beaten
+    bool subCleared[kAreaCount][kSubAreasPerArea] = {};        // the sub-area's boss beaten
+    // A 10-win streak opened the sub-area's manual boss trigger. The streak itself is
+    // run state and not kept.
+    bool subBossUnlocked[kAreaCount][kSubAreasPerArea] = {};
+    uint32_t titlesUnlocked = 0;   // bit i = area i's Title
+    int equippedTitle = -1;        // the shown Title's area, or -1 for none
+
+    bool areaCleared(int a) const { return a >= 0 && a < kAreaCount && sectorCleared[a]; }
+    bool subAreaCleared(int a, int s) const {
+        return a >= 0 && a < kAreaCount && s >= 0 && s < kSubAreasPerArea && subCleared[a][s];
+    }
+    bool subBossReady(int a, int s) const {
+        return a >= 0 && a < kAreaCount && s >= 0 && s < kSubAreasPerArea &&
+               subBossUnlocked[a][s];
+    }
+    bool titleUnlocked(int a) const {
+        return a >= 0 && a < kAreaCount && (titlesUnlocked & (1u << a)) != 0;
+    }
+};
+
+// One species' deepest DeepWeb Dive. Kept per species rather than as one device
+// high-water mark, so the record outlives the pet that set it, "take three different
+// species deep" is answerable, and a line's record is the max over its members.
+struct SpeciesDive {
+    const CreatureDef* def = nullptr;
+    int depth = 0;
+};
+
+// What the operator has ever held, raised and taken deep. Borrowed registry pointers,
+// like OperatorReveals::seenCreatures. Nothing here is ever removed: spending an item
+// does not un-collect it, and a species evolved past stays raised.
+struct OperatorShelves {
+    std::vector<const ItemDef*> collectedItems;
+    std::vector<SpeciesDive> speciesDives;
+    std::vector<const CreatureDef*> raisedCreatures;
+
+    bool itemCollected(const char* id) const;
+    bool creatureRaised(const char* id) const;
+    int deepestDive(const char* creatureId) const;   // 0 = never dived
+    int deepestDiveEver() const;
+    // Record `depth` against `c` if it beats that species' standing record. True when
+    // the shelf changed.
+    bool recordDive(const CreatureDef* c, int depth);
+};
+
+// The Cant (core/model/cant.h) and the SHAKES that buy it. A sigil costs a captured
+// handshake, so the learned set, the lifetime capture count and what has been paid out
+// of it are the whole of what the guardian ladder remembers. Unspent is derived.
+struct OperatorCant {
+    SigilSet sigils = 0;
+    int handshakesSeen = 0;   // distinct WPA handshakes captured, deduped by BSSID
+    int shakesSpent = 0;      // never above handshakesSeen
+
+    int shakesUnspent() const {
+        const int n = handshakesSeen - shakesSpent;
+        return n > 0 ? n : 0;
+    }
+};
+
+// The ARCH shelf. A rack pet is kept as Pet::stored wrote it: it does not age while
+// stored, nothing reads it but the shelf's rows, and Pet::thawed rebuilds it on Deploy.
+// A record is the lasting trace of a pet that died or was sold, and holds no slot.
+struct OperatorArch {
+    std::vector<SaveStoredPet> rack;
+    std::vector<SaveRecord> records;
+};
+
 struct Operator {
     // --- Who they are on the 'net -----------------------------------------------
     char hackerTag[kHackerTagMax + 1] = "NETRUNNER_99";
@@ -194,6 +268,10 @@ struct Operator {
 
     OperatorTallies tallies;
     OperatorReveals reveals;
+    OperatorWorld world;
+    OperatorShelves shelves;
+    OperatorCant cant;
+    OperatorArch arch;
     // The chosen habitat background, SceneId::None for AUTO. Owning one is derived
     // (Game::backgroundOwned), so only the pick is kept.
     SceneId backgroundPick = SceneId::None;
@@ -201,9 +279,10 @@ struct Operator {
     // This record as the save keeps it, at game-ms `nowMs`. A spare mod the running
     // content no longer defines has no wire to write to and is dropped.
     SaveOperator saved(const ContentRegistry& reg, uint32_t nowMs) const;
-    // The record a save holds. Ids the running content no longer defines are dropped, and
-    // an older blob's layouts are migrated. `activeMods` is the active pet's installed
-    // mods, which a pre-v17 save still listed among the spares.
+    // The record a save holds. Ids the running content no longer defines are dropped (a
+    // record keeps its id, since the shelf resolves an unknown one to "?"), and an older
+    // blob's layouts are migrated. `activeMods` is the active pet's installed mods, which
+    // a pre-v17 save still listed among the spares.
     static Operator loaded(const SaveOperator& s, const SaveId (&activeMods)[kModSlots],
                            const ContentRegistry& reg);
 };

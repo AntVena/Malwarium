@@ -11,9 +11,9 @@ void Game::unlockTitle(int sector) {
     // (or a migrated save that already had it) never double-logs. Auto-equip the
     // first Title earned so the reward is visible without a trip to CFG.
     if (sector < 0 || sector >= kAreaCount) return;
-    if (titlesUnlocked_ & (1u << sector)) return;      // already earned
-    titlesUnlocked_ |= (1u << sector);
-    if (equippedTitle_ < 0) equippedTitle_ = sector;   // first Title auto-equips
+    if (op_.world.titlesUnlocked & (1u << sector)) return;      // already earned
+    op_.world.titlesUnlocked |= (1u << sector);
+    if (op_.world.equippedTitle < 0) op_.world.equippedTitle = sector;   // first Title auto-equips
     log_.push(LogEventType::CombatWon, "TITLE UNLOCKED");
     markSaveDirty();
 }
@@ -21,12 +21,12 @@ void Game::unlockTitle(int sector) {
 int Game::titlesUnlockedCount() const {
     int n = 0;
     for (int i = 0; i < kAreaCount; ++i)
-        if (titlesUnlocked_ & (1u << i)) ++n;
+        if (op_.world.titlesUnlocked & (1u << i)) ++n;
     return n;
 }
 
 const char* Game::equippedTitleName() const {
-    return titleUnlocked(equippedTitle_) ? sectorTitle(equippedTitle_) : "NONE";
+    return titleUnlocked(op_.world.equippedTitle) ? sectorTitle(op_.world.equippedTitle) : "NONE";
 }
 
 int Game::nextSelectableTitle(int cur) const {

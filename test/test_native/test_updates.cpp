@@ -144,12 +144,12 @@ void test_save_v38_net_slot_is_reserved() {
     // The slot still occupies its byte, so everything appended behind it lands where
     // the reader expects. A v39 field is the nearest one to prove that with.
     SaveId sp; std::strcpy(sp.id, "malbear");
-    a.raisedCreatures.push_back(sp);
+    a.op.raisedCreatures.push_back(sp);
     blob = serializeSave(a);
     SaveData out2;
     CHECK(deserializeSave(blob, out2));
-    CHECK(out2.raisedCreatures.size() == 1);
-    CHECK(std::strcmp(out2.raisedCreatures[0].id, "malbear") == 0);
+    CHECK(out2.op.raisedCreatures.size() == 1);
+    CHECK(std::strcmp(out2.op.raisedCreatures[0].id, "malbear") == 0);
 }
 
 // A save is the engine's biggest allocation and it fires off a timer, so it can land

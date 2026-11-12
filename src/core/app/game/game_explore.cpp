@@ -51,16 +51,17 @@ void Game::flattenSubFlags(bool (&cleared)[kSubFlags],
                            bool (&bossUnlocked)[kSubFlags]) const {
     for (int a = 0; a < kExplSectors; ++a)
         for (int s = 0; s < kExplSubAreas; ++s) {
-            cleared[a * kExplSubAreas + s] = subCleared_[a][s];
-            bossUnlocked[a * kExplSubAreas + s] = subBossUnlocked_[a][s];
+            cleared[a * kExplSubAreas + s] = op_.world.subCleared[a][s];
+            bossUnlocked[a * kExplSubAreas + s] = op_.world.subBossUnlocked[a][s];
         }
 }
 
 bool Game::areaBossReady(int area) const {
     if (area < 0 || area >= kExplSectors) return false;
-    if (!explSectorOpen(area, sectorCleared_) || sectorCleared_[area]) return false;
+    if (!explSectorOpen(area, op_.world.sectorCleared) || op_.world.sectorCleared[area])
+        return false;
     for (int s = 0; s < kExplSubAreas; ++s)
-        if (!subCleared_[area][s]) return false;
+        if (!op_.world.subCleared[area][s]) return false;
     return true;                                     // all 5 cleared, area not yet
 }
 
@@ -73,7 +74,7 @@ bool Game::explRowLandable(int row) const {
     if (!explRowInLevel(row, explCat_, explNavArea_)) return false;
     bool cleared[kSubFlags], boss[kSubFlags];
     flattenSubFlags(cleared, boss);
-    const ExplRowState st = explRowState(row, sectorCleared_, cleared, boss,
+    const ExplRowState st = explRowState(row, op_.world.sectorCleared, cleared, boss,
                                          exploreActive_ ? exploreSector_ : -1,
                                          exploreActive_ ? exploreSub_ : -1,
                                          tourneyRunning());
@@ -96,7 +97,7 @@ bool Game::explCatLandable(int catRow) const {
 // drawn as "??????".
 ExplListView Game::explView() const {
     ExplListView v;
-    v.areaCleared = sectorCleared_;
+    v.areaCleared = op_.world.sectorCleared;
     v.exploringSector = exploreActive_ ? exploreSector_ : -1;
     v.exploringSub = exploreActive_ ? exploreSub_ : -1;
     v.bestDeepWebDepth = pet_.bestDeepWebDepth;
@@ -181,7 +182,7 @@ void Game::onExplList(const ButtonEvent& ev) {
     const int exSub = exploreActive_ ? exploreSub_ : -1;
     const int n = explRowCount();
     auto stateOf = [&](int r) {
-        return explRowState(r, sectorCleared_, cleared, boss, exSec, exSub,
+        return explRowState(r, op_.world.sectorCleared, cleared, boss, exSec, exSub,
                             tourneyRunning());
     };
     if (ev.button == Button::A) {
@@ -384,7 +385,10 @@ void Game::autoProgressStep() {
     // already cleared never unlocks one again (game_combat.cpp), so on a re-run of a
     // done area this falls through to the positional advance below, so the loop keeps
     // moving.
-    if (subBossUnlocked_[a][s] && !subCleared_[a][s]) { startSubAreaBoss(a, s); return; }
+    if (op_.world.subBossUnlocked[a][s] && !op_.world.subCleared[a][s]) {
+        startSubAreaBoss(a, s);
+        return;
+    }
     autoProgressAdvance(a, s);
 }
 
@@ -399,7 +403,7 @@ void Game::autoProgressAdvance(int area, int sub) {
     // stands. Arming auto-progress midway through an area leaves earlier sub-areas
     // unbeaten, so there the rotation wraps to the first one and comes back round to
     // the gauntlet once they all are.
-    if (areaBossReady(area) || sectorCleared_[area]) { startAreaBoss(area); return; }
+    if (areaBossReady(area) || op_.world.sectorCleared[area]) { startAreaBoss(area); return; }
     startExplore(area, 0);
 }
 
@@ -461,7 +465,7 @@ int Game::nextOpenArea(int area) const {
     // be entered.
     for (int i = 1; i <= kExplSectors; ++i) {
         const int a = (area + i) % kExplSectors;
-        if (explSectorOpen(a, sectorCleared_)) return a;
+        if (explSectorOpen(a, op_.world.sectorCleared)) return a;
     }
     return area;
 }
