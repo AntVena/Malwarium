@@ -39,9 +39,9 @@ void Game::settlePlayedRun(const PlayOutcome& o) {
 
 int Game::playedFragWorth(int units) const {
     const int worth = units * kPlayFragPerUnit * arcadeRewardMult(runDifficulty());
-    const int cap = maintKind_ == MaintKind::Av ? kAvReduction : model_.fragmentation();
+    const int cap = maintKind_ == MaintKind::Av ? kAvReduction : pet_.model.fragmentation();
     const int capped = worth > cap ? cap : worth;
-    return capped > model_.fragmentation() ? model_.fragmentation() : capped;
+    return capped > pet_.model.fragmentation() ? pet_.model.fragmentation() : capped;
 }
 
 int Game::playedBitsWorth(int bitsUnits) const {
@@ -61,7 +61,7 @@ PlayHud Game::playHud(const PlayOutcome& sofar) const {
     }
     h.title = maintKind_ == MaintKind::Defrag ? "DEFRAGMENTING" : "SCANNING";
     h.fragOff = playedFragWorth(sofar.units);
-    h.fragNow = model_.fragmentation() - h.fragOff;
+    h.fragNow = pet_.model.fragmentation() - h.fragOff;
     h.bits = playedBitsWorth(sofar.bitsUnits);
     // The Bits readout only where Bits can be earned: a DEFRAG, by a game with a Bits unit.
     const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_));
@@ -83,21 +83,21 @@ void Game::settleMaintPlay(const PlayOutcome& o) {
     maintPlayLive_ = false;
     maintPlayed_ = true;
     if (maintKind_ == MaintKind::Av && o.won) {
-        playedFragRemoved_ = model_.fragmentation() < kAvReduction ? model_.fragmentation()
+        playedFragRemoved_ = pet_.model.fragmentation() < kAvReduction ? pet_.model.fragmentation()
                                                                    : kAvReduction;
         playedBitsEarned_ = 0;
-        model_.applyAntivirus(true);
+        pet_.model.applyAntivirus(true);
         maintSuccess_ = true;
     } else {
         playedFragRemoved_ = playedFragWorth(o.units);
         playedBitsEarned_ = playedBitsWorth(o.bitsUnits);
-        model_.applyPlayedDefrag(playedFragRemoved_);
+        pet_.model.applyPlayedDefrag(playedFragRemoved_);
         bits_ += playedBitsEarned_;
         maintSuccess_ = maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0 &&
-                        model_.fragmentation() == 0;
+                        pet_.model.fragmentation() == 0;
     }
     // The per-pet tally counts disks that got cleaner, so a run worth nothing doesn't.
-    if (maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0) ++defragCount_;
+    if (maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0) ++pet_.defragCount;
     markSaveDirty();
     processBeat_ = kProcessBeats;                // the work is done; show the outcome
     processResolved_ = true;

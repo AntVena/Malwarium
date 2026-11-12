@@ -11,7 +11,7 @@ void Game::onTrainList(const ButtonEvent& ev) {
     // opens the focused slot's move picker, C backs to the LOADOUT hub. An egg has no
     // unlocked slot at all, so `sel` can be 0. MOVES cannot be reached in that state
     // (slotLocked), but the wrap still has to handle it.
-    const Stage st = pet_ ? pet_->stage : Stage::BootSector;
+    const Stage st = pet_.creature ? pet_.creature->stage : Stage::BootSector;
     const int sel = loadoutSelectableCount(st);
     if (ev.button == Button::A) {
         trainRow_ = sel > 0 ? (trainRow_ + 1) % sel : 0;
@@ -30,7 +30,7 @@ void Game::trainListReleaseB() {
     if (!(nav_ == Nav::Submenu && enteredId() == SubmenuId::Mods &&
           loadoutTab_ == LoadoutTab::Moves))
         return;
-    if (loadoutSelectableCount(pet_ ? pet_->stage : Stage::BootSector) <= 0) return;
+    if (loadoutSelectableCount(pet_.creature ? pet_.creature->stage : Stage::BootSector) <= 0) return;
     trainScreen_ = TrainScreen::MovePicker;
     moveSlot_ = trainRow_;
     movePick_ = 0;
@@ -50,12 +50,12 @@ void Game::onTrainDetail(const ButtonEvent& ev) {
 
 const MoveDef* Game::focusedPickerMove() const {
     if (moveDetailEquipped_) {
-        const char* id = moveLoadout_.equipped(moveSlot_);
+        const char* id = pet_.moves.equipped(moveSlot_);
         return id ? registry_.move(id) : nullptr;
     }
-    const auto owned = ownedMoveList(registry_, moveLoadout_, slotRequiredKind(moveSlot_),
-                                     pet_ ? pet_->stage : Stage::BootSector,
-                                     pet_ ? pet_->line : nullptr, moveSlot_, moveShowAll_);
+    const auto owned = ownedMoveList(registry_, pet_.moves, slotRequiredKind(moveSlot_),
+                                     pet_.creature ? pet_.creature->stage : Stage::BootSector,
+                                     pet_.creature ? pet_.creature->line : nullptr, moveSlot_, moveShowAll_);
     if (movePick_ <= 0 || movePick_ - 1 >= static_cast<int>(owned.size())) return nullptr;
     return owned[movePick_ - 1];
 }
@@ -86,12 +86,12 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
     if (ev.button != Button::B || moveDetailEquipped_) return;
     // A move the pet hasn't evolved into yet can't be equipped: the page states the
     // gate, and B is inert so the player stays and reads it.
-    if (pet_ && !moveUnlockedAtStage(*m, pet_->stage)) return;
+    if (pet_.creature && !moveUnlockedAtStage(*m, pet_.creature->stage)) return;
     // Line-gating: a defensive backstop. A pet can never equip another line's
     // exclusive move (drops already keep them un-owned, so this only fires if a
     // wrong-line move is ever granted some other way).
-    if (pet_ && !moveAllowedForLine(*m, pet_->line)) return;
-    const char* cur = moveLoadout_.equipped(moveSlot_);
+    if (pet_.creature && !moveAllowedForLine(*m, pet_.creature->line)) return;
+    const char* cur = pet_.moves.equipped(moveSlot_);
     if (cur && std::strcmp(cur, m->id) != 0) {
         // Replacing a DIFFERENT move: hand back to the picker, which owns the inline
         // overwrite confirm (drawMovePicker / onMovePicker) rather than duplicating it.
@@ -101,7 +101,7 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
         trainScreen_ = TrainScreen::MovePicker;
         return;
     }
-    moveLoadout_.equip(moveSlot_, m->id);
+    pet_.moves.equip(moveSlot_, m->id);
     markSaveDirty();
     trainScreen_ = TrainScreen::MovePicker;
     nav_ = Nav::Submenu;
@@ -116,16 +116,16 @@ void Game::onMovePicker(const ButtonEvent& ev) {
     // the pet can't equip here right now (locked by stage, wrong line, already
     // equipped elsewhere): leaving only the options that can be equipped now
     // (ownedMoveList).
-    const auto owned = ownedMoveList(registry_, moveLoadout_, slotRequiredKind(moveSlot_),
-                                     pet_ ? pet_->stage : Stage::BootSector,
-                                     pet_ ? pet_->line : nullptr, moveSlot_, moveShowAll_);
+    const auto owned = ownedMoveList(registry_, pet_.moves, slotRequiredKind(moveSlot_),
+                                     pet_.creature ? pet_.creature->stage : Stage::BootSector,
+                                     pet_.creature ? pet_.creature->line : nullptr, moveSlot_, moveShowAll_);
     const int rows = 1 + static_cast<int>(owned.size());   // [0] = unequip
 
     if (moveConfirm_) {
         if (ev.button == Button::A) moveConfirmChoice_ ^= 1;
         else if (ev.button == Button::B) {
             if (moveConfirmChoice_ == 1 && movePendingId_) {
-                moveLoadout_.equip(moveSlot_, movePendingId_);
+                pet_.moves.equip(moveSlot_, movePendingId_);
                 markSaveDirty();
             }
             moveConfirm_ = false;
@@ -158,7 +158,7 @@ void Game::moveFilterReleaseB() {
           trainScreen_ == TrainScreen::MovePicker && !moveConfirm_))
         return;   // bHeld_ was armed elsewhere (the ITEMS / VAULT / CFG holds): no-op
     if (movePick_ == 0) {                              // unequip this slot
-        moveLoadout_.unequip(moveSlot_);
+        pet_.moves.unequip(moveSlot_);
         markSaveDirty();
         nav_ = Nav::Submenu;
     } else {

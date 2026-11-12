@@ -63,7 +63,7 @@ void Game::resetToHatch() {
     // Dev shortcut (host key / device gesture / tests): wipe to a fresh empty
     // save and re-enter the Decryption Hatch. Mirrors the FreshHatch constructor
     // path, so a retest matches a real first boot without a reflash.
-    model_ = PetModel();
+    pet_.model = PetModel();
     inventory_ = Inventory::starting();
     log_ = EventLog{};
     bits_ = kStartBits;
@@ -77,12 +77,12 @@ void Game::resetToHatch() {
     processResolved_ = false;
     feedItem_ = nullptr;
     feedFromLockout_ = false;
-    lockoutActive_ = false;
+    pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
     evolveTo_ = nullptr;
     evolveBeat_ = 0;
-    dyingArmed_ = false;
-    dyingElapsedMs_ = 0;
+    pet_.dyingArmed = false;
+    pet_.dyingElapsedMs = 0;
     csfBeat_ = 0;
     cfgScreen_ = CfgScreen::SysInfo;
     factoryScope_ = 0;
@@ -92,8 +92,8 @@ void Game::resetToHatch() {
     // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
     rack_.clear();
     records_.clear();
-    loadout_ = Loadout::starting();
-    moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // startHatch() below re-seeds it
+    pet_.mods = Loadout::starting();
+    pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // startHatch() below re-seeds it
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;
@@ -116,15 +116,15 @@ void Game::resetToHatch() {
     combatBeat_ = 0;
     fxBeat_ = 0;
     combatTurnBeat_ = 0;
-    combatXp_ = 0;
-    combatLevel_ = 0;                    // a fresh egg starts at level 0
-    defragCount_ = 0;                    // no defrags on a wiped save
-    upgrades_ = PetUpgrades{};           // nothing permanent survives a wipe either
-    petFoodsEaten_.clear();
-    for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
+    pet_.xp = 0;
+    pet_.level = 0;                    // a fresh egg starts at level 0
+    pet_.defragCount = 0;                    // no defrags on a wiped save
+    pet_.upgrades = PetUpgrades{};           // nothing permanent survives a wipe either
+    pet_.foodsEaten.clear();
+    for (int i = 0; i < kLevelStatCount; ++i) pet_.statPoints[i] = 0;
     lastLevelUpStat_ = -1;
-    for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;
-    generation_ = 0;
+    for (int i = 0; i < kMaxMoveSlots; ++i) pet_.slotKinds[i] = SlotKind::Unset;
+    pet_.generation = 0;
     petsRaised_ = 0;
     uptimeBase_ = 0;
     lifetimeSteps_ = 0;

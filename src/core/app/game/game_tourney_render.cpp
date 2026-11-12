@@ -116,7 +116,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
             fb.fillRect(kDockTextX, y + kFontH / 2, textWidth(name), 1,
                         palColor(Pal::INK_DIM));
         char lvl[12];
-        std::snprintf(lvl, sizeof(lvl), "L%d", slot == me ? combatLevel_ : card.level);
+        std::snprintf(lvl, sizeof(lvl), "L%d", slot == me ? pet_.level : card.level);
         // Status as a WORD, never a colour: OUT for a knocked-out entrant, NEXT on the
         // one being faced right now, YOU on the operator. The focus colour is spent on
         // focus and nothing else (PAL_CORE's `accent`), so a tag says what it is.
@@ -156,7 +156,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
     // the copy moves to the foot and takes the whole width.
     const SpriteData* s =
         !dockFaceoffFits(tourneyAlive_) ? nullptr
-        : mine ? (pet_ ? registry_.creatureSprite(*pet_) : nullptr)
+        : mine ? (pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr)
         : c    ? registry_.sprite(c->spriteName)
                : nullptr;
     // The opponent faces the copy that describes it; a champion faces out.

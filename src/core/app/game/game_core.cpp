@@ -22,8 +22,8 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     }
 
     inventory_ = Inventory::starting();
-    loadout_ = Loadout::starting();
-    moveLoadout_ = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
+    pet_.mods = Loadout::starting();
+    pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
 
     // The palette index lives outside this object (core/render/palette.h) (a drawing
     // call reads it without being handed it), so a Game sets its theme explicitly. A
@@ -38,7 +38,7 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         SaveData d;
         if (deserializeSave(store_->load(), d)) {
             applySave(d);
-            if (pet_) { nav_ = Nav::Idle; return; }
+            if (pet_.creature) { nav_ = Nav::Idle; return; }
             startHatch();   // active save was vacated mid-Store; rack survives
             return;
         }
@@ -60,9 +60,9 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
             const int w = static_cast<int>(t);
             tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
         }
-        generation_ = 1;       // the seam pet is the first generation
+        pet_.generation = 1;       // the seam pet is the first generation
         petsRaised_ = 1;
-        moveLoadout_ = MoveLoadout::startingForLine(registry_, pet_ ? pet_->line : nullptr);
+        pet_.moves = MoveLoadout::startingForLine(registry_, pet_.creature ? pet_.creature->line : nullptr);
         stampSlotKinds();      // this is a pet install too: lock its slots
         // startingForLine's auto-equip may not match THIS creature's stamped slot 0
         // kind: drop it if it no longer fits (e.g. a Defend-first line vs. an
@@ -75,8 +75,8 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
 }
 
 bool Game::petReplicates() const {
-    if (!pet_ || inEggPhase()) return false;   // an egg has no copies; nor has an empty save
-    const CreatureLine* line = registry_.creatureLine(pet_->line);
+    if (!pet_.creature || inEggPhase()) return false;   // an egg has no copies; nor has an empty save
+    const CreatureLine* line = registry_.creatureLine(pet_.creature->line);
     return line && hasLinePassive(line->passives, LinePassive::Replication);
 }
 
@@ -86,7 +86,7 @@ int Game::idleCompanionCount() const {
     // a Process worm has found one friend, and by the Daemon the family fills every
     // replication slot the line ever gets. The clamp is what keeps the two agreeing if
     // a fifth stage or a fourth slot ever lands.
-    const int byStage = stageIndex(pet_->stage);
+    const int byStage = stageIndex(pet_.creature->stage);
     return byStage < kWormReplicaSlots ? byStage : kWormReplicaSlots;
 }
 
@@ -138,7 +138,7 @@ bool Game::tickModelClocks(uint32_t nowMs) {
     // walked to accelerate its hatch).
     if (nowMs_ > lastModelMs_) {
         const uint32_t elapsed = nowMs_ - lastModelMs_;
-        if (pet_ && !inEggPhase())
+        if (pet_.creature && !inEggPhase())
             tickHungerAndAwardXp(elapsed);      // no pet (empty save / line-select): nothing decays
         // Bandwidth regenerates slowly over real active time, whether or not
         // EXPL is open, so a walk cannot be farmed in one sitting but recovers
@@ -174,9 +174,9 @@ bool Game::tickModelClocks(uint32_t nowMs) {
         if (inEggPhase() && nav_ != Nav::Decryption &&
             nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation &&
             nav_ != Nav::Chroma) {
-            bootHatchRemainMs_ = bootHatchRemainMs_ > elapsed
-                                     ? bootHatchRemainMs_ - elapsed : 0;
-            if (bootHatchRemainMs_ == 0) { completeHatch(); changed = true; }
+            pet_.bootHatchRemainMs = pet_.bootHatchRemainMs > elapsed
+                                     ? pet_.bootHatchRemainMs - elapsed : 0;
+            if (pet_.bootHatchRemainMs == 0) { completeHatch(); changed = true; }
         }
     }
     lastModelMs_ = nowMs_;
@@ -194,7 +194,7 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
     if (nowMs - lastBeatMs_ < static_cast<uint32_t>(kHeartbeatMs)) return false;
     lastBeatMs_ = nowMs;
     beat_++;
-    const CreatureLine* petLine = pet_ ? registry_.creatureLine(pet_->line) : nullptr;
+    const CreatureLine* petLine = pet_.creature ? registry_.creatureLine(pet_.creature->line) : nullptr;
     const RestingTrick trick =
         petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
     stepRestingMotion(trick);
@@ -221,17 +221,17 @@ void Game::stepRestingMotion(RestingTrick trick) {
     if (!petLure_.active())
         petFeeding_.step(skims, petWander_.offsetX(), petWander_.offsetY());
     if (!petFeeding_.active()) petLure_.step(skims);
-    if (!pet_) {
+    if (!pet_.creature) {
         petWander_.park();
     } else if (const Mail* m = petFeeding_.target()) {
-        petWander_.chase(pet_->locomotion, IdleFeeding::standX(*m),
+        petWander_.chase(pet_.creature->locomotion, IdleFeeding::standX(*m),
                          IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
     } else if (petDisguise_.stage() == DisguiseStage::Rest && !petLure_.active()) {
-        petWander_.step(pet_->locomotion);
+        petWander_.step(pet_.creature->locomotion);
     }
     const int companions = idleCompanionCount();
     for (int i = 0; i < kWormReplicaSlots; ++i) {
-        if (i < companions) companionWander_[i].step(pet_->locomotion);
+        if (i < companions) companionWander_[i].step(pet_.creature->locomotion);
         else companionWander_[i].park();
     }
     petFork_.step(petReplicates());
@@ -379,7 +379,7 @@ void Game::stepCombatBeat() {
 // drops frag below the gate and stepping resumes. Manual Network Ping (A+C then A) still
 // forces a step.
 void Game::stepWalkPacer() {
-    if (model_.fragmentation() >= kBattleFatigueAutoPauseFrag) {
+    if (pet_.model.fragmentation() >= kBattleFatigueAutoPauseFrag) {
         std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "TOO FRAGMENTED - DEFRAG");
     } else if (++exploreStepBeat_ >= kWalkAutoStepBeats) {
         doExploreStep();
@@ -630,33 +630,33 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // permanent loss and the others end in penalties. What it counts is time AWAKE at 5/5: with no
     // RTC (config.h HAS_HARDWARE_RTC) the device cannot see how long it was off, so being switched
     // off neither kills the pet nor buys it a reprieve.
-    if (pet_ && nav_ != Nav::ModalCSF) {
-        if (model_.careBranch() == CareBranch::Dying) {
-            if (!dyingArmed_) {
-                dyingArmed_ = true;
-                dyingEnteredMs_ = nowMs_;
-                failingAlertAtMs_ = dyingElapsedMs_;
+    if (pet_.creature && nav_ != Nav::ModalCSF) {
+        if (pet_.model.careBranch() == CareBranch::Dying) {
+            if (!pet_.dyingArmed) {
+                pet_.dyingArmed = true;
+                pet_.dyingEnteredMs = nowMs_;
+                pet_.failingAlertAtMs = pet_.dyingElapsedMs;
                 markSaveDirty();   // the moment it starts is worth writing at once
             }
-            dyingElapsedMs_ += nowMs_ - dyingEnteredMs_;
-            dyingEnteredMs_ = nowMs_;
-            if (dyingElapsedMs_ >= failingAlertAtMs_ && dyingElapsedMs_ < kCsfDyingGraceMs) {
+            pet_.dyingElapsedMs += nowMs_ - pet_.dyingEnteredMs;
+            pet_.dyingEnteredMs = nowMs_;
+            if (pet_.dyingElapsedMs >= pet_.failingAlertAtMs && pet_.dyingElapsedMs < kCsfDyingGraceMs) {
                 playSound(Sound::Failing);
-                failingAlertAtMs_ = dyingElapsedMs_ + kFailingAlertEveryMs;
+                pet_.failingAlertAtMs = pet_.dyingElapsedMs + kFailingAlertEveryMs;
             }
             // Between the transitions the periodic autosave (kSaveAutosaveMs) keeps the
             // written figure close enough: it is a sixtieth of the window, so a reboot
             // refunds at most that much. Marking the save dirty every tick instead would
             // write flash every kSaveDebounceMs for the whole half hour.
-            if (dyingElapsedMs_ >= kCsfDyingGraceMs) {
+            if (pet_.dyingElapsedMs >= kCsfDyingGraceMs) {
                 fireCSF();
                 changed = true;
             }
-        } else if (dyingArmed_ || dyingElapsedMs_) {
+        } else if (pet_.dyingArmed || pet_.dyingElapsedMs) {
             // Recovered below 5/5: disarm, and forget what was burned. A pet pulled
             // back from the edge gets the full window again next time.
-            dyingArmed_ = false;
-            dyingElapsedMs_ = 0;
+            pet_.dyingArmed = false;
+            pet_.dyingElapsedMs = 0;
             markSaveDirty();       // ...and so is the rescue, which zeroes the window
         }
     }
@@ -672,7 +672,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // the bag: offer it now, once per egg (game_offer.cpp). This is the only stretch of
     // a pet's life the item does anything, so it is asked here rather than left for the
     // player to go and find in ITEMS.
-    if (nav_ == Nav::Idle && inEggPhase() && !eggOfferMade_) {
+    if (nav_ == Nav::Idle && inEggPhase() && !pet_.eggOfferMade) {
         openItemOffer(OfferFor::Egg);
         changed = true;
     }
@@ -683,21 +683,21 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // so firing across it would destroy a found item. The crisis loses nothing by
     // waiting: its deadline starts when it fires, and this check runs again the
     // moment the board is left.
-    if (pet_ && !lockoutActive_ && nav_ != Nav::Decryption && nav_ != Nav::Cryptogram &&
-        nav_ != Nav::ModalEvolve && nav_ != Nav::ModalCSF && model_.isStarving()) {
+    if (pet_.creature && !pet_.armed.lockoutActive && nav_ != Nav::Decryption && nav_ != Nav::Cryptogram &&
+        nav_ != Nav::ModalEvolve && nav_ != Nav::ModalCSF && pet_.model.isStarving()) {
         fireLockout();
         changed = true;
     }
     // Expiry is global while the crisis is live: even if the player is in the
     // ITEMS-in-Lockout list, the deadline resolves the modal.
-    if (lockoutActive_ && nowMs_ >= lockoutDeadlineMs_) {
+    if (pet_.armed.lockoutActive && nowMs_ >= pet_.armed.lockoutDeadlineMs) {
         expireLockout();
         changed = true;
     }
     // No reminder while ITEMS is open from the modal: the owner is already answering.
-    if (lockoutActive_ && !lockoutReminded_ && !lockoutItemsContext_ &&
-        lockoutDeadlineMs_ - nowMs_ <= kLockoutReminderMs) {
-        lockoutReminded_ = true;
+    if (pet_.armed.lockoutActive && !pet_.armed.lockoutReminded && !lockoutItemsContext_ &&
+        pet_.armed.lockoutDeadlineMs - nowMs_ <= kLockoutReminderMs) {
+        pet_.armed.lockoutReminded = true;
         playSound(Sound::Lockout);
     }
 
@@ -705,7 +705,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // change, plus a slower periodic write so passive decay is captured. Only
     // once there's something worth saving (a raised pet or a populated rack): a
     // bare first-boot Hatch leaves the save empty, so the next boot re-hatches.
-    if (store_ && (pet_ || !rack_.empty())) {
+    if (store_ && (pet_.creature || !rack_.empty())) {
         const bool debounced = saveDirty_ && nowMs_ - lastSaveMs_ >= kSaveDebounceMs;
         const bool periodic = nowMs_ - lastSaveMs_ >= kSaveAutosaveMs;
         if (debounced || periodic) persistSave();
@@ -797,7 +797,7 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     // already in the focused slot, where a tap (trainListReleaseB) opens its picker. An
     // empty slot has nothing to read, so the hold waits for the release instead.
     if (bHeld_ && nav_ == Nav::Submenu && enteredId() == SubmenuId::Mods &&
-        loadoutTab_ == LoadoutTab::Moves && moveLoadout_.equipped(trainRow_) &&
+        loadoutTab_ == LoadoutTab::Moves && pet_.moves.equipped(trainRow_) &&
         nowMs_ - bDownMs_ >= kMoveFilterHoldMs) {
         bHeld_ = false;
         moveSlot_ = trainRow_;
@@ -874,7 +874,7 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
     // abandoned check, or a forgotten screen pins the radio open forever.
     const bool inCfgScreen = nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg &&
                               !updateScreenOpen();
-    const bool suspended = lockoutActive_ || nav_ == Nav::ModalFeeding ||
+    const bool suspended = pet_.armed.lockoutActive || nav_ == Nav::ModalFeeding ||
                            nav_ == Nav::Process || nav_ == Nav::Decryption ||
                            nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
                            nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
@@ -947,16 +947,16 @@ void Game::tickHungerAndAwardXp(uint32_t elapsedMs) {
     // XP per point. Only the portion of this decay step that fell above the
     // threshold counts: e.g. threshold 90, hunger 92 -> 88 pays for 2 points
     // (92..91), not all 4.
-    const int hungerBefore = model_.hunger();
-    model_.tick(elapsedMs);
+    const int hungerBefore = pet_.model.hunger();
+    pet_.model.tick(elapsedMs);
     // A Hunger point lost to decay also ends any stacking-food run
     // (ItemEffect::Kind::HungerStacking): the pet has moved on, so the next
     // Polltatoes starts counting from one again.
-    if (model_.hunger() < hungerBefore) stackingFoodRun_ = 0;
+    if (pet_.model.hunger() < hungerBefore) pet_.armed.stackingFoodRun = 0;
     const int rate = hungerXpRateLevel();
     if (rate <= 0) return;
     const int pointsAboveThreshold =
-        hungerBefore - std::max(model_.hunger(), hungerXpThreshold());
+        hungerBefore - std::max(pet_.model.hunger(), hungerXpThreshold());
     if (pointsAboveThreshold > 0) addCombatXp(pointsAboveThreshold * rate);
 }
 

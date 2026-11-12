@@ -76,7 +76,7 @@ bool Game::itemCollected(const char* id) const {
 
 bool Game::petAteFood(const char* id) const {
     if (!id) return false;
-    for (const ItemDef* d : petFoodsEaten_)
+    for (const ItemDef* d : pet_.foodsEaten)
         if (std::strcmp(d->id, id) == 0) return true;
     return false;
 }
@@ -87,8 +87,8 @@ void Game::markFoodEaten(const ItemDef& d) {
     // cooking can never fill.
     if (itemCategory(d) != ItemDef::Category::Food) return;
     ensureFavouriteFood();
-    if (!upgrades_.favouriteFound && upgrades_.favouriteFood == &d) {
-        upgrades_.favouriteFound = true;
+    if (!pet_.upgrades.favouriteFound && pet_.upgrades.favouriteFood == &d) {
+        pet_.upgrades.favouriteFound = true;
         char buf[28];
         std::snprintf(buf, sizeof(buf), "FAVOURITE: %s", d.displayName);
         log_.push(LogEventType::ItemUsed, buf);
@@ -96,12 +96,12 @@ void Game::markFoodEaten(const ItemDef& d) {
         markSaveDirty();
     }
     if (petAteFood(d.id)) return;
-    petFoodsEaten_.push_back(&d);
+    pet_.foodsEaten.push_back(&d);
     markSaveDirty();
 }
 
 void Game::ensureFavouriteFood() {
-    if (upgrades_.favouriteFood || upgrades_.favouriteFound) return;
+    if (pet_.upgrades.favouriteFood || pet_.upgrades.favouriteFound) return;
     // An Epic dish this pet has already taken the once-per-life grant of can never be
     // fed to it again, so it would be a favourite nobody could find.
     const PetLifetimeGates gates = petLifetimeGates();
@@ -114,11 +114,11 @@ void Game::ensureFavouriteFood() {
     // sequence's current value, then a murmur finaliser so neighbouring inputs land far
     // apart. Two pets of one species still get their own roll.
     uint32_t h = 2166136261u;
-    for (const char* c = pet_ ? pet_->id : ""; *c; ++c) h = (h ^ static_cast<uint8_t>(*c)) * 16777619u;
-    h ^= static_cast<uint32_t>(generation_) * 0x9e3779b9u;
+    for (const char* c = pet_.creature ? pet_.creature->id : ""; *c; ++c) h = (h ^ static_cast<uint8_t>(*c)) * 16777619u;
+    h ^= static_cast<uint32_t>(pet_.generation) * 0x9e3779b9u;
     h ^= nowMs_ ^ rng_;
     h ^= h >> 16; h *= 0x85ebca6bu; h ^= h >> 13; h *= 0xc2b2ae35u; h ^= h >> 16;
-    upgrades_.favouriteFood = pool[h % pool.size()];
+    pet_.upgrades.favouriteFood = pool[h % pool.size()];
     markSaveDirty();
 }
 
@@ -270,15 +270,15 @@ int Game::achValue(const AchievementDef& d) const {
             return n;
         }
         // The two per-pet collections. Counted off the very state the pages draw
-        // (petFoodsEaten_ and the pet's own move pool), so a row can never claim a dish
+        // (pet_.foodsEaten and the pet's own move pool), so a row can never claim a dish
         // or a move the FOODS/MOVES grid does not light.
         case AchSeries::PetFoodsEaten:
-            return static_cast<int>(petFoodsEaten_.size());
+            return static_cast<int>(pet_.foodsEaten.size());
         case AchSeries::PetMovesKnown: {
-            int n = static_cast<int>(moveLoadout_.owned().size());
+            int n = static_cast<int>(pet_.moves.owned().size());
             // The innate move is owned without being in the pool (MoveLoadout::isInnate),
             // and the page counts it, so this must too.
-            if (moveLoadout_.defaultMove()) ++n;
+            if (pet_.moves.defaultMove()) ++n;
             return n;
         }
         case AchSeries::RarityCollected: {

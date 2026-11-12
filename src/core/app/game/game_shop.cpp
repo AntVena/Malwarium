@@ -119,7 +119,7 @@ int Game::shopListingHeld(int i) const {
     // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
     // (Loadout::grant): an installed mod left the pool, so it does not count
     // against the cap.
-    return shopIsModShop_ ? loadout_.countOf(id) : inventory_.count(id);
+    return shopIsModShop_ ? pet_.mods.countOf(id) : inventory_.count(id);
 }
 
 int Game::shopListingHeldCap(int i) const {
@@ -173,7 +173,7 @@ void Game::buyShopItem() {
         // storage-gated at the till (shopRowRefusal's STORAGE FULL), so reaching here
         // means there was room for it.
         const ModDef* m = registry_.mod(def.id);
-        loadout_.grant(def.id, modStorageCap());
+        pet_.mods.grant(def.id, modStorageCap());
         std::snprintf(buf, sizeof(buf), "BOUGHT %s", m ? m->displayName : def.id);
     } else {
         inventory_.add(def.id, 1);

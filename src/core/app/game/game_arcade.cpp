@@ -286,7 +286,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     }
     arcadeBits_ = kArcadePlayBits + bonus;
     bits_ += arcadeBits_;
-    model_.setHappiness(model_.happiness() + kArcadePlayHappy);   // clamps at the cap
+    pet_.model.setHappiness(pet_.model.happiness() + kArcadePlayHappy);   // clamps at the cap
 
     if (arcadeGame_ >= 0 && arcadeGame_ < kArcadeMaxCabinets) {
         ++arcadePlays_[arcadeGame_];
@@ -298,7 +298,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
         arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
         if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
     }
-    addBond(upgrades_, BondSource::Games, kBondGameBp);
+    addBond(pet_.upgrades, BondSource::Games, kBondGameBp);
     markSaveDirty();
 
     cursor_ = carouselSlotOf(SubmenuId::Games);

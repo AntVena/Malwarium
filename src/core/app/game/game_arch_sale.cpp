@@ -64,12 +64,12 @@ const char* Game::archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) co
         case SaleOffer::Bits:
             return nullptr;
         case SaleOffer::Reimage:
-            if (!pet_ || inEggPhase() || !sameId(pet_->id, sold.id)) return "NEED TWIN ACTIVE";
-            if (!reimageScript(pet_)) return "NO SCRIPT FORM";
+            if (!pet_.creature || inEggPhase() || !sameId(pet_.creature->id, sold.id)) return "NEED TWIN ACTIVE";
+            if (!reimageScript(pet_.creature)) return "NO SCRIPT FORM";
             return nullptr;
         case SaleOffer::Hotfix:
-            if (!pet_ || inEggPhase()) return "NO ACTIVE PET";
-            if (model_.careMistakes() <= 0) return "ACTIVE HAS NONE";
+            if (!pet_.creature || inEggPhase()) return "NO ACTIVE PET";
+            if (pet_.model.careMistakes() <= 0) return "ACTIVE HAS NONE";
             return nullptr;
     }
     return "";
@@ -106,12 +106,12 @@ ArchSaleSheet Game::archSaleSheet() const {
         } else {
             // A patch's value names the pet that receives it, which is the active pet
             // and never the Daemon being sold.
-            std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_->displayName);
+            std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_.creature->displayName);
         }
     }
     if (sh.offers[static_cast<int>(SaleOffer::Reimage)].available)
         std::snprintf(sh.reimageTo, sizeof(sh.reimageTo), "%s",
-                      reimageScript(pet_)->displayName);
+                      reimageScript(pet_.creature)->displayName);
     sh.focus = archSaleOffer_;
     sh.confirmOpen = archConfirm_;
     sh.confirmChoice = archConfirmChoice_;
@@ -151,9 +151,9 @@ void Game::onArchSale(const ButtonEvent& ev) {
 }
 
 void Game::reimageActivePet() {
-    const CreatureDef* script = reimageScript(pet_);
+    const CreatureDef* script = reimageScript(pet_.creature);
     if (!script) return;
-    const char* oldLine = pet_->line;
+    const char* oldLine = pet_.creature->line;
     installPet(script);
     // Back across a line (a diverted Daemon going home) is a new kit, the same re-seed
     // completeEvolution does going the other way. Within a line the pet keeps what it
@@ -161,29 +161,29 @@ void Game::reimageActivePet() {
     // move locked above the Script stage. The Daemon slot is unstamped too, because the
     // Daemon the retry reaches is the one that gets to type it.
     if (!sameId(oldLine, script->line)) {
-        moveLoadout_ = MoveLoadout::startingForLine(registry_, script->line);
-        for (SlotKind& k : slotKinds_) k = SlotKind::Unset;
+        pet_.moves = MoveLoadout::startingForLine(registry_, script->line);
+        for (SlotKind& k : pet_.slotKinds) k = SlotKind::Unset;
     } else {
         const int unlocked = MoveLoadout::slotsForStage(script->stage);
         for (int i = 0; i < kMaxMoveSlots; ++i) {
             if (i >= unlocked) {
-                moveLoadout_.unequip(i);
-                slotKinds_[i] = SlotKind::Unset;
+                pet_.moves.unequip(i);
+                pet_.slotKinds[i] = SlotKind::Unset;
                 continue;
             }
-            const char* id = moveLoadout_.equipped(i);
+            const char* id = pet_.moves.equipped(i);
             const MoveDef* m = id ? registry_.move(id) : nullptr;
-            if (m && !moveUnlockedAtStage(*m, script->stage)) moveLoadout_.unequip(i);
+            if (m && !moveUnlockedAtStage(*m, script->stage)) pet_.moves.unequip(i);
         }
     }
     stampSlotKinds();
     enforceSlotKindInvariant();
     // The clean error log is what makes the retry a retry: errors are what pick the
     // branch, and nothing else takes more than one of them away.
-    model_.setCareMistakes(0);
+    pet_.model.setCareMistakes(0);
     // Whatever was steering the boundary the pet already crossed is spent with it.
     clearUsbPort();
-    stageEnteredMs_ = nowMs_;
+    pet_.stageEnteredMs = nowMs_;
 }
 
 void Game::archSellStored(int storedIdx, SaleOffer offer) {
@@ -195,7 +195,7 @@ void Game::archSellStored(int storedIdx, SaleOffer offer) {
     switch (offer) {
         case SaleOffer::Bits:    bits_ += daemonSaleBits(sold.combatLevel); break;
         case SaleOffer::Reimage: reimageActivePet(); break;
-        case SaleOffer::Hotfix:  model_.setCareMistakes(0); break;
+        case SaleOffer::Hotfix:  pet_.model.setCareMistakes(0); break;
     }
 
     rack_.erase(rack_.begin() + storedIdx);

@@ -63,7 +63,7 @@ void Game::finishDecryption() {
         // Halves what is left of the clock. The board is played when the egg is laid,
         // so that is the whole incubation, and the prize stays correct if the game is
         // ever offered later.
-        if (bootHatchRemainMs_ > 0) bootHatchRemainMs_ /= 2;
+        if (pet_.bootHatchRemainMs > 0) pet_.bootHatchRemainMs /= 2;
     }
     nav_ = Nav::Idle;
     dirty_ = true;

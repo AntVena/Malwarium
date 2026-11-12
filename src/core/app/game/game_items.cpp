@@ -46,12 +46,12 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     }
     // Rollback is inert with nothing to shed: a level-0 pet has no earned
     // points, so the picker would be empty. Gate it clearly instead of opening blank.
-    if (d.use == ItemDef::Use::Rollback && combatLevel_ <= 0) {
+    if (d.use == ItemDef::Use::Rollback && pet_.level <= 0) {
         gateMsg = "NO LEVELS TO ROLL"; return false;
     }
     // Repartition needs a point to move, and level equals the count of earned points,
     // so a level-0 pet has none.
-    if (d.use == ItemDef::Use::Repartition && combatLevel_ <= 0) {
+    if (d.use == ItemDef::Use::Repartition && pet_.level <= 0) {
         gateMsg = "NO POINTS TO MOVE"; return false;
     }
     // The Boot Accelerator only shortens an egg's incubation, so it does nothing once hatched.
@@ -91,9 +91,9 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     // SCRIPT for the late one (itemSoakReachesScript). A Boot egg has no evolution clock
     // to stretch and a Daemon has no boundary left, so neither is ever a soak's stage.
     if (const int soak = itemEvolveSoakFactor(d); soak > 0) {
-        const bool ok = pet_ && !inEggPhase() &&
-                        (pet_->stage == Stage::Process ||
-                         (pet_->stage == Stage::Script && itemSoakReachesScript(d)));
+        const bool ok = pet_.creature && !inEggPhase() &&
+                        (pet_.creature->stage == Stage::Process ||
+                         (pet_.creature->stage == Stage::Script && itemSoakReachesScript(d)));
         if (!ok) {
             gateMsg = itemSoakReachesScript(d) ? "PROCESS OR SCRIPT ONLY"
                                                : "PROCESS STAGE ONLY";
@@ -148,17 +148,17 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 return false;
             case ItemEffect::Kind::RemoveCareMistakeOnce:
                 ++armingEffects;
-                if (!yubiConsumed_) return false;
+                if (!pet_.grants.yubiSpent) return false;
                 if (!reason) reason = "ALREADY SPENT THIS LIFE";
                 break;
             case ItemEffect::Kind::ClearMistakeShieldOnce:
                 ++armingEffects;
-                if (!shieldItemConsumed_) return false;
+                if (!pet_.grants.shieldSpent) return false;
                 if (!reason) reason = "ALREADY SPENT THIS LIFE";
                 break;
             case ItemEffect::Kind::ForceTrojanDivert:
                 ++armingEffects;
-                if (!forceTrojanDivert_) return false;
+                if (!pet_.armed.trojanDivert) return false;
                 if (!reason) reason = "DIVERT ALREADY ARMED";
                 break;
             // The branch-override pair shares ONE slot, so a second device pointing the
@@ -168,12 +168,12 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
             // change and the override cannot.
             case ItemEffect::Kind::ForceEvolveBranchGood:
                 ++armingEffects;
-                if (evolveBranchOverride_ != BranchOverride::Good) return false;
+                if (pet_.usb.branch != BranchOverride::Good) return false;
                 if (!reason) reason = "GOOD BRANCH ARMED";
                 break;
             case ItemEffect::Kind::ForceEvolveBranchBad:
                 ++armingEffects;
-                if (evolveBranchOverride_ != BranchOverride::Bad) return false;
+                if (pet_.usb.branch != BranchOverride::Bad) return false;
                 if (!reason) reason = "BAD BRANCH ARMED";
                 break;
             // The two locking devices. Both are unreachable while the port gate above
@@ -211,7 +211,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 // These overwrite rather than stack, so a weaker one after a
                 // stronger one is a downgrade paid for with an item.
                 ++armingEffects;
-                if (e.magnitude > deepWebDepthMultiplier_) return false;
+                if (e.magnitude > pet_.armed.deepWebDepthMultiplier) return false;
                 if (!reason) reason = "STRONGER ONE ARMED";
                 break;
             // Both bells are measured against the depth a dive would actually start at
@@ -226,7 +226,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
                 ++armingEffects;
-                if (bestDeepWebDepth_ > armedDeepWebStartDepth()) return false;
+                if (pet_.bestDeepWebDepth > armedDeepWebStartDepth()) return false;
                 if (!reason) reason = "DEEPER START ARMED";
                 break;
             // The pay bonus rides on the arming beside it, which already decides
@@ -239,7 +239,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 // The clock is already inside the reveal window, where the cut is
                 // floored, so using one would move nothing.
                 ++armingEffects;
-                if (inEggPhase() && bootHatchRemainMs_ > kHatchRevealMs) return false;
+                if (inEggPhase() && pet_.bootHatchRemainMs > kHatchRevealMs) return false;
                 if (!reason) reason = "SHELL ALREADY CRACKING";
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
@@ -248,7 +248,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 // answers "not inert" above, which is the intent: it stays an ordinary
                 // food, and only its cure half is conditional.
                 ++armingEffects;
-                if (model_.hasGhost()) return false;
+                if (pet_.model.hasGhost()) return false;
                 if (!reason) reason = "NO REPLICATION GHOST";
                 break;
             // None of these can achieve nothing. An Epic dish whose permanent grant is
@@ -352,43 +352,43 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // fills magnitude. The counter is reset by the next passive Hunger
                 // decay (Game::tickHungerAndAwardXp): a fresh boot starts a fresh
                 // run, which keeps a transient combo counter out of the save blob.
-                ++stackingFoodRun_;
-                hunger += e.magnitude * stackingFoodRun_;
+                ++pet_.armed.stackingFoodRun;
+                hunger += e.magnitude * pet_.armed.stackingFoodRun;
                 break;
             case ItemEffect::Kind::Happy:
                 happy += e.magnitude;
                 break;
             case ItemEffect::Kind::Frag:
-                model_.setFragmentation(model_.fragmentation() + e.magnitude);
+                pet_.model.setFragmentation(pet_.model.fragmentation() + e.magnitude);
                 break;
             case ItemEffect::Kind::HappyToward50: {
                 // The "empty feeling": pull Happiness TOWARD 50% from either side
                 // by magnitude, no overshoot. Numbs a too-happy pet as much as it lifts
                 // a miserable one, unlike the flat Happy add.
-                const int h = model_.happiness();
+                const int h = pet_.model.happiness();
                 if (h > 50) {
                     const int next = h - e.magnitude;
-                    model_.setHappiness(next < 50 ? 50 : next);
+                    pet_.model.setHappiness(next < 50 ? 50 : next);
                 } else if (h < 50) {
                     const int next = h + e.magnitude;
-                    model_.setHappiness(next > 50 ? 50 : next);
+                    pet_.model.setHappiness(next > 50 ? 50 : next);
                 }
                 break;
             }
             case ItemEffect::Kind::RemoveCareMistakeOnce:
                 // Yubi-Cookie ("Once per pet"): remove mistakes ONCE, then the
                 // per-pet flag latches it; already-spent → no-op.
-                if (!yubiConsumed_) {
-                    model_.addCareMistake(-e.magnitude);
-                    yubiConsumed_ = true;
+                if (!pet_.grants.yubiSpent) {
+                    pet_.model.addCareMistake(-e.magnitude);
+                    pet_.grants.yubiSpent = true;
                 }
                 break;
             case ItemEffect::Kind::ClearMistakeShieldOnce:
                 // Restore Point (save v21): arm the next-mistake shield ONCE per pet;
                 // already-spent → no-op.
-                if (!shieldItemConsumed_) {
-                    mistakeShieldActive_ = true;
-                    shieldItemConsumed_ = true;
+                if (!pet_.grants.shieldSpent) {
+                    pet_.grants.shieldActive = true;
+                    pet_.grants.shieldSpent = true;
                 }
                 break;
             case ItemEffect::Kind::ForceTrojanDivert:
@@ -396,7 +396,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // next Process->Script evolution (Game::fireEvolution), replacing the
                 // kTrojanDivertPct roll. Re-armable (unlike the once-per-lifetime
                 // shields above): buying another does no harm.
-                forceTrojanDivert_ = true;
+                pet_.armed.trojanDivert = true;
                 break;
             case ItemEffect::Kind::ForceEvolveBranchGood:
             case ItemEffect::Kind::ForceEvolveBranchBad:
@@ -405,7 +405,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // so this overwrites. Plugging in the opposite device changes the choice,
                 // and the last one in fires. Consumed at the evolution it steers
                 // (Game::completeEvolution).
-                evolveBranchOverride_ = e.kind == ItemEffect::Kind::ForceEvolveBranchBad
+                pet_.usb.branch = e.kind == ItemEffect::Kind::ForceEvolveBranchBad
                                             ? BranchOverride::Bad
                                             : BranchOverride::Good;
                 break;
@@ -420,14 +420,14 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // while one is armed, so this only ever writes into an empty port.
                 // Floored at 1 the way the codec floors it: the factor multiplies a clock
                 // AND an XP award, so a row authored at 0 would stall a pet.
-                evolveSoakFactor_ = e.magnitude > 1 ? e.magnitude : 1;
+                pet_.usb.soakFactor = e.magnitude > 1 ? e.magnitude : 1;
                 break;
             case ItemEffect::Kind::ArmEvolveHold:
                 // Halt-USB (save v60): stop the pet reaching a boundary at all
                 // (Game::evolveEligible). Never consumed by an evolution, because none
                 // arrives while it is in: only an Eject-USB, a rack swap or a new egg
                 // takes it out.
-                evolveHold_ = true;
+                pet_.usb.hold = true;
                 break;
             case ItemEffect::Kind::ClearUsbPort:
                 // Eject-USB: pull whatever is in the port and drop its effect. One call
@@ -440,7 +440,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Backup Drive (save v30): arm the timed combat shield, magnitude
                 // MINUTES from now (Game::buildPlayerCombatant reads the deadline).
                 // Re-armable: using another one just refreshes the window.
-                backupShieldUntilMs_ = lifetimeUptimeMs() + static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
+                pet_.armed.backupShieldUntilMs = lifetimeUptimeMs() + static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
                 break;
             case ItemEffect::Kind::ArmDeepWebDepthMultiplier:
                 // Deep-Learning Module/Core: overwrites, never stacks. Buying a second one
@@ -450,8 +450,8 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // pet (game_lifecycle.cpp). Deliberately NOT tied to exploreStreak_'s
                 // reset: the streak resets at both ends of a run, so following it would
                 // clear the buff on the way INTO the dive it was bought for.
-                deepWebDepthMultiplier_ = e.magnitude;
-                diveStepBonusPct_ = 0;   // the row's own DiveStepBonusPct, if any, follows
+                pet_.armed.deepWebDepthMultiplier = e.magnitude;
+                pet_.armed.diveStepBonusPct = 0;   // the row's own DiveStepBonusPct, if any, follows
                 break;
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
@@ -459,8 +459,8 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // leave only the row's ordinary food levers, including its +Bandwidth.
                 // Granting once is the whole design: the upgrade is per-pet, so the way
                 // to have it twice is to raise a second pet, not to eat a second plate.
-                if (upgrades_.bandwidthRegenMin == 0) {
-                    upgrades_.bandwidthRegenMin = e.magnitude;
+                if (pet_.upgrades.bandwidthRegenMin == 0) {
+                    pet_.upgrades.bandwidthRegenMin = e.magnitude;
                     noteLifetimeGrant("BW REGEN", "-%dMIN", e.magnitude);
                 }
                 break;
@@ -471,12 +471,12 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // An Epic dish's off-level point. Granted once per pet PER STAT (four
                 // dishes, four stats, four upgrades a pet can hold at most), and latched
                 // out after that so the plate keeps feeding without stacking. It lands
-                // outside statPoints_ on purpose: the level stays equal to the sum of
+                // outside pet_.statPoints on purpose: the level stays equal to the sum of
                 // EARNED points, which is the invariant Rollback sheds against, so
                 // nothing here can ever be rolled back off the pet.
                 const int stat = statPointEffectIndex(e.kind);
-                if (stat >= 0 && upgrades_.statBonus[stat] == 0) {
-                    upgrades_.statBonus[stat] = e.magnitude;
+                if (stat >= 0 && pet_.upgrades.statBonus[stat] == 0) {
+                    pet_.upgrades.statBonus[stat] = e.magnitude;
                     noteLifetimeGrant(levelStatWord(stat), "+%d", e.magnitude);
                 }
                 break;
@@ -484,8 +484,8 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::XpRateBonusPct:
                 // Profilerole: raises what every XP source pays this pet, for good.
                 // First helping only, same as the grants above.
-                if (upgrades_.xpRatePct == 0) {
-                    upgrades_.xpRatePct = e.magnitude;
+                if (pet_.upgrades.xpRatePct == 0) {
+                    pet_.upgrades.xpRatePct = e.magnitude;
                     noteLifetimeGrant("XP RATE", "+%d%%", e.magnitude);
                 }
                 break;
@@ -499,32 +499,32 @@ void Game::applyItemEffects(const ItemDef& d) {
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 // Backdoor/Rootkit/Kernel Bell: arm the NEXT startDeepWebDive() to
                 // begin at this fixed depth instead of 0; consumed there.
-                pendingDeepWebStartDepth_ = e.magnitude;
-                pendingDiveStartBonusPct_ = 0;   // ...and this row's bonus, if any, follows
+                pet_.armed.deepWebStartDepth = e.magnitude;
+                pet_.armed.pendingDiveStartBonusPct = 0;   // ...and this row's bonus, if any, follows
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepthToBest:
                 // Checkpoint Bell: arm the next dive to start at THIS PET's own
-                // bestDeepWebDepth_, resolved at dive-start (not here) so improving
+                // pet_.bestDeepWebDepth, resolved at dive-start (not here) so improving
                 // the record between now and then is never stale.
-                pendingDeepWebStartDepth_ = kDeepWebStartDepthUseBest;
-                pendingDiveStartBonusPct_ = 0;
+                pet_.armed.deepWebStartDepth = kDeepWebStartDepthUseBest;
+                pet_.armed.pendingDiveStartBonusPct = 0;
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:
                 // Unlinkguine: cut the phantom process off from the pet it copied.
                 // Guarded on having a ghost, so the achievement marks curing one. Eating
                 // it as ordinary food unlocks nothing.
-                if (model_.hasGhost()) {
-                    model_.setGhost(false);
+                if (pet_.model.hasGhost()) {
+                    pet_.model.setGhost(false);
                     log_.push(LogEventType::ItemUsed, "GHOST CLEARED");
                     unlockAchievement(ach::kAirGapped);
                 }
                 break;
             case ItemEffect::Kind::DiveStartBonusPct:
                 // Armed with the bell's start depth; goes live at startDeepWebDive.
-                pendingDiveStartBonusPct_ = e.magnitude;
+                pet_.armed.pendingDiveStartBonusPct = e.magnitude;
                 break;
             case ItemEffect::Kind::DiveStepBonusPct:
-                diveStepBonusPct_ = e.magnitude;
+                pet_.armed.diveStepBonusPct = e.magnitude;
                 break;
             case ItemEffect::Kind::CutIncubationMin: {
                 // Boot Accelerator: a flat bite out of the incubation clock, floored at
@@ -532,14 +532,14 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // by hand (hatchRevealReady), so a cut that skipped past it would take
                 // that away rather than hand it over.
                 const uint32_t cutMs = static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
-                const uint32_t left = bootHatchRemainMs_ > cutMs ? bootHatchRemainMs_ - cutMs : 0;
-                if (bootHatchRemainMs_ > kHatchRevealMs)
-                    bootHatchRemainMs_ = left > kHatchRevealMs ? left : kHatchRevealMs;
+                const uint32_t left = pet_.bootHatchRemainMs > cutMs ? pet_.bootHatchRemainMs - cutMs : 0;
+                if (pet_.bootHatchRemainMs > kHatchRevealMs)
+                    pet_.bootHatchRemainMs = left > kHatchRevealMs ? left : kHatchRevealMs;
                 break;
             }
         }
     }
-    if (hunger != 0 || happy != 0) model_.feed(hunger, happy);
+    if (hunger != 0 || happy != 0) pet_.model.feed(hunger, happy);
 }
 
 void Game::useBootAccelerator(const ItemDef& d) {
@@ -588,14 +588,14 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     inventory_.remove(d.id, 1);
     // Snapshot first: the modal's gauges report the DELTA this bite achieved, and
     // a stat that was already capped has none to show.
-    feedBefore_ = {model_.hunger(), model_.fragmentation(), model_.happiness()};
+    feedBefore_ = {pet_.model.hunger(), pet_.model.fragmentation(), pet_.model.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
     // A meal builds Bond only when the pet had room for it: stuffing a full pet is not
     // looking after it.
-    if (feedBefore_.hunger < 100) addBond(upgrades_, BondSource::Food, kBondFoodBp);
+    if (feedBefore_.hunger < 100) addBond(pet_.upgrades, BondSource::Food, kBondFoodBp);
     // Feeding from the crisis resolves it immediately: disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).
-    if (fromLockout) lockoutActive_ = false;
+    if (fromLockout) pet_.armed.lockoutActive = false;
     char buf[28];
     std::snprintf(buf, sizeof(buf), "FED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);

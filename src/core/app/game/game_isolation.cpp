@@ -101,7 +101,7 @@ void Game::finishIsolation() {
     // WORM_WHISPERER asks for a CLEAN protocol, and this is the one place that exists:
     // the run that ate the entire clock, not the one that ran out of buffer first.
     if (isolation_.clean()) unlockAchievement(ach::kWormWhisperer);
-    if (bootHatchRemainMs_ == 0) {
+    if (pet_.bootHatchRemainMs == 0) {
         completeHatch();   // nothing left to incubate: hatch here, not a tick later
         return;
     }

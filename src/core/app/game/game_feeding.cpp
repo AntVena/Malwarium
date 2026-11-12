@@ -97,8 +97,8 @@ void Game::drawFeedingMail(Framebuffer& fb) const {
 
 void Game::drawSquatLogin(Framebuffer& fb) const {
     const FeedStage stage = petFeeding_.stage();
-    if (!pet_ || (stage != FeedStage::Squat && stage != FeedStage::Login)) return;
-    Squat q = squatOf(pet_->displayName);
+    if (!pet_.creature || (stage != FeedStage::Squat && stage != FeedStage::Login)) return;
+    Squat q = squatOf(pet_.creature->displayName);
     const bool squatted = petFeeding_.squatted();
     const bool swapBeat =
         stage == FeedStage::Squat && petFeeding_.beatInStage() == kIdleSquatSwapBeat;

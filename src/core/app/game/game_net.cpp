@@ -317,7 +317,7 @@ void Game::resolveNetworkDiscovery() {
         // (Hatch acceleration already fired when this sighting was queued, in
         // registerNetwork: see its comment.)
         checkHackerRankUp();
-        model_.setHappiness(model_.happiness() + kNetDiscoveryFoundHappyBonus);
+        pet_.model.setHappiness(pet_.model.happiness() + kNetDiscoveryFoundHappyBonus);
 
         rng_ = rng_ * 1664525u + 1013904223u;
         const char* id = rollNetworkDiscoveryCacheId(static_cast<int>((rng_ >> 16) % 100));
@@ -354,7 +354,7 @@ void Game::resolveNetworkDiscovery() {
         return;
     }
     addCombatXp(kNetDiscoveryFondXpAmount);
-    model_.setHappiness(model_.happiness() + kNetDiscoveryFoundHappyBonus);
+    pet_.model.setHappiness(pet_.model.happiness() + kNetDiscoveryFoundHappyBonus);
     std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
                  "FONDLY REMEMBERS %s", picked.name);
     netDiscovery_ = NetDiscovery::Fond;

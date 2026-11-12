@@ -13,12 +13,12 @@ bool Game::moveIsTeachable(const MoveDef* m) const {
     // The innate is in the owned set like anything else, so one check covers it: every
     // tier-1 wild swings it and every gauntlet opens with it, and none of that is a
     // move to be "learned" by a pet that already has it.
-    if (!m || moveLoadout_.owns(m->id)) return false;
+    if (!m || pet_.moves.owns(m->id)) return false;
     // A move exclusive to ANOTHER line is skipped rather than dropped: the equip gate
     // would refuse it anyway (MoveDef::line), so granting it would be a reward the pet
     // can never field. Generic moves (line == nullptr) drop to everyone, which is what
     // makes an area's apex rider worth hunting whatever you hatched.
-    if (m->line && (!pet_ || !pet_->line || std::strcmp(m->line, pet_->line) != 0))
+    if (m->line && (!pet_.creature || !pet_.creature->line || std::strcmp(m->line, pet_.creature->line) != 0))
         return false;
     return true;
 }
@@ -26,7 +26,7 @@ bool Game::moveIsTeachable(const MoveDef* m) const {
 int Game::movesToLearnIn(const std::vector<const char*>& pool) const {
     // No pet, nothing to teach: an empty rack must not advertise a zone as holding
     // anything, and moveIsTeachable already refuses a line-exclusive move without one.
-    if (!pet_) return 0;
+    if (!pet_.creature) return 0;
     int n = 0;
     for (const char* id : pool)
         if (moveIsTeachable(registry_.move(id))) ++n;
@@ -70,13 +70,13 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // before one of its line moves existed still fills the gap in, on a win the enemy
     // taught nothing new. A fresh hatch owns its whole line kit already
     // (MoveLoadout::startingForLine), so this is normally a no-op.
-    if (candidates.empty() && pet_ && pet_->line)
+    if (candidates.empty() && pet_.creature && pet_.creature->line)
         for (const MoveDef* m : registry_.allMoves())
-            if (m->line && std::strcmp(m->line, pet_->line) == 0) consider(m);
+            if (m->line && std::strcmp(m->line, pet_.creature->line) == 0) consider(m);
     if (candidates.empty()) return false;
     rng_ = rng_ * 1664525u + 1013904223u;
     const char* id = candidates[(rng_ >> 16) % candidates.size()];
-    moveLoadout_.grant(id);
+    pet_.moves.grant(id);
     const MoveDef* m = registry_.move(id);
     char buf[32];
     std::snprintf(buf, sizeof(buf), "LEARNED %s", m ? m->displayName : id);
@@ -90,7 +90,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
 void Game::startSubAreaBoss(int area, int sub) {
     // A sub-area boss: a single strong malbeast, manually triggered from EXPL
     // once a 10-win streak unlocked it. A full clear marks the SUB-AREA cleared.
-    if (!pet_) return;
+    if (!pet_.creature) return;
     bossSector_ = area;
     bossSub_ = sub;                                 // >=0 → record a sub-area clear
     bossGauntlet_ = subAreaBoss(area, sub);
@@ -103,7 +103,7 @@ void Game::startAreaBoss(int area) {
     // The area boss: the 5 sub-area bosses fought back-to-back with carried
     // Health (no heal). Reachable once all 5 sub-areas are cleared; a full clear
     // clears the AREA (→ next area) + grants its Title.
-    if (!pet_) return;
+    if (!pet_.creature) return;
     // ...and the THRESHOLD chapter goes in front of it, the same way the arrival one
     // goes in front of the first encounter (game_story.cpp). Its `then` carries the
     // area, because by the time the reader hands back nothing else remembers which
@@ -219,7 +219,7 @@ void Game::finishBossRound() {
         // streak, but the boss-unlock PERSISTS, so the player can retry it without grinding again.
         if (combat_.lostOrDrawn()) {
             const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
-            model_.setFragmentation(model_.fragmentation() + frag);
+            pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
             log_.push(LogEventType::CombatLost, "GAUNTLET FAILED");
         }
         exploreActive_ = false;

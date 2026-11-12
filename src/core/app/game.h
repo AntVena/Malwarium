@@ -49,6 +49,7 @@
 #include "core/model/inventory.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
+#include "core/model/pet.h"
 #include "core/model/pet_model.h"
 #include "core/model/pet_upgrades.h"
 #include "core/model/save.h"
@@ -151,28 +152,28 @@ public:
 
     // The per-pet, per-slot Attack/Defend STAMP. Unset until the slot first
     // unlocks for this pet (stampSlotKinds), then fixed for good (see
-    // slotKinds_'s declaration). Public so tests/render can read it without
+    // pet_.slotKinds's declaration). Public so tests/render can read it without
     // reaching into private state.
-    enum class SlotKind : uint8_t { Unset, Attack, Defend };
+    using SlotKind = ::mal::SlotKind;
 
     bool tick(uint32_t nowMs);
     void onButton(const ButtonEvent& ev);
     void render(Framebuffer& fb) const;
 
     // --- Inspection (tests / debug / host) ---------------------------------
-    PetModel& model() { return model_; }
-    const PetModel& model() const { return model_; }
+    PetModel& model() { return pet_.model; }
+    const PetModel& model() const { return pet_.model; }
     Inventory& inventory() { return inventory_; }
     const Inventory& inventory() const override { return inventory_; }
     const EventLog& log() const { return log_; }
     // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
     int combatStatsPage() const { return combatStatsPage_; }
-    const Loadout& loadout() const { return loadout_; }
-    const MoveLoadout& moveLoadout() const { return moveLoadout_; }
+    const Loadout& loadout() const { return pet_.mods; }
+    const MoveLoadout& moveLoadout() const { return pet_.moves; }
     // The stamped kind for `slot`, or Unset if it hasn't
     // unlocked for this pet yet (out-of-range also reads Unset).
     SlotKind slotKind(int slot) const {
-        return (slot >= 0 && slot < kMaxMoveSlots) ? slotKinds_[slot] : SlotKind::Unset;
+        return (slot >= 0 && slot < kMaxMoveSlots) ? pet_.slotKinds[slot] : SlotKind::Unset;
     }
     // The MoveDef::Kind an equip into `slot` must match. Unset defensively reads as
     // Attack. Unreachable in normal play: onTrainList only lets the cursor reach an
@@ -186,23 +187,23 @@ public:
     // needs to enumerate the catalog (e.g. the 'Pedia state export).
     const ContentRegistry& content() const override { return registry_; }
     const Combat& combat() const { return combat_; }
-    int combatXp() const { return combatXp_; }        // XP banked toward the next level
-    int combatLevel() const { return combatLevel_; }  // 0-based creature level
+    int combatXp() const { return pet_.xp; }        // XP banked toward the next level
+    int combatLevel() const { return pet_.level; }  // 0-based creature level
     // What this pet actually banks from a raw award: the USB soak, then the Epic dish's
     // rate and Bond together. Shared by addCombatXp and the walk's XP preview.
     int scaleXp(int xp) const;
-    int defragCount() const { return defragCount_; }  // this pet's defrags
+    int defragCount() const { return pet_.defragCount; }  // this pet's defrags
     // XP needed to climb from the current level to the next: the geometric curve
-    // round(kLevelXpBase * (kLevelXpGrowthPct/100)^combatLevel_).
+    // round(kLevelXpBase * (kLevelXpGrowthPct/100)^pet_.level).
     int xpToNextLevel() const;
     // The same curve asked about an ARBITRARY level rather than the one the pet is on.
     // Rollback needs it: shedding a level moves the pet onto a SHORTER rung, and the
     // banked XP has to be re-expressed against that rung rather than thrown away.
     int xpForLevel(int level) const;
     // Earned points in combat stat `i` (0 power · 1 defense · 2 speed · 3 max-Health);
-    // sum == combatLevel_ (the level == total earned points invariant). Out-of-range → 0.
+    // sum == pet_.level (the level == total earned points invariant). Out-of-range → 0.
     int levelStatPoint(int i) const {
-        return (i >= 0 && i < kLevelStatCount) ? statPoints_[i] : 0;
+        return (i >= 0 && i < kLevelStatCount) ? pet_.statPoints[i] : 0;
     }
     // The combat stat the most-recent level-up bumped (0..3), or -1 before the first
     // level-up. STAT's LVL n line reads it to show which stat grew. Used by tests to
@@ -221,14 +222,14 @@ public:
     // interval less whatever this pet has been fed (Tiramisudo), never below the floor.
     // Per-pet, so the same rig regenerates at different speeds under different pets.
     uint32_t bandwidthRegenMinutes() const {
-        const uint32_t bonus = static_cast<uint32_t>(upgrades_.bandwidthRegenMin);
+        const uint32_t bonus = static_cast<uint32_t>(pet_.upgrades.bandwidthRegenMin);
         return bonus >= kBandwidthRegenMinutesPerPoint - kBandwidthRegenMinutesFloor
                    ? kBandwidthRegenMinutesFloor
                    : kBandwidthRegenMinutesPerPoint - bonus;
     }
     // Has this pet had its permanent regen upgrade? The STAT BUFFS page's own question,
     // and the reason a second Tiramisudo is a top-up rather than a second upgrade.
-    bool bandwidthRegenUpgraded() const { return upgrades_.bandwidthRegenMin > 0; }
+    bool bandwidthRegenUpgraded() const { return pet_.upgrades.bandwidthRegenMin > 0; }
     // n (Rig Shop): the Link Aggregator, the one-time unlock that makes a regen tick
     // pay a PERCENTAGE of the hole instead of a flat point (bandwidthRegenAmount).
     bool linkAggregatorUnlocked() const {
@@ -252,31 +253,31 @@ public:
     }
     // Everything an Epic dish has permanently handed this pet, as one value: what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
-    const PetUpgrades& petUpgrades() const { return upgrades_; }
+    const PetUpgrades& petUpgrades() const { return pet_.upgrades; }
     // ...and those plus the two arming gates, as the one value anything asking "has this
     // pet already taken that row's once-per-life grant" needs (lifetimeGrantSpent,
     // core/model/pet_upgrades.h). The ITEMS list and detail page read it to draw the
     // once-per-life note beside a row that carries one.
     PetLifetimeGates petLifetimeGates() const override {
-        return {upgrades_, yubiConsumed_, shieldItemConsumed_};
+        return {pet_.upgrades, pet_.grants.yubiSpent, pet_.grants.shieldSpent};
     }
     // OFF-LEVEL points in combat stat `i`, granted by an Epic dish or a found favourite
     // dish rather than earned. Sibling to levelStatPoint(): that one is sheddable and
     // counts toward the level, this one is neither. Out-of-range → 0.
     int statBonusPoint(int i) const {
         if (i < 0 || i >= kLevelStatCount) return 0;
-        return upgrades_.statBonus[i] +
-               (upgrades_.favouriteFound ? kFavouriteFoodStatBonus : 0);
+        return pet_.upgrades.statBonus[i] +
+               (pet_.upgrades.favouriteFound ? kFavouriteFoodStatBonus : 0);
     }
     // The active pet's favourite dish, or nullptr while it is still a secret, so
     // the FOODS grid and the 'Pedia cannot give it away.
     const ItemDef* foundFavouriteFood() const {
-        return upgrades_.favouriteFound ? upgrades_.favouriteFood : nullptr;
+        return pet_.upgrades.favouriteFound ? pet_.upgrades.favouriteFood : nullptr;
     }
     // What combat actually fights with: earned + granted. The single answer to "how many
     // points does this pet have in stat `i`", so no fighter is built from half of it.
     int totalStatPoint(int i) const { return levelStatPoint(i) + statBonusPoint(i); }
-    int xpRateBonusPct() const { return upgrades_.xpRatePct; }
+    int xpRateBonusPct() const { return pet_.upgrades.xpRatePct; }
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard
     // different things; this is the one place that answers the question generically, so
@@ -449,7 +450,7 @@ public:
     // while CURRENT Hunger is at or above combatXpWindowThreshold(). A fed and
     // happy pet fights sharper. 0 whenever the pet has let Hunger slip below it.
     int combatXpBonusPct() const {
-        if (!pet_ || model_.hunger() < combatXpWindowThreshold()) return 0;
+        if (!pet_.creature || pet_.model.hunger() < combatXpWindowThreshold()) return 0;
         return rigLevel_[kRigRowCombatXpPct] * kCombatXpPctPerLevel;
     }
     // m (Rig Shop): the Hunger threshold row l's boost stays active above.
@@ -518,7 +519,7 @@ public:
         const int a = areaIndexById(kDarkWebUnlockAreaId);
         return a >= 0 && a < kAreaCount && sectorCleared_[a];
     }
-    int bestDarkWebDepth() const { return bestDarkWebDepth_; }
+    int bestDarkWebDepth() const { return pet_.bestDarkWebDepth; }
     // The DeepWeb Dive's unlock: has the ladder reached kDeepWebUnlockAreaId? The SAME
     // linear gate every area answers to (explSectorOpen over sectorCleared_), asked of
     // one named rung, so the dive needs no unlock flag of its own. The arena works the
@@ -534,7 +535,7 @@ public:
     // (battle fatigue climbed frag into the danger band)? The mode stays armed; a
     // defrag drops frag back below the gate and stepping resumes.
     bool exploreAutoPausedByFatigue() const {
-        return exploreActive_ && model_.fragmentation() >= kBattleFatigueAutoPauseFrag;
+        return exploreActive_ && pet_.model.fragmentation() >= kBattleFatigueAutoPauseFrag;
     }
     // Has sub-area (`area`,`sub`)'s boss been UNLOCKED by a 10-win streak? A per-sub
     // flag, persisted (save v13). The streak is separate and not saved.
@@ -954,10 +955,10 @@ public:
     //
     // No clock to freeze on this side. A deep sleep on this board is a reset, so a wake
     // re-enters through the save, and every engine clock is already reboot-safe by one
-    // of three routes: rebased against nowMs_ on load (stageEnteredMs_, lastModelMs_),
-    // stored as a REMAINING count rather than a deadline (bootHatchRemainMs_), or
-    // anchored on lifetimeUptimeMs(), which is awake time (backupShieldUntilMs_,
-    // dyingElapsedMs_). Nothing observes wall time (the board carries no RTC), so time
+    // of three routes: rebased against nowMs_ on load (pet_.stageEnteredMs, lastModelMs_),
+    // stored as a REMAINING count rather than a deadline (pet_.bootHatchRemainMs), or
+    // anchored on lifetimeUptimeMs(), which is awake time (pet_.armed.backupShieldUntilMs,
+    // pet_.dyingElapsedMs). Nothing observes wall time (the board carries no RTC), so time
     // spent asleep is never credited.
     //
     // Latched rather than pulsed: the device tier may have to hold it for a moment (an
@@ -1507,7 +1508,7 @@ public:
     // anything new). `bssid` is 6 bytes.
     bool handshakeAlreadyCaptured(const uint8_t* bssid) const;
     int allyBuffBattlesLeft() const { return allyBuffBattlesLeft_; }  // friendly-visit buff
-    bool lockoutActive() const { return lockoutActive_; }
+    bool lockoutActive() const { return pet_.armed.lockoutActive; }
     Nav nav() const { return nav_; }
     CfgScreen cfgScreen() const { return cfgScreen_; }  // active CFG L3 (tests/inspection)
     // Which QR step is showing. The steps run in the order they happen: join the
@@ -1559,10 +1560,10 @@ public:
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const override {
         // An egg has nothing to defragment, so it is never charged for one.
-        if (!pet_ || pet_->stage == Stage::BootSector) return 0;
-        return rigUpgradeCost(kDefragCostStart, defragCount_, RigCostCurve::kLogStep);
+        if (!pet_.creature || pet_.creature->stage == Stage::BootSector) return 0;
+        return rigUpgradeCost(kDefragCostStart, pet_.defragCount, RigCostCurve::kLogStep);
     }
-    const CreatureDef* pet() const { return pet_; }   // null while the save is empty (Hatch)
+    const CreatureDef* pet() const { return pet_.creature; }   // null while the save is empty (Hatch)
     // Where the habitat is currently standing its occupant, in logical px off the
     // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
     // exposed so the resting motion can be inspected without a framebuffer.
@@ -1646,20 +1647,20 @@ public:
     // while it's still an unhatched egg (Boot stage + a live incubation clock);
     // `bootHatchRemainMs()` is the remaining clock (tests/UI).
     bool inEggPhase() const {
-        return pet_ && pet_->stage == Stage::BootSector && bootHatchRemainMs_ > 0;
+        return pet_.creature && pet_.creature->stage == Stage::BootSector && pet_.bootHatchRemainMs > 0;
     }
     // Can the hatch REVEAL be played on demand? The home stretch of any incubation.
     // Every line's minigame is played when the egg is laid, so this last stretch is
     // common to all of them, and the chord cracks the shell here so the player sees the
     // 8-frame hatch.
     bool hatchRevealReady() const {
-        return inEggPhase() && bootHatchRemainMs_ <= kHatchRevealMs;
+        return inEggPhase() && pet_.bootHatchRemainMs <= kHatchRevealMs;
     }
     // "The egg can be cracked open now": what the idle prompt advertises with the
     // flashing Exploit pip, and what the chord acts on.
     bool eggCrackable() const { return hatchRevealReady(); }
     int hatchRevealFrame() const;   // the one-shot's current frame (tests/render)
-    uint32_t bootHatchRemainMs() const { return bootHatchRemainMs_; }
+    uint32_t bootHatchRemainMs() const { return pet_.bootHatchRemainMs; }
     // Shaves `ms` off the incubation clock (floors at 0); a no-op outside the egg
     // phase. Walk/network steps use this to advance a laid egg, and it's also the
     // seam dev_config.h's DEV_EGG_TIMER_MS uses to fast-forward a fresh boot.
@@ -1813,7 +1814,7 @@ public:
     int recordCount() const { return static_cast<int>(records_.size()); }
 
     // --- Persisted identity / lifetime (STAT footer, ARCH, CFG) -------------
-    int generation() const { return generation_; }          // active pet's generation
+    int generation() const { return pet_.generation; }          // active pet's generation
     int petsRaised() const { return petsRaised_; }          // lifetime eggs hatched
     uint32_t lifetimeUptimeMs() const { return uptimeBase_ + nowMs_; }
     uint32_t lifetimeSteps() const { return lifetimeSteps_; }  // exploration
@@ -1839,7 +1840,7 @@ public:
     int archPickRow() const { return archPickRow_; }
     int archPickRowCount() const {
         return static_cast<int>(
-            buildArchPickerRows(registry_, pet_, rack_, records_).size());
+            buildArchPickerRows(registry_, pet_.creature, rack_, records_).size());
     }
     int archRowCount() const { return static_cast<int>(archRows().size()); }
     // The species id under the ARCH cursor, or nullptr on an empty group, a record with
@@ -2017,7 +2018,7 @@ public:
     // `id`, and how many distinct dishes has it tasted. Cleared with the pet, so each
     // new pet fills the FOODS grid from empty.
     bool petAteFood(const char* id) const;
-    int petFoodsEaten() const { return static_cast<int>(petFoodsEaten_.size()); }
+    int petFoodsEaten() const { return static_cast<int>(pet_.foodsEaten.size()); }
     // Has the METHOD for `outputId` been won? (save v31). The kitchen's other axis:
     // meeting a dish and knowing how to cook it are independent, and a recipe is only
     // ever won off a Decryptogram, never bought. Keyed by the dish because that is the
@@ -2105,8 +2106,8 @@ public:
     // Put a move in the pet's OWNED set (tests / dump_frame). Nothing in play grants
     // one yet. This is how a scene puts a kit in a known state, e.g. to show the
     // outro a rival with no new move gets.
-    void debugGrantMove(const char* id) { moveLoadout_.grant(id); }
-    void debugUnequipMove(int slot) { moveLoadout_.unequip(slot); }
+    void debugGrantMove(const char* id) { pet_.moves.grant(id); }
+    void debugUnequipMove(int slot) { pet_.moves.unequip(slot); }
     // Unlock a zone-completion Title without clearing its sector (tests /
     // dump_frame): the real path is a sector clear (unlockTitle). Auto-equips the
     // first Title, exactly like the real grant. No-op for an out-of-range sector.
@@ -2121,8 +2122,8 @@ public:
     // Pin the active pet's (unfound) favourite dish, so a gate can feed it on purpose
     // rather than hunting through the roll.
     void debugSetFavouriteFood(const char* id) {
-        upgrades_.favouriteFood = registry_.item(id);
-        upgrades_.favouriteFound = false;
+        pet_.upgrades.favouriteFood = registry_.item(id);
+        pet_.upgrades.favouriteFound = false;
     }
     // Decrypt a sealed cache directly via the real openSealedCache reward path (tests):
     // caches now decrypt from the Hacker VAULT, not pet-side ITEMS. No-op on unknown id.
@@ -2203,7 +2204,7 @@ public:
     int modPick() const { return modPick_; }
     const char* modDetailId() const { return modDetailId_; }
     // Grant mods in tests without walking a boss drop or a cache roll.
-    Loadout& debugLoadout() { return loadout_; }
+    Loadout& debugLoadout() { return pet_.mods; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
@@ -2309,12 +2310,12 @@ public:
     // Real path: EXPL → B on the "> DIVE" row.
     void debugStartDeepWebDive() { startDeepWebDive(); }
     void debugOfferThenDive() { offerThenDive(); }
-    void debugDeclineEggOffer() { eggOfferMade_ = true; }
+    void debugDeclineEggOffer() { pet_.eggOfferMade = true; }
     int debugDiveRewardBonusPct() const { return diveRewardBonusPct(); }
     // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
     // reader outside the engine (the habitat draws it via game_render.cpp), so tests
     // read it here to assert the buff survives the dive it was armed for.
-    int debugDepthMultiplier() const { return deepWebDepthMultiplier_; }
+    int debugDepthMultiplier() const { return pet_.armed.deepWebDepthMultiplier; }
     // The depth the next dive would START at (-1 = no bell armed), with the Checkpoint
     // sentinel already resolved: armedDeepWebStartDepth(), which is what the bells'
     // own inert check compares against, so a gate asserts the number the engine acts on
@@ -2323,7 +2324,7 @@ public:
     // Set this pet's best-ever dive depth, the frontier a Checkpoint Bell targets. Real
     // path: winning at that depth (game_combat.cpp). A gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
-    void debugSetBestDeepWebDepth(int depth) { bestDeepWebDepth_ = depth < 0 ? 0 : depth; }
+    void debugSetBestDeepWebDepth(int depth) { pet_.bestDeepWebDepth = depth < 0 ? 0 : depth; }
     void debugStartDarkWebCrawl() { startDarkWebCrawl(); }
     // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
     // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
@@ -2429,7 +2430,7 @@ public:
     int debugSubRefarmCount(int area, int sub) const {
         if (area < 0 || area >= kAreaCount || sub < 0 || sub >= kSubAreasPerArea)
             return 0;
-        return subRefarmCount_[area][sub];
+        return pet_.armed.subRefarmCount[area][sub];
     }
 
     // Post-encounter status readout inspection (tests): the
@@ -2446,37 +2447,37 @@ public:
     // Game::buildPlayerCombatant() itself, so nothing clears it when it expires.
     // Read by the STAT BUFFS page and the idle-habitat buff badge (game_render.cpp).
     bool backupShieldArmed() const {
-        return backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_;
+        return pet_.armed.backupShieldUntilMs != 0 && lifetimeUptimeMs() < pet_.armed.backupShieldUntilMs;
     }
 
     // The USB family's two armed states, read by the STAT BUFFS page, the idle-habitat
     // buff badges (game_render.cpp) and the gates that decide what else may be plugged
     // in. Both are per-pet and both are spent at the evolution they steer.
-    BranchOverride evolveBranchOverride() const { return evolveBranchOverride_; }
-    int evolveSoakFactor() const { return evolveSoakFactor_; }
-    bool evolveHoldArmed() const { return evolveHold_; }
+    BranchOverride evolveBranchOverride() const { return pet_.usb.branch; }
+    int evolveSoakFactor() const { return pet_.usb.soakFactor; }
+    bool evolveHoldArmed() const { return pet_.usb.hold; }
 
     // Is a LOCKING device in the port (defs.h's isLockingUsbEffect)? A soak owns the
     // boundary by stretching it and a hold owns it by refusing to reach it, so while
     // either is armed the port takes nothing but an Eject-USB. The swappable half of the
     // family (the divert and the branch overrides), never locks anything.
-    bool usbPortLocked() const { return evolveSoakFactor_ > 1 || evolveHold_; }
+    bool usbPortLocked() const { return pet_.usb.soakFactor > 1 || pet_.usb.hold; }
 
     // Is ANYTHING in the port? What the Eject-USB asks before spending itself, so it is
     // refused on an empty port rather than thrown away on one.
     bool usbPortOccupied() const {
-        return usbPortLocked() || forceTrojanDivert_ ||
-               evolveBranchOverride_ != BranchOverride::None;
+        return usbPortLocked() || pet_.armed.trojanDivert ||
+               pet_.usb.branch != BranchOverride::None;
     }
 
     // Pull everything out of the port and drop its effect (the Eject-USB). This is the
     // one place every slot is listed, so a new device in the family is undone by
     // adding it here.
     void clearUsbPort() {
-        forceTrojanDivert_ = false;
-        evolveBranchOverride_ = BranchOverride::None;
-        evolveSoakFactor_ = 1;
-        evolveHold_ = false;
+        pet_.armed.trojanDivert = false;
+        pet_.usb.branch = BranchOverride::None;
+        pet_.usb.soakFactor = 1;
+        pet_.usb.hold = false;
     }
 
     // The care branch the pet's next BRANCHING evolution actually reads: the care
@@ -3301,7 +3302,7 @@ private:
     void openRollbackPicker();
     void onRollbackPicker(const ButtonEvent& ev);
     bool rollbackEligible(int stat) const {
-        return stat >= 0 && stat < kLevelStatCount && statPoints_[stat] > 0;
+        return stat >= 0 && stat < kLevelStatCount && pet_.statPoints[stat] > 0;
     }
     int nextEligibleStat(int cur) const;            // A-cycle target (skips 0-point stats)
     void drawRollbackPickerScreen(Framebuffer& fb) const;
@@ -3355,14 +3356,14 @@ private:
     bool rollMaintSuccess();
 
     // Care-mistake increment with the v21 Restore-Point shield: a POSITIVE `n` is
-    // BLOCKED (and the shield consumed) when mistakeShieldActive_ is armed; a negative
+    // BLOCKED (and the shield consumed) when pet_.grants.shieldActive is armed; a negative
     // `n` (e.g. Yubi-Cookie's −1 removal) is unaffected. The single DRY seam every
     // Game-level positive-mistake path (went-hungry, Lockout expiry) funnels through.
     void addCareMistakeShielded(int n);
 
     // Advances the model's Hunger by `elapsedMs` and pays Passive XP Farming
     // (j/k, Rig Shop) on the portion of the resulting decay that fell above
-    // hungerXpThreshold(). The one place model_.tick() is called for Hunger
+    // hungerXpThreshold(). The one place pet_.model.tick() is called for Hunger
     // decay, so Game::tick() and debugTickHunger() (tests) can't drift apart.
     void tickHungerAndAwardXp(uint32_t elapsedMs);
 
@@ -3490,7 +3491,7 @@ private:
     void completeEvolution();      // commit the swap, restart the in-stage clock, idle
 
     // Stamp the Attack/Defend kind of every UNLOCKED slot
-    // that's still Unset from the CURRENT pet_'s CreatureDef::slotKinds, then never
+    // that's still Unset from the CURRENT pet_.creature's CreatureDef::slotKinds, then never
     // touch that slot again, so which creature occupies the evolution path at the
     // moment a slot unlocks decides that slot's kind for the rest of the raise.
     // Also backfills: any unlocked slot still empty gets the strongest owned+
@@ -3498,7 +3499,7 @@ private:
     // pet is never idling a slot on Quick Jab when it's earned something real to
     // put there, including a move unlocked at an earlier stage than the slot
     // itself. Called after every pet install: completeHatch, completeEvolution,
-    // applySave, and an ARCH Deploy swap. A no-op if pet_ is null.
+    // applySave, and an ARCH Deploy swap. A no-op if pet_.creature is null.
     void stampSlotKinds();
     // Defensive invariant: unequip any move whose kind no longer matches its
     // slot's stamped kind (a pre-v24 save migration, or any other drift). Called
@@ -3515,10 +3516,10 @@ private:
     void acknowledgeCSF();         // B: archive the corpse -> record + new-egg Hatch
 
     ContentRegistry registry_;
-    const CreatureDef* pet_ = nullptr;
-    PetModel model_;
+    // The active pet (core/model/pet.h).
+    Pet pet_;
     // Purely presentational: where the pet is standing on its shelf right now.
-    // Stepped once per heartbeat off pet_->locomotion and parked when there is no
+    // Stepped once per heartbeat off pet_.creature->locomotion and parked when there is no
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
     // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
@@ -3619,115 +3620,30 @@ private:
     // knowable from the variant.
     int playedFragRemoved_ = 0;
     int playedBitsEarned_ = 0;
-    int defragCount_ = 0;                  // this pet's successful defrags:
-                                           // persists through ARCH freeze/thaw (save v16)
-    // Care-mistake SHIELD (save v21): per-pet, reset on a new egg (startHatch). A
-    // Restore-Point buff arms mistakeShieldActive_, which blocks the NEXT positive care
-    // mistake (consumed on interception, addCareMistake). shieldItemConsumed_ and
-    // yubiConsumed_ are once-per-lifetime gates on the Restore Point and the Yubi-Cookie.
-    bool mistakeShieldActive_ = false;
-    bool shieldItemConsumed_ = false;
-    bool yubiConsumed_ = false;
-    // Everything an Epic dish has permanently given THIS pet (core/model/pet_upgrades.h):
-    // Tiramisudo's Bandwidth-regen shave, the off-level stat points, the XP rate. Each is
-    // granted once: the first helping roots the pet, every one after it is just food.
-    // Unlike the two once-per-lifetime gates above these FREEZE WITH THE PET
-    // (SaveStoredPet), because they are properties of the creature rather than of the run:
-    // storing a pet in the rack must not cost it an upgrade it earned.
-    PetUpgrades upgrades_;
-    // Ambig-USB's armed effect (save v28): per-pet, reset on a new egg (layEgg).
-    // Guarantees the pet's next Process->Script Trojan divert (Game::fireEvolution)
-    // instead of leaving it to the kTrojanDivertPct roll; consumed there regardless
-    // of whether the pet actually has a Trojan divert target.
-    bool forceTrojanDivert_ = false;
-    // The branch-override slot (save v60): per-pet, reset on a new egg like the flag
-    // above. Bad-USB and Signed-USB write the SAME field, so the port holds one
-    // direction at a time and the most recently plugged in is the one that fires; it is
-    // read through effectiveCareBranch() everywhere the care budget would have decided a
-    // branch, and consumed at the evolution it steered (completeEvolution, which is a
-    // beat later than the Ambig-USB's own consumption so the 'Pedia achievements can
-    // still see which branch actually fired).
-    BranchOverride evolveBranchOverride_ = BranchOverride::None;
-    // The Sandbox/Hypervisor-USB's armed soak (save v60): per-pet, reset on a new egg.
-    // 1 = nothing plugged in; 2 or 4 = this stage's evolution dwell runs that many times
-    // longer (evolveDwellMs) and every XP award pays that many times more (addCombatXp).
-    // Armable at Process only, spent at the evolution it stretched, and while it is
-    // above 1 no USB item at all is usable (itemUsable): the port is full.
-    // Neither slot is frozen with the pet on an ARCH Store (SaveStoredPet carries the
-    // pet's own properties (its upgrades, its level, its dive record), and a plugged-in
-    // device is not one). Both are emptied on a DEPLOY instead (archDeployStored), so a
-    // rack swap can neither carry a soak into a stage its gate forbids nor hand the
-    // incoming pet an ending the outgoing one paid for.
-    int evolveSoakFactor_ = 1;
-    // The Halt-USB's hold (save v60); per-pet, and the one device in the family that is
-    // NEVER consumed at a boundary, because no boundary arrives while it is in: it makes
-    // evolveEligible() false outright. It comes out through an Eject-USB, a rack swap
-    // (archDeployStored) or a new egg (layEgg), and nothing else.
-    bool evolveHold_ = false;
-    // Backup Drive's timed death-save (save v30): per-pet, reset on a new egg.
-    // The lifetimeUptimeMs() deadline the save is armed until; 0 = inactive.
-    // Game::buildPlayerCombatant() arms Combatant::itemShield while lifetimeUptimeMs()
-    // is under this deadline; a fight that spends it (Combatant::itemShieldFired)
-    // clears this back to 0 early, regardless of time remaining. Re-using the item
-    // just overwrites the deadline (a fresh 1h window). A Sim Battle deliberately
-    // fights without it (Game::startSimBattle): no stakes, so nothing to save.
-    uint32_t backupShieldUntilMs_ = 0;
-    // DeepWeb Dive depth state: see area_defs' area.h for the depth ramp itself.
-    // bestDeepWebDepth_ (save v35) is per-pet, reset on a new egg like the fields
-    // above: the highest exploreStreak_ this pet has ever reached in the dive,
-    // read back by the Checkpoint Bell (SetDeepWebStartDepthToBest) so it targets
-    // THIS pet's own frontier, never a device-wide max. deepWebDepthMultiplier_ and
-    // pendingDeepWebStartDepth_ are session-volatile like exploreStreak_ itself (not
-    // persisted): the multiplier (Deep-Learning Module/Core, x2/x4) is reset to 1 at every
-    // site that resets exploreStreak_ to 0, and doesn't stack. Arming a new one just
-    // overwrites it. pendingDeepWebStartDepth_ is armed by a Backdoor/Rootkit/Kernel/
-    // Checkpoint Bell and consumed the next time startDeepWebDive() begins a fresh dive;
-    // -1 = none armed (starts at depth 0 as normal).
-    int bestDeepWebDepth_ = 0;
-    // The crawl's own record, per-pet exactly as the dive's above is and reset with it on
-    // a new egg. A separate number rather than a shared "deepest endless" one because the
-    // two zones are not the same fight: a depth in the crawl is worth more, and one
-    // figure covering both would let the easier zone speak for the harder.
-    int bestDarkWebDepth_ = 0;
-    int deepWebDepthMultiplier_ = 1;
-    int pendingDeepWebStartDepth_ = -1;
-    // The DIVE PAY bonus (ItemEffect DiveStartBonusPct / DiveStepBonusPct), session-
-    // volatile like the two knobs above and cleared at the same sites. The bell's half
-    // is armed with its start depth and moved into diveStartBonusPct_ when the dive it
-    // starts begins; the device's half lives beside the multiplier it pays for.
-    int pendingDiveStartBonusPct_ = 0;
-    int diveStartBonusPct_ = 0;
-    int diveStepBonusPct_ = 0;
     // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
     // a dive, so a sector walk never collects a bonus armed for the dive after it.
     int diveRewardBonusPct() const {
-        return inDeepWebDive() ? diveStartBonusPct_ + diveStepBonusPct_ : 0;
+        return inDeepWebDive() ? pet_.armed.diveStartBonusPct + pet_.armed.diveStepBonusPct : 0;
     }
     // Every site that ends a dive (or a pet) spends both live halves in one call, so the
     // bonus can't outlive the run it was paid for at one exit and not another.
     void clearDiveDepthBuffs() {
-        deepWebDepthMultiplier_ = 1;
-        diveStepBonusPct_ = 0;
-        diveStartBonusPct_ = 0;
+        pet_.armed.deepWebDepthMultiplier = 1;
+        pet_.armed.diveStepBonusPct = 0;
+        pet_.armed.diveStartBonusPct = 0;
     }
-    static constexpr int kDeepWebStartDepthUseBest = -2;  // pendingDeepWebStartDepth_
+    static constexpr int kDeepWebStartDepthUseBest = -2;  // pet_.armed.deepWebStartDepth
                                                           // sentinel for the Checkpoint Bell
     // The depth a dive would actually START at right now (-1 = nothing armed), with the
-    // Checkpoint sentinel resolved through bestDeepWebDepth_ exactly as startDeepWebDive()
+    // Checkpoint sentinel resolved through pet_.bestDeepWebDepth exactly as startDeepWebDive()
     // resolves it. Anything COMPARING bells reads this rather than the raw field: the
     // sentinel is a negative number, so a raw compare sorts a live Checkpoint arming below
     // "nothing armed" and lets a shallower bell overwrite it. The downgrade paid for
     // with an item that the inert check (itemUseIsInert) exists to refuse.
     int armedDeepWebStartDepth() const {
-        if (pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest) return bestDeepWebDepth_;
-        return pendingDeepWebStartDepth_;
+        if (pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest) return pet_.bestDeepWebDepth;
+        return pet_.armed.deepWebStartDepth;
     }
-    // How many stacking foods (ItemEffect::Kind::HungerStacking: Polltatoes) the pet
-    // has eaten since it last lost a Hunger point to decay. Session-volatile like the
-    // dive knobs above: the run it measures is a sitting at the bag, and the next
-    // decay tick (tickHungerAndAwardXp) ends it anyway, so a reboot mid-run costing
-    // the player their stack is a forgiving default rather than a save field.
-    int stackingFoodRun_ = 0;
 
     StatPage statPage_ = StatPage::Vitals;
     // Which STAT screen is on: one of the pages, or the INDEX over them. STAT still
@@ -3837,11 +3753,10 @@ private:
     ArchGroup archGroup_;
     int archPickRow_ = 0;
 
-    // MODS submenu. loadout_ is the equip state; modSlot_ is the slot
+    // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline
     // overwrite confirm is a picker sub-state (modConfirm_ + the choice +
     // the pending mod id). Mod EFFECTS apply in combat: equip is real.
-    Loadout loadout_;
     int modSlot_ = 0;
     int modPick_ = 0;
     bool modConfirm_ = false;
@@ -3867,18 +3782,7 @@ private:
     // (trainScreen_).
     // The move picker mirrors MODS (slot/pick/confirm + pending). combat_ runs the
     // battle; combatBeat_ paces the auto-resolution; Health lives in combat_ and is
-    // NEVER persisted (transient). combatXp_/combatLevel_ persist (save v2).
-    MoveLoadout moveLoadout_;
-    // The per-pet stamped Attack/Defend kind for each move
-    // slot (Unset until stampSlotKinds() first fills it, then locked). Reset to
-    // all-Unset on every new egg (Game::startHatch, the single new-egg chokepoint
-    // that also resets statPoints_/combatLevel_/moveLoadout_); restored verbatim on
-    // an ARCH Deploy swap alongside the rest of the incoming pet's creature-level
-    // state (combatLevel_/statPoints_, save v26) and its own move+mod loadout
-    // (save v29): a Deploy backfills any still-Unset slot for the newly active
-    // pet. Persisted (save v24).
-    SlotKind slotKinds_[kMaxMoveSlots] = {SlotKind::Unset, SlotKind::Unset,
-                                          SlotKind::Unset, SlotKind::Unset};
+    // NEVER persisted (transient). pet_.xp/pet_.level persist (save v2).
     int trainRow_ = 0;
     // MoveDetail is the picker's reader half (hold-B): the picker chooses, the detail
     // page explains, so neither has to shrink to fit the other.
@@ -3928,14 +3832,6 @@ private:
     // started arriving with real loadouts, and a second key to reach it would have had
     // to come out of the three combat already spends.
     int combatStatsPage_ = 0;
-    int combatXp_ = 0;          // XP banked toward the NEXT level (0-based model)
-    int combatLevel_ = 0;       // creature level (== sum of statPoints_, the invariant)
-    // Per-pet earned combat-stat points: 0 power · 1 defense · 2 speed · 3
-    // max-Health. A level-up bumps one at random; Rollback sheds one and Repartition
-    // moves one between two of them. Applied into
-    // the player Combatant in buildPlayerCombatant. Persists across evolution; a new
-    // egg resets to all-0 (save v11).
-    int statPoints_[kLevelStatCount] = {0};
     // The stat index (0..3) of the most-recent level-up, or -1 if none yet: the
     // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
     int lastLevelUpStat_ = -1;
@@ -4010,7 +3906,7 @@ private:
     uint32_t postEncounterDeadlineMs_ = 0;
     // Per-stat points gained from any level-up(s) THIS encounter + the level
     // reached, so the post-encounter readout can name the stat delta ("POWER +1")
-    // instead of leaving a level-up silent. applyCombatResult snapshots statPoints_
+    // instead of leaving a level-up silent. applyCombatResult snapshots pet_.statPoints
     // before the reward path and diffs it after. Runtime-only, like the rest here.
     int postEncStatGain_[kLevelStatCount] = {0};
     int postEncLevelAfter_ = 0;
@@ -4028,12 +3924,6 @@ private:
     bool sectorCleared_[kAreaCount] = {};
     bool subCleared_[kAreaCount][kSubAreasPerArea] = {};
     bool subBossUnlocked_[kAreaCount][kSubAreasPerArea] = {};
-    // post-clear wild-win count per sub-area: the decay input for its
-    // diminishing non-Bits drop chances (refarmDropScalePct). PER-PET: it
-    // persists across a reboot for the active pet (save v15) but RESETS on a new egg
-    // (startHatch) and on a pet-swap (archDeployStored), so every pet finds a cleared
-    // area an undepleted training ground. The point of re-farm (not per-device).
-    uint16_t subRefarmCount_[kAreaCount][kSubAreasPerArea] = {};
     BossGauntlet bossGauntlet_{"", 0, {}};
     int bossRound_ = 0;
     int bossSector_ = 0;
@@ -4100,11 +3990,6 @@ private:
     // Every item id that has ever been in the bag (save v40): borrowed registry
     // pointers, like seenCreatures_. Player-level: spending an item never un-collects it.
     std::vector<const ItemDef*> collectedItems_;
-    // Every distinct FOOD the active pet has been fed (save v62): the same borrowed
-    // pointers, kept per-pet. Written at the one place a dish is actually eaten
-    // (Game::startFeeding, via markFoodEaten) rather than swept out of the bag, because
-    // holding a dish is not tasting it and the whole point of the set is the difference.
-    std::vector<const ItemDef*> petFoodsEaten_;
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
     // that is not a Food: a Buff drunk from the bag is not a meal. Also where a
     // favourite dish is found.
@@ -4123,7 +4008,7 @@ private:
     int bossWins_ = 0;
     // Lifetime Stacker boards cleared in MAINT (save v44), counted in
     // Game::finishStacker. Player-level, unlike the active pet's own
-    // defragCount_: this one is a record of skill and so belongs to the operator, not
+    // pet_.defragCount: this one is a record of skill and so belongs to the operator, not
     // to whichever pet happened to be on the shelf.
     int stackerWins_ = 0;
     // --- v56: three more lifetime tallies, all player-level like the two above ------
@@ -4153,12 +4038,12 @@ private:
     std::vector<SpeciesDive> speciesDives_;
     // Record `depth` against the species if it beats that species' standing record.
     void recordSpeciesDive(const CreatureDef* c, int depth);
-    // Seat `c` as the active pet. THE one place pet_ is assigned, so that becoming
+    // Seat `c` as the active pet. THE one place pet_.creature is assigned, so that becoming
     // this device's pet and being tallied as raised cannot come apart: every path
     // that installs a pet (a laid egg, a hatch, an evolution, an ARCH Deploy, a save
     // load) goes through here. nullptr clears the pet and tallies nothing.
     void installPet(const CreatureDef* c) {
-        pet_ = c;
+        pet_.creature = c;
         if (c) markCreatureRaised(c->id);
     }
 
@@ -4555,12 +4440,11 @@ private:
     int warpRow_ = 0;
 
     // The ITEM OFFER's cursor, what it is offering for, and where C goes back to.
-    // eggOfferMade_ is the once-per-egg latch: declining is an answer, so the egg is not
+    // pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
     OfferFor offerFor_ = OfferFor::Dive;
     int offerRow_ = 0;
     Nav offerBackNav_ = Nav::Idle;
-    bool eggOfferMade_ = false;
 
     // Hacker Rank: a player/device-level tier derived from
     // networksSeen_ (persists across pets, save v4). rankUpPending_/
@@ -4624,18 +4508,9 @@ private:
     bool feedFromLockout_ = false;
 
     // Lockout modal.
-    bool lockoutActive_ = false;
-    uint32_t lockoutDeadlineMs_ = 0;
     bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits
     bool lockoutItemsContext_ = false;     // ITEMS opened from the Lockout modal
-    bool lockoutReminded_ = false;
 
-    // The egg being incubated: which line laid it, and the Boot-Sector INCUBATION clock
-    // (egg-at-idle) counting down while it sits there. The clock is what every hatch
-    // minigame's prize is spent against, and what hatchRevealReady() gates the on-demand
-    // crack on; persisted (save v9) so an egg survives a reboot mid-incubation.
-    const EggLineDef* hatchLine_ = nullptr;
-    uint32_t bootHatchRemainMs_ = 0;
 
     // DISK DECRYPTION (the Ransomware hatch minigame, game_decryption.cpp). Un-persisted for
     // the same reason the Clutch Pick and the Isolation Protocol below are: it is played
@@ -4728,32 +4603,26 @@ private:
     int lineSelectRow_ = 0;
 
     // Evolution modal (stub). evolveTo_ is the successor being revealed; the
-    // swap onto pet_ is deferred to completeEvolution so the cinematic holds the
-    // old sprite first. stageEnteredMs_ clocks time-in-stage for the trigger.
+    // swap onto pet_.creature is deferred to completeEvolution so the cinematic holds the
+    // old sprite first. pet_.stageEnteredMs clocks time-in-stage for the trigger.
     const CreatureDef* evolveTo_ = nullptr;
     int evolveBeat_ = 0;
-    uint32_t stageEnteredMs_ = 0;
 
-    // Critical System Failure. dyingArmed_ latches when the pet enters the
-    // 5/5 dying state and dyingEnteredMs_ is the anchor it clocks from; csfBeat_
+    // Critical System Failure. pet_.dyingArmed latches when the pet enters the
+    // 5/5 dying state and pet_.dyingEnteredMs is the anchor it clocks from; csfBeat_
     // paces the crash-FX hold before B acknowledges. records_ (persisted, v3) is the
     // ARCH rack of RETIRED/CORRUPTED records: greyed, read-only, no live slot.
     //
-    // dyingElapsedMs_ is the total burned so far and the ONLY one of the three that
+    // pet_.dyingElapsedMs is the total burned so far and the ONLY one of the three that
     // persists (save v42), which is what stops a power cycle from refunding the
     // window. The pair splits because the anchor is in monotonic game-ms, meaningless
     // across a boot, while the accumulator is a duration and survives one intact.
-    bool dyingArmed_ = false;
-    uint32_t dyingEnteredMs_ = 0;
-    uint32_t dyingElapsedMs_ = 0;
-    uint32_t failingAlertAtMs_ = 0;   // in dyingElapsedMs_ time
     int csfBeat_ = 0;
     std::vector<SaveRecord> records_;
 
-    // Persisted identity / lifetime counters. generation_ is
+    // Persisted identity / lifetime counters. pet_.generation is
     // the active pet's generation; petsRaised_ the lifetime egg count; uptimeBase_
     // the lifetime uptime carried from prior boots (lifetime = base + nowMs_).
-    int generation_ = 0;
     int petsRaised_ = 0;
     uint32_t uptimeBase_ = 0;
     uint32_t lifetimeSteps_ = 0;

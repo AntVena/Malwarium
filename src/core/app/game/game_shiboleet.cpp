@@ -266,8 +266,8 @@ void Game::answerShiboleet(bool answered) {
         // The cost of getting it wrong, which is the same cost as not trying: a guardian
         // does not distinguish between an insult and a silence. The fight that follows
         // carries the rest of it, and the verdict screen is where the two are joined up.
-        model_.setHappiness(model_.happiness() - kShiboleetLoseHappy);
-        model_.setFragmentation(model_.fragmentation() + kShiboleetLoseFrag);
+        pet_.model.setHappiness(pet_.model.happiness() - kShiboleetLoseHappy);
+        pet_.model.setFragmentation(pet_.model.fragmentation() + kShiboleetLoseFrag);
         // Names WHICH silence this was. The guardian's own reaction is the same either
         // way (GuardianOutcome::Displeased): this line says what the pet did, which the
         // player can act on next time.
@@ -281,15 +281,15 @@ void Game::answerShiboleet(bool answered) {
     }
 
     shibReply_ = ShiboleetReply::Answered;
-    const int happyBefore = model_.happiness();
-    model_.setHappiness(happyBefore + kShiboleetWinHappy);
-    const int fragBefore = model_.fragmentation();
-    model_.setFragmentation(fragBefore - kShiboleetWinFragCut);
+    const int happyBefore = pet_.model.happiness();
+    pet_.model.setHappiness(happyBefore + kShiboleetWinHappy);
+    const int fragBefore = pet_.model.fragmentation();
+    pet_.model.setFragmentation(fragBefore - kShiboleetWinFragCut);
     // Reports what actually moved, so a pet already at full Happiness or already clean
     // is never told it gained more than it had room for. grantBoon's line does the
     // same.
     std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "+%d HAPPY  -%d FRAG",
-                  model_.happiness() - happyBefore, fragBefore - model_.fragmentation());
+                  pet_.model.happiness() - happyBefore, fragBefore - pet_.model.fragmentation());
 
     // The sigil is the SEPARATE half, and the only part a shake buys. A pet that answered
     // correctly with an empty purse still keeps everything above: it only lacked a SHAKE
@@ -392,18 +392,18 @@ void Game::grantBoon() {
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "%d BATTLES AT YOUR SIDE",
                       kShiboleetEscortBattles);
     } else {
-        const int happyBefore = model_.happiness();
-        model_.setHappiness(happyBefore + kShiboleetBoonHappy);
-        const int fragBefore = model_.fragmentation();
-        model_.setFragmentation(fragBefore - kShiboleetBoonFragCut);
+        const int happyBefore = pet_.model.happiness();
+        pet_.model.setHappiness(happyBefore + kShiboleetBoonHappy);
+        const int fragBefore = pet_.model.fragmentation();
+        pet_.model.setFragmentation(fragBefore - kShiboleetBoonFragCut);
         // Reports the Happiness and Fragmentation that actually moved, so a pet already
         // near clean is never told it lost more than it had. resolveSafeRestEvent's
         // line does the same.
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "A QUIET WORD (-%d FRAG)",
-                      fragBefore - model_.fragmentation());
+                      fragBefore - pet_.model.fragmentation());
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "+%d HAPPY  -%d FRAG",
-                      model_.happiness() - happyBefore,
-                      fragBefore - model_.fragmentation());
+                      pet_.model.happiness() - happyBefore,
+                      fragBefore - pet_.model.fragmentation());
     }
     markSaveDirty();
 }

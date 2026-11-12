@@ -143,7 +143,7 @@ void Game::eggPickCommit() {
         // The reveal has been read: bank the result and drop the player at idle with
         // their egg. Winning halves what's left of the incubation clock; that IS the
         // whole prize, since this line never opens the decrypt modal to grind down.
-        if (eggPickWon_ && bootHatchRemainMs_ > 0) bootHatchRemainMs_ /= 2;
+        if (eggPickWon_ && pet_.bootHatchRemainMs > 0) pet_.bootHatchRemainMs /= 2;
         nav_ = Nav::Idle;
         dirty_ = true;
         markSaveDirty();

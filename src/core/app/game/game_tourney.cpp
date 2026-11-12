@@ -113,7 +113,7 @@ void Game::abandonTourney() {
 }
 
 void Game::startTourneyMatch() {
-    if (!pet_ || tourneyPhase_ != TourneyPhase::Ready) return;
+    if (!pet_.creature || tourneyPhase_ != TourneyPhase::Ready) return;
     const int opp = tourneyOpponentSlot();
     if (opp < 0) return;
     Combatant p = buildPlayerCombatant();
@@ -211,12 +211,12 @@ void Game::awardTourneyPurse() {
     // level. Strictly above: matching the band is the expected fight, and the arena
     // draws levels uniformly, so this is a genuine draw of the short straw rather than
     // a rung that always lands on the third win.
-    if (tourneyOpponent_.spec.level > combatLevel_) unlockAchievement(ach::kDockUnderdog);
+    if (tourneyOpponent_.spec.level > pet_.level) unlockAchievement(ach::kDockUnderdog);
     // PUNCHING UP: the whole bracket taken by a pet that never reached Daemon. The
     // entrants' stage follows their rolled level (kTourneyScriptLevel /
     // kTourneyDaemonLevel), so the top of a bracket is Daemon country; arriving there
     // as a Process or a Script is the operator's kit doing the work, not their stage.
-    if (pet_ && pet_->stage != Stage::Daemon) unlockAchievement(ach::kDockPunchingUp);
+    if (pet_.creature && pet_.creature->stage != Stage::Daemon) unlockAchievement(ach::kDockPunchingUp);
     char took[28];
     std::snprintf(took, sizeof(took), "TOOK %s", kTourneyName);
     log_.push(LogEventType::CombatWon, took);

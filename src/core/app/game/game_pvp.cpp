@@ -60,26 +60,26 @@ void Game::setLocalRadioMac(const uint8_t* mac) {
 }
 
 bool Game::buildPvpFighter(PvpFighter* out) const {
-    if (!out || !pet_) return false;
+    if (!out || !pet_.creature) return false;
     PvpFighter f;
     std::strncpy(f.tag, hackerTag_, sizeof(f.tag) - 1);
-    std::strncpy(f.creatureId, pet_->id, sizeof(f.creatureId) - 1);
+    std::strncpy(f.creatureId, pet_.creature->id, sizeof(f.creatureId) - 1);
 
     // Equipped kit by id. Only slots this pet's stage has unlocked are sent. A
     // locked move is inert in combat, and sending it could make the two devices
     // disagree about which slots count.
-    const int slots = MoveLoadout::slotsForStage(pet_->stage);
+    const int slots = MoveLoadout::slotsForStage(pet_.creature->stage);
     for (int i = 0; i < slots && i < kMaxMoveSlots; ++i)
-        if (const char* id = moveLoadout_.equipped(i))
+        if (const char* id = pet_.moves.equipped(i))
             std::strncpy(f.moveIds[i], id, kPvpIdCap - 1);
     for (int i = 0; i < kModSlots; ++i)
-        if (const char* id = loadout_.equipped(i))
+        if (const char* id = pet_.mods.equipped(i))
             std::strncpy(f.modIds[i], id, kPvpIdCap - 1);
 
     // Level is display-only in a duel (nothing pays XP), but the stat points it bought
     // are the pet's real strength and must cross, including the off-level ones an Epic
     // dish granted, which the pet fights with at home and would otherwise leave behind.
-    f.level = static_cast<uint16_t>(std::min(combatLevel_, 0xFFFF));
+    f.level = static_cast<uint16_t>(std::min(pet_.level, 0xFFFF));
     for (int i = 0; i < 4; ++i)
         f.statPoints[i] = static_cast<uint8_t>(std::min(totalStatPoint(i), 255));
     *out = f;
@@ -312,7 +312,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
             PvpDeclineReason refuse = PvpDeclineReason::Busy;
             bool ok = true;
             if (!linkScreenOpen() || localRadioKey_ == 0) ok = false;
-            else if (!pet_) { ok = false; refuse = PvpDeclineReason::NoPet; }
+            else if (!pet_.creature) { ok = false; refuse = PvpDeclineReason::NoPet; }
             else if (f.rules != kPvpRulesVersion ||
                      !canBuildPvpCombatant(registry_, f.fighter)) {
                 // Different builds or different content would resolve the same spec
@@ -579,7 +579,7 @@ void Game::drawHackerLink(Framebuffer& fb) const {
         drawText(fb, kMargin, listTop + kLineH,
                  apEnabled_                  ? "TURN OFF AP IN CFG"
                  : auditCapture_.capturing() ? "CAPTURE IN PROGRESS"
-                 : !pet_                     ? "AND NO PET TO FIGHT"
+                 : !pet_.creature                     ? "AND NO PET TO FIGHT"
                                              : "LISTENING...",
                  palColor(Pal::INK_DIM));
     } else {

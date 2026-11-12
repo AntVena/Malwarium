@@ -135,9 +135,9 @@ const CreatureDef* Game::chromaSubject() const {
     // in lands here (the egg on the shelf IS the pet, and it is on the family that
     // wears borrowed colours), so the fallback below only ever answers for an arcade
     // cabinet played by somebody else's pet.
-    if (pet_) {
-        const CreatureLine* fam = creatureLine(pet_->line);
-        if (fam && fam->wearsBorrowedColours) return pet_;
+    if (pet_.creature) {
+        const CreatureLine* fam = creatureLine(pet_.creature->line);
+        if (fam && fam->wearsBorrowedColours) return pet_.creature;
     }
     // Otherwise the egg belonging to whichever line runs this game, asked for by its
     // HatchGame rather than by name: the cabinet is a rehearsal, and what rehearses is
@@ -202,7 +202,7 @@ void Game::finishChroma() {
     // exists: a clean board, not one that merely earned a lot. The Worm's own clean-run
     // row (WORM_WHISPERER) is the same idea on the same seam.
     if (chroma_.clean()) unlockAchievement(ach::kNeverSeen);
-    if (bootHatchRemainMs_ == 0) {
+    if (pet_.bootHatchRemainMs == 0) {
         completeHatch();   // nothing left to incubate: hatch here, not a tick later
         return;
     }
@@ -300,7 +300,7 @@ void Game::drawChroma(Framebuffer& fb) const {
         if (arcadeRun_)
             std::snprintf(effect, sizeof(effect), "%d / %d PASSES", chroma_.passes(),
                           chroma_.goal());
-        else if (bootHatchRemainMs_ <=
+        else if (pet_.bootHatchRemainMs <=
                  static_cast<uint32_t>(chroma_.passes()) * kChromaPassMs)
             std::snprintf(effect, sizeof(effect), "HATCHING NOW");
         else if (chroma_.passes() == 0)

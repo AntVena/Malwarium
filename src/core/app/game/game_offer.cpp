@@ -37,7 +37,7 @@ bool Game::offerRelevant(const ItemDef& d) const {
                 // A Checkpoint Bell on a pet that has never been down would start the
                 // dive at 0: the item spent for nothing, so it isn't put forward.
                 if (e.kind == ItemEffect::Kind::SetDeepWebStartDepthToBest)
-                    return bestDeepWebDepth_ > 0;
+                    return pet_.bestDeepWebDepth > 0;
             }
             return false;
     }
@@ -84,7 +84,7 @@ void Game::autoUseDiveGear() {
         for (const ItemEffect& e : d->effects) {
             const int depth = e.kind == ItemEffect::Kind::SetDeepWebStartDepth ? e.magnitude
                             : e.kind == ItemEffect::Kind::SetDeepWebStartDepthToBest
-                                ? bestDeepWebDepth_ : 0;
+                                ? pet_.bestDeepWebDepth : 0;
             if (depth > deepest) { deepest = depth; bell = d; }
             if (e.kind == ItemEffect::Kind::ArmDeepWebDepthMultiplier &&
                 e.magnitude > strongest) {
@@ -108,7 +108,7 @@ void Game::useOfferedItem(const ItemDef& d) {
 
 void Game::openItemOffer(OfferFor f) {
     offerFor_ = f;
-    if (f == OfferFor::Egg) eggOfferMade_ = true;   // asked once per egg, answered or not
+    if (f == OfferFor::Egg) pet_.eggOfferMade = true;   // asked once per egg, answered or not
     if (offerItems().empty()) { finishItemOffer(); return; }
     offerBackNav_ = nav_;
     offerRow_ = 0;

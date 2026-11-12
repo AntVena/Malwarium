@@ -58,9 +58,9 @@ void Game::buildPeerHello(PeerHello* out) const {
 
     // An operator with no pet yet (a fresh device on the Hatch screen) broadcasts an
     // empty species: the row reads "no pet".
-    if (pet_) {
-        std::strncpy(h.petName, pet_->displayName, sizeof(h.petName) - 1);
-        h.stage = static_cast<uint8_t>(pet_->stage);
+    if (pet_.creature) {
+        std::strncpy(h.petName, pet_.creature->displayName, sizeof(h.petName) - 1);
+        h.stage = static_cast<uint8_t>(pet_.creature->stage);
     }
 
     if (const CrewDef* c = activeCrew()) {

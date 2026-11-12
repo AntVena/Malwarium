@@ -38,7 +38,7 @@ namespace mal {
 // --- Render ----------------------------------------------------------------
 
 void Game::render(Framebuffer& fb) const {
-    const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     switch (nav_) {
         case Nav::Idle:
             if (face_ == Face::Hacker) drawHackerHome(fb, -1);
@@ -106,7 +106,7 @@ void Game::render(Framebuffer& fb) const {
             v.before = feedBefore_;
             v.beat = feedBeat_;
             v.fxBeat = fxBeat_;
-            drawFeedingModal(fb, model_, v);
+            drawFeedingModal(fb, pet_.model, v);
             break;
         }
         case Nav::ModalEvolve: drawEvolve(fb); break;
@@ -114,10 +114,10 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModalLockout: {
             LockoutView v;
             v.pet = pet;
-            if (lockoutDeadlineMs_ > nowMs_) {
-                v.secondsLeft = static_cast<int>((lockoutDeadlineMs_ - nowMs_ + 999) / 1000);
+            if (pet_.armed.lockoutDeadlineMs > nowMs_) {
+                v.secondsLeft = static_cast<int>((pet_.armed.lockoutDeadlineMs - nowMs_ + 999) / 1000);
                 v.remainFrac =
-                    static_cast<float>(lockoutDeadlineMs_ - nowMs_) / kLockoutDurationMs;
+                    static_cast<float>(pet_.armed.lockoutDeadlineMs - nowMs_) / kLockoutDurationMs;
             }
             v.focus = lockoutPayOption_ ? LockoutPath::Pay : LockoutPath::Feed;
             v.bitsCost = kLockoutBitsCost;
@@ -170,7 +170,7 @@ SceneId Game::habitatScene() const {
     // (content/content_homes.h), so an evolution walks into a new one with nothing
     // written down.
     if (backgroundPick_ != SceneId::None) return backgroundPick_;
-    return pet_ ? sceneForCreature(*pet_) : SceneId::None;
+    return pet_.creature ? sceneForCreature(*pet_.creature) : SceneId::None;
 }
 
 SceneId Game::stageScene() const {
@@ -228,7 +228,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     // Drawn before the pet so a fork crawls out from behind its body.
     drawIdleReplicas(fb, kActiveW / 2 + logicalToActive(petWander_.offsetX()));
 
-    const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     if (pet) drawHabitatPet(fb, *pet);
     drawFeedingMail(fb);
     // The squat writes on the caption row, so only while that row is free: no menu
@@ -266,10 +266,10 @@ void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
     // one that authored none simply keeps breathing while it slides, which is what
     // every single-row sheet does.
     const AnimClip* clip = nullptr;
-    if (pet_) {
-        if (petFeeding_.biting() || petLure_.biting()) clip = pet_->clip("attack");
-        if (!clip && petWander_.travelling()) clip = pet_->clip("walk");
-        if (!clip) clip = pet_->clip("idle");
+    if (pet_.creature) {
+        if (petFeeding_.biting() || petLure_.biting()) clip = pet_.creature->clip("attack");
+        if (!clip && petWander_.travelling()) clip = pet_.creature->clip("walk");
+        if (!clip) clip = pet_.creature->clip("idle");
     }
     const int row = clip ? clip->row : 0;
     const int frame = clip ? clip->frameAt(beat_) : idleFrame(pet, beat_);
@@ -279,7 +279,7 @@ void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
     // of a continuous drift reads as jitter. The WANDER moves the whole anchor
     // around the living box, in logical px (core/model/idle_wander.h): sideways
     // for every mover, and off the shelf for the ones that don't need the floor.
-    const int bob = (IdleWander::bobs(pet_->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
+    const int bob = (IdleWander::bobs(pet_.creature->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
     const int petW = pet.frameW * kScaleNum / kScaleDen;
     const int petH = pet.h * kScaleNum / kScaleDen;
     const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
@@ -363,7 +363,7 @@ void Game::drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const {
             // running OUT. Repaint comes free from the heartbeat (game_core.cpp),
             // which marks every beat dirty regardless of whether the model moved.
             char prompt[24];
-            const unsigned totalSecs = bootHatchRemainMs_ / 1000u;
+            const unsigned totalSecs = pet_.bootHatchRemainMs / 1000u;
             std::snprintf(prompt, sizeof prompt, "HATCHES IN %u:%02u",
                           totalSecs / 60u, totalSecs % 60u);
             int py = petTop - 6 - kFontH;
@@ -371,7 +371,7 @@ void Game::drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const {
             drawText(fb, (kActiveW - textWidth(prompt)) / 2, py, prompt,
                      palColor(Pal::INK));
         }
-    } else if (model_.isHungry()) {
+    } else if (pet_.model.isHungry()) {
         const bool on = ((beat_ / 2) & 1) == 0;
         if (on) {
             const SpriteData& icon = ASSET_UI_ALERT_HUNGER;
@@ -386,7 +386,7 @@ void Game::drawFailingBanner(Framebuffer& fb) const {
     // sold for a HOTFIX. A banner that counts it down and names the rescue is the least
     // a player walking up to the device is owed. It sits below the hunger alert's 20px
     // slot on a plate of paper, so it reads over whatever the habitat has behind it.
-    if (pet_ && !inEggPhase() && model_.careBranch() == CareBranch::Dying) {
+    if (pet_.creature && !inEggPhase() && pet_.model.careBranch() == CareBranch::Dying) {
         const uint32_t left = static_cast<uint32_t>(failingLeftMs());
         char head[24];
         std::snprintf(head, sizeof head, "FAILING - %u:%02u LEFT",
@@ -394,7 +394,7 @@ void Game::drawFailingBanner(Framebuffer& fb) const {
                       static_cast<unsigned>((left / 1000u) % 60u));
         const char* rescue = yubiReady()      ? "B: FEED THE YUBI-COOKIE"
                            : daemonOnRack()   ? "ARCH: SELL FOR A HOTFIX"
-                           : yubiConsumed_    ? "NOTHING CAN SAVE IT NOW"
+                           : pet_.grants.yubiSpent    ? "NOTHING CAN SAVE IT NOW"
                                               : "ONLY A YUBI-COOKIE SAVES IT";
         const int by = kLivingTop + 26;
         fb.fillRect(0, by - 3, kActiveW, 2 * (kFontH + 3) + 3, palColor(Pal::PAPER));
@@ -440,23 +440,23 @@ void Game::drawHabitatStatusColumn(Framebuffer& fb) const {
                 bx = drawText(fb, bx, by, tag, palColor(Pal::INK)) + 4;
             }
         };
-        if (mistakeShieldActive_) marker("restore_point", "[SHLD]");
-        if (forceTrojanDivert_) marker("ambig_usb", "[USB]");
+        if (pet_.grants.shieldActive) marker("restore_point", "[SHLD]");
+        if (pet_.armed.trojanDivert) marker("ambig_usb", "[USB]");
         // The rest of the USB port. The branch override is ONE slot, so it draws one
         // marker either way; the soak names the weaker of its two devices, since which
         // one armed it isn't tracked (the factor is) and both share the family glyph.
-        if (evolveBranchOverride_ == BranchOverride::Bad) marker("bad_usb", "[BAD]");
-        else if (evolveBranchOverride_ == BranchOverride::Good) marker("signed_usb", "[SGND]");
-        if (evolveSoakFactor_ > 1) marker("sandbox_usb", "[SOAK]");
+        if (pet_.usb.branch == BranchOverride::Bad) marker("bad_usb", "[BAD]");
+        else if (pet_.usb.branch == BranchOverride::Good) marker("signed_usb", "[SGND]");
+        if (pet_.usb.soakFactor > 1) marker("sandbox_usb", "[SOAK]");
         // The hold gets a badge over any of them: it is why STAT's EVOLVE row reads MAX
         // on a pet that plainly has a successor, so the habitat has to say it is there.
-        if (evolveHold_) marker("halt_usb", "[HELD]");
+        if (pet_.usb.hold) marker("halt_usb", "[HELD]");
         if (backupShieldArmed()) marker("backup_drive", "[BKUP]");
         // The two DeepWeb Dive depth buffs record only that they are armed, not
         // which of the several items did it, so both show the shared Buff-item
         // stand-in itemIcon() falls back to rather than guessing an id.
-        if (deepWebDepthMultiplier_ > 1) marker("deep_learning_module", "[DEEP]");
-        if (pendingDeepWebStartDepth_ != -1) marker("backdoor_bell", "[BELL]");
+        if (pet_.armed.deepWebDepthMultiplier > 1) marker("deep_learning_module", "[DEEP]");
+        if (pet_.armed.deepWebStartDepth != -1) marker("backdoor_bell", "[BELL]");
     }
 }
 
@@ -722,19 +722,19 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Stat: drawStat(fb); break;
         case SubmenuId::Items: items_.draw(fb, *this, beat_); break;
         case SubmenuId::Maint:
-            drawMaintList(fb, model_, listRow_, beat_);
+            drawMaintList(fb, pet_.model, listRow_, beat_);
             break;
         case SubmenuId::Cfg:
             drawCfgList(fb, listRow_, hackerTag_, equippedTitleName(), radioOwner_);
             break;
         case SubmenuId::Arch:
             if (archScreen_ == ArchScreen::Picker) {
-                drawArchPicker(fb, buildArchPickerRows(registry_, pet_, rack_, records_),
+                drawArchPicker(fb, buildArchPickerRows(registry_, pet_.creature, rack_, records_),
                                archPickRow_, static_cast<int>(rack_.size()), rackSlots());
             } else {
                 // The group's own name is the list's title, which is the whole reason
                 // the picker exists: the header says which shelf this is.
-                const auto tiles = buildArchPickerRows(registry_, pet_, rack_, records_);
+                const auto tiles = buildArchPickerRows(registry_, pet_.creature, rack_, records_);
                 ArchListView v;
                 for (const ArchPickRow& t : tiles)
                     if (t.group == archGroup_) { v.title = t.label; break; }
@@ -747,9 +747,9 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             }
             break;
         case SubmenuId::Mods: {
-            const Stage st = pet_ ? pet_->stage : Stage::BootSector;
+            const Stage st = pet_.creature ? pet_.creature->stage : Stage::BootSector;
             if (loadoutTab_ == LoadoutTab::Mods) {
-                drawModsList(fb, registry_, loadout_, listRow_, beat_);
+                drawModsList(fb, registry_, pet_.mods, listRow_, beat_);
             } else if (loadoutTab_ == LoadoutTab::Moves) {
                 // Each slot's stamped required kind, for the row tags.
                 MoveDef::Kind sk[kMaxMoveSlots];
@@ -759,13 +759,13 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 v.cursor = trainRow_;
                 v.slotKinds = sk;
                 v.beat = beat_;
-                drawLoadout(fb, registry_, moveLoadout_, v);
+                drawLoadout(fb, registry_, pet_.moves, v);
             } else {
                 LoadoutHubView v;
                 v.stage = st;
                 v.cursor = loadoutHubRow_;
                 v.beat = beat_;
-                drawLoadoutHub(fb, loadout_, moveLoadout_, v);
+                drawLoadoutHub(fb, pet_.mods, pet_.moves, v);
             }
             break;
         }
@@ -846,9 +846,9 @@ void Game::drawDetail(Framebuffer& fb) const {
             v.cost = maintKind_ == MaintKind::Defrag ? defragCost() : 0;
             v.walletBits = bits_;
             v.toolCount = inventory_.count(kDefragToolId);
-            v.defragCount = defragCount_;
+            v.defragCount = pet_.defragCount;
             v.failPct = maintFailPct();
-            drawMaintAction(fb, model_, v);
+            drawMaintAction(fb, pet_.model, v);
             break;
         }
         case SubmenuId::Cfg:
@@ -862,8 +862,8 @@ void Game::drawDetail(Framebuffer& fb) const {
             v.confirmOpen = archConfirm_;
             v.confirmChoice = archConfirmChoice_;
             if (archOnNewEgg()) {
-                v.pet = pet_;
-                v.rackFull = pet_ && rackFull;
+                v.pet = pet_.creature;
+                v.rackFull = pet_.creature && rackFull;
                 drawArchNewEgg(fb, v);
                 break;
             }
@@ -896,16 +896,16 @@ void Game::drawDetail(Framebuffer& fb) const {
             if (modDetail_ && modDetailId_) {
                 const ModDef* md = registry_.mod(modDetailId_);
                 if (md) {
-                    const char* cur = loadout_.equipped(modSlot_);
+                    const char* cur = pet_.mods.equipped(modSlot_);
                     ModDetailView dv;
                     dv.slot = modSlot_;
                     dv.equippedHere = cur && std::strcmp(cur, modDetailId_) == 0;
                     dv.reqLevel = modEquipLevel(*md);
-                    dv.petLevel = combatLevel_;
-                    dv.petLine = pet_ ? pet_->line : nullptr;
+                    dv.petLevel = pet_.level;
+                    dv.petLine = pet_.creature ? pet_.creature->line : nullptr;
                     dv.storageCap = modStorageCap();
                     dv.beat = beat_;
-                    drawModDetail(fb, registry_, loadout_, *md, dv);
+                    drawModDetail(fb, registry_, pet_.mods, *md, dv);
                     break;
                 }
             }
@@ -913,13 +913,13 @@ void Game::drawDetail(Framebuffer& fb) const {
                 ModPickerView pv;
                 pv.slot = modSlot_;
                 pv.pick = modPick_;
-                pv.petLevel = combatLevel_;
-                pv.petLine = pet_ ? pet_->line : nullptr;
+                pv.petLevel = pet_.level;
+                pv.petLine = pet_.creature ? pet_.creature->line : nullptr;
                 pv.confirmActive = modConfirm_;
                 pv.confirmChoice = modConfirmChoice_;
                 pv.pendingId = modPendingId_;
                 pv.beat = beat_;
-                drawModPicker(fb, registry_, loadout_, pv);
+                drawModPicker(fb, registry_, pet_.mods, pv);
             }
             break;
         case SubmenuId::Games:
@@ -934,9 +934,9 @@ void Game::drawTrain(Framebuffer& fb) const {
         // The reader half of the picker (hold-B). A cursor that has somehow lost its
         // move falls back to the picker rather than drawing an empty page.
         if (const MoveDef* m = focusedPickerMove()) {
-            const char* eq = moveLoadout_.equipped(moveSlot_);
+            const char* eq = pet_.moves.equipped(moveSlot_);
             MoveDetailView dv;
-            dv.petStage = pet_ ? pet_->stage : Stage::BootSector;
+            dv.petStage = pet_.creature ? pet_.creature->stage : Stage::BootSector;
             dv.equippedHere = eq && std::strcmp(eq, m->id) == 0;
             dv.proseScroll = moveProseScroll_;
             dv.beat = beat_;
@@ -947,15 +947,15 @@ void Game::drawTrain(Framebuffer& fb) const {
     MovePickerView v;
     v.slot = moveSlot_;
     v.requiredKind = slotRequiredKind(moveSlot_);
-    v.petStage = pet_ ? pet_->stage : Stage::BootSector;
-    v.petLine = pet_ ? pet_->line : nullptr;
+    v.petStage = pet_.creature ? pet_.creature->stage : Stage::BootSector;
+    v.petLine = pet_.creature ? pet_.creature->line : nullptr;
     v.pick = movePick_;
     v.showAll = moveShowAll_;
     v.confirmActive = moveConfirm_;
     v.confirmChoice = moveConfirmChoice_;
     v.pendingId = movePendingId_;
     v.beat = beat_;
-    drawMovePicker(fb, registry_, moveLoadout_, v);
+    drawMovePicker(fb, registry_, pet_.moves, v);
 }
 
 // Which art a CamoTarget names: the contract is on the declaration (game.h).
@@ -986,22 +986,22 @@ const SpriteData* Game::camoSpriteForTarget(const CamoTarget& t, const char* riv
 
 // The rotation rule is on the declaration (game.h).
 const SpriteData* Game::idleCamoSprite(int slot) const {
-    if (!pet_) return nullptr;
+    if (!pet_.creature) return nullptr;
     const std::vector<const CreatureLine*> lines = registry_.allCreatureLines();
     int others = 0;
     for (const CreatureLine* l : lines)
-        if (!pet_->line || std::strcmp(l->id, pet_->line) != 0) ++others;
+        if (!pet_.creature->line || std::strcmp(l->id, pet_.creature->line) != 0) ++others;
     if (others <= 0) return nullptr;         // a roster of one family has nobody to be
     const int want = ((slot % others) + others) % others;
     int i = 0;
     for (const CreatureLine* l : lines) {
-        if (pet_->line && std::strcmp(l->id, pet_->line) == 0) continue;
+        if (pet_.creature->line && std::strcmp(l->id, pet_.creature->line) == 0) continue;
         if (i++ != want) continue;
         // Through the same resolver the fight uses, so a drifting pet at home and a
         // channelling one in a fight reach for the same creature: that family's row at
         // the drifter's OWN tier, never its hatchling.
         return camoSpriteForTarget({CamoTarget::Source::Line, l->id},
-                                   /*rivalSprite=*/nullptr, pet_->stage);
+                                   /*rivalSprite=*/nullptr, pet_.creature->stage);
     }
     return nullptr;
 }
@@ -1033,7 +1033,7 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // creature (core/model/pvp_battle.h).
     const bool duel = pvpFighting();
     const SpriteData* ps = duel ? registry_.sprite(combat_.player().spriteName)
-                                : (pet_ ? registry_.creatureSprite(*pet_) : nullptr);
+                                : (pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr);
     const SpriteData* es = registry_.sprite(combat_.enemy().spriteName);
 
     // Both duellists read their own pet in the left seat on the zoned gauge, like every
@@ -1127,7 +1127,7 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
     v.sectorName = explSectorName(exploreSector_);
     v.outcomeLine = wifiFlavor_;
     v.discoveryLine = netDiscoveryFlavor_;
-    v.pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    v.pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     v.beat = beat_;
     v.fxBeat = fxBeat_;
     drawWifiEvent(fb, v);
@@ -1281,14 +1281,14 @@ void Game::drawWarpPickerScreen(Framebuffer& fb) const {
 }
 
 void Game::drawRollbackPickerScreen(Framebuffer& fb) const {
-    const int points[4] = {statPoints_[0], statPoints_[1], statPoints_[2],
-                           statPoints_[3]};
+    const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],
+                           pet_.statPoints[3]};
     drawRollbackPicker(fb, points, rollbackRow_);
 }
 
 void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
-    const int points[4] = {statPoints_[0], statPoints_[1], statPoints_[2],
-                           statPoints_[3]};
+    const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],
+                           pet_.statPoints[3]};
     drawRepartitionPicker(fb, points, repartitionRow_, repartitionFrom_);
 }
 
@@ -1357,19 +1357,19 @@ void Game::drawEvolve(Framebuffer& fb) const {
     v.phase = evolveBeat_ < kEvoHoldBeats                    ? EvolvePhase::Hold
               : evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats ? EvolvePhase::Flash
                                                              : EvolvePhase::Reveal;
-    v.from = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    v.from = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     v.to = evolveTo_ ? registry_.creatureSprite(*evolveTo_) : nullptr;
     // What changed, in words: the path the errors so far put it on (the thing that
     // decides a Daemon's form), and any move slot the new stage opens.
     char path[28];
-    const int errors = model_.careMistakes();
+    const int errors = pet_.model.careMistakes();
     std::snprintf(path, sizeof path, "%s PATH - %d ERROR%s",
                   effectiveCareBranch() == CareBranch::Bad ? "BAD" : "GOOD", errors,
                   errors == 1 ? "" : "S");
     char slot[40];
-    if (pet_ && evolveTo_) {
+    if (pet_.creature && evolveTo_) {
         const int gained = MoveLoadout::slotsForStage(evolveTo_->stage) -
-                           MoveLoadout::slotsForStage(pet_->stage);
+                           MoveLoadout::slotsForStage(pet_.creature->stage);
         if (gained > 0) {
             std::snprintf(slot, sizeof slot, "+%d MOVE SLOT%s - SEE MODS", gained,
                           gained == 1 ? "" : "S");
@@ -1386,7 +1386,7 @@ void Game::drawEvolve(Framebuffer& fb) const {
 void Game::drawCSF(Framebuffer& fb) const {
     // The heaviest modal in the game: the dying pet corrupts out under a
     // FX_CRITICAL_FAIL crash overlay. B is gated behind the crash hold (csfRevealed).
-    const SpriteData* pet = pet_ ? registry_.creatureSprite(*pet_) : nullptr;
+    const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     drawCSFModal(fb, pet, csfRevealed() ? CsfPhase::Held : CsfPhase::Crashing, beat_);
 }
 

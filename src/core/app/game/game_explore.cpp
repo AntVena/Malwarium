@@ -99,8 +99,8 @@ ExplListView Game::explView() const {
     v.areaCleared = sectorCleared_;
     v.exploringSector = exploreActive_ ? exploreSector_ : -1;
     v.exploringSub = exploreActive_ ? exploreSub_ : -1;
-    v.bestDeepWebDepth = bestDeepWebDepth_;
-    v.bestDarkWebDepth = bestDarkWebDepth_;
+    v.bestDeepWebDepth = pet_.bestDeepWebDepth;
+    v.bestDarkWebDepth = pet_.bestDarkWebDepth;
     v.tourneyRunning = tourneyRunning();
     v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
     v.tourneyRound = tourneyRound_;
@@ -266,7 +266,7 @@ void Game::startDeepWebDive() {
     exploreSector_ = kDeepWebSector;
     exploreSub_ = 0;
     exploreStreak_ = 0;
-    // NB: deepWebDepthMultiplier_ is deliberately NOT reset here. A Deep-Learning
+    // NB: pet_.armed.deepWebDepthMultiplier is deliberately NOT reset here. A Deep-Learning
     // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) so it applies
     // to this dive. Clearing it on the way in would waste it. It is cleared where a
     // dive ENDS instead. A Backdoor/Rootkit/Kernel/Checkpoint Bell arms a start depth
@@ -275,14 +275,14 @@ void Game::startDeepWebDive() {
     // depth NOW (not at Use-time), so it never targets a stale, since-improved record.
     // The bell's DIVE PAY half goes live with it, for this dive only; a dive started
     // with no bell armed pays no start bonus, whatever an earlier dive carried.
-    diveStartBonusPct_ = 0;
-    if (pendingDeepWebStartDepth_ != -1) {
-        exploreStreak_ = pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest
-                              ? bestDeepWebDepth_
-                              : pendingDeepWebStartDepth_;
-        pendingDeepWebStartDepth_ = -1;
-        diveStartBonusPct_ = pendingDiveStartBonusPct_;
-        pendingDiveStartBonusPct_ = 0;
+    pet_.armed.diveStartBonusPct = 0;
+    if (pet_.armed.deepWebStartDepth != -1) {
+        exploreStreak_ = pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest
+                              ? pet_.bestDeepWebDepth
+                              : pet_.armed.deepWebStartDepth;
+        pet_.armed.deepWebStartDepth = -1;
+        pet_.armed.diveStartBonusPct = pet_.armed.pendingDiveStartBonusPct;
+        pet_.armed.pendingDiveStartBonusPct = 0;
     }
     exploreSteps_ = 0;
     exploreStepBeat_ = 0;
@@ -437,12 +437,12 @@ int Game::exploreXpEfficiencyPct() const {
         // does or it advertises a ramp the walk is not paying yet.
         const int rampDepth = exploreStreak_ > kDeepWebRampFreeDepth
                             ? exploreStreak_ - kDeepWebRampFreeDepth : 0;
-        enemyLevel = combatLevel_ + kDeepWebEnemyLevelOffset +
+        enemyLevel = pet_.level + kDeepWebEnemyLevelOffset +
                      kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
     } else if (exploreSector_ == kDarkWebSector) {
         // ...and the crawl's has no foothold to wait out (applyDarkWebScale), so its
         // streak rides the curve from the first win.
-        enemyLevel = combatLevel_ + kDarkWebEnemyLevelOffset +
+        enemyLevel = pet_.level + kDarkWebEnemyLevelOffset +
                      kDarkWebDepthLevelPerLog2 * floorLog2(exploreStreak_ + 1);
     } else {
         const int a = exploreSector_ < 0 ? 0
@@ -451,7 +451,7 @@ int Game::exploreXpEfficiencyPct() const {
                       : exploreSub_ >= kExplSubAreas ? kExplSubAreas - 1 : exploreSub_;
         enemyLevel = a * kExplSubAreas + sub;
     }
-    const int xp = scaleXp(applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, combatLevel_)));
+    const int xp = scaleXp(applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, pet_.level)));
     return (xp * 100 + base / 2) / base;      // rounded, so a small trim still shows
 }
 
@@ -576,10 +576,10 @@ void Game::resolveSafeRestEvent(const ItemDef& d) {
     // second, deeper rest key is a row rather than a branch here. The flavor line
     // reports the delta actually taken, not the row's magnitude, so a pet already
     // near clean doesn't get told it shed more than it had.
-    const int before = model_.fragmentation();
+    const int before = pet_.model.fragmentation();
     applyItemEffects(d);
     std::snprintf(exploreFlavor_, sizeof(exploreFlavor_),
-                 "SAFE MODE - RESTED (-%d FRAG)", before - model_.fragmentation());
+                 "SAFE MODE - RESTED (-%d FRAG)", before - pet_.model.fragmentation());
     markSaveDirty();
     returnToExplore();
 }
@@ -722,7 +722,7 @@ void Game::grantMod(const char* id) {
     // A pool already holding modStorageCap() of this mod takes no more. The drop is
     // reported, because a milestone reward that vanishes silently looks like a bug. The
     // line names the Rig Shop row that would have kept it.
-    if (!loadout_.grant(id, modStorageCap())) {
+    if (!pet_.mods.grant(id, modStorageCap())) {
         std::snprintf(buf, sizeof(buf), "%s: NO ROOM", m->displayName);
         log_.push(LogEventType::ItemGained, buf);
         return;

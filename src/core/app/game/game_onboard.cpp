@@ -67,7 +67,7 @@ ProseRow Game::hatchBriefLeadRow() const {
 void Game::careAttention(unsigned& attention, unsigned& urgent) const {
     attention = 0;
     urgent = 0;
-    if (!pet_ || inEggPhase()) return;
+    if (!pet_.creature || inEggPhase()) return;
     // Each vital names the ONE slot that fixes it, so the shelf points at the remedy
     // rather than at a readout: food is in ITEMS, a defrag or AV scan in MAINT, and the
     // arcade is the one place Happiness can be bought back on demand. With no meal in
@@ -81,12 +81,12 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
         }
     };
     mark(inventoryHoldsMeal(registry_, inventory_) ? SubmenuId::Items : SubmenuId::Expl,
-         model_.hungerZone(), false);
-    mark(SubmenuId::Maint, model_.fragZone(), model_.hasGhost());
-    mark(SubmenuId::Games, model_.happyZone(), false);
+         pet_.model.hungerZone(), false);
+    mark(SubmenuId::Maint, pet_.model.fragZone(), pet_.model.hasGhost());
+    mark(SubmenuId::Games, pet_.model.happyZone(), false);
     // One error short of failing, or failing: STAT is where the errors are read, and
     // this is the one state where waiting is how the pet is lost. Always urgent.
-    if (model_.careMistakes() >= kCareDying - 1)
+    if (pet_.model.careMistakes() >= kCareDying - 1)
         for (int i = 0; i < kCarouselSlots; ++i)
             if (carouselSlots()[i].id == SubmenuId::Stat) {
                 attention |= 1u << i;
@@ -215,8 +215,8 @@ std::vector<ProseRow> Game::tipCardRows() const {
         case Tip::NearTheLine: {
             const TipRowText first[] = {kNearTheLineRows[0]};
             appendTipRows(out, first);
-            const TipRowText second[] = {mistakeShieldActive_ ? kShieldArmedRow
-                                         : shieldItemConsumed_ ? kShieldSpentRow
+            const TipRowText second[] = {pet_.grants.shieldActive ? kShieldArmedRow
+                                         : pet_.grants.shieldSpent ? kShieldSpentRow
                                                                : kNearTheLineRows[1]};
             appendTipRows(out, second);
             break;
@@ -245,11 +245,11 @@ void Game::openTipCard(Tip t, Nav returnTo) {
 }
 
 bool Game::openCareTipIfDue() {
-    if (!pet_ || inEggPhase()) return false;
+    if (!pet_.creature || inEggPhase()) return false;
     // The errors first, nearest the line first: a pet one short of failing is the one
     // thing on this list that cannot wait for the next summon. That card covers what an
     // error is as well, so the first-error card is spent along with it.
-    const int errors = model_.careMistakes();
+    const int errors = pet_.model.careMistakes();
     if (errors >= kCareDying - 1 && errors < kCareDying && !tipSeen(Tip::NearTheLine)) {
         markTipSeen(Tip::FirstError);
         openTipCard(Tip::NearTheLine, Nav::Cursor);
@@ -261,15 +261,15 @@ bool Game::openCareTipIfDue() {
     }
     // In the "!" marks' own order (ITEMS/EXPL, MAINT, GAMES), one card per summon: a
     // second need waits for the next time the menu is opened rather than stacking.
-    if (model_.hungerZone() != Zone::Ok && !tipSeen(Tip::CareFed)) {
+    if (pet_.model.hungerZone() != Zone::Ok && !tipSeen(Tip::CareFed)) {
         openTipCard(Tip::CareFed, Nav::Cursor);
         return true;
     }
-    if ((model_.fragZone() != Zone::Ok || model_.hasGhost()) && !tipSeen(Tip::CareFrag)) {
+    if ((pet_.model.fragZone() != Zone::Ok || pet_.model.hasGhost()) && !tipSeen(Tip::CareFrag)) {
         openTipCard(Tip::CareFrag, Nav::Cursor);
         return true;
     }
-    if (model_.happyZone() != Zone::Ok && !tipSeen(Tip::CareHappy)) {
+    if (pet_.model.happyZone() != Zone::Ok && !tipSeen(Tip::CareHappy)) {
         openTipCard(Tip::CareHappy, Nav::Cursor);
         return true;
     }
@@ -383,14 +383,14 @@ void Game::drawTipsList(Framebuffer& fb) const {
 }
 
 int32_t Game::failingLeftMs() const {
-    if (!pet_ || inEggPhase() || model_.careBranch() != CareBranch::Dying) return -1;
-    return dyingElapsedMs_ < kCsfDyingGraceMs
-               ? static_cast<int32_t>(kCsfDyingGraceMs - dyingElapsedMs_)
+    if (!pet_.creature || inEggPhase() || pet_.model.careBranch() != CareBranch::Dying) return -1;
+    return pet_.dyingElapsedMs < kCsfDyingGraceMs
+               ? static_cast<int32_t>(kCsfDyingGraceMs - pet_.dyingElapsedMs)
                : 0;
 }
 
 bool Game::yubiReady() const {
-    return !yubiConsumed_ && inventory_.count("yubi_cookie") > 0;
+    return !pet_.grants.yubiSpent && inventory_.count("yubi_cookie") > 0;
 }
 
 // --- WHILE YOU WERE AWAY ----------------------------------------------------------
@@ -414,7 +414,7 @@ std::vector<Game::AwayRow> Game::awayRows() const {
     if (away_.evolved) add("EVOLVED INTO", "%s", away_.evolved->displayName);
     if (away_.hungry) add("WENT HUNGRY", "%dX", away_.hungry);
     if (away_.missed) add("LOCKOUTS MISSED", "%d", away_.missed);
-    if (away_.errors) add("ERRORS", "+%d, NOW %d", away_.errors, model_.careMistakes());
+    if (away_.errors) add("ERRORS", "+%d, NOW %d", away_.errors, pet_.model.careMistakes());
     if (away_.won) add("FIGHTS WON", "%d", away_.won);
     if (away_.lost) add("FIGHTS LOST", "%d", away_.lost);
     if (away_.caches) add("CACHES FOUND", "%d", away_.caches);
@@ -427,7 +427,7 @@ bool Game::openAwayDigestIfDue(uint32_t quietMs) {
     // A failing pet comes first: the press may be the one that feeds it the cookie, and
     // the summary keeps until the next press after the crisis.
     if (failingLeftMs() >= 0) return false;
-    const bool due = awayDigestOn_ && quietMs >= kAwayDigestMs && pet_ &&
+    const bool due = awayDigestOn_ && quietMs >= kAwayDigestMs && pet_.creature &&
                      face_ == Face::Pet && nav_ == Nav::Idle && !awayRows().empty();
     if (!due) {
         resetAwayTally();   // the player is here: what they missed starts again from now
@@ -476,7 +476,7 @@ bool Game::feedYubiToSave() {
     if (!cookie) return false;
     detailItem_ = cookie;
     // From the Lockout it is also the meal that clears the Lockout (startFeeding).
-    lockoutItemsContext_ = lockoutActive_;
+    lockoutItemsContext_ = pet_.armed.lockoutActive;
     useItem();
     return nav_ == Nav::ModalFeeding;
 }

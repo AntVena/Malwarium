@@ -40,8 +40,8 @@ int sumEquippedModMagnitude(const ContentRegistry& reg, const Loadout& load,
 // mirror whatever their levels, kits or branches did, and that is what the operator sees.
 // Cheap and idempotent, so a caller fires it on every bout without guarding.
 void Game::noteMirrorMatch(const char* opponentCreatureId) {
-    if (!opponentCreatureId || !pet_ || !pet_->id) return;
-    if (std::strcmp(pet_->id, opponentCreatureId) == 0)
+    if (!opponentCreatureId || !pet_.creature || !pet_.creature->id) return;
+    if (std::strcmp(pet_.creature->id, opponentCreatureId) == 0)
         unlockAchievement(ach::kHashCollision);
 }
 
@@ -61,7 +61,7 @@ void Game::settleBackupDrive() {
     // boss round), so a spent drive is settled in exactly one place. It is spent for the
     // rest of its 1h window, win or lose.
     if (combat_.player().backupUse == Combatant::BackupUse::None) return;
-    backupShieldUntilMs_ = 0;
+    pet_.armed.backupShieldUntilMs = 0;
     if (const char* id = backupDriveAchievement(combat_.player().backupUse,
                                                 combat_.outcome()))
         unlockAchievement(id);
@@ -79,11 +79,11 @@ Combatant Game::buildPlayerCombatant() {
     // The friendly-visit ally buff: a transient combat modifier
     // consumed one per battle, applied at every real entry into combat (Sim +
     // wild). debugStartCombat is the dev/test hook and stays raw/deterministic.
-    Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
+    Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
     // Backup Drive's timed death-save (save v30): armed while lifetimeUptimeMs() is
     // still under the buff's deadline. Consumption is read back in applyCombatResult /
-    // finishBossRound (Combatant::itemShieldFired) to clear backupShieldUntilMs_ early.
-    if (backupShieldUntilMs_ != 0 && lifetimeUptimeMs() < backupShieldUntilMs_)
+    // finishBossRound (Combatant::itemShieldFired) to clear pet_.armed.backupShieldUntilMs early.
+    if (pet_.armed.backupShieldUntilMs != 0 && lifetimeUptimeMs() < pet_.armed.backupShieldUntilMs)
         p.itemShield = true;
     if (inDarkWebCrawl() && p.mods.mag(ModEffect::ScrambleWard) <= 0)
         p.scrambleTurns = kScrambleWholeFight;
@@ -103,14 +103,14 @@ Combatant Game::buildPlayerCombatant() {
 }
 
 void Game::startSimBattle() {
-    if (!pet_) return;
+    if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
     // A Sim Battle has no stakes (losing costs nothing), so there is no death to save
     // the pet from and no reason to spend a Rare item's shield on training. Stripped
     // here rather than in buildPlayerCombatant, which doesn't know the stakes.
     p.itemShield = false;
     CombatEnemy dummy = simDummy(simTier_);
-    applySimDummyLevelScale(dummy, combatLevel_);
+    applySimDummyLevelScale(dummy, pet_.level);
     Combatant e = makeEnemyCombatant(registry_, dummy);
     rng_ = rng_ * 1664525u + 1013904223u;     // advance for a fresh deterministic seed
     combat_.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
@@ -250,7 +250,7 @@ int Game::xpForLevel(int level) const {
     return static_cast<int>(need);
 }
 
-int Game::xpToNextLevel() const { return xpForLevel(combatLevel_); }
+int Game::xpToNextLevel() const { return xpForLevel(pet_.level); }
 
 int Game::scaleXp(int xp) const {
     // The armed Sandbox/Hypervisor-USB soak is the OTHER half of the trade it makes: the
@@ -258,12 +258,12 @@ int Game::scaleXp(int xp) const {
     // XP award pays this many times more. Applied first, as a multiplier on the raw
     // award, so the rates below still read as a percentage of what the source actually
     // paid rather than of a number one item already scaled.
-    if (evolveSoakFactor_ > 1) xp *= evolveSoakFactor_;
+    if (pet_.usb.soakFactor > 1) xp *= pet_.usb.soakFactor;
     // Profilerole's permanent rate and the pet's Bond add up into one percentage, so
     // neither compounds on the other. Applied at the one door every XP source comes
     // through, so they raise combat, solved boards and passive farming alike. Rounded
     // down, so a rate only adds.
-    const int rateBp = upgrades_.xpRatePct * 100 + bondTotalBp(upgrades_);
+    const int rateBp = pet_.upgrades.xpRatePct * 100 + bondTotalBp(pet_.upgrades);
     return xp + static_cast<int>(static_cast<int64_t>(xp) * rateBp / 10000);
 }
 
@@ -271,26 +271,26 @@ void Game::addFightXp(int xp) {
     if (xp <= 0) return;
     // Bond counts the award as the fight paid it, before the pet's own rates, so Bond
     // never feeds on itself.
-    addBond(upgrades_, BondSource::Adventure, xp * kBondAdventureBpPerXp);
+    addBond(pet_.upgrades, BondSource::Adventure, xp * kBondAdventureBpPerXp);
     addCombatXp(xp);
 }
 
 void Game::addCombatXp(int xp) {
     if (xp <= 0) return;
-    combatXp_ += scaleXp(xp);
+    pet_.xp += scaleXp(xp);
     // Spend the XP bucket into as many levels as it covers (a big lump can cross more
     // than one boundary). Each level-up grants +1 to a random combat stat, so
     // level always equals the sum of earned points (the Rollback invariant).
-    const int levelBefore = combatLevel_;
-    while (combatXp_ >= xpToNextLevel()) {
-        combatXp_ -= xpToNextLevel();
-        ++combatLevel_;
+    const int levelBefore = pet_.level;
+    while (pet_.xp >= xpToNextLevel()) {
+        pet_.xp -= xpToNextLevel();
+        ++pet_.level;
         rng_ = rng_ * 1664525u + 1013904223u;      // deterministic stat roll
         const int stat = static_cast<int>((rng_ >> 16) % kLevelStatCount);
-        ++statPoints_[stat];
+        ++pet_.statPoints[stat];
         lastLevelUpStat_ = stat;                    // most-recent level-up stat (tell)
     }
-    if (combatLevel_ > levelBefore) playSound(Sound::LevelUp);
+    if (pet_.level > levelBefore) playSound(Sound::LevelUp);
     markSaveDirty();
 }
 
@@ -352,12 +352,12 @@ void Game::applyBattleFatigue() {
               static_cast<int>((rng_ >> 16) % static_cast<uint32_t>(span));
     // Heat Sink (mod): dampen the fatigue-Frag tax by its cut %. A big cut can zero a
     // small tick, which is the mod's purpose: gentler farming.
-    int cut = sumEquippedModMagnitude(registry_, loadout_, ModEffect::FatigueFragCut,
-                                      pet_ ? pet_->line : nullptr);
+    int cut = sumEquippedModMagnitude(registry_, pet_.mods, ModEffect::FatigueFragCut,
+                                      pet_.creature ? pet_.creature->line : nullptr);
     if (cut > 100) cut = 100;
     if (cut > 0) add = add * (100 - cut) / 100;
     if (add <= 0) return;
-    model_.setFragmentation(model_.fragmentation() + add);
+    pet_.model.setFragmentation(pet_.model.fragmentation() + add);
 }
 
 void Game::applyCombatResult() {
@@ -372,12 +372,12 @@ void Game::applyCombatResult() {
     // Nav::PostEncounter for a WILD fight; harmless bookkeeping for Sim/boss (they
     // never route to that overlay, so nothing reads it there).
     postEncBwBefore_ = bandwidth_;
-    postEncFragBefore_ = model_.fragmentation();
+    postEncFragBefore_ = pet_.model.fragmentation();
     // Snapshot the pre-reward stat points so the readout can name what this fight's
     // XP levelled up. The reward path below calls addCombatXp, which may cross
     // one or more level boundaries; diffing after (part 2) yields the per-stat gain.
     int statBefore[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) statBefore[i] = statPoints_[i];
+    for (int i = 0; i < kLevelStatCount; ++i) statBefore[i] = pet_.statPoints[i];
     // Are we farming an already-CLEARED sub-area? (re-farm context: drives the
     // diminishing-returns loot decay below, once the Bandwidth shield runs dry.)
     const bool refarm =
@@ -406,10 +406,10 @@ void Game::applyCombatResult() {
                 // (Packet Sniffer boosts loot), a little combat XP, a small
                 // Happiness bump. NOT logged: it's a drill.
                 int bits = kSimBitsReward;
-                bits += sumEquippedModMagnitude(registry_, loadout_,
-                            ModEffect::PostBattleBits, pet_ ? pet_->line : nullptr);
+                bits += sumEquippedModMagnitude(registry_, pet_.mods,
+                            ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
                 bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
-                model_.feed(0, kSimHappyReward);
+                pet_.model.feed(0, kSimHappyReward);
                 addFightXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
             } else {
                 // Wild win: Bits + XP + a chance of an item drop
@@ -428,8 +428,8 @@ void Game::applyCombatResult() {
                                 * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
                 else if (inDarkWebCrawl())
                     bits = bits * darkWebDepthBitsPct(exploreStreak_) / 100;
-                bits += sumEquippedModMagnitude(registry_, loadout_,
-                            ModEffect::PostBattleBits, pet_ ? pet_->line : nullptr);
+                bits += sumEquippedModMagnitude(registry_, pet_.mods,
+                            ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
                 bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
                 // scale the ZONE's base XP by how the enemy's depth level compares to
                 // the pet's: punching up pays more, farming shallow pays a trickle. The
@@ -440,7 +440,7 @@ void Game::applyCombatResult() {
                 // outside a dive): the run it buys is shorter and harder, so each win in
                 // it has to be worth more than the shallow ones it skipped.
                 const int winXp = wildWinXp(wildWinXpBase(exploreSector_),
-                                            encounterEnemy_.level, combatLevel_) *
+                                            encounterEnemy_.level, pet_.level) *
                                   (100 + diveRewardBonusPct()) / 100;
                 addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
                 // re-farm loot decay: farming an already-CLEARED sub-area pays FULL non-Bits
@@ -455,7 +455,7 @@ void Game::applyCombatResult() {
                 // already spent at the shield site above, on every fight.
                 int dropScalePct = 100;
                 if (refarm && !bandwidthShielded) {
-                    uint16_t& c = subRefarmCount_[exploreSector_][exploreSub_];
+                    uint16_t& c = pet_.armed.subRefarmCount[exploreSector_][exploreSub_];
                     dropScalePct = refarmDropScalePct(c);
                     if (c < kRefarmCountCap) ++c;
                 }
@@ -492,7 +492,7 @@ void Game::applyCombatResult() {
             // NOT a care mistake. Safe (Sim-Battle): no Frag, no mistake.
             if (!safe) {
                 const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
-                model_.setFragmentation(model_.fragmentation() + frag);
+                pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
                 log_.push(LogEventType::CombatLost, "LOST BATTLE");
             }
             break;
@@ -503,10 +503,10 @@ void Game::applyCombatResult() {
     // Post-encounter status readout snapshot, part 2: the ENDING values, now that
     // the switch above has applied whatever this outcome caused.
     postEncBwAfter_ = bandwidth_;
-    postEncFragAfter_ = model_.fragmentation();
+    postEncFragAfter_ = pet_.model.fragmentation();
     for (int i = 0; i < kLevelStatCount; ++i)
-        postEncStatGain_[i] = statPoints_[i] - statBefore[i];
-    postEncLevelAfter_ = combatLevel_;
+        postEncStatGain_[i] = pet_.statPoints[i] - statBefore[i];
+    postEncLevelAfter_ = pet_.level;
     markSaveDirty();
 }
 
@@ -548,7 +548,7 @@ void Game::finishCombat() {
                 // the streak (= depth) by more than one step per win, so a
                 // blitzing endgame pet catches back up to a genuine struggle faster.
                 // Every other area always advances by exactly 1.
-                exploreStreak_ += inDeepWebDive() ? deepWebDepthMultiplier_ : 1;
+                exploreStreak_ += inDeepWebDive() ? pet_.armed.deepWebDepthMultiplier : 1;
                 // 10 wins in a row unlock the ARMED sub-area's boss, unless
                 // it's already cleared (re-farming a done sub-area never re-arms it).
                 if (exploreStreak_ >= kExploreStreakToBoss &&
@@ -562,15 +562,15 @@ void Game::finishCombat() {
                 // (device best, best per line, and how many species have been taken
                 // deep).
                 if (inDeepWebDive()) {
-                    if (exploreStreak_ > bestDeepWebDepth_) bestDeepWebDepth_ = exploreStreak_;
-                    recordSpeciesDive(pet_, exploreStreak_);
+                    if (exploreStreak_ > pet_.bestDeepWebDepth) pet_.bestDeepWebDepth = exploreStreak_;
+                    recordSpeciesDive(pet_.creature, exploreStreak_);
                 }
                 // The crawl keeps its own record and pays the thing it exists to pay: a
                 // SIGIL every kDarkWebSigilEveryN wins. It is credited as a spent shake
                 // rather than as a free letter, so the two doors onto the Cant meet in one
                 // ledger and the aerial's captures are never devalued by the zone.
                 if (inDarkWebCrawl()) {
-                    if (exploreStreak_ > bestDarkWebDepth_) bestDarkWebDepth_ = exploreStreak_;
+                    if (exploreStreak_ > pet_.bestDarkWebDepth) pet_.bestDarkWebDepth = exploreStreak_;
                     if (kDarkWebSigilEveryN > 0 && exploreStreak_ > 0 &&
                         exploreStreak_ % kDarkWebSigilEveryN == 0 &&
                         sigilsKnown() < kCantSigils) {
@@ -645,8 +645,8 @@ uint32_t Game::rivalTeachableMoveMask() const {
 }
 
 void Game::debugStartCombat(bool live, bool lethal) {
-    if (!pet_) return;
-    Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
+    if (!pet_.creature) return;
+    Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
     CombatEnemy spec = lethal
         // An unbeatable enemy: huge Health + an overwhelming move so a loss is
         // deterministic (exercises the live-vs-safe stakes contract).
@@ -660,8 +660,8 @@ void Game::debugStartCombat(bool live, bool lethal) {
 }
 
 void Game::debugStartCombatVs(const CombatEnemy& spec, bool live) {
-    if (!pet_) return;
-    Combatant p = makePlayerCombatant(registry_, *pet_, moveLoadout_, loadout_);
+    if (!pet_.creature) return;
+    Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
     beginDebugCombat(p, spec, live);
 }
 
@@ -703,25 +703,25 @@ void Game::debugOpenCache(const char* id) {
 void Game::debugSetBits(int n) { bits_ = n < 0 ? 0 : n; }
 
 void Game::debugFillLoadout() {
-    if (!pet_) return;
+    if (!pet_.creature) return;
     // Moves: the first owned move that matches the slot's stamped kind and isn't
     // already sitting in an earlier slot (equipping a move MOVES it, so reusing one
     // would empty the slot behind us and leave the page shorter than it should be).
-    const int slots = MoveLoadout::slotsForStage(pet_->stage);
+    const int slots = MoveLoadout::slotsForStage(pet_.creature->stage);
     for (int s = 0; s < slots; ++s)
-        for (const char* id : moveLoadout_.owned()) {
+        for (const char* id : pet_.moves.owned()) {
             const MoveDef* m = registry_.move(id);
             if (!m || m->kind != slotRequiredKind(s)) continue;
-            if (moveLoadout_.slotOf(id) >= 0) continue;
-            moveLoadout_.equip(s, m->id);
+            if (pet_.moves.slotOf(id) >= 0) continue;
+            pet_.moves.equip(s, m->id);
             break;
         }
     // Mods: any three distinct rows, placed directly (setEquipped, no spare consumed).
     int filled = 0;
     for (const ModDef* d : registry_.allMods()) {
         if (filled >= kModSlots) break;
-        if (loadout_.slotOf(d->id) >= 0) continue;
-        loadout_.setEquipped(filled++, d->id);
+        if (pet_.mods.slotOf(d->id) >= 0) continue;
+        pet_.mods.setEquipped(filled++, d->id);
     }
     markSaveDirty();
 }
@@ -742,9 +742,9 @@ void Game::rollWild() {
                                            : wildMalbeast(3, rng_ >> 16);
         rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
         if (inDarkWebCrawl())
-            applyDarkWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
+            applyDarkWebScale(encounterEnemy_, pet_.level, exploreStreak_, rng_);
         else
-            applyDeepWebScale(encounterEnemy_, combatLevel_, exploreStreak_, rng_);
+            applyDeepWebScale(encounterEnemy_, pet_.level, exploreStreak_, rng_);
     } else {
         encounterEnemy_ = wildMalbeastIn(exploreSector_, rng_ >> 16);   // the area's pair
         applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp
@@ -834,7 +834,7 @@ void Game::resolveSinkhole() {
 }
 
 void Game::startWildCombat(bool forceEnemyFirst) {
-    if (!pet_) return;
+    if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
     Combatant e = makeEnemyCombatant(registry_, encounterEnemy_);
     rng_ = rng_ * 1664525u + 1013904223u;

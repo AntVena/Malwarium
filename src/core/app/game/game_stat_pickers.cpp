@@ -42,11 +42,11 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         // strictly under the taller one), so the shed can never undo itself. Consume
         // the Rollback item + log.
         if (rollbackEligible(rollbackRow_) && detailItem_) {
-            --statPoints_[rollbackRow_];
+            --pet_.statPoints[rollbackRow_];
             const int wasNeed = xpToNextLevel();
-            --combatLevel_;
+            --pet_.level;
             if (wasNeed > 0)
-                combatXp_ = static_cast<int>(static_cast<long long>(combatXp_) *
+                pet_.xp = static_cast<int>(static_cast<long long>(pet_.xp) *
                                              xpToNextLevel() / wasNeed);
             inventory_.remove(detailItem_->id, 1);
             char buf[28];
@@ -109,8 +109,8 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
             // XP bucket are untouched, because nothing was un-earned. The item changes
             // only the table's shape, and level == the sum of earned points still holds.
             // Consume the item + log.
-            --statPoints_[repartitionFrom_];
-            ++statPoints_[repartitionRow_];
+            --pet_.statPoints[repartitionFrom_];
+            ++pet_.statPoints[repartitionRow_];
             inventory_.remove(detailItem_->id, 1);
             char buf[28];
             // Both ends, in words: which stat paid and which one grew. The stat WORDS

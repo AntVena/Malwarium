@@ -48,7 +48,7 @@ void Game::startMaint() {
     const bool defrag = maintKind_ == MaintKind::Defrag;
     const bool played = maintVariant_ == (defrag ? kDefragVariants : kAvVariants) - 1;
     if (defrag) {
-        if (defragGated(model_)) return;                 // nothing to defragment
+        if (defragGated(pet_.model)) return;                 // nothing to defragment
         // a Defrag costs stage-scaled Bits: inert if the wallet can't
         // cover it. Charged here on RUN (before the roll), so it's the spend, not
         // the outcome, that gates spamming; a failed run still burns the Bits.
@@ -69,7 +69,7 @@ void Game::startMaint() {
             }
         }
     } else {
-        if (avGated(model_)) return;                     // inert
+        if (avGated(pet_.model)) return;                     // inert
         if (!played) maintSuccess_ = rollMaintSuccess();
     }
     // The PLAYED variant buys nothing but the attempt (a Defrag's Bits are already
@@ -155,8 +155,8 @@ void Game::resolveMaint() {
     // Restore Point covers maint fails too), so PetModel reports the failure and the
     // Game applies the mistake here (the frag +penalty already landed model-side).
     if (maintKind_ == MaintKind::Defrag) {
-        const bool failed = model_.applyDefrag(maintSuccess_);
-        if (!failed) ++defragCount_;          // this pet's defrag tally
+        const bool failed = pet_.model.applyDefrag(maintSuccess_);
+        if (!failed) ++pet_.defragCount;          // this pet's defrag tally
         else {
             addCareMistakeShielded(1);
             log_.push(LogEventType::CareMistake, "FAILED DEFRAG");
@@ -170,16 +170,16 @@ void Game::resolveMaint() {
             // roll to lose). Worm-line only: a self-replicating phantom copy is that
             // line's failure mode, as Lockout is Ransomware's. A Phishing or Trojan
             // pet's disk just stays fragmented.
-            const bool wormLine = pet_ && pet_->line &&
-                                  std::strcmp(pet_->line, "worm") == 0;
-            if (wormLine && model_.fragmentation() >= kFragCriticalMin &&
-                !model_.hasGhost()) {
-                model_.setGhost(true);
+            const bool wormLine = pet_.creature && pet_.creature->line &&
+                                  std::strcmp(pet_.creature->line, "worm") == 0;
+            if (wormLine && pet_.model.fragmentation() >= kFragCriticalMin &&
+                !pet_.model.hasGhost()) {
+                pet_.model.setGhost(true);
                 log_.push(LogEventType::CareMistake, "REPLICATION GHOST");
             }
         }
     } else {
-        const bool failed = model_.applyAntivirus(maintSuccess_);
+        const bool failed = pet_.model.applyAntivirus(maintSuccess_);
         if (failed) { addCareMistakeShielded(1); log_.push(LogEventType::CareMistake, "FAILED AV SCAN"); }
     }
     markSaveDirty();
@@ -193,16 +193,16 @@ void Game::maybeAutoDefrag() {
     // the per-run Bits cost: which suits an older pet that explores enough to
     // make a hands-off defrag worth paying for.
     const int lvl = rigLevel_[kRigRowDiskMaintenance];
-    if (lvl <= 0 || !pet_) return;
+    if (lvl <= 0 || !pet_.creature) return;
     // Owned is not the same as RUNNING: a service the player has stopped on the SHOP's
     // SERVICES screen spends nothing and defrags nothing until it is started again.
     if (!rigFeatureActive(kRigRowDiskMaintenance)) return;
-    if (model_.fragmentation() < kDiskMaintenanceThreshold[lvl - 1]) return;
+    if (pet_.model.fragmentation() < kDiskMaintenanceThreshold[lvl - 1]) return;
     const int cost = defragCost() * kDiskMaintenanceCostMult[lvl - 1];
     if (bits_ < cost) return;                    // can't afford this run: skip silently
     bits_ -= cost;
-    model_.applyDefrag(true);                    // a paid auto-run never fails
-    ++defragCount_;
+    pet_.model.applyDefrag(true);                    // a paid auto-run never fails
+    ++pet_.defragCount;
     log_.push(LogEventType::ItemUsed, "AUTO-DEFRAG RAN");
     markSaveDirty();
 }
@@ -218,7 +218,7 @@ void Game::debugResolveDefrag(bool success) {
 }
 
 int Game::maintFailPct() const {
-    const int failPct = 15 + model_.fragmentation() / 4;   // rises with Fragmentation
+    const int failPct = 15 + pet_.model.fragmentation() / 4;   // rises with Fragmentation
     return failPct > 60 ? 60 : failPct;
 }
 
@@ -298,8 +298,8 @@ void Game::onModsList(const ButtonEvent& ev) {
 void Game::onModPicker(const ButtonEvent& ev) {
     // The same five arguments drawModPicker draws with, so the cursor indexes the rows
     // the player is looking at: fittable mods first, locked ones after them.
-    const auto owned = ownedModList(registry_, loadout_, combatLevel_,
-                                    pet_ ? pet_->line : nullptr, modSlot_);
+    const auto owned = ownedModList(registry_, pet_.mods, pet_.level,
+                                    pet_.creature ? pet_.creature->line : nullptr, modSlot_);
     const int rows = static_cast<int>(owned.size());      // available spares to install
 
     if (modConfirm_) {                                    // inline overwrite confirm
@@ -307,13 +307,13 @@ void Game::onModPicker(const ButtonEvent& ev) {
         else if (ev.button == Button::B) {
             const ModDef* pendMod = modPendingId_ ? registry_.mod(modPendingId_) : nullptr;
             const bool lineOk = !pendMod || !pendMod->requiresLine ||
-                (pet_ && pet_->line && std::strcmp(pendMod->requiresLine, pet_->line) == 0);
+                (pet_.creature && pet_.creature->line && std::strcmp(pendMod->requiresLine, pet_.creature->line) == 0);
             if (modConfirmChoice_ == 1 && modPendingId_ && lineOk && pendMod &&
-                modEquipLevel(*pendMod) <= combatLevel_) {
+                modEquipLevel(*pendMod) <= pet_.level) {
                 // D3: consumes the new mod AND discards the one already in the slot.
                 // (Re-check the equip-LEVEL + hard line gates defensively: commitModEquip
                 // already gated both before setting modPendingId_.)
-                loadout_.equip(modSlot_, modPendingId_);
+                pet_.mods.equip(modSlot_, modPendingId_);
                 markSaveDirty();
             }
             modConfirm_ = false;
@@ -359,18 +359,18 @@ void Game::commitModEquip() {
     // for every copy; a sub-level mod is blocked here, and the detail already shows
     // LOCKED + the requirement.
     const ModDef* md = registry_.mod(id);
-    if (md && modEquipLevel(*md) > combatLevel_) return;
+    if (md && modEquipLevel(*md) > pet_.level) return;
     // Niche-flavour pass: the HARD line gate (ModDef::requiresLine). Distinct from the
     // soft `line`/`affinityBonus` bonus every other mod uses. A mod like Phishing Rod or
     // Extortion Ledger simply cannot be installed unless the active pet's line matches;
     // it can still drop and sit in inventory for whenever the player raises that line.
     if (md && md->requiresLine &&
-        (!pet_ || !pet_->line || std::strcmp(md->requiresLine, pet_->line) != 0))
+        (!pet_.creature || !pet_.creature->line || std::strcmp(md->requiresLine, pet_.creature->line) != 0))
         return;
     // One slot per id per pet, so a mod already installed on this pet is a no-op.
-    const int elsewhere = loadout_.slotOf(id);
+    const int elsewhere = pet_.mods.slotOf(id);
     if (elsewhere >= 0 && elsewhere != modSlot_) return;
-    const char* cur = loadout_.equipped(modSlot_);
+    const char* cur = pet_.mods.equipped(modSlot_);
     if (cur && std::strcmp(cur, id) == 0) {               // already installed here
         modDetail_ = false;
         nav_ = Nav::Submenu;
@@ -380,7 +380,7 @@ void Game::commitModEquip() {
         modPendingId_ = id;
         modDetail_ = false;                               // confirm shows on the picker
     } else {                                              // empty slot: consume + install
-        loadout_.equip(modSlot_, id);
+        pet_.mods.equip(modSlot_, id);
         markSaveDirty();
         modDetail_ = false;
         nav_ = Nav::Submenu;

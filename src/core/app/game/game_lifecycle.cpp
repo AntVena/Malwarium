@@ -15,13 +15,13 @@ void Game::addCareMistakeShielded(int n) {
     // The single DRY seam for Game-level POSITIVE care mistakes. If a Restore-Point
     // shield is armed, the next positive increment is BLOCKED and the shield consumed;
     // negative adjustments (e.g. Yubi-Cookie's −1) pass through untouched.
-    if (n > 0 && mistakeShieldActive_) {
-        mistakeShieldActive_ = false;   // consume the shield, block this one mistake
+    if (n > 0 && pet_.grants.shieldActive) {
+        pet_.grants.shieldActive = false;   // consume the shield, block this one mistake
         markSaveDirty();
         return;
     }
     if (n > 0) away_.errors += n;
-    model_.addCareMistake(n);
+    pet_.model.addCareMistake(n);
 }
 
 // --- Lockout ---------------------------------------------------------------
@@ -37,9 +37,9 @@ void Game::fireLockout() {
     exploreActive_ = false;
     exploreStreak_ = 0;
     clearDiveDepthBuffs();
-    lockoutActive_ = true;
-    lockoutDeadlineMs_ = nowMs_ + kLockoutDurationMs;
-    lockoutReminded_ = false;
+    pet_.armed.lockoutActive = true;
+    pet_.armed.lockoutDeadlineMs = nowMs_ + kLockoutDurationMs;
+    pet_.armed.lockoutReminded = false;
     playSound(Sound::Lockout);
     // Open on whichever path can actually resolve it: feeding, unless the bag has
     // nothing to feed and the wallet can cover the Bits instead.
@@ -51,12 +51,12 @@ void Game::fireLockout() {
 void Game::expireLockout() {
     ++away_.missed;
     addCareMistakeShielded(kLockoutExpiryMistakes);
-    model_.setHappiness(model_.happiness() - kLockoutHappyPenalty);
-    model_.setHunger(kLockoutRecoveryHunger);
+    pet_.model.setHappiness(pet_.model.happiness() - kLockoutHappyPenalty);
+    pet_.model.setHunger(kLockoutRecoveryHunger);
     char buf[28];
     std::snprintf(buf, sizeof(buf), "HAPPY -%d EXPIRED", kLockoutHappyPenalty);
     log_.push(LogEventType::CareMistake, buf);
-    lockoutActive_ = false;
+    pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
     nav_ = Nav::Idle;
     detailItem_ = nullptr;
@@ -69,9 +69,9 @@ void Game::resolveLockout() {
     // pay-Bits / item-use). Every call site funnels through here, never through
     // expireLockout()'s failure path.
     unlockAchievement(ach::kSurvivedLockout);
-    lockoutActive_ = false;
+    pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
-    if (model_.hunger() == 0) model_.setHunger(kLockoutRecoveryHunger);
+    if (pet_.model.hunger() == 0) pet_.model.setHunger(kLockoutRecoveryHunger);
     nav_ = Nav::Idle;
     listRow_ = 0;
     detailItem_ = nullptr;
@@ -89,7 +89,7 @@ void Game::startHatch() {
     const auto lines = availableEggLines();   // only UNLOCKED lines (Phishing gates on DEEPWEB_DEPTH_8)
     if (lines.size() > 1) {
         installPet(nullptr);         // empty save while choosing (no egg laid yet)
-        hatchLine_ = nullptr;
+        pet_.line = nullptr;
         lineSelectRow_ = 0;
         nav_ = Nav::ModalLineSelect;
         dirty_ = true;
@@ -103,81 +103,81 @@ void Game::layEgg(const EggLineDef* line) {
     // Boot-Sector egg at idle. The egg IS the Boot-Sector creature, on-screen and
     // interactable, incubating over kBootHatchMs. It counts as a new pet immediately
     // (the egg is laid now; generation = its ordinal).
-    hatchLine_ = line ? line : registry_.eggLine("ransomware");
-    installPet(registry_.creature(hatchLine_ ? hatchLine_->eggCreatureId : "cryptoshell"));
-    model_ = PetModel();                 // fresh Boot-Sector vitals (frozen while egg)
+    pet_.line = line ? line : registry_.eggLine("ransomware");
+    installPet(registry_.creature(pet_.line ? pet_.line->eggCreatureId : "cryptoshell"));
+    pet_.model = PetModel();                 // fresh Boot-Sector vitals (frozen while egg)
     // creature levels are per pet, so a newly laid egg starts at level 0. Titles and
     // Rank survive a pet's death. This is the single "new egg" chokepoint (fresh boot,
     // Store, CSF, resetToHatch), so resetting here covers them all; evolution keeps
     // the level (it doesn't pass through here).
-    combatXp_ = 0;
-    combatLevel_ = 0;
-    for (int i = 0; i < kLevelStatCount; ++i) statPoints_[i] = 0;
+    pet_.xp = 0;
+    pet_.level = 0;
+    for (int i = 0; i < kLevelStatCount; ++i) pet_.statPoints[i] = 0;
     lastLevelUpStat_ = -1;
     // The stamped Attack/Defend layout is per-pet too: a
     // fresh egg starts every slot Unset so its own raise re-derives the layout
     // from scratch (same new-egg chokepoint as the level reset above).
-    for (int i = 0; i < kMaxMoveSlots; ++i) slotKinds_[i] = SlotKind::Unset;
+    for (int i = 0; i < kMaxMoveSlots; ++i) pet_.slotKinds[i] = SlotKind::Unset;
     // The equipped/owned move loadout is per-pet too (owned moves are earned by
     // this pet's raise). It resets with the level and slot kinds above, so a new
     // egg never inherits a prior pet's moves, which could be the wrong line or
     // stage and would fall back to Quick Jab in combat. A fresh egg owns every
     // move native to its own line. The generic pool comes only from wild
     // encounters.
-    moveLoadout_ = MoveLoadout::startingForLine(registry_, hatchLine_ ? hatchLine_->id : nullptr);
+    pet_.moves = MoveLoadout::startingForLine(registry_, pet_.line ? pet_.line->id : nullptr);
     // Installed mod SLOTS are per-pet hardware, like the move loadout above: a
     // fresh egg starts with nothing installed. The SPARE pool is untouched: mods
     // are found like items, shared across whichever pet is currently active. Skip
     // on the very first egg (petsRaised_ == 0 here, pre-increment below) so
     // Game::Game()/resetToHatch's starting sample loadout survives a fresh boot.
-    if (petsRaised_ > 0) loadout_.resetSlots();
+    if (petsRaised_ > 0) pet_.mods.resetSlots();
     // Per-pet care-mistake shield state (save v21): a fresh egg carries no shield and
     // has neither once-per-lifetime item consumed. This is the single new-egg chokepoint.
-    mistakeShieldActive_ = false;
-    shieldItemConsumed_ = false;
-    yubiConsumed_ = false;
-    forceTrojanDivert_ = false;
+    pet_.grants.shieldActive = false;
+    pet_.grants.shieldSpent = false;
+    pet_.grants.yubiSpent = false;
+    pet_.armed.trojanDivert = false;
     // ...and nothing in the USB port: a fresh egg carries neither a forced branch, a soak
-    // nor a hold, however many devices the last pet was raised on. forceTrojanDivert_ is
+    // nor a hold, however many devices the last pet was raised on. pet_.armed.trojanDivert is
     // cleared just above, so this is the same emptying the Eject-USB does.
-    evolveBranchOverride_ = BranchOverride::None;
-    evolveSoakFactor_ = 1;
-    evolveHold_ = false;
-    backupShieldUntilMs_ = 0;
+    pet_.usb.branch = BranchOverride::None;
+    pet_.usb.soakFactor = 1;
+    pet_.usb.hold = false;
+    pet_.armed.backupShieldUntilMs = 0;
     // ...and none of the permanent Epic-dish upgrades: every one of them roots a PET, so
     // a new egg starts back at the shared regen interval, with no off-level stat points
     // and no XP rate, however many plates the last one ate.
-    upgrades_ = PetUpgrades{};
+    pet_.upgrades = PetUpgrades{};
     // ...and an empty plate. The palate belongs to the pet. collectedItems_ keeps
     // everything the device has held; this set starts over, so each pet fills STAT's
     // FOODS grid from empty.
-    petFoodsEaten_.clear();
+    pet_.foodsEaten.clear();
     // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
     // start-depth Pass: a fresh egg has never dived and carries nothing armed.
-    bestDeepWebDepth_ = 0;
+    pet_.bestDeepWebDepth = 0;
     clearDiveDepthBuffs();
-    pendingDeepWebStartDepth_ = -1;
-    pendingDiveStartBonusPct_ = 0;
+    pet_.armed.deepWebStartDepth = -1;
+    pet_.armed.pendingDiveStartBonusPct = 0;
     // the re-farm diminishing-returns curve is PER-PET (not per-device):
     // a fresh pet finds every cleared area an undepleted training ground again. This
     // is the single new-egg chokepoint, so zeroing here covers fresh boot / Store /
     // CSF / resetToHatch; the pet-swap path (archDeployStored) resets it too.
-    for (auto& row : subRefarmCount_) for (auto& c : row) c = 0;
+    for (auto& row : pet_.armed.subRefarmCount) for (auto& c : row) c = 0;
     exploreActive_ = false;              // an egg can't explore; clear any live mode
     exploreStreak_ = 0;
-    bootHatchRemainMs_ = kBootHatchMs;   // the incubation clock (decrypt gate)
-    eggOfferMade_ = false;               // this egg hasn't been offered an accelerator
+    pet_.bootHatchRemainMs = kBootHatchMs;   // the incubation clock (decrypt gate)
+    pet_.eggOfferMade = false;               // this egg hasn't been offered an accelerator
     lastModelMs_ = nowMs_;
-    stageEnteredMs_ = nowMs_;            // Boot-Sector in-stage clock starts now
+    pet_.stageEnteredMs = nowMs_;            // Boot-Sector in-stage clock starts now
     ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
-    generation_ = petsRaised_;
+    pet_.generation = petsRaised_;
     // The generation ladder is swept off petsRaised_ (AchSeries::PetsRaised), so
     // incrementing it here is the trigger, and it fires when the new egg is laid without
     // waiting for the hatch.
     nav_ = Nav::Idle;
     dirty_ = true;
     persistSave();                       // a laid egg survives an immediate reboot
-    startHatchGame(hatchLine_);          // some lines play for the hatch bonus right now
+    startHatchGame(pet_.line);          // some lines play for the hatch bonus right now
 }
 
 void Game::startHatchGame(const EggLineDef* line) {
@@ -201,7 +201,7 @@ void Game::startHatchGame(const EggLineDef* line) {
             // Rounded up, so a clock that isn't a whole number of minutes still has
             // to be finished rather than merely reached.
             startIsolation(static_cast<int>(
-                (bootHatchRemainMs_ + kIsolationDotMs - 1) / kIsolationDotMs));
+                (pet_.bootHatchRemainMs + kIsolationDotMs - 1) / kIsolationDotMs));
             break;
         case HatchGame::Chroma:
             // The board as shipped: the window shrinks round by round and the water
@@ -227,7 +227,7 @@ void Game::startHatchGame(const EggLineDef* line) {
 
 void Game::accelerateEggHatch(uint32_t ms) {
     if (!inEggPhase()) return;
-    bootHatchRemainMs_ = bootHatchRemainMs_ > ms ? bootHatchRemainMs_ - ms : 0;
+    pet_.bootHatchRemainMs = pet_.bootHatchRemainMs > ms ? pet_.bootHatchRemainMs - ms : 0;
     // Reaching 0 by acceleration auto-hatches on the next tick (see update()); we
     // don't force the modal here so a walk/network step never yanks the screen away.
 }
@@ -258,19 +258,19 @@ void Game::completeHatch() {
     // sprite, so revealing the shell would look unhatched. Target = a RANDOM Process
     // from the egg line's pool (rollHatchProcess), so the same egg can hatch
     // different species.
-    const CreatureDef* egg = registry_.creature(hatchLine_ ? hatchLine_->eggCreatureId
+    const CreatureDef* egg = registry_.creature(pet_.line ? pet_.line->eggCreatureId
                                                            : "cryptoshell");
-    const CreatureDef* next = rollHatchProcess(hatchLine_);
+    const CreatureDef* next = rollHatchProcess(pet_.line);
     installPet(next ? next : egg); // fall back to the egg if content is missing
-    model_ = PetModel();          // fresh Process vitals (unfreeze the raising loop)
-    defragCount_ = 0;             // a brand-new pet has never been defragged
+    pet_.model = PetModel();          // fresh Process vitals (unfreeze the raising loop)
+    pet_.defragCount = 0;             // a brand-new pet has never been defragged
     stampSlotKinds();             // lock this pet's newly-unlocked slot(s)
     // The Game constructor pre-equips slot 1 with a Defend move (MoveLoadout::
     // starting()) before any creature has stamped a kind onto it. This is the
     // first stamp slot 1 ever gets, so validate now rather than carry a possible
     // mismatch silently into the raise.
     enforceSlotKindInvariant();
-    bootHatchRemainMs_ = 0;       // no longer an egg
+    pet_.bootHatchRemainMs = 0;       // no longer an egg
     // The device's first pet hatches into the Caution band (kStartFragmentation), so
     // MAINT's "!" invites a defrag from its first minute, and a QUICK one can fail into
     // a care ERROR before the player knows what one is. One Defrag Tool makes that first
@@ -280,8 +280,8 @@ void Game::completeHatch() {
         log_.push(LogEventType::ItemGained, "GOT A DEFRAG TOOL");
     }
     lastModelMs_ = nowMs_;        // post-hatch decay starts now (no jump)
-    stageEnteredMs_ = nowMs_;     // Process in-stage clock starts at hatch
-    away_.hatched = pet_;
+    pet_.stageEnteredMs = nowMs_;     // Process in-stage clock starts at hatch
+    away_.hatched = pet_.creature;
     nav_ = Nav::Idle;
     dirty_ = true;
     playSound(Sound::Hatch);
@@ -289,17 +289,17 @@ void Game::completeHatch() {
 }
 
 const SpriteData* Game::hatchEggSprite() const {
-    if (!hatchLine_) return nullptr;
-    const CreatureDef* egg = registry_.creature(hatchLine_->eggCreatureId);
+    if (!pet_.line) return nullptr;
+    const CreatureDef* egg = registry_.creature(pet_.line->eggCreatureId);
     return egg ? registry_.creatureSprite(*egg) : nullptr;
 }
 
 CareBranch Game::effectiveCareBranch() const {
     // A Dying pet has no branch: 5/5 is Critical System Failure, which no USB
     // overrides. Everything else answers to whatever is in the override slot.
-    const CareBranch earned = model_.careBranch();
+    const CareBranch earned = pet_.model.careBranch();
     if (earned == CareBranch::Dying) return earned;
-    switch (evolveBranchOverride_) {
+    switch (pet_.usb.branch) {
         case BranchOverride::Good: return CareBranch::Good;
         case BranchOverride::Bad:  return CareBranch::Bad;
         case BranchOverride::None: break;
@@ -308,7 +308,7 @@ CareBranch Game::effectiveCareBranch() const {
 }
 
 const char* Game::evolutionTargetId() const {
-    if (!pet_) return nullptr;
+    if (!pet_.creature) return nullptr;
     // Script->Daemon: a weighted pool for this care-branch, when the Script has one.
     // 0-2 mistakes -> Good, 3-4 -> Bad; 5/5 (Dying) never reaches here (evolveEligible
     // gates it out -> Critical System Failure). Single-entry pools today, so the pick
@@ -317,14 +317,14 @@ const char* Game::evolutionTargetId() const {
     // port decides it instead, including on this pool, the branch the player spent the
     // stage earning.
     const bool bad = effectiveCareBranch() == CareBranch::Bad;
-    if (const DaemonPoolDef* pool = registry_.daemonPool(pet_->id, bad)) {
+    if (const DaemonPoolDef* pool = registry_.daemonPool(pet_.creature->id, bad)) {
         if (pool->count > 0) return pool->entries[0].daemonId;
     }
     // Everything else is on the creature's own row: a care branch when it defines
     // both successors, otherwise the linear hop (null at a terminus).
-    if (pet_->evolvesToGoodId && pet_->evolvesToBadId)
-        return bad ? pet_->evolvesToBadId : pet_->evolvesToGoodId;
-    return pet_->evolvesToId;
+    if (pet_.creature->evolvesToGoodId && pet_.creature->evolvesToBadId)
+        return bad ? pet_.creature->evolvesToBadId : pet_.creature->evolvesToGoodId;
+    return pet_.creature->evolvesToId;
 }
 
 namespace {
@@ -348,9 +348,9 @@ uint32_t Game::evolveDwellMs() const {
     // Nothing overflows: the longest stage is 32h, the deepest soak x8 (the Hypervisor-USB,
     // items/rare_kit.h), doubled on a Script = x16, so 512h in ms. Under half of what a
     // u32 holds.
-    const Stage stage = pet_ ? pet_->stage : Stage::Process;
+    const Stage stage = pet_.creature ? pet_.creature->stage : Stage::Process;
     const uint32_t base = evolveStageDurationMs(stage);
-    const int factor = evolveSoakFactor_ < 1 ? 1 : evolveSoakFactor_;
+    const int factor = pet_.usb.soakFactor < 1 ? 1 : pet_.usb.soakFactor;
     const int scale = (factor > 1 && stage == Stage::Script) ? 2 * factor : factor;
     return base * static_cast<uint32_t>(scale);
 }
@@ -367,11 +367,11 @@ bool Game::evolveEligible() const {
     // A Halt-USB in the port blocks the boundary entirely, which parks a pet at its
     // stage. Checked before the clock, because a held pet's clock is not the reason it
     // isn't evolving.
-    if (evolveHold_) return false;
+    if (pet_.usb.hold) return false;
     const char* next = evolutionTargetId();
     if (!next || !registry_.creature(next)) return false;      // terminus / unknown
-    if (model_.careMistakes() >= kCareDying) return false;
-    return nowMs_ - stageEnteredMs_ >= evolveDwellMs();          // time-in-stage gate
+    if (pet_.model.careMistakes() >= kCareDying) return false;
+    return nowMs_ - pet_.stageEnteredMs >= evolveDwellMs();          // time-in-stage gate
 }
 
 bool Game::hasNextEvolution() const {
@@ -380,16 +380,16 @@ bool Game::hasNextEvolution() const {
     // row reads MAX, as it does at a terminus. WHY it reads MAX is on the BUFFS page and
     // on the habitat's armed-buff strip, which is where every other armed state already
     // explains itself.
-    if (evolveHold_) return false;
+    if (pet_.usb.hold) return false;
     const char* next = evolutionTargetId();
     return next && registry_.creature(next);          // false at a Daemon terminus
 }
 
 uint32_t Game::evolveRemainMs() const {
-    if (inEggPhase()) return bootHatchRemainMs_;       // egg -> hatch countdown
+    if (inEggPhase()) return pet_.bootHatchRemainMs;       // egg -> hatch countdown
     if (!hasNextEvolution()) return 0;                 // terminus: nothing left
     const uint32_t duration = evolveDwellMs();
-    const uint32_t elapsed = nowMs_ - stageEnteredMs_;
+    const uint32_t elapsed = nowMs_ - pet_.stageEnteredMs;
     return elapsed >= duration ? 0 : duration - elapsed;
 }
 
@@ -414,13 +414,13 @@ void Game::fireEvolution() {
     // fireEvolution at all, and a row that must not divert says so by leaving
     // evolvesToTrojanId null.
     //
-    // An armed Ambig-USB (forceTrojanDivert_, save v28) skips the roll and guarantees
+    // An armed Ambig-USB (pet_.armed.trojanDivert, save v28) skips the roll and guarantees
     // the divert instead; consumed here either way, even if there's no divert target
     // to trigger (the flag doesn't linger onto the pet's next lifecycle).
-    if (pet_) {
-        const bool forced = forceTrojanDivert_;
-        forceTrojanDivert_ = false;
-        if (pet_->evolvesToTrojanId) {
+    if (pet_.creature) {
+        const bool forced = pet_.armed.trojanDivert;
+        pet_.armed.trojanDivert = false;
+        if (pet_.creature->evolvesToTrojanId) {
             rng_ = rng_ * 1664525u + 1013904223u;
             const bool rolled = (rng_ >> 16) % 100 < static_cast<uint32_t>(kTrojanDivertPct);
             if (forced || rolled) {
@@ -428,15 +428,15 @@ void Game::fireEvolution() {
                 // budget the normal Script->Daemon hop reads (evolutionTargetId). The
                 // divert takes the pet's line away from it; it does not also take away
                 // the one thing the player spent the whole stage deciding.
-                const char* to = pet_->evolvesToTrojanId;
-                if (pet_->evolvesToTrojanBadId && effectiveCareBranch() == CareBranch::Bad)
-                    to = pet_->evolvesToTrojanBadId;
+                const char* to = pet_.creature->evolvesToTrojanId;
+                if (pet_.creature->evolvesToTrojanBadId && effectiveCareBranch() == CareBranch::Bad)
+                    to = pet_.creature->evolvesToTrojanBadId;
                 if (const CreatureDef* t = registry_.creature(to))
                     next = t;
             }
         }
     }
-    evolveTo_ = next;           // pet_ holds the OLD sprite through the cinematic
+    evolveTo_ = next;           // pet_.creature holds the OLD sprite through the cinematic
     evolveBeat_ = 0;
     nav_ = Nav::ModalEvolve;
     dirty_ = true;
@@ -446,7 +446,7 @@ void Game::fireEvolution() {
 void Game::completeEvolution() {
     if (evolveTo_) away_.evolved = evolveTo_;
     if (evolveTo_) {
-        // 'Pedia achievements, evaluated BEFORE the swap: model_ still holds the care
+        // 'Pedia achievements, evaluated BEFORE the swap: pet_.model still holds the care
         // budget that decided which branch fired. The branch not taken is not marked
         // seen: seen means faced in combat (Game::markCreatureSeen), and the evolution
         // cinematic's sibling was never fought. Flawless reads the raw mistake count, so
@@ -454,7 +454,7 @@ void Game::completeEvolution() {
         // out, so it reads effectiveCareBranch(): a pet that ended up on the bad line
         // went rogue whether a Bad-USB steered it there or five months of neglect did.
         if (evolveTo_->stage == Stage::Daemon) {
-            if (model_.careMistakes() == 0) unlockAchievement(ach::kFlawlessRun);
+            if (pet_.model.careMistakes() == 0) unlockAchievement(ach::kFlawlessRun);
             if (effectiveCareBranch() == CareBranch::Bad)
                 unlockAchievement(ach::kGoneRogue);
         }
@@ -462,15 +462,15 @@ void Game::completeEvolution() {
         // its old line's moves no longer apply, so re-seed the loadout to the new line's
         // kit and let the new creature's slot layout govern (reset + re-stamp). The first
         // Trojan divert unlocks the family.
-        const char* oldLine = pet_ ? pet_->line : nullptr;
+        const char* oldLine = pet_.creature ? pet_.creature->line : nullptr;
         const char* newLine = evolveTo_->line;
         const bool lineChanged =
             (oldLine == nullptr) != (newLine == nullptr) ||
             (oldLine && newLine && std::strcmp(oldLine, newLine) != 0);
         installPet(evolveTo_);   // commit the swap; the stage indicator advances
         if (lineChanged) {
-            moveLoadout_ = MoveLoadout::startingForLine(registry_, pet_->line);
-            for (SlotKind& k : slotKinds_) k = SlotKind::Unset;
+            pet_.moves = MoveLoadout::startingForLine(registry_, pet_.creature->line);
+            for (SlotKind& k : pet_.slotKinds) k = SlotKind::Unset;
             stampSlotKinds();
             enforceSlotKindInvariant();
             // Arriving on a line can be an achievement in its own right, and the line's
@@ -486,11 +486,11 @@ void Game::completeEvolution() {
     // because the achievements above still had to see which branch fired; the soak is
     // consumed here too, so the next stage counts down at its own pace and pays its own
     // XP. Both are per-pet state and clear again on a new egg (layEgg).
-    evolveBranchOverride_ = BranchOverride::None;
-    evolveSoakFactor_ = 1;
+    pet_.usb.branch = BranchOverride::None;
+    pet_.usb.soakFactor = 1;
     // The hold is deliberately NOT cleared here: it is the one device a boundary never
     // reaches, so reaching one means it was never in.
-    stageEnteredMs_ = nowMs_;          // restart the in-stage clock for the next boundary
+    pet_.stageEnteredMs = nowMs_;          // restart the in-stage clock for the next boundary
     stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)
     nav_ = Nav::Idle;
     dirty_ = true;
@@ -506,11 +506,11 @@ void Game::debugTriggerEvolution() {
 // --- Move-slot rework: per-pet Attack/Defend slot typing -------------
 
 void Game::stampSlotKinds() {
-    if (!pet_) return;
-    const int unlocked = MoveLoadout::slotsForStage(pet_->stage);
+    if (!pet_.creature) return;
+    const int unlocked = MoveLoadout::slotsForStage(pet_.creature->stage);
     for (int i = 0; i < unlocked && i < kMaxMoveSlots; ++i) {
-        if (slotKinds_[i] != SlotKind::Unset) continue;   // locked in, never rewritten
-        slotKinds_[i] = pet_->slotKinds[i] == MoveKind::Defend ? SlotKind::Defend
+        if (pet_.slotKinds[i] != SlotKind::Unset) continue;   // locked in, never rewritten
+        pet_.slotKinds[i] = pet_.creature->slotKinds[i] == MoveKind::Defend ? SlotKind::Defend
                                                                 : SlotKind::Attack;
     }
     // A pet always fights with everything it's earned: an unlocked slot that's
@@ -521,28 +521,28 @@ void Game::stampSlotKinds() {
     // on the generic Quick Jab. Walked in slot order, live-checking slotOf() as it
     // goes, so two empty same-kind slots never both grab the same move.
     for (int i = 0; i < unlocked && i < kMaxMoveSlots; ++i) {
-        if (moveLoadout_.equipped(i) || slotKinds_[i] == SlotKind::Unset) continue;
+        if (pet_.moves.equipped(i) || pet_.slotKinds[i] == SlotKind::Unset) continue;
         const MoveDef::Kind kind = slotRequiredKind(i);
         for (const MoveDef* m : registry_.allMoves()) {
-            if (!moveLoadout_.owns(m->id) || m->kind != kind) continue;
-            if (moveLoadout_.isInnate(m->id)) continue;       // not slottable (equip refuses)
-            if (!moveUnlockedAtStage(*m, pet_->stage)) continue;
-            if (!moveAllowedForLine(*m, pet_->line)) continue;
-            if (moveLoadout_.slotOf(m->id) >= 0) continue;    // already filling another slot
-            moveLoadout_.equip(i, m->id);
+            if (!pet_.moves.owns(m->id) || m->kind != kind) continue;
+            if (pet_.moves.isInnate(m->id)) continue;       // not slottable (equip refuses)
+            if (!moveUnlockedAtStage(*m, pet_.creature->stage)) continue;
+            if (!moveAllowedForLine(*m, pet_.creature->line)) continue;
+            if (pet_.moves.slotOf(m->id) >= 0) continue;    // already filling another slot
+            pet_.moves.equip(i, m->id);
             break;
         }
     }
 }
 
 void Game::enforceSlotKindInvariant() {
-    if (!pet_) return;
-    const int unlocked = MoveLoadout::slotsForStage(pet_->stage);
+    if (!pet_.creature) return;
+    const int unlocked = MoveLoadout::slotsForStage(pet_.creature->stage);
     for (int i = 0; i < unlocked && i < kMaxMoveSlots; ++i) {
-        const char* id = moveLoadout_.equipped(i);
+        const char* id = pet_.moves.equipped(i);
         if (!id) continue;
         const MoveDef* m = registry_.move(id);
-        if (m && m->kind != slotRequiredKind(i)) moveLoadout_.unequip(i);
+        if (m && m->kind != slotRequiredKind(i)) pet_.moves.unequip(i);
     }
 }
 
@@ -557,11 +557,11 @@ void Game::fireCSF() {
     exploreActive_ = false;
     exploreStreak_ = 0;
     clearDiveDepthBuffs();
-    lockoutActive_ = false;
+    pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
     evolveTo_ = nullptr;
-    dyingArmed_ = false;
-    dyingElapsedMs_ = 0;
+    pet_.dyingArmed = false;
+    pet_.dyingElapsedMs = 0;
     csfBeat_ = 0;
     nav_ = Nav::ModalCSF;
     dirty_ = true;
@@ -572,17 +572,17 @@ void Game::acknowledgeCSF() {
     // The pet becomes a permanent [CORRUPTED] ARCH record (greyed, NO rack slot,
     // ) and the active save is vacated -> the Decryption Hatch. Not
     // logged in v1; the record is the lasting trace.
-    if (pet_) {
+    if (pet_.creature) {
         SaveRecord rec;
-        std::strncpy(rec.id, pet_->id, kSaveIdCap - 1);
+        std::strncpy(rec.id, pet_.creature->id, kSaveIdCap - 1);
         rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
-        rec.generation = generation_;
+        rec.generation = pet_.generation;
         records_.push_back(rec);
     }
     csfBeat_ = 0;
-    dyingArmed_ = false;
-    dyingElapsedMs_ = 0;
-    startHatch();      // pet_ = nullptr -> line-select, then a fresh egg
+    pet_.dyingArmed = false;
+    pet_.dyingElapsedMs = 0;
+    startHatch();      // pet_.creature = nullptr -> line-select, then a fresh egg
     persistSave();     // the record + vacated active survive an immediate reboot
 }
 

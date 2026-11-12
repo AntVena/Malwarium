@@ -179,17 +179,17 @@ void Game::stepFocusedList(int dir) {
             break;
         case ListFocus::ModPicker: {
             const int n = static_cast<int>(
-                ownedModList(registry_, loadout_, combatLevel_,
-                             pet_ ? pet_->line : nullptr, modSlot_).size());
+                ownedModList(registry_, pet_.mods, pet_.level,
+                             pet_.creature ? pet_.creature->line : nullptr, modSlot_).size());
             if (n > 0) modPick_ = ((modPick_ + dir) % n + n) % n;
             break;
         }
         case ListFocus::MovePicker: {
             // Row 0 is the unequip row, so the walk covers one more than the roster.
             const int n = 1 + static_cast<int>(
-                ownedMoveList(registry_, moveLoadout_, slotRequiredKind(moveSlot_),
-                              pet_ ? pet_->stage : Stage::BootSector,
-                              pet_ ? pet_->line : nullptr, moveSlot_,
+                ownedMoveList(registry_, pet_.moves, slotRequiredKind(moveSlot_),
+                              pet_.creature ? pet_.creature->stage : Stage::BootSector,
+                              pet_.creature ? pet_.creature->line : nullptr, moveSlot_,
                               moveShowAll_).size());
             movePick_ = ((movePick_ + dir) % n + n) % n;
             break;

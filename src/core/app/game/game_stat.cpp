@@ -37,33 +37,33 @@ std::vector<ProseRow> Game::statTierRows() const {
 }
 
 std::vector<ProseRow> Game::statLoadoutRows() const {
-    return buildLoadoutRows(registry_, moveLoadout_, loadout_,
-                            pet_ ? pet_->stage : Stage::BootSector, inEggPhase());
+    return buildLoadoutRows(registry_, pet_.moves, pet_.mods,
+                            pet_.creature ? pet_.creature->stage : Stage::BootSector, inEggPhase());
 }
 
 std::vector<ProseRow> Game::statBuffRows() const {
     const uint32_t backupRemainMs =
-        backupShieldArmed() ? (backupShieldUntilMs_ - lifetimeUptimeMs()) : 0;
-    return buildBuffRows(registry_, mistakeShieldActive_, forceTrojanDivert_,
-                         backupShieldArmed(), backupRemainMs, deepWebDepthMultiplier_,
-                         pendingDeepWebStartDepth_ != -1,
-                         pendingDeepWebStartDepth_ == kDeepWebStartDepthUseBest,
-                         pendingDeepWebStartDepth_, evolveBranchOverride_,
-                         evolveSoakFactor_, evolveHold_, upgrades_);
+        backupShieldArmed() ? (pet_.armed.backupShieldUntilMs - lifetimeUptimeMs()) : 0;
+    return buildBuffRows(registry_, pet_.grants.shieldActive, pet_.armed.trojanDivert,
+                         backupShieldArmed(), backupRemainMs, pet_.armed.deepWebDepthMultiplier,
+                         pet_.armed.deepWebStartDepth != -1,
+                         pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest,
+                         pet_.armed.deepWebStartDepth, pet_.usb.branch,
+                         pet_.usb.soakFactor, pet_.usb.hold, pet_.upgrades);
 }
 
 std::vector<StatIndexRow> Game::statIndexRows() const {
     // The two counted rows are counted the way the LOADOUT hub counts them
     // (drawLoadoutHub, core/ui/mods_screen.h): equipped over the slots this stage has
     // actually unlocked, so "4/4" on the index means the same thing it means there.
-    const Stage stage = pet_ ? pet_->stage : Stage::BootSector;
+    const Stage stage = pet_.creature ? pet_.creature->stage : Stage::BootSector;
     const int moveSlots = MoveLoadout::slotsForStage(stage);
     int movesOn = 0;
     for (int i = 0; i < moveSlots; ++i)
-        if (moveLoadout_.equipped(i)) ++movesOn;
+        if (pet_.moves.equipped(i)) ++movesOn;
     int modsOn = 0;
     for (int i = 0; i < kModSlots; ++i)
-        if (loadout_.equipped(i)) ++modsOn;
+        if (pet_.mods.equipped(i)) ++modsOn;
 
     // The BUFFS count is BUFFS, not its rows: the page's headings are signage and
     // counting them would tell the reader they have two more buffs than they do.
@@ -85,14 +85,14 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
     for (const FoodRow& r : statFoodRows()) foodsTotal += r.section ? r.total : 0;
 
     StatIndexCounts c;
-    c.level = combatLevel_;
-    c.bondBp = bondTotalBp(upgrades_);
+    c.level = pet_.level;
+    c.bondBp = bondTotalBp(pet_.upgrades);
     c.movesOn = movesOn;
     c.moveSlots = moveSlots;
     c.modsOn = modsOn;
     c.modSlots = kModSlots;
     c.buffs = armed;
-    c.line = pet_ ? pet_->line : nullptr;
+    c.line = pet_.creature ? pet_.creature->line : nullptr;
     c.logEvents = log_.size();
     c.movesKnown = movesKnown;
     c.movesLearnable = movesLearnable;
@@ -102,16 +102,16 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
 }
 
 std::vector<FoodRow> Game::statFoodRows() const {
-    return buildFoodRows(registry_, petFoodsEaten_, foundFavouriteFood());
+    return buildFoodRows(registry_, pet_.foodsEaten, foundFavouriteFood());
 }
 
 std::vector<ProseRow> Game::statMoveDexRows() const {
-    return buildMoveDexRows(registry_, moveLoadout_, pet_ ? pet_->line : nullptr,
-                            pet_ ? pet_->stage : Stage::BootSector);
+    return buildMoveDexRows(registry_, pet_.moves, pet_.creature ? pet_.creature->line : nullptr,
+                            pet_.creature ? pet_.creature->stage : Stage::BootSector);
 }
 
 Game::StatScrollSpan Game::statScrollSpan() const {
-    if (!pet_) return {0, 0};
+    if (!pet_.creature) return {0, 0};
     switch (statPage_) {
         case StatPage::Tiers: {
             const std::vector<ProseRow> rows = statTierRows();
@@ -220,7 +220,7 @@ void Game::onStatIndex(const ButtonEvent& ev) {
 // --- Render -----------------------------------------------------------------
 
 void Game::drawStat(Framebuffer& fb) const {
-    if (!pet_) return;
+    if (!pet_.creature) return;
     if (statScreen_ == StatScreen::Index) {
         drawStatIndex(fb, statIndexRows(), statIndexRow_, beat_);
         return;
@@ -229,19 +229,19 @@ void Game::drawStat(Framebuffer& fb) const {
     switch (statPage_) {
         case StatPage::Vitals: {
             StatScreenView v;
-            v.name = pet_->displayName;
-            v.stage = pet_->stage;
-            v.generation = generation_;
-            v.level = combatLevel_;
-            v.combatXp = combatXp_;
+            v.name = pet_.creature->displayName;
+            v.stage = pet_.creature->stage;
+            v.generation = pet_.generation;
+            v.level = pet_.level;
+            v.combatXp = pet_.xp;
             v.xpToNext = xpToNextLevel();
             v.hasNextEvo = hasNextEvolution();
             v.evoRemainMs = evolveRemainMs();
             v.beat = beat_;
-            drawStatScreen(fb, model_, v);
+            drawStatScreen(fb, pet_.model, v);
             break;
         }
-        case StatPage::Bond: drawBondScreen(fb, upgrades_); break;
+        case StatPage::Bond: drawBondScreen(fb, pet_.upgrades); break;
         case StatPage::Tiers: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
         case StatPage::Loadout: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
         case StatPage::Moves: {
@@ -268,7 +268,7 @@ void Game::drawStat(Framebuffer& fb) const {
             break;
         }
         case StatPage::Buffs: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
-        case StatPage::Species: drawSpeciesScreen(fb, *pet_, beat_); break;
+        case StatPage::Species: drawSpeciesScreen(fb, *pet_.creature, beat_); break;
         case StatPage::Log:
         case StatPage::Count: drawAuditLog(fb, log_, beat_); break;
     }
