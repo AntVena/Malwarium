@@ -1,5 +1,5 @@
 // test_holds.cpp: the hold-B routing every tap/hold screen shares (Game::holdFocus,
-// game_core.cpp). A B press arms one gesture; the hold and the release both go to the
+// game_holds.cpp). A B press arms one gesture; the hold and the release both go to the
 // screen that is up, and to no other.
 #include "test_gates.h"
 
