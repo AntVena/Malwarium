@@ -122,9 +122,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **A fight**: `combat_` and its animation beats, the camo state, the post-encounter result
-  (`postEnc*`). `Combat` is already the turn engine; this row
-  gives it the screen-side clock and result it lacks.
 - **The boss gauntlet**: `boss*`.
 - **The tourney**: `tourney*` (11 fields).
 - **A PvP session**: `pvp*` (19 fields).
@@ -139,6 +136,11 @@ random draws and its result, and is gone when it ends. Rows are M unless marked.
   the arcade list, the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
   arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
+- **The combat screen**: `combatStatsPage_`, the stage's anim clock (`combatAnimBeat_`,
+  `lastCombatAnimMs_`) and the camo (`combatCamo*`). They live while the Combat screen is
+  up, across a gauntlet's rounds, so they stayed off `Fight`. It reads `Game::fight()`.
+- **The encounter intro**: `encounterEnemy_`, `encounterChoice_`, `encounterBypass_`. It
+  hands the wild to `startWildCombat` and keeps nothing once a fight opens. S.
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which
