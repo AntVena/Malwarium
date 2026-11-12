@@ -252,20 +252,32 @@ int Game::xpForLevel(int level) const {
 
 int Game::xpToNextLevel() const { return xpForLevel(combatLevel_); }
 
-void Game::addCombatXp(int xp) {
-    if (xp <= 0) return;
+int Game::scaleXp(int xp) const {
     // The armed Sandbox/Hypervisor-USB soak is the OTHER half of the trade it makes: the
     // stage's evolution dwell runs this many times longer (Game::evolveDwellMs) and every
     // XP award pays this many times more. Applied first, as a multiplier on the raw
-    // award, so the Profilerole rate below still reads as a percentage of what the source
-    // actually paid rather than of a number one item already scaled.
+    // award, so the rates below still read as a percentage of what the source actually
+    // paid rather than of a number one item already scaled.
     if (evolveSoakFactor_ > 1) xp *= evolveSoakFactor_;
-    // Profilerole's permanent rate (PetUpgrades::xpRatePct) is applied HERE, at the one
-    // door every XP source comes through, so a dish that raises what the pet learns
-    // raises it from combat, from a solved board and from passive farming alike. Rounded
-    // down, and never below the award itself, so a rate only adds.
-    xp += xp * upgrades_.xpRatePct / 100;
-    combatXp_ += xp;
+    // Profilerole's permanent rate and the pet's Bond add up into one percentage, so
+    // neither compounds on the other. Applied at the one door every XP source comes
+    // through, so they raise combat, solved boards and passive farming alike. Rounded
+    // down, so a rate only adds.
+    const int rateBp = upgrades_.xpRatePct * 100 + bondTotalBp(upgrades_);
+    return xp + static_cast<int>(static_cast<int64_t>(xp) * rateBp / 10000);
+}
+
+void Game::addFightXp(int xp) {
+    if (xp <= 0) return;
+    // Bond counts the award as the fight paid it, before the pet's own rates, so Bond
+    // never feeds on itself.
+    addBond(upgrades_, BondSource::Adventure, xp * kBondAdventureBpPerXp);
+    addCombatXp(xp);
+}
+
+void Game::addCombatXp(int xp) {
+    if (xp <= 0) return;
+    combatXp_ += scaleXp(xp);
     // Spend the XP bucket into as many levels as it covers (a big lump can cross more
     // than one boundary). Each level-up grants +1 to a random combat stat, so
     // level always equals the sum of earned points (the Rollback invariant).
@@ -398,7 +410,7 @@ void Game::applyCombatResult() {
                             ModEffect::PostBattleBits, pet_ ? pet_->line : nullptr);
                 bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
                 model_.feed(0, kSimHappyReward);
-                addCombatXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
+                addFightXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
             } else {
                 // Wild win: Bits + XP + a chance of an item drop
                 // from the shared reward pool. Full drop tables are a later
@@ -430,7 +442,7 @@ void Game::applyCombatResult() {
                 const int winXp = wildWinXp(wildWinXpBase(exploreSector_),
                                             encounterEnemy_.level, combatLevel_) *
                                   (100 + diveRewardBonusPct()) / 100;
-                addCombatXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
+                addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
                 // re-farm loot decay: farming an already-CLEARED sub-area pays FULL non-Bits
                 // loot while the Bandwidth shield covered this fight (the decay count stays
                 // frozen). Once the pool is dry (this fight was NOT shielded), the

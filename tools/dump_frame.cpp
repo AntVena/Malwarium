@@ -13,7 +13,8 @@
 //        feed:<item_id> (eat one named food through the real Use path and hold the
 //             feeding modal: how to eyeball that its gauges follow that item's own
 //             effects, e.g. feed:tortilla_chip, feed:null_noodles)
-//        stat [tiers|loadout|buffs|species|log] [scroll:<n>] (the 6 STAT pages;
+//        bonded (some fight Bond, so STAT's BOND page has a bar filling) ·
+//        stat [bond|tiers|loadout|movedex|foods|buffs|species|log] [scroll:<n>] (STAT's pages;
 //             "scroll:<n>" takes B n times, which walks the row window of the three pages
 //             that flow prose: pair it with "fullkit" and a Daemon for the longest lists.
 //             TIERS is the investment ladder, and the pet the preset levels has real
@@ -401,6 +402,9 @@ int main(int argc, char** argv) {
     for (int i = 0; i <= beats; ++i)
         game.tick(static_cast<uint32_t>(i) * kHeartbeatMs);
 
+    // "bonded" earns Bond from fights, so the BOND page has a bar part filled.
+    if (hasFlag(argc, argv, "bonded")) game.debugAddFightXp(4321);
+
     // "armbuffs" arms all three item buffs (Restore Point/Ambig-USB/Backup
     // Drive) regardless of which screen flag follows, so it shows on the
     // idle habitat's top-left buff badge as well as the STAT BUFFS page.
@@ -491,22 +495,23 @@ int main(int argc, char** argv) {
         game.debugUseItem("repartition");
         if (hasFlag(argc, argv, "to")) game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "stat")) {
-        // STAT is 8 paged screens: 0 vitals (landing) · 1 tiers · 2 loadout · 3 movedex ·
-        // 4 foods · 5 buffs · 6 species · 7 audit log. "stat" alone shows vitals; the
-        // page names step to theirs; "index" then holds B to open the jump list over
+        // STAT's pages, in StatPage order. "stat" alone shows vitals; the page names
+        // step to theirs; "index" then holds B to open the jump list over
         // them. "ate:<n>" feeds the pet n dishes first, which is what puts lit cells in
         // the FOODS grid.
         game.debugSetBits(1450);
         game.debugSetNetworksSeen(27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
-        int steps = hasFlag(argc, argv, "tiers")   ? 1
-                  : hasFlag(argc, argv, "loadout") ? 2
-                  : hasFlag(argc, argv, "movedex") ? 3
-                  : hasFlag(argc, argv, "foods")    ? 4
-                  : hasFlag(argc, argv, "buffs")    ? 5
-                  : hasFlag(argc, argv, "species")  ? 6
-                  : hasFlag(argc, argv, "log")      ? 7
-                                                     : 0;
+        const StatPage page = hasFlag(argc, argv, "bond")      ? StatPage::Bond
+                            : hasFlag(argc, argv, "tiers")   ? StatPage::Tiers
+                            : hasFlag(argc, argv, "loadout") ? StatPage::Loadout
+                            : hasFlag(argc, argv, "movedex") ? StatPage::Moves
+                            : hasFlag(argc, argv, "foods")   ? StatPage::Foods
+                            : hasFlag(argc, argv, "buffs")   ? StatPage::Buffs
+                            : hasFlag(argc, argv, "species") ? StatPage::Species
+                            : hasFlag(argc, argv, "log")     ? StatPage::Log
+                                                             : StatPage::Vitals;
+        int steps = static_cast<int>(page);
         // "ate:<n>" puts n dishes on the pet's palate before the page draws, which is
         // the only way to see the FOODS grid half filled rather than wholly dim.
         for (int i = 3; i < argc; ++i)

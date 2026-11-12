@@ -84,10 +84,21 @@ std::vector<StatIndexRow> Game::statIndexRows() const {
     int foodsTotal = 0;
     for (const FoodRow& r : statFoodRows()) foodsTotal += r.section ? r.total : 0;
 
-    return buildStatIndexRows(statTierRows(), statLoadoutRows(), combatLevel_, movesOn,
-                              moveSlots, modsOn, kModSlots, armed,
-                              pet_ ? pet_->line : nullptr, log_.size(), movesKnown,
-                              movesLearnable, petFoodsEaten(), foodsTotal);
+    StatIndexCounts c;
+    c.level = combatLevel_;
+    c.bondBp = bondTotalBp(upgrades_);
+    c.movesOn = movesOn;
+    c.moveSlots = moveSlots;
+    c.modsOn = modsOn;
+    c.modSlots = kModSlots;
+    c.buffs = armed;
+    c.line = pet_ ? pet_->line : nullptr;
+    c.logEvents = log_.size();
+    c.movesKnown = movesKnown;
+    c.movesLearnable = movesLearnable;
+    c.foodsEaten = petFoodsEaten();
+    c.foodsTotal = foodsTotal;
+    return buildStatIndexRows(statTierRows(), statLoadoutRows(), c);
 }
 
 std::vector<FoodRow> Game::statFoodRows() const {
@@ -101,25 +112,29 @@ std::vector<ProseRow> Game::statMoveDexRows() const {
 
 Game::StatScrollSpan Game::statScrollSpan() const {
     if (!pet_) return {0, 0};
-    if (statPage_ == 1) {
-        const std::vector<ProseRow> rows = statTierRows();
-        return {tierRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 2) {
-        const std::vector<ProseRow> rows = statLoadoutRows();
-        return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 3) {
-        const std::vector<ProseRow> rows = statMoveDexRows();
-        return {moveDexRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 4) {
-        const std::vector<FoodRow> rows = statFoodRows();
-        return {foodRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
-    }
-    if (statPage_ == 5) {
-        const std::vector<ProseRow> rows = statBuffRows();
-        return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+    switch (statPage_) {
+        case StatPage::Tiers: {
+            const std::vector<ProseRow> rows = statTierRows();
+            return {tierRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+        }
+        case StatPage::Loadout: {
+            const std::vector<ProseRow> rows = statLoadoutRows();
+            return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+        }
+        case StatPage::Moves: {
+            const std::vector<ProseRow> rows = statMoveDexRows();
+            return {moveDexRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+        }
+        case StatPage::Foods: {
+            const std::vector<FoodRow> rows = statFoodRows();
+            return {foodRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+        }
+        case StatPage::Buffs: {
+            const std::vector<ProseRow> rows = statBuffRows();
+            return {buffRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
+        }
+        default:
+            break;
     }
     return {0, 0};
 }
@@ -127,7 +142,7 @@ Game::StatScrollSpan Game::statScrollSpan() const {
 // --- Input ------------------------------------------------------------------
 
 void Game::resetStatReader() {
-    statPage_ = 0;
+    statPage_ = StatPage::Vitals;
     statScroll_ = 0;
     statScreen_ = StatScreen::Page;
     statIndexRow_ = 0;
@@ -135,7 +150,7 @@ void Game::resetStatReader() {
 
 void Game::onStatPage(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
-        statPage_ = (statPage_ + 1) % kStatPages;
+        statPage_ = static_cast<StatPage>((static_cast<int>(statPage_) + 1) % kStatPages);
         statScroll_ = 0;         // fresh page -> scroll to the top
     } else if (ev.button == Button::C) {
         nav_ = Nav::Cursor;
@@ -210,13 +225,9 @@ void Game::drawStat(Framebuffer& fb) const {
         drawStatIndex(fb, statIndexRows(), statIndexRow_, beat_);
         return;
     }
-    // 8 pages: 0 pet vitals (the landing) · 1 the investment ladder, which stat tiers
-    // this pet holds and what the next costs · 2 the equipped loadout (moves + mods,
-    // WITH their effect text) · 3 every move this pet could learn · 4 every dish it
-    // could eat · 5 currently-armed item buffs · 6 the pet's own species lore · 7 audit
-    // log. A cycles; C backs out.
+    // A cycles the pages in StatPage order; C backs out.
     switch (statPage_) {
-        case 0: {
+        case StatPage::Vitals: {
             StatScreenView v;
             v.name = pet_->displayName;
             v.stage = pet_->stage;
@@ -230,9 +241,10 @@ void Game::drawStat(Framebuffer& fb) const {
             drawStatScreen(fb, model_, v);
             break;
         }
-        case 1: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
-        case 2: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
-        case 3: {
+        case StatPage::Bond: drawBondScreen(fb, upgrades_); break;
+        case StatPage::Tiers: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
+        case StatPage::Loadout: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
+        case StatPage::Moves: {
             const std::vector<ProseRow> rows = statMoveDexRows();
             CollectionPage page;
             page.scrollTop = statScroll_;
@@ -245,7 +257,7 @@ void Game::drawStat(Framebuffer& fb) const {
             drawMoveDexScreen(fb, rows, page);
             break;
         }
-        case 4: {
+        case StatPage::Foods: {
             const std::vector<FoodRow> rows = statFoodRows();
             CollectionPage page;
             page.scrollTop = statScroll_;
@@ -255,9 +267,10 @@ void Game::drawStat(Framebuffer& fb) const {
             drawFoodsScreen(fb, registry_, rows, page);
             break;
         }
-        case 5: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
-        case 6: drawSpeciesScreen(fb, *pet_, beat_); break;
-        default: drawAuditLog(fb, log_, beat_); break;
+        case StatPage::Buffs: drawBuffsScreen(fb, statBuffRows(), statScroll_, beat_); break;
+        case StatPage::Species: drawSpeciesScreen(fb, *pet_, beat_); break;
+        case StatPage::Log:
+        case StatPage::Count: drawAuditLog(fb, log_, beat_); break;
     }
 }
 

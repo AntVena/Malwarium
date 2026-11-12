@@ -173,7 +173,7 @@ void Game::finishBossRound() {
         // (bossSub_ >= 0) marks just that sub-area cleared; the AREA boss (bossSub_ ==
         // 1) clears the whole area → the next area unlocks + the Title is granted.
         bits_ += applyCombatBitsBonus(bossBitsAccrued_);   // Scraping Cluster Expansion
-        addCombatXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
+        addFightXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
         if (bossSub_ >= 0 && bossSub_ < kExplSubAreas) {
             const bool firstClear = !subCleared_[bossSector_][bossSub_];
             subCleared_[bossSector_][bossSub_] = true;

@@ -106,7 +106,6 @@ void Game::layEgg(const EggLineDef* line) {
     hatchLine_ = line ? line : registry_.eggLine("ransomware");
     installPet(registry_.creature(hatchLine_ ? hatchLine_->eggCreatureId : "cryptoshell"));
     model_ = PetModel();                 // fresh Boot-Sector vitals (frozen while egg)
-    for (int& t : signalTally_) t = 0;   // Boot-stage dominant signal starts fresh
     // creature levels are per pet, so a newly laid egg starts at level 0. Titles and
     // Rank survive a pet's death. This is the single "new egg" chokepoint (fresh boot,
     // Store, CSF, resetToHatch), so resetting here covers them all; evolution keeps
@@ -264,7 +263,6 @@ void Game::completeHatch() {
     const CreatureDef* next = rollHatchProcess(hatchLine_);
     installPet(next ? next : egg); // fall back to the egg if content is missing
     model_ = PetModel();          // fresh Process vitals (unfreeze the raising loop)
-    for (int& t : signalTally_) t = 0;  // Process-stage dominant signal starts fresh
     defragCount_ = 0;             // a brand-new pet has never been defragged
     stampSlotKinds();             // lock this pet's newly-unlocked slot(s)
     // The Game constructor pre-equips slot 1 with a Defend move (MoveLoadout::
@@ -294,27 +292,6 @@ const SpriteData* Game::hatchEggSprite() const {
     if (!hatchLine_) return nullptr;
     const CreatureDef* egg = registry_.creature(hatchLine_->eggCreatureId);
     return egg ? registry_.creatureSprite(*egg) : nullptr;
-}
-
-// Dominant care signal ------------------------------------------
-
-DominantSignal Game::dominantSignal() const {
-    // Argmax of the per-stage interaction tally. `>=` lets the highest index win
-    // among equal maxima, so a tie leans toward Balanced (the last enum value);
-    // an all-zero tally (nothing's happened yet) is Balanced outright.
-    int best = 0;
-    DominantSignal winner = DominantSignal::Balanced;
-    for (int i = 0; i < kNumDominantSignals; ++i) {
-        if (signalTally_[i] >= best) {
-            best = signalTally_[i];
-            winner = static_cast<DominantSignal>(i);
-        }
-    }
-    return best > 0 ? winner : DominantSignal::Balanced;
-}
-
-void Game::noteCareSignal(DominantSignal s) {
-    signalTally_[static_cast<int>(s)]++;
 }
 
 CareBranch Game::effectiveCareBranch() const {
@@ -514,7 +491,6 @@ void Game::completeEvolution() {
     // The hold is deliberately NOT cleared here: it is the one device a boundary never
     // reaches, so reaching one means it was never in.
     stageEnteredMs_ = nowMs_;          // restart the in-stage clock for the next boundary
-    for (int& t : signalTally_) t = 0; // next stage's dominant signal starts fresh
     stampSlotKinds();                  // lock this pet's newly-unlocked slot(s)
     nav_ = Nav::Idle;
     dirty_ = true;

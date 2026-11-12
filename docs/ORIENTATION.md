@@ -233,6 +233,13 @@ drives the glitch passes), **Happiness**, and **Stage**. Balance numbers are nam
 feeding or by spending Bits. Failing costs 2 mistakes instead of 1, which lands a clean pet exactly
 at the Good ceiling, one slip from Bad.
 
+**Bond rewards raising over farming.** Each pet carries a Bond score that adds to every XP award,
+built from three sources each capped at +100%: +1% per meal given below full, +0.5% per arcade
+game, and +0.01% per XP won in a fight. Passive farming, Sinkholes and Wi-Fi finds build none of
+it. Bond never resets: evolution keeps it and the ARCH rack freezes it with the pet
+(`core/model/pet_upgrades.h`). STAT's BOND page, second after VITALS, shows the total and a bar
+per source.
+
 **Stage durations escalate**. The pet demands a longer, more attentive raise as it matures:
 egg → Process under an hour, Process → Script 8h, Script → Daemon 32h. So a clean raise reaches the
 final form in roughly 40 hours. Each stage also **unlocks combat move slots**, which is the

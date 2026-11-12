@@ -188,6 +188,9 @@ public:
     const Combat& combat() const { return combat_; }
     int combatXp() const { return combatXp_; }        // XP banked toward the next level
     int combatLevel() const { return combatLevel_; }  // 0-based creature level
+    // What this pet actually banks from a raw award: the USB soak, then the Epic dish's
+    // rate and Bond together. Shared by addCombatXp and the walk's XP preview.
+    int scaleXp(int xp) const;
     int defragCount() const { return defragCount_; }  // this pet's defrags
     // XP needed to climb from the current level to the next: the geometric curve
     // round(kLevelXpBase * (kLevelXpGrowthPct/100)^combatLevel_).
@@ -1805,10 +1808,6 @@ public:
     // false and evolveRemainMs() is 0 (STAT shows MAX). Counts real elapsed time.
     bool hasNextEvolution() const;
     uint32_t evolveRemainMs() const;
-    // The care signal dominating this stage. Balanced on a tie / no interactions yet.
-    // Nothing routes on it: evolutionTargetId keys on the care branch, and this is the
-    // input a signal-dependent route would read.
-    DominantSignal dominantSignal() const;
     bool inCSF() const { return nav_ == Nav::ModalCSF; }
     const std::vector<SaveRecord>& records() const { return records_; }
     int recordCount() const { return static_cast<int>(records_.size()); }
@@ -2180,10 +2179,10 @@ public:
     // filtering without driving the tap/hold timing.
     void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
     ItemFilter itemFilter() const { return items_.filter(); }
-    // Where the STAT reader stands: which of the six pages, which row of it the window
+    // Where the STAT reader stands: which page, which row of it the window
     // opens on, whether the INDEX is up, and its cursor. Read by the gates, which
     // assert the page a jump landed on and the row it anchored to.
-    int statPage() const { return statPage_; }
+    StatPage statPage() const { return statPage_; }
     int statScroll() const { return statScroll_; }
     StatScreen statScreen() const { return statScreen_; }
     int statIndexRow() const { return statIndexRow_; }
@@ -2389,6 +2388,8 @@ public:
     // XP and fires any level-ups (+1 random stat each), so the level/stat/curve logic
     // can be exercised without grinding real fights. Not a real reward source.
     void debugAddCombatXp(int xp) { addCombatXp(xp); }
+    // The same award as a fight pays it, which also builds adventure Bond.
+    void debugAddFightXp(int xp) { addFightXp(xp); }
     // The two grants a BACKGROUND can come from that a gate should not have to play out
     // in full: clearing an area's gauntlet, and taking a bracket at the arena. Both move
     // exactly the state ownership is derived from and nothing else, so what they exercise
@@ -2852,6 +2853,9 @@ private:
     // timer (tick()), dismisses it back to the explore habitat (returnToExplore()).
     void dismissPostEncounter();
     void addCombatXp(int xp);                       // bank XP → level-up (+1 random stat)
+    // A FIGHT's XP: the same award, and it also builds the pet's adventure Bond. Passive
+    // farming, Sinkholes and Wi-Fi finds go straight to addCombatXp and build none.
+    void addFightXp(int xp);
     // The A+C Exploit allowance for a fight. The tunable today; the seam a
     // rare reward item hangs off later (item ships later).
     int exploitUsesPerBattle() const { return kExploitUsesPerBattle; }
@@ -3481,8 +3485,7 @@ private:
     // Evolution boundary lifecycle (stub).
     bool evolveEligible() const;   // time-in-stage + care gate + a defined successor
     bool evolveRevealed() const;   // cinematic past hold+flash -> the reveal (B active)
-    const char* evolutionTargetId() const;  // the successor id (signal route / care-picked pool)
-    void noteCareSignal(DominantSignal s);   // tally a care interaction toward the dominant signal
+    const char* evolutionTargetId() const;  // the successor id (care-picked pool)
     void fireEvolution();          // enter the modal toward the successor
     void completeEvolution();      // commit the swap, restart the in-stage clock, idle
 
@@ -3537,10 +3540,6 @@ private:
     IdleHarvest petHarvest_;
     IdleFeeding petFeeding_;
     IdleLure petLure_;
-    // Per-stage tally of care interactions, indexed by DominantSignal, one per action.
-    // Reset when a new stage begins (hatch / evolution) and not persisted. Nothing
-    // routes on it: dominantSignal() is read only by test_dominant_signal_from_care.
-    int signalTally_[kNumDominantSignals] = {0};
     Inventory inventory_;
     EventLog log_;
     int bits_;
@@ -3730,9 +3729,8 @@ private:
     // the player their stack is a forgiving default rather than a save field.
     int stackingFoodRun_ = 0;
 
-    // STAT: 0 vitals · 1 tiers · 2 loadout · 3 buffs · 4 species · 5 audit log
-    int statPage_ = 0;
-    // Which STAT screen is on: one of those six, or the INDEX over them. STAT still
+    StatPage statPage_ = StatPage::Vitals;
+    // Which STAT screen is on: one of the pages, or the INDEX over them. STAT still
     // OPENS on the page (VITALS), never on the index: hunger and frag are what the
     // slot is entered for, and a menu in front of them would be a press charged to
     // every visit to pay for the occasional long jump.

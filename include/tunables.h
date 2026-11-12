@@ -432,6 +432,7 @@ constexpr int kBattleFatigueAutoPauseFrag = 80; // hands-off auto-explore pauses
 constexpr int kLevelXpBase = 100;          // XP to reach level 1 (round(100*1.1^0))
 constexpr int kLevelXpGrowthPct = 110;     // each level costs 1.1x the previous
 constexpr int kLevelStatCount = 4;         // power / defense / speed / max-Health
+constexpr int kBondSources = 3;            // food / games / adventure (PetUpgrades::bondBp)
 
 // --- The investment LADDER: one set of rungs, the same on all four stats -------------
 // Every stat pays out continuously per point AND unlocks three discrete TIERS, and the

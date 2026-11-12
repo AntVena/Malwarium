@@ -786,7 +786,9 @@ int g_failures = 0;
     RUN(test_hatch_reveal_covers_the_decryption_line) \
     RUN(test_eggpick_grayscale)                   \
     RUN(test_frog_line_move_access)               \
-    RUN(test_dominant_signal_from_care)           \
+    RUN(test_bond_from_meals)                     \
+    RUN(test_bond_from_fights_scales_xp)          \
+    RUN(test_save_v74_bond)                       \
     RUN(test_battery_percent_from_mv)           \
     RUN(test_battery_level_bands)               \
     RUN(test_battery_percent_smoothing)         \

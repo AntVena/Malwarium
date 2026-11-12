@@ -631,6 +631,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
         w.u16(static_cast<uint16_t>(bits.size()));
         for (uint8_t b : bits) w.u8(b);
     }
+
+    // v74: Bond, the active pet's then the rack's in rack order.
+    for (uint16_t bp : d.bondBp) w.u16(bp);
+    w.u16(static_cast<uint16_t>(d.rack.size()));
+    for (const SaveStoredPet& p : d.rack)
+        for (uint16_t bp : p.bondBp) w.u16(bp);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1328,6 +1334,17 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
                 }
             }
         }
+    }
+
+    // v74 tail: Bond. Absent in an older blob -> 0, nothing recorded.
+    if (version >= 74) {
+        for (uint16_t& bp : d.bondBp) bp = r.u16();
+        const uint16_t nBond = r.u16();
+        for (uint16_t i = 0; i < nBond && r.ok; ++i)
+            for (int k = 0; k < kBondSources; ++k) {
+                const uint16_t bp = r.u16();
+                if (i < d.rack.size()) d.rack[i].bondBp[k] = bp;
+            }
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

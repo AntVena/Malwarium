@@ -55,7 +55,13 @@ inline bool explCatHasRows(ExplCat c) {
 // so `Hub` is where C from any of the three returns to.
 enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
-// Which STAT screen is open. The six paged readouts are one destination as far as the
+// STAT's pages, in the order A cycles them and the header's pager dots them.
+enum class StatPage : uint8_t {
+    Vitals, Bond, Tiers, Loadout, Moves, Foods, Buffs, Species, Log, Count
+};
+inline constexpr int kStatPages = static_cast<int>(StatPage::Count);
+
+// Which STAT screen is open. The paged readouts are one destination as far as the
 // engine is concerned (statPage_ picks between them); the INDEX is the other: the jump
 // list that fronts them, opened by holding B on any page and backed out of onto the page
 // it was opened from.

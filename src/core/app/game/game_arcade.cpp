@@ -298,9 +298,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
         arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
         if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
     }
-    // The pet enjoyed itself, which the PLAY signal records. The arcade is the one
-    // place a player can give it on purpose.
-    noteCareSignal(DominantSignal::Play);
+    addBond(upgrades_, BondSource::Games, kBondGameBp);
     markSaveDirty();
 
     cursor_ = carouselSlotOf(SubmenuId::Games);

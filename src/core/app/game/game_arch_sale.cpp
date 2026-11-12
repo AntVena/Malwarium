@@ -184,7 +184,6 @@ void Game::reimageActivePet() {
     // Whatever was steering the boundary the pet already crossed is spent with it.
     clearUsbPort();
     stageEnteredMs_ = nowMs_;
-    for (int& t : signalTally_) t = 0;
 }
 
 void Game::archSellStored(int storedIdx, SaleOffer offer) {

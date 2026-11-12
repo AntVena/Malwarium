@@ -336,7 +336,10 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v73 NO BYTES. Renames one CREATURE id (`placeholder_daemon` -> `leatherbackdoor`, see
 //     `renamedIds`); the version exists so the rename row has a `sinceVersion` to retire
 //     against.
-constexpr uint16_t kSaveVersion = 73;
+// v74 APPEND the per-pet BOND (PetUpgrades::bondBp), one tail after v72's: the active
+//     pet's three sources as u16 basis points, then a parallel list onto d.rack. Pre-v74
+//     -> 0 everywhere, because nothing recorded it.
+constexpr uint16_t kSaveVersion = 74;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -461,6 +464,8 @@ struct SaveStoredPet {
     std::vector<SaveId> foodsEaten;
     char favouriteFood[kSaveIdCap] = {0};
     uint8_t favouriteFound = 0;
+    // v74: this pet's Bond per source (BondSource order), frozen with the pet.
+    uint16_t bondBp[kBondSources] = {0};
 };
 
 // The permanent status of an ARCH record: a greyed, read-only entry that
@@ -945,6 +950,9 @@ struct SaveData {
     // not rolled yet, which Game rolls at the next meal (core/model/pet_upgrades.h).
     char favouriteFood[kSaveIdCap] = {0};
     uint8_t favouriteFound = 0;
+
+    // --- v74: the ACTIVE pet's Bond per source (BondSource order) -------------
+    uint16_t bondBp[kBondSources] = {0};
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

@@ -98,7 +98,6 @@ void Game::settleMaintPlay(const PlayOutcome& o) {
     }
     // The per-pet tally counts disks that got cleaner, so a run worth nothing doesn't.
     if (maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0) ++defragCount_;
-    noteCareSignal(DominantSignal::Maintenance);
     markSaveDirty();
     processBeat_ = kProcessBeats;                // the work is done; show the outcome
     processResolved_ = true;

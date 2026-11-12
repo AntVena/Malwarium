@@ -161,19 +161,57 @@ void test_evolution_routing_tables() {
     CHECK(r.daemonPool("barkmail", false) == nullptr);
 }
 
-// The dominant signal is computed from live care interactions: a
-// fresh pet is Balanced (no interactions); feeding it tips the balance to
-// Feeding. The tally that answers this is the input a signal-dependent evolution
-// route would key off; nothing routes on it today, so this is what keeps it honest.
-void test_dominant_signal_from_care() {
-    Game g{StartMode::Hatched};                      // Paypup, no interactions yet
-    CHECK(g.dominantSignal() == DominantSignal::Balanced);
-    g.model().setHunger(40);
-    enterSlot(g, SubmenuId::Items);
-    g.onButton(press(Button::B));                    // open first food's detail
-    g.onButton(press(Button::B));                    // Use -> feed (tally Feeding)
-    CHECK(g.nav() == Game::Nav::ModalFeeding);
-    CHECK(g.dominantSignal() == DominantSignal::Feeding);
+// BOND from meals: a meal the pet had room for adds kBondFoodBp, and one it did not
+// adds nothing, so stuffing a full pet cannot farm it.
+void test_bond_from_meals() {
+    Game hungry{StartMode::Hatched};
+    hungry.model().setHunger(40);
+    enterSlot(hungry, SubmenuId::Items);
+    hungry.onButton(press(Button::B));               // open first food's detail
+    hungry.onButton(press(Button::B));               // Use -> feed
+    CHECK(hungry.nav() == Game::Nav::ModalFeeding);
+    CHECK(hungry.petUpgrades().bondBp[static_cast<int>(BondSource::Food)] == kBondFoodBp);
+
+    Game full{StartMode::Hatched};
+    full.model().setHunger(100);
+    enterSlot(full, SubmenuId::Items);
+    full.onButton(press(Button::B));
+    full.onButton(press(Button::B));
+    CHECK(full.petUpgrades().bondBp[static_cast<int>(BondSource::Food)] == 0);
+}
+
+// BOND from fights: fight XP builds the adventure source one basis point per XP, up to
+// its cap, and XP from anywhere else builds none. A capped source doubles every award.
+void test_bond_from_fights_scales_xp() {
+    Game g{StartMode::Hatched};
+    const int adventure = static_cast<int>(BondSource::Adventure);
+    CHECK(g.scaleXp(100) == 100);
+    g.debugAddCombatXp(500);                         // farming, a Sinkhole, a Wi-Fi find
+    CHECK(g.petUpgrades().bondBp[adventure] == 0);
+    g.debugAddFightXp(50);
+    CHECK(g.petUpgrades().bondBp[adventure] == 50 * kBondAdventureBpPerXp);
+    g.debugAddFightXp(kBondSourceCapBp * 2);
+    CHECK(g.petUpgrades().bondBp[adventure] == kBondSourceCapBp);
+    CHECK(g.scaleXp(100) == 200);
+}
+
+// v74: Bond round-trips for the active pet and, positionally, for each pet on the shelf.
+void test_save_v74_bond() {
+    SaveData a;
+    std::strcpy(a.activeId, "paypup");
+    a.bondBp[0] = 100; a.bondBp[1] = 50; a.bondBp[2] = 10000;
+    SaveStoredPet p1; std::strcpy(p1.id, "malbear");
+    p1.bondBp[2] = 1234;
+    SaveStoredPet p2; std::strcpy(p2.id, "cryptoshell");
+    a.rack = {p1, p2};
+
+    SaveData b;
+    CHECK(deserializeSave(serializeSave(a), b));
+    CHECK(b.bondBp[0] == 100 && b.bondBp[1] == 50 && b.bondBp[2] == 10000);
+    CHECK(b.rack.size() == 2);
+    if (b.rack.size() != 2) return;
+    CHECK(b.rack[0].bondBp[2] == 1234 && b.rack[0].bondBp[0] == 0);
+    CHECK(b.rack[1].bondBp[2] == 0);
 }
 
 // Battery SoC mapping (CFG "BATT" line): the portable helper the device reader

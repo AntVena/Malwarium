@@ -166,6 +166,8 @@ void Game::capturePetProgress(SaveData& d) const {
     if (upgrades_.favouriteFood)
         std::strncpy(d.favouriteFood, upgrades_.favouriteFood->id, kSaveIdCap - 1);
     d.favouriteFound = upgrades_.favouriteFound ? 1 : 0;
+    for (int k = 0; k < kBondSources; ++k)
+        d.bondBp[k] = static_cast<uint16_t>(upgrades_.bondBp[k]);   // v74
 }
 
 // The radio toggles persist as intent only: hot/cooldown timers are runtime-only (no RTC).
@@ -544,6 +546,9 @@ void Game::restorePetProgress(const SaveData& d) {
     // next meal rolls a fresh one; a found flag stands either way, being a grant.
     upgrades_.favouriteFood = registry_.item(d.favouriteFood);
     upgrades_.favouriteFound = d.favouriteFound != 0;
+    // v74: Bond, clamped in case a blob carries more than this build's cap.
+    for (int k = 0; k < kBondSources; ++k)
+        upgrades_.bondBp[k] = std::min<int>(d.bondBp[k], kBondSourceCapBp);
 }
 
 void Game::restoreRadio(const SaveData& d) {

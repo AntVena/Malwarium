@@ -13,16 +13,33 @@
 // Adding one: a field here, its ItemEffect::Kind + applier case (defs.h /
 // Game::applyItemEffects), its line in the save codec's tail, and a BUFFS row.
 //
+// BOND rides here too: it is earned by raising the pet rather than granted, and like
+// the dishes it belongs to the creature, so evolution keeps it and the rack freezes it.
+//
 // The FAVOURITE DISH rides here too, though no item grants it: it is rolled once per
 // pet from every Rare-or-better food (Game::ensureFavouriteFood), hidden until the pet
 // is fed it, and from then on is a standing stat grant like the dishes', so it travels
 // through the rack, the save and the BUFFS page on exactly the same path.
 #pragma once
 
+#include <algorithm>
+
 #include "tunables.h"   // kLevelStatCount: the combat-stat axis statBonus is indexed on
 #include "core/content/defs.h"
 
 namespace mal {
+
+// BOND's three sources: meals given while the pet is not full, arcade games played,
+// and XP won in fights together. Passive farming builds none of it.
+enum class BondSource : uint8_t { Food, Games, Adventure };
+static_assert(static_cast<int>(BondSource::Adventure) + 1 == kBondSources);
+
+// Bond is counted in basis points of extra XP (1 = +0.01%), so the smallest source
+// (one XP of adventure) is a whole number.
+inline constexpr int kBondFoodBp = 100;          // +1% per meal, only below full
+inline constexpr int kBondGameBp = 50;           // +0.5% per arcade game finished
+inline constexpr int kBondAdventureBpPerXp = 1;  // +0.01% per XP won in a fight
+inline constexpr int kBondSourceCapBp = 10000;   // each source tops out at +100%
 
 struct PetUpgrades {
     // MINUTES shaved off this pet's Bandwidth regen interval (Game::bandwidthRegenMinutes,
@@ -45,7 +62,21 @@ struct PetUpgrades {
     // once-per-life gate (lifetimeGrantSpent below reads statBonus alone).
     const ItemDef* favouriteFood = nullptr;
     bool favouriteFound = false;
+    // BOND per source, indexed by BondSource, in basis points, each capped at
+    // kBondSourceCapBp. Added to xpRatePct at the same door (Game::scaleXp).
+    int bondBp[kBondSources] = {0};
 };
+
+inline void addBond(PetUpgrades& u, BondSource s, int bp) {
+    int& v = u.bondBp[static_cast<int>(s)];
+    v = std::min(kBondSourceCapBp, v + bp);
+}
+
+inline int bondTotalBp(const PetUpgrades& u) {
+    int total = 0;
+    for (int bp : u.bondBp) total += bp;
+    return total;
+}
 
 // Points the favourite dish adds to each combat stat once the pet has been fed it.
 inline constexpr int kFavouriteFoodStatBonus = 3;

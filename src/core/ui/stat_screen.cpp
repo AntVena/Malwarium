@@ -34,12 +34,12 @@ constexpr int kNumX = 188;
 // STAT header: title at left, a dot pager at right (one dot per page, kStatPages
 // of them) with the active page filled. The pager is the non-colour channel for
 // "which page" (dot position), so the status pages stay distinguishable in grayscale.
-void statHeader(Framebuffer& fb, const char* title, int page) {
+void statHeader(Framebuffer& fb, const char* title, StatPage page) {
     drawHeaderBand(fb, title);
     for (int i = 0; i < kStatPages; ++i) {
         const int x = kActiveW - 8 - (kStatPages - i) * 8;
         fb.fillRect(x, 8, 4, 4,
-                    i == page ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+                    i == static_cast<int>(page) ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
     }
 }
 
@@ -188,7 +188,7 @@ int tierRowsFitting(const std::vector<ProseRow>& rows, int top) {
 
 void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat) {
-    statHeader(fb, "TIERS", 1);
+    statHeader(fb, "TIERS", StatPage::Tiers);
     // The flow draws no band of its own here (nullptr): every STAT page ends with the
     // same one, and it says more than the flow can know to say.
     drawProseRows(fb, {rows, scrollTop, kTierRowTop, beat, nullptr});
@@ -201,7 +201,7 @@ int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
 
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
-    statHeader(fb, "LOADOUT", 2);
+    statHeader(fb, "LOADOUT", StatPage::Loadout);
     drawProseRows(fb, {rows, scrollTop, kLoadoutRowTop, beat, nullptr});
     statProseHint(fb, rows, scrollTop, kLoadoutRowTop);
 }
@@ -326,13 +326,81 @@ std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
     return out;
 }
 
+namespace {
+
+// The BOND page's grid. Three source rows under the total, each a name line, a bar
+// and the action that fills it.
+constexpr int kBondTotalY = 28;
+constexpr int kBondRowTop = 68;
+constexpr int kBondRowPitch = 44;
+constexpr int kBondBarDy = 12;
+constexpr int kBondBarH = 10;
+constexpr int kBondHowDy = 27;
+constexpr int kBondNotches = 10;   // one notch per +10%, the vitals gauges' cell count
+
+void formatBondPct(char* out, size_t n, int bp) {
+    std::snprintf(out, n, "+%d.%02d%%", bp / 100, bp % 100);
+}
+
+// A continuous fill notched every tenth: fine enough to show one meal's +1% move it,
+// and segmented like the vitals gauges so a glance reads it as so many cells.
+void drawBondBar(Framebuffer& fb, int y, int bp) {
+    const int x = kMargin;
+    const int w = kActiveW - 2 * kMargin;
+    drawProgressBar(fb, x, y, w, kBondBarH, static_cast<float>(bp) / kBondSourceCapBp,
+                    palColor(Pal::ACCENT));
+    const int innerW = w - 2;
+    for (int i = 1; i < kBondNotches; ++i) {
+        const int nx = x + 1 + innerW * i / kBondNotches;
+        const bool filled = bp * kBondNotches >= kBondSourceCapBp * i;
+        fb.fillRect(nx, y + 1, 1, kBondBarH - 2,
+                    palColor(filled ? Pal::PAPER : Pal::TRACK));
+    }
+}
+
+void drawBondRow(Framebuffer& fb, int y, const char* name, const char* how, int bp) {
+    drawText(fb, kLabelX, y, name, palColor(Pal::INK));
+    char val[16];
+    if (bp >= kBondSourceCapBp) std::snprintf(val, sizeof(val), "MAX");
+    else formatBondPct(val, sizeof(val), bp);
+    drawText(fb, kActiveW - kMargin - textWidth(val), y, val,
+             palColor(bp > 0 ? Pal::ACCENT : Pal::INK_DIM));
+    drawBondBar(fb, y + kBondBarDy, bp);
+    drawText(fb, kLabelX, y + kBondHowDy, how, palColor(Pal::INK_DIM));
+}
+
+}  // namespace
+
+void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades) {
+    statHeader(fb, "BOND", StatPage::Bond);
+
+    char total[16];
+    formatBondPct(total, sizeof(total), bondTotalBp(upgrades));
+    drawText(fb, kLabelX, kBondTotalY + 4, "XP BONUS", palColor(Pal::INK_DIM));
+    drawText(fb, kActiveW - kMargin - textWidth(total, 2), kBondTotalY, total,
+             palColor(Pal::ACCENT), 2);
+    drawText(fb, kLabelX, kBondTotalY + 20, "ON EVERY XP AWARD", palColor(Pal::INK_DIM));
+
+    struct Source { BondSource src; const char* name; const char* how; };
+    static const Source kRows[kBondSources] = {
+        {BondSource::Food, "MEALS", "+1% A MEAL, IF NOT FULL"},
+        {BondSource::Games, "GAMES", "+0.5% AN ARCADE GAME"},
+        {BondSource::Adventure, "FIGHTS", "+0.01% PER XP WON"},
+    };
+    for (int i = 0; i < kBondSources; ++i)
+        drawBondRow(fb, kBondRowTop + i * kBondRowPitch, kRows[i].name, kRows[i].how,
+                    upgrades.bondBp[static_cast<int>(kRows[i].src)]);
+
+    statHintBand(fb, 1, 1);
+}
+
 int buffRowsFitting(const std::vector<ProseRow>& rows, int top) {
     return proseRowsFitting(rows, top, kBuffRowTop);
 }
 
 void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat) {
-    statHeader(fb, "BUFFS", 5);
+    statHeader(fb, "BUFFS", StatPage::Buffs);
     if (rows.empty()) {
         drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
         statHintBand(fb, 1, 1);
@@ -347,7 +415,7 @@ void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
     const char* line = c.line;
     const char* hint = c.hint;
     const char* context = c.context;
-    statHeader(fb, "SPECIES", 6);
+    statHeader(fb, "SPECIES", StatPage::Species);
 
     // Name and line tag are both content, and the widest pair of them wants more than
     // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
@@ -445,7 +513,7 @@ void drawEvolveRow(Framebuffer& fb, int y, const StatScreenView& v) {
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v) {
     const PulsePhase pulse = ((v.beat / 2) & 1) == 0 ? PulsePhase::Bright   // ~1Hz
                                                       : PulsePhase::Dim;
-    statHeader(fb, "STAT", 0);
+    statHeader(fb, "STAT", StatPage::Vitals);
 
     // Name · generation. The stage is NOT here: it is spelled out under its own node on
     // the indicator below, which is where the reader is already looking to see how far
@@ -508,7 +576,7 @@ const SpriteData* logGlyph(LogEventType t) {
 } // namespace
 
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
-    statHeader(fb, "AUDIT LOG", 7);
+    statHeader(fb, "AUDIT LOG", StatPage::Log);
 
     // A full page to itself, so it shows the WHOLE ring newest-first rather than a
     // slice of it: the log holds eight and eight is what a page of this pitch fits, so
@@ -543,7 +611,7 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
 namespace {
 
 // One row, formatted. `label` is borrowed; the readout is not.
-StatIndexRow indexRow(const char* label, bool sub, int page, int anchor,
+StatIndexRow indexRow(const char* label, bool sub, StatPage page, int anchor,
                       const char* fmt, ...) {
     StatIndexRow r{};
     r.label = label;
@@ -577,19 +645,16 @@ int sectionEnd(const std::vector<ProseRow>& rows, int from) {
 
 std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
                                              const std::vector<ProseRow>& loadoutRows,
-                                             int level, int movesOn, int moveSlots,
-                                             int modsOn, int modSlots, int buffs,
-                                             const char* line, int logEvents,
-                                             int movesKnown, int movesLearnable,
-                                             int foodsEaten, int foodsTotal) {
+                                             const StatIndexCounts& c) {
     std::vector<StatIndexRow> out;
 
-    out.push_back(indexRow("VITALS", false, 0, 0, "LVL %d", level));
+    out.push_back(indexRow("VITALS", false, StatPage::Vitals, 0, "LVL %d", c.level));
+    out.push_back(indexRow("BOND", false, StatPage::Bond, 0, "+%d%%", c.bondBp / 100));
 
     int rungTotal = 0;
     for (const ProseRow& r : tierRows)
         if (!r.header) ++rungTotal;
-    out.push_back(indexRow("TIERS", false, 1, 0, "%d/%d",
+    out.push_back(indexRow("TIERS", false, StatPage::Tiers, 0, "%d/%d",
                            rungsHeld(tierRows, 0, static_cast<int>(tierRows.size())),
                            rungTotal));
     // One sub-row per stat, anchored at that stat's own heading: choosing MAX HEALTH
@@ -598,42 +663,45 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
     for (int i = 0; i < static_cast<int>(tierRows.size()); ++i) {
         if (!tierRows[i].header) continue;
         const int end = sectionEnd(tierRows, i);
-        out.push_back(indexRow(tierRows[i].label, true, 1, i, "%d/%d",
+        out.push_back(indexRow(tierRows[i].label, true, StatPage::Tiers, i, "%d/%d",
                                rungsHeld(tierRows, i, end), end - i - 1));
     }
 
-    out.push_back(indexRow("LOADOUT", false, 2, 0, "%d/%d", movesOn + modsOn,
-                           moveSlots + modSlots));
+    out.push_back(indexRow("LOADOUT", false, StatPage::Loadout, 0, "%d/%d",
+                           c.movesOn + c.modsOn, c.moveSlots + c.modSlots));
     // The loadout's sections come off its own rows too, so an egg (whose page
     // collapses to a single row and carries no headings) offers none of them.
     for (int i = 0; i < static_cast<int>(loadoutRows.size()); ++i) {
         if (!loadoutRows[i].header) continue;
         const bool moves = std::strcmp(loadoutRows[i].label, "MOVES") == 0;
-        out.push_back(indexRow(loadoutRows[i].label, true, 2, i, "%d/%d",
-                               moves ? movesOn : modsOn,
-                               moves ? moveSlots : modSlots));
+        out.push_back(indexRow(loadoutRows[i].label, true, StatPage::Loadout, i, "%d/%d",
+                               moves ? c.movesOn : c.modsOn,
+                               moves ? c.moveSlots : c.modSlots));
     }
 
     // The two COLLECTION pages read as scores, which is the only thing worth saying
     // about them in a list: a row that says 41/195 has already told the reader whether
     // opening it is a plan or a formality.
-    out.push_back(indexRow("MOVES", false, 3, 0, "%d/%d", movesKnown, movesLearnable));
-    out.push_back(indexRow("FOODS", false, 4, 0, "%d/%d", foodsEaten, foodsTotal));
+    out.push_back(indexRow("MOVES", false, StatPage::Moves, 0, "%d/%d", c.movesKnown,
+                           c.movesLearnable));
+    out.push_back(indexRow("FOODS", false, StatPage::Foods, 0, "%d/%d", c.foodsEaten,
+                           c.foodsTotal));
 
-    out.push_back(buffs > 0 ? indexRow("BUFFS", false, 5, 0, "%d", buffs)
-                            : indexRow("BUFFS", false, 5, 0, "NONE"));
+    out.push_back(c.buffs > 0 ? indexRow("BUFFS", false, StatPage::Buffs, 0, "%d", c.buffs)
+                              : indexRow("BUFFS", false, StatPage::Buffs, 0, "NONE"));
 
     // The line, upper-cased: the same tag the SPECIES page heads itself with.
     char tag[14] = "";
-    if (line && line[0]) {
-        std::snprintf(tag, sizeof(tag), "%s", line);
-        for (char* c = tag; *c; ++c)
-            *c = static_cast<char>(std::toupper(static_cast<unsigned char>(*c)));
+    if (c.line && c.line[0]) {
+        std::snprintf(tag, sizeof(tag), "%s", c.line);
+        for (char* p = tag; *p; ++p)
+            *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
     }
-    out.push_back(indexRow("SPECIES", false, 6, 0, "%s", tag));
+    out.push_back(indexRow("SPECIES", false, StatPage::Species, 0, "%s", tag));
 
-    out.push_back(logEvents > 0 ? indexRow("AUDIT LOG", false, 7, 0, "%d", logEvents)
-                                : indexRow("AUDIT LOG", false, 7, 0, "EMPTY"));
+    out.push_back(c.logEvents > 0
+                      ? indexRow("AUDIT LOG", false, StatPage::Log, 0, "%d", c.logEvents)
+                      : indexRow("AUDIT LOG", false, StatPage::Log, 0, "EMPTY"));
 
     return out;
 }

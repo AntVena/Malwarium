@@ -53,25 +53,6 @@ inline const char* stageName(Stage s) {
 }
 inline int stageIndex(Stage s) { return static_cast<int>(s); }
 
-// The care "signal" that dominates a stage decides which successor a creature
-// evolves into ("chosen by dominant stat"). Balanced
-// is the default / tie outcome (and the highest index, so it sorts last). The
-// per-signal creature ids live in the routing tables below: this enum is only
-// the key; which interactions feed each signal is Game's concern (game.cpp).
-enum class DominantSignal { Feeding, Play, Maintenance, Training, Balanced };
-inline constexpr int kNumDominantSignals = 5;
-
-inline const char* dominantSignalName(DominantSignal s) {
-    switch (s) {
-        case DominantSignal::Feeding: return "Feeding";
-        case DominantSignal::Play: return "Play";
-        case DominantSignal::Maintenance: return "Maintenance";
-        case DominantSignal::Training: return "Training";
-        case DominantSignal::Balanced: return "Balanced";
-    }
-    return "?";
-}
-
 // How many named animation loops one creature may declare. A structural bound on
 // CreatureDef::clips, not a balance number: raise it when a creature genuinely
 // needs a fifth loop, which costs every row the slot whether it fills it or not.

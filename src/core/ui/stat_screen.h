@@ -1,15 +1,16 @@
-// stat_screen.h (STAT): an 8-page status viewer (read-only) and the INDEX that jumps
-// between the pages.
-//   page 0  VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
-//   page 1  TIERS     the investment ladder: each combat stat's points, the rungs it
+// stat_screen.h (STAT): a paged status viewer (read-only, StatPage) and the INDEX that
+// jumps between the pages.
+//   VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
+//   BOND      the pet's Bond: its XP bonus and a bar per source (PetUpgrades::bondBp)
+//   TIERS     the investment ladder: each combat stat's points, the rungs it
 //                     has reached and what the next one costs
-//   page 2  LOADOUT   the pet's equipped moves + mods, WITH their effect text
-//   page 3  MOVES     every move this pet could learn, and which it has (collect_screen.h)
-//   page 4  FOODS     every dish in the game, and which this pet has eaten (ditto)
-//   page 5  BUFFS     currently-armed item buffs (Restore Point/Ambig-USB/Backup
+//   LOADOUT     the pet's equipped moves + mods, WITH their effect text
+//   MOVES       every move this pet could learn, and which it has (collect_screen.h)
+//   FOODS       every dish in the game, and which this pet has eaten (ditto)
+//   BUFFS       currently-armed item buffs (Restore Point/Ambig-USB/Backup
 //                     Drive), each with its effect text and remaining time if timed
-//   page 6  SPECIES   the pet's own lore: line, one-line snarky hint, infosec ref
-//   page 7  AUDIT LOG the rolling event history
+//   SPECIES     the pet's own lore: line, one-line snarky hint, infosec ref
+//   AUDIT LOG the rolling event history
 // A cycles the pages, B scrolls the flowed ones, HOLD B opens the INDEX and C backs
 // out. Each page dual-codes (grayscale-legible).
 // STAT is pet-only. The device/account stats (Hacker Rank, Bits, lifetime breadth)
@@ -25,6 +26,7 @@
 #include "core/model/pet_model.h"
 #include "core/model/pet_upgrades.h"
 #include "core/ui/prose_page.h"
+#include "core/ui/ui_state.h"   // StatPage
 
 namespace mal {
 
@@ -32,10 +34,6 @@ class Framebuffer;
 class ContentRegistry;
 class MoveLoadout;
 class Loadout;
-
-// The pages A cycles, and the dots the header's pager draws: one number, so a page
-// added to the roster can never leave the pager short.
-inline constexpr int kStatPages = 8;
 
 // The band every STAT page ends with. Two facts belong on it and they are not the same
 // kind: what the key under the reader's thumb does right now, and that the INDEX exists
@@ -71,7 +69,7 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
 // B-scroll by exactly what is on screen.
 int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT page 1. TIERS row model: the investment ladder, as the same flowed prose rows
+// STAT TIERS row model: the investment ladder, as the same flowed prose rows
 // LOADOUT and BUFFS use (ProseRow). One `header` row per combat stat carrying that stat's
 // point total, then one row per rung: its name, what it does (straight off the shared
 // table, core/model/stat_tiers.h) and a tag saying where the player stands on it.
@@ -91,12 +89,12 @@ std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]);
 // of authored prose is several screens of it.
 int tierRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT page 1. TIERS: the windowed ladder from buildTierRows, scrolling on B like the
+// STAT TIERS: the windowed ladder from buildTierRows, scrolling on B like the
 // two prose pages after it.
 void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat);
 
-// STAT page 2. LOADOUT: the windowed row list from buildLoadoutRows, each row's
+// STAT LOADOUT: the windowed row list from buildLoadoutRows, each row's
 // name + its effect text wrapped WHOLE beneath it, a scrollbar + "B SCROLL" hint
 // band when the list outruns one screen.
 // `scrollTop` is engine-owned: this page has no cursor to drive scrolling off
@@ -104,7 +102,11 @@ void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scr
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat);
 
-// STAT page 0. VITALS: name + generation + stage indicator, the three vitals
+// STAT BOND: the XP bonus Bond adds, then one bar per source filling toward its cap,
+// each with the action that fills it.
+void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades);
+
+// STAT VITALS: name + generation + stage indicator, the three vitals
 // gauges (Hunger / Fragmentation / Happiness) with tabular numerics, the creature
 // level + an XP bar toward the next level, the care-pip budget, and the
 // time-to-next-evolution readout. The vitals and care pips read from the PetModel.
@@ -169,14 +171,14 @@ std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
 // is more than one screen holds.
 int buffRowsFitting(const std::vector<ProseRow>& rows, int top);
 
-// STAT page 3. BUFFS: the armed-buff list from buildBuffRows, each with its
+// STAT BUFFS: the armed-buff list from buildBuffRows, each with its
 // effect text wrapped WHOLE below the name (and a remaining-time readout for the
 // timed ones), scrolling on B like LOADOUT when more are armed than fit. Empty
 // list shows a plain "no active buffs" line.
 void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
                      int beat);
 
-// STAT page 4. SPECIES: the pet's own lore, straight off its CreatureDef row
+// STAT SPECIES: the pet's own lore, straight off its CreatureDef row
 // (`hint`/`context`, defs.h). The game owns this copy, same as an item's
 // `effect` text. `line` is the raw line id (e.g. "ransomware"), upper-cased
 // for display; `hint` is the snarky read, `context` the real infosec reference
@@ -187,7 +189,7 @@ void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scr
 // with the foot of the screen still empty.
 void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat);
 
-// STAT page 5. AUDIT LOG: the rolling event history newest-first, each
+// STAT AUDIT LOG: the rolling event history newest-first, each
 // a type glyph + terse text. The lifetime/uptime footer lives on the Hacker
 // PROFILE slot, so this page is the log alone and shows the whole ring.
 void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
@@ -218,7 +220,7 @@ struct StatIndexRow {
     const char* label = "";
     char value[14] = {0};
     bool sub = false;
-    int page = 0;
+    StatPage page = StatPage::Vitals;
     int anchor = 0;
 };
 
@@ -231,13 +233,20 @@ struct StatIndexRow {
 // The sub-rows are derived from the header rows of the two flowed pages rather than
 // listed here, which is what keeps an egg's collapsed LOADOUT (one "- NO LOADOUT -"
 // row, no headers) from offering sections it does not have.
+struct StatIndexCounts {
+    int level = 0;
+    int bondBp = 0;                     // bondTotalBp: the BOND row's readout
+    int movesOn = 0, moveSlots = 0;
+    int modsOn = 0, modSlots = 0;
+    int buffs = 0;
+    const char* line = nullptr;
+    int logEvents = 0;
+    int movesKnown = 0, movesLearnable = 0;
+    int foodsEaten = 0, foodsTotal = 0;
+};
 std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
                                              const std::vector<ProseRow>& loadoutRows,
-                                             int level, int movesOn, int moveSlots,
-                                             int modsOn, int modSlots, int buffs,
-                                             const char* line, int logEvents,
-                                             int movesKnown, int movesLearnable,
-                                             int foodsEaten, int foodsTotal);
+                                             const StatIndexCounts& c);
 
 // The INDEX: `rows` from top to bottom, the focused one banded, each with its readout
 // right-aligned. The roster has a ceiling (six pages, four stats, two loadout halves)

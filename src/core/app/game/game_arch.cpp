@@ -231,6 +231,8 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
     p.bandwidthRegenBonusMin = upgrades.bandwidthRegenMin;
     for (int i = 0; i < kLevelStatCount; ++i) p.statBonus[i] = upgrades.statBonus[i];
     p.xpRateBonusPct = upgrades.xpRatePct;
+    for (int k = 0; k < kBondSources; ++k)
+        p.bondBp[k] = static_cast<uint16_t>(upgrades.bondBp[k]);
     // The palate and the favourite are the creature's too: a pet that went onto the shelf
     // having eaten something comes back having eaten it, and still loving the same dish.
     for (const ItemDef* d : foodsEaten) {
@@ -341,6 +343,8 @@ void Game::archDeployStored(int storedIdx) {
     upgrades_.xpRatePct = incoming.xpRateBonusPct;
     upgrades_.favouriteFood = registry_.item(incoming.favouriteFood);
     upgrades_.favouriteFound = incoming.favouriteFound != 0;
+    for (int k = 0; k < kBondSources; ++k)
+        upgrades_.bondBp[k] = std::min<int>(incoming.bondBp[k], kBondSourceCapBp);
     // v26: thaw the incoming pet's creature-level state. Without it the deployed pet
     // silently inherits the outgoing pet's level.
     combatLevel_ = incoming.combatLevel;

@@ -102,7 +102,6 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
         return;
     }
     moveLoadout_.equip(moveSlot_, m->id);
-    noteCareSignal(DominantSignal::Training);
     markSaveDirty();
     trainScreen_ = TrainScreen::MovePicker;
     nav_ = Nav::Submenu;
@@ -127,7 +126,6 @@ void Game::onMovePicker(const ButtonEvent& ev) {
         else if (ev.button == Button::B) {
             if (moveConfirmChoice_ == 1 && movePendingId_) {
                 moveLoadout_.equip(moveSlot_, movePendingId_);
-                noteCareSignal(DominantSignal::Training);
                 markSaveDirty();
             }
             moveConfirm_ = false;

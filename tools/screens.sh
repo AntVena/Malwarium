@@ -39,6 +39,7 @@ SCENES=(
   "stat_index_tiers|stat tiers index"
   "stat_species|stat species"
   "stat_buffs|stat buffs armbuffs"  "stat_buffs_scrolled|stat buffs armbuffs scroll:1"
+  "stat_bond|stat bond"              "stat_bond_filled|stat bond bonded"
   "stat_loadout|stat loadout"
   "stat_loadout_full|stat loadout fullkit pet:wire_heir"
   "stat_loadout_scrolled|stat loadout fullkit pet:wire_heir scroll:1"

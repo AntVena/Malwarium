@@ -451,9 +451,7 @@ int Game::exploreXpEfficiencyPct() const {
                       : exploreSub_ >= kExplSubAreas ? kExplSubAreas - 1 : exploreSub_;
         enemyLevel = a * kExplSubAreas + sub;
     }
-    int xp = applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, combatLevel_));
-    if (evolveSoakFactor_ > 1) xp *= evolveSoakFactor_;
-    xp += xp * upgrades_.xpRatePct / 100;
+    const int xp = scaleXp(applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, combatLevel_)));
     return (xp * 100 + base / 2) / base;      // rounded, so a small trim still shows
 }
 

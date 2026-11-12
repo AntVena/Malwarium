@@ -1637,7 +1637,9 @@ void test_epic_dish_grants_a_permanent_xp_rate() {
     const int award = kLevelXpBase / 2;
     g.debugAddCombatXp(award);
     CHECK(g.combatLevel() == 0);
-    CHECK(g.combatXp() == award + award * rate / 100);
+    // The dish was also a meal, so the pet's Bond rides on the same award.
+    CHECK(g.combatXp() ==
+          award + award * (rate * 100 + bondTotalBp(g.petUpgrades())) / 10000);
     CHECK(g.combatXp() > award);
     // Second helping: the rate is already the pet's, so it does not compound.
     g.debugUseItem(d->id);

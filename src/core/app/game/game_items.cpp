@@ -319,7 +319,6 @@ void Game::useItem() {
     // the item's effects[], applied by the one applier; no per-id branching here.
     inventory_.remove(d.id, 1);
     applyItemEffects(d);
-    noteCareSignal(DominantSignal::Play);   // a happiness buff reads as play
     char buf[28];
     std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
@@ -591,7 +590,9 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     // a stat that was already capped has none to show.
     feedBefore_ = {model_.hunger(), model_.fragmentation(), model_.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
-    noteCareSignal(DominantSignal::Feeding);   // dominant-signal tally
+    // A meal builds Bond only when the pet had room for it: stuffing a full pet is not
+    // looking after it.
+    if (feedBefore_.hunger < 100) addBond(upgrades_, BondSource::Food, kBondFoodBp);
     // Feeding from the crisis resolves it immediately: disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).
     if (fromLockout) lockoutActive_ = false;

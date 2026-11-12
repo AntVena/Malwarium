@@ -182,7 +182,6 @@ void Game::resolveMaint() {
         const bool failed = model_.applyAntivirus(maintSuccess_);
         if (failed) { addCareMistakeShielded(1); log_.push(LogEventType::CareMistake, "FAILED AV SCAN"); }
     }
-    noteCareSignal(DominantSignal::Maintenance);   // dominant-signal tally
     markSaveDirty();
     processResolved_ = true;
 }

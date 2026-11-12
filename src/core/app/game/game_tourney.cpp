@@ -193,7 +193,7 @@ void Game::awardTourneyPurse() {
     // upgrades an operator bought still apply here; the mod is drawn from The Pirate
     // Bayou's own pool, because that is the water the arena is held in.
     bits_ += applyCombatBitsBonus(kTourneyWinBits);
-    addCombatXp(applyCombatXpBonus(kTourneyWinXp));
+    addFightXp(applyCombatXpBonus(kTourneyWinXp));
     if (const char* id = rollAreaModId(kTourneyAreaIndex)) grantMod(id);
     ++tourneyWins_;
     // ...and the rung this win lands on pays a BACKGROUND, if one is authored for it.
