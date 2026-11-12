@@ -6,7 +6,7 @@
 // rack keeps the lifetime and current-life parts and clears PetArmed, since everything in
 // it can be armed again. Pet::stored and Pet::thawed are that move, and the only mapping
 // between a Pet and its save record: the save writes the active pet through them too, with
-// PetArmed::saved beside it.
+// PetArmed::saved beside it. A new egg is a new Pet (Pet::laid).
 #pragma once
 
 #include <cstdint>
@@ -167,6 +167,11 @@ struct Pet {
     // The pet a save record thaws into, at game-ms `nowMs`, with nothing armed. Ids the
     // running content no longer defines are dropped.
     static Pet thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t nowMs);
+    // A newly laid egg of `line`, incubating from game-ms `nowMs`, with nothing of any
+    // earlier pet. The moves and mods are the caller's: the starting kit is the line's,
+    // and a device's first egg keeps the sample mods. Game::installPet seats the
+    // creature, and Game numbers the generation.
+    static Pet laid(const EggLineDef* line, MoveLoadout moves, ModSlots mods, uint32_t nowMs);
 };
 
 }  // namespace mal

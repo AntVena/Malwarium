@@ -108,17 +108,6 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 
 #### Records
 
-**The active pet's save mapping, and the new-egg reset.** `Pet` (`core/model/pet.h`) holds
-the active pet, and `Pet::stored` / `Pet::thawed` are the rack's only mapping. The active pet
-still maps field by field in `game_persist.cpp` (`capturePetProgress`/`restorePetProgress`,
-`captureActivePet`/`restoreActivePet` and parts of the other pairs) into `SaveData`'s flat
-fields, so a new per-pet field needs a second mapping there. Store the active pet as a
-`SaveStoredPet` and load it through `Pet::thawed`, which leaves one mapping. `layEgg` likewise
-resets each field by hand; a fresh `Pet` built for the egg replaces that, with the starting
-moves and the first egg's sample mods as its two inputs. | `game_persist.cpp`,
-`game_lifecycle.cpp`'s `layEgg`, `core/model/save.*` | L | A save format change: a migration
-from the flat fields and a round-trip test on an old and a new blob. |
-
 **The `Operator` record.** Everything the player keeps across pets, tagged PLAYER-LEVEL in
 `save.h` (about 40 fields): Hacker rank and tag, Bits, the Rig Shop account (`rigLevel_`,
 `rigServicesOff_`, `rigServicesAsk_` and the queries over them, `rigFeatureActive`,

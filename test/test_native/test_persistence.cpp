@@ -395,6 +395,50 @@ void test_save_active_pet_round_trips_through_a_reboot() {
     CHECK(g.debugDepthMultiplier() == 1);
 }
 
+// A new egg is a whole new Pet: nothing of the pet before it carries over, and it owns
+// its own line's moves. The device's first egg keeps the sample mods; a later one has none.
+void test_new_egg_is_a_fresh_pet_record() {
+    {
+        Game g{StartMode::FreshHatch};
+        pickFirstEggLine(g);
+        const Pet& p = g.petRecord();
+        CHECK(g.inEggPhase());
+        CHECK(p.mods.equipped(0) && std::strcmp(p.mods.equipped(0), "firewall_patch") == 0);
+        CHECK(p.mods.equipped(1) && std::strcmp(p.mods.equipped(1), "clock_speed_boost") == 0);
+    }
+    Game g{StartMode::Hatched, "paypup"};
+    for (const char* id : {"restore_point", "yubi_cookie", "backup_drive", "ambig_usb",
+                           "bad_usb", "tiramisudo", "deep_learning_module"}) {
+        g.inventory().add(id, 1);
+        g.debugUseItem(id);
+    }
+    g.debugTasteFoods(3);
+    g.debugSetFavouriteFood("spam");
+    g.debugSetBestDarkWebDepth(5);
+    g.debugGrantMove("buffer_overflow");
+    CHECK(g.debugDepthMultiplier() == 2);
+
+    enterArchNewEgg(g);
+    pickFirstEggLine(g);
+    const Pet& p = g.petRecord();
+    CHECK(g.inEggPhase() && p.line);
+    CHECK(p.generation == 2 && g.rackCount() == 1);
+    CHECK(p.level == 0 && p.xp == 0);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(p.statPoints[i] == 0);
+    CHECK(!p.moves.owns("buffer_overflow"));
+    CHECK(p.moves.owned() == MoveLoadout::startingForLine(g.content(), p.line->id).owned());
+    for (int i = 0; i < kModSlots; ++i) CHECK(p.mods.equipped(i) == nullptr);
+    CHECK(p.upgrades.bandwidthRegenMin == 0 && p.upgrades.xpRatePct == 0);
+    CHECK(!p.upgrades.favouriteFood && !p.upgrades.favouriteFound);
+    CHECK(p.foodsEaten.empty());
+    CHECK(!p.grants.shieldActive && !p.grants.shieldSpent && !p.grants.yubiSpent);
+    CHECK(p.usb.branch == BranchOverride::None && p.usb.soakFactor == 1 && !p.usb.hold);
+    CHECK(!p.armed.trojanDivert && p.armed.backupShieldUntilMs == 0);
+    CHECK(p.armed.deepWebDepthMultiplier == 1 && !p.armed.lockoutActive);
+    CHECK(p.bestDeepWebDepth == 0 && p.bestDarkWebDepth == 0);
+    CHECK(p.defragCount == 0 && p.dyingElapsedMs == 0);
+}
+
 // Boot-from-save vs Hatch: an empty store hatches; once a pet is raised + saved,
 // a fresh Game over the same store boots straight onto the raised pet, restored.
 void test_boot_from_save_vs_hatch() {

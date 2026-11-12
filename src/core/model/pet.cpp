@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <utility>
 
 #include "core/content/registry.h"
 #include "core/model/save.h"
@@ -132,6 +133,16 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
     // The dying window resumes from its accumulated time; dyingArmed stays false so the
     // next tick re-anchors it against the current clock.
     p.dyingElapsedMs = s.dyingElapsedMs;
+    return p;
+}
+
+Pet Pet::laid(const EggLineDef* line, MoveLoadout moves, ModSlots mods, uint32_t nowMs) {
+    Pet p;
+    p.line = line;
+    p.moves = std::move(moves);
+    p.mods = std::move(mods);
+    p.stageEnteredMs = nowMs;
+    p.bootHatchRemainMs = kBootHatchMs;
     return p;
 }
 

@@ -103,73 +103,20 @@ void Game::layEgg(const EggLineDef* line) {
     // Boot-Sector egg at idle. The egg IS the Boot-Sector creature, on-screen and
     // interactable, incubating over kBootHatchMs. It counts as a new pet immediately
     // (the egg is laid now; generation = its ordinal).
-    pet_.line = line ? line : registry_.eggLine("ransomware");
-    installPet(registry_.creature(pet_.line ? pet_.line->eggCreatureId : "cryptoshell"));
-    pet_.model = PetModel();                 // fresh Boot-Sector vitals (frozen while egg)
-    // creature levels are per pet, so a newly laid egg starts at level 0. Titles and
-    // Rank survive a pet's death. This is the single "new egg" chokepoint (fresh boot,
-    // Store, CSF, resetToHatch), so resetting here covers them all; evolution keeps
-    // the level (it doesn't pass through here).
-    pet_.xp = 0;
-    pet_.level = 0;
-    for (int i = 0; i < kLevelStatCount; ++i) pet_.statPoints[i] = 0;
+    if (!line) line = registry_.eggLine("ransomware");
+    // A new egg is a whole new Pet, so nothing of the last pet carries over: its level,
+    // moves, mods, upgrades, palate, grants, USB patch and anything armed. This is the
+    // single new-egg chokepoint (fresh boot, Store, CSF, resetToHatch). The egg owns its
+    // line's moves. Installed mods are per-pet hardware, so an egg starts with none,
+    // except the device's first egg, which keeps the sample mods Game() and resetToHatch
+    // install. The spare pool is the player's and is untouched.
+    pet_ = Pet::laid(line, MoveLoadout::startingForLine(registry_, line ? line->id : nullptr),
+                     petsRaised_ > 0 ? ModSlots{} : pet_.mods, nowMs_);
+    installPet(registry_.creature(line ? line->eggCreatureId : "cryptoshell"));
     lastLevelUpStat_ = -1;
-    // The stamped Attack/Defend layout is per-pet too: a
-    // fresh egg starts every slot Unset so its own raise re-derives the layout
-    // from scratch (same new-egg chokepoint as the level reset above).
-    for (int i = 0; i < kMaxMoveSlots; ++i) pet_.slotKinds[i] = SlotKind::Unset;
-    // The equipped/owned move loadout is per-pet too (owned moves are earned by
-    // this pet's raise). It resets with the level and slot kinds above, so a new
-    // egg never inherits a prior pet's moves, which could be the wrong line or
-    // stage and would fall back to Quick Jab in combat. A fresh egg owns every
-    // move native to its own line. The generic pool comes only from wild
-    // encounters.
-    pet_.moves = MoveLoadout::startingForLine(registry_, pet_.line ? pet_.line->id : nullptr);
-    // Installed mod SLOTS are per-pet hardware, like the move loadout above: a
-    // fresh egg starts with nothing installed. The SPARE pool is untouched: mods
-    // are found like items, shared across whichever pet is currently active. Skip
-    // on the very first egg (petsRaised_ == 0 here, pre-increment below) so
-    // Game::Game()/resetToHatch's starting sample loadout survives a fresh boot.
-    if (petsRaised_ > 0) pet_.mods.resetSlots();
-    // Per-pet care-mistake shield state (save v21): a fresh egg carries no shield and
-    // has neither once-per-lifetime item consumed. This is the single new-egg chokepoint.
-    pet_.grants.shieldActive = false;
-    pet_.grants.shieldSpent = false;
-    pet_.grants.yubiSpent = false;
-    pet_.armed.trojanDivert = false;
-    // ...and nothing in the USB port: a fresh egg carries neither a forced branch, a soak
-    // nor a hold, however many devices the last pet was raised on. pet_.armed.trojanDivert is
-    // cleared just above, so this is the same emptying the Eject-USB does.
-    pet_.usb.branch = BranchOverride::None;
-    pet_.usb.soakFactor = 1;
-    pet_.usb.hold = false;
-    pet_.armed.backupShieldUntilMs = 0;
-    // ...and none of the permanent Epic-dish upgrades: every one of them roots a PET, so
-    // a new egg starts back at the shared regen interval, with no off-level stat points
-    // and no XP rate, however many plates the last one ate.
-    pet_.upgrades = PetUpgrades{};
-    // ...and an empty plate. The palate belongs to the pet. collectedItems_ keeps
-    // everything the device has held; this set starts over, so each pet fills STAT's
-    // FOODS grid from empty.
-    pet_.foodsEaten.clear();
-    // This pet's own DeepWeb Dive record (save v35) and any armed depth-multiplier/
-    // start-depth Pass: a fresh egg has never dived and carries nothing armed.
-    pet_.bestDeepWebDepth = 0;
-    pet_.bestDarkWebDepth = 0;
-    clearDiveDepthBuffs();
-    pet_.armed.deepWebStartDepth = -1;
-    pet_.armed.pendingDiveStartBonusPct = 0;
-    // the re-farm diminishing-returns curve is PER-PET (not per-device):
-    // a fresh pet finds every cleared area an undepleted training ground again. This
-    // is the single new-egg chokepoint, so zeroing here covers fresh boot / Store /
-    // CSF / resetToHatch; the pet-swap path (archDeployStored) resets it too.
-    for (auto& row : pet_.armed.subRefarmCount) for (auto& c : row) c = 0;
     exploreActive_ = false;              // an egg can't explore; clear any live mode
     exploreStreak_ = 0;
-    pet_.bootHatchRemainMs = kBootHatchMs;   // the incubation clock (decrypt gate)
-    pet_.eggOfferMade = false;               // this egg hasn't been offered an accelerator
     lastModelMs_ = nowMs_;
-    pet_.stageEnteredMs = nowMs_;            // Boot-Sector in-stage clock starts now
     ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
     pet_.generation = petsRaised_;
     // The generation ladder is swept off petsRaised_ (AchSeries::PetsRaised), so
