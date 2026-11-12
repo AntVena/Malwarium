@@ -335,18 +335,18 @@ void test_theme_persists_by_name() {
     // table is ordered, and an unknown one is base, the set every build has.
     SaveData d;
     CHECK(deserializeSave(store.bytes(), d));
-    CHECK(std::strcmp(d.theme, kThemes[row].palette) == 0);
-    CHECK(palThemeByName(d.theme) == palette);
+    CHECK(std::strcmp(d.settings.theme, kThemes[row].palette) == 0);
+    CHECK(palThemeByName(d.settings.theme) == palette);
     CHECK(palThemeByName("a-set-this-build-does-not-ship") == 0);
     CHECK(palThemeByName("") == 0);
     CHECK(palThemeByName(nullptr) == 0);
 
     // A pre-v64 blob names no theme at all, which is the same answer.
-    d.theme[0] = '\0';
+    d.settings.theme[0] = '\0';
     std::vector<uint8_t> blob = serializeSave(d);
     SaveData back;
     CHECK(deserializeSave(blob, back));
-    CHECK(palThemeByName(back.theme) == 0);
+    CHECK(palThemeByName(back.settings.theme) == 0);
     setPalTheme(0);
 }
 
@@ -365,7 +365,7 @@ void test_theme_load_falls_back_when_locked() {
     }
     SaveData d;
     CHECK(deserializeSave(store.bytes(), d));
-    std::snprintf(d.theme, sizeof(d.theme), "%s", kThemes[chipRow].palette);
+    std::snprintf(d.settings.theme, sizeof(d.settings.theme), "%s", kThemes[chipRow].palette);
     CHECK(store.save(serializeSave(d)));
 
     Game g(StartMode::Hatched, "paypup", &store);

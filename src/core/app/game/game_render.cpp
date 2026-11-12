@@ -70,9 +70,9 @@ void Game::render(Framebuffer& fb) const {
             v.cursor = exploreCtlRow_;
             v.hasWarpKey = !heldWarpKeys().empty();
             v.autoProgress = autoProgress_;
-            v.sound = !soundModeAllows(soundMode_, SoundTier::Event) ? ExploreSound::OffInCfg
-                      : exploreSound_                                ? ExploreSound::On
-                                                                     : ExploreSound::Muted;
+            v.sound = !soundModeAllows(soundMode(), SoundTier::Event) ? ExploreSound::OffInCfg
+                      : exploreSound()                                ? ExploreSound::On
+                                                                      : ExploreSound::Muted;
             v.xpEfficiencyPct = exploreXpEfficiencyPct();
             drawExploreControl(fb, v);
             break;
@@ -549,8 +549,8 @@ void Game::drawHabitatCarousel(Framebuffer& fb, int cursor) const {
     // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside
     // them: the shelf is always up at idle, so it is where a need is seen first.
     // CFG's CARE ALERTS switch turns the marks off; the needs behind them stand.
-    if (careAlerts_) careAttention(marks.attention, marks.urgent);
-    drawCarousel(fb, cursor, uiMode_, beat_, marks);
+    if (settings_.careAlerts) careAttention(marks.attention, marks.urgent);
+    drawCarousel(fb, cursor, settings_.uiMode, beat_, marks);
 }
 
 Game::AchBannerCopy Game::achBannerCopy() const {

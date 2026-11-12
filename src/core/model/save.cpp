@@ -324,7 +324,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (uint8_t b : op.subBossUnlocked) w.u8(b);
 
     // v14: the CFG screen-brightness level.
-    w.i32(d.brightness);
+    w.i32(d.settings.brightness);
 
     // v15: the EXPL per-sub-area re-farm win counts, length-prefixed
     // (flat row-major), each a u16 count.
@@ -590,7 +590,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v64: the chosen PAL_CORE theme, by NAME, in a fixed kSaveIdCap cell like every
     // other id here. Its own tail after v63's.
-    w.bytes(d.theme, kSaveIdCap);
+    w.bytes(d.settings.theme, kSaveIdCap);
 
     // v65: the STORY chapters already shown, as a length-prefixed bitset over
     // StoryChapterDef::wire. Its own tail after v64's.
@@ -603,18 +603,18 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (uint8_t b : op.tipsSeen) w.u8(b);
 
     // v67: UI MODE and CARE ALERTS, a byte each. Their own tail after v66's.
-    w.u8(d.uiMode);
-    w.u8(d.careAlerts);
+    w.u8(d.settings.uiMode);
+    w.u8(d.settings.careAlerts);
 
     // v68
-    w.u8(d.soundMode);
-    w.u8(d.volume);
+    w.u8(d.settings.soundMode);
+    w.u8(d.settings.volume);
 
     // v69: the askable services set to ASK. Its own tail after v68's.
     w.u32(op.rigServicesAsk);
 
     // v71
-    w.u8(d.exploreSound);
+    w.u8(d.settings.exploreSound);
 
     // v72: the favourite dish (the active pet's, then the rack's in rack order), and
     // the rack's palates as a food-id dictionary plus a bitset per pet over it.
@@ -864,10 +864,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     // v14 tail: the CFG screen-brightness level. Absent in a v1..v13 blob:
-    // d.brightness keeps its kBrightnessDefault (brightest) default from SaveData.
+    // d.settings.brightness keeps its kBrightnessDefault default from SaveSettings.
     if (version >= 14) {
         const int32_t b = r.i32();
-        if (r.ok) d.brightness = b;
+        if (r.ok) d.settings.brightness = b;
     }
 
     // v15 tail: the EXPL per-sub-area re-farm win counts. Absent in a
@@ -1284,8 +1284,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // as the base set: what every device drew before there was a second one to choose.
     // A name this build has no set for lands the same way (Game::load resolves it).
     if (version >= 64) {
-        r.bytes(d.theme, kSaveIdCap);
-        d.theme[kSaveIdCap - 1] = '\0';
+        r.bytes(d.settings.theme, kSaveIdCap);
+        d.settings.theme[kSaveIdCap - 1] = '\0';
     }
 
     // v65 tail: which STORY chapters this device has been shown. Absent in an older blob
@@ -1305,21 +1305,21 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v67 tail: UI MODE and CARE ALERTS. Absent in an older blob -> the SaveData
     // defaults. ICONS+LABEL and ON.
     if (version >= 67) {
-        d.uiMode = r.u8();
-        d.careAlerts = r.u8();
+        d.settings.uiMode = r.u8();
+        d.settings.careAlerts = r.u8();
     }
 
     // v68
     if (version >= 68) {
-        d.soundMode = r.u8();
-        d.volume = r.u8();
+        d.settings.soundMode = r.u8();
+        d.settings.volume = r.u8();
     }
 
     // v69 tail: askable services at ASK. Absent in an older blob -> 0, every one at YES.
     if (version >= 69) op.rigServicesAsk = r.u32();
 
     // v71
-    if (version >= 71) d.exploreSound = r.u8();
+    if (version >= 71) d.settings.exploreSound = r.u8();
 
     // v72 tail: the favourite dishes and the rack's palates. Absent in an older blob ->
     // no favourite anywhere (each pet rolls one at its next meal) and empty rack plates.

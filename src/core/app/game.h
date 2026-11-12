@@ -15,6 +15,7 @@
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
 #include "core/app/operator.h"
+#include "core/app/settings.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
@@ -329,6 +330,8 @@ public:
     int modStorageCap() const { return modCopyCap(op_.rig.level[kRigRowModStorage]); }
     // The Operator record, read by const reference: the player across every pet.
     const Operator& operatorRecord() const override { return op_; }
+    // The Settings record, read by const reference: the device's preferences.
+    const Settings& settingsRecord() const { return settings_; }
     // Price of the NEXT "Increase Bandwidth" upgrade (climbs per purchase, a).
     int bandwidthUpgradeCost() const { return op_.rig.costFor(kRigRowBandwidth); }
     // rig upgrades: player-level, persisted (save v27), survive lifecycles
@@ -1646,7 +1649,7 @@ public:
     const CreatureDef* chromaSubject() const;
 
     int cursor() const { return cursor_; }      // focused carousel slot 0..7
-    UiMode uiMode() const { return uiMode_; }
+    UiMode uiMode() const { return settings_.uiMode; }
     // How the carousel draws its slots (icons + label / icons / text). Persisted (save
     // v67), so it survives a reboot and an update; setUiMode persists on change.
     void setUiMode(UiMode m);
@@ -1654,19 +1657,19 @@ public:
     // CFG > DEVICE > CARE ALERTS: whether the carousel draws its "!" needs-attention
     // marks (Game::careAttention). Persisted beside UI MODE (save v67). Off hides the
     // marks only: the vitals, the lockout and the care cards are unchanged.
-    bool careAlerts() const { return careAlerts_; }
+    bool careAlerts() const { return settings_.careAlerts; }
     void setCareAlerts(bool on);
     // Screen-brightness level: a 0-based backlight index (0..kBrightnessLevels-1),
     // persisted (save v14). The device tier reads this to drive the backlight PWM; the
     // host tier ignores it. setBrightness clamps + persists.
-    int brightness() const { return brightness_; }
+    int brightness() const { return settings_.brightness; }
     void setBrightness(int level);
-    SoundMode soundMode() const { return soundMode_; }
+    SoundMode soundMode() const { return settings_.soundMode; }
     void setSoundMode(SoundMode m);
-    int volume() const { return volume_; }
+    int volume() const { return settings_.volume; }
     void setVolume(int level);
     // The walk's A+C SOUND row: false mutes every Event cue an explore fight would play.
-    bool exploreSound() const { return exploreSound_; }
+    bool exploreSound() const { return settings_.exploreSound; }
     void setExploreSound(bool on);
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
     void playSound(Sound s);
@@ -1678,7 +1681,7 @@ public:
     // one move together, so a repaint can never be in a set the save does not name.
     // It refuses a set this device has not unlocked and answers whether it took, the
     // way setBackgroundPick refuses a locked place.
-    int themePick() const { return themePick_; }
+    int themePick() const { return settings_.theme; }
     const char* themeName() const;
     bool setThemePick(int index);
     // Whether row `i` of kThemes (content_themes.h) is unlocked: Start rows always, a
@@ -3409,16 +3412,16 @@ private:
     EventLog log_;
     // The player across every pet (core/app/operator.h). WIPE EVERYTHING replaces it.
     Operator op_;
+    // The device's preferences (core/app/settings.h). Nothing resets it.
+    Settings settings_;
+    // Repaint and schedule a save after a setting changed.
+    void settingChanged() {
+        dirty_ = true;
+        markSaveDirty();
+    }
 
     Nav nav_ = Nav::Idle;
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
-    UiMode uiMode_ = UiMode::IconsLabel;
-    bool careAlerts_ = true;    // the "!" marks on the carousel (save v67)
-    int brightness_ = kBrightnessDefault;  // backlight level (persisted, v14)
-    SoundMode soundMode_ = SoundMode::Off;
-    int volume_ = kVolumeDefault;
-    bool exploreSound_ = true;             // the walk's A+C SOUND row (save v71)
-    int themePick_ = 0;                    // PAL_CORE theme index (persisted, v64)
 
     // L2/L3 state.
     int listRow_ = 0;                      // selected row (ITEMS row idx / MAINT 0..1)

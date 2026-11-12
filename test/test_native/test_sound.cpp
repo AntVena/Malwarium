@@ -195,18 +195,19 @@ void test_cfg_sound_and_volume_persist() {
     CHECK(again.volume() == kVolumeDefault + 1);
 
     SaveData d;
-    d.soundMode = static_cast<uint8_t>(SoundMode::AlertsOnly);
-    d.volume = 4;
+    d.settings.soundMode = static_cast<uint8_t>(SoundMode::AlertsOnly);
+    d.settings.volume = 4;
     SaveData back;
     CHECK(deserializeSave(serializeSave(d), back));
-    CHECK(back.soundMode == static_cast<uint8_t>(SoundMode::AlertsOnly) && back.volume == 4);
-    CHECK(SaveData{}.soundMode == static_cast<uint8_t>(SoundMode::Off) &&
-          SaveData{}.volume == kVolumeDefault);
+    CHECK(back.settings.soundMode == static_cast<uint8_t>(SoundMode::AlertsOnly));
+    CHECK(back.settings.volume == 4);
+    CHECK(SaveData{}.settings.soundMode == static_cast<uint8_t>(SoundMode::Off) &&
+          SaveData{}.settings.volume == kVolumeDefault);
     MemSaveStore odd;
     {
         SaveData bad;
-        bad.soundMode = 9;
-        bad.volume = 200;
+        bad.settings.soundMode = 9;
+        bad.settings.volume = 200;
         odd.save(serializeSave(bad));
     }
     Game clamped{StartMode::Hatched, "paypup", &odd};
@@ -402,10 +403,10 @@ void test_explore_control_sound_row_toggles_and_persists() {
     CHECK(g.nav() == Game::Nav::Idle && g.exploreActive());
 
     SaveData d;
-    CHECK(d.exploreSound == 1);                   // pre-v71 blobs read as ON
-    d.exploreSound = 0;
+    CHECK(d.settings.exploreSound == 1);                   // pre-v71 blobs read as ON
+    d.settings.exploreSound = 0;
     SaveData back;
-    CHECK(deserializeSave(serializeSave(d), back) && back.exploreSound == 0);
+    CHECK(deserializeSave(serializeSave(d), back) && back.settings.exploreSound == 0);
     MemSaveStore store;
     store.save(serializeSave(d));
     Game again{StartMode::Hatched, "paypup", &store};

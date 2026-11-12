@@ -31,11 +31,11 @@ void Game::enterCfgScreen(CfgScreen target) {
             cfgSdFormatPick_ = 0;                            // result left on screen
             if (!sdFormatRequested()) sdFormatState_ = SdFormatState::Idle;  // is spent
             break;
-        case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(uiMode_); break;
+        case CfgScreen::UiMode: cfgUiPick_ = static_cast<int>(settings_.uiMode); break;
         case CfgScreen::Tips: cfgTipsRow_ = 0; break;
-        case CfgScreen::Brightness: cfgBrightPick_ = brightness_; break;   // the applied level
-        case CfgScreen::Sound: cfgSoundPick_ = static_cast<int>(soundMode_); break;
-        case CfgScreen::Volume: cfgVolumePick_ = volume_; break;          // ...likewise
+        case CfgScreen::Brightness: cfgBrightPick_ = brightness(); break;   // the applied level
+        case CfgScreen::Sound: cfgSoundPick_ = static_cast<int>(settings_.soundMode); break;
+        case CfgScreen::Volume: cfgVolumePick_ = settings_.volume; break;          // ...likewise
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle(); break;     // the equipped one
         case CfgScreen::Background: {                                      // ...likewise
@@ -99,7 +99,7 @@ void Game::onCfgGroup(const ButtonEvent& ev) {
     if (ev.button == Button::A) cfgGroupRow_ = (cfgGroupRow_ + 1) % n;
     else if (ev.button == Button::B) {
         // A switch flips where it stands; every other row opens its own screen.
-        if (rows[cfgGroupRow_].target == CfgScreen::CareAlerts) setCareAlerts(!careAlerts_);
+        if (rows[cfgGroupRow_].target == CfgScreen::CareAlerts) setCareAlerts(!careAlerts());
         else enterCfgScreen(rows[cfgGroupRow_].target);
     } else if (ev.button == Button::C) leaveCfgScreen();
 }
@@ -389,31 +389,25 @@ void Game::executeFactoryReset() {
 }
 
 void Game::setUiMode(UiMode m) {
-    if (m == uiMode_) return;
-    uiMode_ = m;
-    dirty_ = true;
-    markSaveDirty();   // a persisted CFG pref (save v67): survives a reboot and an update
+    if (settings_.setUiMode(m)) settingChanged();
 }
 
 void Game::cycleUiMode() {
-    setUiMode(static_cast<UiMode>((static_cast<int>(uiMode_) + 1) % 3));
+    setUiMode(static_cast<UiMode>((static_cast<int>(settings_.uiMode) + 1) % 3));
 }
 
 void Game::setCareAlerts(bool on) {
-    if (on == careAlerts_) return;
-    careAlerts_ = on;
-    dirty_ = true;
-    markSaveDirty();   // a persisted CFG pref (save v67), like UI MODE beside it
+    if (settings_.setCareAlerts(on)) settingChanged();
 }
 
-const char* Game::themeName() const { return kPalThemeNames[themePick_]; }
+const char* Game::themeName() const { return kPalThemeNames[settings_.theme]; }
 
 // Which kThemes ROW the applied set is, for the picker's ACTIVE tag and its opening
 // focus. The table and the palette are separately ordered on purpose (content_themes.h),
 // so this is a lookup and not a cast.
 int Game::themeRow() const {
     for (int i = 0; i < kThemeCount; ++i)
-        if (palThemeByName(kThemes[i].palette) == themePick_) return i;
+        if (palThemeByName(kThemes[i].palette) == settings_.theme) return i;
     return 0;
 }
 
@@ -449,24 +443,18 @@ bool Game::setThemePick(int index) {
     for (int i = 0; i < kThemeCount; ++i)
         if (palThemeByName(kThemes[i].palette) == index) { row = i; break; }
     if (row < 0 || !themeRowUnlocked(row)) {
-        if (index == 0) { setPalTheme(0); themePick_ = 0; return true; }
+        if (index == 0) { setPalTheme(0); settings_.theme = 0; return true; }
         return false;
     }
     setPalTheme(index);            // even when unchanged: a load applies through here
-    if (index == themePick_) return true;
-    themePick_ = index;
-    dirty_ = true;                 // nothing else changed, but every pixel of it did
-    markSaveDirty();               // a persisted CFG pref (save v64): survives a reboot
+    if (index == settings_.theme) return true;
+    settings_.theme = index;
+    settingChanged();              // nothing else changed, but every pixel of it did
     return true;
 }
 
 void Game::setBrightness(int level) {
-    if (level < 0) level = 0;
-    if (level >= kBrightnessLevels) level = kBrightnessLevels - 1;
-    if (level == brightness_) return;
-    brightness_ = level;
-    dirty_ = true;
-    markSaveDirty();   // a persisted CFG pref (save v14): survives a reboot
+    if (settings_.setBrightness(level)) settingChanged();
 }
 
 void Game::drawCfg(Framebuffer& fb) const {
@@ -483,7 +471,7 @@ void Game::drawCfg(Framebuffer& fb) const {
             v.power = power_;
             v.uptimeMs = nowMs_;
             v.fwVersion = kFirmwareVersion;
-            v.uiMode = uiMode_;
+            v.uiMode = settings_.uiMode;
             v.rankTitle = rankLine;
             v.networksSeen = op_.networksSeen;
             v.equippedTitle = equippedTitleName();
@@ -497,17 +485,17 @@ void Game::drawCfg(Framebuffer& fb) const {
         case CfgScreen::Device: {
             CfgDeviceView v;
             v.cursor = cfgGroupRow_;
-            v.uiMode = uiMode_;
-            v.brightness = brightness_;
-            v.soundMode = soundMode_;
-            v.volume = volume_;
+            v.uiMode = settings_.uiMode;
+            v.brightness = settings_.brightness;
+            v.soundMode = settings_.soundMode;
+            v.volume = settings_.volume;
             v.theme = themeName();
             // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
             // however the pet moves, which is the whole difference between the two.
             v.background = op_.backgroundPick == SceneId::None
                                ? "AUTO"
                                : backgroundFor(op_.backgroundPick)->name;
-            v.careAlerts = careAlerts_;
+            v.careAlerts = settings_.careAlerts;
             drawCfgDevice(fb, v);
             break;
         }
@@ -552,11 +540,11 @@ void Game::drawCfg(Framebuffer& fb) const {
             drawBackgrounds(fb, cfgBgPick_, owned, equipped, beat_);
             break;
         }
-        case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, uiMode_); break;
+        case CfgScreen::UiMode: drawUiModeToggle(fb, cfgUiPick_, settings_.uiMode); break;
         case CfgScreen::Tips: drawTipsList(fb); break;
-        case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, brightness_); break;
-        case CfgScreen::Sound: drawSoundMode(fb, cfgSoundPick_, soundMode_); break;
-        case CfgScreen::Volume: drawVolume(fb, cfgVolumePick_, volume_); break;
+        case CfgScreen::Brightness: drawBrightness(fb, cfgBrightPick_, settings_.brightness); break;
+        case CfgScreen::Sound: drawSoundMode(fb, cfgSoundPick_, settings_.soundMode); break;
+        case CfgScreen::Volume: drawVolume(fb, cfgVolumePick_, settings_.volume); break;
         case CfgScreen::Theme:
             drawThemePicker(fb, cfgThemePick_, themeRow(), themesUnlockedMask());
             break;

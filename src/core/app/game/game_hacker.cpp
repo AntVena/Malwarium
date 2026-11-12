@@ -320,7 +320,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
     unsigned accessibleMask = 0;
     for (int i = 0; i < kCarouselSlots; ++i)
         if (hackerSlotAccessible(i)) accessibleMask |= (1u << i);
-    drawHackerCarousel(fb, cursor, uiMode_, accessibleMask);
+    drawHackerCarousel(fb, cursor, settings_.uiMode, accessibleMask);
 }
 
 void Game::drawHackerSubmenu(Framebuffer& fb) const {

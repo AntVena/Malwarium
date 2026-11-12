@@ -6,7 +6,6 @@
 #include "tunables.h"
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_tournament.h"
-#include "core/render/palette.h"   // palThemeByName: the saved theme is resolved by name
 
 namespace mal {
 
@@ -91,17 +90,7 @@ void Game::captureActivePet(SaveData& d) const {
     d.activeArmed = pet_.armed.saved();
 }
 
-// Device-level CFG preferences: what the device looks and sounds like, which no pet owns.
-void Game::captureSettings(SaveData& d) const {
-    d.brightness = brightness_;                       // v14
-    d.uiMode = static_cast<uint8_t>(uiMode_);         // v67
-    d.careAlerts = careAlerts_ ? 1 : 0;
-    d.soundMode = static_cast<uint8_t>(soundMode_);   // v68
-    d.volume = static_cast<uint8_t>(volume_);
-    d.exploreSound = exploreSound_ ? 1 : 0;           // v71
-    // v64: the chosen PAL_CORE theme, stored by NAME (see save.h's version note).
-    std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
-}
+void Game::captureSettings(SaveData& d) const { d.settings = settings_.saved(); }
 
 void Game::restoreBag(const SaveData& d) {
     // Inventory: resolve each saved id to the registry's stable pointer (the
@@ -213,32 +202,16 @@ void Game::restoreActivePet(const SaveData& d) {
     }
 }
 
-// CFG preferences. Runs after restoreOperator because setThemePick validates the
-// theme against the collected-items shelf: applied any earlier, an earned set reads
-// as locked and the load falls back to base.
+// The device's preferences, through the record's own mapping. The theme is applied
+// through setThemePick, which validates it against the collected-items shelf, so this
+// runs after restoreOperator: any earlier, an earned set reads as locked. A set the
+// device has not unlocked leaves the theme in force where it was.
 void Game::restoreSettings(const SaveData& d) {
-    // Screen-brightness level (v14). A pre-v14 blob carries kBrightnessDefault
-    // (brightest). Clamp defensively so a corrupt value can't drive the backlight
-    // out of range.
-    brightness_ = d.brightness;
-    // v67: UI MODE and CARE ALERTS. A mode number this build has no mode for reads as
-    // the default rather than as a cast past the enum's end.
-    uiMode_ = d.uiMode <= static_cast<uint8_t>(UiMode::TextOnly) ? static_cast<UiMode>(d.uiMode)
-                                                                 : UiMode::IconsLabel;
-    careAlerts_ = d.careAlerts != 0;
-    // v68
-    soundMode_ = d.soundMode < kSoundModeCount ? static_cast<SoundMode>(d.soundMode)
-                                               : SoundMode::Off;
-    volume_ = d.volume < kVolumeLevels ? d.volume : kVolumeLevels - 1;
-    exploreSound_ = d.exploreSound != 0;   // v71
-    if (brightness_ < 0) brightness_ = 0;
-    if (brightness_ >= kBrightnessLevels) brightness_ = kBrightnessLevels - 1;
-
-    // The chosen theme (v64), by name. An empty name (every pre-v64 blob), and a name
-    // this build ships no set for both resolve to base, and setThemePick applies it:
-    // the palette index and this member move together, so the first repaint after a
-    // load uses the saved set.
-    setThemePick(palThemeByName(d.theme));
+    Settings loaded = Settings::loaded(d.settings);
+    const int theme = loaded.theme;
+    loaded.theme = settings_.theme;
+    settings_ = loaded;
+    setThemePick(theme);
 }
 
 // The chosen background, validated rather than trusted: one the operator does not own is

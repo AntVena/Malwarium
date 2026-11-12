@@ -436,12 +436,14 @@ void test_cfg_care_alerts_switch() {
     CHECK(again.uiMode() == UiMode::TextOnly);
 
     SaveData d;                                              // the codec, both ways
-    d.uiMode = static_cast<uint8_t>(UiMode::IconsOnly);
-    d.careAlerts = 0;
+    d.settings.uiMode = static_cast<uint8_t>(UiMode::IconsOnly);
+    d.settings.careAlerts = 0;
     SaveData back;
     CHECK(deserializeSave(serializeSave(d), back));
-    CHECK(back.uiMode == static_cast<uint8_t>(UiMode::IconsOnly) && back.careAlerts == 0);
-    CHECK(SaveData{}.careAlerts == 1 && SaveData{}.uiMode == 0);   // the pre-v67 reading
+    CHECK(back.settings.uiMode == static_cast<uint8_t>(UiMode::IconsOnly));
+    CHECK(back.settings.careAlerts == 0);
+    // The pre-v67 reading.
+    CHECK(SaveData{}.settings.careAlerts == 1 && SaveData{}.settings.uiMode == 0);
 }
 
 // CFG > DEVICE > TIPS lists every card this device has shown and reads one again on

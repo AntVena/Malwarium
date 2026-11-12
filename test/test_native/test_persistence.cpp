@@ -6,6 +6,7 @@
 #include "test_gates.h"
 
 #include "core/content/content_backgrounds.h"   // kBackgrounds: a pick the round trip can name
+#include "core/render/palette.h"                // palThemeByName: the settings gates name a set
 
 // The LOADOUT hub's back-out chain, and EXPL's nested list.
 void test_loadout_expl_nav() {
@@ -94,7 +95,7 @@ void test_save_roundtrip() {
     a.op.bossUnlocked = {1, 1};                   // v12: both sectors' bosses unlocked
     a.op.subCleared = {0x07, 0x00};               // v13: area 0 subs 1-3 cleared, area 1 none
     a.op.subBossUnlocked = {0x0F, 0x01};          // v13: area 0 subs 1-4 unlocked, area 1 sub 1
-    a.brightness = 2;                          // v14: a non-default backlight level
+    a.settings.brightness = 2;                          // v14: a non-default backlight level
     a.activeArmed.subRefarm.assign(kExplSectors * kExplSubAreas, 0);  // v15: per-sub re-farm counts
     a.activeArmed.subRefarm[2] = 7; a.activeArmed.subRefarm[9] = 3;
     a.active.defragCount = 12;                        // v16: the active pet's defrag tally
@@ -130,7 +131,7 @@ void test_save_roundtrip() {
     CHECK(b.op.subCleared.size() == 2 && b.op.subCleared[0] == 0x07 && b.op.subCleared[1] == 0x00);
     CHECK(b.op.subBossUnlocked.size() == 2 && b.op.subBossUnlocked[0] == 0x0F &&
           b.op.subBossUnlocked[1] == 0x01);
-    CHECK(b.brightness == 2);                  // v14: the backlight level round-trips
+    CHECK(b.settings.brightness == 2);                  // v14: the backlight level round-trips
     CHECK(b.activeArmed.subRefarm.size() == static_cast<size_t>(kExplSectors * kExplSubAreas) &&
           b.activeArmed.subRefarm[2] == 7 && b.activeArmed.subRefarm[9] == 3);   // v15: re-farm counts round-trip
     CHECK(b.active.defragCount == 12);                          // v16: active defrag tally
@@ -742,6 +743,93 @@ void test_save_operator_round_trips_through_its_mapping() {
     SaveData z;
     z.op = Operator::loaded(y.op, y.active.equippedMods, reg).saved(reg, 0);
     CHECK(serializeSave(x) == serializeSave(z));
+}
+
+// A v75 blob with every device setting set, written by the build before SaveData grouped
+// them into SaveSettings. Its theme is a chip set, and the blob's collected shelf holds
+// that chip, so the theme is unlocked when it loads.
+static const char* const kSettingsV75Blob =
+    "4d414c314b007061797075700000000000000000000000000000000000003200"
+    "0000000000000000000000000000000000000000000000010000000000000000"
+    "0000000000000000000000000000000000000000000000000000000003000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000400000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000ffffffff04000000000000000000"
+    "0000000000000000000000000000010000000000000000000000000000000000"
+    "0000000000000000040000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000100616d6265725f747562650000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000010000000000000000000000616d"
+    "6265720000000000000000000000000000000000000000000000020001040000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000";
+
+// It reads into SaveData::settings field by field, and writes back with the same bytes
+// up to its end.
+void test_save_settings_reads_from_a_v75_blob() {
+    const std::vector<uint8_t> blob = blobFromHex(kSettingsV75Blob);
+    CHECK(blob.size() > 6 && blob[4] == 75 && blob[5] == 0);
+    SaveData d;
+    CHECK(deserializeSave(blob, d));
+    const SaveSettings& s = d.settings;
+    CHECK(s.brightness == 1 && std::strcmp(s.theme, "amber") == 0);
+    CHECK(s.uiMode == 2 && s.careAlerts == 0);
+    CHECK(s.soundMode == 1 && s.volume == 4 && s.exploreSound == 0);
+    const std::vector<uint8_t> again = serializeSave(d);
+    CHECK(again.size() >= blob.size());
+    CHECK(std::equal(blob.begin() + 6, blob.end(), again.begin() + 6));
+}
+
+// ...and boots into the Settings record, with the theme applied.
+void test_save_settings_loads_from_a_v75_blob() {
+    MemSaveStore store;
+    store.save(blobFromHex(kSettingsV75Blob));
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    const Settings& s = g.settingsRecord();
+    CHECK(s.brightness == 1 && s.uiMode == UiMode::TextOnly && !s.careAlerts);
+    CHECK(s.soundMode == SoundMode::AlertsOnly && s.volume == 4 && !s.exploreSound);
+    CHECK(s.theme == palThemeByName("amber") && palThemeIndex() == s.theme);
+    setPalTheme(0);
+}
+
+// Settings with every field off its default map to the save and back unchanged, and a
+// value from a corrupt or newer blob reads as one this build has.
+void test_save_settings_round_trip_and_clamp() {
+    Settings v;
+    v.setBrightness(0);
+    v.setUiMode(UiMode::IconsOnly);
+    v.setCareAlerts(false);
+    v.setSoundMode(SoundMode::All);
+    v.setVolume(1);
+    v.setExploreSound(false);
+    v.theme = palThemeByName("high-contrast");
+    SaveData x;
+    x.settings = v.saved();
+    SaveData y;
+    CHECK(deserializeSave(serializeSave(x), y));
+    SaveData z;
+    z.settings = Settings::loaded(y.settings).saved();
+    CHECK(serializeSave(x) == serializeSave(z));
+
+    SaveSettings bad;
+    bad.brightness = 99;
+    bad.uiMode = 7;
+    bad.soundMode = 9;
+    bad.volume = 200;
+    std::strcpy(bad.theme, "no-such-set");
+    const Settings r = Settings::loaded(bad);
+    CHECK(r.brightness == kBrightnessLevels - 1 && r.uiMode == UiMode::IconsLabel);
+    CHECK(r.soundMode == SoundMode::Off && r.volume == kVolumeLevels - 1 && r.theme == 0);
+    Settings c;
+    CHECK(!c.setVolume(kVolumeDefault) && c.setVolume(-3) && c.volume == 0);
 }
 
 // Boot-from-save vs Hatch: an empty store hatches; once a pet is raised + saved,

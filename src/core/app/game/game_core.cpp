@@ -29,7 +29,7 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     // The palette index lives outside this object (core/render/palette.h) (a drawing
     // call reads it without being handed it), so a Game sets its theme explicitly. A
     // save read below re-states it with whatever the operator chose.
-    setThemePick(themePick_);
+    setThemePick(settings_.theme);
 
     // Boot from a persisted save when one exists. A valid blob
     // always restores the lifetime/economy/rack state; if it also names a live

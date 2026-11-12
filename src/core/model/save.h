@@ -777,6 +777,34 @@ struct SaveOperator {
     int32_t shakesSpent = 0;
 };
 
+// What a save keeps of the Settings record (Settings::saved / Settings::loaded): the
+// device's preferences. Grouped here in memory only, for the reason SaveOperator gives.
+struct SaveSettings {
+    // v14: CFG screen-brightness level ------------------------
+    // The persisted backlight level as a 0-based index (0..kBrightnessLevels-1).
+    // A pre-v14 blob defaults to kBrightnessDefault so a migrated save
+    // never boots surprisingly dim.
+    int32_t brightness = kBrightnessDefault;
+
+    // --- v64: the chosen PAL_CORE theme --------------------------------------
+    // The set's name (kPalThemeNames), empty for the base set. A NAME and not the
+    // generated index: see the version note above.
+    char theme[kSaveIdCap] = {0};
+
+    // --- v67: two CFG > DEVICE preferences --------------------------------------
+    // `uiMode` is UiMode's wire number (0 ICONS+LABEL, 1 ICONS, 2 TEXT); an unknown one
+    // reads back as the default. `careAlerts` is 1 when the "!" marks are drawn.
+    uint8_t uiMode = 0;
+    uint8_t careAlerts = 1;
+
+    // --- v68 ---
+    uint8_t soundMode = 2;   // SoundMode::Off
+    uint8_t volume = kVolumeDefault;
+
+    // --- v71 ---
+    uint8_t exploreSound = 1;
+};
+
 // The full snapshot. Defaults describe an empty save (no active pet).
 struct SaveData {
     // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
@@ -787,6 +815,7 @@ struct SaveData {
     SaveStoredPet active;
     SaveArmedPet activeArmed;
     SaveOperator op;
+    SaveSettings settings;
 
     // Collections.
     std::vector<SaveStack> items;
@@ -815,12 +844,6 @@ struct SaveData {
     // is a 48-bit packed BSSID (6 bytes). Empty on a pre-v7 blob. (The sibling
     // NETS/seenBssids dedup set was REMOVED as of v33: see the v33 note above.)
     std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup fallback (per-network handshake)
-
-    // v14: CFG screen-brightness level ------------------------
-    // The persisted backlight level as a 0-based index (0..kBrightnessLevels-1).
-    // A pre-v14 blob defaults to kBrightnessDefault (brightest) so a migrated save
-    // never boots surprisingly dim.
-    int32_t brightness = kBrightnessDefault;
 
     // v20: 'Pedia local-AP runtime toggle ------------
     // The player's opt-in for the standalone Wi-Fi Access Point that serves the
@@ -855,24 +878,6 @@ struct SaveData {
     uint8_t tourneyAlive = 0;
     uint8_t tourneyRound = 0;
     uint8_t tourneyPhase = 0;
-
-    // --- v64: the chosen PAL_CORE theme --------------------------------------
-    // The set's name (kPalThemeNames), empty for the base set. A NAME and not the
-    // generated index: see the version note above. Player-level, like brightness.
-    char theme[kSaveIdCap] = {0};
-
-    // --- v67: two CFG > DEVICE preferences --------------------------------------
-    // `uiMode` is UiMode's wire number (0 ICONS+LABEL, 1 ICONS, 2 TEXT); an unknown one
-    // reads back as the default. `careAlerts` is 1 when the "!" marks are drawn.
-    uint8_t uiMode = 0;
-    uint8_t careAlerts = 1;
-
-    // --- v68 ---
-    uint8_t soundMode = 2;   // SoundMode::Off
-    uint8_t volume = kVolumeDefault;
-
-    // --- v71 ---
-    uint8_t exploreSound = 1;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveOperator::ownedModCounts) by

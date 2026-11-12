@@ -513,7 +513,7 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             autoProgress_ = !autoProgress_;
             break;
         case ExploreControlRow::Sound:
-            setExploreSound(!exploreSound_);      // a mode too: the overlay stays open
+            setExploreSound(!settings_.exploreSound);      // a mode too: the overlay stays open
             break;
         case ExploreControlRow::Stop:
             // Read the dive flag BEFORE clearing exploreActive_: inDeepWebDive() is
