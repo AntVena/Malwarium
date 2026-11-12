@@ -108,15 +108,25 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 
 #### Records
 
-**The `Operator` record.** Everything the player keeps across pets, tagged PLAYER-LEVEL in
-`save.h` (about 40 fields): Hacker rank and tag, Bits, the Rig Shop account (`rigLevel_`,
-`rigServicesOff_`, `rigServicesAsk_` and the queries over them, `rigFeatureActive`,
-`rigServiceMode`, which shrinks `RigShopHost`), achievements, arcade bests, plays and wins,
-story chapters read, tips seen, the network ledger, owned backgrounds and the spare mod
-pool (`modPool_`, the `ModPool` half of the mods). A factory reset
-replaces it. | `core/app/game.h`; `game_persist.cpp`'s `captureOperator`, `captureRig`,
-`captureRecords`, `captureReveals`, `captureHistory` and their restores; `game_reset.cpp` |
-L | Save round-trip test, as for `Pet`. |
+**The rest of the player-level state onto `Operator`.** `Operator` (`core/app/operator.h`)
+holds the identity, wallet, spare mods, Rig Shop account, tallies and reveals. Still on
+`Game` and still PLAYER-LEVEL in `save.h`: world progress (`sectorCleared_`, `subCleared_`,
+`subBossUnlocked_`, the Titles), the shelves (`collectedItems_`, `speciesDives_`,
+`raisedCreatures_`), the Cant (`cantSigils_`, `shakesSpent_`) with `handshakesSeen_`, and the
+ARCH rack and records. Each becomes a part of `Operator` with its fields in `SaveOperator`
+at their stream positions, which also shrinks `wipeDeviceProgress` to the radio consents.
+The SD-backed `networkLedger_` stays on `Game`: a wipe keeps the card file, and the record
+is replaced whole. | `core/app/game.h`; `game_persist.cpp`'s `captureWorldProgress`,
+`captureShelves`, `captureCant`, `captureHistory` and their restores; `game_reset.cpp` | M |
+Save bytes and screens unchanged; the v75 Operator blob gate covers the new fields. |
+
+**RESET PET restarts part of the `Operator`.** `resetToHatch` puts the HackerTag, the
+lifetime counters, Bits, the spare mods and the arcade tallies back to a fresh operator's,
+while the CFG screen says RESET PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it
+keeps every player-level tally. Decide which is meant: either a pet reset leaves the record
+alone, or the part it restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`,
+`game_config.cpp`'s `executeFactoryReset`, `cfg_screen.cpp` | S |
+`test_cfg_factory_reset_scopes_differ` states the answer. |
 
 **The `Settings` record.** Theme, brightness, sound and volume, UI mode, care alerts, explore
 sound: the DEVICE-level fields, kept through a pet's death and a factory reset. |
