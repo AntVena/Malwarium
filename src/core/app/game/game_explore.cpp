@@ -344,7 +344,7 @@ void Game::doExploreStep() {
     // Dirtying per step is safe: the debounce is measured from the last WRITE, not the
     // last change, so a long walk still lands one write every kSaveDebounceMs rather
     // than pushing the write out ahead of itself.
-    ++lifetimeSteps_;
+    ++op_.lifetimeSteps;
     markSaveDirty();
     rng_ = rng_ * 1664525u + 1013904223u;
     const int roll = static_cast<int>((rng_ >> 16) % 100);
@@ -467,7 +467,7 @@ int Game::nextOpenArea(int area) const {
 }
 
 void Game::autoArmBackupShield(int gateRow) {
-    if (!rigFeatureActive(gateRow)) return;   // not owned, or stopped on SHOP > SERVICES
+    if (!op_.rig.featureActive(gateRow)) return;   // not owned, or stopped on SHOP > SERVICES
     if (backupShieldArmed()) return;          // already live, never doubles up
     // applyItemEffects, not useItem: the upgrade grants the effect outright and never
     // reaches into the Vault, so owning it doesn't quietly eat the player's drives.
@@ -655,7 +655,7 @@ void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
     // Full drop tables are a later content pass; this seeds the mechanic.
     // Reused by the loot-cache event and the Wi-Fi sleeping-guardian/open-cache
     // sub-outcomes ("no new ones," same pool, same log path).
-    bits_ += applyCacheBitsBonus(kLootBitsReward);   // Enhanced DataMining
+    op_.bits += applyCacheBitsBonus(kLootBitsReward);   // Enhanced DataMining
     rng_ = rng_ * 1664525u + 1013904223u;
     const bool dropItem =
         static_cast<int>((rng_ >> 16) % 100) < kLootItemChancePct;
@@ -722,7 +722,7 @@ void Game::grantMod(const char* id) {
     // A pool already holding modStorageCap() of this mod takes no more. The drop is
     // reported, because a milestone reward that vanishes silently looks like a bug. The
     // line names the Rig Shop row that would have kept it.
-    if (!modPool_.grant(id, modStorageCap())) {
+    if (!op_.modPool.grant(id, modStorageCap())) {
         std::snprintf(buf, sizeof(buf), "%s: NO ROOM", m->displayName);
         log_.push(LogEventType::ItemGained, buf);
         return;

@@ -39,38 +39,17 @@ void captureIds(std::vector<SaveId>& out, const std::vector<const Def*>& defs) {
 // Every capture is a read, so unlike applySave the order carries no dependency.
 SaveData Game::captureSave() const {
     SaveData d;
-    captureOperator(d);
     captureBag(d);
     captureHistory(d);
     captureRadio(d);
     captureWorldProgress(d);
-    captureRig(d);
-    captureReveals(d);
-    captureRecords(d);
+    captureOperator(d);
+    captureTourneyRun(d);
     captureShelves(d);
     captureActivePet(d);
     captureSettings(d);
-    captureBackgroundAndCant(d);
+    captureCant(d);
     return d;
-}
-
-void Game::captureOperator(SaveData& d) const {
-    d.petsRaised = petsRaised_;
-    d.lifetimeUptimeMs = uptimeBase_ + nowMs_;
-    d.lifetimeSteps = lifetimeSteps_;
-    d.bits = bits_;
-    std::strncpy(d.hackerTag, hackerTag_, kHackerTagMax);
-
-    // v36: the crew rides as its content ID (content_crews.h), so the table can be
-    // reordered.
-    if (const CrewDef* c = activeCrew())
-        std::strncpy(d.crewId, c->id, kSaveIdCap - 1);
-    d.homeNetworkKey = homeNetworkKey_;
-    std::strncpy(d.homeNetworkName, homeNetworkName_, kSaveNetNameCap - 1);
-
-    // v4: Hacker Rank. Real-network history lives in the SD-backed networkLedger_.
-    d.networksSeen = networksSeen_;
-    d.hackerRank = hackerRank_;
 }
 
 void Game::captureBag(SaveData& d) const {
@@ -81,13 +60,6 @@ void Game::captureBag(SaveData& d) const {
         ss.qty = s.qty;
         d.items.push_back(ss);
     }
-    // v45: the spare pool as a count per mod WIRE. A mod the running content no longer
-    // defines has no wire to write to and is dropped here rather than at load. The pool
-    // in RAM was built from the registry, so this can only miss a row retired underneath
-    // a live game, which is a developer state, not a player one.
-    for (const OwnedMod& m : modPool_.owned())
-        if (const ModDef* def = registry_.mod(m.id))
-            saveSetModCount(d.ownedModCounts, def->wire, m.count);
 }
 
 void Game::captureHistory(SaveData& d) const {
@@ -154,86 +126,15 @@ void Game::captureWorldProgress(SaveData& d) const {
     d.equippedTitle = equippedTitle_;
 }
 
-// Rows below kRigRowExtBase map positionally onto legacy per-row save fields;
-// rigLevel_ is the in-memory source of truth (game_rig_shop.h). Bandwidth itself isn't
-// saved, only the purchased cap.
-void Game::captureRig(SaveData& d) const {
-    d.bwUpgradeCount = rigLevel_[kRigRowBandwidth];                          // v19
-    d.fragAmountTier = static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]);   // v21
-    d.fragTriggerTier = static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]); // v22
-    d.itemTabsUnlocked = rigLevel_[kRigRowItemTabs] ? 1 : 0;                 // v23
-    d.bulkOpenUnlocked = rigLevel_[kRigRowBulkOpen] ? 1 : 0;
-    d.rackSlotUpgradeCount = rigLevel_[kRigRowRackSlot];                     // v27
-    d.scrapingClusterLevel = rigLevel_[kRigRowScraping];
-    d.dataMiningLevel = rigLevel_[kRigRowDataMining];
+void Game::captureOperator(SaveData& d) const { d.op = op_.saved(registry_, nowMs_); }
 
-    // v31: the Merge Hub unlock, and (v49) the whole owned-recipe mask. Recipes own
-    // their state outright rather than mirroring rig rows, so the mask is written
-    // straight through.
-    d.mergeHubUnlocked = rigLevel_[kRigRowMergeHub] ? 1 : 0;
-    // The whole set goes out as the v51 bitset; its first four bytes ALSO go out as the
-    // v31 u32, which is all a reader that predates the bitset can hold.
-    d.recipeOwned.assign(recipesOwned_, recipesOwned_ + kMergeRecipeWireBytes);
-    d.recipesUnlocked = 0;
-    for (int i = 0; i < 4; ++i)
-        d.recipesUnlocked |= static_cast<uint32_t>(recipesOwned_[i]) << (i * 8);
-
-    // v32: every rig row from kRigRowExtBase up, a forward-compatible tail so a new
-    // Rig Shop row never needs a save.h edit. Mirrors the subRefarm vector pattern:
-    // length-prefixed, bounds-checked on read, short/missing defaults every level to 0.
-    d.rigLevelsExt.reserve(kRigUpgradeCount - kRigRowExtBase);
-    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i)
-        d.rigLevelsExt.push_back(static_cast<uint16_t>(rigLevel_[i]));
-
-    // v61: which owned services are stopped. Its own field rather than a level, because
-    // a switch is not a purchase: the level says what was bought, this says what runs.
-    d.rigServicesOff = rigServicesOff_;
-    d.rigServicesAsk = rigServicesAsk_;   // v69
-}
-
-void Game::captureReveals(SaveData& d) const {
-    // v25: web-'Pedia reveal state, glimpsed-but-not-hatched creature ids and the
-    // malbeast seen/defeated masks.
-    captureIds(d.seenCreatures, seenCreatures_);
-    d.malbeastSeen = malbeastSeenMask_;
-    d.malbeastDefeated = malbeastDefeatedMask_;
-
-    // v40: the achievement bitsets (by wire number). They go out at their full
-    // in-memory width, so a catalogue that grows into spare capacity needs no save
-    // change at all.
-    d.achievementEarned.assign(achEarned_, achEarned_ + kAchBytes);
-    d.achievementNotified.assign(achNotified_, achNotified_ + kAchBytes);
-    // v65: the STORY read-set, the same shape and for the same reason: a bitset over
-    // wire numbers, written at its full in-memory width.
-    d.storyRead.assign(storyRead_, storyRead_ + sizeof(storyRead_));
-    d.tipsSeen.assign(tipsSeen_, tipsSeen_ + sizeof(tipsSeen_));   // v66, same shape
-}
-
-void Game::captureRecords(SaveData& d) const {
-    // v40 onward: the counters behind the countable achievement rows.
-    d.bossWins = bossWins_;
-    d.stackerWins = stackerWins_;   // v44
-    d.tourneyWins = tourneyWins_;   // v56
-    d.pvpWins = pvpWins_;           // v56
-    d.mergesCooked = mergesCooked_; // v56
+void Game::captureTourneyRun(SaveData& d) const {
     // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
     // derived from the seed (core/model/tournament.h) rather than written down.
     d.tourneySeed = tourneySeed_;
     d.tourneyAlive = tourneyAlive_;
     d.tourneyRound = tourneyRound_;
     d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
-    // v47: one row per cabinet that has actually been played, id-keyed. A cabinet with
-    // no runs writes nothing: the save carries history, not the roster.
-    for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
-        if (arcadePlays_[i] == 0) continue;
-        d.arcadeIds.push_back(saveId(arcadeGames()[i].id));
-        d.arcadePlays.push_back(arcadePlays_[i]);
-        d.arcadeWins.push_back(arcadeWins_[i]);
-        d.arcadeBest.push_back(arcadeBest_[i]);
-    }
-    // v48: the DECRYPTOGRAM per-quote states, at their full in-memory width, so a pool
-    // that grows into spare capacity needs no save change at all.
-    d.quoteStates.assign(quoteStates_, quoteStates_ + kQuoteStateBytes);
 }
 
 void Game::captureShelves(SaveData& d) const {
@@ -265,43 +166,11 @@ void Game::captureSettings(SaveData& d) const {
     std::snprintf(d.theme, sizeof(d.theme), "%s", themeName());
 }
 
-void Game::captureBackgroundAndCant(SaveData& d) const {
-    // v58: the chosen background, by wire. AUTO writes 0, which is also what a pick
-    // this build somehow has no row for writes, since AUTO is the safe reading.
-    if (const BackgroundDef* b = backgroundFor(backgroundPick_)) d.backgroundPick = b->wire;
+void Game::captureCant(SaveData& d) const {
     // v59: the CANT. The learned mask and what was paid for it; how many shakes are
     // still SPENDABLE is derived from this and the v7 lifetime count, never stored.
     d.cantSigils = cantSigils_;
     d.shakesSpent = shakesSpent_;
-}
-
-// Player-level identity and standing. A Store-vacated save (no active pet) still carries
-// all of it.
-void Game::restoreOperator(const SaveData& d) {
-    petsRaised_ = d.petsRaised;
-    uptimeBase_ = d.lifetimeUptimeMs;
-    lifetimeSteps_ = d.lifetimeSteps;
-    bits_ = d.bits;
-    std::strncpy(hackerTag_, d.hackerTag, sizeof(hackerTag_) - 1);
-    hackerTag_[sizeof(hackerTag_) - 1] = '\0';
-
-    // Crew + home network (v36). The crew resolves from its stored ID, so a save
-    // written against a crew that no longer exists loads as unaffiliated rather than
-    // pointing at whatever now occupies that row. A pre-v36 blob carries neither.
-    crewIndex_ = crewIndexById(d.crewId);
-    homeNetworkKey_ = d.homeNetworkKey;
-    std::strncpy(homeNetworkName_, d.homeNetworkName, sizeof(homeNetworkName_) - 1);
-    homeNetworkName_[sizeof(homeNetworkName_) - 1] = '\0';
-    // Crew membership requires a home network. setHomeNetwork enforces that,
-    // and this re-applies it so no blob loads into a crew without one.
-    if (homeNetworkKey_ == 0) crewIndex_ = -1;
-
-    // Hacker Rank (v4): the counter restores verbatim; rank is stored rather than
-    // re-derived so a future threshold retune doesn't retroactively demote a save.
-    // Real-network dedup/history lives in networkLedger_ now (loaded separately
-    // from SD, Game::loadNetworkLedger), not this save blob.
-    networksSeen_ = d.networksSeen;
-    hackerRank_ = d.hackerRank;
 }
 
 void Game::restoreBag(const SaveData& d) {
@@ -311,42 +180,6 @@ void Game::restoreBag(const SaveData& d) {
     for (const auto& s : d.items) {
         const ItemDef* def = registry_.item(s.id);
         if (def && s.qty > 0) inventory_.add(def->id, s.qty);
-    }
-    // The spare mod pool. The slot occupants are the pet's and come back with it
-    // (restoreActivePet), unconsumed: a v17+ save stores spares and slots disjointly. A
-    // pre-v17 blob predates the split: its ownedMods still listed the equipped mods, so
-    // drop any owned id that also sits in a slot, else the migrated save would gift a
-    // duplicate spare of each.
-    modPool_ = ModPool{};
-    if (d.hasModCountData) {
-        // v45: a count per wire. The stored count was capped when it was written, so it
-        // is its own ceiling here. modStorageCap() would take copies away from a player
-        // whose MOD STORAGE purchase was lost. A wire the running content no longer
-        // defines resolves to nullptr and its copies are dropped, which is what retiring
-        // a mod should do.
-        for (int wire = 0; wire < kModWireCap; ++wire) {
-            const int n = saveModCount(d.ownedModCounts, wire);
-            if (n <= 0) continue;
-            const ModDef* def = registry_.modByWire(wire);
-            if (!def) continue;
-            for (int i = 0; i < n; ++i) modPool_.grant(def->id, n);
-        }
-    } else {
-        // v44 and older: a flat list, one entry per COPY, with a rolled equip level
-        // alongside that no longer means anything. Tally per id and keep up to the base
-        // cap. No migrating save can own MOD STORAGE, so the base cap is correct and
-        // does not depend on rigLevel_ being restored yet.
-        for (const auto& m : d.ownedMods) {
-            const ModDef* def = registry_.mod(m.id);
-            if (!def) continue;
-            if (!d.hasPermanentModData) {
-                bool inSlot = false;
-                for (const SaveId& e : d.active.equippedMods)
-                    if (std::strcmp(e.id, m.id) == 0) { inSlot = true; break; }
-                if (inSlot) continue;             // migrate: equipped mod isn't a spare
-            }
-            modPool_.grant(def->id, kModCopyCapBase);   // surplus copies simply don't fit
-        }
     }
 }
 
@@ -446,148 +279,34 @@ void Game::restoreWorldProgress(const SaveData& d) {
     if (!titleUnlocked(equippedTitle_)) equippedTitle_ = -1;
 }
 
-// Every Rig Shop row, the Merge Hub's recipes, and the service switches.
-void Game::restoreRig(const SaveData& d) {
-    // Rig Shop account upgrades (v19). A pre-v19 blob carries 0 (bought none).
-    rigLevel_[kRigRowBandwidth] = d.bwUpgradeCount < 0 ? 0 : d.bwUpgradeCount;
-    // v21-v23: the frag tiers and the two one-time unlocks (older blobs default to 0).
-    rigLevel_[kRigRowFragReduce] = d.fragAmountTier;
-    // v22: the c Reduce-Explore-Frag-TRIGGER tier (a pre-v22 blob defaults it to 0).
-    rigLevel_[kRigRowFragTrigger] = d.fragTriggerTier;
-    // v23: the d/e one-time Rig Shop unlocks (a pre-v23 blob defaults both false).
-    rigLevel_[kRigRowItemTabs] = d.itemTabsUnlocked ? 1 : 0;
-    rigLevel_[kRigRowBulkOpen] = d.bulkOpenUnlocked ? 1 : 0;
-
-    // v27: the Rig Shop rig-upgrade levels. A pre-v27 blob defaults all 0
-    // (a migrated save has bought none).
-    rigLevel_[kRigRowRackSlot] = d.rackSlotUpgradeCount < 0 ? 0 : d.rackSlotUpgradeCount;
-    rigLevel_[kRigRowScraping] = d.scrapingClusterLevel < 0 ? 0 : d.scrapingClusterLevel;
-    rigLevel_[kRigRowDataMining] = d.dataMiningLevel < 0 ? 0 : d.dataMiningLevel;
-
-    // v31: the Merge Hub unlock and the owned-recipe mask (a pre-v31 blob defaults both
-    // to 0. No Hub, no recipes). The mask arrives already in v49's layout: a pre-v49
-    // blob had two of its recipes riding rig rows instead, and save.cpp's reader folds
-    // those into the bits before handing the struct over.
-    rigLevel_[kRigRowMergeHub] = d.mergeHubUnlocked ? 1 : 0;
-    // The bitset is authoritative: save.cpp has already seeded it from the u32 for any
-    // blob that predates v51, so this reads one field however old the save is. A set
-    // longer than this build understands is truncated, which is what "a shorter view"
-    // means: those recipes exist in the blob and come back on the build that has them.
-    for (uint8_t& b : recipesOwned_) b = 0;
-    for (size_t i = 0; i < d.recipeOwned.size() && i < kMergeRecipeWireBytes; ++i)
-        recipesOwned_[i] = d.recipeOwned[i];
-
-    // v32: every rig row from kRigRowExtBase up (a pre-v32 blob carries an empty vector
-    // → every such row defaults to 0. A migrated save has bought none of them).
-    for (int i = kRigRowExtBase; i < kRigUpgradeCount; ++i) {
-        const size_t idx = static_cast<size_t>(i - kRigRowExtBase);
-        rigLevel_[i] = idx < d.rigLevelsExt.size() ? d.rigLevelsExt[idx] : 0;
+// The player across every pet, through the record's own mapping. A Store-vacated save (no
+// active pet) still carries all of it. Runs after restoreWorldProgress, which the boss
+// tally seeds from.
+void Game::restoreOperator(const SaveData& d) {
+    op_ = Operator::loaded(d.op, d.active.equippedMods, registry_);
+    if (op_.tallies.bossWins == 0) {
+        // Pre-v40 nothing counted boss rounds, but the clear flags prove a floor: every
+        // cleared sub-area and every cleared area had its boss beaten at least once.
+        // Seeding from them means an established device doesn't have to re-beat content
+        // it has already finished to earn the early rungs, and it can only undercount.
+        for (int a = 0; a < kAreaCount; ++a) {
+            if (sectorCleared_[a]) ++op_.tallies.bossWins;
+            for (int s = 0; s < kSubAreasPerArea; ++s)
+                if (subCleared_[a][s]) ++op_.tallies.bossWins;
+        }
     }
-
-    // v61: the stopped-service mask (pre-v61 → 0, everything the save bought running).
-    rigServicesOff_ = d.rigServicesOff;
-    rigServicesAsk_ = d.rigServicesAsk;   // v69: pre-v69 -> 0, every askable row at YES
-
+    achBannerWire_ = -1;
+    achBannerCount_ = 0;
     // Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool to the
     // restored cap and a loaded save boots with a full farm pool.
     bandwidth_ = bandwidthMax();
 }
 
-// What the 'Pedia, the achievements, the story and the tips have revealed.
-void Game::restoreReveals(const SaveData& d) {
-    // web-'Pedia reveal state (v25). seenCreatures resolves each saved id to the
-    // registry's stable pointer, dropping unknown ids (mirrors rack_/records_); the
-    // masks restore verbatim.
-    //
-    // The dedupe is needed: a blob can carry two ids that are now one creature, because
-    // a rename row may retire several ids onto the same successor (save.h's
-    // `renamedIds`. The Worm line's two Script placeholders both land on Rootgrub).
-    // These lists are tallies, and AchSeries::LineRaised COUNTS the raised one per
-    // line, so a duplicate would award a line achievement for a creature the operator
-    // raised once. The mark* helpers are idempotent for the same reason; this path
-    // bypasses them, so it has to say so.
-    seenCreatures_.clear();
-    for (const auto& s : d.seenCreatures)
-        if (const CreatureDef* c = registry_.creature(s.id))
-            if (!creatureSeen(c->id)) seenCreatures_.push_back(c);
-    malbeastSeenMask_ = d.malbeastSeen;
-    malbeastDefeatedMask_ = d.malbeastDefeated;
-
-    // v40: the achievement bitsets. A blob may be shorter than this build's capacity
-    // (an older save) or longer (a save written by a build with a bigger catalogue):
-    // copy what overlaps and leave the rest zero. The length prefix is what allows
-    // that.
-    for (uint8_t& b : achEarned_) b = 0;
-    for (uint8_t& b : achNotified_) b = 0;
-    for (size_t i = 0; i < d.achievementEarned.size() && i < kAchBytes; ++i)
-        achEarned_[i] = d.achievementEarned[i];
-    for (size_t i = 0; i < d.achievementNotified.size() && i < kAchBytes; ++i)
-        achNotified_[i] = d.achievementNotified[i];
-    // v65: the STORY read-set, loaded the same way and clamped the same way. A blob
-    // from a build with more chapters than this one keeps the bits this build can hold
-    // and drops the rest, which is exactly "the chapters it knows about".
-    for (uint8_t& b : storyRead_) b = 0;
-    for (size_t i = 0; i < d.storyRead.size() && i < sizeof(storyRead_); ++i)
-        storyRead_[i] = d.storyRead[i];
-    // v66: the onboarding tips, the same way. A v66 blob always writes the set at its
-    // full width, so an EMPTY one is a pre-v66 save: a device already in use, whose
-    // operator has opened the menu, played the Ransomware hatch every device starts on,
-    // cared for a pet and walked it. Those are taken as seen; a line it has never laid
-    // still gets its briefing.
-    for (uint8_t& b : tipsSeen_) b = 0;
-    for (size_t i = 0; i < d.tipsSeen.size() && i < sizeof(tipsSeen_); ++i)
-        tipsSeen_[i] = d.tipsSeen[i];
-    if (d.tipsSeen.empty())
-        for (Tip t : {Tip::MenuOpened, Tip::HatchDecrypt, Tip::CareFed, Tip::CareFrag,
-                      Tip::CareHappy, Tip::FirstWalk, Tip::FirstError,
-                      Tip::NearTheLine, Tip::FirstCache}) {
-            const int w = static_cast<int>(t);
-            tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
-        }
-    if (d.achievementEarned.empty() && d.achievementsMask != 0) {
-        // Pre-v40: the legacy u32 mask, whose bit i IS wire number i (the original 14
-        // rows kept their enum order as their wire numbers, precisely so this is a copy
-        // and not a mapping table). `notified` stays clear, so an upgraded device
-        // announces everything it has earned, including rows awarded on the first
-        // sweep.
-        for (int i = 0; i < 4 && i < kAchBytes; ++i)
-            achEarned_[i] = static_cast<uint8_t>((d.achievementsMask >> (8 * i)) & 0xFF);
-    }
-    achBannerWire_ = -1;
-    achBannerCount_ = 0;
-}
-
-// The tallies the countable achievements measure, the arena run, and the arcade and
-// quote records. bossWins seeds from world progress, so this runs after
-// restoreWorldProgress.
-void Game::restoreRecords(const SaveData& d) {
-    // v40: the counters the countable rows are measured against.
-    bossWins_ = d.bossWins;
-    if (bossWins_ == 0) {
-        // Pre-v40 nothing counted boss rounds, but the clear flags (already loaded
-        // above) prove a floor: every cleared sub-area and every cleared area had its
-        // boss beaten at least once. Seeding from them means an established device
-        // doesn't have to re-beat content it has already finished to earn the early
-        // rungs, and it can only undercount, which is safe.
-        for (int a = 0; a < kAreaCount; ++a) {
-            if (sectorCleared_[a]) ++bossWins_;
-            for (int s = 0; s < kSubAreasPerArea; ++s)
-                if (subCleared_[a][s]) ++bossWins_;
-        }
-    }
-    // v44: boards cleared by hand. No pre-v44 seed: see the version note in save.h for
-    // why defragCount is not one.
-    stackerWins_ = d.stackerWins;
-    // v56's three tallies. No pre-v56 fallback on purpose (save.cpp's tail note): each
-    // counts an event that leaves nothing behind, so an older blob has nothing to seed
-    // them from and a guess would read as a record the operator never set.
-    tourneyWins_ = d.tourneyWins;
-    pvpWins_ = d.pvpWins;
-    mergesCooked_ = d.mergesCooked;
-    // v53: the arena run. A blob written before the arena existed reads back a zero
-    // seed, which IS "no bracket in play"; a phase byte naming a value this build does
-    // not have falls back to Ready, so a stale save resumes a fightable run rather than
-    // a screen stuck on a verdict it cannot dismiss.
+// v53: the arena run. A blob written before the arena existed reads back a zero seed,
+// which IS "no bracket in play"; a phase byte naming a value this build does not have
+// falls back to Ready, so a stale save resumes a fightable run rather than a screen
+// stuck on a verdict it cannot dismiss.
+void Game::restoreTourneyRun(const SaveData& d) {
     tourneySeed_ = d.tourneySeed;
     tourneyAlive_ = d.tourneyAlive;
     tourneyRound_ = d.tourneyRound < kTourneyRounds
@@ -595,28 +314,6 @@ void Game::restoreRecords(const SaveData& d) {
     tourneyPhase_ = d.tourneyPhase <= static_cast<uint8_t>(TourneyPhase::Champion)
                         ? static_cast<TourneyPhase>(d.tourneyPhase)
                         : TourneyPhase::Ready;
-    // v47: the arcade tallies, resolved back through the roster. A row naming a
-    // cabinet this build no longer has simply doesn't land anywhere.
-    for (int i = 0; i < kArcadeMaxCabinets; ++i) {
-        arcadePlays_[i] = 0;
-        arcadeWins_[i] = 0;
-        arcadeBest_[i] = 0;
-    }
-    for (size_t i = 0; i < d.arcadeIds.size(); ++i) {
-        const int row = arcadeGameIndexById(d.arcadeIds[i].id);
-        if (row < 0 || row >= kArcadeMaxCabinets) continue;
-        arcadePlays_[row] = i < d.arcadePlays.size() ? d.arcadePlays[i] : 0;
-        arcadeWins_[row] = i < d.arcadeWins.size() ? d.arcadeWins[i] : 0;
-        // Short (a pre-v55 blob, or one written by a build with fewer cabinets) reads 0
-        // rather than falling off the end: a device that never recorded a best has none.
-        arcadeBest_[row] = i < d.arcadeBest.size() ? d.arcadeBest[i] : 0;
-    }
-    // v48: the per-quote board states. Copy what overlaps and leave the rest zero, the
-    // way the achievement bitsets do, which is what makes the length prefix worth
-    // having. A pre-v48 blob carries none, so every quote reads back as never played.
-    for (uint8_t& b : quoteStates_) b = 0;
-    for (size_t i = 0; i < d.quoteStates.size() && i < kQuoteStateBytes; ++i)
-        quoteStates_[i] = d.quoteStates[i];
 }
 
 // The collected-items shelf, the palate, the dive records and the raised-species tally.
@@ -697,21 +394,7 @@ void Game::restoreSettings(const SaveData& d) {
     setThemePick(palThemeByName(d.theme));
 }
 
-void Game::restoreBackgroundAndCant(const SaveData& d) {
-    // v58. The chosen background, validated rather than trusted: a background the
-    // operator does not own is not a state this game should be able to boot into, and a
-    // wire from a NEWER build has no row here at all. Both land on AUTO.
-    //
-    // LAST, and that ordering is load-bearing: ownership is derived from the raised
-    // species, the cleared areas and the bracket tally, and the first of those is
-    // rebuilt from the rack and the records well below where the tail is read. Asked any
-    // earlier, every earned background would read as unowned and the pick would be
-    // quietly thrown away.
-    {
-        const BackgroundDef* b = backgroundByWire(d.backgroundPick);
-        backgroundPick_ = (b && backgroundOwned(b->scene)) ? b->scene : SceneId::None;
-    }
-
+void Game::restoreCant(const SaveData& d) {
     // v59: the CANT. `shakesSpent` is clamped to the lifetime handshake count restored
     // above, so a blob that somehow claims more spent than were ever captured reads back
     // as an empty purse: shakesUnspent() would floor it anyway, and clamping here means
@@ -721,22 +404,30 @@ void Game::restoreBackgroundAndCant(const SaveData& d) {
                  : (d.shakesSpent > handshakesSeen_ ? handshakesSeen_ : d.shakesSpent);
 }
 
+// The chosen background, validated rather than trusted: one the operator does not own is
+// not a state this game should be able to boot into, so it lands on AUTO. Ownership is
+// derived from the raised species, the cleared areas and the bracket tally, and the first
+// of those is rebuilt from the rack, the records and the active pet, so this runs last.
+// Asked any earlier, every earned background would read as unowned.
+void Game::settleBackgroundPick() {
+    if (!backgroundOwned(op_.backgroundPick)) op_.backgroundPick = SceneId::None;
+}
+
 void Game::applySave(const SaveData& d) {
     // Order matters where a step validates against an earlier one: the boss tally seeds
     // from world progress, installPet tallies into the raised species, and the settings
     // and background validate against what everything above restored.
-    restoreOperator(d);
     restoreBag(d);
     restoreHistory(d);
     restoreRadio(d);
     restoreWorldProgress(d);
-    restoreRig(d);
-    restoreReveals(d);
-    restoreRecords(d);
+    restoreOperator(d);
+    restoreTourneyRun(d);
     restoreShelves(d);
     restoreActivePet(d);
     restoreSettings(d);
-    restoreBackgroundAndCant(d);
+    restoreCant(d);
+    settleBackgroundPick();
     lastSaveMs_ = nowMs_;
     saveDirty_ = false;
 }

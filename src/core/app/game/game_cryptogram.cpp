@@ -37,7 +37,7 @@ CryptogramTier Game::quoteTier(int i) const {
     if (i < 0 || i >= quoteCount()) return CryptogramTier::Hard;
     const int wire = quotes()[i].wire;
     if (wire < 0 || wire >= kQuoteWireCap) return CryptogramTier::Hard;
-    return static_cast<CryptogramTier>((quoteStates_[wire / 4] >> (2 * (wire % 4))) & 0x3);
+    return static_cast<CryptogramTier>((op_.tallies.quoteStates[wire / 4] >> (2 * (wire % 4))) & 0x3);
 }
 
 void Game::setQuoteTier(int i, CryptogramTier t) {
@@ -45,7 +45,7 @@ void Game::setQuoteTier(int i, CryptogramTier t) {
     const int wire = quotes()[i].wire;
     if (wire < 0 || wire >= kQuoteWireCap) return;
     const int shift = 2 * (wire % 4);
-    uint8_t& cell = quoteStates_[wire / 4];
+    uint8_t& cell = op_.tallies.quoteStates[wire / 4];
     cell = static_cast<uint8_t>((cell & ~(0x3u << shift)) |
                                 (static_cast<unsigned>(t) << shift));
 }
@@ -202,7 +202,7 @@ void Game::settleCryptogram() {
 }
 
 void Game::applyQuoteReward() {
-    bits_ += cryptogramPrizeBits_;
+    op_.bits += cryptogramPrizeBits_;
     switch (cryptogramPrize_.kind) {
         case QuoteReward::Kind::RigGrant: {
             // Free, but otherwise a purchase: grantRigLevel is the same call

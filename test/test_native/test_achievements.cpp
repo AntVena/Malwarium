@@ -408,19 +408,19 @@ void test_achievement_banner_collapses_a_burst() {
 // v40 round-trip of all four achievement fields.
 void test_save_v40_achievements_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.achievementEarned.assign(8, 0);
-    a.achievementEarned[0] = 0x05;            // wires 0 and 2
-    a.achievementNotified.assign(8, 0);
-    a.achievementNotified[0] = 0x01;          // wire 0 announced, wire 2 not
-    a.bossWins = 37;
+    a.op.achievementEarned.assign(8, 0);
+    a.op.achievementEarned[0] = 0x05;            // wires 0 and 2
+    a.op.achievementNotified.assign(8, 0);
+    a.op.achievementNotified[0] = 0x01;          // wire 0 announced, wire 2 not
+    a.op.bossWins = 37;
     a.collectedItems.push_back(SaveId{"osi_dip"});
     a.speciesDiveIds.push_back(SaveId{"malbear"});
     a.speciesDiveDepths.push_back(312);
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.achievementEarned.size() == 8 && out.achievementEarned[0] == 0x05);
-    CHECK(out.achievementNotified.size() == 8 && out.achievementNotified[0] == 0x01);
-    CHECK(out.bossWins == 37);
+    CHECK(out.op.achievementEarned.size() == 8 && out.op.achievementEarned[0] == 0x05);
+    CHECK(out.op.achievementNotified.size() == 8 && out.op.achievementNotified[0] == 0x01);
+    CHECK(out.op.bossWins == 37);
     CHECK(out.collectedItems.size() == 1);
     CHECK(std::strcmp(out.collectedItems[0].id, "osi_dip") == 0);
     CHECK(out.speciesDiveIds.size() == 1 && out.speciesDiveDepths.size() == 1);
@@ -433,21 +433,21 @@ void test_save_v40_achievements_roundtrip() {
 // to "nothing was counted" instead of dragging an earlier field's bytes into these.
 void test_save_v56_lifetime_tallies_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.tourneyWins = 7;
-    a.pvpWins = 19;
-    a.mergesCooked = 231;
+    a.op.tourneyWins = 7;
+    a.op.pvpWins = 19;
+    a.op.mergesCooked = 231;
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.tourneyWins == 7);
-    CHECK(out.pvpWins == 19);
-    CHECK(out.mergesCooked == 231);
+    CHECK(out.op.tourneyWins == 7);
+    CHECK(out.op.pvpWins == 19);
+    CHECK(out.op.mergesCooked == 231);
 
     // A default blob (nothing ever counted) still round-trips as zeros, which is what a
     // pre-v56 save is read back as.
     SaveData b; std::strcpy(b.active.id, "paypup"); b.active.generation = 1;
     SaveData zeroed;
     CHECK(deserializeSave(serializeSave(b), zeroed));
-    CHECK(zeroed.tourneyWins == 0 && zeroed.pvpWins == 0 && zeroed.mergesCooked == 0);
+    CHECK(zeroed.op.tourneyWins == 0 && zeroed.op.pvpWins == 0 && zeroed.op.mergesCooked == 0);
 }
 
 // The species dive record outlives the pet that set it, and is what the per-line and

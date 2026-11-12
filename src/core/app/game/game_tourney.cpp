@@ -192,15 +192,15 @@ void Game::awardTourneyPurse() {
     // same Scraping Cluster / Well-Fed bonuses every other combat reward does, so the
     // upgrades an operator bought still apply here; the mod is drawn from The Pirate
     // Bayou's own pool, because that is the water the arena is held in.
-    bits_ += applyCombatBitsBonus(kTourneyWinBits);
+    op_.bits += applyCombatBitsBonus(kTourneyWinBits);
     addFightXp(applyCombatXpBonus(kTourneyWinXp));
     if (const char* id = rollAreaModId(kTourneyAreaIndex)) grantMod(id);
-    ++tourneyWins_;
+    ++op_.tallies.tourneyWins;
     // ...and the rung this win lands on pays a BACKGROUND, if one is authored for it.
     // Read off the table rather than spelled out here, so adding a third arena prize is
     // a row rather than an edit to the purse.
     for (const BackgroundDef& b : kBackgrounds)
-        if (b.source == BackgroundSource::Bracket && b.rung == tourneyWins_)
+        if (b.source == BackgroundSource::Bracket && b.rung == op_.tallies.tourneyWins)
             announceBackground(b.scene);
     // The two rows that describe what the bracket was taken WITH, which the tally above
     // cannot say. Both are read HERE, before the caller clears tourneyOpponent_: the

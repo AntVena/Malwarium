@@ -14,6 +14,7 @@
 #include "tunables.h"
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
+#include "core/app/operator.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
@@ -23,9 +24,9 @@
 #include "core/device/radio_status.h"
 #include "core/device/sd_status.h"
 #include "core/content/areas/area_defs.h"
-#include "core/content/content_arcade.h"    // kArcadeMaxCabinets sizes the arcade tallies
+#include "core/content/content_arcade.h"    // kArcadeMaxCabinets bounds the arcade tallies
 #include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
-#include "core/content/content_quotes.h"    // kQuoteStateBytes sizes the per-quote states
+#include "core/content/content_quotes.h"    // QuoteReward: the Decryptogram prize
 #include "core/content/content_riddles.h"   // kRiddleReplies sizes the shown reply order
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"
@@ -167,9 +168,9 @@ public:
     // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
     int combatStatsPage() const { return combatStatsPage_; }
     const ModSlots& modSlots() const { return pet_.mods; }
-    const ModPool& modPool() const { return modPool_; }
+    const ModPool& modPool() const { return op_.modPool; }
     // The two halves the MODS screen reads together.
-    ModHoldings modHoldings() const { return {pet_.mods, modPool_}; }
+    ModHoldings modHoldings() const { return {pet_.mods, op_.modPool}; }
     const MoveLoadout& moveLoadout() const { return pet_.moves; }
     // The stamped kind for `slot`, or Unset if it hasn't
     // unlocked for this pet yet (out-of-range also reads Unset).
@@ -210,15 +211,15 @@ public:
     // level-up. STAT's LVL n line reads it to show which stat grew. Used by tests to
     // confirm a level-up.
     int lastLevelUpStat() const { return lastLevelUpStat_; }
-    int bits() const override { return bits_; }
+    int bits() const { return op_.bits; }
     int bandwidth() const { return bandwidth_; }   // farming resource: see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
     int bandwidthMax() const {
-        return kBandwidthMax + rigLevel_[kRigRowBandwidth] * kBandwidthUpgradeStep;
+        return kBandwidthMax + op_.rig.level[kRigRowBandwidth] * kBandwidthUpgradeStep;
     }
-    int bwUpgradeCount() const { return rigLevel_[kRigRowBandwidth]; }   // a purchases made
+    int bwUpgradeCount() const { return op_.rig.level[kRigRowBandwidth]; }   // a purchases made
     // Minutes of real active time per +1 Bandwidth for the ACTIVE pet: the shared
     // interval less whatever this pet has been fed (Tiramisudo), never below the floor.
     // Per-pet, so the same rig regenerates at different speeds under different pets.
@@ -234,7 +235,7 @@ public:
     // n (Rig Shop): the Link Aggregator, the one-time unlock that makes a regen tick
     // pay a PERCENTAGE of the hole instead of a flat point (bandwidthRegenAmount).
     bool linkAggregatorUnlocked() const {
-        return rigLevel_[kRigRowLinkAggregator] > 0;
+        return op_.rig.level[kRigRowLinkAggregator] > 0;
     }
     // How much ONE regen tick restores: the amount half of regen, where
     // bandwidthRegenMinutes() is the interval half. Flat +1 by default; with the
@@ -271,96 +272,41 @@ public:
     bool lifetimeItemSpent(const ItemDef& d) const;
     // Player-level Fragmentation-amount tier (b, save v21): shaves the battle-fatigue
     // frag AMOUNT cap (Game::applyBattleFatigue).
-    uint8_t fragAmountTier() const { return static_cast<uint8_t>(rigLevel_[kRigRowFragReduce]); }
+    uint8_t fragAmountTier() const { return static_cast<uint8_t>(op_.rig.level[kRigRowFragReduce]); }
     // Player-level Fragmentation-TRIGGER tier (c, save v22): lowers the
     // battle-fatigue trigger CHANCE (sibling to fragAmountTier's AMOUNT cut).
     uint8_t fragTriggerTier() const {
-        return static_cast<uint8_t>(rigLevel_[kRigRowFragTrigger]);
+        return static_cast<uint8_t>(op_.rig.level[kRigRowFragTrigger]);
     }
     // d/e (Rig Shop, save v23): one-time, permanent account unlocks. No
     // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-B filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open.
-    bool itemTabsUnlocked() const override { return rigLevel_[kRigRowItemTabs] > 0; }
-    bool bulkOpenUnlocked() const { return rigLevel_[kRigRowBulkOpen] > 0; }
+    bool itemTabsUnlocked() const override { return op_.rig.level[kRigRowItemTabs] > 0; }
+    bool bulkOpenUnlocked() const { return op_.rig.level[kRigRowBulkOpen] > 0; }
     // ITEMS Type-Picker (Rig Shop): another one-time unlock. The ITEMS submenu
     // opens on the category tile screen (ItemsView::Picker) instead of straight
     // onto the list, and hold-B's cycle steps up to the finer category axis.
-    bool itemPickerUnlocked() const override { return rigLevel_[kRigRowItemPicker] > 0; }
+    bool itemPickerUnlocked() const override { return op_.rig.level[kRigRowItemPicker] > 0; }
     // f (Rig Shop, save v31): the Merge Hub one-time unlock. Makes the MRG
     // carousel slot accessible (game_merge.cpp). Doesn't grant any recipe by
-    // itself; each recipe is its own one-time Rig Shop row (rigUpgradeOwned).
-    bool mergeHubUnlocked() const { return rigLevel_[kRigRowMergeHub] > 0; }
+    // itself; each recipe is won off a Decryptogram (recipeOwned).
+    bool mergeHubUnlocked() const { return op_.rig.level[kRigRowMergeHub] > 0; }
     // g/h (Rig Shop): one-time unlocks gating the auto-arm hooks in
     // Game::autoArmBackupShield. Auto Backup fires at explore-start
     // (startExplore/startDeepWebDive), Continuous Auto-Backup at every resolved
     // explore event (returnToExplore).
-    bool autoBackupUnlocked() const { return rigLevel_[kRigRowAutoBackup] > 0; }
+    bool autoBackupUnlocked() const { return op_.rig.level[kRigRowAutoBackup] > 0; }
     bool continuousBackupUnlocked() const {
-        return rigLevel_[kRigRowContinuousBackup] > 0;
+        return op_.rig.level[kRigRowContinuousBackup] > 0;
     }
     // i (Rig Shop): Disk Maintenance tier (0 = not bought). Level N's threshold/cost
     // multiplier live on kDiskMaintenanceThreshold/kDiskMaintenanceCostMult
     // (game_rig_shop.h), read by Game::maybeAutoDefrag.
-    int diskMaintenanceLevel() const override { return rigLevel_[kRigRowDiskMaintenance]; }
+    int diskMaintenanceLevel() const { return op_.rig.level[kRigRowDiskMaintenance]; }
 
     // --- SERVICES: the owned rows that run on their own, and their switches ---------
-    // A SERVICE is a row that acts between events without being asked (the two backup
-    // auto-arms, Disk Maintenance's auto-defrag). Owning one is a purchase; RUNNING it
-    // is a switch, because a service spends the player's Bits or a decision they might
-    // want back, so every effect site asks rigFeatureActive, never the level.
-    //
-    // Is `row` a service this player owns, and so a line on the SERVICES screen?
-    bool rigServiceOwned(int row) const {
-        return row >= 0 && row < kRigUpgradeCount && kRigUpgrades[row].service &&
-               rigLevel_[row] > 0;
-    }
-    // Is `row`'s effect live right now: owned, and not switched off? The one question
-    // an effect site asks. A row that is not a service has no switch, so owning it is
-    // the whole answer.
-    // An ASK-able service (RigUpgradeDef::askable) set to ASK counts as live here: it
-    // is running, it just hands the decision back; rigServiceMode says which.
-    bool rigFeatureActive(int row) const override {
-        if (row < 0 || row >= kRigUpgradeCount || rigLevel_[row] <= 0) return false;
-        if (!kRigUpgrades[row].service) return true;
-        return (rigServicesOff_ & (1u << row)) == 0;
-    }
+    // RigAccount (core/app/operator.h) answers which are owned, running and at ASK.
     using ServiceMode = mal::ServiceMode;   // game_rig_shop.h
-    // The word the SERVICES board prints for a row's switch: ON/OFF for a two-way
-    // service, YES/ASK/NO for an askable one, whose question is "use them for me?".
-    const char* rigServiceWord(int row) const override {
-        const ServiceMode m = rigServiceMode(row);
-        if (!kRigUpgrades[row].askable) return m == ServiceMode::Off ? "OFF" : "ON";
-        return m == ServiceMode::On ? "YES" : m == ServiceMode::Ask ? "ASK" : "NO";
-    }
-    ServiceMode rigServiceMode(int row) const override {
-        if (!rigFeatureActive(row)) return ServiceMode::Off;
-        if (kRigUpgrades[row].askable && (rigServicesAsk_ & (1u << row)) != 0)
-            return ServiceMode::Ask;
-        return ServiceMode::On;
-    }
-    // The owned services in table order: what the SERVICES screen lists. Returns how
-    // many were written.
-    int rigServiceRows(int* out, int max) const override {
-        int n = 0;
-        for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
-            if (rigServiceOwned(i)) out[n++] = i;
-        return n;
-    }
-    // Does the SHOP list carry its SERVICES head slot? Only once there is a service to
-    // switch, so the head slot never opens an empty screen.
-    bool rigServicesOffered() const override {
-        for (int i = 0; i < kRigUpgradeCount; ++i)
-            if (rigServiceOwned(i)) return true;
-        return false;
-    }
-    // How many owned services are running, of how many owned: the SHOP head slot's
-    // readout ("2/3 ON").
-    int rigServicesRunning() const override {
-        int n = 0;
-        for (int i = 0; i < kRigUpgradeCount; ++i)
-            if (rigServiceOwned(i) && rigFeatureActive(i)) ++n;
-        return n;
-    }
     // Flip one owned service, or, on an askable one, step it YES -> ASK -> NO -> YES.
     // A row that isn't an owned service has no switch to throw, so this is inert on it
     // rather than storing a bit nothing reads.
@@ -380,37 +326,27 @@ public:
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
     // bench of a favourite mod buys the room for it rather than accumulating copies
     // nobody counted.
-    int modStorageCap() const { return modCopyCap(rigLevel_[kRigRowModStorage]); }
-    // Is `row` on sale right now: anything left to buy on it? The single answer the
-    // SHOP's A-cycle, its render loop and buyRigUpgrade all defer to, so the list can't
-    // show a row the cursor skips.
-    bool shopRowOffered(int row) const override;
-    // Price of the NEXT purchase at a Rig Shop row (game_rig_shop.h): every row
-    // resolves its own cost from its own costStart/curve/costStep, so this is the one
-    // place that math happens; every named *Cost() below is a thin wrapper over it.
-    int rigLevel(int row) const override { return rigLevel_[row]; }
-    int rigUpgradeCostFor(int row) const override {
-        const RigUpgradeDef& d = kRigUpgrades[row];
-        return rigUpgradeCost(d.costStart, rigLevel_[row], d.curve, d.costStep);
-    }
+    int modStorageCap() const { return modCopyCap(op_.rig.level[kRigRowModStorage]); }
+    // The Operator record, read by const reference: the player across every pet.
+    const Operator& operatorRecord() const override { return op_; }
     // Price of the NEXT "Increase Bandwidth" upgrade (climbs per purchase, a).
-    int bandwidthUpgradeCost() const { return rigUpgradeCostFor(kRigRowBandwidth); }
+    int bandwidthUpgradeCost() const { return op_.rig.costFor(kRigRowBandwidth); }
     // rig upgrades: player-level, persisted (save v27), survive lifecycles
-    // like bwUpgradeCount(). All three price off rigUpgradeCostFor() so balance is a
+    // like bwUpgradeCount(). All three price off RigAccount::costFor so balance is a
     // start-price/max-purchase edit on the row (game_rig_shop.h), not new code.
-    int rackSlotUpgradeCount() const { return rigLevel_[kRigRowRackSlot]; }
-    int rackSlots() const { return kRackSlots + rigLevel_[kRigRowRackSlot]; }  // ARCH capacity
-    int rackSlotUpgradeCost() const { return rigUpgradeCostFor(kRigRowRackSlot); }
-    int scrapingClusterLevel() const { return rigLevel_[kRigRowScraping]; }
+    int rackSlotUpgradeCount() const { return op_.rig.level[kRigRowRackSlot]; }
+    int rackSlots() const { return kRackSlots + op_.rig.level[kRigRowRackSlot]; }  // ARCH capacity
+    int rackSlotUpgradeCost() const { return op_.rig.costFor(kRigRowRackSlot); }
+    int scrapingClusterLevel() const { return op_.rig.level[kRigRowScraping]; }
     int combatBitsBonusPct() const {
-        return rigLevel_[kRigRowScraping] * kScrapingClusterPctPerLevel;
+        return op_.rig.level[kRigRowScraping] * kScrapingClusterPctPerLevel;
     }
-    int scrapingClusterCost() const { return rigUpgradeCostFor(kRigRowScraping); }
-    int dataMiningLevel() const { return rigLevel_[kRigRowDataMining]; }
+    int scrapingClusterCost() const { return op_.rig.costFor(kRigRowScraping); }
+    int dataMiningLevel() const { return op_.rig.level[kRigRowDataMining]; }
     int cacheBitsBonusPct() const {
-        return rigLevel_[kRigRowDataMining] * kDataMiningPctPerLevel;
+        return op_.rig.level[kRigRowDataMining] * kDataMiningPctPerLevel;
     }
-    int dataMiningCost() const { return rigUpgradeCostFor(kRigRowDataMining); }
+    int dataMiningCost() const { return op_.rig.costFor(kRigRowDataMining); }
     // Applied at every combat/cache Bits payout site so the % bonus is one call, not
     // duplicated arithmetic per site. Integer `bits * pct / 100` truncates to 0 on
     // small grants at low levels (e.g. a 10-Bit Common cache at 2-8% DataMining never
@@ -425,22 +361,22 @@ public:
     // j (Rig Shop): Passive XP Farming level. Game::tick reads this directly
     // whenever Hunger decays (game_core.cpp), granting level XP per hunger point
     // lost while Hunger stayed above hungerXpThreshold().
-    int hungerXpRateLevel() const { return rigLevel_[kRigRowHungerXpRate]; }
+    int hungerXpRateLevel() const { return op_.rig.level[kRigRowHungerXpRate]; }
     // k (Rig Shop): the Hunger threshold row j's passive XP still counts above.
     // Level 0 sits at the row's base threshold; each level lowers it.
     int hungerXpThreshold() const {
-        return kHungerXpBaseThreshold - rigLevel_[kRigRowHungerXpWindow] * kHungerXpWindowStepPct;
+        return kHungerXpBaseThreshold - op_.rig.level[kRigRowHungerXpWindow] * kHungerXpWindowStepPct;
     }
     // l (Rig Shop): +kCombatXpPctPerLevel%% combat XP per level, active only
     // while CURRENT Hunger is at or above combatXpWindowThreshold(). A fed and
     // happy pet fights sharper. 0 whenever the pet has let Hunger slip below it.
     int combatXpBonusPct() const {
         if (!pet_.creature || pet_.model.hunger() < combatXpWindowThreshold()) return 0;
-        return rigLevel_[kRigRowCombatXpPct] * kCombatXpPctPerLevel;
+        return op_.rig.level[kRigRowCombatXpPct] * kCombatXpPctPerLevel;
     }
     // m (Rig Shop): the Hunger threshold row l's boost stays active above.
     int combatXpWindowThreshold() const {
-        return kCombatXpBaseThreshold - rigLevel_[kRigRowCombatXpWindow] * kCombatXpWindowStepPct;
+        return kCombatXpBaseThreshold - op_.rig.level[kRigRowCombatXpWindow] * kCombatXpWindowStepPct;
     }
     // Applied at real-fight XP payout sites (wild win / boss / Sim-Battle). The
     // Sinkhole bypass and Wi-Fi discovery XP grants skip it because neither is
@@ -589,27 +525,9 @@ public:
     // can assert what the page SAYS instead of reading it out of pixels.
     std::vector<ProseRow> gameBriefRows() const;
 
-    // --- One-time onboarding tips (game_onboard.cpp) --------------------------- The
-    // things the device teaches exactly once and then never again: the briefing in
-    // front of each egg line's hatch game, and the idle nudge that says which button
-    // opens the menu. PLAYER-LEVEL and persisted (save v66) like the STORY read-set,
-    // so a new egg does not repeat the button lesson. A Tip's value is its bit in that
-    // set: append, never renumber or reuse.
-    enum class Tip : uint8_t {
-        HatchDecrypt = 0,     // the Ransomware egg's DISK DECRYPTION
-        HatchClutch = 1,      // the Phishing egg's Clutch Pick
-        HatchIsolation = 2,   // the Worm egg's Isolation Protocol
-        HatchChroma = 3,      // the Metamorphic egg's CHROMATOPHORE
-        MenuOpened = 4,       // the carousel has been summoned at least once
-        CareFed = 5,          // the first time FED's "!" is up when the menu opens
-        CareFrag = 6,         // ...FRAG's (or a ghost's)
-        CareHappy = 7,        // ...HAPPY's
-        FirstWalk = 8,        // the first walk the player arms from EXPL
-        FirstError = 9,       // the first care error a pet has taken
-        NearTheLine = 10,     // a pet one error short of failing (kCareDying - 1)
-        FirstCache = 11,      // the first sealed cache or Decryptogram in the bag
-    };
-    static constexpr int kTipWireCap = 32;   // bits in the persisted set
+    // --- One-time onboarding tips (game_onboard.cpp) ---------------------------
+    // Taught once per operator, so a new egg does not repeat the button lesson.
+    using Tip = mal::Tip;   // core/app/operator.h
     bool tipSeen(Tip t) const;
     void markTipSeen(Tip t);
     // Which carousel slots the pet needs visited right now, as drawCarousel's masks
@@ -664,7 +582,7 @@ public:
     // then presses a button means the press), and a gate about it turns it back on.
     void debugSetAwayDigest(bool on) { awayDigestOn_ = on; }
     // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
-    void debugClearTips() { for (uint8_t& b : tipsSeen_) b = 0; }
+    void debugClearTips() { for (uint8_t& b : op_.reveals.tipsSeen) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
     // Fragmentation: what rollMaintSuccess rolls against and MAINT prints.
     int maintFailPct() const;
@@ -739,7 +657,7 @@ public:
     // The same beat as a value, for the screen's picture of it (and for a gate to
     // assert against without reading the sentence).
     NetDiscovery netDiscovery() const { return netDiscovery_; }
-    int networksSeen() const { return networksSeen_; }         // lifetime, dedup'd
+    int networksSeen() const { return op_.networksSeen; }         // lifetime, dedup'd
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
     // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
     // kPendingNetworkQueueCap, past which new sightings are dropped.
@@ -973,7 +891,7 @@ public:
         dirty_ = true;
     }
     RadioOwner radioOwner() const { return radioOwner_; }
-    int hackerRank() const { return hackerRank_; }              // (unbounded)
+    int hackerRank() const { return op_.hackerRank; }              // (unbounded)
 
     // Audit-mode passive Wi-Fi discovery scan. Runtime opt-in, persisted (save
     // v5), default OFF, because authorized use needs an explicit choice.
@@ -1679,16 +1597,16 @@ public:
     // Lifetime tallies per roster row (content_arcade.h's index order). Out-of-range
     // reads 0, so a caller iterating a roster that shrank can't fall off the array.
     int arcadePlays(int i) const {
-        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadePlays_[i] : 0;
+        return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadePlays[i] : 0;
     }
     int arcadeWins(int i) const {
-        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeWins_[i] : 0;
+        return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadeWins[i] : 0;
     }
     // The best score a cabinet has ever been played to. Only meaningful where a run
     // HAS a score: a win-or-lose cabinet (the Clutch) reports 0 forever, which is why
     // the cabinet page shows this only when the roster row scores incrementally.
     int arcadeBest(int i) const {
-        return (i >= 0 && i < kArcadeMaxCabinets) ? arcadeBest_[i] : 0;
+        return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadeBest[i] : 0;
     }
     // ...by cabinet id, which is what an achievement row keys on (AchSeries::
     // ArcadeCabinetBest). The roster is free to reorder, so a wire-stable question has
@@ -1799,10 +1717,10 @@ public:
 
     // --- Persisted identity / lifetime (STAT footer, ARCH, CFG) -------------
     int generation() const { return pet_.generation; }          // active pet's generation
-    int petsRaised() const { return petsRaised_; }          // lifetime eggs hatched
-    uint32_t lifetimeUptimeMs() const { return uptimeBase_ + nowMs_; }
-    uint32_t lifetimeSteps() const { return lifetimeSteps_; }  // exploration
-    const char* hackerTag() const { return hackerTag_; }
+    int petsRaised() const { return op_.petsRaised; }          // lifetime eggs hatched
+    uint32_t lifetimeUptimeMs() const { return op_.uptimeBase + nowMs_; }
+    uint32_t lifetimeSteps() const { return op_.lifetimeSteps; }  // exploration
+    const char* hackerTag() const { return op_.hackerTag; }
     // The CURRENT serialized save size: what a persistSave() right now would
     // actually write. Diagnostic-only (the boot-line print, main.cpp): lets a
     // dev watch it against the save partition's known capacity as content
@@ -1853,8 +1771,8 @@ public:
     // Player-level, persisted (survive a pet reset, like the Titles above). The HOME
     // NETWORK is the network the operator has designated as theirs to defend; holding
     // one is the precondition for belonging to a crew (joinCrew refuses without it).
-    int crewIndex() const { return crewIndex_; }            // kCrews row, or -1
-    const CrewDef* activeCrew() const { return crew(crewIndex_); }
+    int crewIndex() const { return op_.crewIndex; }            // kCrews row, or -1
+    const CrewDef* activeCrew() const { return crew(op_.crewIndex); }
     // The CREW screen's four views, deepest last. Enlisting is the one piece of player
     // IDENTITY this device asks you to author, so the screen gives it room rather than
     // stacking a roster into one list: the Hub states who you are and offers the two
@@ -1864,9 +1782,9 @@ public:
     // name a view; the transitions are Game::onHackerCrew's alone.
     enum class CrewView : uint8_t { Hub, Picker, Team, Detail };
     CrewView crewView() const { return crewView_; }
-    bool hasHomeNetwork() const { return homeNetworkKey_ != 0; }
-    uint64_t homeNetworkKey() const { return homeNetworkKey_; }
-    const char* homeNetworkName() const { return homeNetworkName_; }
+    bool hasHomeNetwork() const { return op_.homeNetworkKey != 0; }
+    uint64_t homeNetworkKey() const { return op_.homeNetworkKey; }
+    const char* homeNetworkName() const { return op_.homeNetworkName; }
     // Designate `key` (a packed 48-bit BSSID, as Game::registerNetwork builds them)
     // as the home network. An explicit pick, replacing any earlier inference from
     // sighting counts. key 0 clears it (and any crew that depended on it).
@@ -1907,7 +1825,9 @@ public:
     // lives in one place.
     void noteMirrorMatch(const char* opponentCreatureId);
     bool hasAchievement(const char* id) const;
-    bool hasAchievement(const AchievementDef& d) const { return achBit(achEarned_, d.wire); }
+    bool hasAchievement(const AchievementDef& d) const {
+        return achBit(op_.reveals.achEarned, d.wire);
+    }
     // The player's live progress toward `d` (the numerator of its ladder). Paired with
     // achievementGoal(d) (app/game_achievements.h), which owns the denominator.
     int achValue(const AchievementDef& d) const;
@@ -1975,23 +1895,23 @@ public:
     // (defeated): see Game::startEncounter / Game::finishCombat.
     bool malbeastSeen(int idx) const {
         return idx >= 0 && idx < kWildMalbeastCount &&
-               (malbeastSeenMask_ & (1u << idx)) != 0;
+               (op_.reveals.malbeastSeenMask & (1u << idx)) != 0;
     }
     bool malbeastDefeated(int idx) const {
         return idx >= 0 && idx < kWildMalbeastCount &&
-               (malbeastDefeatedMask_ & (1u << idx)) != 0;
+               (op_.reveals.malbeastDefeatedMask & (1u << idx)) != 0;
     }
 
     // Lifetime boss rounds won (save v40). Each round of a gauntlet counts, so a
     // three-boss gauntlet adds three.
-    int bossWins() const { return bossWins_; }
+    int bossWins() const { return op_.tallies.bossWins; }
     // Lifetime Stacker boards cleared by hand in MAINT (save v44), for any process.
     // Quick and Tool runs do not count because nothing is played.
-    int stackerWins() const { return stackerWins_; }
+    int stackerWins() const { return op_.tallies.stackerWins; }
     // The three v56 lifetime tallies, on the same footing as the two above.
-    int tourneyWins() const { return tourneyWins_; }   // ROCK THE DOCK brackets taken
-    int pvpWins() const { return pvpWins_; }           // LINK duels won
-    int mergesCooked() const { return mergesCooked_; } // dishes cooked at the MERGE HUB
+    int tourneyWins() const { return op_.tallies.tourneyWins; }   // ROCK THE DOCK brackets taken
+    int pvpWins() const { return op_.tallies.pvpWins; }           // LINK duels won
+    int mergesCooked() const { return op_.tallies.mergesCooked; } // dishes cooked at the MERGE HUB
     // Has this item EVER been in the bag? (save v40): the collection tally behind the
     // cuisine/rarity achievements. Anything asking what the player has seen reads
     // this; the bag holds only what is left. Written by a sweep over the live
@@ -2020,9 +1940,9 @@ public:
     // Wipe back to a fresh empty save and re-enter the Decryption Hatch, so the
     // hatch + raising loop can be retested without reflashing / relaunching.
     void resetToHatch();
-    // Clear the player-level state a pet reset deliberately leaves standing: the
-    // 'Pedia reveal tiers, rank/discovery, Titles, world progress, Rig Shop
-    // upgrades, crew, and the radio consents. Paired with resetToHatch() by the
+    // Clear the player-level state a pet reset deliberately leaves standing: a fresh
+    // Operator record, the Titles, world progress, the shelves, the Cant and the radio
+    // consents. Paired with resetToHatch() by the
     // Factory Reset's WIPE EVERYTHING scope; nothing else calls it, because every
     // other reset path is scoped to one pet on purpose.
     void wipeDeviceProgress();
@@ -2074,10 +1994,10 @@ public:
     }
     // Credit boss rounds without fighting them (tests / headless runs): reaching the
     // deeper rungs otherwise means walking a gauntlet ladder per rung.
-    void debugAddBossWins(int n) { bossWins_ += n; markSaveDirty(); }
+    void debugAddBossWins(int n) { op_.tallies.bossWins += n; markSaveDirty(); }
     // Credit cleared DEFRAG boards without playing them (tests / headless runs). The
     // deeper rungs are dozens of hand-played runs, each of which also spends Bits.
-    void debugAddStackerWins(int n) { stackerWins_ += n; markSaveDirty(); }
+    void debugAddStackerWins(int n) { op_.tallies.stackerWins += n; markSaveDirty(); }
     // Record a species' DeepWeb depth without diving (tests / headless runs), so the
     // depth ladders can be exercised without a several-hundred-fight run.
     void debugRecordSpeciesDive(const char* creatureId, int depth) {
@@ -2180,7 +2100,7 @@ public:
     int modPick() const { return modPick_; }
     const char* modDetailId() const { return modDetailId_; }
     // Grant mods in tests without walking a boss drop or a cache roll.
-    ModPool& debugModPool() { return modPool_; }
+    ModPool& debugModPool() { return op_.modPool; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
@@ -2378,7 +2298,7 @@ public:
         sectorCleared_[area] = true;
         markSaveDirty();
     }
-    void debugAddTourneyWin() { ++tourneyWins_; markSaveDirty(); }
+    void debugAddTourneyWin() { ++op_.tallies.tourneyWins; markSaveDirty(); }
     // MODS earn path (tests): roll an id from an area's mod loot table, and
     // grant a mod through the real earn path (rolls its per-instance equip-level gate).
     // Real path: boss clears / DeepWeb wins / Epic caches. Same helpers, gated there.
@@ -2496,12 +2416,12 @@ public:
     // AUTO is SceneId::None: the pet decides, which is what the habitat did before any
     // of this could be chosen. A pick the operator does not own is refused, so nothing
     // can place them somewhere they have not been.
-    SceneId backgroundPick() const { return backgroundPick_; }
+    SceneId backgroundPick() const { return op_.backgroundPick; }
     bool setBackgroundPick(SceneId s);
     // How many of the arena's backgrounds the brackets taken so far have paid out. The
     // picker's own rung check and the announcement both read this, so "which win pays
     // what" is stated once.
-    int backgroundBracketsTaken() const { return tourneyWins_; }
+    int backgroundBracketsTaken() const { return op_.tallies.tourneyWins; }
 
 private:
     // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp). The
@@ -2727,7 +2647,6 @@ private:
     bool gameBriefOpen_ = false;
     int gameBriefScroll_ = 0;
     bool gameBriefIntro_ = false;            // opened by the hatch, not the chord
-    uint8_t tipsSeen_[kTipWireCap / 8] = {}; // one bit per Tip (save v66)
     // The tip card on screen (game_onboard.cpp): which tip, the window it is scrolled
     // to, where dismissing it returns, and whether it leads with the "!" explainer
     // (the first CARE card a device ever shows).
@@ -3075,7 +2994,7 @@ private:
     void autoUseDiveGear();         // AUTO DIVE GEAR at YES: arm the best of each kind
     void drawItemOfferScreen(Framebuffer& fb) const;
 
-    // Hacker Rank: re-derives rank from networksSeen_ after
+    // Hacker Rank: re-derives rank from op_.networksSeen after
     // every new unique network and arms a pending celebration on a crossing.
     // applyPendingRankUp() surfaces it the next time nav_ lands back on Walk
     // (both the direct Wi-Fi-resolve path and the wild-combat-return path can
@@ -3084,7 +3003,7 @@ private:
     void applyPendingRankUp();
 
     void enterHackerTagEditor();                   // copy the tag into the edit buffer
-    void saveHackerTag();                          // commit the edit buffer → hackerTag_
+    void saveHackerTag();                          // commit the edit buffer to the tag
 
     // Hacker face (07) ----------------------------------------
     // The parallel operator interface reached by A+C at the top level. It reuses the
@@ -3102,7 +3021,7 @@ private:
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
-    // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
+    // offered/afford, deducts Bits, bumps op_.rig.level[row], applies the row's
     // RigEffectKind (only Bandwidth has one. The live-pool grant), logs, persists. One
     // function for every row: adding a row is a table entry, not a new buyX().
     void buyRigUpgrade(int row) override;
@@ -3112,7 +3031,6 @@ private:
     // level and a bought one must land identically, and this is the one place either
     // lands. Out-of-range rows and non-positive counts are inert.
     void grantRigLevel(int row, int levels);
-    bool rigUpgradeOwned(int row) const { return rigLevel_[row] > 0; }  // level > 0
 
     // MERGE HUB (game_merge.cpp): the f Rig Shop unlock combines owned ingredient
     // items into a rarer one. Owning the Hub makes the MRG slot accessible; each
@@ -3144,7 +3062,7 @@ private:
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
     // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
-    // recipe wire in recipesOwned_, and this trio is the only code that knows that.
+    // recipe wire in op_.rig.recipesOwned, and this trio is the only code that knows that.
     bool recipeOwned(int recipeIndex) const;       // won off a Decryptogram, never bought
     void grantRecipe(int recipeIndex);             // the win: light the bit, persist
     // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
@@ -3181,31 +3099,27 @@ private:
     SaveData captureSave() const;                  // snapshot all persisted state
     void applySave(const SaveData& d);             // restore from a loaded snapshot
     // captureSave's sections, each the mirror of the restore* of the same name.
-    void captureOperator(SaveData& d) const;
     void captureBag(SaveData& d) const;
     void captureHistory(SaveData& d) const;
     void captureRadio(SaveData& d) const;
     void captureWorldProgress(SaveData& d) const;
-    void captureRig(SaveData& d) const;
-    void captureReveals(SaveData& d) const;
-    void captureRecords(SaveData& d) const;
+    void captureOperator(SaveData& d) const;
+    void captureTourneyRun(SaveData& d) const;
     void captureShelves(SaveData& d) const;
     void captureActivePet(SaveData& d) const;
     void captureSettings(SaveData& d) const;
-    void captureBackgroundAndCant(SaveData& d) const;
-    // applySave's sections, called in order (game_persist.cpp).
-    void restoreOperator(const SaveData& d);
+    void captureCant(SaveData& d) const;
     void restoreBag(const SaveData& d);
     void restoreHistory(const SaveData& d);
     void restoreRadio(const SaveData& d);
     void restoreWorldProgress(const SaveData& d);
-    void restoreRig(const SaveData& d);
-    void restoreReveals(const SaveData& d);
-    void restoreRecords(const SaveData& d);
+    void restoreOperator(const SaveData& d);
+    void restoreTourneyRun(const SaveData& d);
     void restoreShelves(const SaveData& d);
     void restoreActivePet(const SaveData& d);
     void restoreSettings(const SaveData& d);
-    void restoreBackgroundAndCant(const SaveData& d);
+    void restoreCant(const SaveData& d);
+    void settleBackgroundPick();
     void persistSave();                            // serialize + write via store_
     void markSaveDirty() { saveDirty_ = true; }    // schedule a debounced write
 
@@ -3509,7 +3423,8 @@ private:
     IdleLure petLure_;
     Inventory inventory_;
     EventLog log_;
-    int bits_;
+    // The player across every pet (core/app/operator.h). WIPE EVERYTHING replaces it.
+    Operator op_;
 
     Nav nav_ = Nav::Idle;
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
@@ -3665,7 +3580,6 @@ private:
     // tell a hold from a tap: a press that moved the cursor has done its job and must
     // not ALSO cancel out of the list on the way up.
     bool listBackStepped_ = false;
-    char hackerTag_[kHackerTagMax + 1] = "NETRUNNER_99";  // persisted
     // HackerTag on-device arcade editor: a working buffer + caret. Caret
     // kHackerTagMax = the ⏎ confirm cell.
     char editTag_[kHackerTagMax + 1] = {0};
@@ -3685,9 +3599,6 @@ private:
     ArchGroup archGroup_;
     int archPickRow_ = 0;
 
-    // The player's spare mods, shared by whichever pet is active. Player-level: it moves
-    // to the Operator record with the rest of the player's state.
-    ModPool modPool_;
     // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline
     // overwrite confirm is a picker sub-state (modConfirm_ + the choice +
@@ -3876,26 +3787,12 @@ private:
     // sector, in order. Locked sectors are skipped. Drives the CFG picker's A-cycle.
     int nextSelectableTitle(int cur) const;
 
-    // Web-'Pedia reveal state (save v25, game_pedia.cpp). seenCreatures_ holds
-    // glimpsed-but-not-hatched creature pointers: borrowed, stable registry
-    // pointers (same pattern rack_/records_ use, resolved through the registry on
-    // load). The two malbeast masks are plain bitfields.
-    std::vector<const CreatureDef*> seenCreatures_;
-    // The raised tally (save v39). Same borrowed-registry-pointer shape as
-    // seenCreatures_ above, and player-level in the same way: nothing clears it.
+    // The raised tally (save v39): borrowed registry pointers, resolved through the
+    // registry on load. Player-level: nothing but a wipe clears it.
     std::vector<const CreatureDef*> raisedCreatures_;
-    uint16_t malbeastSeenMask_ = 0;
-    uint16_t malbeastDefeatedMask_ = 0;
 
-    // --- Achievement state (save v40, game_pedia.cpp) -------------------------------
-    // Two bitsets indexed by AchievementDef::wire, NOT by table position: that is what
-    // lets content_achievements.cpp group its rows by theme and still load an old save.
-    // `earned` is the achievement; `notified` is whether its banner has been shown, kept
-    // separate so a firmware update that retro-awards a back catalogue announces every
-    // one of them instead of silently absorbing them.
-    static constexpr int kAchBytes = kAchievementWireCap / 8;
-    uint8_t achEarned_[kAchBytes] = {0};
-    uint8_t achNotified_[kAchBytes] = {0};
+    // --- Achievements (game_pedia.cpp) -----------------------------------------------
+    // The earned and notified bitsets are the Operator's (OperatorReveals).
     bool achBit(const uint8_t* bits, int wire) const {
         return wire >= 0 && wire < kAchievementWireCap &&
                (bits[wire / 8] & (1u << (wire % 8))) != 0;
@@ -3923,7 +3820,8 @@ private:
                                     // than wherever the free-running beat happens to be
 
     // Every item id that has ever been in the bag (save v40): borrowed registry
-    // pointers, like seenCreatures_. Player-level: spending an item never un-collects it.
+    // pointers, like OperatorReveals::seenCreatures. Player-level: spending an item never
+    // un-collects it.
     std::vector<const ItemDef*> collectedItems_;
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
     // that is not a Food: a Buff drunk from the bag is not a meal. Also where a
@@ -3939,33 +3837,10 @@ private:
     // the bag for a tick, so one pass over the stacks catches all of them, including
     // the items an upgraded save was already holding.
     void sweepCollectedItems();
-    // Lifetime boss rounds won (save v40): counted in Game::finishBossRound.
-    int bossWins_ = 0;
-    // Lifetime Stacker boards cleared in MAINT (save v44), counted in
-    // Game::finishStacker. Player-level, unlike the active pet's own
-    // pet_.defragCount: this one is a record of skill and so belongs to the operator, not
-    // to whichever pet happened to be on the shelf.
-    int stackerWins_ = 0;
-    // --- v56: three more lifetime tallies, all player-level like the two above ------
-    // ROCK THE DOCK brackets TAKEN (Game::awardTourneyPurse). Brackets, not matches:
-    // the arena is single elimination, so the run is the unit. See AchSeries::TourneyWins.
-    int tourneyWins_ = 0;
-    // The operator's chosen background, or SceneId::None for AUTO: the only part of
-    // this feature a save carries, and it carries it as a wire number
-    // (content/content_backgrounds.h) rather than as an ordinal.
-    SceneId backgroundPick_ = SceneId::None;
-    // LINK duels WON (Game::settlePvpBattle). The FIRST_DUEL achievement counts the
-    // meeting and fires at the START of a duel, because a duel that desyncs was still
-    // fought; this counts the verdict, so it only moves on a fight that finished.
-    int pvpWins_ = 0;
-    // Dishes cooked at the MERGE HUB (Game::craftRecipe). Distinct from the recipes
-    // KNOWN mask beside it: knowing a method is a Decryptogram cracked once, cooking is
-    // the thing the player does with it over and over.
-    int mergesCooked_ = 0;
     // The deepest DeepWeb Dive reached BY SPECIES (save v40). A per-species record rather
     // than one device high-water mark, so "take three different species deep" is
     // answerable and a line's own record is the max over its members. Borrowed registry
-    // pointers, like seenCreatures_.
+    // pointers, like OperatorReveals::seenCreatures.
     struct SpeciesDive {
         const CreatureDef* def = nullptr;
         int depth = 0;
@@ -3984,13 +3859,12 @@ private:
 
     // Wi-Fi network event. wifiOutcome_/wifiFlavor_ are set when the
     // guardian/cache/friendly roll happens (startWifiEvent) and consumed on B
-    // (resolveWifiOutcome). networksSeen_ is the lifetime unique-REAL-network
-    // counter (persists, save v4), only resolveNetworkDiscovery() bumps it now.
+    // (resolveWifiOutcome). Operator::networksSeen is the lifetime unique-REAL-network
+    // counter, and only resolveNetworkDiscovery() bumps it.
     // allyBuffBattlesLeft_ is the friendly-visit buff consumed one per battle in
     // buildPlayerCombatant.
     WifiOutcome wifiOutcome_ = WifiOutcome::SleepingGuardian;
     char wifiFlavor_[40] = "";
-    int networksSeen_ = 0;
     PowerStatus power_;  // last SMOOTHED reading from the platform tier
     // The battery fill currently on screen, which is the state batteryLevelStable
     // needs to hold a glyph steady across a reading that sits on a band edge. -1 =
@@ -4207,11 +4081,6 @@ private:
     TourneyView tourneyView_ = TourneyView::Bracket;
 
     // --- THE STORY (game_story.cpp) -----------------------------------------
-    // The read-set: one bit per StoryChapterDef::wire (core/content/story.h), so a
-    // chapter fires exactly once on this device however many pets walk past its beat.
-    // PLAYER-LEVEL and persisted (save v65) for that reason: the journey belongs to
-    // the operator, and a new egg is not grounds for being told the premise again.
-    uint8_t storyRead_[kStoryWireCap / 8] = {};
     // What the reader is showing, and the chapter queued behind it. Two, because a
     // cleared area fires its two outros back to back (fireStoryPair) and nothing else
     // ever queues more than that: a deeper queue would be a story the walk is telling
@@ -4297,17 +4166,6 @@ private:
     void onHackerLink(const ButtonEvent& ev);      // LINK list: A cycle · B act · C back
     void drawHackerLink(Framebuffer& fb) const;    // LINK screen + header (game_pvp.cpp)
 
-    // Crew allegiance + the HOME NETWORK it hangs off (game_crew.cpp). Both are
-    // player-level (they survive a pet reset, like the HackerTag and the Titles), and
-    // both persist (save v36). crewIndex_ is a kCrews row (-1 = unaffiliated); the SAVE
-    // stores the crew's id string, so the table can be reordered. homeNetworkKey_ is a
-    // packed 48-bit BSSID (0 = none designated) with homeNetworkName_ caching the label
-    // so the UI reads correctly even on a boot where the ledger file is unavailable
-    // (no SD card).
-    int crewIndex_ = -1;
-    uint64_t homeNetworkKey_ = 0;
-    char homeNetworkName_[33] = {0};
-
     // Shop event. shopFront_ points at the CURRENT area's AreaStorefrontDef (its
     // .shop or .modShop, picked by startShopEvent/startModShopEvent): a stable
     // pointer into compiled-in content, valid for the whole visit. shopIsModShop_
@@ -4344,33 +4202,6 @@ private:
     int crewDetail_ = -1;                  // the kCrews row Detail is showing
     int crewProseScroll_ = 0;              // Detail: first prose line drawn (A pages it)
     int crewNetRow_ = 0;
-    // Rig Shop purchase levels, one int per RigRow (game_rig_shop.h): 0 = never
-    // bought; a tiered row's purchase count, or 0/1 for a one-time unlock. Player-level,
-    // survives lifecycles. Persistence (game_persist.cpp) maps rows below
-    // kRigRowExtBase onto the legacy per-row SaveGame fields (bwUpgradeCount/
-    // fragAmountTier/etc., save v19-v31, unchanged wire format) and every row from
-    // there up into the forward-compatible `rigLevelsExt` vector (save v32), so a new
-    // row never needs a save.h edit.
-    int rigLevel_[kMaxRigUpgrades] = {};
-    // Which owned SERVICE rows are switched OFF: one bit per RigRow, set = off
-    // (rigFeatureActive). Player-level and persisted (save v61). Stored as the OFF
-    // half rather than the on half so that zero means what a save written before the
-    // screen existed means: every service a player has bought is running.
-    static_assert(kMaxRigUpgrades <= 32, "rigServicesOff_ is one bit per rig row");
-    uint32_t rigServicesOff_ = 0;
-    // ...and which askable ones sit at ASK (rigServiceMode), one bit per row, set = ask
-    // (save v69). Read only while the row's OFF bit is clear. Zero is YES, so a row
-    // bought before the bit existed keeps doing what it did.
-    uint32_t rigServicesAsk_ = 0;
-
-    // Which MERGE HUB recipes are known: one bit per MergeRecipe::wire
-    // (game_internal.h), read and written only through recipeOwned/grantRecipe.
-    // Player-level, survives lifecycles; persisted whole as SaveData::recipeOwned
-    // (save v51), with its first four bytes also riding the legacy u32 a v31..v50
-    // reader understands. A recipe is never bought: the Decryptogram's prize ladder
-    // is the only writer.
-    uint8_t recipesOwned_[kMergeRecipeWireBytes] = {};
-
     // Warp-key picker. warpRow_ is the focused row into the live
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the
     // keys themselves persist in the inventory, but the picker cursor does not).
@@ -4383,11 +4214,9 @@ private:
     int offerRow_ = 0;
     Nav offerBackNav_ = Nav::Idle;
 
-    // Hacker Rank: a player/device-level tier derived from
-    // networksSeen_ (persists across pets, save v4). rankUpPending_/
-    // rankUpFlavor_ hold a crossing until the next Walk-screen render (both the
-    // direct Wi-Fi-resolve return and the wild-combat-return path check it).
-    int hackerRank_ = 0;
+    // A Hacker Rank crossing (Operator::hackerRank), held until the next Walk-screen
+    // render (both the direct Wi-Fi-resolve return and the wild-combat-return path
+    // check it).
     bool rankUpPending_ = false;
     char rankUpFlavor_[32] = "";
 
@@ -4459,18 +4288,17 @@ private:
 
     // THE DECRYPTOGRAM (game_cryptogram.cpp). The BOARD is un-persisted like the three
     // above: a reboot mid-quote forfeits the Decryptogram, which is the same deal
-    // every other minigame offers. What does persist (save v48) is quoteStates_: two
-    // bits per QuoteDef::wire holding the tier ladder, which is simultaneously the loss
-    // ratchet and the "already won" record. Player-level, so it outlives a pet.
+    // every other minigame offers. What does persist (save v48) is
+    // OperatorTallies::quoteStates: two bits per QuoteDef::wire holding the tier ladder,
+    // which is at once the loss ratchet and the "already won" record.
     //
     // cryptogramPrize_ is the finished run frozen for the verdict screen, for the same
-    // reason the arcade's result block is: the payout has already landed on bits_ and
+    // reason the arcade's result block is: the payout has already landed on the wallet and
     // the rig by the time the player reads it.
     Cryptogram cryptogram_;
     int cryptogramQuote_ = -1;        // roster row being played, or -1
     int cryptogramPrizeBits_ = 0;     // what the solve actually paid
     QuoteReward cryptogramPrize_ = {};  // ...and the unlock beside it (None = replay)
-    uint8_t quoteStates_[kQuoteStateBytes] = {0};
 
     // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor,
     // arcadeGame_ the roster index of what is RUNNING: they part company as soon as a
@@ -4489,9 +4317,6 @@ private:
     int arcadeScore_ = 0;
     int arcadeScoreMax_ = 0;          // 0 = a win-or-lose cabinet, with no score to show
     int arcadeBits_ = 0;              // what the run actually paid
-    int arcadePlays_[kArcadeMaxCabinets] = {0};
-    int arcadeWins_[kArcadeMaxCabinets] = {0};
-    int arcadeBest_[kArcadeMaxCabinets] = {0};   // high score per cabinet (save v55)
     // Did the run just finished SET that best? Runtime-only and about one screen: the
     // payout says NEW BEST instead of quoting a number the player already had.
     bool arcadeNewBest_ = false;
@@ -4556,13 +4381,6 @@ private:
     // across a boot, while the accumulator is a duration and survives one intact.
     int csfBeat_ = 0;
     std::vector<SaveRecord> records_;
-
-    // Persisted identity / lifetime counters. pet_.generation is
-    // the active pet's generation; petsRaised_ the lifetime egg count; uptimeBase_
-    // the lifetime uptime carried from prior boots (lifetime = base + nowMs_).
-    int petsRaised_ = 0;
-    uint32_t uptimeBase_ = 0;
-    uint32_t lifetimeSteps_ = 0;
 
     // Persistence plumbing. store_ is the platform save sink (nullptr = none).
     // saveDirty_ schedules a debounced write; lastSaveMs_ paces autosaves.

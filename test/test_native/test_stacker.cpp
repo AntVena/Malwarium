@@ -508,10 +508,10 @@ void test_stacker_wins_ladder_sweeps_and_persists() {
     // v44 on the wire, and back into a Game: the tally is the operator's, so it has to
     // come back on a device that has been power-cycled since.
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.stackerWins = 10;
+    a.op.stackerWins = 10;
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.stackerWins == 10);
+    CHECK(out.op.stackerWins == 10);
     MemSaveStore store; store.save(serializeSave(a));
     Game loaded(StartMode::Hatched, "paypup", &store);
     CHECK(loaded.stackerWins() == 10);

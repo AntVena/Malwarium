@@ -334,7 +334,7 @@ void test_rig_link_aggregator_regen() {
     g.debugBuyLinkAggregator();
     CHECK(g.linkAggregatorUnlocked());
     CHECK(g.bits() == 7);                                    // Bits deducted
-    CHECK(!g.shopRowOffered(kRigRowLinkAggregator));         // ...and nothing left to buy
+    CHECK(!g.operatorRecord().rig.offered(kRigRowLinkAggregator));         // ...and nothing left to buy
     g.debugSetBandwidth(cap - 200);
     CHECK(g.bandwidthRegenAmount() == 2);
     g.tick(now += tick);
@@ -392,7 +392,7 @@ void test_rig_services_switchboard() {
         Game g{StartMode::Hatched, "paypup", &store};
         // Nothing that runs by itself is owned, so the list carries no head slot: a lap
         // of the whole storefront never lands on one.
-        CHECK(!g.rigServicesOffered());
+        CHECK(!g.operatorRecord().rig.servicesOffered());
         enterHackerSlot(g, HackerSlotId::Shop);
         CHECK(g.nav() == Game::Nav::Submenu && g.shopView() == Game::ShopView::Rows);
         for (int i = 0; i <= kRigUpgradeCount; ++i) {
@@ -405,7 +405,7 @@ void test_rig_services_switchboard() {
         g.debugSetBits(kRigAutoBackupCost + kDiskMaintenanceBuyStart);
         g.debugBuyAutoBackup();
         g.debugBuyRigRow(kRigRowDiskMaintenance);
-        CHECK(g.rigServicesOffered() && g.rigServicesRunning() == 2);
+        CHECK(g.operatorRecord().rig.servicesOffered() && g.operatorRecord().rig.servicesRunning() == 2);
 
         // The head slot now draws at the top of the storefront, and the board behind it
         // draws too: both are new screens, so both are rendered at least once here.
@@ -419,12 +419,12 @@ void test_rig_services_switchboard() {
         g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
         int rows[kRigUpgradeCount];
-        CHECK(g.rigServiceRows(rows, kRigUpgradeCount) == 2);
+        CHECK(g.operatorRecord().rig.serviceRows(rows, kRigUpgradeCount) == 2);
         CHECK(rows[0] == kRigRowAutoBackup && rows[1] == kRigRowDiskMaintenance);
         tapB(g);
-        CHECK(!g.rigFeatureActive(kRigRowAutoBackup));
+        CHECK(!g.operatorRecord().rig.featureActive(kRigRowAutoBackup));
         CHECK(g.autoBackupUnlocked());              // still bought: a switch isn't a refund
-        CHECK(g.rigServicesRunning() == 1);
+        CHECK(g.operatorRecord().rig.servicesRunning() == 1);
         backToPetFace(g);
         enterWalk(g);
         CHECK(!g.backupShieldArmed());
@@ -432,7 +432,7 @@ void test_rig_services_switchboard() {
         // Started again, the same walk arms the free save.
         openServices(g);
         tapB(g);
-        CHECK(g.rigFeatureActive(kRigRowAutoBackup));
+        CHECK(g.operatorRecord().rig.featureActive(kRigRowAutoBackup));
         backToPetFace(g);
         enterWalk(g);
         CHECK(g.backupShieldArmed());
@@ -443,7 +443,7 @@ void test_rig_services_switchboard() {
         g.onButton(press(Button::A));               // cursor -> DISK MAINTENANCE
         CHECK(g.rigServiceRow() == 1);
         tapB(g);
-        CHECK(!g.rigFeatureActive(kRigRowDiskMaintenance));
+        CHECK(!g.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));
         tapC(g);                                    // C backs to the storefront, not out
         CHECK(g.shopView() == Game::ShopView::Rows && g.nav() == Game::Nav::Submenu);
 
@@ -457,8 +457,8 @@ void test_rig_services_switchboard() {
     // The switch survives the reboot, and the service it stopped is still stopped.
     Game g2(StartMode::Hatched, "paypup", &store);
     CHECK(g2.diskMaintenanceLevel() == 1);
-    CHECK(!g2.rigFeatureActive(kRigRowDiskMaintenance));
-    CHECK(g2.rigFeatureActive(kRigRowAutoBackup));
+    CHECK(!g2.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));
+    CHECK(g2.operatorRecord().rig.featureActive(kRigRowAutoBackup));
 }
 
 // SHOP > SERVICES, the other half of B: a HELD B reads the focused service out
@@ -478,13 +478,13 @@ void test_rig_service_info_on_hold_b() {
     CHECK(g.shopView() == Game::ShopView::Services);
     g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
     CHECK(g.shopView() == Game::ShopView::ServiceInfo);
-    CHECK(g.rigFeatureActive(kRigRowAutoBackup));       // ...still running
+    CHECK(g.operatorRecord().rig.featureActive(kRigRowAutoBackup));       // ...still running
     g.onButton(lift(Button::B));                        // release after the fire: no-op
-    CHECK(g.rigFeatureActive(kRigRowAutoBackup));
+    CHECK(g.operatorRecord().rig.featureActive(kRigRowAutoBackup));
 
     // Every service carries the description that page is for, and it draws.
     int rows[kRigUpgradeCount];
-    const int n = g.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = g.operatorRecord().rig.serviceRows(rows, kRigUpgradeCount);
     for (int i = 0; i < n; ++i) CHECK(kRigUpgrades[rows[i]].serviceInfo != nullptr);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
@@ -497,7 +497,7 @@ void test_rig_service_info_on_hold_b() {
     g.tick(t += kServiceInfoHoldMs / 2);                // well under the threshold
     g.onButton(lift(Button::B));
     CHECK(g.shopView() == Game::ShopView::Services);    // no page opened...
-    CHECK(!g.rigFeatureActive(kRigRowAutoBackup));      // ...the tap switched it off
+    CHECK(!g.operatorRecord().rig.featureActive(kRigRowAutoBackup));      // ...the tap switched it off
 
     // The page reads out the service under the cursor, whichever that is: step to
     // DISK MAINTENANCE and hold there. Its live per-run price is the one thing the
@@ -512,7 +512,7 @@ void test_rig_service_info_on_hold_b() {
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     tapB(g);                                            // B leaves the reader too
     CHECK(g.shopView() == Game::ShopView::Services);
-    CHECK(g.rigFeatureActive(kRigRowDiskMaintenance));  // and left the switch alone
+    CHECK(g.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));  // and left the switch alone
 }
 
 // Disk Maintenance is an emergency backstop, not a maid: every tier sits inside the

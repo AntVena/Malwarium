@@ -164,7 +164,7 @@ void Game::finishBossRound() {
         rollEnemyMoveDrop(combat_.enemy(), kBossMoveDropPct);
         const int surviving = combat_.player().health;
         ++bossRound_;
-        ++bossWins_;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten
+        ++op_.tallies.bossWins;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten
         if (bossRound_ < static_cast<int>(bossGauntlet_.rounds.size())) {
             startBossRound(surviving);              // next round, no heal: stays in Combat
             return;
@@ -172,7 +172,7 @@ void Game::finishBossRound() {
         // Boss beaten: pay the lump, record the clear. A SUB-AREA boss
         // (bossSub_ >= 0) marks just that sub-area cleared; the AREA boss (bossSub_ ==
         // 1) clears the whole area → the next area unlocks + the Title is granted.
-        bits_ += applyCombatBitsBonus(bossBitsAccrued_);   // Scraping Cluster Expansion
+        op_.bits += applyCombatBitsBonus(bossBitsAccrued_);   // Scraping Cluster Expansion
         addFightXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
         if (bossSub_ >= 0 && bossSub_ < kExplSubAreas) {
             const bool firstClear = !subCleared_[bossSector_][bossSub_];

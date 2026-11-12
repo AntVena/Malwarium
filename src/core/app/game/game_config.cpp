@@ -39,7 +39,7 @@ void Game::enterCfgScreen(CfgScreen target) {
         case CfgScreen::Theme: cfgThemePick_ = themeRow(); break;          // ...likewise
         case CfgScreen::Titles: cfgTitlePick_ = equippedTitle_; break;     // the equipped one
         case CfgScreen::Background: {                                      // ...likewise
-            const BackgroundDef* b = backgroundFor(backgroundPick_);
+            const BackgroundDef* b = backgroundFor(op_.backgroundPick);
             cfgBgPick_ = 0;
             for (int i = 0; i < kBackgroundCount; ++i)
                 if (b && kBackgrounds[i].wire == b->wire) cfgBgPick_ = i + 1;
@@ -474,8 +474,8 @@ void Game::drawCfg(Framebuffer& fb) const {
             // RANK reads "R{n} {title}" so the endless NUMERIC rank shows alongside the
             // (threshold-unlocked, growable) title, the same "R%d %s" form as STAT.
             char rankLine[28];
-            std::snprintf(rankLine, sizeof(rankLine), "R%d %s", hackerRank_,
-                          hackerRankTitle(hackerRank_));
+            std::snprintf(rankLine, sizeof(rankLine), "R%d %s", op_.hackerRank,
+                          hackerRankTitle(op_.hackerRank));
             SysInfoView v;
             v.owner = radioOwner_;
             v.sd = sdStatus_;
@@ -484,7 +484,7 @@ void Game::drawCfg(Framebuffer& fb) const {
             v.fwVersion = kFirmwareVersion;
             v.uiMode = uiMode_;
             v.rankTitle = rankLine;
-            v.networksSeen = networksSeen_;
+            v.networksSeen = op_.networksSeen;
             v.equippedTitle = equippedTitleName();
             v.captureEnabled = auditCapture_.enabled();
             v.handshakesSeen = handshakesSeen_;
@@ -503,9 +503,9 @@ void Game::drawCfg(Framebuffer& fb) const {
             v.theme = themeName();
             // The row previews the CHOICE, not the place being drawn: AUTO stays AUTO
             // however the pet moves, which is the whole difference between the two.
-            v.background = backgroundPick_ == SceneId::None
+            v.background = op_.backgroundPick == SceneId::None
                                ? "AUTO"
-                               : backgroundFor(backgroundPick_)->name;
+                               : backgroundFor(op_.backgroundPick)->name;
             v.careAlerts = careAlerts_;
             drawCfgDevice(fb, v);
             break;
@@ -544,7 +544,7 @@ void Game::drawCfg(Framebuffer& fb) const {
                 if (backgroundOwned(kBackgrounds[i].scene))
                     owned |= 1u << i;
             int equipped = 0;
-            if (const BackgroundDef* b = backgroundFor(backgroundPick_))
+            if (const BackgroundDef* b = backgroundFor(op_.backgroundPick))
                 for (int i = 0; i < kBackgroundCount; ++i)
                     if (kBackgrounds[i].wire == b->wire) equipped = i + 1;
             drawBackgrounds(fb, cfgBgPick_, owned, equipped, beat_);
@@ -616,7 +616,7 @@ void Game::enterHackerTagEditor() {
     // Seed the working buffer from the live tag, padding to the fixed cell count
     // with '_' (a valid alphabet char). Caret starts at the first cell.
     for (int i = 0; i < kHackerTagMax; ++i) {
-        const char c = hackerTag_[i];
+        const char c = op_.hackerTag[i];
         editTag_[i] = (c == '\0') ? '_' : c;
     }
     editTag_[kHackerTagMax] = '\0';
@@ -624,8 +624,8 @@ void Game::enterHackerTagEditor() {
 }
 
 void Game::saveHackerTag() {
-    std::strncpy(hackerTag_, editTag_, sizeof(hackerTag_) - 1);
-    hackerTag_[sizeof(hackerTag_) - 1] = '\0';
+    std::strncpy(op_.hackerTag, editTag_, sizeof(op_.hackerTag) - 1);
+    op_.hackerTag[sizeof(op_.hackerTag) - 1] = '\0';
     markSaveDirty();
     nav_ = Nav::Submenu;
 }
@@ -642,8 +642,8 @@ bool Game::setHackerTag(const char* s) {
         const bool ok = (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
         if (!ok) return false;
     }
-    std::strncpy(hackerTag_, s, sizeof(hackerTag_) - 1);
-    hackerTag_[sizeof(hackerTag_) - 1] = '\0';
+    std::strncpy(op_.hackerTag, s, sizeof(op_.hackerTag) - 1);
+    op_.hackerTag[sizeof(op_.hackerTag) - 1] = '\0';
     markSaveDirty();
     return true;
 }
@@ -668,7 +668,7 @@ bool Game::backgroundOwned(SceneId s) const {
                 if (area(a).scene == s) return sectorCleared_[a];
             return false;
         case BackgroundSource::Bracket:
-            return tourneyWins_ >= b->rung;
+            return op_.tallies.tourneyWins >= b->rung;
         case BackgroundSource::Achieve:
             // The achievement bitset is already saved, so this is derived the same
             // way as the other three.
@@ -682,7 +682,7 @@ bool Game::setBackgroundPick(SceneId s) {
     // refused rather than clamped: quietly landing on a neighbouring background would
     // be the screen deciding where the operator lives.
     if (s != SceneId::None && !backgroundOwned(s)) return false;
-    backgroundPick_ = s;
+    op_.backgroundPick = s;
     markSaveDirty();
     dirty_ = true;
     return true;

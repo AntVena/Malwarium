@@ -1107,10 +1107,10 @@ void test_recipes_past_the_legacy_mask_persist() {
     SaveData d{};
     CHECK(deserializeSave(store.bytes(), d));
     const int lowWire = kMergeRecipes[lowIdx].wire;
-    CHECK((d.recipesUnlocked & (1u << lowWire)) != 0);
-    CHECK(static_cast<int>(d.recipeOwned.size()) == kMergeRecipeWireBytes);
+    CHECK((d.op.recipesUnlocked & (1u << lowWire)) != 0);
+    CHECK(static_cast<int>(d.op.recipeOwned.size()) == kMergeRecipeWireBytes);
     const int highWire = kMergeRecipes[highIdx].wire;
-    CHECK((d.recipeOwned[highWire / 8] & (1u << (highWire % 8))) != 0);
+    CHECK((d.op.recipeOwned[highWire / 8] & (1u << (highWire % 8))) != 0);
 }
 
 // A recipe consumes every ingredient it names, not just the first two: Hashed Browns

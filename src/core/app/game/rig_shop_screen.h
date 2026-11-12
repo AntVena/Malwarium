@@ -2,14 +2,15 @@
 //
 // The SHOP is three views behind one slot: the storefront list, the SERVICES switchboard
 // its head slot opens, and one service's info page, which a HELD B opens from the board.
-// RigShopScreen holds which view is up and the cursors inside each; the Rig Shop account
-// it sells into (levels, service switches, the wallet) belongs to the game, and the
-// screen reaches it only through RigShopHost.
+// RigShopScreen holds which view is up and the cursors inside each. The Rig Shop account
+// it sells into (levels, service switches, the wallet) is the Operator record's, which
+// the screen reads by const reference and changes only through RigShopHost.
 #pragma once
 
 #include <cstdint>
 
 #include "core/app/game_rig_shop.h"
+#include "core/app/operator.h"
 #include "core/content/effect_text.h"
 #include "core/device/platform.h"
 
@@ -22,19 +23,10 @@ enum class ShopView : uint8_t { Rows, Services, ServiceInfo };
 // What the SHOP needs from the game. Game implements it; a test can too.
 class RigShopHost {
 public:
-    virtual int bits() const = 0;
-    virtual int rigLevel(int row) const = 0;
-    virtual int rigUpgradeCostFor(int row) const = 0;
-    virtual bool shopRowOffered(int row) const = 0;
-    virtual bool rigServicesOffered() const = 0;
-    virtual int rigServiceRows(int* out, int max) const = 0;
-    virtual int rigServicesRunning() const = 0;
-    virtual bool rigFeatureActive(int row) const = 0;
-    virtual ServiceMode rigServiceMode(int row) const = 0;
-    virtual const char* rigServiceWord(int row) const = 0;
+    // The account the SHOP sells into, and the wallet it is paid from.
+    virtual const Operator& operatorRecord() const = 0;
     // Disk Maintenance's per-run price is its row's multiple of the pet's defrag price.
     virtual int defragCost() const = 0;
-    virtual int diskMaintenanceLevel() const = 0;
 
     virtual void buyRigUpgrade(int row) = 0;
     virtual void toggleRigService(int row) = 0;

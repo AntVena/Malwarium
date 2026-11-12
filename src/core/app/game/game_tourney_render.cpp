@@ -96,7 +96,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
         // "n LEFT" readout, so the collapse reads correctly in grayscale.
         if (!live && !focused) {
             fb.fillRect(kDockTextX, y + kDockOutRowH / 2,
-                        textWidth(slot == me ? hackerTag_
+                        textWidth(slot == me ? op_.hackerTag
                                              : tourneyCard(tourneySeed_, slot).handle),
                         1, palColor(Pal::INK_DIM));
             continue;
@@ -109,7 +109,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
         const TourneyCard card = tourneyCard(tourneySeed_, slot);
         // The operator's own row shows their tag like every other entrant, so all
         // eight rows compare the same way.
-        const char* name = slot == me ? hackerTag_ : card.handle;
+        const char* name = slot == me ? op_.hackerTag : card.handle;
         const Rgb565 ink = live ? palColor(Pal::INK) : palColor(Pal::INK_DIM);
         drawText(fb, kDockTextX, y, name, ink);
         if (!live)   // the same strike the collapsed rows carry, through the name
@@ -219,7 +219,7 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
     // Everything under it is the shared flow.
     const int slot = tourneyScoutedSlot_;
     const bool self = slot == tourneySlot();
-    drawHeaderBand(fb, self ? hackerTag_ : tourneyCard(tourneySeed_, slot).handle,
+    drawHeaderBand(fb, self ? op_.hackerTag : tourneyCard(tourneySeed_, slot).handle,
                    "SCOUT");
     const CreatureDef* c = registry_.creature(tourneyScouted_.spec.creatureId);
     const SpriteData* s = c ? registry_.sprite(c->spriteName) : nullptr;

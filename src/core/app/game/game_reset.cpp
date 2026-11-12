@@ -10,9 +10,8 @@
 namespace mal {
 
 void Game::wipeDeviceProgress() {
-    // Everything the device knows that OUTLIVES a pet: the 'Pedia's reveal tiers, the
-    // operator's rank and discovery history, earned Titles, world progress, every
-    // quote's standing, the Rig Shop's account upgrades, the crew allegiance, and every
+    // Everything the device knows that OUTLIVES a pet: the whole Operator record, earned
+    // Titles, world progress, the collected-items and dive shelves, the Cant, and every
     // radio consent (out of the box, all three are off). resetToHatch() clears the
     // per-pet half; together they are a device with no history. Not cleared: the device
     // preferences (brightness, UI mode, sound), which are settings rather than progress,
@@ -21,22 +20,12 @@ void Game::wipeDeviceProgress() {
     // deleting them. The SHAKES handshake ledger is SD-backed too but pet-level (it
     // follows handshakesSeen_ below), so it IS cleared here, which truncates its card
     // file.
-    seenCreatures_.clear();
+    op_ = Operator{};
     raisedCreatures_.clear();
-    malbeastSeenMask_ = 0;
-    malbeastDefeatedMask_ = 0;
-    for (uint8_t& b : achEarned_) b = 0;
-    for (uint8_t& b : achNotified_) b = 0;
     achBannerWire_ = -1;
     achBannerCount_ = 0;
     collectedItems_.clear();
     speciesDives_.clear();
-    bossWins_ = 0;
-    stackerWins_ = 0;
-    for (uint8_t& b : quoteStates_) b = 0;   // every quote back to never played
-    for (uint8_t& b : tipsSeen_) b = 0;      // a device with no history is taught again
-    hackerRank_ = 0;
-    networksSeen_ = 0;
     handshakesSeen_ = 0;
     handshakeLedger_.clear();
     cantSigils_ = 0;      // the Cant is unlearned again, and the purse it was bought
@@ -50,10 +39,6 @@ void Game::wipeDeviceProgress() {
             subBossUnlocked_[a][s] = false;
         }
     }
-    for (int i = 0; i < kMaxRigUpgrades; ++i) rigLevel_[i] = 0;
-    crewIndex_ = -1;
-    homeNetworkKey_ = 0;
-    homeNetworkName_[0] = '\0';
     setAuditMode(AuditMode::Off);      // seals capture with the scan, per the ladder
     setApEnabled(false);
     setLinkEnabled(false);
@@ -69,7 +54,6 @@ void Game::resetToHatch() {
     pet_.mods = ModSlots::starting();
     inventory_ = Inventory::starting();
     log_ = EventLog{};
-    bits_ = kStartBits;
     cursor_ = 0;
     listRow_ = 0;
     detailItem_ = nullptr;
@@ -92,7 +76,6 @@ void Game::resetToHatch() {
     // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
     rack_.clear();
     records_.clear();
-    modPool_ = ModPool::starting();
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;
@@ -102,11 +85,6 @@ void Game::resetToHatch() {
     cryptogramPrize_ = {};
     arcadeDifficulty_ = ArcadeDifficulty::Medium;
     maintDifficulty_ = ArcadeDifficulty::Easy;
-    for (int i = 0; i < kArcadeMaxCabinets; ++i) {
-        arcadePlays_[i] = 0;
-        arcadeWins_[i] = 0;
-        arcadeBest_[i] = 0;
-    }
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
     moveConfirm_ = false;
@@ -116,11 +94,20 @@ void Game::resetToHatch() {
     fxBeat_ = 0;
     combatTurnBeat_ = 0;
     lastLevelUpStat_ = -1;
-    petsRaised_ = 0;
-    uptimeBase_ = 0;
-    lifetimeSteps_ = 0;
-    std::strncpy(hackerTag_, "NETRUNNER_99", sizeof(hackerTag_) - 1);
-    hackerTag_[sizeof(hackerTag_) - 1] = '\0';
+    // RESET PET also restarts this much of the Operator: the tag, the lifetime counters,
+    // the wallet, the spare mods and the arcade tallies. The 'Pedia, the rank, the Rig
+    // Shop and the achievements stand. WIPE EVERYTHING has already replaced the record.
+    const Operator fresh;
+    std::memcpy(op_.hackerTag, fresh.hackerTag, sizeof(op_.hackerTag));
+    op_.petsRaised = fresh.petsRaised;
+    op_.uptimeBase = fresh.uptimeBase;
+    op_.lifetimeSteps = fresh.lifetimeSteps;
+    op_.bits = fresh.bits;
+    op_.modPool = fresh.modPool;
+    OperatorTallies& t = op_.tallies;
+    std::memcpy(t.arcadePlays, fresh.tallies.arcadePlays, sizeof(t.arcadePlays));
+    std::memcpy(t.arcadeWins, fresh.tallies.arcadeWins, sizeof(t.arcadeWins));
+    std::memcpy(t.arcadeBest, fresh.tallies.arcadeBest, sizeof(t.arcadeBest));
     archConfirm_ = false;
     saveDirty_ = false;
     lastSaveMs_ = nowMs_;

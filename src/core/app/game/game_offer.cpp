@@ -61,8 +61,8 @@ void Game::offerThenDive() {
     // arms them without a screen, NO skips them without one, ASK is the DIVE PREP list.
     // A rig without the row is asked, which is how a player meets the items at all.
     if (!deepWebUnlocked()) return;
-    if (rigServiceOwned(kRigRowAutoDiveGear)) {
-        switch (rigServiceMode(kRigRowAutoDiveGear)) {
+    if (op_.rig.serviceOwned(kRigRowAutoDiveGear)) {
+        switch (op_.rig.serviceMode(kRigRowAutoDiveGear)) {
             case ServiceMode::On:  autoUseDiveGear(); startDeepWebDive(); return;
             case ServiceMode::Off: startDeepWebDive(); return;
             case ServiceMode::Ask: break;

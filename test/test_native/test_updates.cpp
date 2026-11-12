@@ -9,16 +9,16 @@
 void test_save_v18_mod_reqlevel() {
     SaveData a;
     std::strcpy(a.active.id, "paypup");
-    a.ownedMods.resize(2);
-    std::strcpy(a.ownedMods[0].id, "crypto_coprocessor");
-    std::strcpy(a.ownedMods[1].id, "overclock_chip");
-    a.ownedModReqLevels = {3, 22};
+    a.op.ownedMods.resize(2);
+    std::strcpy(a.op.ownedMods[0].id, "crypto_coprocessor");
+    std::strcpy(a.op.ownedMods[1].id, "overclock_chip");
+    a.op.ownedModReqLevels = {3, 22};
     auto full = serializeSave(a);
 
     SaveData out;
     CHECK(deserializeSave(full, out));
-    CHECK(out.hasModEquipLevelData);
-    CHECK(out.ownedModReqLevels == a.ownedModReqLevels);
+    CHECK(out.op.hasModEquipLevelData);
+    CHECK(out.op.ownedModReqLevels == a.op.ownedModReqLevels);
 }
 
 // The pool has a ceiling now, and the Rig Shop row is what moves it. Both halves matter:
@@ -107,7 +107,7 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
     CHECK(deserializeSave(store.bytes(), d));
     // kModWireCap - 1 is addressable by the format and belongs to no shipped row.
     CHECK(ContentRegistry::embedded().modByWire(kModWireCap - 1) == nullptr);
-    saveSetModCount(d.ownedModCounts, kModWireCap - 1, 5);
+    saveSetModCount(d.op.ownedModCounts, kModWireCap - 1, 5);
     store.save(serializeSave(d));
 
     Game g2(StartMode::Hatched, "paypup", &store);
@@ -1085,14 +1085,14 @@ void test_save_v21_shield_roundtrip() {
     a.active.shieldActive = 1;
     a.active.shieldSpent = 1;
     a.active.yubiSpent = 1;
-    a.fragAmountTier = 3;
+    a.op.fragAmountTier = 3;
     auto blob = serializeSave(a);
     SaveData out;
     CHECK(deserializeSave(blob, out));
     CHECK(out.active.shieldActive == 1);
     CHECK(out.active.shieldSpent == 1);
     CHECK(out.active.yubiSpent == 1);
-    CHECK(out.fragAmountTier == 3);
+    CHECK(out.op.fragAmountTier == 3);
 }
 
 // v22 field round-trip: fragTriggerTier survives a full serialize/deserialize
@@ -1100,27 +1100,27 @@ void test_save_v21_shield_roundtrip() {
 void test_save_v22_frag_trigger_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.active.shieldActive = 1;
-    a.fragAmountTier = 3;
-    a.fragTriggerTier = 4;
+    a.op.fragAmountTier = 3;
+    a.op.fragTriggerTier = 4;
     SaveData rt;
     CHECK(deserializeSave(serializeSave(a), rt));
     CHECK(rt.active.shieldActive == 1);
-    CHECK(rt.fragAmountTier == 3);
-    CHECK(rt.fragTriggerTier == 4);
+    CHECK(rt.op.fragAmountTier == 3);
+    CHECK(rt.op.fragTriggerTier == 4);
 }
 
 // v23 field round-trip: both one-time shop unlocks survive a full
 // serialize/deserialize alongside the v22 field ahead of them.
 void test_save_v23_shop_unlocks_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.fragTriggerTier = 5;
-    a.itemTabsUnlocked = 1;
-    a.bulkOpenUnlocked = 1;
+    a.op.fragTriggerTier = 5;
+    a.op.itemTabsUnlocked = 1;
+    a.op.bulkOpenUnlocked = 1;
     SaveData rt;
     CHECK(deserializeSave(serializeSave(a), rt));
-    CHECK(rt.fragTriggerTier == 5);
-    CHECK(rt.itemTabsUnlocked == 1);
-    CHECK(rt.bulkOpenUnlocked == 1);
+    CHECK(rt.op.fragTriggerTier == 5);
+    CHECK(rt.op.itemTabsUnlocked == 1);
+    CHECK(rt.op.bulkOpenUnlocked == 1);
 }
 
 // The 'Pedia AP runtime toggle + QR integration (default OFF): turning it ON

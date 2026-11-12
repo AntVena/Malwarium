@@ -121,7 +121,7 @@ void Game::render(Framebuffer& fb) const {
             }
             v.focus = lockoutPayOption_ ? LockoutPath::Pay : LockoutPath::Feed;
             v.bitsCost = kLockoutBitsCost;
-            v.canPay = bits_ >= kLockoutBitsCost;
+            v.canPay = op_.bits >= kLockoutBitsCost;
             v.hasFood = lockoutFoodHeld();
             v.failingLeftMs = failingLeftMs();
             v.yubiReady = yubiReady();
@@ -169,7 +169,7 @@ SceneId Game::habitatScene() const {
     // belongs in follows from its line and how it gets around
     // (content/content_homes.h), so an evolution walks into a new one with nothing
     // written down.
-    if (backgroundPick_ != SceneId::None) return backgroundPick_;
+    if (op_.backgroundPick != SceneId::None) return op_.backgroundPick;
     return pet_.creature ? sceneForCreature(*pet_.creature) : SceneId::None;
 }
 
@@ -725,7 +725,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             drawMaintList(fb, pet_.model, listRow_, beat_);
             break;
         case SubmenuId::Cfg:
-            drawCfgList(fb, listRow_, hackerTag_, equippedTitleName(), radioOwner_);
+            drawCfgList(fb, listRow_, op_.hackerTag, equippedTitleName(), radioOwner_);
             break;
         case SubmenuId::Arch:
             if (archScreen_ == ArchScreen::Picker) {
@@ -844,7 +844,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             v.kind = maintKind_;
             v.variant = maintVariant_;
             v.cost = maintKind_ == MaintKind::Defrag ? defragCost() : 0;
-            v.walletBits = bits_;
+            v.walletBits = op_.bits;
             v.toolCount = inventory_.count(kDefragToolId);
             v.defragCount = pet_.defragCount;
             v.failPct = maintFailPct();
@@ -1220,7 +1220,7 @@ void Game::drawShopScreen(Framebuffer& fb) const {
     const EffectText description = shopListingDescription(shopCursor_);   // outlives the draw
     StorefrontView v;
     v.storeName = shopStoreName();
-    v.walletBits = bits_;
+    v.walletBits = op_.bits;
     v.rows = rows;
     v.rowCount = n;
     v.cursor = shopCursor_;

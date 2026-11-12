@@ -979,14 +979,14 @@ void test_crew_exploit_in_combat_picker() {
 // unaffiliated.
 void test_save_v36_crew_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    std::strcpy(a.crewId, "deniers_of_service");
-    a.homeNetworkKey = 0x0123456789ABull;
-    std::strcpy(a.homeNetworkName, "HOME_AP");
+    std::strcpy(a.op.crewId, "deniers_of_service");
+    a.op.homeNetworkKey = 0x0123456789ABull;
+    std::strcpy(a.op.homeNetworkName, "HOME_AP");
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(std::strcmp(out.crewId, "deniers_of_service") == 0);
-    CHECK(out.homeNetworkKey == 0x0123456789ABull);
-    CHECK(std::strcmp(out.homeNetworkName, "HOME_AP") == 0);
+    CHECK(std::strcmp(out.op.crewId, "deniers_of_service") == 0);
+    CHECK(out.op.homeNetworkKey == 0x0123456789ABull);
+    CHECK(std::strcmp(out.op.homeNetworkName, "HOME_AP") == 0);
 
     MemSaveStore store; store.save(serializeSave(a));
     Game g(StartMode::Hatched, "paypup", &store);
@@ -995,7 +995,7 @@ void test_save_v36_crew_roundtrip() {
 
     // A crew id no longer in the table loads as unaffiliated, never as whatever now
     // occupies that row.
-    SaveData b = a; std::strcpy(b.crewId, "no_such_crew");
+    SaveData b = a; std::strcpy(b.op.crewId, "no_such_crew");
     MemSaveStore store2; store2.save(serializeSave(b));
     Game g2(StartMode::Hatched, "paypup", &store2);
     CHECK(g2.crewIndex() == -1 && g2.hasHomeNetwork());
@@ -1008,9 +1008,9 @@ void test_save_v36_crew_roundtrip() {
 // (covered separately below).
 void test_pedia_state_json_reveal_states() {
     SaveData a; std::strcpy(a.active.id, "pingcub"); a.active.generation = 1;
-    a.seenCreatures.push_back(SaveId{"malbear"});   // glimpsed, not hatched
-    a.malbeastSeen = 1 << 1;                        // Segfault Pup: seen only
-    a.malbeastDefeated = 1 << 0;                    // GlitchHog: defeated
+    a.op.seenCreatures.push_back(SaveId{"malbear"});   // glimpsed, not hatched
+    a.op.malbeastSeen = 1 << 1;                        // Segfault Pup: seen only
+    a.op.malbeastDefeated = 1 << 0;                    // GlitchHog: defeated
     MemSaveStore store; store.save(serializeSave(a));
     Game g(StartMode::Hatched, "paypup", &store);   // hatchedCreature ignored: store wins
 

@@ -62,7 +62,7 @@ void Game::setLocalRadioMac(const uint8_t* mac) {
 bool Game::buildPvpFighter(PvpFighter* out) const {
     if (!out || !pet_.creature) return false;
     PvpFighter f;
-    std::strncpy(f.tag, hackerTag_, sizeof(f.tag) - 1);
+    std::strncpy(f.tag, op_.hackerTag, sizeof(f.tag) - 1);
     std::strncpy(f.creatureId, pet_.creature->id, sizeof(f.creatureId) - 1);
 
     // Equipped kit by id. Only slots this pet's stage has unlocked are sent. A
@@ -459,7 +459,7 @@ void Game::finishPvpBattle() {
     // and marks the save then). A duel still pays no XP, Bits, Fragmentation or care
     // signal.
     if (pvpWon_) {
-        ++pvpWins_;
+        ++op_.tallies.pvpWins;
         markSaveDirty();
     }
     // No applyCombatResult: a duel pays nothing and costs nothing, so no XP, Bits,

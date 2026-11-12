@@ -238,7 +238,7 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 
     // HackerTag: the operator's handle, framed like a prompt banner.
     char tag[kHackerTagMax + 8];
-    std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
+    std::snprintf(tag, sizeof(tag), "// %s //", op_.hackerTag);
     drawText(fb, kMargin, y, tag, palColor(Pal::INK));
     y += kFontH + 6;
 
@@ -264,12 +264,12 @@ void Game::drawHackerHome(Framebuffer& fb, int cursor) const {
 
     // Rank + NETS/SHAKES: the brag line the PROFILE viewer expands.
     char rank[28];
-    std::snprintf(rank, sizeof(rank), "RANK %d %s", hackerRank_,
-                  hackerRankTitle(hackerRank_));
+    std::snprintf(rank, sizeof(rank), "RANK %d %s", op_.hackerRank,
+                  hackerRankTitle(op_.hackerRank));
     drawText(fb, kMargin, y, rank, palColor(Pal::INK));
     y += kFontH + 4;
     char nets[20];
-    std::snprintf(nets, sizeof(nets), "NETS %d", networksSeen_);
+    std::snprintf(nets, sizeof(nets), "NETS %d", op_.networksSeen);
     drawText(fb, kMargin, y, nets, palColor(Pal::INK_DIM));
     char shakes[20];
     std::snprintf(shakes, sizeof(shakes), "SHAKES %d", handshakesSeen_);
@@ -388,7 +388,7 @@ void Game::drawHackerVault(Framebuffer& fb) const {
 void Game::drawHackerProfile(Framebuffer& fb) const {
     drawHeaderBand(fb, "PROFILE");
     char tag[kHackerTagMax + 8];
-    std::snprintf(tag, sizeof(tag), "// %s //", hackerTag_);
+    std::snprintf(tag, sizeof(tag), "// %s //", op_.hackerTag);
     drawText(fb, kMargin, 28, tag, palColor(Pal::INK));
 
     // Crew, then Title, a line each (unaffiliated → greyed). Both are content that
@@ -425,11 +425,11 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     // characters, and the short form is what leaves room for the longest of them. It
     // is also what SYSTEM INFO calls the same readout.
     char rankVal[24];
-    std::snprintf(rankVal, sizeof(rankVal), "R%d %s", hackerRank_,
-                  hackerRankTitle(hackerRank_));
+    std::snprintf(rankVal, sizeof(rankVal), "R%d %s", op_.hackerRank,
+                  hackerRankTitle(op_.hackerRank));
     statRow(76, "RANK", rankVal, palColor(Pal::ACCENT));
     char nets[12];
-    std::snprintf(nets, sizeof(nets), "%d", networksSeen_);
+    std::snprintf(nets, sizeof(nets), "%d", op_.networksSeen);
     statRow(92, "NETS", nets, palColor(Pal::INK));
     // SHAKES is UNSPENT/LIFETIME, the same n/N shape QUEUED uses below. A shake is what
     // buys a sigil of the Cant (game_shiboleet.cpp), so the number that matters when
@@ -460,7 +460,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
     // also where a player reads how far they are from the next rung.
     char steps[16];
     std::snprintf(steps, sizeof(steps), "%lu",
-                  static_cast<unsigned long>(lifetimeSteps_));
+                  static_cast<unsigned long>(op_.lifetimeSteps));
     statRow(156, "STEPS", steps, palColor(Pal::INK));
 
     // QUEUED: sightings waiting in RAM for a walk (EXPL Wi-Fi event) to flush
@@ -486,7 +486,7 @@ void Game::drawHackerProfile(Framebuffer& fb) const {
 
     // HOME NET: the network this operator defends (set in CREW). Sits with the
     // identity stats because it's a property of the player, not the pet.
-    statRow(210, "HOME NET", hasHomeNetwork() ? homeNetworkName_ : "NOT SET",
+    statRow(210, "HOME NET", hasHomeNetwork() ? op_.homeNetworkName : "NOT SET",
             hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
 }
 

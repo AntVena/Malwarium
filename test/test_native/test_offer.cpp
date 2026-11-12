@@ -79,8 +79,8 @@ void test_auto_dive_gear_modes() {
         Game g = divingReadyGame(&store);
         g.debugSetBits(kRigAutoDiveGearCost);
         g.debugBuyRigRow(kRigRowAutoDiveGear);
-        CHECK(g.rigServiceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
-        CHECK(std::strcmp(g.rigServiceWord(kRigRowAutoDiveGear), "YES") == 0);
+        CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
+        CHECK(std::strcmp(g.operatorRecord().rig.serviceWord(kRigRowAutoDiveGear), "YES") == 0);
         g.inventory().add("backdoor_bell", 1);
         g.inventory().add("kernel_bell", 1);
         g.inventory().add("deep_learning_module", 1);
@@ -94,13 +94,13 @@ void test_auto_dive_gear_modes() {
         stopExplore(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // -> ASK
-        CHECK(g.rigServiceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Ask);
+        CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Ask);
         g.debugOfferThenDive();
         CHECK(g.nav() == Game::Nav::ItemOffer);
         tapC(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // -> NO
-        CHECK(g.rigServiceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Off);
+        CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Off);
         g.debugOfferThenDive();
         CHECK(g.inDeepWebDive());
         CHECK(g.inventory().count("backdoor_bell") == 1);
@@ -108,12 +108,12 @@ void test_auto_dive_gear_modes() {
         stopExplore(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // NO -> YES
-        CHECK(g.rigServiceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
+        CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
         g.toggleRigService(kRigRowAutoDiveGear);   // -> ASK, and keep it there
         g.tick(kSaveAutosaveMs + kHeartbeatMs);
     }
     Game g2(StartMode::Hatched, "bruinforce", &store);
-    CHECK(g2.rigServiceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Ask);
+    CHECK(g2.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Ask);
 }
 
 // An egg at rest offers the Boot Accelerator once: B spends it and cuts the row's own

@@ -294,13 +294,13 @@ void test_background_pick_survives_a_reboot() {
     {
         SaveData d;
         CHECK(deserializeSave(store.bytes(), d));
-        d.backgroundPick = 10;                      // GRID HORIZON: an arena prize
+        d.op.backgroundPick = 10;                      // GRID HORIZON: an arena prize
         store.save(serializeSave(d));
         Game g{StartMode::FreshHatch, "paypup", &store};
         CHECK(g.backgroundPick() == SceneId::None);
         // ...and once the brackets that pay it have actually been taken, the same blob
         // loads as what it says. Ownership catching up is the whole point of deriving it.
-        d.tourneyWins = 1;
+        d.op.tourneyWins = 1;
         store.save(serializeSave(d));
         Game g2{StartMode::FreshHatch, "paypup", &store};
         CHECK(g2.backgroundPick() == SceneId::GridHorizon);
@@ -313,7 +313,7 @@ void test_background_pick_survives_a_reboot() {
 void test_background_absent_from_an_older_save_reads_as_auto() {
     SaveData d;
     std::snprintf(d.active.id, sizeof(d.active.id), "paypup");
-    d.backgroundPick = 4;
+    d.op.backgroundPick = 4;
     std::vector<uint8_t> blob = serializeSave(d);
     // Rewrite the version stamp in place: it sits behind the 4-byte magic. The tail is
     // still on the end and simply will not be read, which is exactly what a v57 build
@@ -323,7 +323,7 @@ void test_background_absent_from_an_older_save_reads_as_auto() {
     blob[4] = 57; blob[5] = 0;
     SaveData back;
     CHECK(deserializeSave(blob, back));
-    CHECK(back.backgroundPick == 0);
+    CHECK(back.op.backgroundPick == 0);
 }
 
 // Every row names a place that exists, and every wire is its own. A duplicate wire is

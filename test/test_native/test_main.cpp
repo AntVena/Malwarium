@@ -266,7 +266,7 @@ int g_failures = 0;
     RUN(test_save_active_pet_reads_from_a_v75_blob) \
     RUN(test_save_active_pet_loads_from_a_v75_blob) \
     RUN(test_save_active_pet_round_trips_through_a_reboot) \
-    RUN(test_new_egg_is_a_fresh_pet_record) \
+    RUN(test_new_egg_is_a_fresh_pet_record)     RUN(test_save_operator_reads_from_a_v75_blob)     RUN(test_save_operator_loads_from_a_v75_blob)     RUN(test_save_operator_round_trips_through_its_mapping) \
     RUN(test_boot_from_save_vs_hatch)       \
     RUN(test_reboot_preserves_active_creature_level) \
     RUN(test_persistence_reset_clears_store)\

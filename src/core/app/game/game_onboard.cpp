@@ -24,13 +24,13 @@ namespace mal {
 bool Game::tipSeen(Tip t) const {
     const int w = static_cast<int>(t);
     if (w >= kTipWireCap) return false;
-    return (tipsSeen_[w / 8] & (1u << (w % 8))) != 0;
+    return (op_.reveals.tipsSeen[w / 8] & (1u << (w % 8))) != 0;
 }
 
 void Game::markTipSeen(Tip t) {
     const int w = static_cast<int>(t);
     if (w >= kTipWireCap || tipSeen(t)) return;
-    tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
+    op_.reveals.tipsSeen[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
     markSaveDirty();
 }
 

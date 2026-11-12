@@ -43,7 +43,7 @@ void Game::fireLockout() {
     playSound(Sound::Lockout);
     // Open on whichever path can actually resolve it: feeding, unless the bag has
     // nothing to feed and the wallet can cover the Bits instead.
-    lockoutPayOption_ = !lockoutFoodHeld() && bits_ >= kLockoutBitsCost;
+    lockoutPayOption_ = !lockoutFoodHeld() && op_.bits >= kLockoutBitsCost;
     lockoutItemsContext_ = false;
     nav_ = Nav::ModalLockout;
 }
@@ -111,15 +111,15 @@ void Game::layEgg(const EggLineDef* line) {
     // except the device's first egg, which keeps the sample mods Game() and resetToHatch
     // install. The spare pool is the player's and is untouched.
     pet_ = Pet::laid(line, MoveLoadout::startingForLine(registry_, line ? line->id : nullptr),
-                     petsRaised_ > 0 ? ModSlots{} : pet_.mods, nowMs_);
+                     op_.petsRaised > 0 ? ModSlots{} : pet_.mods, nowMs_);
     installPet(registry_.creature(line ? line->eggCreatureId : "cryptoshell"));
     lastLevelUpStat_ = -1;
     exploreActive_ = false;              // an egg can't explore; clear any live mode
     exploreStreak_ = 0;
     lastModelMs_ = nowMs_;
-    ++petsRaised_;                       // lifetime egg count; this pet's generation = its ordinal
-    pet_.generation = petsRaised_;
-    // The generation ladder is swept off petsRaised_ (AchSeries::PetsRaised), so
+    ++op_.petsRaised;                       // lifetime egg count; this pet's generation = its ordinal
+    pet_.generation = op_.petsRaised;
+    // The generation ladder is swept off op_.petsRaised (AchSeries::PetsRaised), so
     // incrementing it here is the trigger, and it fires when the new egg is laid without
     // waiting for the hatch.
     nav_ = Nav::Idle;
@@ -223,7 +223,7 @@ void Game::completeHatch() {
     // MAINT's "!" invites a defrag from its first minute, and a QUICK one can fail into
     // a care ERROR before the player knows what one is. One Defrag Tool makes that first
     // defrag a sure thing; MAINT lists it as the GUARANTEED row, one press of A away.
-    if (petsRaised_ == 1) {
+    if (op_.petsRaised == 1) {
         inventory_.add(kDefragToolId, 1);
         log_.push(LogEventType::ItemGained, "GOT A DEFRAG TOOL");
     }

@@ -1,6 +1,6 @@
 // net_sniff.h: device-tier passive network-discovery scan.
 //
-// Feeds the engine's lifetime NETS counter (Game::networksSeen_) from the REAL
+// Feeds the engine's lifetime NETS counter (Operator::networksSeen) from the REAL
 // radio: a periodic, PASSIVE Wi-Fi scan that counts distinct networks the device
 // can actually hear (dedup by BSSID lives engine-side, Game::registerNetwork).
 // Before this, that counter was simulated: it only ticked from the in-game

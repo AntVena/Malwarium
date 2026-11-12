@@ -450,17 +450,17 @@ void test_wild_malbeast_index_mapping() {
 // own round-trip and migration are gated separately.)
 void test_save_v25_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.seenCreatures.push_back(SaveId{"malbear"});
-    a.seenCreatures.push_back(SaveId{"berserkernel"});
-    a.malbeastSeen = 0x2A;       // bits 1, 3, 5
-    a.malbeastDefeated = 0x01;   // bit 0
+    a.op.seenCreatures.push_back(SaveId{"malbear"});
+    a.op.seenCreatures.push_back(SaveId{"berserkernel"});
+    a.op.malbeastSeen = 0x2A;       // bits 1, 3, 5
+    a.op.malbeastDefeated = 0x01;   // bit 0
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.seenCreatures.size() == 2);
-    CHECK(std::strcmp(out.seenCreatures[0].id, "malbear") == 0);
-    CHECK(std::strcmp(out.seenCreatures[1].id, "berserkernel") == 0);
-    CHECK(out.malbeastSeen == 0x2A);
-    CHECK(out.malbeastDefeated == 0x01);
+    CHECK(out.op.seenCreatures.size() == 2);
+    CHECK(std::strcmp(out.op.seenCreatures[0].id, "malbear") == 0);
+    CHECK(std::strcmp(out.op.seenCreatures[1].id, "berserkernel") == 0);
+    CHECK(out.op.malbeastSeen == 0x2A);
+    CHECK(out.op.malbeastDefeated == 0x01);
 
     // Game-level round trip through captureSave/persistSave/applySave (mirrors the
     // v24 gate's "Live round-trip" section).
@@ -479,14 +479,14 @@ void test_save_v25_roundtrip() {
 // v27: the rig-upgrade levels round-trip.
 void test_save_v27_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.rackSlotUpgradeCount = 3;
-    a.scrapingClusterLevel = 7;
-    a.dataMiningLevel = 12;
+    a.op.rackSlotUpgradeCount = 3;
+    a.op.scrapingClusterLevel = 7;
+    a.op.dataMiningLevel = 12;
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.rackSlotUpgradeCount == 3);
-    CHECK(out.scrapingClusterLevel == 7);
-    CHECK(out.dataMiningLevel == 12);
+    CHECK(out.op.rackSlotUpgradeCount == 3);
+    CHECK(out.op.scrapingClusterLevel == 7);
+    CHECK(out.op.dataMiningLevel == 12);
 
     // Game-level round trip through captureSave/persistSave/applySave.
     MemSaveStore store;
@@ -507,10 +507,10 @@ void test_save_v27_roundtrip() {
 // v32: rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips.
 void test_save_v32_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.rigLevelsExt = {5, 9};
+    a.op.rigLevelsExt = {5, 9};
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.rigLevelsExt.size() == 2 && out.rigLevelsExt[0] == 5 && out.rigLevelsExt[1] == 9);
+    CHECK(out.op.rigLevelsExt.size() == 2 && out.op.rigLevelsExt[0] == 5 && out.op.rigLevelsExt[1] == 9);
 }
 
 // --- The pet page's own two blocks -----------------------------------------

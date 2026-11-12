@@ -14,7 +14,7 @@
 namespace mal {
 
 Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
-    : registry_(ContentRegistry::embedded()), bits_(kStartBits), store_(store) {
+    : registry_(ContentRegistry::embedded()), store_(store) {
     // Set the ambient copies' wanders apart before anything can return early. They are
     // otherwise identical objects, and identical wanders walk identical paths, so the
     // seed is what tells three copies apart.
@@ -24,7 +24,6 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
 
     inventory_ = Inventory::starting();
     pet_.mods = ModSlots::starting();
-    modPool_ = ModPool::starting();
     pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
 
     // The palette index lives outside this object (core/render/palette.h) (a drawing
@@ -60,10 +59,10 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
                       Tip::CareHappy, Tip::FirstWalk, Tip::FirstError,
                       Tip::NearTheLine, Tip::FirstCache}) {
             const int w = static_cast<int>(t);
-            tipsSeen_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
+            op_.reveals.tipsSeen[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
         }
         pet_.generation = 1;       // the seam pet is the first generation
-        petsRaised_ = 1;
+        op_.petsRaised = 1;
         pet_.moves = MoveLoadout::startingForLine(registry_, pet_.creature ? pet_.creature->line : nullptr);
         stampSlotKinds();      // this is a pet install too: lock its slots
         // startingForLine's auto-equip may not match THIS creature's stamped slot 0

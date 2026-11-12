@@ -1652,12 +1652,12 @@ void test_save_records_roundtrip() {
 void test_save_hacker_rank_roundtrip() {
     SaveData d;
     std::strncpy(d.active.id, "paypup", kSaveIdCap - 1);
-    d.networksSeen = 5;
-    d.hackerRank = 2;
+    d.op.networksSeen = 5;
+    d.op.hackerRank = 2;
     SaveData out;
     CHECK(deserializeSave(serializeSave(d), out));
-    CHECK(out.networksSeen == 5);
-    CHECK(out.hackerRank == 2);
+    CHECK(out.op.networksSeen == 5);
+    CHECK(out.op.hackerRank == 2);
 }
 
 // The CSF modal reads in grayscale (dual-coding gate): title/message ink survives.

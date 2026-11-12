@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/content/content_backgrounds.h"   // kBackgrounds: a pick the round trip can name
+
 // The LOADOUT hub's back-out chain, and EXPL's nested list.
 void test_loadout_expl_nav() {
     Framebuffer fb(kActiveW, kActiveH);
@@ -71,11 +73,11 @@ void test_save_roundtrip() {
     std::strcpy(a.active.id, "paypup");
     a.active.hunger = 42; a.active.frag = 13; a.active.happy = 88; a.active.mistakes = 3;
     a.active.debuffs = 2; a.active.ghost = 1; a.active.timeInStageMs = 123456; a.active.generation = 4;
-    a.bits = 777; std::strcpy(a.hackerTag, "L33T_HAXX0R");
-    a.lifetimeUptimeMs = 99999; a.lifetimeSteps = 12; a.petsRaised = 4;
+    a.op.bits = 777; std::strcpy(a.op.hackerTag, "L33T_HAXX0R");
+    a.op.lifetimeUptimeMs = 99999; a.op.lifetimeSteps = 12; a.op.petsRaised = 4;
     a.items.push_back(SaveStack{"dyno_nuggets", 3});
     a.items.push_back(SaveStack{"yubi_cookie", 1});
-    a.ownedMods.push_back(SaveId{"firewall_patch"});
+    a.op.ownedMods.push_back(SaveId{"firewall_patch"});
     a.active.equippedMods[0] = SaveId{"firewall_patch"};
     SaveLogEntry le; le.type = static_cast<uint8_t>(LogEventType::ItemUsed);
     std::strcpy(le.text, "USED YUBI-COOKIE"); a.log.push_back(le);
@@ -96,7 +98,7 @@ void test_save_roundtrip() {
     a.activeArmed.subRefarm.assign(kExplSectors * kExplSubAreas, 0);  // v15: per-sub re-farm counts
     a.activeArmed.subRefarm[2] = 7; a.activeArmed.subRefarm[9] = 3;
     a.active.defragCount = 12;                        // v16: the active pet's defrag tally
-    a.bwUpgradeCount = 5;                       // v19: Hacker SHOP bandwidth upgrades bought
+    a.op.bwUpgradeCount = 5;                       // v19: Hacker SHOP bandwidth upgrades bought
     a.apEnabled = 1;                            // v20: 'Pedia local-AP toggle
 
     SaveData b;
@@ -105,13 +107,13 @@ void test_save_roundtrip() {
     CHECK(b.active.hunger == 42 && b.active.frag == 13 && b.active.happy == 88 && b.active.mistakes == 3);
     CHECK(b.active.debuffs == 2 && b.active.ghost == 1);
     CHECK(b.active.timeInStageMs == 123456u && b.active.generation == 4);
-    CHECK(b.bits == 777 && std::strcmp(b.hackerTag, "L33T_HAXX0R") == 0);
-    CHECK(b.lifetimeUptimeMs == 99999u && b.lifetimeSteps == 12u && b.petsRaised == 4);
+    CHECK(b.op.bits == 777 && std::strcmp(b.op.hackerTag, "L33T_HAXX0R") == 0);
+    CHECK(b.op.lifetimeUptimeMs == 99999u && b.op.lifetimeSteps == 12u && b.op.petsRaised == 4);
     CHECK(b.items.size() == 2 && std::strcmp(b.items[0].id, "dyno_nuggets") == 0 &&
           b.items[0].qty == 3);
-    CHECK(b.ownedMods.size() == 1);
+    CHECK(b.op.ownedMods.size() == 1);
     CHECK(std::strcmp(b.active.equippedMods[0].id, "firewall_patch") == 0 && b.active.equippedMods[1].id[0] == '\0');
-    CHECK(b.hasPermanentModData);   // v17: the permanent-mod semantics marker
+    CHECK(b.op.hasPermanentModData);   // v17: the permanent-mod semantics marker
     CHECK(b.log.size() == 1 && std::strcmp(b.log[0].text, "USED YUBI-COOKIE") == 0);
     CHECK(b.rack.size() == 1 && std::strcmp(b.rack[0].id, "cryptoshell") == 0 &&
           b.rack[0].generation == 2);
@@ -133,7 +135,7 @@ void test_save_roundtrip() {
           b.activeArmed.subRefarm[2] == 7 && b.activeArmed.subRefarm[9] == 3);   // v15: re-farm counts round-trip
     CHECK(b.active.defragCount == 12);                          // v16: active defrag tally
     CHECK(b.rack.size() == 1 && b.rack[0].defragCount == 9);  // v16: rack pet tally
-    CHECK(b.bwUpgradeCount == 5);                         // v19: SHOP bandwidth upgrades
+    CHECK(b.op.bwUpgradeCount == 5);                         // v19: SHOP bandwidth upgrades
     CHECK(b.apEnabled == 1);                              // v20: 'Pedia AP toggle round-trips
 }
 
@@ -231,7 +233,7 @@ void test_save_version_and_empty() {
 void test_save_from_a_newer_build_still_loads() {
     SaveData a;
     std::strcpy(a.active.id, "paypup");
-    a.active.hunger = 61; a.active.happy = 43; a.bits = 777;
+    a.active.hunger = 61; a.active.happy = 43; a.op.bits = 777;
     auto blob = serializeSave(a);
 
     // Stamp it a version ahead and append a tail this build knows nothing about: the
@@ -246,7 +248,7 @@ void test_save_from_a_newer_build_still_loads() {
     CHECK(std::strcmp(out.active.id, "paypup") == 0);        // the pet survives a rollback
     CHECK(out.active.hunger == 61);
     CHECK(out.active.happy == 43);
-    CHECK(out.bits == 777);
+    CHECK(out.op.bits == 777);
 }
 
 // A v75 blob with every field of the active pet set (built from a SaveData by the v75
@@ -437,6 +439,176 @@ void test_new_egg_is_a_fresh_pet_record() {
     CHECK(p.armed.deepWebDepthMultiplier == 1 && !p.armed.lockoutActive);
     CHECK(p.bestDeepWebDepth == 0 && p.bestDarkWebDepth == 0);
     CHECK(p.defragCount == 0 && p.dyingElapsedMs == 0);
+}
+
+// A v75 blob with every Operator field set, written by the build before SaveData grouped
+// them into SaveOperator. Kept as bytes so the gate below reads what that build wrote.
+static const char* const kOperatorV75Blob =
+    "4d414c314b007061797075700000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000697a00005a"
+    "455230434f4f4c000000000006120f00e1100000060000000000010066697265"
+    "77616c6c5f706174636800000000000000000000030000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000004000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000004d000000040000000000000000000000"
+    "00000000000000000000ffffffff040000000000000000000000000000000000"
+    "0000000000000300000000000000000000000100030000000700000000000000"
+    "02030101040000000000020070686973686c6574000000000000000000000000"
+    "000000006b616c69636f0000000000000000000000000000000000000f0f0101"
+    "050000000000090000000b0000000d0000000000000000000001050100000b00"
+    "0100000002000300000004000100010001000100010000000000000000007368"
+    "656c6c5f736d61736865727300000000000000000000f6e5d4c3b2a10000484f"
+    "4d45424153450000000000000000000000000000000000000000000000000000"
+    "0000000300030010030001001015000000000000000000000000000800000002"
+    "0042500200737461636b65720000000000000000000000000000000000667261"
+    "6767657200000000000000000000000000000000000a00000004000000060000"
+    "000100000003001b000300000000000005000501000080000000000000000200"
+    "840300007800000002000000050000000c000000000000000000000000000000"
+    "0000000000000000000003000000000000000000010000020000000000000000"
+    "0000000000000000000000000000000000000000000000000100070400110100"
+    "0000010202000008000100000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000";
+
+static std::vector<uint8_t> operatorV75Blob() {
+    std::vector<uint8_t> out;
+    for (const char* p = kOperatorV75Blob; p[0] && p[1]; p += 2)
+        out.push_back(static_cast<uint8_t>(std::stoi(std::string(p, 2), nullptr, 16)));
+    return out;
+}
+
+// The v75 blob reads into SaveData::op field by field, and writes back with the same bytes
+// up to its end: the fields moved in SaveData, not on the wire.
+void test_save_operator_reads_from_a_v75_blob() {
+    const std::vector<uint8_t> blob = operatorV75Blob();
+    CHECK(blob.size() > 6 && blob[4] == 75 && blob[5] == 0);
+    SaveData d;
+    CHECK(deserializeSave(blob, d));
+    const SaveOperator& o = d.op;
+    CHECK(o.petsRaised == 6 && o.lifetimeUptimeMs == 987654u && o.lifetimeSteps == 4321u);
+    CHECK(o.bits == 31337 && std::strcmp(o.hackerTag, "ZER0COOL") == 0);
+    CHECK(std::strcmp(o.crewId, "shell_smashers") == 0);
+    CHECK(o.homeNetworkKey == 0xA1B2C3D4E5F6ull && std::strcmp(o.homeNetworkName, "HOMEBASE") == 0);
+    CHECK(o.networksSeen == 77 && o.hackerRank == 4);
+    CHECK(o.ownedMods.size() == 1 && std::strcmp(o.ownedMods[0].id, "firewall_patch") == 0);
+    CHECK(o.ownedModReqLevels.size() == 1 && o.ownedModReqLevels[0] == 3);
+    CHECK(o.hasModCountData && o.hasPermanentModData);
+    CHECK(saveModCount(o.ownedModCounts, 0) == 2 && saveModCount(o.ownedModCounts, 1) == 4);
+    CHECK(saveModCount(o.ownedModCounts, 3) == 5);
+    CHECK(o.bwUpgradeCount == 7 && o.fragAmountTier == 2 && o.fragTriggerTier == 3);
+    CHECK(o.itemTabsUnlocked == 1 && o.bulkOpenUnlocked == 1);
+    CHECK(o.rackSlotUpgradeCount == 9 && o.scrapingClusterLevel == 11 && o.dataMiningLevel == 13);
+    CHECK(o.mergeHubUnlocked == 1 && o.recipesUnlocked == 0x105u);
+    CHECK(o.recipeOwned.size() == 5 && o.recipeOwned[0] == 0x05 && o.recipeOwned[4] == 0x80);
+    CHECK(o.rigLevelsExt.size() == 11 && o.rigLevelsExt[2] == 2 && o.rigLevelsExt[5] == 4);
+    CHECK(o.rigServicesOff == (1u << 9) && o.rigServicesAsk == (1u << 19));
+    CHECK(o.seenCreatures.size() == 2 && std::strcmp(o.seenCreatures[1].id, "kalico") == 0);
+    CHECK(o.malbeastSeen == 0x0F0F && o.malbeastDefeated == 0x0101);
+    CHECK(o.achievementsMask == 0x5u);
+    CHECK(o.achievementEarned.size() == 3 && o.achievementEarned[2] == 0x10);
+    CHECK(o.achievementNotified.size() == 3 && o.achievementNotified[0] == 0x01);
+    CHECK(o.storyRead.size() == 1 && o.storyRead[0] == 0x07);
+    CHECK(o.tipsSeen.size() == 4 && o.tipsSeen[0] == 0x11 && o.tipsSeen[1] == 0x01);
+    CHECK(o.bossWins == 21 && o.stackerWins == 8 && o.tourneyWins == 2);
+    CHECK(o.pvpWins == 5 && o.mergesCooked == 12);
+    CHECK(o.arcadeIds.size() == 2 && std::strcmp(o.arcadeIds[1].id, "fragger") == 0);
+    CHECK(o.arcadePlays[0] == 10 && o.arcadeWins[0] == 6 && o.arcadeBest[0] == 900);
+    CHECK(o.arcadePlays[1] == 4 && o.arcadeWins[1] == 1 && o.arcadeBest[1] == 120);
+    CHECK(o.quoteStates.size() == 3 && o.quoteStates[0] == 0x1B);
+    CHECK(o.backgroundPick == 3);
+
+    // Past the version word, a newer writer only ever appends.
+    const std::vector<uint8_t> again = serializeSave(d);
+    CHECK(again.size() >= blob.size());
+    CHECK(std::equal(blob.begin() + 6, blob.end(), again.begin() + 6));
+}
+
+// ...and boots into the Operator record through Operator::loaded.
+void test_save_operator_loads_from_a_v75_blob() {
+    MemSaveStore store;
+    store.save(operatorV75Blob());
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    const Operator& o = g.operatorRecord();
+    const ContentRegistry& reg = g.content();
+    CHECK(std::strcmp(o.hackerTag, "ZER0COOL") == 0 && o.bits == 31337);
+    CHECK(o.petsRaised == 6 && o.uptimeBase == 987654u && o.lifetimeSteps == 4321u);
+    CHECK(o.networksSeen == 77 && o.hackerRank == 4);
+    CHECK(o.crewIndex == crewIndexById("shell_smashers") && o.crewIndex >= 0);
+    CHECK(o.homeNetworkKey == 0xA1B2C3D4E5F6ull && std::strcmp(o.homeNetworkName, "HOMEBASE") == 0);
+    // Wire 0 names no mod in this build, so its copies have nowhere to land.
+    CHECK(reg.modByWire(0) == nullptr && o.modPool.owned().size() == 2);
+    CHECK(o.modPool.countOf(reg.modByWire(1)->id) == 4);
+    CHECK(o.modPool.countOf(reg.modByWire(3)->id) == 5);
+    CHECK(o.rig.level[kRigRowBandwidth] == 7 && o.rig.level[kRigRowFragReduce] == 2);
+    CHECK(o.rig.level[kRigRowFragTrigger] == 3 && o.rig.owned(kRigRowItemTabs));
+    CHECK(o.rig.owned(kRigRowBulkOpen) && o.rig.level[kRigRowRackSlot] == 9);
+    CHECK(o.rig.level[kRigRowScraping] == 11 && o.rig.level[kRigRowDataMining] == 13);
+    CHECK(o.rig.owned(kRigRowMergeHub) && o.rig.level[kRigRowDiskMaintenance] == 2);
+    CHECK(o.rig.level[kRigRowAutoDiveGear] == 1);
+    CHECK(o.rig.serviceOwned(kRigRowAutoBackup) && !o.rig.featureActive(kRigRowAutoBackup));
+    CHECK(o.rig.serviceMode(kRigRowAutoDiveGear) == ServiceMode::Ask);
+    CHECK(o.rig.recipesOwned[0] == 0x05 && o.rig.recipesOwned[4] == 0x80);
+    CHECK(o.reveals.seenCreatures.size() == 2);
+    CHECK(o.reveals.malbeastSeenMask == 0x0F0F && o.reveals.malbeastDefeatedMask == 0x0101);
+    CHECK(o.reveals.achEarned[0] == 0x03 && o.reveals.achEarned[2] == 0x10);
+    CHECK(o.reveals.achNotified[0] == 0x01 && o.reveals.storyRead[0] == 0x07);
+    CHECK(o.reveals.tipsSeen[0] == 0x11 && o.reveals.tipsSeen[1] == 0x01);
+    CHECK(o.tallies.bossWins == 21 && o.tallies.stackerWins == 8);
+    CHECK(o.tallies.tourneyWins == 2 && o.tallies.pvpWins == 5 && o.tallies.mergesCooked == 12);
+    const int stacker = arcadeGameIndexById("stacker");
+    const int fragger = arcadeGameIndexById("fragger");
+    CHECK(o.tallies.arcadePlays[stacker] == 10 && o.tallies.arcadeBest[stacker] == 900);
+    CHECK(o.tallies.arcadeWins[fragger] == 1 && o.tallies.arcadeBest[fragger] == 120);
+    CHECK(o.tallies.quoteStates[0] == 0x1B && o.tallies.quoteStates[2] == 0x03);
+}
+
+// An Operator with something in every part maps to the save and back unchanged.
+void test_save_operator_round_trips_through_its_mapping() {
+    Game g{StartMode::Hatched, "paypup"};
+    const ContentRegistry& reg = g.content();
+    Operator o;
+    std::strcpy(o.hackerTag, "R00TKIT");
+    o.networksSeen = 12;
+    o.hackerRank = 2;
+    o.homeNetworkKey = 0x0102030405ull;
+    std::strcpy(o.homeNetworkName, "LAN");
+    o.crewIndex = crewIndexById("shell_smashers");
+    o.petsRaised = 3;
+    o.uptimeBase = 5000;
+    o.lifetimeSteps = 77;
+    o.bits = 4242;
+    o.modPool.grant(reg.modByWire(1)->id, kModCopyCapBase);
+    for (int i = 0; i < kRigUpgradeCount; ++i) o.rig.level[i] = 1 + (i % 3);
+    o.rig.servicesOff = 1u << kRigRowContinuousBackup;
+    o.rig.servicesAsk = 1u << kRigRowAutoDiveGear;
+    o.rig.recipesOwned[1] = 0x42;
+    o.reveals.seenCreatures.push_back(reg.creature("kalico"));
+    o.reveals.malbeastSeenMask = 0x30;
+    o.reveals.malbeastDefeatedMask = 0x10;
+    o.reveals.achEarned[1] = 0x81;
+    o.reveals.achNotified[1] = 0x01;
+    o.reveals.storyRead[0] = 0x03;
+    o.reveals.tipsSeen[1] = 0x02;
+    o.tallies.bossWins = 9;
+    o.tallies.stackerWins = 4;
+    o.tallies.tourneyWins = 1;
+    o.tallies.pvpWins = 6;
+    o.tallies.mergesCooked = 2;
+    o.tallies.arcadePlays[1] = 3;
+    o.tallies.arcadeWins[1] = 2;
+    o.tallies.arcadeBest[1] = 55;
+    o.tallies.quoteStates[0] = 0x0C;
+    o.backgroundPick = kBackgrounds[1].scene;
+
+    SaveData x;
+    x.op = o.saved(reg, 0);
+    SaveData y;
+    CHECK(deserializeSave(serializeSave(x), y));
+    SaveData z;
+    z.op = Operator::loaded(y.op, y.active.equippedMods, reg).saved(reg, 0);
+    CHECK(serializeSave(x) == serializeSave(z));
 }
 
 // Boot-from-save vs Hatch: an empty store hatches; once a pet is raised + saved,

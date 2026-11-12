@@ -27,19 +27,19 @@
 #include <cstring>
 
 #include "core/content/effect_text.h"   // SpecRows/SpecBuilder: the shared readout
-#include "core/content/recipe_wire.h"   // kMergeRecipeWireBytes, which sizes Game::recipesOwned_
+#include "core/content/recipe_wire.h"   // kMergeRecipeWireBytes: sizes RigAccount::recipesOwned
 #include "tunables.h"
 
 namespace mal {
 
 // A rig row's purchase state is a single int LEVEL (0 = never bought): a tiered row's
-// purchase count, or 0/1 for a one-time unlock. `Game::rigLevel_` is sized to this.
+// purchase count, or 0/1 for a one-time unlock. `RigAccount::level` is sized to this.
 inline constexpr int kMaxRigUpgrades = 24;   // headroom for future rows
 // Bandwidth has no purchase cap (unlike every other row): a maxLevel this large is
 // never actually reached, so the generic "MAXED" check is permanently false for it.
 inline constexpr int kRigLevelUnlimited = 1 << 20;
 
-// Rig row indices: the SHOP list's cursor space and Game::rigLevel_'s index space.
+// Rig row indices: the SHOP list's cursor space and RigAccount::level's index space.
 // Values are stable (persisted positionally: rows below kRigRowExtBase have their own
 // named save fields, the rest ride the rigLevelsExt tail by position), never reorder
 // existing rows, and append new ones at the END.
@@ -82,7 +82,7 @@ enum RigRow {
 // cursor space (RigShopScreen::slot) with a row index without colliding with one.
 inline constexpr int kRigSlotServices = -1;
 
-// The first row that persists positionally in SaveData::rigLevelsExt rather than
+// The first row that persists positionally in SaveOperator::rigLevelsExt rather than
 // through a named field of its own (save.h v32). Every row below it predates that tail
 // and keeps its own field; every row from here up is `rigLevelsExt[row - this]`.
 inline constexpr int kRigRowExtBase = kRigRowAutoBackup;
@@ -317,7 +317,7 @@ struct RigUpgradeDef {
     RigReadout readouts[kMaxRigReadouts];
     // Does this row run as a SERVICE (something that acts on its own, between events,
     // without the player asking), and so belongs on the SHOP's SERVICES screen, where an
-    // owned one can be switched off and back on (Game::rigFeatureActive)? True for the
+    // owned one can be switched off and back on (RigAccount::featureActive)? True for the
     // rows that spend something or take a decision out of the player's hands; false for
     // a row that only ever raises a number or arms a gesture the player still performs,
     // which has nothing to switch off. Trailing, so a row that isn't one says nothing.
@@ -333,7 +333,7 @@ struct RigUpgradeDef {
     // stopped? For a service that spends items the player may want to choose between:
     // ASK hands the choice back each time instead of making it for them. The SERVICES
     // board then reads YES / ASK / NO for the row and B steps through the three
-    // (Game::rigServiceMode). Trailing, so a two-way service says nothing.
+    // (RigAccount::serviceMode). Trailing, so a two-way service says nothing.
     bool askable = false;
 };
 
@@ -352,7 +352,7 @@ inline int rigValueAt(const RigReadout& r, int lvl) {
 // A rig row's readout as the same SpecRows every content row produces, so the SHOP
 // list and any panel showing one render through the shared grid (drawSpecGrid) rather
 // than a bespoke formatter. `level` is the row's current purchase count
-// (Game::rigLevel_).
+// (RigAccount::level).
 inline SpecRows rigSpec(const RigUpgradeDef& d, int level) {
     SpecBuilder s;
     const bool maxed = level >= d.maxLevel;

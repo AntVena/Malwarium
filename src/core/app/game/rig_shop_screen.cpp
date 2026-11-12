@@ -20,6 +20,8 @@ namespace mal {
 
 namespace {
 
+const RigAccount& account(const RigShopHost& host) { return host.operatorRecord().rig; }
+
 // Append one row to a readout rigSpec has already built. The info page states what a
 // run COSTS right now, a live number off the pet's defrag tally that a static content
 // table cannot carry, beside the magnitudes the row itself declares.
@@ -40,9 +42,9 @@ constexpr int kSvcInfoProseBottom = kActiveH - kHintBandH;
 // player owns a service to switch), then every row with something left to buy.
 int shopSlots(const RigShopHost& host, int* out, int max) {
     int n = 0;
-    if (host.rigServicesOffered() && n < max) out[n++] = kRigSlotServices;
+    if (account(host).servicesOffered() && n < max) out[n++] = kRigSlotServices;
     for (int i = 0; i < kRigUpgradeCount && n < max; ++i)
-        if (host.shopRowOffered(i)) out[n++] = i;
+        if (account(host).offered(i)) out[n++] = i;
     return n;
 }
 }  // namespace
@@ -64,7 +66,8 @@ int RigShopScreen::nextSlot(const RigShopHost& host, int cur, int dir) const {
     for (int step = 1; step <= total; ++step) {
         const int idx = (((cur + 1) + dir * step) % total + total) % total;
         const int slot = idx - 1;
-        if (slot == kRigSlotServices ? host.rigServicesOffered() : host.shopRowOffered(slot))
+        if (slot == kRigSlotServices ? account(host).servicesOffered()
+                                     : account(host).offered(slot))
             return slot;
     }
     return cur;
@@ -76,7 +79,7 @@ void RigShopScreen::stepSlot(const RigShopHost& host, int dir) {
 
 void RigShopScreen::stepService(const RigShopHost& host, int dir) {
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     if (n > 0) serviceRow_ = ((serviceRow_ + dir) % n + n) % n;
 }
 
@@ -101,7 +104,7 @@ void RigShopScreen::onRows(RigShopHost& host, const ButtonEvent& ev) {
         host.buyRigUpgrade(slot_);
         // The purchase may have taken the focused row out of the list. Hop to the next
         // offered one so the cursor never rests on a row nobody drew.
-        if (!host.shopRowOffered(slot_)) slot_ = nextSlot(host, slot_, +1);
+        if (!account(host).offered(slot_)) slot_ = nextSlot(host, slot_, +1);
     } else if (ev.button == Button::C) {
         host.leaveToCarousel();
     }
@@ -109,7 +112,7 @@ void RigShopScreen::onRows(RigShopHost& host, const ButtonEvent& ev) {
 
 void RigShopScreen::onServices(RigShopHost& host, const ButtonEvent& ev) {
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     // C backs up ONE view, to the storefront that opened this (the stack CREW's views
     // walk). An empty board leaves the same way.
     if (ev.button == Button::C || n == 0) {
@@ -132,17 +135,17 @@ void RigShopScreen::onServices(RigShopHost& host, const ButtonEvent& ev) {
 void RigShopScreen::releaseB(RigShopHost& host) {
     if (view_ != ShopView::Services) return;
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     if (n == 0) return;
     if (serviceRow_ >= n) serviceRow_ = 0;
     host.toggleRigService(rows[serviceRow_]);
 }
 
 SpecRows RigShopScreen::serviceSpec(const RigShopHost& host, int row) {
-    SpecRows spec = rigSpec(kRigUpgrades[row], host.rigLevel(row));
+    SpecRows spec = rigSpec(kRigUpgrades[row], account(host).level[row]);
     // Disk Maintenance's UPKEEP multiple is half a price: a run costs that multiple of
     // THIS pet's defrag price, which climbs with every defrag the pet has had.
-    const int dm = host.diskMaintenanceLevel();
+    const int dm = account(host).level[kRigRowDiskMaintenance];
     if (row == kRigRowDiskMaintenance && dm > 0)
         appendSpecRow(spec, "PER RUN", "%d BITS",
                       host.defragCost() * kDiskMaintenanceCostMult[dm - 1]);
@@ -164,7 +167,7 @@ bool RigShopScreen::holdB(RigShopHost& host, uint32_t heldMs) {
 void RigShopScreen::openServiceInfo(RigShopHost& host) {
     if (view_ != ShopView::Services) return;
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     if (n == 0) return;
     if (serviceRow_ >= n) serviceRow_ = 0;
     view_ = ShopView::ServiceInfo;
@@ -178,7 +181,7 @@ void RigShopScreen::onServiceInfo(RigShopHost& host, const ButtonEvent& ev) {
     // (serviceProseLines), so the two agree about where the last page is.
     if (ev.button == Button::A) {
         int rows[kRigUpgradeCount];
-        const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+        const int n = account(host).serviceRows(rows, kRigUpgradeCount);
         if (n > 0) {
             const int row = rows[serviceRow_ < n ? serviceRow_ : 0];
             const int room = serviceProseLines(host, row);
@@ -210,7 +213,7 @@ void RigShopScreen::drawServiceInfo(Framebuffer& fb, const RigShopHost& host) co
     // (ui/spec_sheet.h). The row's own readout, bounded and never cut, sits over the
     // authored description of what running it costs.
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     if (n == 0) {
         drawHeaderBand(fb, "SERVICE");
         drawText(fb, kMargin, 40, "NO SERVICES OWNED", palColor(Pal::INK_DIM));
@@ -218,10 +221,10 @@ void RigShopScreen::drawServiceInfo(Framebuffer& fb, const RigShopHost& host) co
     }
     const int row = rows[serviceRow_ < n ? serviceRow_ : 0];
     const RigUpgradeDef& def = kRigUpgrades[row];
-    const bool on = host.rigFeatureActive(row);
+    const bool on = account(host).featureActive(row);
     // The header names the service and states the switch, so the panel underneath is
     // all description: the page is opened to read it.
-    drawHeaderBand(fb, def.displayName, host.rigServiceWord(row),
+    drawHeaderBand(fb, def.displayName, account(host).serviceWord(row),
                    on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
 
     const SpecRows spec = serviceSpec(host, row);
@@ -246,7 +249,7 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
     drawHeaderBand(fb, "SERVICES");
 
     int rows[kRigUpgradeCount];
-    const int n = host.rigServiceRows(rows, kRigUpgradeCount);
+    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
     if (n == 0) {
         drawText(fb, kMargin, 40, "NO SERVICES OWNED", palColor(Pal::INK_DIM));
         return;
@@ -262,10 +265,10 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
         if (cur) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
         // A stopped service is stated twice, by the word OFF and by the dim ink, so the
         // list reads right in grayscale.
-        const bool on = host.rigFeatureActive(row);
+        const bool on = account(host).featureActive(row);
         drawLabelValue(fb, kMargin, rowY, kRigUpgrades[row].displayName,
                        cur ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
-                       host.rigServiceWord(row),
+                       account(host).serviceWord(row),
                        on ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM),
                        beat, Overflow::Scroll);
     }
@@ -273,9 +276,9 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
                   kHackerListRows);
     // An askable row's B steps to its next position, so the label names that one.
     const int selRow = rows[sel];
-    const ServiceMode mode = host.rigServiceMode(selRow);
+    const ServiceMode mode = account(host).serviceMode(selRow);
     const char* bLabel = !kRigUpgrades[selRow].askable
-                             ? (host.rigFeatureActive(selRow) ? "B STOP" : "B START")
+                             ? (account(host).featureActive(selRow) ? "B STOP" : "B START")
                          : mode == ServiceMode::On  ? "B SET ASK"
                          : mode == ServiceMode::Ask ? "B SET NO"
                                                     : "B SET YES";
@@ -286,7 +289,7 @@ void RigShopScreen::drawServices(Framebuffer& fb, const RigShopHost& host, int b
 void RigShopScreen::drawRows(Framebuffer& fb, const RigShopHost& host, int beat) const {
     // The storefront. The header carries the Bits wallet.
     char bitsStr[16];
-    std::snprintf(bitsStr, sizeof(bitsStr), "%d BITS", host.bits());
+    std::snprintf(bitsStr, sizeof(bitsStr), "%d BITS", host.operatorRecord().bits);
     drawHeaderBand(fb, "SHOP", bitsStr, palColor(Pal::ACCENT));
 
     // Only purchasable rows are listed, behind the SERVICES head slot that owning a
@@ -318,9 +321,9 @@ void RigShopScreen::drawRows(Framebuffer& fb, const RigShopHost& host, int beat)
             // The head slot opens the switchboard and costs nothing. Its value column
             // counts what is RUNNING of what is owned.
             int svcRows[kRigUpgradeCount];
-            const int svcN = host.rigServiceRows(svcRows, kRigUpgradeCount);
+            const int svcN = account(host).serviceRows(svcRows, kRigUpgradeCount);
             char svc[16];
-            std::snprintf(svc, sizeof(svc), "%d/%d ON", host.rigServicesRunning(), svcN);
+            std::snprintf(svc, sizeof(svc), "%d/%d ON", account(host).servicesRunning(), svcN);
             drawLabelValue(fb, kMargin, rowY, "SERVICES",
                            sel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), svc,
                            palColor(Pal::INK), beat, Overflow::Scroll);
@@ -338,8 +341,8 @@ void RigShopScreen::drawRows(Framebuffer& fb, const RigShopHost& host, int beat)
         }
 
         const RigUpgradeDef& def = kRigUpgrades[row];
-        const int cost = host.rigUpgradeCostFor(row);
-        const bool afford = host.bits() >= cost;
+        const int cost = account(host).costFor(row);
+        const bool afford = host.operatorRecord().bits >= cost;
         char rhs[16];
         std::snprintf(rhs, sizeof(rhs), "%d BITS", cost);
         // Every row scrolls: several names ("REDUCE EXPLORE FRAG") overflow the column
@@ -349,7 +352,7 @@ void RigShopScreen::drawRows(Framebuffer& fb, const RigShopHost& host, int beat)
                        afford ? palColor(Pal::INK) : palColor(Pal::INK_DIM),
                        beat, Overflow::Scroll);
 
-        const SpecRows spec = rigSpec(def, host.rigLevel(row));
+        const SpecRows spec = rigSpec(def, account(host).level[row]);
         drawSpecGrid(fb, kMargin, rowY + kFontH + 5, kActiveW - 2 * kMargin,
                      spec.rows, spec.count, kFontH + 3, palColor(Pal::INK_DIM),
                      palColor(Pal::ACCENT));

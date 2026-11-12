@@ -488,7 +488,7 @@ void test_cryptogram_states_persist() {
     // board rather than as a corrupt stream.
     SaveData d;
     CHECK(deserializeSave(store.bytes(), d));
-    d.quoteStates.clear();
+    d.op.quoteStates.clear();
     MemSaveStore older;
     older.save(serializeSave(d));
     Game g(StartMode::Hatched, "malbear", &older);

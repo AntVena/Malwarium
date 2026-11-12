@@ -408,7 +408,7 @@ void Game::applyCombatResult() {
                 int bits = kSimBitsReward;
                 bits += sumEquippedModMagnitude(registry_, pet_.mods,
                             ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
-                bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
+                op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
                 pet_.model.feed(0, kSimHappyReward);
                 addFightXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
             } else {
@@ -430,7 +430,7 @@ void Game::applyCombatResult() {
                     bits = bits * darkWebDepthBitsPct(exploreStreak_) / 100;
                 bits += sumEquippedModMagnitude(registry_, pet_.mods,
                             ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
-                bits_ += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
+                op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
                 // scale the ZONE's base XP by how the enemy's depth level compares to
                 // the pet's: punching up pays more, farming shallow pays a trickle. The
                 // base is the flat one everywhere but the CRAWL, which pays a multiple of
@@ -539,8 +539,8 @@ void Game::finishCombat() {
             // (never a boss round. Those return via finishBossRound() above before
             // ever reaching here, and Sim never reaches this branch either).
             if (const int idx = wildMalbeastIndex(encounterEnemy_.name);
-                idx >= 0 && !(malbeastDefeatedMask_ & (1u << idx))) {
-                malbeastDefeatedMask_ |= static_cast<uint16_t>(1u << idx);
+                idx >= 0 && !(op_.reveals.malbeastDefeatedMask & (1u << idx))) {
+                op_.reveals.malbeastDefeatedMask |= static_cast<uint16_t>(1u << idx);
                 markSaveDirty();
             }
             if (exploreActive_) {
@@ -681,8 +681,8 @@ void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool li
 
 void Game::debugSetNetworksSeen(int n) {
     if (n < 0) n = 0;
-    networksSeen_ = n;   // unbounded (XP model): no ledger/pool to keep in sync now
-    hackerRank_ = hackerRankForNetworksSeen(networksSeen_);   // silent: no celebration
+    op_.networksSeen = n;   // unbounded (XP model): no ledger/pool to keep in sync now
+    op_.hackerRank = hackerRankForNetworksSeen(op_.networksSeen);   // silent: no celebration
 }
 
 void Game::debugUseItem(const char* id) {
@@ -700,7 +700,7 @@ void Game::debugOpenCache(const char* id) {
     if (d) openSealedCache(*d);
 }
 
-void Game::debugSetBits(int n) { bits_ = n < 0 ? 0 : n; }
+void Game::debugSetBits(int n) { op_.bits = n < 0 ? 0 : n; }
 
 void Game::debugFillLoadout() {
     if (!pet_.creature) return;
@@ -753,8 +753,8 @@ void Game::rollWild() {
     // glimpse, regardless of what happens next (fight/flee/sinkhole/auto-resolve).
     // wildMalbeastIndex returns -1 for anything outside the wild roster.
     if (const int idx = wildMalbeastIndex(encounterEnemy_.name);
-        idx >= 0 && !(malbeastSeenMask_ & (1u << idx))) {
-        malbeastSeenMask_ |= static_cast<uint16_t>(1u << idx);
+        idx >= 0 && !(op_.reveals.malbeastSeenMask & (1u << idx))) {
+        op_.reveals.malbeastSeenMask |= static_cast<uint16_t>(1u << idx);
         markSaveDirty();
     }
 }

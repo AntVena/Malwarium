@@ -92,7 +92,7 @@ void Game::settleMaintPlay(const PlayOutcome& o) {
         playedFragRemoved_ = playedFragWorth(o.units);
         playedBitsEarned_ = playedBitsWorth(o.bitsUnits);
         pet_.model.applyPlayedDefrag(playedFragRemoved_);
-        bits_ += playedBitsEarned_;
+        op_.bits += playedBitsEarned_;
         maintSuccess_ = maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0 &&
                         pet_.model.fragmentation() == 0;
     }

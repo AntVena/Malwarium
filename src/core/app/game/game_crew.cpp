@@ -116,12 +116,12 @@ void drawPanel(Framebuffer& fb, int x, int y, int w, int h) {
 // --- Membership + home network --------------------------------------------
 
 void Game::setHomeNetwork(uint64_t key, const char* name) {
-    homeNetworkKey_ = key;
-    std::strncpy(homeNetworkName_, name ? name : "", sizeof(homeNetworkName_) - 1);
-    homeNetworkName_[sizeof(homeNetworkName_) - 1] = '\0';
+    op_.homeNetworkKey = key;
+    std::strncpy(op_.homeNetworkName, name ? name : "", sizeof(op_.homeNetworkName) - 1);
+    op_.homeNetworkName[sizeof(op_.homeNetworkName) - 1] = '\0';
     if (key == 0) {
-        homeNetworkName_[0] = '\0';
-        crewIndex_ = -1;   // membership can't outlive the network it defends
+        op_.homeNetworkName[0] = '\0';
+        op_.crewIndex = -1;   // membership can't outlive the network it defends
     }
     markSaveDirty();
     dirty_ = true;
@@ -130,8 +130,8 @@ void Game::setHomeNetwork(uint64_t key, const char* name) {
 bool Game::joinCrew(int index) {
     if (!crew(index)) return false;
     if (!hasHomeNetwork()) return false;   // a crew member is always somebody's defender
-    if (crewIndex_ == index) return true;
-    crewIndex_ = index;
+    if (op_.crewIndex == index) return true;
+    op_.crewIndex = index;
     // Taking a side at all, once. Fired on the first join. A player belongs to at most
     // one crew and can switch freely, so there is nothing to count.
     unlockAchievement(ach::kCrewEnlisted);
@@ -142,8 +142,8 @@ bool Game::joinCrew(int index) {
 }
 
 void Game::leaveCrew() {
-    if (crewIndex_ < 0) return;
-    crewIndex_ = -1;
+    if (op_.crewIndex < 0) return;
+    op_.crewIndex = -1;
     markSaveDirty();
     dirty_ = true;
 }
@@ -247,7 +247,7 @@ void Game::onHackerCrew(const ButtonEvent& ev) {
             const CrewDef* c = crew(crewDetail_);
             if (!c) { crewView_ = CrewView::Team; break; }
             if (ev.button == Button::B) {              // the one verb on this page
-                if (crewIndex_ == crewDetail_) leaveCrew();
+                if (op_.crewIndex == crewDetail_) leaveCrew();
                 else joinCrew(crewDetail_);            // no-op without a home network
             } else if (ev.button == Button::A) {
                 // A already means "advance", so paging the description with it needs no
@@ -307,7 +307,7 @@ void Game::drawCrewHub(Framebuffer& fb) const {
     // that band is for. It is also row 0, so it carries the cursor like any other.
     const bool homeSel = crewHubRow_ == 0;
     if (homeSel) drawRowCursor(fb, 2, kContextY + 1, palColor(Pal::ACCENT));
-    const char* homeVal = hasHomeNetwork() ? homeNetworkName_ : "NOT SET";
+    const char* homeVal = hasHomeNetwork() ? op_.homeNetworkName : "NOT SET";
     drawLabelValue(fb, kMargin + 10, kContextY, "HOME NET",
                    homeSel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), homeVal,
                    hasHomeNetwork() ? palColor(Pal::INK) : palColor(Pal::WARN), beat_,
@@ -444,7 +444,7 @@ void Game::drawCrewNetPicker(Framebuffer& fb) const {
             // No LIVE tag: every row on this screen is in range by construction, so
             // the tag would mark nothing. HOME still needs saying: it's the one
             // row whose meaning differs. Word, never colour alone.
-            if (row.key == homeNetworkKey_)
+            if (row.key == op_.homeNetworkKey)
                 drawText(fb, kMargin + 10, rowY + kFontH + 1, "HOME",
                          palColor(Pal::ACCENT));
         }
@@ -480,7 +480,7 @@ void Game::drawCrewTeam(Framebuffer& fb) const {
         const CrewDef& c = kCrews[i];
         const int y = kRowTop + v * kTeamRowH;
         const bool s = scrollTop + v == sel;
-        const bool joined = crewIndex_ == i;
+        const bool joined = op_.crewIndex == i;
         if (s) drawRowCursor(fb, 2, y + 1, palColor(Pal::ACCENT));
         // One job per line, each with the full row, so a long crew name never clips.
         const int tx = kMargin + 10;
@@ -524,7 +524,7 @@ void Game::drawCrewDetail(Framebuffer& fb) const {
     if (!c) return;
     const bool red = c->team == CrewTeam::Red;
     const Rgb565 side = teamColor(red);
-    const bool joined = crewIndex_ == crewDetail_;
+    const bool joined = op_.crewIndex == crewDetail_;
 
     // Glyph + motto. The name is already the header band's title, so this block holds
     // the motto. It wraps instead of scrolling, so the reader never waits for it.

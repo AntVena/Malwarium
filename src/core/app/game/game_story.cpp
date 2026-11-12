@@ -21,14 +21,14 @@ bool Game::storyRead(const StoryChapterDef* chapter) const {
     if (!chapter || chapter->wire == kStoryWireNone) return false;
     const int w = chapter->wire;
     if (w >= kStoryWireCap) return false;    // a wire this build's set cannot hold
-    return (storyRead_[w / 8] & (1u << (w % 8))) != 0;
+    return (op_.reveals.storyRead[w / 8] & (1u << (w % 8))) != 0;
 }
 
 void Game::markStoryRead(const StoryChapterDef* chapter) {
     if (!chapter || chapter->wire == kStoryWireNone) return;
     const int w = chapter->wire;
     if (w >= kStoryWireCap) return;
-    storyRead_[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
+    op_.reveals.storyRead[w / 8] |= static_cast<uint8_t>(1u << (w % 8));
     markSaveDirty();
 }
 

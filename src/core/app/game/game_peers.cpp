@@ -54,7 +54,7 @@ void Game::setLinkEnabled(bool on) {
 void Game::buildPeerHello(PeerHello* out) const {
     if (!out) return;
     PeerHello h;
-    std::strncpy(h.tag, hackerTag_, sizeof(h.tag) - 1);
+    std::strncpy(h.tag, op_.hackerTag, sizeof(h.tag) - 1);
 
     // An operator with no pet yet (a fresh device on the Hatch screen) broadcasts an
     // empty species: the row reads "no pet".
@@ -70,7 +70,7 @@ void Game::buildPeerHello(PeerHello* out) const {
 
     // Rank is unbounded in the model but one byte on the wire; clamping beats
     // wrapping a rank-260 operator back to 4.
-    h.rank = static_cast<uint8_t>(std::min(hackerRank_, 255));
+    h.rank = static_cast<uint8_t>(std::min(op_.hackerRank, 255));
     *out = h;
 }
 

@@ -193,7 +193,7 @@ void Game::archSellStored(int storedIdx, SaleOffer offer) {
     if (!d || d->stage != Stage::Daemon || archSaleBlocker(offer, sold)) return;
 
     switch (offer) {
-        case SaleOffer::Bits:    bits_ += daemonSaleBits(sold.combatLevel); break;
+        case SaleOffer::Bits:    op_.bits += daemonSaleBits(sold.combatLevel); break;
         case SaleOffer::Reimage: reimageActivePet(); break;
         case SaleOffer::Hotfix:  pet_.model.setCareMistakes(0); break;
     }

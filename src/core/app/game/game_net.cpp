@@ -141,17 +141,17 @@ void Game::resolveWifiOutcome() {
 // Hacker Rank -----------------------------------------
 
 void Game::checkHackerRankUp() {
-    const int newRank = hackerRankForNetworksSeen(networksSeen_);
-    if (newRank <= hackerRank_) return;
+    const int newRank = hackerRankForNetworksSeen(op_.networksSeen);
+    if (newRank <= op_.hackerRank) return;
     // A single scan can hear several new APs at once and cross more than one rank
     // (XP model): pay the flat Bits lump per rank gained. Reward-only: this
     // gates nothing, it's just a celebration. Deliberately NOT logged (
     // rank-up is one of the few beats the closed Hacker-Log vocabulary excludes).
-    const int gained = newRank - hackerRank_;
-    hackerRank_ = newRank;
-    bits_ += kHackerRankUpBitsReward * gained;
+    const int gained = newRank - op_.hackerRank;
+    op_.hackerRank = newRank;
+    op_.bits += kHackerRankUpBitsReward * gained;
     std::snprintf(rankUpFlavor_, sizeof(rankUpFlavor_), "RANK UP R%d +%dB",
-                 hackerRank_, kHackerRankUpBitsReward * gained);
+                 op_.hackerRank, kHackerRankUpBitsReward * gained);
     rankUpPending_ = true;
     markSaveDirty();
 }
@@ -313,7 +313,7 @@ void Game::resolveNetworkDiscovery() {
         // New: the only source of Hacker Rank XP and the Sealed-Cache discovery
         // reward.
         networkLedger_.recordNew(picked.key, picked.name);
-        ++networksSeen_;
+        ++op_.networksSeen;
         // (Hatch acceleration already fired when this sighting was queued, in
         // registerNetwork: see its comment.)
         checkHackerRankUp();

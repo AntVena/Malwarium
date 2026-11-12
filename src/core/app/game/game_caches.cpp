@@ -55,7 +55,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     // adding a container is a row rather than a branch here.
     const CacheDef& c = d.cache;
     bitsOut = applyCacheBitsBonus(c.bits);   // Enhanced DataMining
-    bits_ += bitsOut;
+    op_.bits += bitsOut;
     itemCountOut = 0;
     for (int i = 0; i < c.draws; ++i) {
         if (c.drawChancePct < 100) {

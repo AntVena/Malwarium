@@ -140,7 +140,7 @@ void Game::drawGameBrief(Framebuffer& fb) const {
 // --- The cabinet list (L2) -------------------------------------------------
 //
 // A locked cabinet is ABSENT from the list, not greyed in it. The Rig Shop's rule
-// (shopRowOffered), and for the same reason: a menu should not advertise a door the
+// (RigAccount::offered), and for the same reason: a menu should not advertise a door the
 // player has no key to. arcadeRow_ stays a ROSTER index throughout, so the tallies and
 // the START call index the same space whether or not anything is hidden.
 
@@ -285,18 +285,18 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
         bonus = kArcadeScoreBits;
     }
     arcadeBits_ = kArcadePlayBits + bonus;
-    bits_ += arcadeBits_;
+    op_.bits += arcadeBits_;
     pet_.model.setHappiness(pet_.model.happiness() + kArcadePlayHappy);   // clamps at the cap
 
     if (arcadeGame_ >= 0 && arcadeGame_ < kArcadeMaxCabinets) {
-        ++arcadePlays_[arcadeGame_];
-        if (won) ++arcadeWins_[arcadeGame_];
+        ++op_.tallies.arcadePlays[arcadeGame_];
+        if (won) ++op_.tallies.arcadeWins[arcadeGame_];
         // The HIGH SCORE, which is the only one of the three tallies a run can leave
         // worse than it found: it is kept unclamped, deliberately. The bits a run pays
         // stop at the win line, but the number remembered here does not, because on an
         // endless cabinet that number IS the game.
-        arcadeNewBest_ = score > arcadeBest_[arcadeGame_] && scoreMax > 0;
-        if (arcadeNewBest_) arcadeBest_[arcadeGame_] = score;
+        arcadeNewBest_ = score > op_.tallies.arcadeBest[arcadeGame_] && scoreMax > 0;
+        if (arcadeNewBest_) op_.tallies.arcadeBest[arcadeGame_] = score;
     }
     addBond(pet_.upgrades, BondSource::Games, kBondGameBp);
     markSaveDirty();
@@ -320,7 +320,7 @@ void Game::onArcadeResult(const ButtonEvent& ev) {
 void Game::drawArcade(Framebuffer& fb) const {
     int plays[kArcadeMaxCabinets] = {0};
     for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i)
-        plays[i] = arcadePlays_[i];
+        plays[i] = op_.tallies.arcadePlays[i];
     int rows[kArcadeMaxCabinets] = {0};
     ArcadeListView v;
     v.rows = rows;

@@ -17,8 +17,8 @@
 // Its recipes cannot be bought. Each is won by a first solve on the DECRYPTOGRAM
 // (game_cryptogram.cpp's prize ladder), and crafting also needs the ingredients. The
 // raw ingredients still have to be in the bag. Ownership is a bit per recipe wire in
-// recipesOwned_ (save v31's recipesUnlocked bitset, save v51), which this file is the
-// only writer of.
+// RigAccount::recipesOwned (save v31's recipesUnlocked bitset, save v51), which this file
+// is the only writer of.
 //
 // So this file owns cooking end to end: the ownership bit, the craft mechanic over
 // MergeRecipe (core/content/content_recipes.h), and the screen body.
@@ -39,7 +39,8 @@ void Game::debugWinRecipe(int i) { grantRecipe(i); }
 
 // --- Which recipes the operator has ----------------------------------------
 //
-// One bit per MergeRecipe::wire in recipesOwned_. Every read and write of that packing
+// One bit per MergeRecipe::wire in RigAccount::recipesOwned. Every read and write of that
+// packing
 // is in this pair, so nothing else has to know the layout (the same discipline the
 // quote tiers keep, game_cryptogram.cpp).
 
@@ -47,7 +48,7 @@ bool Game::recipeOwned(int recipeIndex) const {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return false;
     const int wire = kMergeRecipes[recipeIndex].wire;
     if (wire < 0 || wire >= kMergeRecipeWireCap) return false;
-    return (recipesOwned_[wire / 8] & (1u << (wire % 8))) != 0;
+    return (op_.rig.recipesOwned[wire / 8] & (1u << (wire % 8))) != 0;
 }
 
 // The same bit, asked the way anything OUTSIDE the engine has to ask it: by the dish.
@@ -61,7 +62,7 @@ void Game::grantRecipe(int recipeIndex) {
     if (recipeIndex < 0 || recipeIndex >= kMergeRecipeCount) return;
     const MergeRecipe& r = kMergeRecipes[recipeIndex];
     if (r.wire < 0 || r.wire >= kMergeRecipeWireCap) return;
-    uint8_t& byte = recipesOwned_[r.wire / 8];
+    uint8_t& byte = op_.rig.recipesOwned[r.wire / 8];
     const uint8_t bit = static_cast<uint8_t>(1u << (r.wire % 8));
     if (byte & bit) return;                          // already known: nothing to write
     byte = static_cast<uint8_t>(byte | bit);
@@ -99,7 +100,7 @@ void Game::craftRecipe(int recipeIndex) {
         if (in.id) inventory_.remove(in.id, in.qty);
     inventory_.add(r.outputId, r.outputQty);
     sweepCollectedItems();   // a crafted dish counts as met right away, not next tick
-    ++mergesCooked_;         // the lifetime stove tally (save v56)
+    ++op_.tallies.mergesCooked;         // the lifetime stove tally (save v56)
     log_.push(LogEventType::ItemUsed, r.logText);
     markSaveDirty();
     dirty_ = true;

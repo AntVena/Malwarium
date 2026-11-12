@@ -288,7 +288,7 @@ void Game::onButton(const ButtonEvent& ev) {
             if (ev.button == Button::A) lockoutPayOption_ = !lockoutPayOption_;
             else if (ev.button == Button::B) {
                 if (lockoutPayOption_) {
-                    if (bits_ >= kLockoutBitsCost) { bits_ -= kLockoutBitsCost; resolveLockout(); }
+                    if (op_.bits >= kLockoutBitsCost) { op_.bits -= kLockoutBitsCost; resolveLockout(); }
                 } else if (yubiWouldSave()) {         // the one meal that saves it
                     feedYubiToSave();
                 } else {                              // Open Items (Lockout context)

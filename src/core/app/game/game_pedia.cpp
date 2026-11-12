@@ -52,17 +52,17 @@ bool Game::creatureRaised(const char* id) const {
 
 void Game::markCreatureSeen(const char* id) {
     if (!id || creatureRaised(id)) return;          // "raised" always wins over "seen"
-    for (const CreatureDef* c : seenCreatures_)
+    for (const CreatureDef* c : op_.reveals.seenCreatures)
         if (std::strcmp(c->id, id) == 0) return;    // already glimpsed: idempotent
     if (const CreatureDef* def = registry_.creature(id)) {
-        seenCreatures_.push_back(def);
+        op_.reveals.seenCreatures.push_back(def);
         markSaveDirty();
     }
 }
 
 bool Game::creatureSeen(const char* id) const {
     if (!id) return false;
-    for (const CreatureDef* c : seenCreatures_)
+    for (const CreatureDef* c : op_.reveals.seenCreatures)
         if (std::strcmp(c->id, id) == 0) return true;
     return false;
 }
@@ -171,15 +171,15 @@ void Game::recordSpeciesDive(const CreatureDef* c, int depth) {
 
 bool Game::hasAchievement(const char* id) const {
     const AchievementDef* d = achievementById(id);
-    return d && achBit(achEarned_, d->wire);
+    return d && achBit(op_.reveals.achEarned, d->wire);
 }
 
 void Game::unlockAchievement(const char* id) {
     const AchievementDef* d = achievementById(id);
     // An unknown id is a call site naming a row that no longer exists. Ignore it. The
     // native gate catches the typo, so a device in the field never crashes on it.
-    if (!d || achBit(achEarned_, d->wire)) return;   // unknown / already earned
-    setAchBit(achEarned_, d->wire);
+    if (!d || achBit(op_.reveals.achEarned, d->wire)) return;   // unknown / already earned
+    setAchBit(op_.reveals.achEarned, d->wire);
     applyAchievementRewards(*d);
     char line[kSaveTextCap];
     std::snprintf(line, sizeof(line), "* %s", d->displayName);
@@ -204,7 +204,7 @@ void Game::applyAchievementRewards(const AchievementDef& d) {
             case AchievementReward::Kind::None:
                 break;
             case AchievementReward::Kind::Bits:
-                bits_ += r.magnitude;
+                op_.bits += r.magnitude;
                 break;
             case AchievementReward::Kind::Item:
                 // Straight into the bag: a Commendation Cache is opened from the VAULT
@@ -236,7 +236,7 @@ int Game::achValue(const AchievementDef& d) const {
             return n;
         }
         case AchSeries::BossWins:
-            return bossWins_;
+            return op_.tallies.bossWins;
         case AchSeries::AreasCleared: {
             int n = 0;
             for (int i = 0; i < kAreaCount; ++i) n += sectorCleared_[i] ? 1 : 0;
@@ -296,7 +296,7 @@ int Game::achValue(const AchievementDef& d) const {
         }
         case AchSeries::RigRowsOwned: {
             int n = 0;
-            for (int i = 0; i < kRigUpgradeCount; ++i) n += rigLevel_[i] > 0 ? 1 : 0;
+            for (int i = 0; i < kRigUpgradeCount; ++i) n += op_.rig.level[i] > 0 ? 1 : 0;
             return n;
         }
         case AchSeries::RigCappedLevels: {
@@ -306,27 +306,27 @@ int Game::achValue(const AchievementDef& d) const {
             for (int i = 0; i < kRigUpgradeCount; ++i) {
                 const int cap = kRigUpgrades[i].maxLevel;
                 if (cap == kRigLevelUnlimited) continue;
-                n += rigLevel_[i] < cap ? rigLevel_[i] : cap;
+                n += op_.rig.level[i] < cap ? op_.rig.level[i] : cap;
             }
             return n;
         }
         case AchSeries::NetworksSeen:
-            return networksSeen_;
+            return op_.networksSeen;
         case AchSeries::Handshakes:
             return handshakesSeen_;
         case AchSeries::BitsHeld:
-            return bits_;
+            return op_.bits;
         case AchSeries::PetsRaised:
-            return petsRaised_;
+            return op_.petsRaised;
         case AchSeries::StackerWins:
-            return stackerWins_;
+            return op_.tallies.stackerWins;
         case AchSeries::ArcadePlays:
         case AchSeries::ArcadeWins:
         case AchSeries::ArcadeLosses: {
             int plays = 0, wins = 0;
             for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i) {
-                plays += arcadePlays_[i];
-                wins += arcadeWins_[i];
+                plays += op_.tallies.arcadePlays[i];
+                wins += op_.tallies.arcadeWins[i];
             }
             if (d.series == AchSeries::ArcadeWins) return wins;
             if (d.series == AchSeries::ArcadeLosses) return plays - wins;
@@ -337,11 +337,11 @@ int Game::achValue(const AchievementDef& d) const {
         case AchSeries::ArcadeCabinetBest:
             return arcadeBestById(d.key);
         case AchSeries::TourneyWins:
-            return tourneyWins_;
+            return op_.tallies.tourneyWins;
         case AchSeries::PvpWins:
-            return pvpWins_;
+            return op_.tallies.pvpWins;
         case AchSeries::MergesCooked:
-            return mergesCooked_;
+            return op_.tallies.mergesCooked;
         case AchSeries::QuotesSolved:
             return quotesSolved();
         case AchSeries::TitlesUnlocked:
@@ -349,7 +349,7 @@ int Game::achValue(const AchievementDef& d) const {
         case AchSeries::PeersMet:
             return static_cast<int>(peerLedger_.size());
         case AchSeries::SpeciesSeen:
-            return static_cast<int>(seenCreatures_.size());
+            return static_cast<int>(op_.reveals.seenCreatures.size());
         case AchSeries::RackHeld:
             return rackCount();
         // The four COLLECTION reads of the same shelf. All of them walk the rack rather
@@ -407,7 +407,7 @@ int Game::achValue(const AchievementDef& d) const {
             return best;
         }
         case AchSeries::StepsWalked:
-            return static_cast<int>(lifetimeSteps_);
+            return static_cast<int>(op_.lifetimeSteps);
     }
     return 0;
 }
@@ -427,7 +427,7 @@ void Game::sweepAchievements() {
     for (int i = 0; i < kAchievementCount; ++i) {
         const AchievementDef& d = kAchievements[i];
         if (d.series == AchSeries::Event) continue;      // fired at its own site
-        if (achBit(achEarned_, d.wire)) continue;        // already earned: skip the work
+        if (achBit(op_.reveals.achEarned, d.wire)) continue;        // already earned: skip the work
         const int goal = achievementGoal(d);
         if (goal <= 0) continue;                          // kGoalAll on an unbounded series
         const bool sameAsMemo = memoValid && d.series == memoSeries &&
@@ -447,7 +447,7 @@ int Game::achPendingNotify() const {
     int n = 0;
     for (int i = 0; i < kAchievementCount; ++i) {
         const AchievementDef& d = kAchievements[i];
-        if (achBit(achEarned_, d.wire) && !achBit(achNotified_, d.wire)) ++n;
+        if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) ++n;
     }
     return n;
 }
@@ -477,7 +477,7 @@ bool Game::achBannerHeld() const {
 
 void Game::dismissAchievementBanner() {
     if (achBannerWire_ < 0) return;
-    setAchBit(achNotified_, achBannerWire_);
+    setAchBit(op_.reveals.achNotified, achBannerWire_);
     achBannerWire_ = -1;
     achBannerCount_ = 0;
     markSaveDirty();
@@ -494,10 +494,10 @@ void Game::tickAchievementBanner() {
     if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_ && !achBannerHeld()) {
         if (achBannerCount_ > 1) {
             for (int i = 0; i < kAchievementCount; ++i)
-                if (achBit(achEarned_, kAchievements[i].wire))
-                    setAchBit(achNotified_, kAchievements[i].wire);
+                if (achBit(op_.reveals.achEarned, kAchievements[i].wire))
+                    setAchBit(op_.reveals.achNotified, kAchievements[i].wire);
         } else {
-            setAchBit(achNotified_, achBannerWire_);
+            setAchBit(op_.reveals.achNotified, achBannerWire_);
         }
         achBannerWire_ = -1;
         achBannerCount_ = 0;
@@ -517,7 +517,7 @@ void Game::tickAchievementBanner() {
         achBannerWire_ = -1;
         for (int i = 0; i < kAchievementCount; ++i) {
             const AchievementDef& d = kAchievements[i];
-            if (achBit(achEarned_, d.wire) && !achBit(achNotified_, d.wire)) {
+            if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) {
                 achBannerWire_ = d.wire;     // a name to show under the count
                 break;
             }
@@ -526,7 +526,7 @@ void Game::tickAchievementBanner() {
     } else {
         for (int i = 0; i < kAchievementCount; ++i) {
             const AchievementDef& d = kAchievements[i];
-            if (achBit(achEarned_, d.wire) && !achBit(achNotified_, d.wire)) {
+            if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) {
                 achBannerWire_ = d.wire;
                 achBannerCount_ = 1;
                 break;

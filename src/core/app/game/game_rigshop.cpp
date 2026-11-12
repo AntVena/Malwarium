@@ -2,22 +2,12 @@
 
 #include "core/app/game_rig_shop.h"
 
-// game_rigshop.cpp: the Rig Shop account (purchases, grants, service switches) and the
-// RigShopHost methods Game implements for the SHOP screen (game/rig_shop_screen.cpp).
-// The account stays on Game because other features buy and grant rows too: a
-// Decryptogram prize, an item, the arcade's gating.
+// game_rigshop.cpp: buying, granting and switching on the Rig Shop account
+// (Operator::rig), and the RigShopHost methods Game implements for the SHOP screen
+// (game/rig_shop_screen.cpp). These stay on Game because a purchase moves more than the
+// account: the wallet, the live Bandwidth pool, the log and the save.
 
 namespace mal {
-
-// Is this row on sale right now? One way it isn't: it's maxed/owned, with nothing left
-// to buy. Every row in the table is an ordinary purchase. MERGE HUB recipes are won
-// off a Decryptogram and are not rig rows. The single answer the A-cycle, the render
-// loop and buyRigUpgrade all defer to, so the list can't show a row the cursor skips,
-// or sell one it never drew.
-bool Game::shopRowOffered(int i) const {
-    if (i < 0 || i >= kRigUpgradeCount) return false;
-    return rigLevel_[i] < kRigUpgrades[i].maxLevel;
-}
 
 void Game::leaveToCarousel() { nav_ = Nav::Cursor; }
 
@@ -29,35 +19,26 @@ void Game::armHoldB() {
 void Game::markDirty() { dirty_ = true; }
 
 void Game::toggleRigService(int row) {
-    if (!rigServiceOwned(row)) return;   // nothing bought here has a switch
-    const uint32_t bit = 1u << static_cast<unsigned>(row);
+    if (!op_.rig.toggleService(row)) return;   // nothing bought here has a switch
+    const char* line = "SERVICE STOPPED";
     if (kRigUpgrades[row].askable) {
-        // Three positions, stepped in the order the board reads them.
-        switch (rigServiceMode(row)) {
-            case ServiceMode::On:  rigServicesAsk_ |= bit; break;
-            case ServiceMode::Ask: rigServicesAsk_ &= ~bit; rigServicesOff_ |= bit; break;
-            case ServiceMode::Off: rigServicesOff_ &= ~bit; break;
-        }
-        log_.push(LogEventType::ItemUsed, rigServiceMode(row) == ServiceMode::On  ? "SERVICE SET YES"
-                                        : rigServiceMode(row) == ServiceMode::Ask ? "SERVICE SET ASK"
-                                                                                  : "SERVICE SET NO");
-        dirty_ = true;
-        markSaveDirty();
-        return;
+        const ServiceMode m = op_.rig.serviceMode(row);
+        line = m == ServiceMode::On  ? "SERVICE SET YES"
+             : m == ServiceMode::Ask ? "SERVICE SET ASK"
+                                     : "SERVICE SET NO";
+    } else if (op_.rig.featureActive(row)) {
+        line = "SERVICE STARTED";
     }
-    rigServicesOff_ ^= bit;
-    log_.push(LogEventType::ItemUsed,
-              rigFeatureActive(row) ? "SERVICE STARTED" : "SERVICE STOPPED");
+    log_.push(LogEventType::ItemUsed, line);
     dirty_ = true;
     markSaveDirty();
 }
 
 void Game::buyRigUpgrade(int row) {
-    if (!shopRowOffered(row)) return;   // MAXED/OWNED, or gated: inert
-    const RigUpgradeDef& def = kRigUpgrades[row];
-    const int cost = rigUpgradeCostFor(row);
-    if (bits_ < cost) return;                       // NOT ENOUGH BITS: inert
-    bits_ -= cost;
+    if (!op_.rig.offered(row)) return;   // MAXED/OWNED, or gated: inert
+    const int cost = op_.rig.costFor(row);
+    if (op_.bits < cost) return;   // NOT ENOUGH BITS: inert
+    op_.bits -= cost;
     grantRigLevel(row, 1);
     dirty_ = true;
 }
@@ -66,7 +47,7 @@ void Game::grantRigLevel(int row, int levels) {
     if (row < 0 || row >= kRigUpgradeCount || levels <= 0) return;
     const RigUpgradeDef& def = kRigUpgrades[row];
     for (int i = 0; i < levels; ++i) {
-        ++rigLevel_[row];
+        ++op_.rig.level[row];
         // Bandwidth is the one row with an immediate effect: the freshly-owned pool
         // capacity is available to farm with right away, not just on the next regen
         // tick. Applied per level so a multi-level grant tops up by the whole amount.

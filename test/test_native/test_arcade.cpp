@@ -335,7 +335,7 @@ void test_arcade_high_score_tail_is_rollback_safe() {
 
     SaveData now;
     CHECK(deserializeSave(blob, now));
-    CHECK(now.arcadeBest.size() == now.arcadeIds.size());
+    CHECK(now.op.arcadeBest.size() == now.op.arcadeIds.size());
 
     // The version stamp is a u16 right after the 4-byte magic (serializeSaveInto).
     CHECK(blob[4] == static_cast<uint8_t>(kSaveVersion & 0xFF));
@@ -344,8 +344,8 @@ void test_arcade_high_score_tail_is_rollback_safe() {
 
     SaveData older;
     CHECK(deserializeSave(blob, older));            // the old build still loads it...
-    CHECK(older.arcadeBest.empty());                // ...and only loses what v55 added
-    CHECK(std::strcmp(older.hackerTag, now.hackerTag) == 0);
-    CHECK(older.arcadeIds.size() == now.arcadeIds.size());
-    CHECK(older.bits == now.bits);
+    CHECK(older.op.arcadeBest.empty());                // ...and only loses what v55 added
+    CHECK(std::strcmp(older.op.hackerTag, now.op.hackerTag) == 0);
+    CHECK(older.op.arcadeIds.size() == now.op.arcadeIds.size());
+    CHECK(older.op.bits == now.op.bits);
 }

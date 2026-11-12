@@ -509,16 +509,11 @@ struct SaveArmedPet {
     std::vector<uint16_t> subRefarm;
 };
 
-// The full snapshot. Defaults describe an empty save (no active pet).
-struct SaveData {
-    // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
-    // one save mapping. An empty id is a save vacated by an ARCH Store. Its fields sit
-    // at the stream positions each version gave them (serializeSaveInto), not in a
-    // record of their own: an older build reading this blob after an OTA rollback finds
-    // the pet where it always was.
-    SaveStoredPet active;
-    SaveArmedPet activeArmed;
-
+// What a save keeps of the Operator record (Operator::saved / Operator::loaded): every
+// player-level field. Grouped here in memory only. Each field sits at the stream position
+// its version gave it (serializeSaveInto), so an older build reading this blob after an
+// OTA rollback finds every field where it always was.
+struct SaveOperator {
     // Economy / identity / lifetime counters.
     int32_t bits = 0;
     char hackerTag[kHackerTagMax + 1] = {0};
@@ -526,8 +521,6 @@ struct SaveData {
     uint32_t lifetimeSteps = 0;       // explore steps walked, all pets, all runs
     int32_t petsRaised = 0;
 
-    // Collections.
-    std::vector<SaveStack> items;
     // v1..v44 ONLY, read on migration and never written: the spare pool as a flat list
     // of ids, one cell per COPY, each with its own rolled equip level alongside. See the
     // v45 note in the banner for why both are gone.
@@ -538,11 +531,6 @@ struct SaveData {
     // interchangeable, so a save has to remember how many, not which; 4 bits is what
     // bounds kModCopyCapMax.
     std::vector<uint8_t> ownedModCounts;
-    std::vector<SaveLogEntry> log;    // chronological, oldest first
-    std::vector<SaveStoredPet> rack;
-
-    // v3: ARCH records -------------------------------
-    std::vector<SaveRecord> records;   // RETIRED/CORRUPTED greyed records (no slot)
 
     // v4: Hacker Rank -----------------------------------
     int32_t networksSeen = 0;          // lifetime unique Wi-Fi networks
@@ -550,6 +538,197 @@ struct SaveData {
     // networkSeenMask (the v4/v21 dedup pool) is REMOVED as of v33: real-network
     // dedup + history now lives entirely in the SD-backed NetworkLedger
     // (core/net/network_ledger.h), not the save blob. See the v33 note above.
+
+    // v17: permanent-mod semantics ----------------------
+    // Set by deserialize: true when the blob is v17+, i.e. `ownedMods` already excludes
+    // the equipped mods (the permanent-mod model). A pre-v17 blob leaves this false so
+    // the loader migrates by dropping owned ids that also appear in `equipped` (the old
+    // swappable model kept equipped mods in the owned pool). No wire field of its own.
+    bool hasPermanentModData = false;
+
+    // v18: per-spare mod equip-level gates -------------------
+    // Set by deserialize: true when the blob carried the v18 parallel tail. Read only on
+    // the v44-and-older migration path now, and never written: v45 dropped the rolled
+    // gate, so the levels this flag guards no longer mean anything to a live save.
+    bool hasModEquipLevelData = false;
+
+    // v45: the counted mod pool ------------------------------
+    // Set by deserialize: true when the blob carried the v45 nibble array. False means a
+    // v44-or-older blob, and the loader migrates by tallying `ownedMods` per id and
+    // clamping each to kModCopyCapBase. The surplus copies are dropped, which is no
+    // loss the player can see: the picker has only ever listed mods by type.
+    bool hasModCountData = false;
+
+    // v19: Hacker SHOP account upgrades ----------------------
+    // Player-level, persists across pets like the HackerTag. bwUpgradeCount = how many
+    // "Increase Bandwidth" upgrades were bought (each raises the farming-pool cap by
+    // kBandwidthUpgradeStep). Pre-v19 → 0
+    // (a migrated save has bought none). Bandwidth itself is NOT persisted (it refills
+    // on reboot); only the purchased CAP increase is.
+    int32_t bwUpgradeCount = 0;
+
+    // v21: player-level (survives lifecycles, like hackerRank). PRE-ALLOCATED for a
+    // later shop task; unused otherwise. Pre-v21 → 0.
+    uint8_t fragAmountTier = 0;
+
+    // v22: Hacker-SHOP "Reduce Explore Frag TRIGGER %" upgrade (c) ------
+    // Player-level (survives lifecycles, like fragAmountTier). The purchased tier
+    // (0..kFragTriggerMaxTier) that lowers the battle-fatigue TRIGGER chance:
+    // sibling to fragAmountTier (which lowers the frag AMOUNT). Pre-v22 → 0.
+    uint8_t fragTriggerTier = 0;
+
+    // v23: Hacker-SHOP one-time unlocks (d/e) ---------------------------
+    // Player-level (survive lifecycles, like fragTriggerTier). No tiers: just
+    // owned or not. itemTabsUnlocked arms the ITEMS hold-B type-filter cycle;
+    // bulkOpenUnlocked arms the VAULT hold-B bulk-open. Pre-v23 → both false.
+    uint8_t itemTabsUnlocked = 0;
+    uint8_t bulkOpenUnlocked = 0;
+
+    // --- v25: web-'Pedia reveal-state bookkeeping ---------------------------
+    // Creature ids glimpsed-but-not-hatched (Game::markCreatureSeen). Pre-v25 → empty.
+    std::vector<SaveId> seenCreatures;
+    // Bitmasks over the append-only wild-malbeast roster (combat.h::kWildMalbeastIds).
+    // Pre-v25 → both 0 (nothing seen/defeated).
+    uint16_t malbeastSeen = 0;
+    uint16_t malbeastDefeated = 0;
+    // The v25 achievements bitmask, one bit per legacy achievement. SUPERSEDED as of v40
+    // by `achievementEarned` below: a v25..v39 blob carries real bits here and the loader
+    // migrates them (the legacy rows hold wire numbers 0-13, so it is a straight byte
+    // copy); a v40+ writer emits 0. The four bytes stay on the wire because the field is
+    // mid-stream: see the writer's note on never removing one.
+    uint32_t achievementsMask = 0;
+
+    // v27: Hacker-SHOP rig-upgrade levels ---------------------------
+    // Player-level (survive lifecycles, like bwUpgradeCount). Pre-v27 → all 0 (a
+    // migrated save has bought none).
+    int32_t rackSlotUpgradeCount = 0;
+    int32_t scrapingClusterLevel = 0;
+    int32_t dataMiningLevel = 0;
+
+    // v31: the Merge Hub unlock + the recipes known -----------------------------
+    // Player-level (survive lifecycles, like itemTabsUnlocked). mergeHubUnlocked makes
+    // the MRG carousel slot accessible; recipesUnlocked is a bitmask over
+    // game_internal.h's kMergeRecipes, bit = MergeRecipe::wire. Pre-v31 → both 0 (no
+    // Hub, no recipes). Pre-v49 the mask only carried its first two bits and the rest
+    // of cooking rode the rig rows: see migrateRecipeRows.
+    //
+    // The whole set lives in `recipeOwned` below (v51). This u32 stays on the wire at its
+    // v31 position carrying wires 0-31, so a v31..v50 reader still gets the recipes it can
+    // name: so an OTA rollback keeps the recipes that build knows.
+    uint8_t mergeHubUnlocked = 0;
+    uint32_t recipesUnlocked = 0;
+
+    // v32: Rig Shop rows from kRigRowExtBase up ---------------------------
+    // Player-level (survive lifecycles, like bwUpgradeCount). Index i = rig row
+    // (kRigRowExtBase + i), value = its purchased level. Pre-v32 → empty (every such
+    // row defaults to 0: a migrated save has bought none of them).
+    std::vector<uint16_t> rigLevelsExt;
+
+    // v61: which owned SERVICE rows are switched OFF. One bit per rig row, set = off
+    // (RigAccount::featureActive). Player-level. Pre-v61 → 0, everything running.
+    uint32_t rigServicesOff = 0;
+
+    // v36: Hacker CREW allegiance + the home network it hangs off -------------
+    // Player-level (survive lifecycles, like hackerTag). `crewId` is a content id
+    // (content_crews.h), empty = unaffiliated. `homeNetworkKey` is a packed 48-bit
+    // BSSID (0 = none designated) and `homeNetworkName` its cached display label.
+    // Pre-v36 → no crew, no home network.
+    char crewId[kSaveIdCap] = {0};
+    uint64_t homeNetworkKey = 0;
+    char homeNetworkName[kSaveNetNameCap] = {0};
+
+    // --- v40: achievements + the counters they are measured against ----------
+    // Two bitsets indexed by AchievementDef::wire (content_achievements.h), stored
+    // length-prefixed so the catalogue can outgrow any fixed width: a longer set loads
+    // into a shorter build harmlessly, and a shorter one reads back as "not earned".
+    // Player-level, like titlesUnlocked. Pre-v40 → migrated from achievementsMask above,
+    // with nothing marked notified so an upgraded device announces its whole history.
+    std::vector<uint8_t> achievementEarned;
+    std::vector<uint8_t> achievementNotified;
+    // Lifetime boss ROUNDS won (a gauntlet round counts as one). Pre-v40 → seeded by the
+    // loader from cleared sub-areas + areas, the most a save that never counted can say.
+    int32_t bossWins = 0;
+
+    // --- v44: the played-maintenance tally -----------------------------------
+    // Stacker boards cleared by hand in MAINT, lifetime.
+    // Player-level (survives a pet reset, like bossWins above). Pre-v44 → 0; nothing in an older blob can be honestly read as this.
+    int32_t stackerWins = 0;
+
+    // --- v47: the arcade's per-cabinet tallies -------------------------------
+    // Three parallel runs: a cabinet's content id, its lifetime run count, and how many
+    // of those runs were won. Player-level, like stackerWins above. Id-keyed, so the
+    // GAMES roster (content_arcade.cpp) can be reordered and a retired cabinet's row
+    // simply stops resolving. Pre-v47 → empty.
+    std::vector<SaveId> arcadeIds;
+    std::vector<int32_t> arcadePlays;
+    std::vector<int32_t> arcadeWins;
+
+    // --- v55: the arcade's per-cabinet HIGH SCORE ----------------------------
+    // A fourth run parallel to arcadeIds above, written as its own tail at the end of
+    // the blob rather than beside them, so a pre-v55 build still parses a v55 save.
+    // Empty (or short) → 0, which is the truth for a device that has only ever played
+    // cabinets that had no score to keep.
+    std::vector<int32_t> arcadeBest;
+
+    // --- v56: three more lifetime tallies ------------------------------------
+    // Player-level, like bossWins/stackerWins above, and written as one tail at the end
+    // of the blob rather than beside them. Pre-v56 → 0; see the version note in the
+    // banner for why none of the three can be honestly seeded from an older save.
+    int32_t tourneyWins = 0;    // ROCK THE DOCK brackets taken
+    int32_t pvpWins = 0;        // LINK duels won
+    int32_t mergesCooked = 0;   // dishes cooked at the MERGE HUB
+    // The chosen background's BackgroundDef::wire, or 0 for AUTO (the pet decides).
+    // A wire this build has no row for reads back as AUTO: see backgroundByWire.
+    uint8_t backgroundPick = 0;
+
+    // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
+    // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like
+    // the achievement bitsets it borrows its length-prefixed shape from; pack/unpack
+    // through quoteStateGet/quoteStateSet below so no call site does the shifting.
+    // Pre-v48 → empty, and every quote reads as never played.
+    std::vector<uint8_t> quoteStates;
+
+    // --- v51: the owned-recipe bitset ----------------------------------------
+    // One bit per MergeRecipe::wire (game_internal.h), low bit first within each byte,
+    // stored length-prefixed so the kitchen can outgrow any fixed width. The same
+    // shape and the same reason as the v40 achievement bitsets. Supersedes the v31
+    // `recipesUnlocked` u32 above, which still carries wires 0-31 for readers that
+    // predate this. Player-level. Pre-v51 → seeded by the loader from that u32, so an
+    // upgraded device keeps every recipe it had.
+    std::vector<uint8_t> recipeOwned;
+
+    // --- v65: the STORY chapters this device has been shown -------------------
+    // One bit per StoryChapterDef::wire (core/content/story.h), length-prefixed so the
+    // catalogue can outgrow any fixed width: a longer set loads into a shorter build
+    // harmlessly, and a shorter one reads back as "not shown yet". Player-level.
+    std::vector<uint8_t> storyRead;
+
+    // --- v66: the one-time onboarding tips already shown ----------------------
+    // One bit per Game::Tip, length-prefixed like storyRead. Player-level.
+    std::vector<uint8_t> tipsSeen;
+
+    // --- v69: which askable SERVICES sit at ASK (RigAccount::serviceMode) ---
+    uint32_t rigServicesAsk = 0;
+};
+
+// The full snapshot. Defaults describe an empty save (no active pet).
+struct SaveData {
+    // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
+    // one save mapping. An empty id is a save vacated by an ARCH Store. Its fields sit
+    // at the stream positions each version gave them (serializeSaveInto), not in a
+    // record of their own: an older build reading this blob after an OTA rollback finds
+    // the pet where it always was.
+    SaveStoredPet active;
+    SaveArmedPet activeArmed;
+    SaveOperator op;
+
+    // Collections.
+    std::vector<SaveStack> items;
+    std::vector<SaveLogEntry> log;    // chronological, oldest first
+    std::vector<SaveStoredPet> rack;
+
+    // v3: ARCH records -------------------------------
+    std::vector<SaveRecord> records;   // RETIRED/CORRUPTED greyed records (no slot)
 
     // v5: Audit-mode passive-scan runtime toggle -------- The authorized-use
     // opt-in the player flips in CFG (default OFF). Persisted so the choice
@@ -614,34 +793,6 @@ struct SaveData {
     // never boots surprisingly dim.
     int32_t brightness = kBrightnessDefault;
 
-    // v17: permanent-mod semantics ----------------------
-    // Set by deserialize: true when the blob is v17+, i.e. `ownedMods` already excludes
-    // the equipped mods (the permanent-mod model). A pre-v17 blob leaves this false so
-    // the loader migrates by dropping owned ids that also appear in `equipped` (the old
-    // swappable model kept equipped mods in the owned pool). No wire field of its own.
-    bool hasPermanentModData = false;
-
-    // v18: per-spare mod equip-level gates -------------------
-    // Set by deserialize: true when the blob carried the v18 parallel tail. Read only on
-    // the v44-and-older migration path now, and never written: v45 dropped the rolled
-    // gate, so the levels this flag guards no longer mean anything to a live save.
-    bool hasModEquipLevelData = false;
-
-    // v45: the counted mod pool ------------------------------
-    // Set by deserialize: true when the blob carried the v45 nibble array. False means a
-    // v44-or-older blob, and the loader migrates by tallying `ownedMods` per id and
-    // clamping each to kModCopyCapBase. The surplus copies are dropped, which is no
-    // loss the player can see: the picker has only ever listed mods by type.
-    bool hasModCountData = false;
-
-    // v19: Hacker SHOP account upgrades ----------------------
-    // Player-level, persists across pets like the HackerTag. bwUpgradeCount = how many
-    // "Increase Bandwidth" upgrades were bought (each raises the farming-pool cap by
-    // kBandwidthUpgradeStep). Pre-v19 → 0
-    // (a migrated save has bought none). Bandwidth itself is NOT persisted (it refills
-    // on reboot); only the purchased CAP increase is.
-    int32_t bwUpgradeCount = 0;
-
     // v20: 'Pedia local-AP runtime toggle ------------
     // The player's opt-in for the standalone Wi-Fi Access Point that serves the
     // 'Pedia landing page (a sibling of netScanEnabled). Default OFF; persisted so
@@ -650,76 +801,6 @@ struct SaveData {
     // owner, it stands the audit scan/capture down while on and hands the radio
     // back to whichever of those is still toggled on when it goes off. Pre-v20 → 0.
     uint8_t apEnabled = 0;
-
-    // v21: player-level (survives lifecycles, like hackerRank). PRE-ALLOCATED for a
-    // later shop task; unused otherwise. Pre-v21 → 0.
-    uint8_t fragAmountTier = 0;
-
-    // v22: Hacker-SHOP "Reduce Explore Frag TRIGGER %" upgrade (c) ------
-    // Player-level (survives lifecycles, like fragAmountTier). The purchased tier
-    // (0..kFragTriggerMaxTier) that lowers the battle-fatigue TRIGGER chance:
-    // sibling to fragAmountTier (which lowers the frag AMOUNT). Pre-v22 → 0.
-    uint8_t fragTriggerTier = 0;
-
-    // v23: Hacker-SHOP one-time unlocks (d/e) ---------------------------
-    // Player-level (survive lifecycles, like fragTriggerTier). No tiers: just
-    // owned or not. itemTabsUnlocked arms the ITEMS hold-B type-filter cycle;
-    // bulkOpenUnlocked arms the VAULT hold-B bulk-open. Pre-v23 → both false.
-    uint8_t itemTabsUnlocked = 0;
-    uint8_t bulkOpenUnlocked = 0;
-
-    // --- v25: web-'Pedia reveal-state bookkeeping ---------------------------
-    // Creature ids glimpsed-but-not-hatched (Game::markCreatureSeen). Pre-v25 → empty.
-    std::vector<SaveId> seenCreatures;
-    // Bitmasks over the append-only wild-malbeast roster (combat.h::kWildMalbeastIds).
-    // Pre-v25 → both 0 (nothing seen/defeated).
-    uint16_t malbeastSeen = 0;
-    uint16_t malbeastDefeated = 0;
-    // The v25 achievements bitmask, one bit per legacy achievement. SUPERSEDED as of v40
-    // by `achievementEarned` below: a v25..v39 blob carries real bits here and the loader
-    // migrates them (the legacy rows hold wire numbers 0-13, so it is a straight byte
-    // copy); a v40+ writer emits 0. The four bytes stay on the wire because the field is
-    // mid-stream: see the writer's note on never removing one.
-    uint32_t achievementsMask = 0;
-
-    // v27: Hacker-SHOP rig-upgrade levels ---------------------------
-    // Player-level (survive lifecycles, like bwUpgradeCount). Pre-v27 → all 0 (a
-    // migrated save has bought none).
-    int32_t rackSlotUpgradeCount = 0;
-    int32_t scrapingClusterLevel = 0;
-    int32_t dataMiningLevel = 0;
-
-    // v31: the Merge Hub unlock + the recipes known -----------------------------
-    // Player-level (survive lifecycles, like itemTabsUnlocked). mergeHubUnlocked makes
-    // the MRG carousel slot accessible; recipesUnlocked is a bitmask over
-    // game_internal.h's kMergeRecipes, bit = MergeRecipe::wire. Pre-v31 → both 0 (no
-    // Hub, no recipes). Pre-v49 the mask only carried its first two bits and the rest
-    // of cooking rode the rig rows: see migrateRecipeRows.
-    //
-    // The whole set lives in `recipeOwned` below (v51). This u32 stays on the wire at its
-    // v31 position carrying wires 0-31, so a v31..v50 reader still gets the recipes it can
-    // name: so an OTA rollback keeps the recipes that build knows.
-    uint8_t mergeHubUnlocked = 0;
-    uint32_t recipesUnlocked = 0;
-
-    // v32: Rig Shop rows from kRigRowExtBase up ---------------------------
-    // Player-level (survive lifecycles, like bwUpgradeCount). Index i = rig row
-    // (kRigRowExtBase + i), value = its purchased level. Pre-v32 → empty (every such
-    // row defaults to 0: a migrated save has bought none of them).
-    std::vector<uint16_t> rigLevelsExt;
-
-    // v61: which owned SERVICE rows are switched OFF. One bit per rig row, set = off
-    // (Game::rigFeatureActive). Player-level. Pre-v61 → 0, everything running.
-    uint32_t rigServicesOff = 0;
-
-    // v36: Hacker CREW allegiance + the home network it hangs off -------------
-    // Player-level (survive lifecycles, like hackerTag). `crewId` is a content id
-    // (content_crews.h), empty = unaffiliated. `homeNetworkKey` is a packed 48-bit
-    // BSSID (0 = none designated) and `homeNetworkName` its cached display label.
-    // Pre-v36 → no crew, no home network.
-    char crewId[kSaveIdCap] = {0};
-    uint64_t homeNetworkKey = 0;
-    char homeNetworkName[kSaveNetNameCap] = {0};
 
     // v37: the pet-to-pet LINK opt-in --------------------------------------
     // Player-level, default OFF. Consent to BROADCAST identity, which is why it is
@@ -740,17 +821,7 @@ struct SaveData {
     // Pre-v39 → seeded by the loader from the active pet + rack + records.
     std::vector<SaveId> raisedCreatures;
 
-    // --- v40: achievements + the counters they are measured against ----------
-    // Two bitsets indexed by AchievementDef::wire (content_achievements.h), stored
-    // length-prefixed so the catalogue can outgrow any fixed width: a longer set loads
-    // into a shorter build harmlessly, and a shorter one reads back as "not earned".
-    // Player-level, like titlesUnlocked. Pre-v40 → migrated from achievementsMask above,
-    // with nothing marked notified so an upgraded device announces its whole history.
-    std::vector<uint8_t> achievementEarned;
-    std::vector<uint8_t> achievementNotified;
-    // Lifetime boss ROUNDS won (a gauntlet round counts as one). Pre-v40 → seeded by the
-    // loader from cleared sub-areas + areas, the most a save that never counted can say.
-    int32_t bossWins = 0;
+    // --- v40: the collected-items shelf and the per-species dive records ---
     // Every item id that has ever been held. Not "in the bag now" (which the 'Pedia's
     // items{} map already reports): this is what the collection achievements count, and
     // spending an item must not un-collect it. Pre-v40 → seeded from the held stacks.
@@ -761,54 +832,6 @@ struct SaveData {
     // seeded from the active pet's own record.
     std::vector<SaveId> speciesDiveIds;
     std::vector<int32_t> speciesDiveDepths;
-
-    // --- v44: the played-maintenance tally -----------------------------------
-    // Stacker boards cleared by hand in MAINT, lifetime.
-    // Player-level (survives a pet reset, like bossWins above). Pre-v44 → 0; nothing in an older blob can be honestly read as this.
-    int32_t stackerWins = 0;
-
-    // --- v47: the arcade's per-cabinet tallies -------------------------------
-    // Three parallel runs: a cabinet's content id, its lifetime run count, and how many
-    // of those runs were won. Player-level, like stackerWins above. Id-keyed, so the
-    // GAMES roster (content_arcade.cpp) can be reordered and a retired cabinet's row
-    // simply stops resolving. Pre-v47 → empty.
-    std::vector<SaveId> arcadeIds;
-    std::vector<int32_t> arcadePlays;
-    std::vector<int32_t> arcadeWins;
-
-    // --- v55: the arcade's per-cabinet HIGH SCORE ----------------------------
-    // A fourth run parallel to arcadeIds above, written as its own tail at the end of
-    // the blob rather than beside them, so a pre-v55 build still parses a v55 save.
-    // Empty (or short) → 0, which is the truth for a device that has only ever played
-    // cabinets that had no score to keep.
-    std::vector<int32_t> arcadeBest;
-
-    // --- v56: three more lifetime tallies ------------------------------------
-    // Player-level, like bossWins/stackerWins above, and written as one tail at the end
-    // of the blob rather than beside them. Pre-v56 → 0; see the version note in the
-    // banner for why none of the three can be honestly seeded from an older save.
-    int32_t tourneyWins = 0;    // ROCK THE DOCK brackets taken
-    int32_t pvpWins = 0;        // LINK duels won
-    int32_t mergesCooked = 0;   // dishes cooked at the MERGE HUB
-    // The chosen background's BackgroundDef::wire, or 0 for AUTO (the pet decides).
-    // A wire this build has no row for reads back as AUTO: see backgroundByWire.
-    uint8_t backgroundPick = 0;
-
-    // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
-    // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like
-    // the achievement bitsets it borrows its length-prefixed shape from; pack/unpack
-    // through quoteStateGet/quoteStateSet below so no call site does the shifting.
-    // Pre-v48 → empty, and every quote reads as never played.
-    std::vector<uint8_t> quoteStates;
-
-    // --- v51: the owned-recipe bitset ----------------------------------------
-    // One bit per MergeRecipe::wire (game_internal.h), low bit first within each byte,
-    // stored length-prefixed so the kitchen can outgrow any fixed width. The same
-    // shape and the same reason as the v40 achievement bitsets. Supersedes the v31
-    // `recipesUnlocked` u32 above, which still carries wires 0-31 for readers that
-    // predate this. Player-level. Pre-v51 → seeded by the loader from that u32, so an
-    // upgraded device keeps every recipe it had.
-    std::vector<uint8_t> recipeOwned;
 
     // --- v53: ROCK THE DOCK's run in play ----------------------------------------
     // The whole bracket, because the seed IS the bracket (core/model/tournament.h):
@@ -834,16 +857,6 @@ struct SaveData {
     // generated index: see the version note above. Player-level, like brightness.
     char theme[kSaveIdCap] = {0};
 
-    // --- v65: the STORY chapters this device has been shown -------------------
-    // One bit per StoryChapterDef::wire (core/content/story.h), length-prefixed so the
-    // catalogue can outgrow any fixed width: a longer set loads into a shorter build
-    // harmlessly, and a shorter one reads back as "not shown yet". Player-level.
-    std::vector<uint8_t> storyRead;
-
-    // --- v66: the one-time onboarding tips already shown ----------------------
-    // One bit per Game::Tip, length-prefixed like storyRead. Player-level.
-    std::vector<uint8_t> tipsSeen;
-
     // --- v67: two CFG > DEVICE preferences --------------------------------------
     // `uiMode` is UiMode's wire number (0 ICONS+LABEL, 1 ICONS, 2 TEXT); an unknown one
     // reads back as the default. `careAlerts` is 1 when the "!" marks are drawn.
@@ -854,14 +867,11 @@ struct SaveData {
     uint8_t soundMode = 2;   // SoundMode::Off
     uint8_t volume = kVolumeDefault;
 
-    // --- v69: which askable SERVICES sit at ASK (Game::rigServiceMode) ---
-    uint32_t rigServicesAsk = 0;
-
     // --- v71 ---
     uint8_t exploreSound = 1;
 };
 
-// Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by
+// Read/write one mod's spare count in the v45 packed pool (SaveOperator::ownedModCounts) by
 // its ModDef::wire. Two mods to a byte: even wires in the low nibble, odd in the high,
 // so a count is 0..15 (kModCopyCapMax) and the whole pool is one byte per two mods
 // however many copies are held. Out-of-range or unwritten wires read as 0: the same

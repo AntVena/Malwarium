@@ -53,13 +53,13 @@ void Game::startMaint() {
         // cover it. Charged here on RUN (before the roll), so it's the spend, not
         // the outcome, that gates spamming; a failed run still burns the Bits.
         const int cost = defragCost();
-        if (bits_ < cost) return;                        // can't afford: inert
+        if (op_.bits < cost) return;                        // can't afford: inert
         // the TOOL variant additionally spends one Defrag Tool for a
         // GUARANTEED clean (no fail roll). Inert if none held; the QUICK variant is
         // Bits-only with the normal success roll.
         const bool tool = maintVariant_ == 1;
         if (tool && inventory_.count(kDefragToolId) <= 0) return;   // no tool: inert
-        bits_ -= cost;
+        op_.bits -= cost;
         if (!played) {
             if (tool) {
                 inventory_.remove(kDefragToolId, 1);
@@ -137,7 +137,7 @@ void Game::finishStacker() {
     // the whole record of how the run went: the full starting width means no block ever
     // fell past a wall, and one block means the line was finished a column at a time.
     if (!arcadeRun_ && stacker_.won()) {
-        ++stackerWins_;
+        ++op_.tallies.stackerWins;
         const int kept = stacker_.width();
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);
         if (kept == 1) unlockAchievement(ach::kHangingByABit);
@@ -192,15 +192,15 @@ void Game::maybeAutoDefrag() {
     // threshold. A deeper (pricier) tier both lowers that threshold and raises
     // the per-run Bits cost: which suits an older pet that explores enough to
     // make a hands-off defrag worth paying for.
-    const int lvl = rigLevel_[kRigRowDiskMaintenance];
+    const int lvl = op_.rig.level[kRigRowDiskMaintenance];
     if (lvl <= 0 || !pet_.creature) return;
     // Owned is not the same as RUNNING: a service the player has stopped on the SHOP's
     // SERVICES screen spends nothing and defrags nothing until it is started again.
-    if (!rigFeatureActive(kRigRowDiskMaintenance)) return;
+    if (!op_.rig.featureActive(kRigRowDiskMaintenance)) return;
     if (pet_.model.fragmentation() < kDiskMaintenanceThreshold[lvl - 1]) return;
     const int cost = defragCost() * kDiskMaintenanceCostMult[lvl - 1];
-    if (bits_ < cost) return;                    // can't afford this run: skip silently
-    bits_ -= cost;
+    if (op_.bits < cost) return;                    // can't afford this run: skip silently
+    op_.bits -= cost;
     pet_.model.applyDefrag(true);                    // a paid auto-run never fails
     ++pet_.defragCount;
     log_.push(LogEventType::ItemUsed, "AUTO-DEFRAG RAN");
@@ -313,7 +313,7 @@ void Game::onModPicker(const ButtonEvent& ev) {
                 // D3: consumes the new mod AND discards the one already in the slot.
                 // (Re-check the equip-LEVEL + hard line gates defensively: commitModEquip
                 // already gated both before setting modPendingId_.)
-                pet_.mods.install(modSlot_, modPendingId_, modPool_);
+                pet_.mods.install(modSlot_, modPendingId_, op_.modPool);
                 markSaveDirty();
             }
             modConfirm_ = false;
@@ -380,7 +380,7 @@ void Game::commitModEquip() {
         modPendingId_ = id;
         modDetail_ = false;                               // confirm shows on the picker
     } else {                                              // empty slot: consume + install
-        pet_.mods.install(modSlot_, id, modPool_);
+        pet_.mods.install(modSlot_, id, op_.modPool);
         markSaveDirty();
         modDetail_ = false;
         nav_ = Nav::Submenu;
