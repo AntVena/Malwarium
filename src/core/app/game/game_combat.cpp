@@ -17,7 +17,7 @@ namespace {
 // mod effects that makePlayerCombatant's loop can't apply itself: the post-battle Bits
 // bonus (Packet Sniffer, PostBattleBits) and the battle-fatigue Frag cut (Heat Sink,
 // FatigueFragCut).
-int sumEquippedModMagnitude(const ContentRegistry& reg, const Loadout& load,
+int sumEquippedModMagnitude(const ContentRegistry& reg, const ModSlots& load,
                             ModEffect kind, const char* petLine) {
     int total = 0;
     for (int i = 0; i < kModSlots; ++i)

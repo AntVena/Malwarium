@@ -160,7 +160,8 @@ page by its title. | `core/ui/stat_screen.*`, `collect_screen.*`, `game_stat.cpp
 `save.h` (about 40 fields): Hacker rank and tag, Bits, the Rig Shop account (`rigLevel_`,
 `rigServicesOff_`, `rigServicesAsk_` and the queries over them, `rigFeatureActive`,
 `rigServiceMode`, which shrinks `RigShopHost`), achievements, arcade bests, plays and wins,
-story chapters read, tips seen, the network ledger and owned backgrounds. A factory reset
+story chapters read, tips seen, the network ledger, owned backgrounds and the spare mod
+pool (`modPool_`, the `ModPool` half of the mods). A factory reset
 replaces it. | `core/app/game.h`; `game_persist.cpp`'s `captureOperator`, `captureRig`,
 `captureRecords`, `captureReveals`, `captureHistory` and their restores; `game_reset.cpp` |
 L | Save round-trip test, as for `Pet`. |

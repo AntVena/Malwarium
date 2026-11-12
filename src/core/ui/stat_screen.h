@@ -33,7 +33,7 @@ namespace mal {
 class Framebuffer;
 class ContentRegistry;
 class MoveLoadout;
-class Loadout;
+class ModSlots;
 
 // The band every STAT page ends with. Two facts belong on it and they are not the same
 // kind: what the key under the reader's thumb does right now, and that the INDEX exists
@@ -61,7 +61,7 @@ void drawStatHintBand(Framebuffer& fb, int window, int windows);
 // answer to "what does this move do".
 std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const MoveLoadout& moveLoad,
-                                       const Loadout& modLoad,
+                                       const ModSlots& modLoad,
                                        Stage stage, bool isEgg);
 
 // How many rows starting at `top` fit the LOADOUT page: the flow's own count

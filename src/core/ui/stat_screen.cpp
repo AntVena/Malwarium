@@ -105,7 +105,7 @@ void statProseHint(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
 
 std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const MoveLoadout& moveLoad,
-                                       const Loadout& modLoad,
+                                       const ModSlots& modLoad,
                                        Stage stage, bool isEgg) {
     std::vector<ProseRow> out;
     // An egg can't train or mod (Game::slotLocked): nothing to show.
@@ -201,7 +201,7 @@ int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
 
 void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        int scrollTop, int beat) {
-    statHeader(fb, "LOADOUT", StatPage::Loadout);
+    statHeader(fb, "LOADOUT", StatPage::ModSlots);
     drawProseRows(fb, {rows, scrollTop, kLoadoutRowTop, beat, nullptr});
     statProseHint(fb, rows, scrollTop, kLoadoutRowTop);
 }
@@ -667,14 +667,14 @@ std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRo
                                rungsHeld(tierRows, i, end), end - i - 1));
     }
 
-    out.push_back(indexRow("LOADOUT", false, StatPage::Loadout, 0, "%d/%d",
+    out.push_back(indexRow("LOADOUT", false, StatPage::ModSlots, 0, "%d/%d",
                            c.movesOn + c.modsOn, c.moveSlots + c.modSlots));
     // The loadout's sections come off its own rows too, so an egg (whose page
     // collapses to a single row and carries no headings) offers none of them.
     for (int i = 0; i < static_cast<int>(loadoutRows.size()); ++i) {
         if (!loadoutRows[i].header) continue;
         const bool moves = std::strcmp(loadoutRows[i].label, "MOVES") == 0;
-        out.push_back(indexRow(loadoutRows[i].label, true, StatPage::Loadout, i, "%d/%d",
+        out.push_back(indexRow(loadoutRows[i].label, true, StatPage::ModSlots, i, "%d/%d",
                                moves ? c.movesOn : c.modsOn,
                                moves ? c.moveSlots : c.modSlots));
     }

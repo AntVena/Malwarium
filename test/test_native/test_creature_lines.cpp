@@ -688,7 +688,7 @@ void test_combatant_carries_its_creature() {
     const CreatureDef* kalico = r.creature("kalico");
     CHECK(kalico);
     MoveLoadout ml;
-    Loadout mods;
+    ModSlots mods;
     Combatant p = makePlayerCombatant(r, *kalico, ml, mods);
     CHECK(p.creature == kalico);                  // the registry's row, not a copy
     CHECK(p.creature->clip("attack"));
@@ -724,7 +724,7 @@ void test_wander_travelling_tracks_the_trip() {
 void test_fight_pose_precedence() {
     ContentRegistry r = ContentRegistry::embedded();
     MoveLoadout ml;
-    Loadout mods;
+    ModSlots mods;
     Combatant kal = makePlayerCombatant(r, *r.creature("kalico"), ml, mods);
 
     auto row = [](const AnimClip* c) { return c ? c->row : -1; };

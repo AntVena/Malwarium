@@ -57,7 +57,7 @@ void test_stat_paging_loadout_xp() {
 void test_loadout_rows_model() {
     ContentRegistry r = ContentRegistry::embedded();
     MoveLoadout ml = MoveLoadout::starting();   // owns 3, equips packet_storm (slot 0 only)
-    Loadout mods = Loadout::starting();         // equips firewall_patch + clock_speed_boost
+    ModSlots mods = ModSlots::starting();         // equips firewall_patch + clock_speed_boost
 
     auto rows = buildLoadoutRows(r, ml, mods, Stage::Process, /*isEgg=*/false);
 
@@ -113,11 +113,11 @@ void test_loadout_rows_model() {
             ++equippedModCount;
         }
     }
-    CHECK(equippedModCount > 0);   // Loadout::starting does equip mods (sample)
+    CHECK(equippedModCount > 0);   // ModSlots::starting does equip mods (sample)
     CHECK(static_cast<int>(rows.size()) == 2 + unlocked + equippedModCount);
 
     // No mods equipped -> a single "- NONE -" row (the section still appears).
-    Loadout noMods;   // default-constructed: equipped(i) == nullptr for every slot
+    ModSlots noMods;   // default-constructed: equipped(i) == nullptr for every slot
     auto rowsNoMods = buildLoadoutRows(r, ml, noMods, Stage::Process, false);
     bool sawNone = false;
     for (const auto& row : rowsNoMods)
@@ -319,8 +319,8 @@ void test_stat_loadout_b_scroll() {
     // On to LOADOUT; TIERS flows rows of its own and is walked by its own gate below.
     // Confirm the starting loadout really does overflow the visible window (the
     // precondition this test needs).
-    while (g.statPage() != StatPage::Loadout) g.onButton(press(Button::A));
-    auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.loadout(),
+    while (g.statPage() != StatPage::ModSlots) g.onButton(press(Button::A));
+    auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.modSlots(),
                                  g.pet()->stage, g.inEggPhase());
     CHECK(loadoutRowsFitting(rows, 0) < static_cast<int>(rows.size()));
 
@@ -346,7 +346,7 @@ void test_stat_loadout_b_scroll() {
     // the scroll reset (renders identically to the first LOADOUT view, l0).
     tapC(g);
     tapB(g);
-    while (g.statPage() != StatPage::Loadout) g.onButton(press(Button::A));
+    while (g.statPage() != StatPage::ModSlots) g.onButton(press(Button::A));
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);
     CHECK(fbEqual(l0, l3));
 
@@ -458,7 +458,7 @@ void test_tier_page_counts_off_level_points() {
 void test_stat_prose_windows_tile_the_list() {
     Game g{StartMode::Hatched, "wire_heir"};
     g.debugFillLoadout();
-    const auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.loadout(),
+    const auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.modSlots(),
                                        g.pet()->stage, g.inEggPhase());
     const int total = static_cast<int>(rows.size());
     CHECK(loadoutRowsFitting(rows, 0) < total);   // it really does need scrolling

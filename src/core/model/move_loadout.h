@@ -1,6 +1,6 @@
 // move_loadout.h: the pet's equipped combat moves (MOVES).
 //
-// Mirrors Loadout (MODS), with two combat-specific twists:
+// Mirrors ModSlots (MODS), with two combat-specific twists:
 //  * an innate DEFAULT move that lives OUTSIDE the equip slots and is always
 // available (so a fresh Boot pet is never actionless);
 // * the number of USABLE slots grows with each evolution. Slots are the

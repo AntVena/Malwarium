@@ -36,22 +36,23 @@ void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
     CHECK(modCopyCap(kModStorageMaxTier) > kModCopyCapBase);       // the ladder climbs
     CHECK(modCopyCap(kModStorageMaxTier + 9) == modCopyCap(kModStorageMaxTier));  // clamps
 
-    Loadout l;
-    CHECK(l.grant("heat_sink", kModCopyCapBase));
-    CHECK(l.grant("heat_sink", kModCopyCapBase));
-    CHECK(!l.grant("heat_sink", kModCopyCapBase));   // full: reported, not silently dropped
-    CHECK(l.countOf("heat_sink") == kModCopyCapBase);
-    // Equipping frees a copy, so the cap bounds what is HELD, not what may ever be earned.
-    l.equip(0, "heat_sink");
-    CHECK(l.countOf("heat_sink") == kModCopyCapBase - 1);
-    CHECK(l.grant("heat_sink", kModCopyCapBase));
+    ModSlots l;
+    ModPool pool;
+    CHECK(pool.grant("heat_sink", kModCopyCapBase));
+    CHECK(pool.grant("heat_sink", kModCopyCapBase));
+    CHECK(!pool.grant("heat_sink", kModCopyCapBase));   // full: reported, not silently dropped
+    CHECK(pool.countOf("heat_sink") == kModCopyCapBase);
+    // Installing frees a copy, so the cap bounds what is HELD, not what may ever be earned.
+    l.install(0, "heat_sink", pool);
+    CHECK(pool.countOf("heat_sink") == kModCopyCapBase - 1);
+    CHECK(pool.grant("heat_sink", kModCopyCapBase));
 
     // A drop into a full pool leaves the pool alone, and the count doesn't creep.
     Game g{StartMode::Hatched};
     const int cap = g.modStorageCap();
     CHECK(cap == kModCopyCapBase);                  // nothing bought yet
     for (int i = 0; i < cap + 5; ++i) g.debugGrantMod("heat_sink");
-    CHECK(g.loadout().countOf("heat_sink") == cap);
+    CHECK(g.modPool().countOf("heat_sink") == cap);
 
     // Buying MOD STORAGE raises what the same call will accept.
     g.debugSetBits(kModStorageStart);
@@ -59,7 +60,7 @@ void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
     CHECK(g.modStorageCap() == modCopyCap(1));
     CHECK(g.modStorageCap() > cap);
     g.debugGrantMod("heat_sink");
-    CHECK(g.loadout().countOf("heat_sink") == cap + 1);
+    CHECK(g.modPool().countOf("heat_sink") == cap + 1);
 }
 
 // The v45 pool is a nibble of COUNT per mod wire, two mods to a byte. The packing is
@@ -111,7 +112,7 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
 
     Game g2(StartMode::Hatched, "paypup", &store);
     int copies = 0;
-    for (const OwnedMod& m : g2.loadout().owned()) copies += m.count;
+    for (const OwnedMod& m : g2.modPool().owned()) copies += m.count;
     CHECK(copies == 2);                          // just the two the seed grants
 }
 

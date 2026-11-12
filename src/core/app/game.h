@@ -168,7 +168,10 @@ public:
     const EventLog& log() const { return log_; }
     // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
     int combatStatsPage() const { return combatStatsPage_; }
-    const Loadout& loadout() const { return pet_.mods; }
+    const ModSlots& modSlots() const { return pet_.mods; }
+    const ModPool& modPool() const { return modPool_; }
+    // The two halves the MODS screen reads together.
+    ModHoldings modHoldings() const { return {pet_.mods, modPool_}; }
     const MoveLoadout& moveLoadout() const { return pet_.moves; }
     // The stamped kind for `slot`, or Unset if it hasn't
     // unlocked for this pet yet (out-of-range also reads Unset).
@@ -2204,7 +2207,7 @@ public:
     int modPick() const { return modPick_; }
     const char* modDetailId() const { return modDetailId_; }
     // Grant mods in tests without walking a boss drop or a cache roll.
-    Loadout& debugLoadout() { return pet_.mods; }
+    ModPool& debugModPool() { return modPool_; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
@@ -3753,6 +3756,9 @@ private:
     ArchGroup archGroup_;
     int archPickRow_ = 0;
 
+    // The player's spare mods, shared by whichever pet is active. Player-level: it moves
+    // to the Operator record with the rest of the player's state.
+    ModPool modPool_;
     // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline
     // overwrite confirm is a picker sub-state (modConfirm_ + the choice +

@@ -129,8 +129,10 @@ void test_list_contract_skips_non_lists() {
 // usable half. Nothing is dropped: the locked rows are still all there, after.
 void test_mod_picker_orders_fittable_first() {
     ContentRegistry r = ContentRegistry::embedded();
-    Loadout load;
-    for (const ModDef* m : r.allMods()) load.grant(m->id, 1);
+    ModSlots slots;
+    ModPool pool;
+    const ModHoldings load{slots, pool};
+    for (const ModDef* m : r.allMods()) pool.grant(m->id, 1);
 
     // A level-1 pet can field only the mods whose rolled gate it has reached.
     const auto rows = ownedModList(r, load, /*petLevel=*/1, /*petLine=*/nullptr,
@@ -171,13 +173,13 @@ void test_mod_picker_orders_fittable_first() {
 void test_mod_picker_cursor_matches_drawn_order() {
     Game g{StartMode::Hatched};
     ContentRegistry r = ContentRegistry::embedded();
-    for (const ModDef* m : r.allMods()) g.debugLoadout().grant(m->id, 1);
+    for (const ModDef* m : r.allMods()) g.debugModPool().grant(m->id, 1);
 
-    const auto rows = ownedModList(r, g.loadout(), g.combatLevel(),
+    const auto rows = ownedModList(r, g.modHoldings(), g.combatLevel(),
                                    g.pet() ? g.pet()->line : nullptr, /*slot=*/0);
     CHECK(!rows.empty());
     CHECK(!modLockedFor(*rows[0], g.combatLevel(),
-                        g.pet() ? g.pet()->line : nullptr, g.loadout(), 0));
+                        g.pet() ? g.pet()->line : nullptr, g.modHoldings(), 0));
 
     enterLoadoutTab(g, 0);                          // MODS slot list
     g.onButton(press(Button::B));                   // open slot 0's picker

@@ -722,7 +722,7 @@ void Game::grantMod(const char* id) {
     // A pool already holding modStorageCap() of this mod takes no more. The drop is
     // reported, because a milestone reward that vanishes silently looks like a bug. The
     // line names the Rig Shop row that would have kept it.
-    if (!pet_.mods.grant(id, modStorageCap())) {
+    if (!modPool_.grant(id, modStorageCap())) {
         std::snprintf(buf, sizeof(buf), "%s: NO ROOM", m->displayName);
         log_.push(LogEventType::ItemGained, buf);
         return;

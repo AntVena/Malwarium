@@ -57,7 +57,7 @@ enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
 // STAT's pages, in the order A cycles them and the header's pager dots them.
 enum class StatPage : uint8_t {
-    Vitals, Bond, Tiers, Loadout, Moves, Foods, Buffs, Species, Log, Count
+    Vitals, Bond, Tiers, ModSlots, Moves, Foods, Buffs, Species, Log, Count
 };
 inline constexpr int kStatPages = static_cast<int>(StatPage::Count);
 

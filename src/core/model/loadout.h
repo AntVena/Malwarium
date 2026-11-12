@@ -1,74 +1,81 @@
-// loadout.h. The player's equipped mods (MODS). A mod is PERMANENT: CONSUMED from the
-// available inventory when equipped, and never unequipped, only OVERWRITTEN by another
-// mod, and the overwritten one is discarded. Runtime state: which mod id sits in each
-// of the kModSlots slots, plus the pool of still-available (un-equipped) mods.
-// `owned_` is a multiset: a rare earn source may hand you a duplicate spare of a mod
-// you've already installed. Ids are stable content ids (borrowed from the content
-// source, never copied).
+// loadout.h: mods, as two records' parts (CONTRIBUTING, "Where state lives").
+//
+// ModSlots is the pet's: which mod is installed in each of its kModSlots slots. ModPool is
+// the player's: the un-installed spares, shared by whichever pet is active. A mod is
+// PERMANENT: installing it CONSUMES one spare from the pool, and it is never uninstalled,
+// only OVERWRITTEN, and the overwritten one is discarded. Ids are stable content ids
+// (borrowed from the content source, never copied).
 #pragma once
 
 #include <vector>
 
 namespace mal {
 
-// Un-equipped spares of one mod. A count per mod, because copies are interchangeable:
-// the equip-level gate belongs to the mod (ModDef::equipLevel). The picker lists mods
-// by type and never had a way to offer one copy over another. Ids are stable
-// content-ids (borrowed), so the pool costs one pointer and one int per mod OWNED
-// rather than per copy held. `count` is >= 1; a mod that reaches zero leaves the pool
-// entirely.
+// Un-installed spares of one mod. A count per mod, because copies are interchangeable:
+// the equip-level gate belongs to the mod (ModDef::equipLevel). `count` is >= 1; a mod
+// that reaches zero leaves the pool entirely.
 struct OwnedMod {
     const char* id;
     int count;
 };
 
-class Loadout {
+class ModPool {
 public:
-    // Equipped mod id in `slot` (0..kModSlots-1), or nullptr if the slot is empty.
-    const char* equipped(int slot) const;
-
-    // The slot holding `id`, or -1 if it isn't equipped (combat reads passives here).
-    int slotOf(const char* id) const;
-
-    // At least one un-equipped copy of `id` is available to equip.
-    bool owns(const char* id) const;
+    // At least one spare of `id` is held.
+    bool owns(const char* id) const { return countOf(id) > 0; }
     const std::vector<OwnedMod>& owned() const { return owned_; }
-
-    // How many un-equipped spare copies of `id` are held.
     int countOf(const char* id) const;
 
-    // Add one copy of `id` to the available pool (save restore / earn source), up to
-    // `cap` copies of that one mod. Returns FALSE when the pool was already at the cap
-    // and nothing was added: the caller decides what to do with the drop, because
-    // Loadout knows nothing of Bits. `cap` is the player's current MOD STORAGE
+    // Add one spare of `id`, up to `cap` copies of that mod. Returns false when the pool
+    // was already at the cap and nothing was added: the caller decides what the drop is
+    // worth, because the pool knows nothing of Bits. `cap` is the player's MOD STORAGE
     // allowance (modCopyCap, tunables); a cap below 1 grants nothing.
     bool grant(const char* id, int cap);
 
-    // CONSUME one available copy of `id` and install it permanently into `slot`. Copies
-    // are interchangeable, so which one goes is not a question. Whatever was in `slot` is
-    // DISCARDED, not returned to the pool. Inert if no copy is available, or if `id`
-    // already occupies a DIFFERENT slot (a mod holds one slot per pet, so a passive never
-    // stacks). No unequip. The equip-LEVEL gate is enforced by the caller (Game, which
-    // knows the pet level).
-    void equip(int slot, const char* id);
+    // Spend one spare of `id`. False, and nothing changes, if none is held.
+    bool take(const char* id);
 
-    // Restore-only: place `id` into `slot` WITHOUT consuming a copy from the pool
-    // (the equipped mods were already consumed when first installed; a save stores
-    // the slot occupants and the spare pool separately).
-    void setEquipped(int slot, const char* id);
-
-    // Uninstall every slot WITHOUT returning the mods to the spare pool: installed
-    // mods are consumed permanently, so a pet swap doesn't refund them. Used before
-    // installing a different pet's own slot contents (the spare pool stays shared).
-    void resetSlots();
-
-    // Seed (sample): two mods installed, two held as spares.
-    static Loadout starting();
+    // The sample pool a new device starts with: two spares.
+    static ModPool starting();
 
 private:
-    std::vector<OwnedMod> owned_;     // available (un-equipped) spares, multiset
+    std::vector<OwnedMod> owned_;
+};
+
+class ModSlots {
+public:
+    // Installed mod id in `slot` (0..kModSlots-1), or nullptr if the slot is empty.
+    const char* equipped(int slot) const;
+
+    // The slot holding `id`, or -1 if it isn't installed (combat reads passives here).
+    int slotOf(const char* id) const;
+
+    // Install `id` into `slot`, spending one spare from `pool`. Whatever was in `slot` is
+    // DISCARDED. Inert if `pool` holds no copy, or if `id` already occupies a DIFFERENT
+    // slot (a mod holds one slot per pet, so a passive never stacks). The equip-LEVEL gate
+    // is the caller's (Game, which knows the pet level).
+    void install(int slot, const char* id, ModPool& pool);
+
+    // Place `id` into `slot` without spending a spare: the restore path, since a save
+    // stores the installed mods and the pool separately, and the way a fighter is built
+    // with a known kit.
+    void setEquipped(int slot, const char* id);
+
+    // Empty every slot. The mods are not returned to any pool: installing consumed them.
+    void resetSlots();
+
+    // The sample kit a new device's first pet starts with: two mods installed.
+    static ModSlots starting();
+
+private:
     std::vector<const char*> slots_;  // size kModSlots; nullptr = empty
     void ensureSlots();
+};
+
+// What a MODS screen reads together: the active pet's slots and the player's pool.
+struct ModHoldings {
+    const ModSlots& slots;
+    const ModPool& pool;
 };
 
 } // namespace mal

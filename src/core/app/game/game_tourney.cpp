@@ -233,7 +233,7 @@ std::vector<ProseRow> Game::tourneyScoutRows() const {
     const CreatureDef* pet = registry_.creature(tourneyScouted_.spec.creatureId);
     if (!pet) return out;
     MoveLoadout moves;
-    Loadout mods;
+    ModSlots mods;
     buildPvpLoadouts(registry_, tourneyScouted_.spec, moves, mods);
     out = buildLoadoutRows(registry_, moves, mods, pet->stage, /*isEgg=*/false);
 

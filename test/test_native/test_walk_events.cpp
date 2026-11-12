@@ -381,7 +381,7 @@ void test_mod_shop_buy_grants_mod() {
         g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
     g.debugSetBits(price);
     g.onButton(press(Button::B));
-    CHECK(g.loadout().owns(id));
+    CHECK(g.modPool().owns(id));
     CHECK(g.bits() == 0);
     for (int k = 0; k < costCount; ++k)
         CHECK(g.shopListingCostHave(row, k) == 0);   // the cost items were consumed
@@ -399,15 +399,15 @@ void test_mod_shop_buy_gated_by_item_cost() {
     CHECK(g.shopListingCostCount(row) >= 1);
     g.debugSetBits(g.shopListingBitsPrice(row) * 10);   // plenty of Bits
     const int bits0 = g.bits();
-    const bool ownedBefore = g.loadout().owns(id);
+    const bool ownedBefore = g.modPool().owns(id);
     g.onButton(press(Button::B));                       // no cost items held -> inert
     CHECK(g.bits() == bits0);
-    CHECK(g.loadout().owns(id) == ownedBefore);
+    CHECK(g.modPool().owns(id) == ownedBefore);
 }
 
 // A mod's STORAGE CAP is a buy gate, not just a drop gate: a pool already holding
 // modStorageCap() copies of the listed mod refuses the purchase outright instead of
-// taking the Bits and the item costs for a mod Loadout::grant would then drop on the
+// taking the Bits and the item costs for a mod ModSlots::grant would then drop on the
 // floor. The row says so before the press (HAVE n/cap + STORAGE FULL), and raising the
 // cap through the Rig Shop's MOD STORAGE row re-opens the same buy.
 void test_mod_shop_buy_gated_when_storage_full() {
@@ -418,7 +418,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     const char* id = g.shopListingId(row);
     const int cap = g.modStorageCap();
     CHECK(g.shopListingHeldCap(row) == cap);          // a mod row carries the ceiling
-    CHECK(g.shopListingHeld(row) == g.loadout().countOf(id));
+    CHECK(g.shopListingHeld(row) == g.modPool().countOf(id));
 
     // Fill the pool for THIS listing's mod, then stand at the till with everything else
     // the row asks for: only storage is short.
@@ -435,7 +435,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     g.onButton(press(Button::B));                     // inert: nothing changes hands
     CHECK(g.bits() == bits0);
     CHECK(g.shopListingStock(row) == stock0);
-    CHECK(g.loadout().countOf(id) == cap);
+    CHECK(g.modPool().countOf(id) == cap);
     for (int k = 0; k < g.shopListingCostCount(row); ++k)
         CHECK(g.shopListingCostHave(row, k) == g.shopListingCostQty(row, k));
 
@@ -447,7 +447,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     CHECK(g.shopRowBuyable(row));
     CHECK(std::strcmp(g.shopStatusLine(), "B TO BUY") == 0);
     g.onButton(press(Button::B));
-    CHECK(g.loadout().countOf(id) == cap + 1);
+    CHECK(g.modPool().countOf(id) == cap + 1);
     CHECK(g.shopListingStock(row) == stock0 - 1);
 }
 

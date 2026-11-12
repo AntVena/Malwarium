@@ -35,28 +35,29 @@ void test_arch_list_and_record() {
 // when equipped, never unequipped, only overwritten (the old one discarded, not
 // returned). The seed installs two mods and holds two spares.
 void test_loadout_permanent_mods() {
-    Loadout l = Loadout::starting();
+    ModSlots l = ModSlots::starting();
+    ModPool pool = ModPool::starting();
     CHECK(l.slotOf("firewall_patch") == 0);        // installed, not a spare
     CHECK(l.slotOf("clock_speed_boost") == 1);
-    CHECK(!l.owns("firewall_patch"));              // equipped mods aren't in the pool
-    CHECK(l.owns("packet_sniffer") && l.owns("raid_mirror"));  // two spares held
+    CHECK(!pool.owns("firewall_patch"));           // installed mods aren't in the pool
+    CHECK(pool.owns("packet_sniffer") && pool.owns("raid_mirror"));  // two spares held
     CHECK(l.equipped(2) == nullptr);
 
-    // Equip a spare into an empty slot: it's CONSUMED out of the pool.
-    l.equip(2, "packet_sniffer");
+    // Install a spare into an empty slot: it's CONSUMED out of the pool.
+    l.install(2, "packet_sniffer", pool);
     CHECK(l.slotOf("packet_sniffer") == 2);
-    CHECK(!l.owns("packet_sniffer"));              // consumed on equip
+    CHECK(!pool.owns("packet_sniffer"));           // consumed on install
     CHECK(l.equipped(0) != nullptr);               // did NOT move firewall out of slot 0
 
     // Overwrite a slot: the displaced mod is DISCARDED (not returned to the pool),
     // the new one consumed.
-    l.equip(0, "raid_mirror");
+    l.install(0, "raid_mirror", pool);
     CHECK(l.slotOf("raid_mirror") == 0);
     CHECK(l.slotOf("firewall_patch") == -1);       // firewall gone for good
-    CHECK(!l.owns("firewall_patch") && !l.owns("raid_mirror"));
+    CHECK(!pool.owns("firewall_patch") && !pool.owns("raid_mirror"));
 
     // Inert with no spare of that id available.
-    l.equip(3, "firewall_patch");
+    l.install(3, "firewall_patch", pool);
     CHECK(l.equipped(3) == nullptr);
 }
 
@@ -720,7 +721,7 @@ void test_combat_builders_and_flee() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.creature("paypup");        // Process → 2 slots, 60 HP
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout mods = Loadout::starting();                   // Firewall + Clock-Speed equipped
+    ModSlots mods = ModSlots::starting();                   // Firewall + Clock-Speed equipped
     Combatant pc = makePlayerCombatant(r, *pet, ml, mods);
     CHECK(pc.maxHealth == kMaxHealthByStage[stageIndex(Stage::Process)]);
     // One pool entry per unlocked slot: slot 0's equipped packet_storm, and
@@ -753,7 +754,7 @@ void test_mods_equip_flow() {
 
     g.onButton(press(Button::A));                  // slot 1 -> slot 2
     g.onButton(press(Button::A));                  // slot 2 -> slot 3 (empty)
-    CHECK(g.loadout().equipped(2) == nullptr);
+    CHECK(g.modSlots().equipped(2) == nullptr);
     g.onButton(press(Button::B));                  // open slot 3 picker
     CHECK(g.nav() == Game::Nav::Detail);
     g.render(fb);
@@ -762,16 +763,16 @@ void test_mods_equip_flow() {
     Framebuffer det = fb;
     g.render(det);
     CHECK(hasDarkInk(det, 0, 0, kActiveW, kActiveH));    // detail grayscale
-    CHECK(g.loadout().equipped(2) == nullptr);          // inspecting equips nothing yet
+    CHECK(g.modSlots().equipped(2) == nullptr);          // inspecting equips nothing yet
     // C backs out of the detail to the picker without equipping.
     tapC(g);
-    CHECK(g.nav() == Game::Nav::Detail && g.loadout().equipped(2) == nullptr);
+    CHECK(g.nav() == Game::Nav::Detail && g.modSlots().equipped(2) == nullptr);
     g.onButton(press(Button::B));                  // re-open detail
     g.onButton(press(Button::B));                  // EQUIP from the detail
     CHECK(g.nav() == Game::Nav::Submenu);
-    const char* installed = g.loadout().equipped(2);
+    const char* installed = g.modSlots().equipped(2);
     CHECK(installed != nullptr);                    // a spare is now installed there
-    CHECK(!g.loadout().owns(installed));            // consumed out of the pool (permanent)
+    CHECK(!g.modPool().owns(installed));            // consumed out of the pool (permanent)
 }
 
 // MODS overwrite confirm: equipping over a slot that already holds a
@@ -783,9 +784,9 @@ void test_mods_overwrite_confirm() {
     // and EQUIP raises the overwrite confirm back on the picker.
     { Game g{StartMode::Hatched};
       enterLoadoutTab(g, 0);          // slot 1 holds Firewall Patch
-      CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
+      CHECK(std::strcmp(g.modSlots().equipped(0), "firewall_patch") == 0);
       g.onButton(press(Button::B));                // open slot 1 picker (rows = spares)
-      const char* spare = g.loadout().owned().front().id;  // first available spare
+      const char* spare = g.modPool().owned().front().id;  // first available spare
       g.onButton(press(Button::B));                // open the spare's detail
       g.onButton(press(Button::B));                // EQUIP -> inline confirm on picker
       CHECK(g.nav() == Game::Nav::Detail);         // still in the picker (confirm up)
@@ -794,20 +795,20 @@ void test_mods_overwrite_confirm() {
       g.onButton(press(Button::A));                // Cancel -> Confirm
       g.onButton(press(Button::B));                // commit
       CHECK(g.nav() == Game::Nav::Submenu);
-      CHECK(std::strcmp(g.loadout().equipped(0), spare) == 0);   // new mod installed
-      CHECK(g.loadout().slotOf("firewall_patch") == -1);         // old mod discarded
-      CHECK(!g.loadout().owns("firewall_patch")); }              // not returned to pool
+      CHECK(std::strcmp(g.modSlots().equipped(0), spare) == 0);   // new mod installed
+      CHECK(g.modSlots().slotOf("firewall_patch") == -1);         // old mod discarded
+      CHECK(!g.modPool().owns("firewall_patch")); }              // not returned to pool
 
     // Cancel path leaves the slot unchanged and the spare un-consumed.
     { Game g{StartMode::Hatched};
       enterLoadoutTab(g, 0);
-      const char* spare = g.loadout().owned().front().id;
+      const char* spare = g.modPool().owned().front().id;
       g.onButton(press(Button::B));                // open slot 1 picker
       g.onButton(press(Button::B));                // open the spare's detail
       g.onButton(press(Button::B));                // EQUIP -> confirm (default Cancel)
       g.onButton(press(Button::B));                // B on Cancel -> abort
-      CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
-      CHECK(g.loadout().owns(spare)); }            // spare still held (not consumed)
+      CHECK(std::strcmp(g.modSlots().equipped(0), "firewall_patch") == 0);
+      CHECK(g.modPool().owns(spare)); }            // spare still held (not consumed)
 }
 
 // The ONE-SHOT caveat is drawn for a consumed-on-trigger mod and absent otherwise. It is
@@ -821,7 +822,9 @@ void test_mod_detail_oneshot() {
     reuse.oneShot = false;
 
     Framebuffer os(kActiveW, kActiveH), ru(kActiveW, kActiveH);
-    Loadout load;
+    ModSlots slots;
+    ModPool pool;
+    const ModHoldings load{slots, pool};
     ModDetailView dv;
     dv.slot = 2;
     dv.storageCap = kModCopyCapBase;
@@ -839,20 +842,21 @@ void test_mod_detail_oneshot() {
     CHECK(!hot);
 }
 
-// A mod holds at most one slot per pet: equip() refuses to install an id already
-// occupying a different slot, and doesn't consume a spare on refusal.
+// A mod holds at most one slot per pet: install() refuses an id already occupying a
+// different slot, and doesn't consume a spare on refusal.
 void test_loadout_one_slot_per_mod() {
-    Loadout l;
-    CHECK(l.grant("firewall_patch", kModCopyCapBase));
-    CHECK(l.grant("firewall_patch", kModCopyCapBase));
-    CHECK(l.countOf("firewall_patch") == 2);
-    l.equip(0, "firewall_patch");
+    ModSlots l;
+    ModPool pool;
+    CHECK(pool.grant("firewall_patch", kModCopyCapBase));
+    CHECK(pool.grant("firewall_patch", kModCopyCapBase));
+    CHECK(pool.countOf("firewall_patch") == 2);
+    l.install(0, "firewall_patch", pool);
     CHECK(std::strcmp(l.equipped(0), "firewall_patch") == 0);
-    CHECK(l.countOf("firewall_patch") == 1);
+    CHECK(pool.countOf("firewall_patch") == 1);
 
-    l.equip(1, "firewall_patch");
+    l.install(1, "firewall_patch", pool);
     CHECK(l.equipped(1) == nullptr);
-    CHECK(l.countOf("firewall_patch") == 1);
+    CHECK(pool.countOf("firewall_patch") == 1);
 }
 
 // mod effects are DATA-DRIVEN (effectKind + magnitude): makePlayerCombatant
@@ -863,10 +867,10 @@ void test_mod_effects_data_driven() {
     const CreatureDef* pet = r.creature("paypup");        // Process, ransomware line
     CHECK(pet && pet->line && std::strcmp(pet->line, "ransomware") == 0);
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;                                        // no slots filled
+    ModSlots empty;                                        // no slots filled
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     auto build = [&](const char* mod) {
-        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
+        ModSlots l; l.setEquipped(0, mod);
         return makePlayerCombatant(r, *pet, ml, l);
     };
     // Magnitudes come off the ROW, not from a number restated here: what these pin is
@@ -1310,10 +1314,10 @@ void test_mod_ecc_memory_hitcap() {
     // Data-driven wiring: equipping ecc_memory resolves cap = 35% of the pet's max Health.
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::MaxHitCapPct) == 0);                   // no mod → uncapped
-    Loadout l; l.grant("ecc_memory", kModCopyCapBase); l.equip(0, "ecc_memory");
+    ModSlots l; l.setEquipped(0, "ecc_memory");
     Combatant ecc = makePlayerCombatant(r, *pet, ml, l);
     CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) == base.maxHealth * 35 / 100);
     CHECK(ecc.mods.mag(ModEffect::MaxHitCapPct) > 0);
@@ -1355,10 +1359,10 @@ void test_mod_load_balancer_split() {
     // split = 50%; an unmodded pet has no threshold (feature off).
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::LoadBalance) == 0);
-    Loadout l; l.grant("load_balancer", kModCopyCapBase); l.equip(0, "load_balancer");
+    ModSlots l; l.setEquipped(0, "load_balancer");
     Combatant lb = makePlayerCombatant(r, *pet, ml, l);
     CHECK(lb.mods.mag(ModEffect::LoadBalance) == base.maxHealth * 30 / 100);
     CHECK(lb.mods.mag(ModEffect::LoadBalance) > 0);
@@ -1398,10 +1402,10 @@ void test_mod_watchdog_timer() {
     // Data-driven wiring: equipping watchdog_timer sets the clamp to its magnitude (1).
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::WatchdogClamp) == 0);
-    Loadout l; l.grant("watchdog_timer", kModCopyCapBase); l.equip(0, "watchdog_timer");
+    ModSlots l; l.setEquipped(0, "watchdog_timer");
     Combatant w = makePlayerCombatant(r, *pet, ml, l);
     CHECK(w.mods.mag(ModEffect::WatchdogClamp) == 1);
 }
@@ -1518,10 +1522,10 @@ void test_mod_faraday_cage() {
     // off the row, since where that number sits on the DoT ladder is a balance question.
     const CreatureDef* pet = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.mods.mag(ModEffect::FaradayCut) == 0);
-    Loadout l; l.grant("faraday_cage", kModCopyCapBase); l.equip(0, "faraday_cage");
+    ModSlots l; l.setEquipped(0, "faraday_cage");
     Combatant f = makePlayerCombatant(r, *pet, ml, l);
     CHECK(f.mods.mag(ModEffect::FaradayCut) == r.mod("faraday_cage")->magnitude);
 }
@@ -1666,7 +1670,7 @@ void test_override_scramble_holds_the_picker() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.allCreatures()[0];
     MoveLoadout ml = MoveLoadout::startingForLine(r, pet->line);
-    Loadout mods;
+    ModSlots mods;
     auto openWith = [&](Combat& cb, SigilSet sigils) {
         cb.openOverride({{"disk_scrubber", "Disk Scrubber", 20}}, {}, sigils);
     };
@@ -1728,7 +1732,7 @@ void test_override_scramble_holds_the_picker() {
     {
         const MoveDef* hijack = r.move("c2_hijack");
         CHECK(hijack && hijack->scrambleTurns > 0);
-        Loadout ward;
+        ModSlots ward;
         ward.setEquipped(0, "crib_sheet");
         Combatant warded = makePlayerCombatant(r, *pet, ml, ward);
         CHECK(warded.mods.mag(ModEffect::ScrambleWard) > 0);
@@ -1819,7 +1823,7 @@ void test_mod_earn_tables_and_reqlevel() {
     for (int i = 0; i < 8; ++i) {                   // every grant agrees with the row
         Game gd{StartMode::Hatched};
         gd.debugGrantMod("ghost_process");
-        CHECK(gd.loadout().countOf("ghost_process") == 1);
+        CHECK(gd.modPool().countOf("ghost_process") == 1);
         CHECK(modEquipLevel(*r.mod("ghost_process")) == modEquipLevel(*deep));
     }
 }
@@ -1845,10 +1849,10 @@ void test_mod_niche_flavour_data_driven() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.creature("paypup");         // Process, ransomware line
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     auto build = [&](const char* mod) {
-        Loadout l; l.grant(mod, kModCopyCapBase); l.equip(0, mod);
+        ModSlots l; l.setEquipped(0, mod);
         return makePlayerCombatant(r, *pet, ml, l);
     };
     CHECK(build("prowlware").mods.armed(ModEffect::FirstStrikeRankMult));
@@ -1906,11 +1910,11 @@ void test_mod_botnet_swarm_and_airgap_ward() {
     ml.equip(0, "packet_storm");    // Attack
     ml.equip(1, "fork_bomb");       // Attack
     ml.equip(2, "checksum_guard");  // Defend
-    Loadout empty;
+    ModSlots empty;
     Combatant base = makePlayerCombatant(r, *pet, ml, empty);
     CHECK(base.moves.size() == 3);
 
-    Loadout withSwarm; withSwarm.grant("botnet_swarm", kModCopyCapBase); withSwarm.equip(0, "botnet_swarm");
+    ModSlots withSwarm; withSwarm.setEquipped(0, "botnet_swarm");
     Combatant sw = makePlayerCombatant(r, *pet, ml, withSwarm);
     // Multiplicative, as ModEffect::PowerPct is and for the same reason: it scales the
     // pet's own output rather than adding onto a stage-inflated base. Its sibling below
@@ -1918,7 +1922,7 @@ void test_mod_botnet_swarm_and_airgap_ward() {
     const int swarm = r.mod("botnet_swarm")->magnitude;
     CHECK(sw.powerMultPct == base.powerMultPct * (100 + swarm * 2) / 100);  // 2 Attack moves
 
-    Loadout withWard; withWard.grant("airgap_ward", kModCopyCapBase); withWard.equip(0, "airgap_ward");
+    ModSlots withWard; withWard.setEquipped(0, "airgap_ward");
     Combatant wd = makePlayerCombatant(r, *pet, ml, withWard);
     CHECK(wd.defense == base.defense + 7 * 1);    // +7 DEF per Defend move (1)
 }
@@ -2017,7 +2021,7 @@ void test_mod_prowlware_rank_computation() {
     ml.equip(0, "quick_jab");       // power 6  -> weakest tier
     ml.equip(1, "packet_storm");    // power 12 -> strongest tier
     // slot 2 (Defend-typed) left unequipped -> falls back to quick_jab (Attack, power 6).
-    Loadout l; l.grant("prowlware", kModCopyCapBase); l.equip(0, "prowlware");
+    ModSlots l; l.setEquipped(0, "prowlware");
     Combatant c = makePlayerCombatant(r, *pet, ml, l);
     CHECK(c.mods.armed(ModEffect::FirstStrikeRankMult));
     CHECK(c.moves.size() == 3);
@@ -2531,7 +2535,7 @@ void test_min_damage_penetration() {
 // The HARD line gate (ModDef::requiresLine, niche-flavour pass): distinct from every
 // other mod's soft `line`/`affinityBonus` bonus. Driven through the real MODS UI,
 // mirroring test_mod_equip_level_gate's pattern: Paypup's starting owned spares are
-// exactly {packet_sniffer, raid_mirror} (Loadout::starting()), so granting ONE more
+// exactly {packet_sniffer, raid_mirror} (ModSlots::starting()), so granting ONE more
 // mod always lands it at picker row 2 (registry order, filtered to owned).
 // A mod's equip gate: level a test pet to this and that mod is equippable. Derived from
 // the mod's own rank rather than written as a literal, so shifting the ladder moves these
@@ -2552,8 +2556,8 @@ void test_mod_hard_line_gate() {
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // pick row 2 = phishing_rod
     g.onButton(press(Button::B));                           // open its detail
     g.onButton(press(Button::B));                           // EQUIP -> blocked (wrong line)
-    CHECK(g.loadout().equipped(2) == nullptr);
-    CHECK(g.loadout().owns("phishing_rod"));                // spare not consumed
+    CHECK(g.modSlots().equipped(2) == nullptr);
+    CHECK(g.modPool().owns("phishing_rod"));                // spare not consumed
 
     Game g2{StartMode::Hatched};
     while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
@@ -2564,8 +2568,8 @@ void test_mod_hard_line_gate() {
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
     g2.onButton(press(Button::B));
     g2.onButton(press(Button::B));                          // EQUIP -> allowed (matching line)
-    CHECK(g2.loadout().slotOf("extortion_ledger") == 2);
-    CHECK(!g2.loadout().owns("extortion_ledger"));
+    CHECK(g2.modSlots().slotOf("extortion_ledger") == 2);
+    CHECK(!g2.modPool().owns("extortion_ledger"));
 }
 
 // the rolled equip-LEVEL gate: a spare above the pet's level can't be
@@ -2583,8 +2587,8 @@ void test_mod_equip_level_gate() {
     g.onButton(press(Button::A));                          // pick row 1 = overclock
     g.onButton(press(Button::B));                          // open its detail
     g.onButton(press(Button::B));                          // EQUIP → blocked (under-level)
-    CHECK(g.loadout().equipped(2) == nullptr);             // not installed
-    CHECK(g.loadout().owns("overclock_chip"));             // spare not consumed
+    CHECK(g.modSlots().equipped(2) == nullptr);             // not installed
+    CHECK(g.modPool().owns("overclock_chip"));             // spare not consumed
     // Level the pet above the gate, then the same equip succeeds.
     while (g.combatLevel() < ocGate) g.debugAddCombatXp(g.xpToNextLevel());
     enterLoadoutTab(g, 0);
@@ -2593,8 +2597,8 @@ void test_mod_equip_level_gate() {
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
     g.onButton(press(Button::B));                          // EQUIP → now allowed
-    CHECK(g.loadout().slotOf("overclock_chip") == 2);
-    CHECK(!g.loadout().owns("overclock_chip"));            // consumed on equip
+    CHECK(g.modSlots().slotOf("overclock_chip") == 2);
+    CHECK(!g.modPool().owns("overclock_chip"));            // consumed on equip
 }
 
 // drawModPicker windowing (twin of train_screen's drawMovePicker fix): with more
@@ -2603,10 +2607,12 @@ void test_mod_equip_level_gate() {
 // Grants every embedded mod (16, well past the 6-row window) as an owned spare.
 void test_mod_picker_windows_large_pool() {
     ContentRegistry r = ContentRegistry::embedded();
-    Loadout load;
+    ModSlots slots;
+    ModPool pool;
+    const ModHoldings load{slots, pool};
     const auto allMods = r.allMods();
     CHECK(allMods.size() > 6);                  // the pool this test needs to overflow
-    for (const ModDef* m : allMods) load.grant(m->id, kModCopyCapBase);  // one spare each
+    for (const ModDef* m : allMods) pool.grant(m->id, kModCopyCapBase);  // one spare each
 
     const auto owned = ownedModList(r, load, /*petLevel=*/99, /*petLine=*/nullptr,
                                     /*slot=*/0);
@@ -3175,7 +3181,7 @@ void test_metamorphic_content_builds_a_real_pool() {
     CHECK(pet->line && std::strcmp(pet->line, "metamorphic") == 0);
     ml.equip(0, "instruction_swap");                       // Attack wildcard: ransomware+trojan
     ml.equip(1, "signature_drift");                        // Defend wildcard: ransomware+trojan
-    Loadout mods;
+    ModSlots mods;
     Combatant c = makePlayerCombatant(r, *pet, ml, mods);
 
     CHECK(c.polymorphic);                                  // the passive is live
@@ -3345,7 +3351,7 @@ void test_every_mod_reaches_the_fight() {
     MoveLoadout ml = MoveLoadout::startingForLine(r, "metamorphic");
     ml.equip(0, "instruction_swap");            // ATK wildcard: also sets `polymorphic`
     ml.equip(1, "signature_drift");             // DEF, so the count-based mods register
-    Loadout none;
+    ModSlots none;
     const Combatant base = makePlayerCombatant(r, *pet, ml, none);
 
     for (const ModDef* m : r.allMods()) {
@@ -3355,7 +3361,7 @@ void test_every_mod_reaches_the_fight() {
             m->effectKind == ModEffect::FatigueFragCut ||
             m->effectKind == ModEffect::None)
             continue;
-        Loadout one;
+        ModSlots one;
         one.setEquipped(0, m->id);
         const Combatant with = makePlayerCombatant(r, *pet, ml, one);
         // Either it moved a base stat at build time, or it parked a live magnitude for a
@@ -3373,7 +3379,7 @@ void test_every_mod_reaches_the_fight() {
 
     // ...and the one that just failed this, pinned by name so the regression is legible:
     // Mutation Engine parks the stat-points-per-effect-kind the turn engine reads.
-    Loadout me;
+    ModSlots me;
     me.setEquipped(0, "mutation_engine");
     const Combatant c = makePlayerCombatant(r, *pet, ml, me);
     const ModDef* def = r.mod("mutation_engine");

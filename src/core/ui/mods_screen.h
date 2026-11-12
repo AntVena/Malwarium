@@ -1,6 +1,6 @@
 // mods_screen.h (MODS submenu): the LOADOUT hub (L2) that fronts it, the
 // equip-slot list, and the mod picker. Slot-based hardware equips; mods move freely
-// between slots. Mod EFFECTS apply in combat: the equip/inspect UI + the Loadout
+// between slots. Mod EFFECTS apply in combat: the equip/inspect UI + the ModSlots
 // data model live here.
 //
 // MODS is the pet's whole combat loadout, so the hub's other two rows open screens
@@ -16,7 +16,7 @@ namespace mal {
 
 class Framebuffer;
 class ContentRegistry;
-class Loadout;
+struct ModHoldings;
 class MoveLoadout;
 
 // Hub rows, in cursor order: MODS, MOVES, PRACTISE (LoadoutTab's non-Hub values,
@@ -31,7 +31,7 @@ struct LoadoutHubView {
     int cursor = 0;                  // the focused row, in hub order
     int beat = 0;
 };
-void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
+void drawLoadoutHub(Framebuffer& fb, const ModHoldings& load, const MoveLoadout& moves,
                     const LoadoutHubView& v);
 
 // Owned mods in picker order: the ones that can go in `slot` RIGHT NOW first, then the
@@ -45,7 +45,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 // The Game's picker cursor indexes THIS list (Game::onModPicker), so both callers must
 // pass the same three arguments: an order the cursor and the rows disagree about is a
 // mod equipped by pointing at a different one.
-std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadout& load,
+std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const ModHoldings& load,
                                         int petLevel, const char* petLine, int slot);
 
 // True if `m` is blocked from `slot` on this pet right now: its rolled equip level is
@@ -54,13 +54,13 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadou
 // the picker's verdict line all read, so a mod can never sort as available and then
 // draw as LOCKED.
 bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
-                  const Loadout& load, int slot);
+                  const ModHoldings& load, int slot);
 
 // L2 equip-slot list: one row per slot, showing the equipped mod + effect tag
 // (or ". Empty. "). `cursor` is the focused slot; `beat` scrolls the focused row's name
 // when it is too long to sit beside its tag.
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
-                  const Loadout& load, int cursor, int beat);
+                  const ModHoldings& load, int cursor, int beat);
 
 // L3 mod picker for a slot: the available (un-equipped) mods, the focused mod's
 // effect text below, and an inline overwrite confirm when the slot already holds a
@@ -85,7 +85,7 @@ struct ModPickerView {
     const char* pendingId = nullptr; // the mod being equipped
     int beat = 0;
 };
-void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const ModHoldings& load,
                    const ModPickerView& v);
 
 // Prose lines the MODS detail panel actually holds. Its floor grows with the readout,
@@ -113,7 +113,7 @@ struct ModDetailView {
     int storageCap = 0;
     int beat = 0;
 };
-void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const ModHoldings& load,
                    const ModDef& mod, const ModDetailView& v);
 
 } // namespace mal

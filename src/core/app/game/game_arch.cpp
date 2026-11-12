@@ -196,7 +196,7 @@ static SaveStoredPet freezePet(const CreatureDef* pet, const PetModel& m, int ge
                                int defragCount, int combatLevel, int combatXp,
                                const int (&statPoints)[kLevelStatCount],
                                const Game::SlotKind (&slotKinds)[kMaxMoveSlots],
-                               const MoveLoadout& moveLoadout, const Loadout& loadout,
+                               const MoveLoadout& moveLoadout, const ModSlots& loadout,
                                uint32_t timeInStageMs, int bestDeepWebDepth,
                                uint32_t dyingElapsedMs, const PetUpgrades& upgrades,
                                const std::vector<const ItemDef*>& foodsEaten) {

@@ -77,7 +77,7 @@ void resolveChains(const ContentRegistry& reg, Combatant& c) {
 }
 
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,
-                              const MoveLoadout& moves, const Loadout& mods) {
+                              const MoveLoadout& moves, const ModSlots& mods) {
     Combatant c;
     c.name = pet.displayName;
     c.spriteName = pet.spriteName;

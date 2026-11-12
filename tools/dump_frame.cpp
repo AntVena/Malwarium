@@ -504,7 +504,7 @@ int main(int argc, char** argv) {
         enterSlot(SubmenuId::Stat);
         const StatPage page = hasFlag(argc, argv, "bond")      ? StatPage::Bond
                             : hasFlag(argc, argv, "tiers")   ? StatPage::Tiers
-                            : hasFlag(argc, argv, "loadout") ? StatPage::Loadout
+                            : hasFlag(argc, argv, "loadout") ? StatPage::ModSlots
                             : hasFlag(argc, argv, "movedex") ? StatPage::Moves
                             : hasFlag(argc, argv, "foods")   ? StatPage::Foods
                             : hasFlag(argc, argv, "buffs")   ? StatPage::Buffs

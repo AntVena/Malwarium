@@ -77,17 +77,17 @@ constexpr int kDetailSlotY = 160;
 } // namespace
 
 bool modLockedFor(const ModDef& m, int petLevel, const char* petLine,
-                  const Loadout& load, int slot) {
-    const int elsewhere = load.slotOf(m.id);
+                  const ModHoldings& load, int slot) {
+    const int elsewhere = load.slots.slotOf(m.id);
     return modEquipLevel(m) > petLevel || lineLocked(&m, petLine) ||
            (elsewhere >= 0 && elsewhere != slot);
 }
 
-std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadout& load,
+std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const ModHoldings& load,
                                         int petLevel, const char* petLine, int slot) {
     std::vector<const ModDef*> out;
     for (const ModDef* m : reg.allMods())
-        if (load.owns(m->id)) out.push_back(m);
+        if (load.pool.owns(m->id)) out.push_back(m);
     // Fittable first. std::stable_sort, not sort: registry order is the mod table's own
     // order and is what keeps a pool that grows by one from reshuffling everything the
     // player had learned the position of, so the two halves each keep it.
@@ -99,7 +99,7 @@ std::vector<const ModDef*> ownedModList(const ContentRegistry& reg, const Loadou
     return out;
 }
 
-void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& moves,
+void drawLoadoutHub(Framebuffer& fb, const ModHoldings& load, const MoveLoadout& moves,
                     const LoadoutHubView& v) {
     drawHeaderBand(fb, "LOADOUT");
 
@@ -109,7 +109,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 
     int modsOn = 0;
     for (int i = 0; i < kModSlots; ++i)
-        if (load.equipped(i)) ++modsOn;
+        if (load.slots.equipped(i)) ++modsOn;
     const int moveSlots = MoveLoadout::slotsForStage(v.stage);
     int movesOn = 0;
     for (int i = 0; i < moveSlots; ++i)
@@ -137,7 +137,7 @@ void drawLoadoutHub(Framebuffer& fb, const Loadout& load, const MoveLoadout& mov
 }
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
-                  const Loadout& load, int cursor, int beat) {
+                  const ModHoldings& load, int cursor, int beat) {
     drawHeaderBand(fb, "MODS");
     // Each row is two lines, the mod over its slot number, and both have to sit inside
     // the selection fill (drawRowSelection's 2px inset), the way EXPL's two-line rows do.
@@ -148,7 +148,7 @@ void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
         if (i == cursor) drawRowSelection(fb, y, kRowH);
         char slotLbl[10];
         std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
-        const char* id = load.equipped(i);
+        const char* id = load.slots.equipped(i);
         if (id) {
             const ModDef* m = reg.mod(id);
             const SpriteData* icon = modIcon(reg, id);
@@ -178,13 +178,13 @@ namespace {
 // column and the two print on top of each other. A mod the pet is too low-level to field
 // shows its required level ("L n") in place of the effect tag and dims: a number channel
 // that reads without colour.
-void drawModPickerRow(Framebuffer& fb, const ModDef& m, const Loadout& load,
+void drawModPickerRow(Framebuffer& fb, const ModDef& m, const ModHoldings& load,
                       const ModPickerView& v, int y, bool focused) {
-    const int elsewhere = load.slotOf(m.id);
+    const int elsewhere = load.slots.slotOf(m.id);
     const bool inOtherSlot = elsewhere >= 0 && elsewhere != v.slot;
     const bool locked = modLockedFor(m, v.petLevel, v.petLine, load, v.slot);
     char name[40];
-    const int qty = load.countOf(m.id);
+    const int qty = load.pool.countOf(m.id);
     if (qty > 1) std::snprintf(name, sizeof(name), "%s x%d", m.displayName, qty);
     else std::snprintf(name, sizeof(name), "%s", m.displayName);
     char rl[20];
@@ -207,7 +207,7 @@ void drawModPickerRow(Framebuffer& fb, const ModDef& m, const Loadout& load,
 
 // The focused mod's spec panel from `y`, plus its equip gate on its own row at the
 // bottom of the panel band, above the hint band rather than into it.
-void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const Loadout& load,
+void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const ModHoldings& load,
                         const ModPickerView& v, int y) {
     const SpecRows spec = specRows(fm);
     const EffectText prose = effectText(fm);   // must outlive the draw
@@ -220,7 +220,7 @@ void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const Loadout& load,
                       kActiveH - kHintBandH - 2, sheet).endY;
     const int req = modEquipLevel(fm);
     const bool wrongLine = lineLocked(&fm, v.petLine);
-    const int elsewhere = load.slotOf(fm.id);
+    const int elsewhere = load.slots.slotOf(fm.id);
     const bool inOtherSlot = elsewhere >= 0 && elsewhere != v.slot;
     char rl[40];
     if (inOtherSlot) {
@@ -242,11 +242,11 @@ void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const Loadout& load,
 // Inline overwrite confirm: shown only when the slot already holds a DIFFERENT mod. The
 // overwrite is IRREVERSIBLE (it discards the current mod for good), so the warning names
 // it and stamps PERMANENT (a grayscale-safe word, not a colour). Default focus is Cancel.
-void drawModReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+void drawModReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg, const ModHoldings& load,
                            const ModPickerView& v) {
     fb.fillRect(4, 88, kActiveW - 8, 64, palColor(Pal::TRACK));
     const ModDef* pend = v.pendingId ? reg.mod(v.pendingId) : nullptr;
-    const ModDef* curMod = reg.mod(load.equipped(v.slot));
+    const ModDef* curMod = reg.mod(load.slots.equipped(v.slot));
     char q[40];
     std::snprintf(q, sizeof(q), "EQUIP %s", pend ? pend->displayName : "MOD");
     drawText(fb, kMargin, 94, q, palColor(Pal::INK));
@@ -259,7 +259,7 @@ void drawModReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg, const Lo
 
 }  // namespace
 
-void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const ModHoldings& load,
                    const ModPickerView& v) {
     char title[20];
     std::snprintf(title, sizeof(title), "SLOT %d", v.slot + 1);
@@ -318,7 +318,7 @@ int modDetailProseLines() {
     return (kDetailProseLines * kLineH - kSpecBlockGap) / kLineH;
 }
 
-void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& load,
+void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const ModHoldings& load,
                    const ModDef& mod, const ModDetailView& v) {
     drawHeaderBand(fb, "MODS");
 
@@ -363,7 +363,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // per-instance rolled requirement (a number channel); a mod with requiresLine
     // adds a second REQUIRES <LINE> LINE row. Any gate failing turns the action
     // line LOCKED instead of EQUIP (word channel, grayscale-safe).
-    const int elsewhere = load.slotOf(mod.id);
+    const int elsewhere = load.slots.slotOf(mod.id);
     const bool inOtherSlot = !v.equippedHere && elsewhere >= 0;
     const bool levelLocked = !v.equippedHere && v.reqLevel > v.petLevel;
     const bool wrongLine = !v.equippedHere && lineLocked(&mod, v.petLine);
@@ -376,7 +376,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const Loadout& l
     // that the number stopped climbing on purpose: that is the MOD STORAGE row's whole
     // pitch, and the only place it gets made.
     char have[16];
-    const int held = load.countOf(mod.id);
+    const int held = load.pool.countOf(mod.id);
     std::snprintf(have, sizeof(have), "HAVE %d/%d", held, v.storageCap);
     drawText(fb, kActiveW - kMargin - textWidth(have), slotY, have,
              held >= v.storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));

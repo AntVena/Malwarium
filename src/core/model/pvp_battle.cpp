@@ -11,7 +11,7 @@ bool canBuildPvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
 }
 
 void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
-                      MoveLoadout& moves, Loadout& mods) {
+                      MoveLoadout& moves, ModSlots& mods) {
     // Equipping stores the id POINTER, so it must be the registry's stable copy: the
     // spec's own char arrays live on a transient wire struct.
     for (int i = 0; i < kMaxMoveSlots; ++i) {
@@ -42,7 +42,7 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
     // stage scaling, the move fallbacks and every mod effect identically, and the only
     // way to guarantee that is for there to be one implementation.
     MoveLoadout moves;
-    Loadout mods;
+    ModSlots mods;
     buildPvpLoadouts(reg, f, moves, mods);
 
     Combatant c = makePlayerCombatant(reg, *pet, moves, mods);

@@ -117,7 +117,7 @@ Game::StatScrollSpan Game::statScrollSpan() const {
             const std::vector<ProseRow> rows = statTierRows();
             return {tierRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
         }
-        case StatPage::Loadout: {
+        case StatPage::ModSlots: {
             const std::vector<ProseRow> rows = statLoadoutRows();
             return {loadoutRowsFitting(rows, statScroll_), static_cast<int>(rows.size())};
         }
@@ -243,7 +243,7 @@ void Game::drawStat(Framebuffer& fb) const {
         }
         case StatPage::Bond: drawBondScreen(fb, pet_.upgrades); break;
         case StatPage::Tiers: drawTiersScreen(fb, statTierRows(), statScroll_, beat_); break;
-        case StatPage::Loadout: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
+        case StatPage::ModSlots: drawLoadoutScreen(fb, statLoadoutRows(), statScroll_, beat_); break;
         case StatPage::Moves: {
             const std::vector<ProseRow> rows = statMoveDexRows();
             CollectionPage page;

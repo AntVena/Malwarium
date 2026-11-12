@@ -117,9 +117,9 @@ int Game::shopListingHeld(int i) const {
     if (!shopRowInRange(shopFront_, i)) return 0;
     const char* id = shopFront_->listings[i].id;
     // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
-    // (Loadout::grant): an installed mod left the pool, so it does not count
+    // (ModPool::grant): an installed mod left the pool, so it does not count
     // against the cap.
-    return shopIsModShop_ ? pet_.mods.countOf(id) : inventory_.count(id);
+    return shopIsModShop_ ? modPool_.countOf(id) : inventory_.count(id);
 }
 
 int Game::shopListingHeldCap(int i) const {
@@ -137,7 +137,7 @@ const char* Game::shopRowRefusal(int i) const {
     if (shopStockLeft_[i] <= 0) return "SOLD OUT";
     // Storage before the wallet: a full mod pool is the one refusal Bits cannot answer,
     // so naming a price the player could meet would send them off to earn Bits that
-    // still would not buy this. The buy is refused up front, because Loadout::grant
+    // still would not buy this. The buy is refused up front, because ModSlots::grant
     // would return false after the Bits were spent.
     const int cap = shopListingHeldCap(i);
     if (cap > 0 && shopListingHeld(i) >= cap) return "STORAGE FULL";
@@ -173,7 +173,7 @@ void Game::buyShopItem() {
         // storage-gated at the till (shopRowRefusal's STORAGE FULL), so reaching here
         // means there was room for it.
         const ModDef* m = registry_.mod(def.id);
-        pet_.mods.grant(def.id, modStorageCap());
+        modPool_.grant(def.id, modStorageCap());
         std::snprintf(buf, sizeof(buf), "BOUGHT %s", m ? m->displayName : def.id);
     } else {
         inventory_.add(def.id, 1);

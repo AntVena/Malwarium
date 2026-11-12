@@ -1808,7 +1808,7 @@ void test_deepweb_dive() {
 void test_combat_force_enemy_first() {
     ContentRegistry r = ContentRegistry::embedded();
     MoveLoadout mv = MoveLoadout::starting();
-    Loadout md = Loadout::starting();
+    ModSlots md = ModSlots::starting();
     const CreatureDef* pet = r.creature("paypup");
     CHECK(pet != nullptr);
     Combatant p = makePlayerCombatant(r, *pet, mv, md);

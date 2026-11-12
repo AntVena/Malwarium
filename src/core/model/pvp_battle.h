@@ -27,7 +27,7 @@
 namespace mal {
 
 class ContentRegistry;
-class Loadout;
+class ModSlots;
 class MoveLoadout;
 
 // Rebuild a Combatant from a wire spec: resolve the species, moves and mods against
@@ -52,7 +52,7 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f);
 // An id this build doesn't know leaves its slot empty: and the fight treats it
 // as an unequipped slot.
 void buildPvpLoadouts(const ContentRegistry& reg, const PvpFighter& f,
-                      MoveLoadout& moves, Loadout& mods);
+                      MoveLoadout& moves, ModSlots& mods);
 
 // Whether `f` names a species this build knows. False means the two devices are
 // carrying different content and the duel is refused because the fights would

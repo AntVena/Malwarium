@@ -63,7 +63,7 @@ namespace mal {
 // worth stating once rather than re-deriving at each of its five line rows. DEF ratings ADD
 // across slots, but what they are worth DIMINISHES in the share of a hit they remove (the
 // Defence curve, defendedDamage), and every pet starts with Firewall Patch's 67 already
-// installed (Loadout::starting), so a DEF row's real budget is not its band's rung, it is
+// installed (ModSlots::starting), so a DEF row's real budget is not its band's rung, it is
 // what one more slot of rating is still worth on top of that 67. A line row priced a full
 // band deeper here would make the second DEF slot the whole build, so the DEF rows stop a
 // step short of their band target on purpose: Junk Padding 35, Lookalike Cert 49, Cipher
@@ -317,7 +317,7 @@ const ModDef kMods[] = {
     //
     // Base 16 sits just under TPM Chip's 18 in the same band; on-line 35 clears Hardened
     // Shell (25, tier 3). It does NOT clear Firewall Patch's 67, and is not meant to: that
-    // row is INSTALLED FROM HATCH (Loadout::starting) rather than earned off the ladder, so
+    // row is INSTALLED FROM HATCH (ModSlots::starting) rather than earned off the ladder, so
     // it is the wall every build already has rather than a rung this one competes for.
     {/*wire=*/47, "junk_padding", "Junk Padding", "+DEF",
      "Padded until nothing matches: raises DEF by {mag} "

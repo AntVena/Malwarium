@@ -111,7 +111,7 @@ struct Pet {
     SlotKind slotKinds[kMaxMoveSlots] = {SlotKind::Unset, SlotKind::Unset, SlotKind::Unset,
                                          SlotKind::Unset};
     MoveLoadout moves;
-    Loadout mods;
+    ModSlots mods;
     uint32_t stageEnteredMs = 0;      // game-ms the current stage began
     uint32_t bootHatchRemainMs = 0;   // the egg's incubation clock (save v9)
     bool eggOfferMade = false;        // the egg was offered an accelerator; not saved

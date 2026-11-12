@@ -298,7 +298,7 @@ void Game::onModsList(const ButtonEvent& ev) {
 void Game::onModPicker(const ButtonEvent& ev) {
     // The same five arguments drawModPicker draws with, so the cursor indexes the rows
     // the player is looking at: fittable mods first, locked ones after them.
-    const auto owned = ownedModList(registry_, pet_.mods, pet_.level,
+    const auto owned = ownedModList(registry_, modHoldings(), pet_.level,
                                     pet_.creature ? pet_.creature->line : nullptr, modSlot_);
     const int rows = static_cast<int>(owned.size());      // available spares to install
 
@@ -313,7 +313,7 @@ void Game::onModPicker(const ButtonEvent& ev) {
                 // D3: consumes the new mod AND discards the one already in the slot.
                 // (Re-check the equip-LEVEL + hard line gates defensively: commitModEquip
                 // already gated both before setting modPendingId_.)
-                pet_.mods.equip(modSlot_, modPendingId_);
+                pet_.mods.install(modSlot_, modPendingId_, modPool_);
                 markSaveDirty();
             }
             modConfirm_ = false;
@@ -380,7 +380,7 @@ void Game::commitModEquip() {
         modPendingId_ = id;
         modDetail_ = false;                               // confirm shows on the picker
     } else {                                              // empty slot: consume + install
-        pet_.mods.equip(modSlot_, id);
+        pet_.mods.install(modSlot_, id, modPool_);
         markSaveDirty();
         modDetail_ = false;
         nav_ = Nav::Submenu;

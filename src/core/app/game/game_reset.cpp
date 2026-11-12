@@ -92,7 +92,8 @@ void Game::resetToHatch() {
     // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
     rack_.clear();
     records_.clear();
-    pet_.mods = Loadout::starting();
+    pet_.mods = ModSlots::starting();
+    modPool_ = ModPool::starting();
     pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // startHatch() below re-seeds it
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;

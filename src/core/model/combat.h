@@ -30,7 +30,7 @@
 namespace mal {
 
 class ContentRegistry;
-class Loadout;        // MODS: combat passives
+class ModSlots;        // MODS: combat passives
 class MoveLoadout;    // equipped moves
 
 // The per-fight state of an ARMED crew Exploit: one block on the Combatant, so the crew
@@ -995,7 +995,7 @@ void buildWildPools(const ContentRegistry& reg, Combatant& c, Stage stage);
 
 // Build the player Combatant from live game state (active pet + loadouts + mods).
 Combatant makePlayerCombatant(const ContentRegistry& reg, const CreatureDef& pet,
-                              const MoveLoadout& moves, const Loadout& mods);
+                              const MoveLoadout& moves, const ModSlots& mods);
 
 // Fold a pet's earned per-level stat points into an already-built Combatant, in the
 // order power / defense / speed / maxHealth. Additive on top of the branch multipliers

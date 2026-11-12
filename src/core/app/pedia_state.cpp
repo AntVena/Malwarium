@@ -249,7 +249,7 @@ std::string buildPediaStateJson(const Game& g) {
         const std::vector<const ModDef*> mods = g.content().allMods();
         for (size_t i = 0; i < mods.size(); ++i) {
             const ModDef* m = mods[i];
-            const bool owned = g.loadout().owns(m->id) || g.loadout().slotOf(m->id) >= 0;
+            const bool owned = g.modPool().owns(m->id) || g.modSlots().slotOf(m->id) >= 0;
             appendKeyString(out, m->id, owned ? "unlocked" : "locked", i + 1 < mods.size());
         }
     }

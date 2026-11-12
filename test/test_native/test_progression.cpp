@@ -402,7 +402,7 @@ void test_arch_deploy_loadout_is_per_pet() {
     Game g{StartMode::Hatched, "paypup"};   // ransomware line
     const char* paypupMove = g.moveLoadout().equipped(0);
     CHECK(paypupMove != nullptr);
-    CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
+    CHECK(std::strcmp(g.modSlots().equipped(0), "firewall_patch") == 0);
 
     g.debugSeedRack("tadpoll");             // phishing line
     CHECK(g.rackCount() == 1);
@@ -415,13 +415,13 @@ void test_arch_deploy_loadout_is_per_pet() {
         const char* eq = g.moveLoadout().equipped(i);
         CHECK(!eq || std::strcmp(eq, paypupMove) != 0);
     }
-    for (int i = 0; i < kModSlots; ++i) CHECK(g.loadout().equipped(i) == nullptr);
+    for (int i = 0; i < kModSlots; ++i) CHECK(g.modSlots().equipped(i) == nullptr);
 
     enterArchStoredPet(g, "paypup");
     archConfirmAction(g);                   // Deploy -> confirm -> commit
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
     CHECK(std::strcmp(g.moveLoadout().equipped(0), paypupMove) == 0);
-    CHECK(std::strcmp(g.loadout().equipped(0), "firewall_patch") == 0);
+    CHECK(std::strcmp(g.modSlots().equipped(0), "firewall_patch") == 0);
 }
 
 // Auto-battle paces itself: an autonomous turn resolves only every
@@ -470,7 +470,7 @@ static int medianExchanges(const Combatant& player, const CombatEnemy& enemySpec
 void test_combat_length_in_band() {
     ContentRegistry r = ContentRegistry::embedded();
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout mods = Loadout::starting();
+    ModSlots mods = ModSlots::starting();
     // Process / Script / Daemon each vs their sector-tier wild malbeast (both
     // variants), and the two sector bosses. Wilds carry the challenge buff
     // (kWildEnemy*Pct: +Health lengthens the fight), so their median sits in the
@@ -514,7 +514,7 @@ void test_wild_encounter_challenge_buff() {
     // (2) Win still lands, but at a real Health cost. Sample many seeds; the pet
     // must win the vast majority AND the median ending Health must be a clear dent.
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout mods = Loadout::starting();
+    ModSlots mods = ModSlots::starting();
     Combatant p = makePlayerCombatant(r, *r.creature("paypup"), ml, mods);
     int wins = 0; std::vector<int> endPct;
     for (uint32_t s = 1; s <= 200; ++s) {
@@ -688,7 +688,7 @@ void test_explore_subarea_ramp() {
     // non-increasing curve with a near-certain floor and a hard-gated apex.
     const CreatureDef* pup = r.creature("paypup");
     MoveLoadout ml = MoveLoadout::startingForLine(r, pup->line);
-    Loadout mods = Loadout::starting();
+    ModSlots mods = ModSlots::starting();
     Combatant paypup = makePlayerCombatant(r, *pup, ml, mods);
     int win[kExplSubAreas];
     for (int sub = 0; sub < kExplSubAreas; ++sub) {
@@ -915,7 +915,7 @@ void test_ransom_note_shows_up_in_pve() {
     ContentRegistry r = ContentRegistry::embedded();
     const CreatureDef* pet = r.creature("paypup");           // Process, ransomware
     MoveLoadout ml = MoveLoadout::starting();
-    Loadout mods;
+    ModSlots mods;
     const int kFights = 200;
     int fightsWithPool = 0;
     for (int s = 0; s < kFights; ++s) {
@@ -982,7 +982,7 @@ void test_wild_subarea_level_and_xp_scaling() {
 //       so a mirror comes down to turns rather than to which branch was rolled.
 void test_care_branch_trades_power_for_body() {
     const ContentRegistry reg = ContentRegistry::embedded();
-    MoveLoadout moves; Loadout mods;
+    MoveLoadout moves; ModSlots mods;
     // (1) Every shipped Daemon is one branch or the other (or authored neutral), and
     //     nothing below Daemon claims a branch: walked over the whole roster rather than
     //     spot-checked, so a new line has to answer this too.
@@ -1014,10 +1014,10 @@ void test_care_branch_trades_power_for_body() {
     //     / 100 on the Defence curve. Measured as the two cross-products rather than as
     //     a ratio, so no integer division sits between the gate and the thing it is
     //     claiming; a tenth of tolerance either way, since the leans round to whole units.
-    //     Priced on the STARTING loadout (Loadout::starting: Firewall Patch installed from
+    //     Priced on the STARTING loadout (ModSlots::starting: Firewall Patch installed from
     //     hatch), because that rating is under every pet the armour half stacks onto.
     CHECK(cg.defense == cb.defense + kBranchGoodDefense);
-    const Loadout start = Loadout::starting();
+    const ModSlots start = ModSlots::starting();
     const Combatant sg = makePlayerCombatant(reg, *good, moves, start);
     const Combatant sb = makePlayerCombatant(reg, *bad, moves, start);
     const long long badReach = 1LL * sb.powerMultPct * sb.maxHealth * (100 + sb.defense);
@@ -1048,7 +1048,7 @@ void test_move_evolution_gating() {
     MoveLoadout ml;
     ml.grant("buffer_overflow");
     ml.equip(0, "buffer_overflow");
-    Loadout mods;
+    ModSlots mods;
     auto hasMove = [](const Combatant& c, const char* id) {
         for (const MoveDef* m : c.moves)
             if (std::strcmp(m->id, id) == 0) return true;
@@ -1149,7 +1149,7 @@ void test_hatch_fills_every_unlocked_slot() {
 // default x (N-1); fully equipped -> zero default entries in the pool.
 void test_move_pool_per_slot_fallback() {
     ContentRegistry r = ContentRegistry::embedded();
-    Loadout mods;                                  // no mod passives in play
+    ModSlots mods;                                  // no mod passives in play
     const CreatureDef* proc = r.creature("paypup");    // Process: 2 slots
     const int slots = MoveLoadout::slotsForStage(proc->stage);
     CHECK(slots == 2);
@@ -1458,7 +1458,7 @@ void test_evolution_branch_selection() {
 void test_evolution_branch_mechanics() {
     ContentRegistry r = ContentRegistry::embedded();
     MoveLoadout mv = MoveLoadout::starting();
-    Loadout md = Loadout::starting();
+    ModSlots md = ModSlots::starting();
     const CreatureDef* good = r.creature("bruinforce");
     const CreatureDef* bad = r.creature("berserkernel");
     CHECK(good && bad);

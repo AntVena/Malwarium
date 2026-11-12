@@ -22,7 +22,8 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     }
 
     inventory_ = Inventory::starting();
-    pet_.mods = Loadout::starting();
+    pet_.mods = ModSlots::starting();
+    modPool_ = ModPool::starting();
     pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
 
     // The palette index lives outside this object (core/render/palette.h) (a drawing

@@ -749,7 +749,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Mods: {
             const Stage st = pet_.creature ? pet_.creature->stage : Stage::BootSector;
             if (loadoutTab_ == LoadoutTab::Mods) {
-                drawModsList(fb, registry_, pet_.mods, listRow_, beat_);
+                drawModsList(fb, registry_, modHoldings(), listRow_, beat_);
             } else if (loadoutTab_ == LoadoutTab::Moves) {
                 // Each slot's stamped required kind, for the row tags.
                 MoveDef::Kind sk[kMaxMoveSlots];
@@ -765,7 +765,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
                 v.stage = st;
                 v.cursor = loadoutHubRow_;
                 v.beat = beat_;
-                drawLoadoutHub(fb, pet_.mods, pet_.moves, v);
+                drawLoadoutHub(fb, modHoldings(), pet_.moves, v);
             }
             break;
         }
@@ -905,7 +905,7 @@ void Game::drawDetail(Framebuffer& fb) const {
                     dv.petLine = pet_.creature ? pet_.creature->line : nullptr;
                     dv.storageCap = modStorageCap();
                     dv.beat = beat_;
-                    drawModDetail(fb, registry_, pet_.mods, *md, dv);
+                    drawModDetail(fb, registry_, modHoldings(), *md, dv);
                     break;
                 }
             }
@@ -919,7 +919,7 @@ void Game::drawDetail(Framebuffer& fb) const {
                 pv.confirmChoice = modConfirmChoice_;
                 pv.pendingId = modPendingId_;
                 pv.beat = beat_;
-                drawModPicker(fb, registry_, pet_.mods, pv);
+                drawModPicker(fb, registry_, modHoldings(), pv);
             }
             break;
         case SubmenuId::Games:

@@ -179,7 +179,7 @@ void Game::stepFocusedList(int dir) {
             break;
         case ListFocus::ModPicker: {
             const int n = static_cast<int>(
-                ownedModList(registry_, pet_.mods, pet_.level,
+                ownedModList(registry_, modHoldings(), pet_.level,
                              pet_.creature ? pet_.creature->line : nullptr, modSlot_).size());
             if (n > 0) modPick_ = ((modPick_ + dir) % n + n) % n;
             break;

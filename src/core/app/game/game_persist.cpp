@@ -87,7 +87,7 @@ void Game::captureBag(SaveData& d) const {
     // defines has no wire to write to and is dropped here rather than at load. The pool
     // in RAM was built from the registry, so this can only miss a row retired underneath
     // a live game, which is a developer state, not a player one.
-    for (const OwnedMod& m : pet_.mods.owned())
+    for (const OwnedMod& m : modPool_.owned())
         if (const ModDef* def = registry_.mod(m.id))
             saveSetModCount(d.ownedModCounts, def->wire, m.count);
     d.equipped.reserve(kModSlots);
@@ -393,12 +393,13 @@ void Game::restoreBag(const SaveData& d) {
         const ItemDef* def = registry_.item(s.id);
         if (def && s.qty > 0) inventory_.add(def->id, s.qty);
     }
-    // Loadout (D3 permanent mods): grant the un-equipped spares, then install the
+    // Mods (D3 permanent mods): grant the un-installed spares, then install the
     // slot occupants WITHOUT consuming (they were consumed when first equipped, and a
     // v17+ save stores spares and slots disjointly). A pre-v17 blob predates the split:
     // its ownedMods still listed the equipped mods, so drop any owned id that also
     // sits in a slot, else the migrated save would gift a duplicate spare of each.
-    pet_.mods = Loadout{};
+    pet_.mods = ModSlots{};
+    modPool_ = ModPool{};
     if (d.hasModCountData) {
         // v45: a count per wire. The stored count was capped when it was written, so it
         // is its own ceiling here. modStorageCap() would take copies away from a player
@@ -410,7 +411,7 @@ void Game::restoreBag(const SaveData& d) {
             if (n <= 0) continue;
             const ModDef* def = registry_.modByWire(wire);
             if (!def) continue;
-            for (int i = 0; i < n; ++i) pet_.mods.grant(def->id, n);
+            for (int i = 0; i < n; ++i) modPool_.grant(def->id, n);
         }
     } else {
         // v44 and older: a flat list, one entry per COPY, with a rolled equip level
@@ -426,7 +427,7 @@ void Game::restoreBag(const SaveData& d) {
                     if (std::strcmp(e.id, m.id) == 0) { inSlot = true; break; }
                 if (inSlot) continue;             // migrate: equipped mod isn't a spare
             }
-            pet_.mods.grant(def->id, kModCopyCapBase);   // surplus copies simply don't fit
+            modPool_.grant(def->id, kModCopyCapBase);   // surplus copies simply don't fit
         }
     }
     for (int i = 0; i < static_cast<int>(d.equipped.size()) && i < kModSlots; ++i)
