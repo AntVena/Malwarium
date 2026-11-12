@@ -217,7 +217,7 @@ void Game::onCfgDetail(const ButtonEvent& ev) {
         case CfgScreen::PediaQr:    onCfgPediaQr(ev); break;
         case CfgScreen::FactoryReset:
             if (ev.button == Button::A) factoryScope_ ^= 1;          // cycle scope
-            else if (ev.button == Button::B) { bHeld_ = true; bDownMs_ = nowMs_; }  // arm hold-to-commit
+            else if (ev.button == Button::B) armHoldB();          // arm hold-to-commit
             else if (ev.button == Button::C) nav_ = Nav::Submenu;    // safe abort
             break;
         case CfgScreen::ResetHatch:
@@ -262,12 +262,27 @@ void Game::onCfgFormatSd(const ButtonEvent& ev) {
 
 // A re-checks the card: ask the device tier to unmount + remount so one inserted after
 // boot is picked up. The result lands on this screen's own SD line (+ the idle SD-present
-// icon), which is why the action lives here. B arms the hidden hold-to-reveal (the timer
-// fires in tick); C backs to the list.
+// icon), which is why the action lives here. B arms the hidden hold-to-reveal
+// (cfgHoldB); C backs to the list.
 void Game::onCfgSysInfo(const ButtonEvent& ev) {
     if (ev.button == Button::A) requestSdRecheck();
-    else if (ev.button == Button::B) { bHeld_ = true; bDownMs_ = nowMs_; }
+    else if (ev.button == Button::B) armHoldB();
     else if (ev.button == Button::C) leaveCfgScreen();
+}
+
+// The hidden Factory Reset: a held B reveals the reset screen from System Info, then
+// commits the wipe there. Each is a deliberate hold of several seconds.
+bool Game::cfgHoldB(uint32_t heldMs) {
+    if (cfgScreen_ == CfgScreen::SysInfo && heldMs >= kFactoryRevealMs) {
+        cfgScreen_ = CfgScreen::FactoryReset;
+        factoryScope_ = 0;
+        return true;
+    }
+    if (cfgScreen_ == CfgScreen::FactoryReset && heldMs >= kFactoryCommitMs) {
+        executeFactoryReset();
+        return true;
+    }
+    return false;
 }
 
 // On-device arcade editor: A cycles the focused cell's char, B advances the caret (and

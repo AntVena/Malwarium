@@ -295,14 +295,19 @@ void Game::openTourneyScout() {
 
 // --- Input -------------------------------------------------------------------
 
+// Held on the bracket past kTourneyScoutHoldMs, B opens the focused entrant's SCOUT
+// sheet: its full kit, read on the very page the operator reads their own kit on. The
+// tap underneath (tourneyReleaseB) fights the operator's own bout, so both engage with
+// the fighter under the cursor, which is what keeps the hold related to the tap.
+bool Game::tourneyHoldB(uint32_t heldMs) {
+    if (tourneyView_ != TourneyView::Bracket || heldMs < kTourneyScoutHoldMs) return false;
+    openTourneyScout();
+    return true;
+}
+
 void Game::tourneyReleaseB() {
-    // Screen check only: onButton owns bHeld_ (see moveFilterReleaseB). A B that was
-    // armed on the bracket and released before kTourneyScoutHoldMs is the TAP: start
-    // the operator's own bout.
-    if (nav_ != Nav::Tourney || tourneyView_ != TourneyView::Bracket) return;
+    if (tourneyView_ != TourneyView::Bracket) return;
     startTourneyMatch();
-    dirty_ = true;
-    lastInputMs_ = nowMs_;
 }
 
 void Game::onTourney(const ButtonEvent& ev) {
@@ -351,9 +356,8 @@ void Game::onTourney(const ButtonEvent& ev) {
         dirty_ = true;
     } else if (ev.button == Button::B) {
         // Tap/hold, resolved on the RELEASE edge: a tap starts the bout
-        // (tourneyReleaseB), a hold opens the focused entrant's sheet (tick()).
-        bHeld_ = true;
-        bDownMs_ = nowMs_;
+        // (tourneyReleaseB), a hold opens the focused entrant's sheet (tourneyHoldB).
+        armHoldB();
     } else if (ev.button == Button::C) {
         // Leaving does NOT forfeit: the run is persisted, and the EXPL row says IN PLAY
         // until it is finished. A bracket is a commitment of attention, not of one

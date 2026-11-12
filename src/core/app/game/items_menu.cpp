@@ -1,5 +1,6 @@
 #include "core/app/game/items_menu.h"
 
+#include "tunables.h"
 #include "core/model/inventory.h"
 #include "core/ui/items_screen.h"
 
@@ -66,7 +67,7 @@ void ItemsMenu::onList(ItemsHost& host, const ButtonEvent& ev) {
         step(host, +1);
     } else if (ev.button == Button::B) {
         // With the type-tabs upgrade, B is a tap/hold pair settled on the release
-        // (releaseB) or on the hold (cycleFilter). Without it B opens on the press.
+        // (releaseB) or on the hold (holdB). Without it B opens on the press.
         if (host.itemTabsUnlocked()) host.armHoldB();
         else openFocused(host);
     } else if (ev.button == Button::C) {
@@ -98,6 +99,13 @@ void ItemsMenu::openFocused(ItemsHost& host) {
 void ItemsMenu::releaseB(ItemsHost& host) {
     if (view_ != ItemsView::List || !host.itemTabsUnlocked()) return;
     openFocused(host);
+}
+
+bool ItemsMenu::holdB(const ItemsHost& host, uint32_t heldMs) {
+    if (view_ != ItemsView::List || !host.itemTabsUnlocked() || heldMs < kItemFilterHoldMs)
+        return false;
+    cycleFilter(host);
+    return true;
 }
 
 void ItemsMenu::cycleFilter(const ItemsHost& host) {

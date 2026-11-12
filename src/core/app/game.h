@@ -2621,15 +2621,20 @@ private:
     // The focused list's own C case, replayed: what a tap of C on it means.
     void leaveFocusedList();
 
+    // The hold-B gestures (game_holds.cpp), routed the way the list gestures are:
+    // holdFocus reports which tap/hold screen is up right now, and the hold tick and the
+    // release edge each switch over it to that screen's own entry points. A screen absent
+    // from it has no second action on B.
+    enum class HoldFocus { None, Cfg, Items, Stat, MoveSlots, MovePicker, Tourney, Shop, Vault };
+    HoldFocus holdFocus() const;
+    // The hold half: the focused screen's second action, once its own dwell has passed.
+    // True if it landed, which disarms B.
+    bool tickHoldB();
+    // The release half: the tap underneath a hold that never landed.
+    void releaseHoldB();
+
     // Per-state input handlers.
-    // Resolves STAT's hold-B gesture's SHORT-press half, the twin of itemFilterReleaseB:
-    // a B that never reached kStatIndexHoldMs is the ordinary window advance.
-    void statIndexReleaseB();
     void onItemsDetail(const ButtonEvent& ev);
-    // Resolves the ITEMS hold-B gesture's SHORT-press half, called from onButton on
-    // every B release. Hands the release to ItemsMenu only while ITEMS is the screen
-    // up, since bHeld_ may have been armed by another screen's hold.
-    void itemFilterReleaseB();
     void onMaintList(const ButtonEvent& ev);
     void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
@@ -2644,6 +2649,7 @@ private:
     void onCfgTravel(const ButtonEvent& ev);
     void onCfgFormatSd(const ButtonEvent& ev);
     void onCfgSysInfo(const ButtonEvent& ev);
+    bool cfgHoldB(uint32_t heldMs);   // System Info / Factory Reset's hidden hold
     void onCfgHackerTag(const ButtonEvent& ev);
     void onCfgUpdate(const ButtonEvent& ev);
     void onCfgUpdateJob(const ButtonEvent& ev);
@@ -2782,11 +2788,13 @@ private:
     void onTrainList(const ButtonEvent& ev);
     void onTrainDetail(const ButtonEvent& ev);     // dispatch MovePicker / MoveDetail / SimTier
     void onMovePicker(const ButtonEvent& ev);
-    // The MOVES picker's own hold-B short-press half (the twin of itemFilterReleaseB):
-    // a tap drills into the focused move's detail, and only a hold that never reached
-    // kMoveFilterHoldMs gets here. No-op outside the picker.
-    void moveFilterReleaseB();
-    void trainListReleaseB();
+    // The MOVES picker's B: a hold toggles the full roster, a tap unequips (on the
+    // first row) or drills into the focused move's detail.
+    bool movePickerHoldB(uint32_t heldMs);
+    void movePickerReleaseB();
+    // The MOVES slot list's B: a hold reads the move in the slot, a tap opens its picker.
+    bool moveSlotsHoldB(uint32_t heldMs);
+    void moveSlotsReleaseB();
     void onMoveDetail(const ButtonEvent& ev);      // A pages prose, B equips, C backs
     // The move the picker's cursor is on, or nullptr on the unequip row: shared by
     // the drill-down, its input handler and the MoveDetail render.
@@ -3096,9 +3104,6 @@ private:
     bool hackerSlotAccessible(int slot) const;     // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
-    // B's TAP on the SERVICES board, resolved on the release edge: flip the focused
-    // service. No-op unless the SHOP is what's on screen (RigShopScreen::releaseB).
-    void rigServiceReleaseB();
     void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
     // offered/afford, deducts Bits, bumps rigLevel_[row], applies the row's
@@ -3171,11 +3176,10 @@ private:
     // draw, a Decryptogram rolls a quote and starts a board. The one place a VAULT B
     // resolves, so the tap path and the bulk-hold's release path cannot diverge.
     void cashVaultRow(const ItemDef& d);
-    // e: resolves the VAULT hold-B gesture's SHORT-press half. Called from
-    // onButton on every B release. No-op unless the hold was armed here (not by the
-    // unrelated CFG Factory-Reset hold, which also uses bHeld_/bDownMs_) AND never
-    // crossed kBulkOpenHoldMs (that fires the bulk-open itself via tick()).
-    void vaultBulkReleaseB();
+    // The VAULT's B once Bulk-Open is owned: a hold opens every cache of the focused
+    // row's rarity, a tap cashes the focused row alone.
+    bool vaultHoldB(uint32_t heldMs);
+    void vaultReleaseB();
 
     // Persistence ------------------------------------
     SaveData captureSave() const;                  // snapshot all persisted state
@@ -4284,8 +4288,9 @@ private:
     void drawTourneyFoot(Framebuffer& fb) const;   // the match card under the field
     void drawTourneyScout(Framebuffer& fb) const;
     void drawTourneyBrief(Framebuffer& fb) const;
-    void openTourneyScout();                       // hold-B on the bracket
-    void tourneyReleaseB();                        // the tap half of that gesture
+    void openTourneyScout();
+    bool tourneyHoldB(uint32_t heldMs);            // the bracket's B: a hold scouts...
+    void tourneyReleaseB();                        // ...and a tap fights the own bout
     void startTourneyMatch();                      // the operator's own match, live
     void finishTourneyMatch();                     // advance the bracket, or end the run
     void abandonTourney();                         // forget the run (seed back to 0)

@@ -155,6 +155,12 @@ int RigShopScreen::serviceProseLines(const RigShopHost& host, int row) {
     return room > 0 ? room : 0;
 }
 
+bool RigShopScreen::holdB(RigShopHost& host, uint32_t heldMs) {
+    if (view_ != ShopView::Services || heldMs < kServiceInfoHoldMs) return false;
+    openServiceInfo(host);
+    return true;
+}
+
 void RigShopScreen::openServiceInfo(RigShopHost& host) {
     if (view_ != ShopView::Services) return;
     int rows[kRigUpgradeCount];

@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "tunables.h"
 #include "core/model/pet.h"
 #include "core/ui/stat_pages.h"
 #include "core/ui/stat_screen.h"
@@ -68,6 +69,12 @@ void StatReader::releaseB(StatReaderHost& host) {
     if (next == scroll_) return;
     scroll_ = next;
     host.markDirty();
+}
+
+bool StatReader::holdB(const StatSources& s, uint32_t heldMs) {
+    if (screen_ != StatScreen::Page || heldMs < kStatIndexHoldMs) return false;
+    openIndex(s);
+    return true;
 }
 
 void StatReader::openIndex(const StatSources& s) {

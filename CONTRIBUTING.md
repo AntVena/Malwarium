@@ -18,7 +18,9 @@ MOVES show-all, the VAULT bulk-open, the CFG factory reset), hold **C** to walk 
 backward. A hold never means something unrelated to the tap under it, and C's tap is Cancel
 on every screen, with no exceptions. The row-stepping half is implemented once, in
 [`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it by gaining a case
-there rather than by writing its own cursor arithmetic. A tap/hold button settles on the
+there rather than by writing its own cursor arithmetic. B's tap/hold pair is routed the same
+way, in [`game_holds.cpp`](src/core/app/game/game_holds.cpp): a screen joins by gaining a
+`HoldFocus` case and its own hold and release entry points. A tap/hold button settles on the
 RELEASE edge, so anything driving one (a gate, `tools/dump_frame.cpp`) must send both edges.
 
 **Dual-coding release gate:** every status meaning carries a non-colour channel, so **a
@@ -67,8 +69,7 @@ a board row for what is not. The smallest patch that makes the symptom go away i
   code that owns each case. Headers, layout constants and per-screen state live in that code.
 - **Route input by state.** Behaviour that differs per screen reaches the screen through the
   same dispatch as its taps. Guards that each work out which screen is up from
-  `face_`/`nav_`/a sub-view drift apart. Button holds still work that way; board section 1j
-  covers it.
+  `face_`/`nav_`/a sub-view drift apart.
 - **Share what is the same, and explain what differs.** When two sites draw or compute the
   same thing, they call one function. When one site must differ, its comment says why. A
   comment reading "same as X" means the two are kept equal by hand.

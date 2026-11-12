@@ -66,8 +66,11 @@ public:
     void step(const ItemsHost& host, int dir);
     // B released on the list before the filter hold landed: open the focused item.
     void releaseB(ItemsHost& host);
-    // B held on the list past kItemFilterHoldMs: move to the next filter.
-    void cycleFilter(const ItemsHost& host);
+    // B held `heldMs` so far. On the list, once the type tabs are owned, past
+    // kItemFilterHoldMs it moves to the next filter and re-parks the cursor on the new
+    // list's first row. True once the hold has landed, so the release that follows is
+    // not also a tap.
+    bool holdB(const ItemsHost& host, uint32_t heldMs);
     void draw(Framebuffer& fb, const ItemsHost& host, int beat) const;
 
     ItemsView view() const { return view_; }
@@ -80,6 +83,7 @@ private:
     void onPicker(ItemsHost& host, const ButtonEvent& ev);
     void onList(ItemsHost& host, const ButtonEvent& ev);
     void openFocused(ItemsHost& host);
+    void cycleFilter(const ItemsHost& host);
     void parkOnFirstRow(const ItemsHost& host);
     const std::vector<InvRow>& rows(const ItemsHost& host) const;
 

@@ -16,20 +16,28 @@ void Game::onTrainList(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         trainRow_ = sel > 0 ? (trainRow_ + 1) % sel : 0;
     } else if (ev.button == Button::B) {
-        // Tap/hold, resolved on release (trainListReleaseB) or on the hold crossing
-        // kMoveFilterHoldMs (tick): a tap opens the picker, a hold reads the move in the slot.
+        // Tap/hold, resolved on release (moveSlotsReleaseB) or on the hold crossing
+        // kMoveFilterHoldMs (moveSlotsHoldB): a tap opens the picker, a hold reads the
+        // move in the slot.
         if (sel <= 0) return;
-        bHeld_ = true;
-        bDownMs_ = nowMs_;
+        armHoldB();
     } else if (ev.button == Button::C) {
         leaveLoadoutTab();
     }
 }
 
-void Game::trainListReleaseB() {
-    if (!(nav_ == Nav::Submenu && enteredId() == SubmenuId::Mods &&
-          loadoutTab_ == LoadoutTab::Moves))
-        return;
+// An empty slot has nothing to read, so there the hold waits for the release instead.
+bool Game::moveSlotsHoldB(uint32_t heldMs) {
+    if (!pet_.moves.equipped(trainRow_) || heldMs < kMoveFilterHoldMs) return false;
+    moveSlot_ = trainRow_;
+    moveDetailEquipped_ = true;
+    moveProseScroll_ = 0;
+    trainScreen_ = TrainScreen::MoveDetail;
+    nav_ = Nav::Detail;
+    return true;
+}
+
+void Game::moveSlotsReleaseB() {
     if (loadoutSelectableCount(pet_.creature ? pet_.creature->stage : Stage::BootSector) <= 0) return;
     trainScreen_ = TrainScreen::MovePicker;
     moveSlot_ = trainRow_;
@@ -39,8 +47,6 @@ void Game::trainListReleaseB() {
     moveDetailEquipped_ = false;
     movePendingId_ = nullptr;
     nav_ = Nav::Detail;
-    dirty_ = true;
-    lastInputMs_ = nowMs_;
 }
 
 void Game::onTrainDetail(const ButtonEvent& ev) {
@@ -142,21 +148,26 @@ void Game::onMovePicker(const ButtonEvent& ev) {
         movePick_ = (movePick_ + 1) % rows;   // steps, and holding it repeats
     } else if (ev.button == Button::B) {
         // B is the tap/hold pair here (the ITEMS list's shape): arm now and resolve on
-        // the RELEASE edge (moveFilterReleaseB. A short tap unequips or drills into
-        // the focused move) or on the hold crossing kMoveFilterHoldMs, where tick()
+        // the RELEASE edge (movePickerReleaseB: a short tap unequips or drills into the
+        // focused move) or on the hold crossing kMoveFilterHoldMs, where movePickerHoldB
         // reveals the full roster instead.
-        bHeld_ = true;
-        bDownMs_ = nowMs_;
+        armHoldB();
     } else if (ev.button == Button::C) {
         nav_ = Nav::Submenu;
     }
 }
 
-void Game::moveFilterReleaseB() {
-    // Screen check only: onButton owns bHeld_ (see itemFilterReleaseB).
-    if (!(nav_ == Nav::Detail && loadoutTab_ == LoadoutTab::Moves &&
-          trainScreen_ == TrainScreen::MovePicker && !moveConfirm_))
-        return;   // bHeld_ was armed elsewhere (the ITEMS / VAULT / CFG holds): no-op
+// The row set changes size with the roster, so the cursor re-parks at row 0. No unlock
+// gate, unlike the ITEMS filter.
+bool Game::movePickerHoldB(uint32_t heldMs) {
+    if (moveConfirm_ || heldMs < kMoveFilterHoldMs) return false;
+    moveShowAll_ = !moveShowAll_;
+    movePick_ = 0;
+    return true;
+}
+
+void Game::movePickerReleaseB() {
+    if (moveConfirm_) return;
     if (movePick_ == 0) {                              // unequip this slot
         pet_.moves.unequip(moveSlot_);
         markSaveDirty();
@@ -169,8 +180,6 @@ void Game::moveFilterReleaseB() {
         trainScreen_ = TrainScreen::MoveDetail;
         moveProseScroll_ = 0;
     }
-    dirty_ = true;
-    lastInputMs_ = nowMs_;
 }
 
 void Game::onSimTier(const ButtonEvent& ev) {

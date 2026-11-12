@@ -19,13 +19,6 @@ bool Game::shopRowOffered(int i) const {
     return rigLevel_[i] < kRigUpgrades[i].maxLevel;
 }
 
-void Game::rigServiceReleaseB() {
-    if (!(face_ == Face::Hacker && nav_ == Nav::Submenu &&
-          enteredHackerId() == HackerSlotId::Shop))
-        return;   // bHeld_ was armed elsewhere (the VAULT or CFG holds)
-    rigShop_.releaseB(*this);
-}
-
 void Game::leaveToCarousel() { nav_ = Nav::Cursor; }
 
 void Game::armHoldB() {

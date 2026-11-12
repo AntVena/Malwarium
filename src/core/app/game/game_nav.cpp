@@ -18,28 +18,15 @@
 namespace mal {
 
 void Game::onButton(const ButtonEvent& ev) {
-    // A released B resolves whichever tap/hold gesture was armed. All of them live on B
-    // and all are guarded to their own screen, so each release asks them in turn and at
-    // most one claims it: the CFG hidden Factory Reset (releasing early aborts the
-    // reveal/commit), the VAULT bulk-open (releasing before kBulkOpenHoldMs resolves as
-    // the ordinary single-open), the ITEMS filter (a tap opens the focused item), the
-    // MOVES picker's show-all (a tap unequips or drills into the focused move), and
-    // STAT's index (a tap advances the open page's window instead).
+    // A released B resolves the tap/hold gesture it armed, on the screen that is up
+    // (releaseHoldB, game_holds.cpp): a hold that already landed has disarmed it, and
+    // anything shorter is the tap.
     // C on a list is the same shape and settles here too (listBackRelease). Only A never
     // needs a release action: its hold REPEATS the step its press already made rather
     // than replacing it, so letting go only has to stop the clock tickListNav reads.
     if (!ev.pressed) {
         if (ev.button == Button::B) {
-            const bool wasHeld = bHeld_;
-            if (wasHeld) {
-                vaultBulkReleaseB();
-                rigServiceReleaseB();
-                itemFilterReleaseB();
-                moveFilterReleaseB();
-                trainListReleaseB();
-                tourneyReleaseB();
-                statIndexReleaseB();
-            }
+            if (bHeld_) releaseHoldB();
             bHeld_ = false;
         } else if (ev.button == Button::A) {
             aHeld_ = false;

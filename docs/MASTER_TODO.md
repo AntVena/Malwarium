@@ -152,15 +152,11 @@ random draws and its result, and is gone when it ends. Rows are M unless marked.
 
 #### Screens
 
-1. **Hold and release routing.** `tickHeldGestures` is a ladder of guarded `if`s, and on
-   release `game_nav.cpp` calls all seven `*ReleaseB()` functions in turn, each returning
-   early unless its own condition holds. Give the active screen a hold and a release entry
-   point and route to it. `RigShopScreen` already takes `releaseB` and `openServiceInfo`. |
-   `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge | M |
-2. **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
-   the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the area SHOP, VAULT,
-   the arcade list, the story reader, tip cards, and the ITEMS detail page and its Use path
-   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s.
+- **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
+  the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the area SHOP, VAULT,
+  the arcade list, the story reader, tip cards, and the ITEMS detail page and its Use path
+  (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
+  arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which

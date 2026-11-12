@@ -21,17 +21,6 @@ void Game::openItemDetail(const ItemDef& d) {
 
 void Game::returnToLockout() { nav_ = Nav::ModalLockout; }
 
-void Game::itemFilterReleaseB() {
-    // Only the screen check here: onButton owns bHeld_, and clears it once after
-    // offering the release to all four B gestures. Clearing it in here would disarm
-    // the three that had not been asked yet.
-    if (!(nav_ == Nav::Submenu && face_ == Face::Pet && enteredId() == SubmenuId::Items))
-        return;   // bHeld_ was armed elsewhere (the VAULT / CFG / MOVES holds)
-    items_.releaseB(*this);
-    dirty_ = true;
-    lastInputMs_ = nowMs_;
-}
-
 bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     if (inventory_.count(d.id) <= 0) { gateMsg = "- NONE LEFT -"; return false; }
     // Boot-Sector egg: only quest items are usable (an egg can't be fed or buffed).

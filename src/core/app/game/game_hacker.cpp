@@ -176,9 +176,9 @@ void Game::onHackerVault(const ButtonEvent& ev) {
     // cashable stacks (caches to decrypt, Decryptograms to play); A cycles, C backs to
     // the carousel. B: unowned e resolves the focused row immediately (cashVaultRow);
     // owned, B becomes a tap/hold gesture on a cache row. Arm here and resolve on the
-    // button-RELEASE edge (vaultBulkReleaseB, a short tap cashes just the one) or on
-    // the hold crossing kBulkOpenHoldMs (tick() bulk-opens every cache sharing the
-    // row's rarity instead).
+    // button-RELEASE edge (vaultReleaseB, a short tap cashes just the one) or on the
+    // hold crossing kBulkOpenHoldMs (vaultHoldB bulk-opens every cache sharing the row's
+    // rarity instead).
     const ItemDef* rows[16];
     const int n = vaultOwnedRows(rows, 16);
     if (ev.button == Button::C) { nav_ = Nav::Cursor; return; }
@@ -192,25 +192,34 @@ void Game::onHackerVault(const ButtonEvent& ev) {
         // therefore always resolves on the press.
         if (bulkOpenUnlocked() &&
             rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer) {
-            bHeld_ = true;
-            bDownMs_ = nowMs_;
+            armHoldB();
         } else {
             cashVaultRow(*rows[hackerVaultRow_]);   // a reward draw, or a board
         }
     }
 }
 
-void Game::vaultBulkReleaseB() {
-    if (!(face_ == Face::Hacker && nav_ == Nav::Submenu &&
-          enteredHackerId() == HackerSlotId::Vault && bulkOpenUnlocked()))
-        return;   // bHeld_ was armed elsewhere (e.g. the unrelated CFG hold): no-op
+bool Game::vaultHoldB(uint32_t heldMs) {
+    if (!bulkOpenUnlocked() || heldMs < kBulkOpenHoldMs) return false;
+    const ItemDef* rows[16];
+    const int n = vaultOwnedRows(rows, 16);
+    if (n > 0) {
+        if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
+        // Caches only: the row can move under a held B, and a Decryptogram cannot be
+        // bulk-opened.
+        if (rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer)
+            openAllCachesOfRarity(*rows[hackerVaultRow_]);
+    }
+    return true;
+}
+
+void Game::vaultReleaseB() {
+    if (!bulkOpenUnlocked()) return;
     const ItemDef* rows[16];
     const int n = vaultOwnedRows(rows, 16);
     if (n == 0) return;
     if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
     cashVaultRow(*rows[hackerVaultRow_]);
-    dirty_ = true;
-    lastInputMs_ = nowMs_;
 }
 
 // --- Rendering -------------------------------------------------------------

@@ -1,5 +1,5 @@
-// game_stat.cpp (STAT): what the reader's pages read off the game, and the hold-B
-// release that reaches the reader (StatReader, game/stat_reader.h).
+// game_stat.cpp (STAT): what the reader's pages read off the game (StatReader,
+// game/stat_reader.h).
 #include "core/app/game.h"
 
 #include "core/ui/stat_pages.h"
@@ -15,13 +15,6 @@ StatSources Game::statSources() const {
     s.backupRemainMs =
         backupShieldArmed() ? pet_.armed.backupShieldUntilMs - lifetimeUptimeMs() : 0;
     return s;
-}
-
-void Game::statIndexReleaseB() {
-    if (!bHeld_ || face_ != Face::Pet || nav_ != Nav::Submenu ||
-        enteredId() != SubmenuId::Stat)
-        return;
-    stat_.releaseB(*this);
 }
 
 }  // namespace mal

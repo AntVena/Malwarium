@@ -59,10 +59,11 @@ public:
     void onButton(StatReaderHost& host, const ButtonEvent& ev);
     // B released on a page before the hold landed: advance the page's window.
     void releaseB(StatReaderHost& host);
-    // B held on a page past kStatIndexHoldMs: open the INDEX with the cursor on the page
-    // and window being read, so it opens as a map of where the reader IS and backing
-    // straight out is a no-op.
-    void openIndex(const StatSources& s);
+    // B held `heldMs` so far. On a page, past kStatIndexHoldMs, it opens the INDEX with
+    // the cursor on the page and window being read, so the index opens as a map of where
+    // the reader IS and backing straight out is a no-op. True once the hold has landed,
+    // so the release that follows is not also a tap.
+    bool holdB(const StatSources& s, uint32_t heldMs);
     // Step the INDEX cursor by `dir`, wrapping. The A tap, the A hold-repeat and the C
     // backward walk (game_listnav.cpp) all land here.
     void stepIndex(const StatSources& s, int dir);
@@ -81,6 +82,7 @@ public:
 private:
     void onPage(StatReaderHost& host, const ButtonEvent& ev);
     void onIndex(const StatSources& s, const ButtonEvent& ev);
+    void openIndex(const StatSources& s);
 
     const StatPage* page_ = pages().front();
     // Row-window scroll offset for the open page. One offset serves every page because a

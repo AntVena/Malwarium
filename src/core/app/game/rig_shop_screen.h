@@ -53,8 +53,10 @@ public:
     void onButton(RigShopHost& host, const ButtonEvent& ev);
     // B released on the SERVICES board before the hold landed: flip the focused service.
     void releaseB(RigShopHost& host);
-    // B held on the SERVICES board: open the focused service's info page.
-    void openServiceInfo(RigShopHost& host);
+    // B held `heldMs` so far. On the SERVICES board, past kServiceInfoHoldMs, it opens the
+    // focused service's info page and leaves the service switched as it was. True once
+    // the hold has landed, so the release that follows is not also a tap.
+    bool holdB(RigShopHost& host, uint32_t heldMs);
     // Step the storefront cursor `dir` slots over the SERVICES head slot and every
     // offered row, wrapping. The one walk the A-cycle, the hold-repeat and the
     // post-buy re-aim share.
@@ -72,6 +74,7 @@ private:
     void onRows(RigShopHost& host, const ButtonEvent& ev);
     void onServices(RigShopHost& host, const ButtonEvent& ev);
     void onServiceInfo(RigShopHost& host, const ButtonEvent& ev);
+    void openServiceInfo(RigShopHost& host);
     int nextSlot(const RigShopHost& host, int cur, int dir) const;
     // The info page's readout: the row's own rigSpec plus the live per-run price. The
     // renderer and A's paging both read it, since paging needs the readout's height.
