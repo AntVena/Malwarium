@@ -110,15 +110,12 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 
 **RESET PET restarts part of the `Operator`.** `resetToHatch` puts the HackerTag, the
 lifetime counters, Bits, the spare mods and the arcade tallies back to a fresh operator's
-and empties the ARCH rack and records (`OperatorArch`), while the CFG screen says RESET PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it
-keeps every player-level tally. Decide which is meant: either a pet reset leaves the record
-alone, or the part it restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`,
-`game_config.cpp`'s `executeFactoryReset`, `cfg_screen.cpp` | S |
+and empties the ARCH rack and records (`OperatorArch`), while the CFG screen says RESET
+PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it keeps every player-level
+tally. Decide which is meant: either a pet reset leaves the record alone, or the part it
+restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_config.cpp`'s
+`executeFactoryReset`, `cfg_screen.cpp` | S |
 `test_cfg_factory_reset_scopes_differ` states the answer. |
-
-**The `Settings` record.** Theme, brightness, sound and volume, UI mode, care alerts, explore
-sound: the DEVICE-level fields, kept through a pet's death and a factory reset. |
-`game_persist.cpp`'s `captureSettings`/`restoreSettings` | S | |
 
 #### Runs
 
