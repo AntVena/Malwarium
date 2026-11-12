@@ -263,6 +263,9 @@ int g_failures = 0;
     RUN(test_save_roundtrip)                \
     RUN(test_save_version_and_empty)        \
     RUN(test_save_from_a_newer_build_still_loads) \
+    RUN(test_save_active_pet_reads_from_a_v75_blob) \
+    RUN(test_save_active_pet_loads_from_a_v75_blob) \
+    RUN(test_save_active_pet_round_trips_through_a_reboot) \
     RUN(test_boot_from_save_vs_hatch)       \
     RUN(test_reboot_preserves_active_creature_level) \
     RUN(test_persistence_reset_clears_store)\

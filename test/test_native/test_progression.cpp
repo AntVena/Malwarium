@@ -350,12 +350,12 @@ void test_creature_level_persist_evolution_reset_egg() {
     for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.levelStatPoint(i) == 0);
 
     // Save v11 round-trips the stat points (sum == level).
-    SaveData a; a.combatLevel = 3; a.combatXp = 42;
-    a.statPoints = {1, 0, 2, 0}; a.hasLevelData = true;
+    SaveData a; a.active.combatLevel = 3; a.active.combatXp = 42;
+    a.active.statPoints[0] = 1; a.active.statPoints[2] = 2;
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
-    CHECK(b.hasLevelData && b.combatLevel == 3 && b.combatXp == 42);
-    CHECK(b.statPoints.size() == 4 && b.statPoints[0] == 1 && b.statPoints[2] == 2);
+    CHECK(b.active.combatLevel == 3 && b.active.combatXp == 42);
+    CHECK(b.active.statPoints[0] == 1 && b.active.statPoints[1] == 0 && b.active.statPoints[2] == 2);
 }
 
 // Regression: ARCH Store/Deploy round-trips a pet's creature level (combatLevel_/
@@ -1313,15 +1313,14 @@ void test_move_slot_stamping_locks_at_unlock() {
 // ordinary autosave + reload.
 void test_save_v24_slot_kinds_roundtrip() {
     // Raw SaveData round-trip.
-    SaveData a; std::strcpy(a.activeId, "malbear"); a.generation = 1;
-    a.slotKinds = {1, 1, 2, 0};   // Attack, Attack, Defend, Unset (SlotKind values)
+    SaveData a; std::strcpy(a.active.id, "malbear"); a.active.generation = 1;
+    const uint8_t kinds[kMaxMoveSlots] = {1, 1, 2, 0};   // Attack, Attack, Defend, Unset
+    std::memcpy(a.active.slotKinds, kinds, sizeof(kinds));
     auto blobFull = serializeSave(a);
     SaveData full;
     CHECK(deserializeSave(blobFull, full));
-    CHECK(full.hasSlotKindData);
-    CHECK(full.slotKinds.size() == 4);
-    CHECK(full.slotKinds[0] == 1 && full.slotKinds[1] == 1 &&
-          full.slotKinds[2] == 2 && full.slotKinds[3] == 0);
+    CHECK(full.active.slotKinds[0] == 1 && full.active.slotKinds[1] == 1 &&
+          full.active.slotKinds[2] == 2 && full.active.slotKinds[3] == 0);
 
     // Live round-trip: a Game raised to malbear, stamped kinds intact after an
     // ordinary autosave + reload.
@@ -1633,7 +1632,7 @@ void test_csf_recovery_clears_burned_window() {
 // Save v3 round-trips the ARCH records (and a v1/v2 blob migrates with none).
 void test_save_records_roundtrip() {
     SaveData d;
-    std::strncpy(d.activeId, "paypup", kSaveIdCap - 1);
+    std::strncpy(d.active.id, "paypup", kSaveIdCap - 1);
     SaveRecord rec;
     std::strncpy(rec.id, "berserkernel", kSaveIdCap - 1);
     rec.status = static_cast<uint8_t>(RecordStatus::Corrupted);
@@ -1652,7 +1651,7 @@ void test_save_records_roundtrip() {
 // already-seen network as new).
 void test_save_hacker_rank_roundtrip() {
     SaveData d;
-    std::strncpy(d.activeId, "paypup", kSaveIdCap - 1);
+    std::strncpy(d.active.id, "paypup", kSaveIdCap - 1);
     d.networksSeen = 5;
     d.hackerRank = 2;
     SaveData out;

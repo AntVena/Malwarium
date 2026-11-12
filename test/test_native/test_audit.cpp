@@ -721,7 +721,7 @@ void test_audit_mode_enforces_scan_dependency() {
 // invariant holds: capture never runs without its discovery feed.
 void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.active.id, "paypup");
     a.netScanEnabled = 0;
     a.auditCaptureEnabled = 1;               // the inconsistent legacy state
     MemSaveStore store;
@@ -976,7 +976,7 @@ void test_audit_ledgers_persist_no_recredit() {
 // byte-exact (the persistence contract behind test_audit_ledgers_persist).
 void test_save_v7_ledger_roundtrip() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.active.id, "paypup");
     a.handshakesSeen = 3;
     a.seenHandshakeBssids = {0xABCDEFULL, 0x010203040506ULL};
     auto blob = serializeSave(a);

@@ -36,6 +36,9 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // A mid-stream field is NEVER removed. One that stopped meaning anything keeps being read
 // and discarded (v33, v38, v40), because every later field is positioned behind it.
 //
+// The entries name the active pet's fields as they first went on the wire. In SaveData
+// they are the fields of `active` (a SaveStoredPet) and `activeArmed`.
+//
 // v2  APPEND move loadout + combat XP/level.
 // v3  APPEND the ARCH records (RETIRED/CORRUPTED, from Critical System Failure).
 // v4  APPEND Hacker Rank: lifetime networks-seen, its dedup pool, the derived rank.
@@ -386,7 +389,7 @@ const RenamedId* renamedIds(int& count);
 // like one written after the splice. Appending to the END of the ladder needs no row.
 //
 // The ladder-indexed fields are `sectorCleared`, `bossUnlocked`, `subCleared`,
-// `subBossUnlocked`, `subRefarm` (row-major), the `titlesUnlocked` bitmask and the
+// `subBossUnlocked`, `activeArmed.subRefarm` (row-major), the `titlesUnlocked` bitmask and the
 // `equippedTitle` index.
 //
 // `atIndex` is the rung the area landed on in the ladder AS IT WAS then. Rows apply
@@ -417,8 +420,9 @@ struct SaveLogEntry {
     char text[kSaveTextCap] = {0};
 };
 
-// A frozen pet in the ARCH rack: no decay in storage, so its vitals are
-// preserved verbatim and restored on Deploy.
+// One pet's save record (Pet::stored): each pet on the ARCH rack, and the active pet
+// (SaveData::active). A pet in storage does not decay, so its vitals are kept verbatim
+// and restored on Deploy. The version notes below say where the rack writes each field.
 struct SaveStoredPet {
     char id[kSaveIdCap] = {0};
     int32_t hunger = 0, frag = 0, happy = 0, mistakes = 0, debuffs = 0;
@@ -493,14 +497,27 @@ struct SaveRecord {
     int32_t generation = 0;
 };
 
+// What a save keeps of the active pet's PetArmed. The rack clears all of PetArmed; the
+// rest of it (the DeepWeb arming, the dive pay, a Lockout) is not saved and re-arms from
+// scratch after a reboot.
+struct SaveArmedPet {
+    uint8_t trojanDivert = 0;           // v28: Ambig-USB
+    uint32_t backupShieldUntilMs = 0;   // v30: the Backup Drive's lifetimeUptimeMs() deadline
+    // v15: post-clear wild wins per sub-area, flat row-major (area*kSubAreasPerArea + sub).
+    // Ladder-indexed (see `ladderInserts`). Length-prefixed on the wire, so a short or
+    // empty list reads as 0.
+    std::vector<uint16_t> subRefarm;
+};
+
 // The full snapshot. Defaults describe an empty save (no active pet).
 struct SaveData {
-    // Active pet: id + vitals/care + the reboot-safe in-stage clock + generation.
-    char activeId[kSaveIdCap] = {0};
-    int32_t hunger = 0, frag = 0, happy = 0, mistakes = 0, debuffs = 0;
-    uint8_t ghost = 0;
-    uint32_t timeInStageMs = 0;       // elapsed time-in-stage (not absolute millis)
-    int32_t generation = 0;
+    // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
+    // one save mapping. An empty id is a save vacated by an ARCH Store. Its fields sit
+    // at the stream positions each version gave them (serializeSaveInto), not in a
+    // record of their own: an older build reading this blob after an OTA rollback finds
+    // the pet where it always was.
+    SaveStoredPet active;
+    SaveArmedPet activeArmed;
 
     // Economy / identity / lifetime counters.
     int32_t bits = 0;
@@ -521,18 +538,8 @@ struct SaveData {
     // interchangeable, so a save has to remember how many, not which; 4 bits is what
     // bounds kModCopyCapMax.
     std::vector<uint8_t> ownedModCounts;
-    std::vector<SaveId> equipped;     // one cell per equip slot ("" = empty)
     std::vector<SaveLogEntry> log;    // chronological, oldest first
     std::vector<SaveStoredPet> rack;
-
-    // v2: combat -----------------------------------------------
-    std::vector<SaveId> ownedMoves;     // acquired moves (default is innate, excluded)
-    std::vector<SaveId> equippedMoves;  // one cell per move slot ("" = empty)
-    int32_t combatXp = 0;      // v11: XP banked toward the NEXT level (0-based model)
-    int32_t combatLevel = 0;   // v11: 0-based creature level (was a 1-based vestige)
-    // Set by deserialize: true when the blob carried v2 move data. A v1 blob leaves
-    // this false so the loader can seed the starting move loadout (graceful migrate).
-    bool hasMoveData = false;
 
     // v3: ARCH records -------------------------------
     std::vector<SaveRecord> records;   // RETIRED/CORRUPTED greyed records (no slot)
@@ -576,14 +583,6 @@ struct SaveData {
     // pre-v8 blob → nothing cleared (the honest default: only sector 0 is open).
     std::vector<uint8_t> sectorCleared;
 
-    // v9: Boot-Sector incubation timer (redesign) -----------------
-    // The remaining incubation clock (game-ms) for an unhatched egg (activeId is
-    // the Boot-Sector creature). 0 = not incubating (already hatched, or the save
-    // predates the egg-at-idle redesign). A pre-v9 blob defaults to 0, so a
-    // migrated pet is treated as fully hatched (the honest default: no in-flight
-    // egg to resume). Persisted so an egg survives a reboot mid-incubation.
-    uint32_t bootHatchRemainMs = 0;
-
     // v10: zone-completion Titles --------------------------
     // Player-level (persist across pets, like sectorCleared[]). A clear grants the
     // sector's Title: `titlesUnlocked` is a bitmask (bit i = sector i's Title
@@ -592,19 +591,6 @@ struct SaveData {
     // a save that predates Titles has earned none).
     uint32_t titlesUnlocked = 0;
     int32_t equippedTitle = -1;
-
-    // v11: creature-level stat points ---------------------------
-    // The per-pet EARNED combat-stat points behind the XP level (power / defense
-    // / speed / max-Health, kLevelStatCount entries). Their sum equals combatLevel
-    // (the level == total earned points invariant). Empty on a pre-v11 blob →
-    // hasLevelData stays false, and the loader migrates the pet to a fresh level 0
-    // (the pre-v11 level was vestigial (never applied to combat), so nothing of
-    // value is lost). combatXp/combatLevel above carry the 0-based geometric model.
-    std::vector<int32_t> statPoints;
-    // Set by deserialize: true when the blob carried the v11 level tail. A pre-v11
-    // blob leaves this false so the loader resets the level system to 0 rather than
-    // reinterpreting the old 1-based combatLevel as a 0-based one.
-    bool hasLevelData = false;
 
     // v12: EXPL per-sector boss-unlock flags ------------------
     // One byte per sector: has a 10-win streak unlocked that sector's manual boss
@@ -627,18 +613,6 @@ struct SaveData {
     // A pre-v14 blob defaults to kBrightnessDefault (brightest) so a migrated save
     // never boots surprisingly dim.
     int32_t brightness = kBrightnessDefault;
-
-    // v15: EXPL per-sub-area re-farm win counts --------------
-    // Flat row-major (area*kExplSubAreas + sub) count of post-clear wild wins in each
-    // sub-area. The decay input for its diminishing non-Bits drop chances. Player-
-    // level, like subCleared[]. Empty on a pre-v15 blob → every count defaults to 0
-    // (nothing depleted yet). Length is self-describing (length-prefixed on the wire).
-    std::vector<uint16_t> subRefarm;
-
-    // v16: per-pet defrag count ------------------------------
-    // The ACTIVE pet's successful-defrag tally. The rack pets' tallies ride on
-    // SaveStoredPet::defragCount (serialized in a parallel v16 tail). Pre-v16 → 0.
-    int32_t defragCount = 0;
 
     // v17: permanent-mod semantics ----------------------
     // Set by deserialize: true when the blob is v17+, i.e. `ownedMods` already excludes
@@ -677,16 +651,7 @@ struct SaveData {
     // back to whichever of those is still toggled on when it goes off. Pre-v20 → 0.
     uint8_t apEnabled = 0;
 
-    // --- v21: care-mistake shield + once-per-lifetime item gates + shop pre-alloc --
-    // Per-pet (reset on a new egg, alongside statPoints). `mistakeShieldActive` = a
-    // Restore-Point buff is armed and will block the NEXT positive care mistake;
-    // `shieldItemConsumed` = the Restore Point's once-per-lifetime gate is spent;
-    // `yubiConsumed` = the Yubi-Cookie's once-per-lifetime −1 removal is spent. Pre-v21
-    // → 0 (no shield, neither item consumed).
-    uint8_t mistakeShieldActive = 0;
-    uint8_t shieldItemConsumed = 0;
-    uint8_t yubiConsumed = 0;
-    // Player-level (survives lifecycles, like hackerRank). PRE-ALLOCATED for a
+    // v21: player-level (survives lifecycles, like hackerRank). PRE-ALLOCATED for a
     // later shop task; unused otherwise. Pre-v21 → 0.
     uint8_t fragAmountTier = 0;
 
@@ -702,14 +667,6 @@ struct SaveData {
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open. Pre-v23 → both false.
     uint8_t itemTabsUnlocked = 0;
     uint8_t bulkOpenUnlocked = 0;
-
-    // --- v24: move-slot rework; per-pet Attack/Defend slot typing -----------
-    // The stamped Game::SlotKind (0 Unset · 1 Attack · 2 Defend) for each of the
-    // kMaxMoveSlots move slots, length-prefixed (mirrors statPoints). Per-pet, reset
-    // on a new egg. Pre-v24 → slotKinds stays empty and hasSlotKindData false, so the
-    // loader leaves every slot Unset for Game::stampSlotKinds() to re-derive.
-    std::vector<uint8_t> slotKinds;
-    bool hasSlotKindData = false;
 
     // --- v25: web-'Pedia reveal-state bookkeeping ---------------------------
     // Creature ids glimpsed-but-not-hatched (Game::markCreatureSeen). Pre-v25 → empty.
@@ -731,17 +688,6 @@ struct SaveData {
     int32_t rackSlotUpgradeCount = 0;
     int32_t scrapingClusterLevel = 0;
     int32_t dataMiningLevel = 0;
-
-    // v28: Ambig-USB's armed effect -------------------------------------------
-    // Per-pet (reset on a new egg, like mistakeShieldActive). Guarantees the pet's
-    // next Process->Script Trojan divert. Pre-v28 → 0 (no divert armed).
-    uint8_t forceTrojanDivert = 0;
-
-    // v30: the Backup Drive combat-shield buff --------------------------------
-    // Per-pet (reset on a new egg, like mistakeShieldActive). The lifetimeUptimeMs()
-    // deadline the buff is armed until; 0 = inactive. Consumed early (set back to 0)
-    // the moment it negates a hit in combat, regardless of time remaining.
-    uint32_t backupShieldUntilMs = 0;
 
     // v31: the Merge Hub unlock + the recipes known -----------------------------
     // Player-level (survive lifecycles, like itemTabsUnlocked). mergeHubUnlocked makes
@@ -815,16 +761,6 @@ struct SaveData {
     // seeded from the active pet's own record.
     std::vector<SaveId> speciesDiveIds;
     std::vector<int32_t> speciesDiveDepths;
-    // Every distinct Food this pet has been fed (v62). Per-pet, unlike collectedItems
-    // above: what the device has ever HELD is the operator's collection, what this pet
-    // has TASTED is the pet's, and STAT's FOODS grid draws the difference between them.
-    std::vector<SaveId> petFoodsEaten;
-
-    // How much of the 5/5 recovery window this pet has already spent, in ms awake at
-    // 5/5, because a board with no RTC cannot measure wall time across a boot.
-    // Per-pet; zeroed the moment care recovers below 5/5, so a later brush with death
-    // starts clean. Pre-v42 → 0.
-    uint32_t dyingElapsedMs = 0;
 
     // --- v44: the played-maintenance tally -----------------------------------
     // Stacker boards cleared by hand in MAINT, lifetime.
@@ -865,21 +801,6 @@ struct SaveData {
     // Pre-v48 → empty, and every quote reads as never played.
     std::vector<uint8_t> quoteStates;
 
-    // --- v50: the ACTIVE pet's Bandwidth-regen upgrade -----------------------
-    // Minutes shaved off its regen interval by a Tiramisudo. Per-pet (reset on a new
-    // egg, like mistakeShieldActive) AND frozen with the pet: the rack pets' own
-    // values ride on SaveStoredPet::bandwidthRegenBonusMin, a parallel tail. Pre-v50 →
-    // 0, which is the truth: nothing granted it before this version.
-    int32_t bandwidthRegenBonusMin = 0;
-
-    // --- v57: the ACTIVE pet's other permanent Epic-dish grants --------------
-    // Off-level combat-stat points and the XP rate (core/model/pet_upgrades.h). Same
-    // shape and the same reason as the v50 pair above: per-pet, reset on a new egg, and
-    // frozen with the pet, so the rack's own values ride on SaveStoredPet::statBonus /
-    // ::xpRateBonusPct in a parallel tail. Pre-v57 → 0, which is the truth.
-    int32_t statBonus[kLevelStatCount] = {0};
-    int32_t xpRateBonusPct = 0;
-
     // --- v51: the owned-recipe bitset ----------------------------------------
     // One bit per MergeRecipe::wire (game_internal.h), low bit first within each byte,
     // stored length-prefixed so the kitchen can outgrow any fixed width. The same
@@ -901,29 +822,12 @@ struct SaveData {
     uint8_t tourneyRound = 0;
     uint8_t tourneyPhase = 0;
 
-    // v35: this pet's own best-ever DeepWeb Dive depth ------------------------
-    // Per-pet (reset on a new egg, like mistakeShieldActive). The active pet's
-    // value; the rack pets' own values ride on SaveStoredPet::bestDeepWebDepth
-    // (a parallel tail, mirrors defragCount's v16 pattern). Pre-v35 → 0 (never
-    // dived).
-    int32_t bestDeepWebDepth = 0;
-    // v63: the ACTIVE pet's deepest DARKWEB CRAWL, beside the dive's and for the same
-    // reasons; per-pet, reset on a new egg, and a separate number from the dive's
-    // because the two zones are not the same fight.
-    int32_t bestDarkWebDepth = 0;
-
     // --- v59: the CANT -------------------------------------------------------
     // Player-level, not per-pet: the operator's device learned this language, and it
     // outlives a pet the way the HackerTag, the Titles and the network ledger do. See
     // the version note above for why SPENT rather than UNSPENT is the field.
     uint32_t cantSigils = 0;
     int32_t shakesSpent = 0;
-    // v60: the USB port. `evolveBranchOverride` is BranchOverride's wire number and
-    // `evolveSoakFactor` defaults to 1 because it is a multiplier, so an untouched
-    // SaveData describes an empty port.
-    uint8_t evolveBranchOverride = 0;
-    uint8_t evolveSoakFactor = 1;
-    uint8_t evolveHold = 0;
 
     // --- v64: the chosen PAL_CORE theme --------------------------------------
     // The set's name (kPalThemeNames), empty for the base set. A NAME and not the
@@ -955,15 +859,6 @@ struct SaveData {
 
     // --- v71 ---
     uint8_t exploreSound = 1;
-
-    // --- v72: the ACTIVE pet's favourite dish --------------------------------
-    // Per-pet, reset on a new egg and frozen with the pet (SaveStoredPet). Empty means
-    // not rolled yet, which Game rolls at the next meal (core/model/pet_upgrades.h).
-    char favouriteFood[kSaveIdCap] = {0};
-    uint8_t favouriteFound = 0;
-
-    // --- v74: the ACTIVE pet's Bond per source (BondSource order) -------------
-    uint16_t bondBp[kBondSources] = {0};
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveData::ownedModCounts) by

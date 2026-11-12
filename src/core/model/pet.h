@@ -5,7 +5,8 @@
 // The part a field sits in decides what moving the pet does to it: storing a pet on the
 // rack keeps the lifetime and current-life parts and clears PetArmed, since everything in
 // it can be armed again. Pet::stored and Pet::thawed are that move, and the only mapping
-// between a Pet and its rack record.
+// between a Pet and its save record: the save writes the active pet through them too, with
+// PetArmed::saved beside it.
 #pragma once
 
 #include <cstdint>
@@ -22,6 +23,7 @@
 namespace mal {
 
 class ContentRegistry;
+struct SaveArmedPet;
 struct SaveStoredPet;
 
 // A move slot's stamped kind: Unset until Game::stampSlotKinds first fills it, then
@@ -82,9 +84,15 @@ struct PetArmed {
     uint32_t lockoutDeadlineMs = 0;
     bool lockoutReminded = false;
     // Post-clear wild wins per sub-area: the decay input for its diminishing drop chances
-    // (refarmDropScalePct). Saved for the active pet (save v15), so each pet finds a
-    // cleared area an undepleted training ground.
+    // (refarmDropScalePct). Per pet, so each pet finds a cleared area an undepleted
+    // training ground.
     uint16_t subRefarmCount[kAreaCount][kSubAreasPerArea] = {};
+
+    // What the active pet's save keeps of this part: the Backup Drive deadline, the
+    // Ambig-USB divert and the re-farm counts. Everything else comes back as a reboot
+    // leaves it, with no dive armed and no Lockout running.
+    SaveArmedPet saved() const;
+    static PetArmed loaded(const SaveArmedPet& s);
 };
 
 struct Pet {
@@ -121,7 +129,8 @@ struct Pet {
     uint32_t bootHatchRemainMs = 0;   // the egg's incubation clock (save v9)
     bool eggOfferMade = false;        // the egg was offered an accelerator; not saved
     // The 5/5 dying window. The anchor is in game-ms and means nothing across a boot, so
-    // only the accumulated elapsed time is saved (save v42).
+    // only the accumulated elapsed time is saved (save v42). It is the one timed window a
+    // reboot keeps: refunding it would make the only death path optional.
     bool dyingArmed = false;
     uint32_t dyingEnteredMs = 0;
     uint32_t dyingElapsedMs = 0;
@@ -152,10 +161,11 @@ struct Pet {
         return creature && creature->stage == Stage::BootSector && bootHatchRemainMs > 0;
     }
 
-    // This pet as a rack record, at game-ms `nowMs`. PetArmed is left behind.
+    // This pet as a save record, at game-ms `nowMs`: a rack slot, or the active pet in
+    // the save. PetArmed is left behind (PetArmed::saved keeps the active pet's).
     SaveStoredPet stored(uint32_t nowMs) const;
-    // The pet a rack record thaws into, at game-ms `nowMs`, with nothing armed. Ids the
-    // running content no longer defines are dropped, as a save load drops them.
+    // The pet a save record thaws into, at game-ms `nowMs`, with nothing armed. Ids the
+    // running content no longer defines are dropped.
     static Pet thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t nowMs);
 };
 

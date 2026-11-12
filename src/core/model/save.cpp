@@ -73,6 +73,16 @@ void writeLog(Writer& w, const SaveLogEntry& e) {
     w.u8(e.type);
     w.bytes(e.text, kSaveTextCap);
 }
+// A length-prefixed id run read into a fixed row of cells. Ids past the row's end are
+// consumed and dropped, and cells past the run's end stay empty.
+template <size_t N>
+void readIdRow(Reader& r, SaveId (&row)[N]) {
+    const uint16_t n = r.u16();
+    for (uint16_t i = 0; i < n && r.ok; ++i) {
+        SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
+        if (i < N) row[i] = s;
+    }
+}
 void writeStored(Writer& w, const SaveStoredPet& p) {
     w.bytes(p.id, kSaveIdCap);
     w.i32(p.hunger); w.i32(p.frag); w.i32(p.happy);
@@ -122,7 +132,7 @@ void renameId(char* id, uint16_t version) {
 // renamed. The table is flattened (no `to` is ever a `from`), so one pass over each
 // is enough.
 void renameRetiredIds(SaveData& d, uint16_t version) {
-    renameId(d.activeId, version);
+    renameId(d.active.id, version);
     for (SaveStoredPet& p : d.rack) renameId(p.id, version);
     for (SaveRecord& r : d.records) renameId(r.id, version);
     for (SaveId& s : d.seenCreatures) renameId(s.id, version);
@@ -130,7 +140,7 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
     for (SaveId& s : d.speciesDiveIds) renameId(s.id, version);
     for (SaveStack& s : d.items) renameId(s.id, version);
     for (SaveId& s : d.collectedItems) renameId(s.id, version);
-    for (SaveId& s : d.petFoodsEaten) renameId(s.id, version);
+    for (SaveId& s : d.active.foodsEaten) renameId(s.id, version);
 }
 
 // The mid-ladder splice table. Adding and retiring a row: save.h's `ladderInserts`.
@@ -161,8 +171,8 @@ void openLadderRung(SaveData& d, int at) {
     openByte(d.subBossUnlocked);
     // subRefarm is row-major with kSubAreasPerArea counts per area: a whole ROW opens.
     const size_t row = static_cast<size_t>(at) * kSubAreasPerArea;
-    if (row <= d.subRefarm.size())
-        d.subRefarm.insert(d.subRefarm.begin() + row, kSubAreasPerArea, 0);
+    std::vector<uint16_t>& refarm = d.activeArmed.subRefarm;
+    if (row <= refarm.size()) refarm.insert(refarm.begin() + row, kSubAreasPerArea, 0);
     // titlesUnlocked is a bitmask indexed by rung: everything at or above `at` moves up
     // one bit, leaving the new rung's Title correctly unearned.
     if (at < 32) {
@@ -214,12 +224,16 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.bytes(reinterpret_cast<const char*>(kMagic), 4);
     w.u16(kSaveVersion);
 
-    w.bytes(d.activeId, kSaveIdCap);
-    w.i32(d.hunger); w.i32(d.frag); w.i32(d.happy);
-    w.i32(d.mistakes); w.i32(d.debuffs);
-    w.u8(d.ghost);
-    w.u32(d.timeInStageMs);
-    w.i32(d.generation);
+    // The active pet's fields go where each version first put them, not in a record of
+    // their own: see SaveData::active.
+    const SaveStoredPet& a = d.active;
+    const SaveArmedPet& armed = d.activeArmed;
+    w.bytes(a.id, kSaveIdCap);
+    w.i32(a.hunger); w.i32(a.frag); w.i32(a.happy);
+    w.i32(a.mistakes); w.i32(a.debuffs);
+    w.u8(a.ghost);
+    w.u32(a.timeInStageMs);
+    w.i32(a.generation);
 
     w.i32(d.bits);
     w.bytes(d.hackerTag, kHackerTagMax + 1);
@@ -237,20 +251,20 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // exactly what the migration tests forge by stamping the version word down.
     w.u16(static_cast<uint16_t>(d.ownedMods.size()));
     for (const auto& m : d.ownedMods) writeId(w, m);
-    w.u16(static_cast<uint16_t>(d.equipped.size()));
-    for (const auto& e : d.equipped) writeId(w, e);
+    w.u16(static_cast<uint16_t>(kModSlots));
+    for (const SaveId& e : a.equippedMods) writeId(w, e);
     w.u16(static_cast<uint16_t>(d.log.size()));
     for (const auto& e : d.log) writeLog(w, e);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) writeStored(w, p);
 
     // v2: the move loadout + combat XP/level (appended after the v1 stream).
-    w.u16(static_cast<uint16_t>(d.ownedMoves.size()));
-    for (const auto& m : d.ownedMoves) writeId(w, m);
-    w.u16(static_cast<uint16_t>(d.equippedMoves.size()));
-    for (const auto& e : d.equippedMoves) writeId(w, e);
-    w.i32(d.combatXp);
-    w.i32(d.combatLevel);
+    w.u16(static_cast<uint16_t>(a.ownedMoves.size()));
+    for (const auto& m : a.ownedMoves) writeId(w, m);
+    w.u16(static_cast<uint16_t>(kMaxMoveSlots));
+    for (const SaveId& e : a.equippedMoves) writeId(w, e);
+    w.i32(a.combatXp);
+    w.i32(a.combatLevel);
 
     // v3: the ARCH records (RETIRED/CORRUPTED), appended after the v2 tail.
     w.u16(static_cast<uint16_t>(d.records.size()));
@@ -286,7 +300,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     for (uint8_t c : d.sectorCleared) w.u8(c);
 
     // v9: the Boot-Sector incubation timer (remaining decrypt clock).
-    w.u32(d.bootHatchRemainMs);
+    w.u32(a.bootHatchRemainMs);
 
     // v10: the zone-completion Titles. Unlocked bitmask + equipped index.
     w.u32(d.titlesUnlocked);
@@ -294,8 +308,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v11: the creature-level stat points, length-prefixed so the count is
     // self-describing (kLevelStatCount today). Sum equals combatLevel (the invariant).
-    w.u16(static_cast<uint16_t>(d.statPoints.size()));
-    for (int32_t p : d.statPoints) w.i32(p);
+    w.u16(static_cast<uint16_t>(kLevelStatCount));
+    for (int32_t p : a.statPoints) w.i32(p);
 
     // v12: the EXPL per-sector boss-unlock flags, length-prefixed.
     w.u16(static_cast<uint16_t>(d.bossUnlocked.size()));
@@ -313,13 +327,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v15: the EXPL per-sub-area re-farm win counts, length-prefixed
     // (flat row-major), each a u16 count.
-    w.u16(static_cast<uint16_t>(d.subRefarm.size()));
-    for (uint16_t c : d.subRefarm) w.u16(c);
+    w.u16(static_cast<uint16_t>(armed.subRefarm.size()));
+    for (uint16_t c : armed.subRefarm) w.u16(c);
 
     // v16: the per-pet defrag count. The active pet's tally, then a parallel
     // length-prefixed list of the rack pets' tallies (same order as d.rack), so the
     // count survives ARCH freeze/thaw without touching the mid-stream rack records.
-    w.i32(d.defragCount);
+    w.i32(a.defragCount);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.i32(p.defragCount);
 
@@ -340,9 +354,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v21: the per-pet care-mistake shield + once-per-lifetime item gates, and the
     // shop-pre-alloc fragAmountTier. Appended, so a v20 reader ignores it. (The full
     // 64-bit dedup mask this tail used to carry was removed as of v33: see save.h.)
-    w.u8(d.mistakeShieldActive);
-    w.u8(d.shieldItemConsumed);
-    w.u8(d.yubiConsumed);
+    w.u8(a.shieldActive);
+    w.u8(a.shieldSpent);
+    w.u8(a.yubiSpent);
     w.u8(d.fragAmountTier);
 
     // v22: the c "Reduce Explore Frag TRIGGER %" tier. Appended, so a v21
@@ -356,8 +370,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v24: the move-slot rework's per-pet Attack/Defend slot typing,
     // length-prefixed like statPoints. Appended, so a v23 reader ignores it.
-    w.u16(static_cast<uint16_t>(d.slotKinds.size()));
-    for (uint8_t k : d.slotKinds) w.u8(k);
+    w.u16(static_cast<uint16_t>(kMaxMoveSlots));
+    for (uint8_t k : a.slotKinds) w.u8(k);
 
     // v25: the web-'Pedia reveal-state bookkeeping; seenCreatures (length-prefixed,
     // like ownedMods) and the malbeast seen/defeated bitmasks. Appended, so a v24 reader
@@ -394,7 +408,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v28: the Ambig-USB armed Trojan-divert flag. Appended, so a v27 reader
     // ignores it; a pre-v28 blob reads back as false (no divert armed).
-    w.u8(d.forceTrojanDivert);
+    w.u8(armed.trojanDivert);
 
     // v29: per-stored-pet move + mod loadout, parallel to d.rack (mirrors v26's
     // pattern) so a rack pet's MOVES/MODS state survives an ARCH Store/Deploy cycle.
@@ -407,7 +421,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     }
 
     // v30: the Backup Drive combat-shield buff's armed-until deadline.
-    w.u32(d.backupShieldUntilMs);
+    w.u32(armed.backupShieldUntilMs);
 
     // v31: the f Hacker-SHOP Merge Hub unlocks. Appended, so a v30 reader
     // ignores them; a pre-v31 blob reads back as both 0 (bought neither).
@@ -427,7 +441,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v35: this pet's own best-ever DeepWeb Dive depth. The active pet's tally,
     // then a parallel list mapped onto d.rack by index (mirrors defragCount's v16
     // pattern) so it survives an ARCH Store/Deploy cycle.
-    w.i32(d.bestDeepWebDepth);
+    w.i32(a.bestDeepWebDepth);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.i32(p.bestDeepWebDepth);
 
@@ -469,7 +483,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // nor an ARCH freeze can refund it. Awake-ms only; save.h's version note explains
     // why for a board with no RTC. The active pet's value, then a parallel list
     // mapped onto d.rack by index.
-    w.u32(d.dyingElapsedMs);
+    w.u32(a.dyingElapsedMs);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.u32(p.dyingElapsedMs);
 
@@ -499,7 +513,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v50: the per-pet Bandwidth-regen upgrade. The active pet's minutes, then a
     // parallel list mapped onto the rack by index (the v42 dying-window shape).
-    w.i32(d.bandwidthRegenBonusMin);
+    w.i32(a.bandwidthRegenBonusMin);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) w.i32(p.bandwidthRegenBonusMin);
 
@@ -535,8 +549,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // points and XP rate, then the same pair per rack pet, mapped by index. The v50 tail
     // above carries the first of these grants and is left exactly as it was, so a build
     // that stops at v56 still reads every field it knows.
-    for (int32_t v : d.statBonus) w.i32(v);
-    w.i32(d.xpRateBonusPct);
+    for (int32_t v : a.statBonus) w.i32(v);
+    w.i32(a.xpRateBonusPct);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const auto& p : d.rack) {
         for (int32_t v : p.statBonus) w.i32(v);
@@ -556,9 +570,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v60: the USB port's three per-pet slots. The forced evolution branch, the armed
     // soak factor and the evolution hold. Its own tail after v59's, so a build that stops
     // at either still reads every field it knows.
-    w.u8(d.evolveBranchOverride);
-    w.u8(d.evolveSoakFactor);
-    w.u8(d.evolveHold);
+    w.u8(a.usbBranch);
+    w.u8(a.usbSoak);
+    w.u8(a.usbHold);
 
     // v61: which owned SERVICE rows are stopped, as one bit per rig row. Its own tail
     // after v60's, so a build that stops at either still reads every field it knows.
@@ -566,12 +580,12 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v62: the active pet's tasted set, a length-prefixed SaveId run like every other id
     // list here. Its own tail after v61's.
-    w.u16(static_cast<uint16_t>(d.petFoodsEaten.size()));
-    for (const auto& s : d.petFoodsEaten) writeId(w, s);
+    w.u16(static_cast<uint16_t>(a.foodsEaten.size()));
+    for (const auto& s : a.foodsEaten) writeId(w, s);
 
     // v63: this pet's deepest DARKWEB CRAWL. Its own tail after v62's, so a build that
     // stops at either still reads every field it knows.
-    w.i32(d.bestDarkWebDepth);
+    w.i32(a.bestDarkWebDepth);
 
     // v64: the chosen PAL_CORE theme, by NAME, in a fixed kSaveIdCap cell like every
     // other id here. Its own tail after v63's.
@@ -603,8 +617,8 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v72: the favourite dish (the active pet's, then the rack's in rack order), and
     // the rack's palates as a food-id dictionary plus a bitset per pet over it.
-    w.bytes(d.favouriteFood, kSaveIdCap);
-    w.u8(d.favouriteFound);
+    w.bytes(a.favouriteFood, kSaveIdCap);
+    w.u8(a.favouriteFound);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const SaveStoredPet& p : d.rack) {
         w.bytes(p.favouriteFood, kSaveIdCap);
@@ -633,7 +647,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     }
 
     // v74: Bond, the active pet's then the rack's in rack order.
-    for (uint16_t bp : d.bondBp) w.u16(bp);
+    for (uint16_t bp : a.bondBp) w.u16(bp);
     w.u16(static_cast<uint16_t>(d.rack.size()));
     for (const SaveStoredPet& p : d.rack)
         for (uint16_t bp : p.bondBp) w.u16(bp);
@@ -691,12 +705,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     }
 
     SaveData d;
-    r.bytes(d.activeId, kSaveIdCap);
-    d.hunger = r.i32(); d.frag = r.i32(); d.happy = r.i32();
-    d.mistakes = r.i32(); d.debuffs = r.i32();
-    d.ghost = r.u8();
-    d.timeInStageMs = r.u32();
-    d.generation = r.i32();
+    SaveStoredPet& a = d.active;
+    SaveArmedPet& armed = d.activeArmed;
+    r.bytes(a.id, kSaveIdCap);
+    a.id[kSaveIdCap - 1] = '\0';
+    a.hunger = r.i32(); a.frag = r.i32(); a.happy = r.i32();
+    a.mistakes = r.i32(); a.debuffs = r.i32();
+    a.ghost = r.u8();
+    a.timeInStageMs = r.u32();
+    a.generation = r.i32();
 
     d.bits = r.i32();
     r.bytes(d.hackerTag, kHackerTagMax + 1);
@@ -718,11 +735,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
         d.ownedMods.push_back(m);
     }
-    const uint16_t nEquip = r.u16();
-    for (uint16_t i = 0; i < nEquip && r.ok; ++i) {
-        SaveId e; r.bytes(e.id, kSaveIdCap); e.id[kSaveIdCap - 1] = '\0';
-        d.equipped.push_back(e);
-    }
+    readIdRow(r, a.equippedMods);
     const uint16_t nLog = r.u16();
     for (uint16_t i = 0; i < nLog && r.ok; ++i) {
         SaveLogEntry e; e.type = r.u8();
@@ -739,23 +752,17 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.rack.push_back(p);
     }
 
-    // v2 tail: the move loadout + combat XP/level. Absent in a v1 blob (the fields
-    // keep their SaveData defaults; hasMoveData stays false so the loader seeds a
-    // starting loadout). The reader stays bounds-checked, so a clean v1 blob is OK.
+    // v2 tail: the move loadout + combat XP/level. Absent in a v1 blob: the owned list
+    // stays empty, which Pet::thawed reads as a pet with no move state.
     if (version >= 2) {
         const uint16_t nOwnedMv = r.u16();
         for (uint16_t i = 0; i < nOwnedMv && r.ok; ++i) {
             SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
-            d.ownedMoves.push_back(m);
+            a.ownedMoves.push_back(m);
         }
-        const uint16_t nEquipMv = r.u16();
-        for (uint16_t i = 0; i < nEquipMv && r.ok; ++i) {
-            SaveId e; r.bytes(e.id, kSaveIdCap); e.id[kSaveIdCap - 1] = '\0';
-            d.equippedMoves.push_back(e);
-        }
-        d.combatXp = r.i32();
-        d.combatLevel = r.i32();
-        d.hasMoveData = r.ok;
+        readIdRow(r, a.equippedMoves);
+        a.combatXp = r.i32();
+        a.combatLevel = r.i32();
     }
 
     // v3 tail: the ARCH records. Absent in a v1/v2 blob (records stay empty).
@@ -814,7 +821,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v9 tail: the Boot-Sector incubation timer. Absent in a v1..v8 blob. It stays
     // 0 (the migrated pet is treated as already hatched: no in-flight egg to resume).
     if (version >= 9) {
-        d.bootHatchRemainMs = r.u32();
+        a.bootHatchRemainMs = r.u32();
     }
 
     // v10 tail: the zone-completion Titles. Absent in a v1..v9 blob: nothing
@@ -824,14 +831,13 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.equippedTitle = r.i32();
     }
 
-    // v11 tail: the creature-level stat points. Absent in a v1..v10 blob:
-    // statPoints stays empty and hasLevelData false, so the loader migrates the pet
-    // to a fresh level 0 (the pre-v11 combatLevel was never applied to combat).
+    // v11 tail: the creature-level stat points. Every accepted blob has it.
     if (version >= 11) {
         const uint16_t nStat = r.u16();
-        for (uint16_t i = 0; i < nStat && r.ok; ++i)
-            d.statPoints.push_back(r.i32());
-        d.hasLevelData = r.ok;
+        for (uint16_t i = 0; i < nStat && r.ok; ++i) {
+            const int32_t v = r.i32();
+            if (i < kLevelStatCount) a.statPoints[i] = v;
+        }
     }
 
     // v12 tail: the EXPL per-sector boss-unlock flags. Absent in a v1..v11 blob:
@@ -868,14 +874,14 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 15) {
         const uint16_t nRf = r.u16();
         for (uint16_t i = 0; i < nRf && r.ok; ++i)
-            d.subRefarm.push_back(r.u16());
+            armed.subRefarm.push_back(r.u16());
     }
 
     // v16 tail: the per-pet defrag counts. The active pet's tally + a
     // parallel list mapped back onto the rack pets by index. Absent in a v1..v15 blob:
     // every tally stays 0 (a migrated save's pets read as never-defragged).
     if (version >= 16) {
-        d.defragCount = r.i32();
+        a.defragCount = r.i32();
         const uint16_t nDc = r.u16();
         for (uint16_t i = 0; i < nDc && r.ok; ++i) {
             const int32_t c = r.i32();
@@ -908,9 +914,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // the shop-pre-alloc fragAmountTier. Absent in a v1..v20 blob → the per-pet flags
     // stay 0 (no shield, neither item consumed) and fragAmountTier 0.
     if (version >= 21) {
-        d.mistakeShieldActive = r.u8();
-        d.shieldItemConsumed = r.u8();
-        d.yubiConsumed = r.u8();
+        a.shieldActive = r.u8();
+        a.shieldSpent = r.u8();
+        a.yubiSpent = r.u8();
         d.fragAmountTier = r.u8();
     }
 
@@ -925,15 +931,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.bulkOpenUnlocked = r.u8();
     }
 
-    // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing.
-    // Absent in a v1..v23 blob: slotKinds stays empty and hasSlotKindData false,
-    // so the loader leaves every slot Unset and Game::stampSlotKinds() re-derives
-    // it from the loaded pet's CreatureDef::slotKinds (a deterministic migration).
+    // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing. Absent in a
+    // v1..v23 blob: every slot stays Unset, and Game::stampSlotKinds() re-derives it
+    // from the loaded pet's CreatureDef::slotKinds (a deterministic migration).
     if (version >= 24) {
         const uint16_t nSk = r.u16();
-        for (uint16_t i = 0; i < nSk && r.ok; ++i)
-            d.slotKinds.push_back(r.u8());
-        d.hasSlotKindData = r.ok;
+        for (uint16_t i = 0; i < nSk && r.ok; ++i) {
+            const uint8_t k = r.u8();
+            if (i < kMaxMoveSlots) a.slotKinds[i] = k;
+        }
     }
 
     // v25 tail: the web-'Pedia reveal-state bookkeeping. Absent in a v1..v24 blob:
@@ -984,7 +990,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v28 tail: the Ambig-USB armed Trojan-divert flag. Absent in a v1..v27 blob →
     // stays false (no divert armed).
-    if (version >= 28) d.forceTrojanDivert = r.u8();
+    if (version >= 28) armed.trojanDivert = r.u8();
 
     // v29 tail: per-stored-pet move + mod loadout, parallel to d.rack. Absent in a
     // v1..v28 blob: every rack pet keeps its SaveStoredPet default (empty
@@ -1019,7 +1025,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v30 tail: the Backup Drive combat-shield buff's armed-until deadline. Absent in
     // a v1..v29 blob → stays 0 (no shield armed).
-    if (version >= 30) d.backupShieldUntilMs = r.u32();
+    if (version >= 30) armed.backupShieldUntilMs = r.u32();
 
     // v31 tail: the f Hacker-SHOP Merge Hub unlocks. Absent in a v1..v30 blob →
     // both stay 0 (a migrated save has bought neither the Hub nor any recipe).
@@ -1052,7 +1058,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // tally + a parallel list mapped back onto the rack pets by index. Absent in a
     // v1..v34 blob → every pet reads back as 0 (never dived).
     if (version >= 35) {
-        d.bestDeepWebDepth = r.i32();
+        a.bestDeepWebDepth = r.i32();
         const uint16_t nBd = r.u16();
         for (uint16_t i = 0; i < nBd && r.ok; ++i) {
             const int32_t v = r.i32();
@@ -1122,7 +1128,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // full grace period. That is the forgiving reading, and the only one a save that
     // never recorded the figure can support.
     if (version >= 42) {
-        d.dyingElapsedMs = r.u32();
+        a.dyingElapsedMs = r.u32();
         const uint16_t nDy = r.u16();
         for (uint16_t i = 0; i < nDy && r.ok; ++i) {
             const uint32_t v = r.u32();
@@ -1170,7 +1176,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // mapped back onto the rack pets by index. Absent in a v1..v49 blob → 0 for every
     // pet, which is the truth rather than a compromise: no dish granted it before v50.
     if (version >= 50) {
-        d.bandwidthRegenBonusMin = r.i32();
+        a.bandwidthRegenBonusMin = r.i32();
         const uint16_t nBw = r.u16();
         for (uint16_t i = 0; i < nBw && r.ok; ++i) {
             const int32_t v = r.i32();
@@ -1217,8 +1223,8 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v1..v56 blob → 0 for every pet, which is the truth rather than a compromise: no
     // dish granted one before this version.
     if (version >= 57) {
-        for (int32_t& v : d.statBonus) v = r.i32();
-        d.xpRateBonusPct = r.i32();
+        for (int32_t& v : a.statBonus) v = r.i32();
+        a.xpRateBonusPct = r.i32();
         const uint16_t nUp = r.u16();
         for (uint16_t i = 0; i < nUp && r.ok; ++i) {
             int32_t bonus[kLevelStatCount];
@@ -1247,10 +1253,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // the evolution dwell and every XP award, so a 0 on the wire (from a truncated or
     // hand-edited blob) would otherwise stop the pet learning anything at all.
     if (version >= 60) {
-        d.evolveBranchOverride = r.u8();
-        d.evolveSoakFactor = r.u8();
-        if (d.evolveSoakFactor < 1) d.evolveSoakFactor = 1;
-        d.evolveHold = r.u8();
+        a.usbBranch = r.u8();
+        a.usbSoak = r.u8();
+        if (a.usbSoak < 1) a.usbSoak = 1;
+        a.usbHold = r.u8();
     }
 
     // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, so every
@@ -1263,13 +1269,13 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         const uint16_t n = r.u16();
         for (uint16_t i = 0; i < n && r.ok; ++i) {
             SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            d.petFoodsEaten.push_back(s);
+            a.foodsEaten.push_back(s);
         }
     }
 
     // v63 tail: the crawl's depth record. Absent in an older blob -> 0, a pet that has
     // never been down there, which is every pet written before the zone existed.
-    if (version >= 63) d.bestDarkWebDepth = r.i32();
+    if (version >= 63) a.bestDarkWebDepth = r.i32();
 
     // v64 tail: the chosen theme's name. Absent in an older blob -> empty, which reads
     // as the base set: what every device drew before there was a second one to choose.
@@ -1315,9 +1321,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v72 tail: the favourite dishes and the rack's palates. Absent in an older blob ->
     // no favourite anywhere (each pet rolls one at its next meal) and empty rack plates.
     if (version >= 72) {
-        r.bytes(d.favouriteFood, kSaveIdCap);
-        d.favouriteFood[kSaveIdCap - 1] = '\0';
-        d.favouriteFound = r.u8();
+        r.bytes(a.favouriteFood, kSaveIdCap);
+        a.favouriteFood[kSaveIdCap - 1] = '\0';
+        a.favouriteFound = r.u8();
         const uint16_t nFav = r.u16();
         for (uint16_t i = 0; i < nFav && r.ok; ++i) {
             char id[kSaveIdCap];
@@ -1351,7 +1357,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v74 tail: Bond. Absent in an older blob -> 0, nothing recorded.
     if (version >= 74) {
-        for (uint16_t& bp : d.bondBp) bp = r.u16();
+        for (uint16_t& bp : a.bondBp) bp = r.u16();
         const uint16_t nBond = r.u16();
         for (uint16_t i = 0; i < nBond && r.ok; ++i)
             for (int k = 0; k < kBondSources; ++k) {

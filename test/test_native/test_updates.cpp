@@ -8,7 +8,7 @@
 // save v18: the per-spare equip gate round-trips.
 void test_save_v18_mod_reqlevel() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.active.id, "paypup");
     a.ownedMods.resize(2);
     std::strcpy(a.ownedMods[0].id, "crypto_coprocessor");
     std::strcpy(a.ownedMods[1].id, "overclock_chip");
@@ -119,7 +119,7 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
 // v37 round-trip: the pet-to-pet LINK opt-in. Only the consent bit is in the blob:
 // the met operators themselves ride the SD-backed PeerLedger.
 void test_save_v37_link_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.linkEnabled = true;
     auto blob = serializeSave(a);
     SaveData out;
@@ -132,7 +132,7 @@ void test_save_v37_link_roundtrip() {
 // 'net. The byte itself has to stay (v39..v42 sit behind it and the tail is read
 // positionally), which is what the second half checks.
 void test_save_v38_net_slot_is_reserved() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.netReserved = true;                       // whatever a caller puts here...
     a.linkEnabled = true;
     auto blob = serializeSave(a);
@@ -280,7 +280,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     // would come back as: the previous one, in the report.
     SaveData onFlash;
     CHECK(deserializeSave(store.bytes(), onFlash));
-    const std::string previous = onFlash.activeId;
+    const std::string previous = onFlash.active.id;
     CHECK(!previous.empty());
 
     store.refuse = true;                                 // the medium starts saying no
@@ -291,7 +291,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     CHECK(g.saveWritesFailed() > 0);                     // the hatch's own write bounced
     SaveData still;
     CHECK(deserializeSave(store.bytes(), still));
-    CHECK(previous == still.activeId);                   // a reboot here = the old pet
+    CHECK(previous == still.active.id);                   // a reboot here = the old pet
 
     // The pet is owed a write, so the next store that says yes gets it: no further
     // player action, and no waiting out the 30s autosave.
@@ -299,7 +299,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     g.tick(t += kSaveDebounceMs);
     SaveData back;
     CHECK(deserializeSave(store.bytes(), back));
-    CHECK(hatched == back.activeId);
+    CHECK(hatched == back.active.id);
     CHECK(g.saveWritesFailed() == 0);
 }
 
@@ -337,7 +337,7 @@ void test_net_access_needs_a_live_job() {
 
     // A fresh device carrying a save written when the standing opt-in still existed
     // reads that slot as reserved, so it lands off the 'net like any other.
-    SaveData d; std::strcpy(d.activeId, "paypup"); d.generation = 1;
+    SaveData d; std::strcpy(d.active.id, "paypup"); d.active.generation = 1;
     d.netReserved = true;
     SaveData out;
     CHECK(deserializeSave(serializeSave(d), out));
@@ -1081,30 +1081,30 @@ void test_net_attempt_outcomes() {
 // and fragAmountTier. (The v21 tail's dedup-mask field was removed as of v33:
 // see test_save_v33_drops_network_dedup below for that boundary.)
 void test_save_v21_shield_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.mistakeShieldActive = 1;
-    a.shieldItemConsumed = 1;
-    a.yubiConsumed = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
+    a.active.shieldActive = 1;
+    a.active.shieldSpent = 1;
+    a.active.yubiSpent = 1;
     a.fragAmountTier = 3;
     auto blob = serializeSave(a);
     SaveData out;
     CHECK(deserializeSave(blob, out));
-    CHECK(out.mistakeShieldActive == 1);
-    CHECK(out.shieldItemConsumed == 1);
-    CHECK(out.yubiConsumed == 1);
+    CHECK(out.active.shieldActive == 1);
+    CHECK(out.active.shieldSpent == 1);
+    CHECK(out.active.yubiSpent == 1);
     CHECK(out.fragAmountTier == 3);
 }
 
 // v22 field round-trip: fragTriggerTier survives a full serialize/deserialize
 // alongside the v21 fields it sits behind.
 void test_save_v22_frag_trigger_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
-    a.mistakeShieldActive = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
+    a.active.shieldActive = 1;
     a.fragAmountTier = 3;
     a.fragTriggerTier = 4;
     SaveData rt;
     CHECK(deserializeSave(serializeSave(a), rt));
-    CHECK(rt.mistakeShieldActive == 1);
+    CHECK(rt.active.shieldActive == 1);
     CHECK(rt.fragAmountTier == 3);
     CHECK(rt.fragTriggerTier == 4);
 }
@@ -1112,7 +1112,7 @@ void test_save_v22_frag_trigger_roundtrip() {
 // v23 field round-trip: both one-time shop unlocks survive a full
 // serialize/deserialize alongside the v22 field ahead of them.
 void test_save_v23_shop_unlocks_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.fragTriggerTier = 5;
     a.itemTabsUnlocked = 1;
     a.bulkOpenUnlocked = 1;

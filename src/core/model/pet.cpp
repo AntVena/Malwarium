@@ -37,6 +37,9 @@ SaveStoredPet Pet::stored(uint32_t nowMs) const {
         p.bondBp[k] = static_cast<uint16_t>(upgrades.bondBp[k]);
     if (upgrades.favouriteFood) copyId(p.favouriteFood, upgrades.favouriteFood->id);
     p.favouriteFound = upgrades.favouriteFound ? 1 : 0;
+    // Reserved to the exact count, as Game::captureSave's collections are, so building a
+    // save does not leave the heap in pieces.
+    p.foodsEaten.reserve(foodsEaten.size());
     for (const ItemDef* d : foodsEaten) {
         SaveId id;
         copyId(id.id, d->id);
@@ -53,6 +56,7 @@ SaveStoredPet Pet::stored(uint32_t nowMs) const {
     p.combatXp = xp;
     for (int i = 0; i < kLevelStatCount; ++i) p.statPoints[i] = statPoints[i];
     for (int i = 0; i < kMaxMoveSlots; ++i) p.slotKinds[i] = static_cast<uint8_t>(slotKinds[i]);
+    p.ownedMoves.reserve(moves.owned().size());
     for (const char* mv : moves.owned()) {
         SaveId id;
         copyId(id.id, mv);
@@ -70,7 +74,7 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
     Pet p;
     p.creature = reg.creature(s.id);
     // The line is only read while the pet is an incubating egg, so it is derived for one
-    // and left null otherwise, as restoreActivePet does.
+    // and left null otherwise.
     p.line = p.creature && p.creature->stage == Stage::BootSector
                  ? reg.eggLineForCreature(p.creature->id)
                  : nullptr;
@@ -97,7 +101,10 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
     p.grants.shieldActive = s.shieldActive != 0;
     p.grants.shieldSpent = s.shieldSpent != 0;
     p.grants.yubiSpent = s.yubiSpent != 0;
-    p.usb.branch = static_cast<BranchOverride>(s.usbBranch);
+    // A branch number this build has no override for reads as none.
+    p.usb.branch = s.usbBranch <= static_cast<uint8_t>(BranchOverride::Bad)
+                       ? static_cast<BranchOverride>(s.usbBranch)
+                       : BranchOverride::None;
     p.usb.soakFactor = s.usbSoak < 1 ? 1 : s.usbSoak;
     p.usb.hold = s.usbHold != 0;
 
@@ -105,9 +112,11 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
     p.xp = s.combatXp;
     for (int i = 0; i < kLevelStatCount; ++i) p.statPoints[i] = s.statPoints[i];
     for (int i = 0; i < kMaxMoveSlots; ++i) p.slotKinds[i] = static_cast<SlotKind>(s.slotKinds[i]);
-    // An empty owned list marks a pre-v29 record with no move state, which seeds its
-    // line's starting kit.
+    // An empty owned list marks a record with no move state (a pre-v29 rack pet), which
+    // seeds its line's starting kit. Otherwise the innate move is granted first, since an
+    // older record may not list it and every pet owns it.
     if (!s.ownedMoves.empty()) {
+        p.moves.grant(p.moves.defaultMove());
         for (const SaveId& mv : s.ownedMoves)
             if (const MoveDef* def = reg.move(mv.id)) p.moves.grant(def->id);
         for (int i = 0; i < kMaxMoveSlots; ++i)
@@ -124,6 +133,28 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
     // next tick re-anchors it against the current clock.
     p.dyingElapsedMs = s.dyingElapsedMs;
     return p;
+}
+
+SaveArmedPet PetArmed::saved() const {
+    SaveArmedPet s;
+    s.trojanDivert = trojanDivert ? 1 : 0;
+    s.backupShieldUntilMs = backupShieldUntilMs;
+    s.subRefarm.reserve(static_cast<size_t>(kAreaCount) * kSubAreasPerArea);
+    for (const auto& row : subRefarmCount)
+        for (uint16_t c : row) s.subRefarm.push_back(c);
+    return s;
+}
+
+PetArmed PetArmed::loaded(const SaveArmedPet& s) {
+    PetArmed a;
+    a.trojanDivert = s.trojanDivert != 0;
+    a.backupShieldUntilMs = s.backupShieldUntilMs;
+    for (int i = 0; i < kAreaCount; ++i)
+        for (int j = 0; j < kSubAreasPerArea; ++j) {
+            const size_t idx = static_cast<size_t>(i) * kSubAreasPerArea + j;
+            a.subRefarmCount[i][j] = idx < s.subRefarm.size() ? s.subRefarm[idx] : 0;
+        }
+    return a;
 }
 
 }  // namespace mal

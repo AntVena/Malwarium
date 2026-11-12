@@ -3184,7 +3184,6 @@ private:
     void captureOperator(SaveData& d) const;
     void captureBag(SaveData& d) const;
     void captureHistory(SaveData& d) const;
-    void capturePetProgress(SaveData& d) const;
     void captureRadio(SaveData& d) const;
     void captureWorldProgress(SaveData& d) const;
     void captureRig(SaveData& d) const;
@@ -3198,7 +3197,6 @@ private:
     void restoreOperator(const SaveData& d);
     void restoreBag(const SaveData& d);
     void restoreHistory(const SaveData& d);
-    void restorePetProgress(const SaveData& d);
     void restoreRadio(const SaveData& d);
     void restoreWorldProgress(const SaveData& d);
     void restoreRig(const SaveData& d);

@@ -42,7 +42,6 @@ SaveData Game::captureSave() const {
     captureOperator(d);
     captureBag(d);
     captureHistory(d);
-    capturePetProgress(d);
     captureRadio(d);
     captureWorldProgress(d);
     captureRig(d);
@@ -56,7 +55,6 @@ SaveData Game::captureSave() const {
 }
 
 void Game::captureOperator(SaveData& d) const {
-    d.generation = pet_.generation;
     d.petsRaised = petsRaised_;
     d.lifetimeUptimeMs = uptimeBase_ + nowMs_;
     d.lifetimeSteps = lifetimeSteps_;
@@ -90,8 +88,6 @@ void Game::captureBag(SaveData& d) const {
     for (const OwnedMod& m : modPool_.owned())
         if (const ModDef* def = registry_.mod(m.id))
             saveSetModCount(d.ownedModCounts, def->wire, m.count);
-    d.equipped.reserve(kModSlots);
-    for (int i = 0; i < kModSlots; ++i) d.equipped.push_back(saveId(pet_.mods.equipped(i)));
 }
 
 void Game::captureHistory(SaveData& d) const {
@@ -106,68 +102,6 @@ void Game::captureHistory(SaveData& d) const {
     }
     d.rack = rack_;
     d.records = records_;                             // v3: ARCH RETIRED/CORRUPTED records
-}
-
-// The rack pets' own copies of the per-pet fields here ride on d.rack, written by
-// Pet::stored.
-void Game::capturePetProgress(SaveData& d) const {
-    // v2: the move loadout (owned + per-slot equipped) + combat XP/level. Health is
-    // transient (resets each fight) and is deliberately NOT captured.
-    d.ownedMoves.reserve(pet_.moves.owned().size());
-    for (const char* m : pet_.moves.owned()) d.ownedMoves.push_back(saveId(m));
-    d.equippedMoves.reserve(kMaxMoveSlots);
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        d.equippedMoves.push_back(saveId(pet_.moves.equipped(i)));
-    d.combatXp = pet_.xp;
-    d.combatLevel = pet_.level;
-    // v11: the creature-level stat points. Sum == combatLevel (the invariant).
-    d.statPoints.assign(pet_.statPoints, pet_.statPoints + kLevelStatCount);
-
-    // v24: the per-pet Attack/Defend slot typing.
-    d.slotKinds.reserve(kMaxMoveSlots);
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        d.slotKinds.push_back(static_cast<uint8_t>(pet_.slotKinds[i]));
-
-    d.defragCount = pet_.defragCount;                     // v16
-    d.bestDeepWebDepth = pet_.bestDeepWebDepth;           // v35
-    d.bestDarkWebDepth = pet_.bestDarkWebDepth;
-
-    // v42: the 5/5 recovery window already burned. The one timed window that persists:
-    // every other one (Lockout, the audit hot/cooldown) resets on reboot by the rule in
-    // core/net/audit_capture.h, but refunding THIS one makes the only death path
-    // optional.
-    d.dyingElapsedMs = pet_.dyingElapsedMs;
-
-    // v9: the Boot-Sector incubation clock so an unhatched egg resumes after a
-    // reboot instead of restarting (or hatching early).
-    d.bootHatchRemainMs = pet_.bootHatchRemainMs;
-
-    // v21: the care-mistake shield + once-per-lifetime item gates (reset on a new egg).
-    d.mistakeShieldActive = pet_.grants.shieldActive ? 1 : 0;
-    d.shieldItemConsumed = pet_.grants.shieldSpent ? 1 : 0;
-    d.yubiConsumed = pet_.grants.yubiSpent ? 1 : 0;
-
-    // v28 and v60: the USB port. The Ambig-USB Trojan divert, the Bad-USB/Signed-USB
-    // branch override, the Sandbox/Hypervisor-USB soak factor and the Halt-USB's hold,
-    // all reset on a new egg.
-    d.forceTrojanDivert = pet_.armed.trojanDivert ? 1 : 0;
-    d.evolveBranchOverride = static_cast<uint8_t>(pet_.usb.branch);
-    d.evolveSoakFactor = static_cast<uint8_t>(pet_.usb.soakFactor);
-    d.evolveHold = pet_.usb.hold ? 1 : 0;
-
-    // v30: the Backup Drive combat-shield buff's armed-until deadline.
-    d.backupShieldUntilMs = pet_.armed.backupShieldUntilMs;
-
-    // v50/v57: this pet's permanent Epic-dish upgrades (core/model/pet_upgrades.h), and
-    // (v72) the favourite dish.
-    d.bandwidthRegenBonusMin = pet_.upgrades.bandwidthRegenMin;
-    for (int i = 0; i < kLevelStatCount; ++i) d.statBonus[i] = pet_.upgrades.statBonus[i];
-    d.xpRateBonusPct = pet_.upgrades.xpRatePct;
-    if (pet_.upgrades.favouriteFood)
-        std::strncpy(d.favouriteFood, pet_.upgrades.favouriteFood->id, kSaveIdCap - 1);
-    d.favouriteFound = pet_.upgrades.favouriteFound ? 1 : 0;
-    for (int k = 0; k < kBondSources; ++k)
-        d.bondBp[k] = static_cast<uint16_t>(pet_.upgrades.bondBp[k]);   // v74
 }
 
 // The radio toggles persist as intent only: hot/cooldown timers are runtime-only (no RTC).
@@ -218,13 +152,6 @@ void Game::captureWorldProgress(SaveData& d) const {
     // v10: the zone-completion Titles, the unlocked bitmask + the equipped index.
     d.titlesUnlocked = titlesUnlocked_;
     d.equippedTitle = equippedTitle_;
-
-    // v15: the EXPL per-sub-area re-farm win counts, flat row-major
-    // (area*kSubAreasPerArea + sub), so a depleted area stays depleted for future pets.
-    d.subRefarm.assign(static_cast<size_t>(kAreaCount) * kSubAreasPerArea, 0);
-    for (int a = 0; a < kAreaCount; ++a)
-        for (int s = 0; s < kSubAreasPerArea; ++s)
-            d.subRefarm[a * kSubAreasPerArea + s] = pet_.armed.subRefarmCount[a][s];
 }
 
 // Rows below kRigRowExtBase map positionally onto legacy per-row save fields;
@@ -311,7 +238,6 @@ void Game::captureRecords(SaveData& d) const {
 
 void Game::captureShelves(SaveData& d) const {
     captureIds(d.collectedItems, collectedItems_);
-    captureIds(d.petFoodsEaten, pet_.foodsEaten);
     d.speciesDiveIds.reserve(speciesDives_.size());
     d.speciesDiveDepths.reserve(speciesDives_.size());
     for (const SpeciesDive& s : speciesDives_) {
@@ -323,14 +249,8 @@ void Game::captureShelves(SaveData& d) const {
 }
 
 void Game::captureActivePet(SaveData& d) const {
-    if (pet_.creature) std::strncpy(d.activeId, pet_.creature->id, kSaveIdCap - 1);
-    d.hunger = pet_.model.hunger();
-    d.frag = pet_.model.fragmentation();
-    d.happy = pet_.model.happiness();
-    d.mistakes = pet_.model.careMistakes();
-    d.debuffs = pet_.model.debuffs();
-    d.ghost = pet_.model.hasGhost() ? 1 : 0;
-    d.timeInStageMs = nowMs_ - pet_.stageEnteredMs;   // elapsed in stage (reboot-safe)
+    d.active = pet_.stored(nowMs_);
+    d.activeArmed = pet_.armed.saved();
 }
 
 // Device-level CFG preferences: what the device looks and sounds like, which no pet owns.
@@ -358,7 +278,6 @@ void Game::captureBackgroundAndCant(SaveData& d) const {
 // Player-level identity and standing. A Store-vacated save (no active pet) still carries
 // all of it.
 void Game::restoreOperator(const SaveData& d) {
-    pet_.generation = d.generation;
     petsRaised_ = d.petsRaised;
     uptimeBase_ = d.lifetimeUptimeMs;
     lifetimeSteps_ = d.lifetimeSteps;
@@ -393,12 +312,11 @@ void Game::restoreBag(const SaveData& d) {
         const ItemDef* def = registry_.item(s.id);
         if (def && s.qty > 0) inventory_.add(def->id, s.qty);
     }
-    // Mods (D3 permanent mods): grant the un-installed spares, then install the
-    // slot occupants WITHOUT consuming (they were consumed when first equipped, and a
-    // v17+ save stores spares and slots disjointly). A pre-v17 blob predates the split:
-    // its ownedMods still listed the equipped mods, so drop any owned id that also
-    // sits in a slot, else the migrated save would gift a duplicate spare of each.
-    pet_.mods = ModSlots{};
+    // The spare mod pool. The slot occupants are the pet's and come back with it
+    // (restoreActivePet), unconsumed: a v17+ save stores spares and slots disjointly. A
+    // pre-v17 blob predates the split: its ownedMods still listed the equipped mods, so
+    // drop any owned id that also sits in a slot, else the migrated save would gift a
+    // duplicate spare of each.
     modPool_ = ModPool{};
     if (d.hasModCountData) {
         // v45: a count per wire. The stored count was capped when it was written, so it
@@ -423,16 +341,13 @@ void Game::restoreBag(const SaveData& d) {
             if (!def) continue;
             if (!d.hasPermanentModData) {
                 bool inSlot = false;
-                for (const auto& e : d.equipped)
+                for (const SaveId& e : d.active.equippedMods)
                     if (std::strcmp(e.id, m.id) == 0) { inSlot = true; break; }
                 if (inSlot) continue;             // migrate: equipped mod isn't a spare
             }
             modPool_.grant(def->id, kModCopyCapBase);   // surplus copies simply don't fit
         }
     }
-    for (int i = 0; i < static_cast<int>(d.equipped.size()) && i < kModSlots; ++i)
-        if (const ModDef* def = registry_.mod(d.equipped[i].id))
-            pet_.mods.setEquipped(i, def->id);
 }
 
 void Game::restoreHistory(const SaveData& d) {
@@ -448,108 +363,6 @@ void Game::restoreHistory(const SaveData& d) {
     // creature id is gone from content (a record is a name + status, not a live
     // pet); the UI resolves an unknown id to "?".
     records_ = d.records;
-}
-
-// The active pet's own state: moves, level, slot typing, tallies, flags and upgrades.
-void Game::restorePetProgress(const SaveData& d) {
-    // Move loadout (v2). A v1 blob carried no move data (hasMoveData == false), so
-    // the pet is seeded with its line's starting kit instead of only the innate
-    // default move.
-    if (d.hasMoveData) {
-        pet_.moves = MoveLoadout{};
-        // The innate is part of what every pet owns, and a blob written before that was
-        // true simply doesn't list it. Granted first, unconditionally. The format does
-        // not record it, so a pet restored from any blob always has it.
-        pet_.moves.grant(pet_.moves.defaultMove());
-        for (const auto& m : d.ownedMoves)
-            if (const MoveDef* def = registry_.move(m.id)) pet_.moves.grant(def->id);
-        for (int i = 0; i < static_cast<int>(d.equippedMoves.size()) && i < kMaxMoveSlots; ++i)
-            if (const MoveDef* def = registry_.move(d.equippedMoves[i].id))
-                pet_.moves.equip(i, def->id);
-    } else {
-        const CreatureDef* activeDef = registry_.creature(d.activeId);
-        pet_.moves = MoveLoadout::startingForLine(registry_, activeDef ? activeDef->line : nullptr);
-    }
-    // Creature levels (v11). A v11+ blob restores the 0-based level + XP bucket
-    // + earned stat points verbatim. A pre-v11 blob carried only the vestigial 1-based
-    // combatLevel (never applied to combat): it migrates to a fresh level 0 so no
-    // phantom points appear (hasLevelData distinguishes the two).
-    if (d.hasLevelData) {
-        pet_.xp = d.combatXp;
-        pet_.level = d.combatLevel;
-        for (int i = 0; i < kLevelStatCount; ++i)
-            pet_.statPoints[i] = i < static_cast<int>(d.statPoints.size()) ? d.statPoints[i] : 0;
-    } else {
-        pet_.xp = 0;
-        pet_.level = 0;
-        for (int i = 0; i < kLevelStatCount; ++i) pet_.statPoints[i] = 0;
-    }
-
-    // Per-pet Attack/Defend slot typing (v24). A v24+ blob
-    // restores the stamped SlotKind verbatim; a pre-v24 blob leaves every slot
-    // Unset (hasSlotKindData false), and the block below (after the active pet is
-    // resolved) deterministically re-derives it via stampSlotKinds().
-    for (int i = 0; i < kMaxMoveSlots; ++i)
-        pet_.slotKinds[i] = (d.hasSlotKindData && i < static_cast<int>(d.slotKinds.size()))
-                            ? static_cast<SlotKind>(d.slotKinds[i])
-                            : SlotKind::Unset;
-
-    // Active pet's defrag tally (v16). A pre-v16 blob carries 0 (the pet
-    // reads as never-defragged); the rack pets' tallies rode in on rack_ above.
-    pet_.defragCount = d.defragCount;
-
-    // Active pet's best-ever DeepWeb Dive depth (v35). A pre-v35 blob carries 0
-    // (never dived); the rack pets' values rode in on rack_ above.
-    pet_.bestDeepWebDepth = d.bestDeepWebDepth;
-    pet_.bestDarkWebDepth = d.bestDarkWebDepth;
-
-    // Active pet's spent 5/5 recovery window (v42). A pre-v42 blob carries 0, so the
-    // pet gets a full window on its next brush with death; the rack pets' values rode
-    // in on rack_ above. pet_.dyingArmed stays false: the accumulator is the durable half,
-    // and the first tick at 5/5 re-anchors it against the current clock.
-    pet_.dyingElapsedMs = d.dyingElapsedMs;
-
-    // Boot-Sector incubation clock (v9). A pre-v9 blob carries 0 → the loaded pet
-    // is treated as fully hatched (inEggPhase() is false for a 0 clock), so a
-    // migrated save is never re-frozen as an egg.
-    pet_.bootHatchRemainMs = d.bootHatchRemainMs;
-
-    // v21: the per-pet care-mistake shield + once-per-lifetime item gates (reset on a
-    // new egg; a pre-v21 blob defaults them to 0: no shield, neither item consumed).
-    pet_.grants.shieldActive = d.mistakeShieldActive != 0;
-    pet_.grants.shieldSpent = d.shieldItemConsumed != 0;
-    pet_.grants.yubiSpent = d.yubiConsumed != 0;
-
-    // v28: the Ambig-USB armed Trojan-divert flag (per-pet; a pre-v28 blob defaults
-    // it to false. No divert armed).
-    pet_.armed.trojanDivert = d.forceTrojanDivert != 0;
-
-    // v60: the branch override and the soak (per-pet; a pre-v60 blob defaults to an empty
-    // port). Both are clamped rather than trusted: an unknown override number reads as no
-    // override, and the factor is floored at 1 the way the codec floors it, so nothing a
-    // blob can say makes the pet un-evolvable or its XP worthless.
-    pet_.usb.branch = d.evolveBranchOverride == 1   ? BranchOverride::Good
-                            : d.evolveBranchOverride == 2 ? BranchOverride::Bad
-                                                          : BranchOverride::None;
-    pet_.usb.soakFactor = d.evolveSoakFactor < 1 ? 1 : d.evolveSoakFactor;
-    pet_.usb.hold = d.evolveHold != 0;
-
-    // v30: the Backup Drive combat-shield buff's armed-until deadline (per-pet; a
-    // pre-v30 blob defaults it to 0. No shield armed).
-    pet_.armed.backupShieldUntilMs = d.backupShieldUntilMs;
-
-    // v50/v57: the active pet's permanent Epic-dish upgrades (an older blob → 0: no dish
-    // granted one). The rack's own values come back with the stored records themselves.
-    pet_.upgrades.bandwidthRegenMin = d.bandwidthRegenBonusMin;
-    for (int i = 0; i < kLevelStatCount; ++i) pet_.upgrades.statBonus[i] = d.statBonus[i];
-    pet_.upgrades.xpRatePct = d.xpRateBonusPct;
-    // v72: the favourite. An id this build has no item for leaves it unrolled, and the
-    // next meal rolls a fresh one; a found flag stands either way, being a grant.
-    pet_.upgrades.favouriteFood = registry_.item(d.favouriteFood);
-    pet_.upgrades.favouriteFound = d.favouriteFound != 0;
-    // v74: Bond, clamped in case a blob carries more than this build's cap.
-    for (int k = 0; k < kBondSources; ++k)
-        pet_.upgrades.bondBp[k] = std::min<int>(d.bondBp[k], kBondSourceCapBp);
 }
 
 void Game::restoreRadio(const SaveData& d) {
@@ -574,7 +387,7 @@ void Game::restoreRadio(const SaveData& d) {
     // Audit-capture toggle (v6). A pre-v6 blob defaults it OFF. Rebuild the policy
     // SM from the persisted intent. The hot/cooldown clock starts fresh (no RTC,
     // like Lockout): a reboot clears any in-flight PENALTY window. The 5/5 CSF
-    // recovery window is the one exception; see pet_.dyingElapsedMs above.
+    // recovery window is the one exception (Pet::dyingElapsedMs).
     auditCapture_ = AuditCapture{};
     auditCapture_.setEnabled(d.auditCaptureEnabled != 0, nowMs_);
 
@@ -631,15 +444,6 @@ void Game::restoreWorldProgress(const SaveData& d) {
     titlesUnlocked_ = d.titlesUnlocked & ((1u << kAreaCount) - 1u);
     equippedTitle_ = d.equippedTitle;
     if (!titleUnlocked(equippedTitle_)) equippedTitle_ = -1;
-
-    // Per-sub-area re-farm counts (v15). A v15+ blob restores the flat
-    // row-major list; a pre-v15 blob carries an empty vector → every count defaults to
-    // 0 (a migrated save's cleared areas start un-depleted, full drops until farmed).
-    for (int a = 0; a < kAreaCount; ++a)
-        for (int s = 0; s < kSubAreasPerArea; ++s) {
-            const size_t idx = static_cast<size_t>(a) * kSubAreasPerArea + s;
-            pet_.armed.subRefarmCount[a][s] = idx < d.subRefarm.size() ? d.subRefarm[idx] : 0;
-        }
 }
 
 // Every Rig Shop row, the Merge Hub's recipes, and the service switches.
@@ -821,24 +625,18 @@ void Game::restoreShelves(const SaveData& d) {
     for (const auto& s : d.collectedItems)
         if (const ItemDef* it = registry_.item(s.id)) collectedItems_.push_back(it);
     sweepCollectedItems();     // fold in whatever the bag holds: seeds a pre-v40 save
-    // The palate is NOT swept from the bag for the same reason it is not written there:
-    // a pre-v62 save has no record of what its pet ate, and inventing one out of what it
-    // happens to be carrying would light cells for meals that never happened.
-    pet_.foodsEaten.clear();
-    for (const auto& s : d.petFoodsEaten)
-        if (const ItemDef* it = registry_.item(s.id)) pet_.foodsEaten.push_back(it);
     speciesDives_.clear();
     for (size_t i = 0; i < d.speciesDiveIds.size(); ++i) {
         const int depth = i < d.speciesDiveDepths.size() ? d.speciesDiveDepths[i] : 0;
         if (const CreatureDef* c = registry_.creature(d.speciesDiveIds[i].id))
             speciesDives_.push_back({c, depth});
     }
-    if (d.speciesDiveIds.empty() && d.bestDeepWebDepth > 0)
+    if (d.speciesDiveIds.empty() && d.active.bestDeepWebDepth > 0)
         // Pre-v40: one pet's own record is the only dive history that was ever kept, so
         // credit it to that pet's species. Deeper dives by earlier pets were never
         // recorded, so they cannot be recovered.
-        if (const CreatureDef* c = registry_.creature(d.activeId))
-            speciesDives_.push_back({c, d.bestDeepWebDepth});
+        if (const CreatureDef* c = registry_.creature(d.active.id))
+            speciesDives_.push_back({c, d.active.bestDeepWebDepth});
 
     // v39: the raised-species tally, resolved the same way. Then union in every
     // species the save still POINTS at: every pet in the ARCH rack or records was
@@ -853,25 +651,14 @@ void Game::restoreShelves(const SaveData& d) {
     for (const auto& r : d.records) markCreatureRaised(r.id);
 }
 
+// The active pet, through the same mapping as a rack Deploy, then what the save keeps of
+// its armed part. Runs after restoreShelves, which clears the raised-species tally that
+// installPet adds to.
 void Game::restoreActivePet(const SaveData& d) {
-    // Active pet (may be empty for a Store-vacated save).
-    installPet(registry_.creature(d.activeId));
-    // pet_.line isn't independently persisted; re-derive it from the restored pet
-    // whenever it's still an incubating Boot-Sector egg, so completeHatch() rolls the
-    // correct line's Process pool instead of falling back to the Ransomware default
-    // after any save/load that lands mid-incubation.
-    pet_.line = pet_.creature && pet_.creature->stage == Stage::BootSector
-                     ? registry_.eggLineForCreature(pet_.creature->id)
-                     : nullptr;
+    pet_ = Pet::thawed(d.active, registry_, nowMs_);
+    pet_.armed = PetArmed::loaded(d.activeArmed);
+    installPet(pet_.creature);   // a Store-vacated save has none
     if (pet_.creature) {
-        pet_.model = PetModel();
-        pet_.model.setHunger(d.hunger);
-        pet_.model.setFragmentation(d.frag);
-        pet_.model.setHappiness(d.happy);
-        pet_.model.setCareMistakes(d.mistakes);
-        pet_.model.setDebuffs(d.debuffs);
-        pet_.model.setGhost(d.ghost != 0);
-        pet_.stageEnteredMs = nowMs_ - d.timeInStageMs;   // reconstruct the in-stage clock
         lastModelMs_ = nowMs_;
         // Backfill any slot the v24 tail didn't cover (a pre-v24 blob leaves
         // ALL of them Unset here), then drop any restored equip that no longer
@@ -941,7 +728,6 @@ void Game::applySave(const SaveData& d) {
     restoreOperator(d);
     restoreBag(d);
     restoreHistory(d);
-    restorePetProgress(d);
     restoreRadio(d);
     restoreWorldProgress(d);
     restoreRig(d);

@@ -958,19 +958,19 @@ void test_soak_usb_is_process_stage_only() {
 // hand back a pet that can neither evolve nor learn.
 void test_save_v60_usb_port_roundtrip() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.generation = 1;
-    a.evolveBranchOverride = static_cast<uint8_t>(BranchOverride::Bad);
-    a.evolveSoakFactor = 4;
+    std::strcpy(a.active.id, "paypup");
+    a.active.generation = 1;
+    a.active.usbBranch = static_cast<uint8_t>(BranchOverride::Bad);
+    a.active.usbSoak = 4;
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.evolveBranchOverride == static_cast<uint8_t>(BranchOverride::Bad));
-    CHECK(out.evolveSoakFactor == 4);
+    CHECK(out.active.usbBranch == static_cast<uint8_t>(BranchOverride::Bad));
+    CHECK(out.active.usbSoak == 4);
 
     // A blob that never carried the tail describes an empty port, not a stalled pet.
     SaveData fresh;
-    CHECK(fresh.evolveBranchOverride == 0);
-    CHECK(fresh.evolveSoakFactor == 1);
+    CHECK(fresh.active.usbBranch == 0);
+    CHECK(fresh.active.usbSoak == 1);
 
     // ...and the round trip through the live game, over a real store: an armed port
     // survives a power cycle, because a soak the player is halfway through paying for
@@ -1548,9 +1548,9 @@ void test_tiramisudo_upgrade_survives_the_rack() {
 // v50: the upgrade round-trips for the active pet AND for a pet on the shelf.
 void test_save_v50_bandwidth_regen_upgrade() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.generation = 1;
-    a.bandwidthRegenBonusMin = 1;
+    std::strcpy(a.active.id, "paypup");
+    a.active.generation = 1;
+    a.active.bandwidthRegenBonusMin = 1;
     SaveStoredPet stored;
     std::strcpy(stored.id, "cryptoshell");
     stored.bandwidthRegenBonusMin = 1;
@@ -1559,7 +1559,7 @@ void test_save_v50_bandwidth_regen_upgrade() {
 
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    CHECK(out.bandwidthRegenBonusMin == 1);
+    CHECK(out.active.bandwidthRegenBonusMin == 1);
     CHECK(out.rack.size() == 2);
     CHECK(out.rack[0].bandwidthRegenBonusMin == 1);
     CHECK(out.rack[1].bandwidthRegenBonusMin == 0);
@@ -1757,9 +1757,9 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
 // ate the same dish share one dictionary entry rather than each writing the id.
 void test_save_v72_rack_palates_and_favourites() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    std::strcpy(a.favouriteFood, "racelette");
-    a.favouriteFound = 1;
+    std::strcpy(a.active.id, "paypup");
+    std::strcpy(a.active.favouriteFood, "racelette");
+    a.active.favouriteFound = 1;
     SaveStoredPet p1; std::strcpy(p1.id, "cryptoshell");
     p1.foodsEaten = {SaveId{"dyno_nuggets"}, SaveId{"brusshetta"}};
     std::strcpy(p1.favouriteFood, "profilerole");
@@ -1772,7 +1772,7 @@ void test_save_v72_rack_palates_and_favourites() {
     SaveData b;
     const std::vector<uint8_t> blob = serializeSave(a);
     CHECK(deserializeSave(blob, b));
-    CHECK(std::strcmp(b.favouriteFood, "racelette") == 0 && b.favouriteFound == 1);
+    CHECK(std::strcmp(b.active.favouriteFood, "racelette") == 0 && b.active.favouriteFound == 1);
     CHECK(b.rack.size() == 3);
     if (b.rack.size() != 3) return;
     CHECK(b.rack[0].foodsEaten.size() == 2);
@@ -1792,10 +1792,10 @@ void test_save_v72_rack_palates_and_favourites() {
 
 void test_save_v57_permanent_grants() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.generation = 1;
-    for (int i = 0; i < kLevelStatCount; ++i) a.statBonus[i] = i;
-    a.xpRateBonusPct = 25;
+    std::strcpy(a.active.id, "paypup");
+    a.active.generation = 1;
+    for (int i = 0; i < kLevelStatCount; ++i) a.active.statBonus[i] = i;
+    a.active.xpRateBonusPct = 25;
     SaveStoredPet stored;
     std::strcpy(stored.id, "cryptoshell");
     stored.statBonus[2] = 1;
@@ -1805,8 +1805,8 @@ void test_save_v57_permanent_grants() {
 
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
-    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.statBonus[i] == i);
-    CHECK(out.xpRateBonusPct == 25);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(out.active.statBonus[i] == i);
+    CHECK(out.active.xpRateBonusPct == 25);
     CHECK(out.rack.size() == 2);
     CHECK(out.rack[0].statBonus[2] == 1);
     CHECK(out.rack[0].xpRateBonusPct == 25);
@@ -1912,7 +1912,7 @@ void test_lifetime_mark_says_whether_this_pet_has_had_it() {
 // rewritten as it is read, which is why the assertions are on what came BACK.
 void test_save_v54_renames_the_snack_item_id() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.active.id, "paypup");
     a.items.push_back(SaveStack{"airgap_snack", 3});
     a.items.push_back(SaveStack{"tortilla_chip", 1});   // a neighbour must not move
     SaveId collected;
@@ -1951,7 +1951,7 @@ void test_save_v54_renames_the_snack_item_id() {
 // ever-collected set both come back under the new id, and a current blob is untouched.
 void test_save_v70_renames_crostini() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
+    std::strcpy(a.active.id, "paypup");
     a.items.push_back(SaveStack{"crostini", 2});
     SaveId collected;
     std::strcpy(collected.id, "crostini");

@@ -978,7 +978,7 @@ void test_crew_exploit_in_combat_picker() {
 // v36: the crew id + home network round-trip, and an unknown crew id loads as
 // unaffiliated.
 void test_save_v36_crew_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     std::strcpy(a.crewId, "deniers_of_service");
     a.homeNetworkKey = 0x0123456789ABull;
     std::strcpy(a.homeNetworkName, "HOME_AP");
@@ -1007,7 +1007,7 @@ void test_save_v36_crew_roundtrip() {
 // triggers, so this isolates the JSON-shape half from the trigger-wiring half
 // (covered separately below).
 void test_pedia_state_json_reveal_states() {
-    SaveData a; std::strcpy(a.activeId, "pingcub"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "pingcub"); a.active.generation = 1;
     a.seenCreatures.push_back(SaveId{"malbear"});   // glimpsed, not hatched
     a.malbeastSeen = 1 << 1;                        // Segfault Pup: seen only
     a.malbeastDefeated = 1 << 0;                    // GlitchHog: defeated

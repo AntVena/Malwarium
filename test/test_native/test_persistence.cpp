@@ -68,64 +68,60 @@ void test_loadout_expl_nav() {
 // The save blob round-trips: every field survives serialize -> deserialize.
 void test_save_roundtrip() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.hunger = 42; a.frag = 13; a.happy = 88; a.mistakes = 3;
-    a.debuffs = 2; a.ghost = 1; a.timeInStageMs = 123456; a.generation = 4;
+    std::strcpy(a.active.id, "paypup");
+    a.active.hunger = 42; a.active.frag = 13; a.active.happy = 88; a.active.mistakes = 3;
+    a.active.debuffs = 2; a.active.ghost = 1; a.active.timeInStageMs = 123456; a.active.generation = 4;
     a.bits = 777; std::strcpy(a.hackerTag, "L33T_HAXX0R");
     a.lifetimeUptimeMs = 99999; a.lifetimeSteps = 12; a.petsRaised = 4;
     a.items.push_back(SaveStack{"dyno_nuggets", 3});
     a.items.push_back(SaveStack{"yubi_cookie", 1});
     a.ownedMods.push_back(SaveId{"firewall_patch"});
-    a.equipped.push_back(SaveId{"firewall_patch"});
-    a.equipped.push_back(SaveId{""});
+    a.active.equippedMods[0] = SaveId{"firewall_patch"};
     SaveLogEntry le; le.type = static_cast<uint8_t>(LogEventType::ItemUsed);
     std::strcpy(le.text, "USED YUBI-COOKIE"); a.log.push_back(le);
     SaveStoredPet sp; std::strcpy(sp.id, "cryptoshell");
     sp.hunger = 60; sp.generation = 2; sp.defragCount = 9;  // v16: rack pet's tally
     a.rack.push_back(sp);
-    a.ownedMoves.push_back(SaveId{"packet_storm"});
-    a.ownedMoves.push_back(SaveId{"fork_bomb"});
-    a.equippedMoves.push_back(SaveId{"packet_storm"});
-    a.equippedMoves.push_back(SaveId{""});
-    a.combatXp = 35; a.combatLevel = 2;
+    a.active.ownedMoves.push_back(SaveId{"packet_storm"});
+    a.active.ownedMoves.push_back(SaveId{"fork_bomb"});
+    a.active.equippedMoves[0] = SaveId{"packet_storm"};
+    a.active.combatXp = 35; a.active.combatLevel = 2;
     a.sectorCleared = {1, 0};                 // v8: sector 0 cleared, sector 1 not
-    a.bootHatchRemainMs = 424242;             // v9: an egg mid-incubation
+    a.active.bootHatchRemainMs = 424242;             // v9: an egg mid-incubation
     a.titlesUnlocked = 0x3; a.equippedTitle = 1;  // v10: both Titles, sector 1 equipped
     a.bossUnlocked = {1, 1};                   // v12: both sectors' bosses unlocked
     a.subCleared = {0x07, 0x00};               // v13: area 0 subs 1-3 cleared, area 1 none
     a.subBossUnlocked = {0x0F, 0x01};          // v13: area 0 subs 1-4 unlocked, area 1 sub 1
     a.brightness = 2;                          // v14: a non-default backlight level
-    a.subRefarm.assign(kExplSectors * kExplSubAreas, 0);  // v15: per-sub re-farm counts
-    a.subRefarm[2] = 7; a.subRefarm[9] = 3;
-    a.defragCount = 12;                        // v16: the active pet's defrag tally
+    a.activeArmed.subRefarm.assign(kExplSectors * kExplSubAreas, 0);  // v15: per-sub re-farm counts
+    a.activeArmed.subRefarm[2] = 7; a.activeArmed.subRefarm[9] = 3;
+    a.active.defragCount = 12;                        // v16: the active pet's defrag tally
     a.bwUpgradeCount = 5;                       // v19: Hacker SHOP bandwidth upgrades bought
     a.apEnabled = 1;                            // v20: 'Pedia local-AP toggle
 
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
-    CHECK(std::strcmp(b.activeId, "paypup") == 0);
-    CHECK(b.hunger == 42 && b.frag == 13 && b.happy == 88 && b.mistakes == 3);
-    CHECK(b.debuffs == 2 && b.ghost == 1);
-    CHECK(b.timeInStageMs == 123456u && b.generation == 4);
+    CHECK(std::strcmp(b.active.id, "paypup") == 0);
+    CHECK(b.active.hunger == 42 && b.active.frag == 13 && b.active.happy == 88 && b.active.mistakes == 3);
+    CHECK(b.active.debuffs == 2 && b.active.ghost == 1);
+    CHECK(b.active.timeInStageMs == 123456u && b.active.generation == 4);
     CHECK(b.bits == 777 && std::strcmp(b.hackerTag, "L33T_HAXX0R") == 0);
     CHECK(b.lifetimeUptimeMs == 99999u && b.lifetimeSteps == 12u && b.petsRaised == 4);
     CHECK(b.items.size() == 2 && std::strcmp(b.items[0].id, "dyno_nuggets") == 0 &&
           b.items[0].qty == 3);
-    CHECK(b.ownedMods.size() == 1 && b.equipped.size() == 2);
-    CHECK(std::strcmp(b.equipped[0].id, "firewall_patch") == 0 && b.equipped[1].id[0] == '\0');
+    CHECK(b.ownedMods.size() == 1);
+    CHECK(std::strcmp(b.active.equippedMods[0].id, "firewall_patch") == 0 && b.active.equippedMods[1].id[0] == '\0');
     CHECK(b.hasPermanentModData);   // v17: the permanent-mod semantics marker
     CHECK(b.log.size() == 1 && std::strcmp(b.log[0].text, "USED YUBI-COOKIE") == 0);
     CHECK(b.rack.size() == 1 && std::strcmp(b.rack[0].id, "cryptoshell") == 0 &&
           b.rack[0].generation == 2);
-    CHECK(b.hasMoveData);
-    CHECK(b.ownedMoves.size() == 2 && std::strcmp(b.ownedMoves[0].id, "packet_storm") == 0);
-    CHECK(b.equippedMoves.size() == 2 &&
-          std::strcmp(b.equippedMoves[0].id, "packet_storm") == 0 &&
-          b.equippedMoves[1].id[0] == '\0');
-    CHECK(b.combatXp == 35 && b.combatLevel == 2);
+    CHECK(b.active.ownedMoves.size() == 2 && std::strcmp(b.active.ownedMoves[0].id, "packet_storm") == 0);
+    CHECK(std::strcmp(b.active.equippedMoves[0].id, "packet_storm") == 0 &&
+          b.active.equippedMoves[1].id[0] == '\0');
+    CHECK(b.active.combatXp == 35 && b.active.combatLevel == 2);
     CHECK(b.sectorCleared.size() == 2 && b.sectorCleared[0] == 1 &&
           b.sectorCleared[1] == 0);
-    CHECK(b.bootHatchRemainMs == 424242u);
+    CHECK(b.active.bootHatchRemainMs == 424242u);
     CHECK(b.titlesUnlocked == 0x3u && b.equippedTitle == 1);
     CHECK(b.bossUnlocked.size() == 2 && b.bossUnlocked[0] == 1 &&
           b.bossUnlocked[1] == 1);
@@ -133,9 +129,9 @@ void test_save_roundtrip() {
     CHECK(b.subBossUnlocked.size() == 2 && b.subBossUnlocked[0] == 0x0F &&
           b.subBossUnlocked[1] == 0x01);
     CHECK(b.brightness == 2);                  // v14: the backlight level round-trips
-    CHECK(b.subRefarm.size() == static_cast<size_t>(kExplSectors * kExplSubAreas) &&
-          b.subRefarm[2] == 7 && b.subRefarm[9] == 3);   // v15: re-farm counts round-trip
-    CHECK(b.defragCount == 12);                          // v16: active defrag tally
+    CHECK(b.activeArmed.subRefarm.size() == static_cast<size_t>(kExplSectors * kExplSubAreas) &&
+          b.activeArmed.subRefarm[2] == 7 && b.activeArmed.subRefarm[9] == 3);   // v15: re-farm counts round-trip
+    CHECK(b.active.defragCount == 12);                          // v16: active defrag tally
     CHECK(b.rack.size() == 1 && b.rack[0].defragCount == 9);  // v16: rack pet tally
     CHECK(b.bwUpgradeCount == 5);                         // v19: SHOP bandwidth upgrades
     CHECK(b.apEnabled == 1);                              // v20: 'Pedia AP toggle round-trips
@@ -215,16 +211,16 @@ void test_zone_titles_picker_skips_locked() {
 void test_save_version_and_empty() {
     SaveData out;
     CHECK(!deserializeSave({}, out));                       // empty -> false
-    CHECK(out.activeId[0] == '\0');                         // left defaulted
+    CHECK(out.active.id[0] == '\0');                         // left defaulted
     std::vector<uint8_t> junk = {'X', 'X', 'X', 'X', 1, 0};
     CHECK(!deserializeSave(junk, out));                     // bad magic
-    SaveData a; std::strcpy(a.activeId, "paypup");
+    SaveData a; std::strcpy(a.active.id, "paypup");
     auto blob = serializeSave(a);
     blob[4] = 0; blob[5] = 0;                               // below kOldestAcceptedVersion
     CHECK(!deserializeSave(blob, out));
     auto trunc = serializeSave(a); trunc.resize(10);        // cut mid-stream
     CHECK(!deserializeSave(trunc, out));
-    CHECK(out.activeId[0] == '\0');
+    CHECK(out.active.id[0] == '\0');
 }
 
 // A blob from a NEWER build still loads. This is the OTA rollback: an image boots on
@@ -234,8 +230,8 @@ void test_save_version_and_empty() {
 // prefix it understands and drops only the tail it doesn't.
 void test_save_from_a_newer_build_still_loads() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.hunger = 61; a.happy = 43; a.bits = 777;
+    std::strcpy(a.active.id, "paypup");
+    a.active.hunger = 61; a.active.happy = 43; a.bits = 777;
     auto blob = serializeSave(a);
 
     // Stamp it a version ahead and append a tail this build knows nothing about: the
@@ -247,10 +243,156 @@ void test_save_from_a_newer_build_still_loads() {
 
     SaveData out;
     CHECK(deserializeSave(blob, out));
-    CHECK(std::strcmp(out.activeId, "paypup") == 0);        // the pet survives a rollback
-    CHECK(out.hunger == 61);
-    CHECK(out.happy == 43);
+    CHECK(std::strcmp(out.active.id, "paypup") == 0);        // the pet survives a rollback
+    CHECK(out.active.hunger == 61);
+    CHECK(out.active.happy == 43);
     CHECK(out.bits == 777);
+}
+
+// A v75 blob with every field of the active pet set (built from a SaveData by the v75
+// codec). Each field sits where the version that added it put it, which is what lets an
+// older build read the pet after an OTA rollback.
+static const char* const kActivePetV75Blob =
+    "4d414c314b007061797075700000000000000000000000000000000000002a00"
+    "00000d0000005800000003000000020000000140e20100040000000000000000"
+    "0000000000000000000000000000000000000000040000000000000003006669"
+    "726577616c6c5f70617463680000000000000000000000000000000000000000"
+    "0000000000000000000000000000636c6f636b5f73706565645f626f6f737400"
+    "000000000000000000000300717569636b5f6a61620000000000000000000000"
+    "000000007061636b65745f73746f726d000000000000000000000000666f726b"
+    "5f626f6d6200000000000000000000000000000004007061636b65745f73746f"
+    "726d000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000023000000030000000000"
+    "0000000000000000000000000000000000000000000000000000ffffffff0400"
+    "01000000000000000200000000000000000000000000030000000a0000000000"
+    "070000000000000000000000000000000c000000000000000000000000010101"
+    "0000000004000102000000000000000000000000000000000000000000000000"
+    "000001000028db0b000000000000000000000900000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000008813000000000000000000000000000002000000000000"
+    "0000000000000000000000000000000000000000000001000000000000000000"
+    "0000010000001900000000000000000000000000000204010000000002007370"
+    "616d000000000000000000000000000000000000000064796e6f5f6e75676765"
+    "7473000000000000000000000000040000000000000000000000000000000000"
+    "00000000000000000000000000000001020200000000017370616d0000000000"
+    "0000000000000000000000000000000100000000000064003200102700000000";
+
+static std::vector<uint8_t> activePetV75Blob() {
+    std::vector<uint8_t> out;
+    for (const char* p = kActivePetV75Blob; p[0] && p[1]; p += 2)
+        out.push_back(static_cast<uint8_t>(std::stoi(std::string(p, 2), nullptr, 16)));
+    return out;
+}
+
+// The v75 blob reads into SaveData::active and activeArmed field by field, and writes
+// back with the same bytes up to its end: the record moved in SaveData, not on the wire.
+void test_save_active_pet_reads_from_a_v75_blob() {
+    const std::vector<uint8_t> blob = activePetV75Blob();
+    CHECK(blob.size() > 6 && blob[4] == 75 && blob[5] == 0);
+    SaveData d;
+    CHECK(deserializeSave(blob, d));
+    const SaveStoredPet& a = d.active;
+    CHECK(std::strcmp(a.id, "paypup") == 0);
+    CHECK(a.hunger == 42 && a.frag == 13 && a.happy == 88 && a.mistakes == 3);
+    CHECK(a.debuffs == 2 && a.ghost == 1);
+    CHECK(a.timeInStageMs == 123456u && a.generation == 4);
+    CHECK(std::strcmp(a.equippedMods[0].id, "firewall_patch") == 0);
+    CHECK(a.equippedMods[1].id[0] == '\0');
+    CHECK(std::strcmp(a.equippedMods[2].id, "clock_speed_boost") == 0);
+    CHECK(a.ownedMoves.size() == 3 && std::strcmp(a.ownedMoves[2].id, "fork_bomb") == 0);
+    CHECK(std::strcmp(a.equippedMoves[0].id, "packet_storm") == 0);
+    CHECK(a.equippedMoves[1].id[0] == '\0');
+    CHECK(a.combatXp == 35 && a.combatLevel == 3);
+    CHECK(a.statPoints[0] == 1 && a.statPoints[1] == 0 && a.statPoints[2] == 2);
+    CHECK(a.slotKinds[0] == 1 && a.slotKinds[1] == 2 && a.slotKinds[2] == 0);
+    CHECK(a.defragCount == 12);
+    CHECK(a.shieldActive == 1 && a.shieldSpent == 1 && a.yubiSpent == 1);
+    CHECK(a.bestDeepWebDepth == 9 && a.bestDarkWebDepth == 4);
+    CHECK(a.dyingElapsedMs == 5000u);
+    CHECK(a.bandwidthRegenBonusMin == 2);
+    CHECK(a.statBonus[0] == 1 && a.statBonus[3] == 1 && a.xpRateBonusPct == 25);
+    CHECK(a.usbBranch == 2 && a.usbSoak == 4 && a.usbHold == 1);
+    CHECK(a.foodsEaten.size() == 2 && std::strcmp(a.foodsEaten[1].id, "dyno_nuggets") == 0);
+    CHECK(std::strcmp(a.favouriteFood, "spam") == 0 && a.favouriteFound == 1);
+    CHECK(a.bondBp[0] == 100 && a.bondBp[1] == 50 && a.bondBp[2] == 10000);
+    CHECK(d.activeArmed.trojanDivert == 1);
+    CHECK(d.activeArmed.backupShieldUntilMs == 777000u);
+    CHECK(d.activeArmed.subRefarm.size() == 10 && d.activeArmed.subRefarm[2] == 7);
+
+    // Past the version word, a newer writer only ever appends.
+    const std::vector<uint8_t> again = serializeSave(d);
+    CHECK(again.size() >= blob.size());
+    CHECK(std::equal(blob.begin() + 6, blob.end(), again.begin() + 6));
+}
+
+// ...and boots into the Pet record through Pet::thawed, with the armed part the save
+// keeps.
+void test_save_active_pet_loads_from_a_v75_blob() {
+    MemSaveStore store;
+    store.save(activePetV75Blob());
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    const Pet& p = g.petRecord();
+    CHECK(p.creature && std::strcmp(p.creature->id, "paypup") == 0);
+    CHECK(p.model.hunger() == 42 && p.model.fragmentation() == 13 && p.model.happiness() == 88);
+    CHECK(p.model.careMistakes() == 3 && p.model.hasGhost());
+    CHECK(p.generation == 4 && p.level == 3 && p.xp == 35);
+    CHECK(p.statPoints[0] == 1 && p.statPoints[2] == 2);
+    CHECK(p.slotKinds[0] == SlotKind::Attack && p.slotKinds[1] == SlotKind::Defend);
+    CHECK(p.moves.owns("quick_jab") && p.moves.owns("packet_storm") && p.moves.owns("fork_bomb"));
+    CHECK(p.moves.equipped(0) && std::strcmp(p.moves.equipped(0), "packet_storm") == 0);
+    CHECK(p.mods.equipped(0) && std::strcmp(p.mods.equipped(0), "firewall_patch") == 0);
+    CHECK(p.mods.equipped(1) == nullptr);
+    CHECK(p.mods.equipped(2) && std::strcmp(p.mods.equipped(2), "clock_speed_boost") == 0);
+    CHECK(p.defragCount == 12 && p.bestDeepWebDepth == 9 && p.bestDarkWebDepth == 4);
+    CHECK(p.dyingElapsedMs == 5000u && !p.dyingArmed);
+    CHECK(p.grants.shieldActive && p.grants.shieldSpent && p.grants.yubiSpent);
+    CHECK(p.usb.branch == BranchOverride::Bad && p.usb.soakFactor == 4 && p.usb.hold);
+    CHECK(p.upgrades.bandwidthRegenMin == 2 && p.upgrades.xpRatePct == 25);
+    CHECK(p.upgrades.statBonus[0] == 1 && p.upgrades.statBonus[3] == 1);
+    CHECK(p.upgrades.favouriteFood && std::strcmp(p.upgrades.favouriteFood->id, "spam") == 0);
+    CHECK(p.upgrades.favouriteFound);
+    CHECK(p.upgrades.bondBp[0] == 100 && p.upgrades.bondBp[2] == 10000);
+    CHECK(p.foodsEaten.size() == 2);
+    CHECK(p.armed.trojanDivert && p.armed.backupShieldUntilMs == 777000u);
+    CHECK(p.armed.subRefarmCount[0][2] == 7);
+}
+
+// A pet with something in every part survives a save and a reboot whole: its record
+// compares equal as a rack record, and the save keeps its Backup Drive and divert. A
+// DeepWeb arming does not survive a reboot.
+void test_save_active_pet_round_trips_through_a_reboot() {
+    MemSaveStore store;
+    Pet before;
+    {
+        Game g{StartMode::Hatched, "paypup", &store};
+        for (const char* id : {"restore_point", "yubi_cookie", "backup_drive", "ambig_usb",
+                               "bad_usb", "tiramisudo", "deep_learning_module"}) {
+            g.inventory().add(id, 1);
+            g.debugUseItem(id);
+        }
+        g.debugTasteFoods(3);
+        g.debugSetFavouriteFood("spam");
+        g.debugSetBestDarkWebDepth(5);
+        g.debugGrantMove("buffer_overflow");
+        CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.yubiSpent);
+        CHECK(g.backupShieldArmed() && g.petRecord().armed.trojanDivert);
+        CHECK(g.debugDepthMultiplier() == 2);
+        before = g.petRecord();
+        CHECK(g.saveNow());
+    }
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    const Pet& after = g.petRecord();
+    // Stored at each pet's own stage start, so the two clocks line up.
+    SaveData x, y;
+    x.rack = {before.stored(before.stageEnteredMs)};
+    y.rack = {after.stored(after.stageEnteredMs)};
+    CHECK(serializeSave(x) == serializeSave(y));
+    CHECK(after.armed.trojanDivert);
+    CHECK(after.armed.backupShieldUntilMs == before.armed.backupShieldUntilMs);
+    CHECK(g.backupShieldArmed());
+    CHECK(g.debugDepthMultiplier() == 1);
 }
 
 // Boot-from-save vs Hatch: an empty store hatches; once a pet is raised + saved,

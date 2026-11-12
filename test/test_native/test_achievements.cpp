@@ -407,7 +407,7 @@ void test_achievement_banner_collapses_a_burst() {
 
 // v40 round-trip of all four achievement fields.
 void test_save_v40_achievements_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.achievementEarned.assign(8, 0);
     a.achievementEarned[0] = 0x05;            // wires 0 and 2
     a.achievementNotified.assign(8, 0);
@@ -432,7 +432,7 @@ void test_save_v40_achievements_roundtrip() {
 // the tail is appended at the very END of the blob, so a truncation there must degrade
 // to "nothing was counted" instead of dragging an earlier field's bytes into these.
 void test_save_v56_lifetime_tallies_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.tourneyWins = 7;
     a.pvpWins = 19;
     a.mergesCooked = 231;
@@ -444,7 +444,7 @@ void test_save_v56_lifetime_tallies_roundtrip() {
 
     // A default blob (nothing ever counted) still round-trips as zeros, which is what a
     // pre-v56 save is read back as.
-    SaveData b; std::strcpy(b.activeId, "paypup"); b.generation = 1;
+    SaveData b; std::strcpy(b.active.id, "paypup"); b.active.generation = 1;
     SaveData zeroed;
     CHECK(deserializeSave(serializeSave(b), zeroed));
     CHECK(zeroed.tourneyWins == 0 && zeroed.pvpWins == 0 && zeroed.mergesCooked == 0);
@@ -492,8 +492,8 @@ void test_collected_items_survive_being_spent() {
 // paths that install or record a pet, so all three land in the raised tally too.
 void test_pedia_state_json_rack_and_record_hatched() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.generation = 3;
+    std::strcpy(a.active.id, "paypup");
+    a.active.generation = 3;
     SaveStoredPet stored; std::strcpy(stored.id, "pingcub");
     a.rack.push_back(stored);
     SaveRecord rec; std::strcpy(rec.id, "malbear");

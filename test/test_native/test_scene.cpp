@@ -312,7 +312,7 @@ void test_background_pick_survives_a_reboot() {
 // than by reasoning about it.
 void test_background_absent_from_an_older_save_reads_as_auto() {
     SaveData d;
-    std::snprintf(d.activeId, sizeof(d.activeId), "paypup");
+    std::snprintf(d.active.id, sizeof(d.active.id), "paypup");
     d.backgroundPick = 4;
     std::vector<uint8_t> blob = serializeSave(d);
     // Rewrite the version stamp in place: it sits behind the 4-byte magic. The tail is

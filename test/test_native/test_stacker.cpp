@@ -507,7 +507,7 @@ void test_stacker_wins_ladder_sweeps_and_persists() {
 
     // v44 on the wire, and back into a Game: the tally is the operator's, so it has to
     // come back on a device that has been power-cycled since.
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.stackerWins = 10;
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
@@ -760,7 +760,7 @@ void test_save_v39_raised_tally_roundtrip() {
 // achievement's own re-check (fired by the evolution below) is what unlocks it.
 void test_full_pedia_achievement_reads_the_raised_tally() {
     ContentRegistry r = ContentRegistry::embedded();
-    SaveData a; std::strcpy(a.activeId, "pingcub"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "pingcub"); a.active.generation = 1;
     for (const CreatureDef* c : r.allCreatures())
         if (c->line && std::strcmp(c->line, "ransomware") == 0 &&
             std::strcmp(c->id, "malbear") != 0) {      // the one still to be raised

@@ -198,8 +198,8 @@ void test_bond_from_fights_scales_xp() {
 // v74: Bond round-trips for the active pet and, positionally, for each pet on the shelf.
 void test_save_v74_bond() {
     SaveData a;
-    std::strcpy(a.activeId, "paypup");
-    a.bondBp[0] = 100; a.bondBp[1] = 50; a.bondBp[2] = 10000;
+    std::strcpy(a.active.id, "paypup");
+    a.active.bondBp[0] = 100; a.active.bondBp[1] = 50; a.active.bondBp[2] = 10000;
     SaveStoredPet p1; std::strcpy(p1.id, "malbear");
     p1.bondBp[2] = 1234;
     SaveStoredPet p2; std::strcpy(p2.id, "cryptoshell");
@@ -207,7 +207,7 @@ void test_save_v74_bond() {
 
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
-    CHECK(b.bondBp[0] == 100 && b.bondBp[1] == 50 && b.bondBp[2] == 10000);
+    CHECK(b.active.bondBp[0] == 100 && b.active.bondBp[1] == 50 && b.active.bondBp[2] == 10000);
     CHECK(b.rack.size() == 2);
     if (b.rack.size() != 2) return;
     CHECK(b.rack[0].bondBp[2] == 1234 && b.rack[0].bondBp[0] == 0);
@@ -449,7 +449,7 @@ void test_wild_malbeast_index_mapping() {
 // to ride here is no longer written: v40 replaced it with a wire-indexed bitset, whose
 // own round-trip and migration are gated separately.)
 void test_save_v25_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.seenCreatures.push_back(SaveId{"malbear"});
     a.seenCreatures.push_back(SaveId{"berserkernel"});
     a.malbeastSeen = 0x2A;       // bits 1, 3, 5
@@ -478,7 +478,7 @@ void test_save_v25_roundtrip() {
 
 // v27: the rig-upgrade levels round-trip.
 void test_save_v27_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.rackSlotUpgradeCount = 3;
     a.scrapingClusterLevel = 7;
     a.dataMiningLevel = 12;
@@ -506,7 +506,7 @@ void test_save_v27_roundtrip() {
 
 // v32: rigLevelsExt (Rig Shop rows beyond the legacy 11) round-trips.
 void test_save_v32_roundtrip() {
-    SaveData a; std::strcpy(a.activeId, "paypup"); a.generation = 1;
+    SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.rigLevelsExt = {5, 9};
     SaveData out;
     CHECK(deserializeSave(serializeSave(a), out));
