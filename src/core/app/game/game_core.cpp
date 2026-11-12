@@ -350,8 +350,8 @@ void Game::stepScreenBeat() {
 // frenzy instead of ticking at one flat cadence. The A "SKIP" fast-forward steps
 // immediately, bypassing this pace. Once resolved it parks on the result beat.
 void Game::stepCombatBeat() {
-    if (combat_.outcome() == Combat::Outcome::Ongoing) {
-        if (!combat_.overrideOpen() && ++combatTurnBeat_ >= combatBeatsForTurn())
+    if (fight_.combat.outcome() == Combat::Outcome::Ongoing) {
+        if (!fight_.combat.overrideOpen() && ++fight_.turnBeat >= combatBeatsForTurn())
             advanceCombatTurn();
         return;
     }
@@ -359,14 +359,14 @@ void Game::stepCombatBeat() {
     // beaten rival: the verdict banner shares that space and waits for it (drawCombat),
     // so starting the auto-dismiss underneath would leave the words a fraction of a
     // second before the screen went.
-    if (!combatDissolveRunning()) ++combatBeat_;
+    if (!combatDissolveRunning()) ++fight_.resultBeat;
     // Hands-off auto-explore: a wild or boss fight's result is a REVEAL with no human to
     // press B, so hold it ~3s then auto-dismiss back to the habitat (finishCombat
     // advances the streak / cancels on a loss) or straight into the gauntlet's next round
     // (finishBossRound). Sim fights stay player-driven, with nothing automatic.
     if (walk_.active &&
-        (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss) &&
-        combatBeat_ >= kExploreRevealHoldBeats) {
+        (fight_.caller == FightCaller::Wild || fight_.caller == FightCaller::Boss) &&
+        fight_.resultBeat >= kExploreRevealHoldBeats) {
         finishCombat();
     }
 }
@@ -427,13 +427,13 @@ Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
     if (nowMs - lastCombatAnimMs_ < static_cast<uint32_t>(kCombatAnimMs)) return Cadence::Open;
     lastCombatAnimMs_ = nowMs;
     combatAnimBeat_++;
-    combatHitBeat_++;
+    fight_.hitBeat++;
     // A guardian's SWARM is a fighter, so it moves on the clock the fighters move on
     // rather than on the dissolve's: the stage is an ~8fps screen, and a body stepping
     // four times faster than the creature beside it would read as two screens composited
     // together. The mood is a health band (Game::guardianFlockMood), so the flock visibly
     // comes apart as it loses.
-    if (combat_.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
+    if (fight_.combat.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
     stepCombatCamo();
     return Cadence::Fired;
 }
@@ -450,8 +450,8 @@ Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
 // per repaint.
 void Game::stepCombatCamo() {
     const bool flip = combatLocalIsEnemySide();
-    const Combatant& self = flip ? combat_.enemy() : combat_.player();
-    const Combatant& rival = flip ? combat_.player() : combat_.enemy();
+    const Combatant& self = flip ? fight_.combat.enemy() : fight_.combat.player();
+    const Combatant& rival = flip ? fight_.combat.player() : fight_.combat.enemy();
     const SpriteData* wear =
         camoSpriteForTarget(camoTarget(self, rival), rival.spriteName, self.stage);
     // Trading one borrowed palette for ANOTHER restarts the scatter with the old one held
@@ -476,8 +476,8 @@ void Game::stepCombatCamo() {
 // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the only one
 // gated on a specific effect being on screen: it runs for the ~2s a sweep takes and costs
 // nothing the rest of the time. Three hosts, one counter, only one dissolve is ever up.
-// Each reset its own start (startFeeding / startWifiEvent / the fight's own combatBeat_
-// reset), so this only has to decide when to ADVANCE.
+// Each resets it at its own start (startFeeding / startWifiEvent / every fight start), so
+// this only has to decide when to ADVANCE.
 //
 // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
 // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
@@ -488,7 +488,7 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
     const bool swarmLive = nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
     const bool fxSweeping =
         nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
-        (nav_ == Nav::Combat && combat_.outcome() != Combat::Outcome::Ongoing);
+        (nav_ == Nav::Combat && fight_.combat.outcome() != Combat::Outcome::Ongoing);
     if (!fxSweeping) {
         lastFxMs_ = nowMs;
         return Cadence::Closed;
@@ -603,7 +603,7 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // Post-encounter status readout: a real-ms auto-dismiss window, like
     // kSdIconRevealMs. Informational only, so it times out on its own rather
     // than parking forever like a modal.
-    if (nav_ == Nav::PostEncounter && nowMs_ >= postEncounterDeadlineMs_) {
+    if (nav_ == Nav::PostEncounter && nowMs_ >= fight_.result.readoutUntilMs) {
         dismissPostEncounter();
         changed = true;
     }

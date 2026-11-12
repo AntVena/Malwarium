@@ -36,6 +36,7 @@
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
 #include "core/model/explore_walk.h"
+#include "core/model/fight.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
@@ -190,7 +191,9 @@ public:
     // Content lookup (creatures/items/mods/moves): read-only, for anything that
     // needs to enumerate the catalog (e.g. the 'Pedia state export).
     const ContentRegistry& content() const override { return registry_; }
-    const Combat& combat() const { return combat_; }
+    const Combat& combat() const { return fight_.combat; }
+    // The current fight, or the last one after it ends (core/model/fight.h).
+    const Fight& fight() const { return fight_; }
     int combatXp() const { return pet_.xp; }        // XP banked toward the next level
     int combatLevel() const { return pet_.level; }  // 0-based creature level
     // What this pet actually banks from a raw award: the USB soak, then the Epic dish's
@@ -2194,8 +2197,6 @@ public:
     void debugSetSectorCleared(int area, bool v) {
         if (area >= 0 && area < kAreaCount) { op_.world.sectorCleared[area] = v; markSaveDirty(); }
     }
-    // The level stamped on the last rolled wild encounter (DeepWeb scaling test).
-    int debugEncounterEnemyLevel() const { return encounterEnemy_.level; }
     // Arm the DeepWeb Dive directly (tests): keeps its own all-areas-cleared guard.
     // Real path: EXPL → B on the "> DIVE" row.
     void debugStartDeepWebDive() { startDeepWebDive(); }
@@ -2323,15 +2324,6 @@ public:
             return 0;
         return pet_.armed.subRefarmCount[area][sub];
     }
-
-    // Post-encounter status readout inspection (tests): the
-    // bandwidth/fragmentation before/after snapshot + shield flag applyCombatResult()
-    // captured for the fight that just parked on Nav::PostEncounter.
-    int debugPostEncBwBefore() const { return postEncBwBefore_; }
-    int debugPostEncBwAfter() const { return postEncBwAfter_; }
-    int debugPostEncFragBefore() const { return postEncFragBefore_; }
-    int debugPostEncFragAfter() const { return postEncFragAfter_; }
-    bool debugPostEncShielded() const { return postEncShielded_; }
 
     // Is the Backup Drive death-save currently armed (used and not yet spent in a
     // fight, nor lapsed)? Lazily checked against the deadline, like
@@ -2713,8 +2705,8 @@ private:
     void onCombat(const ButtonEvent& ev);
     void startSimBattle();                          // build combat (safe stakes) + enter
     void finishCombat();                            // apply result, return to caller
-    // Feeding-frenzy pacing: resolves one combat_.step(), then updates the
-    // same-actor streak counters off who just acted (combat_.playerTurnNext()
+    // Feeding-frenzy pacing: resolves one Combat::step(), then updates the
+    // same-actor streak counters off who just acted (Combat::playerTurnNext()
     // is stable until step() runs, so it IS "who's about to act"). Shared by the
     // heartbeat auto-pace (game_core.cpp) and the A fast-forward (onCombat) so
     // skipping a beat doesn't desync the streak read.
@@ -2840,12 +2832,13 @@ private:
     // adds "and won") and by the mask the KIT page marks its prizes from.
     bool combatCanTeach() const;
     void startEncounter();                          // roll the malbeast, open the intro
-    void rollWild();                                // encounterEnemy_ for this zone, scaled
+    CombatEnemy rollWild();                         // the wild for this zone, scaled
     void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
     void resolveFlee();                             // pre-fight escape roll
     const ItemDef* heldEncounterBypass() const;
     void resolveSinkhole();                         // spend encounterBypass_ -> XP lump
-    void startWildCombat(bool forceEnemyFirst);     // live-stakes combat from an encounter
+    // Live-stakes combat against `wild`: an encounter's roll, or an area guardian.
+    void startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst);
     // The tail both debug combat hooks share once the player is built: roll the fight
     // open against `spec` and hand the screen to it (debugStartCombat / ...Vs).
     void beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live);
@@ -3391,8 +3384,9 @@ private:
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
     // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
-    // the art it is currently sampling. Same split as the fight's combatCamoWorn_ pair:
-    // the tick holds a level and a sprite, the draw ranks that sprite into a ladder.
+    // the art it is currently sampling. Same split as the combat stage's
+    // combatCamoWorn_ pair: the tick holds a level and a sprite, the draw ranks that
+    // sprite into a ladder.
     // Null between drifts, which is also what says nothing is worn.
     IdleCamo petCamo_;
     const SpriteData* idleCamoWorn_ = nullptr;
@@ -3613,9 +3607,8 @@ private:
     // engine. trainRow_ is the focused MOVES row (always an unlocked slot); the L3
     // Detail is either the move picker or, under PRACTISE, the Sim-Battle tier pick
     // (trainScreen_).
-    // The move picker mirrors MODS (slot/pick/confirm + pending). combat_ runs the
-    // battle; combatBeat_ paces the auto-resolution; Health lives in combat_ and is
-    // NEVER persisted (transient). pet_.xp/pet_.level persist (save v2).
+    // The move picker mirrors MODS (slot/pick/confirm + pending). A fight's Health lives
+    // in fight_ and is never persisted; pet_.xp/pet_.level persist (save v2).
     int trainRow_ = 0;
     // MoveDetail is the picker's reader half (hold-B): the picker chooses, the detail
     // page explains, so neither has to shrink to fit the other.
@@ -3637,16 +3630,13 @@ private:
     int moveConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
     const char* movePendingId_ = nullptr;
     int simTier_ = 0;
-    Combat combat_;
-    int combatBeat_ = 0;
-    int combatTurnBeat_ = 0;   // heartbeats since the last autonomous turn (paces auto-battle)
-    // Combat sprite motion runs on its own faster tick (kCombatAnimMs) instead of the
-    // shared beat_ (which paces turn timing/idle/everything else): see game_core.cpp's
-    // Nav::Combat branch. combatHitBeat_ counts animBeat ticks since the last
-    // combat_.step() and drives drawCombat's post-hit impact punch/flash.
+    // The fight on screen, or the last one (core/model/fight.h).
+    Fight fight_;
+    // The combat stage's sprite motion, on its own faster tick (kCombatAnimMs) instead of
+    // the shared beat_ (tickCombatAnim). It and the camo below run while the Combat
+    // screen is up, across a gauntlet's rounds, so they are the screen's and not a fight's.
     int combatAnimBeat_ = 0;
     uint32_t lastCombatAnimMs_ = 0;
-    int combatHitBeat_ = 0;
     // Whose colours the pet is wearing (FX_CAMO): the ART being sampled plus a LEVEL,
     // neither of which is a beat. The tick reads the pet's live cast (camoTarget),
     // resolves it to a sprite (camoSpriteForTarget) and eases the level toward it
@@ -3656,7 +3646,7 @@ private:
     // sprite decides whether the palette is actually changing: a cast onto a fighter
     // whose line the pet already wears must sit still rather than dissolve into itself.
     // `combatCamoLeaving_` is the art a swap is coming off, held until the dissolve
-    // finishes. All three clear on leaving the fight.
+    // finishes. All three clear when the Combat screen closes.
     const SpriteData* combatCamoWorn_ = nullptr;
     const SpriteData* combatCamoLeaving_ = nullptr;
     uint8_t combatCamoLevel_ = 0;
@@ -3676,9 +3666,7 @@ private:
 
     // The explore walk (core/model/explore_walk.h), a background mode on the IDLE
     // habitat. The wild-encounter intro and event screens are their own Nav states, past
-    // the 3-deep menu budget, and suspend the global auto-defocus. combatCaller_ tells
-    // finishCombat() where to return: the LOADOUT hub (Sim-Battle) or the explore habitat
-    // (a wild encounter), never the carousel.
+    // the 3-deep menu budget, and suspend the global auto-defocus.
     ExploreWalk walk_;
 
     // Bandwidth is the FARMING resource: spent 1 per re-farm win to keep cleared-sub
@@ -3694,7 +3682,7 @@ private:
     // event, and the beaten rival's combat outro. Each resets it as its own sweep opens
     // and gates its advance (game_core.cpp), so it always means beats-since-THIS-sweep.
     //
-    // Deliberately NOT ExploreWalk::eventBeat / combatBeat_: a press restarts those, and a
+    // Deliberately NOT ExploreWalk::eventBeat / Fight::resultBeat: a press restarts those, and a
     // dissolve animates something already resolved. Replaying it under a player leaning
     // on A would be a second helping that never happened.
     int fxBeat_ = 0;
@@ -3703,33 +3691,13 @@ private:
     // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
     // the fast frames, not a parallel list, so the two cannot drift.
     bool fastCadenceActive_ = false;
+    // The wild-encounter intro (Nav::Encounter), a screen: the wild it presents, its
+    // cursor, and the held item that can bypass the fight (any row with a
+    // preEncounterXp), or nullptr; that item is what the third option spends. A fight
+    // opened from it is handed the wild (startWildCombat) and keeps nothing of the intro.
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
-    // The held item that can bypass this encounter (any row with a preEncounterXp), or
-    // nullptr; it is what the intro's third option spends.
     const ItemDef* encounterBypass_ = nullptr;
-    enum class CombatCaller { Sim, Wild, Boss, Tourney, Duel };
-    CombatCaller combatCaller_ = CombatCaller::Sim;
-
-    // Post-encounter status readout (Nav::PostEncounter). Captured
-    // by applyCombatResult() at the moment a WILD (non-boss, non-Sim) fight resolves:
-    // the bandwidth/fragmentation values just BEFORE and just AFTER this fight's
-    // rewards/tax were applied, plus whether 's corruption shield covered it.
-    // Runtime-only (never persisted: it describes one just-finished fight, not
-    // durable state); postEncounterDeadlineMs_ is the kPostEncounterMs auto-dismiss
-    // deadline (a real-ms window, the kSdIconRevealMs pattern, not a beat count).
-    int postEncBwBefore_ = 0;
-    int postEncBwAfter_ = 0;
-    int postEncFragBefore_ = 0;
-    int postEncFragAfter_ = 0;
-    bool postEncShielded_ = false;
-    uint32_t postEncounterDeadlineMs_ = 0;
-    // Per-stat points gained from any level-up(s) THIS encounter + the level
-    // reached, so the post-encounter readout can name the stat delta ("POWER +1")
-    // instead of leaving a level-up silent. applyCombatResult snapshots pet_.statPoints
-    // before the reward path and diffs it after. Runtime-only, like the rest here.
-    int postEncStatGain_[kLevelStatCount] = {0};
-    int postEncLevelAfter_ = 0;
 
     // The boss gauntlet in play. Which bosses have been beaten is the Operator's
     // (OperatorWorld). bossGauntlet_ is the active gauntlet's rounds, bossRound_ the

@@ -60,10 +60,10 @@ void Game::settleBackupDrive() {
     // Every path out of a fight lands here (applyCombatResult for wild/Sim, and every
     // boss round), so a spent drive is settled in exactly one place. It is spent for the
     // rest of its 1h window, win or lose.
-    if (combat_.player().backupUse == Combatant::BackupUse::None) return;
+    if (fight_.combat.player().backupUse == Combatant::BackupUse::None) return;
     pet_.armed.backupShieldUntilMs = 0;
-    if (const char* id = backupDriveAchievement(combat_.player().backupUse,
-                                                combat_.outcome()))
+    if (const char* id = backupDriveAchievement(fight_.combat.player().backupUse,
+                                                fight_.combat.outcome()))
         unlockAchievement(id);
 }
 
@@ -113,14 +113,10 @@ void Game::startSimBattle() {
     applySimDummyLevelScale(dummy, pet_.level);
     Combatant e = makeEnemyCombatant(registry_, dummy);
     rng_ = rng_ * 1664525u + 1013904223u;     // advance for a fresh deterministic seed
-    combat_.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
-                  /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
-    // Set every time: a practice fight opened mid-walk would otherwise inherit the last
-    // wild fight's caller and be paid, streaked and auto-dismissed as one.
-    combatCaller_ = CombatCaller::Sim;
-    combatBeat_ = 0;
+    fight_ = Fight::started(FightCaller::Sim);
+    fight_.combat.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
+                        /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::CombatStart);
@@ -128,7 +124,7 @@ void Game::startSimBattle() {
 
 void Game::onCombat(const ButtonEvent& ev) {
     // Once resolved, the result beat waits for B/C to return to the caller.
-    if (combat_.outcome() != Combat::Outcome::Ongoing) {
+    if (fight_.combat.outcome() != Combat::Outcome::Ongoing) {
         if (ev.button == Button::B || ev.button == Button::C) finishCombat();
         return;
     }
@@ -148,25 +144,25 @@ void Game::onCombat(const ButtonEvent& ev) {
         // scrambled move the pet can read (MoveDef::scrambleTurns) and Combat has no
         // other source for it. The sigils are the device's, not the fight's.
         if (!duel)
-            combat_.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
+            fight_.combat.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
         return;
     }
-    if (combat_.overrideOpen()) {                 // standard A/B/C inside the picker
-        if (ev.button == Button::A) combat_.cycleOverride();
+    if (fight_.combat.overrideOpen()) {           // standard A/B/C inside the picker
+        if (ev.button == Button::A) fight_.combat.cycleOverride();
         else if (ev.button == Button::B) {
             // B descends at the band level and commits inside a band, so each level
             // gives B one meaning. A picker holding a single band never has a level
             // to descend, so B commits there as it always did.
-            if (combat_.enterOverrideBand()) return;
-            combat_.commitOverride();
+            if (fight_.combat.enterOverrideBand()) return;
+            fight_.combat.commitOverride();
             playSound(Sound::ExploitFire);
             // If a USE-ITEM was committed, Combat has already patched Health; the
             // Game now consumes the stack + applies the item's out-of-combat effect.
-            if (const char* id = combat_.takeCommittedItem()) consumeCombatItem(id);
+            if (const char* id = fight_.combat.takeCommittedItem()) consumeCombatItem(id);
         } else if (ev.button == Button::C) {
             // C is Cancel at both levels; what it cancels is the band you opened,
             // and then the picker.
-            if (!combat_.leaveOverrideBand()) combat_.cancelOverride();
+            if (!fight_.combat.leaveOverrideBand()) fight_.combat.cancelOverride();
         }
         return;
     }
@@ -183,33 +179,34 @@ void Game::onCombat(const ButtonEvent& ev) {
     // second fight with no exit: forfeiting a bracket mid-match would let a losing
     // draw be replayed, which is the whole stake gone. The way out of the arena is
     // the bracket screen, before a match starts.
-    const bool noExit = duel || combatCaller_ == CombatCaller::Tourney;
+    const bool noExit = duel || fight_.caller == FightCaller::Tourney;
     if (ev.button == Button::A) {
         advanceCombatTurn();
     } else if (ev.button == Button::C && !noExit) {
-        combat_.flee();
+        fight_.combat.flee();
         playCombatTurnSound();   // a failed flee hands the rival a free swing
     }
 }
 
 int Game::combatBeatsForTurn() const {
-    // combat_ already tracks the same-actor streak for its own combo-damage bonus
+    // Combat already tracks the same-actor streak for its own combo-damage bonus
     // (Combat::streakCount_): this reuses it. streakCount()/ streakIsPlayer() describe
     // the LAST resolved hit; playerTurnNext() names who's about to act, so if that
     // matches, the upcoming hit extends the run by one. Ramps the wait down from
     // kCombatBeatsPerTurn, floored at kCombatMinBeatsPerTurn.
-    const bool nextIsPlayer = combat_.playerTurnNext();
-    const int upcoming = (combat_.streakCount() > 0 && nextIsPlayer == combat_.streakIsPlayer())
-                              ? combat_.streakCount() + 1
+    const Combat& c = fight_.combat;
+    const bool nextIsPlayer = c.playerTurnNext();
+    const int upcoming = (c.streakCount() > 0 && nextIsPlayer == c.streakIsPlayer())
+                              ? c.streakCount() + 1
                               : 1;
     const int beats = kCombatBeatsPerTurn - (upcoming - 1);
     return beats < kCombatMinBeatsPerTurn ? kCombatMinBeatsPerTurn : beats;
 }
 
 void Game::advanceCombatTurn() {
-    combat_.step();
-    combatTurnBeat_ = 0;
-    combatHitBeat_ = 0;   // restart the impact-punch decay for drawCombat
+    fight_.combat.step();
+    fight_.turnBeat = 0;
+    fight_.hitBeat = 0;   // restart the impact-punch decay for drawCombat
     playCombatTurnSound();
     // FX_CAMO deliberately takes nothing from here. The colours the pet is wearing are a
     // reading of its LIVE cast, eased every anim tick (tick(), camoAdvance), so this
@@ -219,11 +216,12 @@ void Game::advanceCombatTurn() {
 
 bool Game::exploreFightLive() const {
     return walk_.active && nav_ == Nav::Combat &&
-           (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
+           (fight_.caller == FightCaller::Wild || fight_.caller == FightCaller::Boss);
 }
 
 void Game::playCombatTurnSound() {
-    switch (combat_.outcome()) {
+    const Combat& c = fight_.combat;
+    switch (c.outcome()) {
         case Combat::Outcome::Ongoing: break;
         case Combat::Outcome::Fled: playSound(Sound::Fled); return;
         default: playSound(Sound::Knockout); return;
@@ -231,12 +229,12 @@ void Game::playCombatTurnSound() {
     // Nobody is watching an auto-explore fight swing by swing; a cue every turn would
     // only be noise from a device sitting in a pocket. The start and the KO still sound.
     if (exploreFightLive()) return;
-    if (combat_.lastWasStunned()) playSound(Sound::Stunned);
+    if (c.lastWasStunned()) playSound(Sound::Stunned);
     // Only a swing gets a hit cue: the passive ticks and wind-ups would make every turn
     // beep, and a shielded or ransomed swing that moved no Health reads as a block.
-    else if (!combat_.lastWasStrike()) return;
-    else if (combat_.lastDamage() == 0 || combat_.lastRansomed()) playSound(Sound::Blocked);
-    else playSound(combat_.lastByPlayer() ? Sound::HitDealt : Sound::HitTaken);
+    else if (!c.lastWasStrike()) return;
+    else if (c.lastDamage() == 0 || c.lastRansomed()) playSound(Sound::Blocked);
+    else playSound(c.lastByPlayer() ? Sound::HitDealt : Sound::HitTaken);
 }
 
 int Game::xpForLevel(int level) const {
@@ -362,17 +360,17 @@ void Game::applyBattleFatigue() {
 
 void Game::applyCombatResult() {
     settleBackupDrive();
-    const bool safe = combat_.stakes() == Combat::Stakes::Safe;
-    const bool won = combat_.outcome() == Combat::Outcome::Win;
-    const bool lost = combat_.lostOrDrawn();       // a draw (the turn limit) is a loss
+    const bool safe = fight_.combat.stakes() == Combat::Stakes::Safe;
+    const bool won = fight_.combat.outcome() == Combat::Outcome::Win;
+    const bool lost = fight_.combat.lostOrDrawn();   // a draw (the turn limit) is a loss
     const bool fought = won || lost;
     // Post-encounter status readout snapshot: the STARTING
     // bandwidth/fragmentation, before anything below moves them. finishCombat()
-    // reads the before/after pair (+ postEncShielded_ below) to drive
+    // reads the before/after pair (+ the shield flag below) to drive
     // Nav::PostEncounter for a WILD fight; harmless bookkeeping for Sim/boss (they
     // never route to that overlay, so nothing reads it there).
-    postEncBwBefore_ = bandwidth_;
-    postEncFragBefore_ = pet_.model.fragmentation();
+    fight_.result.bwBefore = bandwidth_;
+    fight_.result.fragBefore = pet_.model.fragmentation();
     // Snapshot the pre-reward stat points so the readout can name what this fight's
     // XP levelled up. The reward path below calls addCombatXp, which may cross
     // one or more level boundaries; diffing after (part 2) yields the per-stat gain.
@@ -396,10 +394,10 @@ void Game::applyCombatResult() {
     // here.
     const bool bandwidthShielded = !safe && fought && bandwidth_ > 0;
     if (bandwidthShielded) --bandwidth_;               // spend one charge for the shield
-    postEncShielded_ = bandwidthShielded;
+    fight_.result.shielded = bandwidthShielded;
     if (!safe && fought && !bandwidthShielded)
         applyBattleFatigue();                          // no charge left → the pet corrupts
-    switch (combat_.outcome()) {
+    switch (fight_.combat.outcome()) {
         case Combat::Outcome::Win: {
             if (safe) {
                 // Sim-Battle: a fixed small flat payout. A few Bits
@@ -419,7 +417,7 @@ void Game::applyCombatResult() {
                 // The wild malbeast's difficulty pips (1/2/3) stand in for its
                 // stage tier, so R = diffPips+1 → Process 2..4, Script 3..9,
                 // Daemon 4..16.
-                int bits = normalBitsReward(encounterEnemy_.diffPips + 1, rng_);
+                int bits = normalBitsReward(fight_.combat.enemy().diffPips + 1, rng_);
                 // depth ramp, Bits half: mirrors the XP bonus below onto Bits,
                 // because diffPips (and so the base roll) does not move with depth,
                 // and a deep dive would otherwise pay the same Bits as a fresh one.
@@ -440,7 +438,7 @@ void Game::applyCombatResult() {
                 // outside a dive): the run it buys is shorter and harder, so each win in
                 // it has to be worth more than the shallow ones it skipped.
                 const int winXp = wildWinXp(wildWinXpBase(walk_.sector),
-                                            encounterEnemy_.level, pet_.level) *
+                                            fight_.combat.enemy().level, pet_.level) *
                                   (100 + diveRewardBonusPct()) / 100;
                 addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
                 // re-farm loot decay: farming an already-CLEARED sub-area pays FULL non-Bits
@@ -471,7 +469,7 @@ void Game::applyCombatResult() {
                     drawCacheItem(t.rows, t.count);
                 }
                 // A separate, independent move-drop roll, mirroring the item roll above.
-                rollEnemyMoveDrop(combat_.enemy(), moveDropPct);
+                rollEnemyMoveDrop(fight_.combat.enemy(), moveDropPct);
                 // the endless DeepWeb Dive is the tier-4 mod source: a rare
                 // roll on a win drops one of its permanent endgame mods (Deadman Switch /
                 // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop
@@ -491,7 +489,7 @@ void Game::applyCombatResult() {
             // Live stakes: +Fragmentation (×Bad-branch multiplier) + COMBAT_LOST
             // NOT a care mistake. Safe (Sim-Battle): no Frag, no mistake.
             if (!safe) {
-                const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
+                const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
                 pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
                 log_.push(LogEventType::CombatLost, "LOST BATTLE");
             }
@@ -502,43 +500,43 @@ void Game::applyCombatResult() {
     }
     // Post-encounter status readout snapshot, part 2: the ENDING values, now that
     // the switch above has applied whatever this outcome caused.
-    postEncBwAfter_ = bandwidth_;
-    postEncFragAfter_ = pet_.model.fragmentation();
+    fight_.result.bwAfter = bandwidth_;
+    fight_.result.fragAfter = pet_.model.fragmentation();
     for (int i = 0; i < kLevelStatCount; ++i)
-        postEncStatGain_[i] = pet_.statPoints[i] - statBefore[i];
-    postEncLevelAfter_ = pet_.level;
+        fight_.result.statGain[i] = pet_.statPoints[i] - statBefore[i];
+    fight_.result.levelAfter = pet_.level;
     markSaveDirty();
 }
 
 void Game::finishCombat() {
     combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
-    if (combat_.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
-    else if (combat_.lostOrDrawn()) playSound(Sound::BattleLose);
+    if (fight_.combat.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
+    else if (fight_.combat.lostOrDrawn()) playSound(Sound::BattleLose);
     // A duel has its own result path (a banner on the LINK screen and a log line; a
     // duel has no stakes, so no reward and no penalty), so it hands off before
     // applyCombatResult() the same way a boss round does.
     if (pvpFighting()) { finishPvpBattle(); return; }
     // A boss/gauntlet round has its own result path (advance/clear/fail + the
     // lump) with no wild loot rolls: hand off before applyCombatResult().
-    if (combatCaller_ == CombatCaller::Boss) { finishBossRound(); return; }
+    if (fight_.caller == FightCaller::Boss) { finishBossRound(); return; }
     // An arena bout advances a bracket instead of paying a fight (game_tourney.cpp):
     // Safe stakes, no loot rolls, and nothing but the title pays. Same hand-off shape.
-    if (combatCaller_ == CombatCaller::Tourney) { finishTourneyMatch(); return; }
+    if (fight_.caller == FightCaller::Tourney) { finishTourneyMatch(); return; }
     applyCombatResult();
     // Return to the caller, never a fixed layer. Sim-Battle returns to the
     // LOADOUT hub; a wild encounter returns to the idle habitat (explore-mode),
     // not the EXPL list or the carousel.
-    if (combatCaller_ == CombatCaller::Wild) {
+    if (fight_.caller == FightCaller::Wild) {
         // Explore win-streak: a win advances the streak (10 in a row →
         // unlock the sector's boss, unless already cleared); a loss cancels the mode
         // and resets the streak. That's the whole risk model.
-        if (combat_.outcome() == Combat::Outcome::Win) ++away_.won;
-        else if (combat_.lostOrDrawn()) ++away_.lost;
-        if (combat_.outcome() == Combat::Outcome::Win) {
+        if (fight_.combat.outcome() == Combat::Outcome::Win) ++away_.won;
+        else if (fight_.combat.lostOrDrawn()) ++away_.lost;
+        if (fight_.combat.outcome() == Combat::Outcome::Win) {
             // 'Pedia malbeast "defeated": a WON live wild fight
             // (never a boss round. Those return via finishBossRound() above before
             // ever reaching here, and Sim never reaches this branch either).
-            if (const int idx = wildMalbeastIndex(encounterEnemy_.name);
+            if (const int idx = wildMalbeastIndex(fight_.combat.enemy().name);
                 idx >= 0 && !(op_.reveals.malbeastDefeatedMask & (1u << idx))) {
                 op_.reveals.malbeastDefeatedMask |= static_cast<uint16_t>(1u << idx);
                 markSaveDirty();
@@ -579,7 +577,7 @@ void Game::finishCombat() {
                     }
                 }
             }
-        } else if (combat_.lostOrDrawn()) {
+        } else if (fight_.combat.lostOrDrawn()) {
             // A loss ends the run: a draw is one. Same rule as the Stop row: only a DIVE ending spends
             // the depth multiplier, and inDeepWebDive() is derived from walk_.active,
             // so it has to be read first.
@@ -591,9 +589,9 @@ void Game::finishCombat() {
         // flee never reaches finishCombat() with those stakes touched, so it skips
         // straight back (returnToExplore also surfaces an awakened-guardian
         // rank-up).
-        if (combat_.outcome() == Combat::Outcome::Win || combat_.lostOrDrawn()) {
+        if (fight_.combat.outcome() == Combat::Outcome::Win || fight_.combat.lostOrDrawn()) {
             nav_ = Nav::PostEncounter;
-            postEncounterDeadlineMs_ = nowMs_ + kPostEncounterMs;
+            fight_.result.readoutUntilMs = nowMs_ + kPostEncounterMs;
         } else {
             returnToExplore();
         }
@@ -612,13 +610,13 @@ bool Game::combatCanTeach() const {
     // operator's pet and a Sim fights a dummy. Neither rolls a drop, so neither shows
     // anything to win.
     return !pvpFighting() &&
-           (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
+           (fight_.caller == FightCaller::Wild || fight_.caller == FightCaller::Boss);
 }
 
 bool Game::combatOutroEligible() const {
     // ...and WON, which is the only thing the dissolve adds to the question above: the
     // KIT panel answers it live, mid-fight, off the same gate.
-    return combatCanTeach() && combat_.outcome() == Combat::Outcome::Win;
+    return combatCanTeach() && fight_.combat.outcome() == Combat::Outcome::Win;
 }
 
 bool Game::combatDissolveRunning() const {
@@ -635,7 +633,7 @@ uint32_t Game::rivalTeachableMoveMask() const {
     // seating that differs (a duel guest, core/ui/combat_screen.h's CombatSides) is a
     // duel, which combatCanTeach has already refused.
     uint32_t mask = 0;
-    const std::vector<const MoveDef*>& kit = combat_.enemy().moves;
+    const std::vector<const MoveDef*>& kit = fight_.combat.enemy().moves;
     // 32 is far above any kit the game builds (a boss carries the depth spine, its
     // area's rider and at most kMaxBossTeaches), so the bound only guards the shift.
     for (size_t i = 0; i < kit.size() && i < 32; ++i)
@@ -667,13 +665,11 @@ void Game::debugStartCombatVs(const CombatEnemy& spec, bool live) {
 void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live) {
     Combatant e = makeEnemyCombatant(registry_, spec);
     rng_ = rng_ * 1664525u + 1013904223u;
-    combat_.begin(p, e, live ? Combat::Stakes::Live : Combat::Stakes::Safe, rng_,
-                  /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
-                  exploitUsesPerBattle());
-    combatCaller_ = CombatCaller::Sim;   // the dev hook always returns to the hub
-    combatBeat_ = 0;
+    fight_ = Fight::started(FightCaller::Sim);   // the dev hook always returns to the hub
+    fight_.combat.begin(p, e, live ? Combat::Stakes::Live : Combat::Stakes::Safe, rng_,
+                        /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
+                        exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
 }
@@ -729,7 +725,8 @@ void Game::debugFillLoadout() {
 // The wild a walk meets here, at full strength for where it was met: the zone's own pair
 // and its scaling. The Wi-Fi guardian (game_net.cpp) rolls through this too, so it is the
 // same creature a walk in the same place would meet.
-void Game::rollWild() {
+CombatEnemy Game::rollWild() {
+    CombatEnemy wild;
     rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
     if (inEndlessZone()) {
         // Both endless zones field a tier-3 pair (the crawl its own, kDarkWebWilds) and
@@ -737,25 +734,26 @@ void Game::rollWild() {
         // (walk_.streak) so pushing deeper gradually punches the pet up instead of
         // sitting at flat parity forever. The dive's curve has a foothold and spends a
         // fraction of a level's stat points; the crawl's has neither.
-        encounterEnemy_ = inDarkWebCrawl() ? wildMalbeastOf(kDarkWebWilds, 3, rng_ >> 16)
-                                           : wildMalbeast(3, rng_ >> 16);
+        wild = inDarkWebCrawl() ? wildMalbeastOf(kDarkWebWilds, 3, rng_ >> 16)
+                                : wildMalbeast(3, rng_ >> 16);
         rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
         if (inDarkWebCrawl())
-            applyDarkWebScale(encounterEnemy_, pet_.level, walk_.streak, rng_);
+            applyDarkWebScale(wild, pet_.level, walk_.streak, rng_);
         else
-            applyDeepWebScale(encounterEnemy_, pet_.level, walk_.streak, rng_);
+            applyDeepWebScale(wild, pet_.level, walk_.streak, rng_);
     } else {
-        encounterEnemy_ = wildMalbeastIn(walk_.sector, rng_ >> 16);   // the area's pair
-        applyWildSubAreaRamp(encounterEnemy_, walk_.sector, walk_.sub);  // depth ramp
+        wild = wildMalbeastIn(walk_.sector, rng_ >> 16);     // the area's pair
+        applyWildSubAreaRamp(wild, walk_.sector, walk_.sub);  // depth ramp
     }
     // 'Pedia malbeast "seen": the wild roll itself is the
     // glimpse, regardless of what happens next (fight/flee/sinkhole/auto-resolve).
     // wildMalbeastIndex returns -1 for anything outside the wild roster.
-    if (const int idx = wildMalbeastIndex(encounterEnemy_.name);
+    if (const int idx = wildMalbeastIndex(wild.name);
         idx >= 0 && !(op_.reveals.malbeastSeenMask & (1u << idx))) {
         op_.reveals.malbeastSeenMask |= static_cast<uint16_t>(1u << idx);
         markSaveDirty();
     }
+    return wild;
 }
 
 void Game::startEncounter() {
@@ -767,7 +765,7 @@ void Game::startEncounter() {
     // this function once it is done, by which time the chapter is marked read and the
     // gate falls straight through.
     if (fireStory(walk_.sector, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
-    rollWild();
+    encounterEnemy_ = rollWild();
     encounterChoice_ = 0;
     encounterBypass_ = heldEncounterBypass();
     // Auto-explore is a hands-off background mode: a wild encounter resolves
@@ -778,7 +776,7 @@ void Game::startEncounter() {
     // (currently unused) manual encounter path.
     if (walk_.active) {
         if (encounterBypass_) resolveSinkhole();
-        else startWildCombat(/*forceEnemyFirst=*/false);
+        else startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/false);
         return;
     }
     nav_ = Nav::Encounter;
@@ -789,7 +787,7 @@ void Game::onEncounter(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         encounterChoice_ = (encounterChoice_ + 1) % options;
     } else if (ev.button == Button::B) {
-        if (encounterChoice_ == 0) startWildCombat(/*forceEnemyFirst=*/false);
+        if (encounterChoice_ == 0) startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/false);
         else if (encounterChoice_ == 1) resolveFlee();
         else resolveSinkhole();
     } else if (ev.button == Button::C) {
@@ -806,7 +804,7 @@ void Game::resolveFlee() {
         returnToExplore();
     } else {
         // A failed flee forces the fight, enemy first (retreat isn't free).
-        startWildCombat(/*forceEnemyFirst=*/true);
+        startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/true);
     }
 }
 
@@ -832,17 +830,15 @@ void Game::resolveSinkhole() {
     returnToExplore();
 }
 
-void Game::startWildCombat(bool forceEnemyFirst) {
+void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
     if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
-    Combatant e = makeEnemyCombatant(registry_, encounterEnemy_);
+    Combatant e = makeEnemyCombatant(registry_, wild);
     rng_ = rng_ * 1664525u + 1013904223u;
-    combat_.begin(p, e, Combat::Stakes::Live, rng_, forceEnemyFirst,
-                  /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
-    combatCaller_ = CombatCaller::Wild;
-    combatBeat_ = 0;
+    fight_ = Fight::started(FightCaller::Wild);
+    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, forceEnemyFirst,
+                        /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::CombatStart);

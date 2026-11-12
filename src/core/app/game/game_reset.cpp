@@ -73,9 +73,8 @@ void Game::resetToHatch() {
     moveConfirm_ = false;
     movePendingId_ = nullptr;
     simTier_ = 0;
-    combatBeat_ = 0;
+    fight_ = Fight{};                    // nothing can be mid-fight after a reset
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
     lastLevelUpStat_ = -1;
     // RESET PET also restarts this much of the Operator: the tag, the lifetime counters,
     // the wallet, the spare mods and the arcade tallies. The 'Pedia, the rank, the Rig

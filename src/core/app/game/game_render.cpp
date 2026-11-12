@@ -1035,9 +1035,9 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // comes from the fight: on a guest's screen the player_ slot holds the HOST's
     // creature (core/model/pvp_battle.h).
     const bool duel = pvpFighting();
-    const SpriteData* ps = duel ? registry_.sprite(combat_.player().spriteName)
+    const SpriteData* ps = duel ? registry_.sprite(fight_.combat.player().spriteName)
                                 : (pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr);
-    const SpriteData* es = registry_.sprite(combat_.enemy().spriteName);
+    const SpriteData* es = registry_.sprite(fight_.combat.enemy().spriteName);
 
     // Both duellists read their own pet in the left seat on the zoned gauge, like every
     // other fight: `localIsEnemySide` tells the screen to swap the roles for the guest,
@@ -1051,8 +1051,8 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     }
     // An arena bout is the other pet-vs-pet fight, and the other one with no way out,
     // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
-    if (combatCaller_ == CombatCaller::Tourney) sides.rivalLabel = "RIVAL";
-    sides.canRun = !duel && combatCaller_ != CombatCaller::Tourney;
+    if (fight_.caller == FightCaller::Tourney) sides.rivalLabel = "RIVAL";
+    sides.canRun = !duel && fight_.caller != FightCaller::Tourney;
 
     // The beaten rival's outro, over the beats finishCombat() holds the result for.
     // WHICH fights get one is combatOutroEligible(): shared with the tick, which has
@@ -1078,14 +1078,14 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     // its flock into the seat the stage reserved (FX_SWARM). The same body the pet
     // spoke to on the hail, moved into the fighter's cell when the fight opened.
     SwarmView rivalSwarm;
-    const bool swarmRival = combat_.enemy().isSwarm && !sides.localIsEnemySide;
+    const bool swarmRival = fight_.combat.enemy().isSwarm && !sides.localIsEnemySide;
     if (swarmRival) rivalSwarm = swarmViewOf(guardianFlock_);
     CombatView v;
     v.playerSprite = ps;
     v.enemySprite = es;
     v.beat = beat_;
     v.animBeat = combatAnimBeat_;
-    v.hitBeat = combatHitBeat_;
+    v.hitBeat = fight_.hitBeat;
     v.statPage = combatStatsPage_;
     v.sides = sides;
     v.outro = outro;
@@ -1093,7 +1093,7 @@ void Game::drawCombatScreen(Framebuffer& fb) const {
     v.camo = camo;
     v.scene = stageScene();
     v.rivalSwarm = swarmRival ? &rivalSwarm : nullptr;
-    drawCombat(fb, combat_, v);
+    drawCombat(fb, fight_.combat, v);
 }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
@@ -1239,8 +1239,8 @@ void Game::drawPostEncounterScreen(Framebuffer& fb) const {
     // separate loss penalty, so it can be both shielded AND up). Only a genuinely-clean
     // fight where a charge was spent reads SHIELDED; no charge + no rise reads None.
     const PostEncounterFragState st =
-        (postEncFragAfter_ > postEncFragBefore_) ? PostEncounterFragState::Rose
-        : (postEncShielded_ ? PostEncounterFragState::Shielded
+        (fight_.result.fragAfter > fight_.result.fragBefore) ? PostEncounterFragState::Rose
+        : (fight_.result.shielded ? PostEncounterFragState::Shielded
                             : PostEncounterFragState::None);
     // Compose the level-up line (nullptr if this fight didn't level up): "LVL n" +
     // one "STAT +k" chip per stat that gained (usually one. A wild win grants a
@@ -1249,21 +1249,21 @@ void Game::drawPostEncounterScreen(Framebuffer& fb) const {
     char lvlBuf[64];   // "LVL n" + up to kLevelStatCount " STAT +k" chips (multi-level lump)
     const char* lvlLine = nullptr;
     int gained = 0;
-    for (int i = 0; i < kLevelStatCount; ++i) gained += postEncStatGain_[i];
+    for (int i = 0; i < kLevelStatCount; ++i) gained += fight_.result.statGain[i];
     if (gained > 0) {
-        int off = std::snprintf(lvlBuf, sizeof(lvlBuf), "LVL %d", postEncLevelAfter_);
+        int off = std::snprintf(lvlBuf, sizeof(lvlBuf), "LVL %d", fight_.result.levelAfter);
         for (int i = 0; i < kLevelStatCount && off > 0 && off < (int)sizeof(lvlBuf); ++i)
-            if (postEncStatGain_[i] > 0)
+            if (fight_.result.statGain[i] > 0)
                 off += std::snprintf(lvlBuf + off, sizeof(lvlBuf) - off, "  %s +%d",
-                                     levelStatName(i), postEncStatGain_[i]);
+                                     levelStatName(i), fight_.result.statGain[i]);
         lvlLine = lvlBuf;
     }
     PostEncounterView v;
-    v.bwBefore = postEncBwBefore_;
-    v.bwAfter = postEncBwAfter_;
+    v.bwBefore = fight_.result.bwBefore;
+    v.bwAfter = fight_.result.bwAfter;
     v.bwMax = bandwidthMax();
     v.fragState = st;
-    v.fragDelta = postEncFragAfter_ - postEncFragBefore_;
+    v.fragDelta = fight_.result.fragAfter - fight_.result.fragBefore;
     v.levelLine = lvlLine;
     drawPostEncounter(fb, v);
 }

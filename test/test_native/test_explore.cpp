@@ -207,12 +207,12 @@ void test_post_encounter_reports_bandwidth_shield() {
     CHECK(g.combat().outcome() == Combat::Outcome::Win);
     CHECK(g.nav() == Game::Nav::PostEncounter);  // parked on the readout, not idle yet
     // Bandwidth line: exactly 1 charge spent this encounter.
-    CHECK(g.debugPostEncBwBefore() == kBandwidthMax);
-    CHECK(g.debugPostEncBwAfter() == kBandwidthMax - 1);
+    CHECK(g.fight().result.bwBefore == kBandwidthMax);
+    CHECK(g.fight().result.bwAfter == kBandwidthMax - 1);
     CHECK(g.bandwidth() == kBandwidthMax - 1);
     // Frag line: SHIELDED, and indeed no rise happened.
-    CHECK(g.debugPostEncShielded());
-    CHECK(g.debugPostEncFragAfter() == g.debugPostEncFragBefore());
+    CHECK(g.fight().result.shielded);
+    CHECK(g.fight().result.fragAfter == g.fight().result.fragBefore);
     CHECK(g.model().fragmentation() == frag0);
     // The rendered overlay reads (grayscale-safe, per the release gate).
     Framebuffer fb(kActiveW, kActiveH);
@@ -239,10 +239,10 @@ void test_post_encounter_reports_frag_rise_when_unshielded() {
     for (int fights = 0; fights < 20 && !sawRise; ++fights) {
         resolveWildFightToPostEncounter(g, t);
         CHECK(g.nav() == Game::Nav::PostEncounter);
-        CHECK(!g.debugPostEncShielded());        // bandwidth stayed 0 -> never shielded
-        CHECK(g.debugPostEncBwBefore() == 0);
-        CHECK(g.debugPostEncBwAfter() == 0);      // "nothing to spend", not a fresh -1
-        const int before = g.debugPostEncFragBefore(), after = g.debugPostEncFragAfter();
+        CHECK(!g.fight().result.shielded);        // bandwidth stayed 0 -> never shielded
+        CHECK(g.fight().result.bwBefore == 0);
+        CHECK(g.fight().result.bwAfter == 0);      // "nothing to spend", not a fresh -1
+        const int before = g.fight().result.fragBefore, after = g.fight().result.fragAfter;
         CHECK(after >= before);                   // never SHIELDED and rose at once
         if (after > before) sawRise = true;
         g.onButton(press(Button::B));             // dismiss -> back to the habitat
@@ -1762,7 +1762,7 @@ void test_deepweb_dive() {
             (void)t;
         }
         CHECK(g.nav() == Game::Nav::Combat);          // a wild dive fight started
-        CHECK(g.debugEncounterEnemyLevel() == L + kDeepWebEnemyLevelOffset);  // scaled to pet
+        CHECK(g.combat().enemy().level == L + kDeepWebEnemyLevelOffset);  // scaled to pet
     }
     // (4) The Deep-Learning buff SURVIVES the dive it was armed for. It is a
     //     Context::Anytime item, so the whole point is arming it before diving:
@@ -2060,4 +2060,36 @@ void test_explore_walk_starts_whole_and_ends_with_its_streak() {
     g.debugArmExplore(0, 2);
     CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2);
     CHECK(g.exploreStreak() == 0 && g.exploreSteps() == 0 && g.exploreFlavor()[0] == '\0');
+}
+
+// A wild LOSS ends the walk before the readout opens, and the readout still has the
+// fight's result to draw. The next fight starts whole: it inherits neither the caller
+// nor the result nor any clock of the one before. A Phishlet fresh from the egg in the
+// deepest sub-area is the deterministic loss.
+void test_fight_result_outlives_the_walk_and_the_next_start_replaces_it() {
+    Game g{StartMode::Hatched, "phishlet"};
+    g.debugSeedRng(1);
+    g.debugMarkStoryRead();
+    g.debugArmExplore(kAreaCount - 1, kSubAreasPerArea - 1);
+    g.debugSetAutoProgress(false);
+    for (int i = 0; i < 400 && g.nav() != Game::Nav::Combat; ++i) {
+        if (g.nav() == Game::Nav::Idle) pingExplore(g);
+        else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) tapC(g);
+        else g.onButton(press(Button::B));
+    }
+    CHECK(g.nav() == Game::Nav::Combat);
+    CHECK(g.fight().caller == FightCaller::Wild);
+    uint32_t t = 0;
+    resolveWildFightToPostEncounter(g, t);
+    CHECK(g.combat().outcome() == Combat::Outcome::Lose);
+    CHECK(!g.exploreActive());                    // the loss ended the walk...
+    CHECK(g.nav() == Game::Nav::PostEncounter);   // ...and the readout still opened
+    CHECK(g.fight().result.fragAfter > g.fight().result.fragBefore);
+    CHECK(g.fight().result.readoutUntilMs > 0);
+
+    g.debugStartCombat(/*live=*/false);
+    CHECK(g.fight().caller == FightCaller::Sim);
+    CHECK(g.combat().outcome() == Combat::Outcome::Ongoing);
+    CHECK(g.fight().turnBeat == 0 && g.fight().resultBeat == 0 && g.fight().hitBeat == 0);
+    CHECK(g.fight().result.fragAfter == 0 && g.fight().result.readoutUntilMs == 0);
 }

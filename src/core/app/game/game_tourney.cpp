@@ -131,16 +131,13 @@ void Game::startTourneyMatch() {
     // from a linked duel, which grants zero: there, opening the picker would pause a
     // fight the other device is still stepping. Here both fighters are local, so the
     // arena is the only full-kit pet-vs-pet fight with Exploits on both sides.
-    combat_.begin(p, e, Combat::Stakes::Safe,
-                  tourneyMatchSeed(tourneySeed_, tourneyRound_,
-                                   tourneyBlockStart(tourneySlot(), tourneyRound_)),
-                  /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
-                  exploitUsesPerBattle());
-    combatCaller_ = CombatCaller::Tourney;
-    combatBeat_ = 0;
+    fight_ = Fight::started(FightCaller::Tourney);
+    fight_.combat.begin(p, e, Combat::Stakes::Safe,
+                        tourneyMatchSeed(tourneySeed_, tourneyRound_,
+                                         tourneyBlockStart(tourneySlot(), tourneyRound_)),
+                        /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
+                        exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
-    combatHitBeat_ = 0;
     combatStatsPage_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
@@ -149,7 +146,7 @@ void Game::startTourneyMatch() {
 
 void Game::finishTourneyMatch() {
     const int opp = mal::tourneyOpponentSlot(tourneyAlive_, tourneySlot(), tourneyRound_);
-    const bool won = combat_.outcome() == Combat::Outcome::Win;
+    const bool won = fight_.combat.outcome() == Combat::Outcome::Win;
     char line[28];
     if (!won) {
         // A loss, a walk-out (there is no fleeing a bracket, only forfeiting), or a

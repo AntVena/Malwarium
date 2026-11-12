@@ -180,11 +180,11 @@ FlockMood Game::guardianFlockMood() const {
         // recent blow by EITHER fighter (RENDER_PIPELINE.md says what that did to
         // FX_CAMO), so a mood keyed to it would flicker with the exchange instead of
         // describing the creature. This holds until the fight actually changes it.
-        if (combat_.outcome() != Combat::Outcome::Ongoing)
-            return combat_.outcome() == Combat::Outcome::Win ? FlockMood::Scattering
+        if (fight_.combat.outcome() != Combat::Outcome::Ongoing)
+            return fight_.combat.outcome() == Combat::Outcome::Win ? FlockMood::Scattering
                                                              : FlockMood::Watching;
-        const int max = combat_.enemy().maxHealth;
-        const int pct = max > 0 ? combat_.enemy().health * 100 / max : 100;
+        const int max = fight_.combat.enemy().maxHealth;
+        const int pct = max > 0 ? fight_.combat.enemy().health * 100 / max : 100;
         if (pct <= kGuardianSwarmFailingPct) return FlockMood::Withdrawn;
         if (pct <= kGuardianSwarmPressedPct) return FlockMood::Agitated;
         return FlockMood::Watching;
@@ -419,8 +419,7 @@ void Game::startGuardianCombat() {
     // any other, and the post-encounter readout, streak and loot rolls work as usual.
     // What makes it a guardian is the enemy (guardianEnemy, combat_factory.cpp), not a
     // second set of combat rules.
-    encounterEnemy_ = guardianEnemy(walk_.sector, walk_.sub);
-    startWildCombat(/*forceEnemyFirst=*/false);
+    startWildCombat(guardianEnemy(walk_.sector, walk_.sub), /*forceEnemyFirst=*/false);
 }
 
 void Game::shiboleetRiddleText(char* out, int cap) const {

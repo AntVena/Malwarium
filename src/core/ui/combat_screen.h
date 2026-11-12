@@ -304,7 +304,7 @@ constexpr int kCombatPanelRows =
 // every other screen); animBeat is combat's own faster (kCombatAnimMs) tick driving
 // sprite motion (idleFrame/windup-flash) so it stays lively at accelerated turn pacing
 // without speeding up the gauge pulse too; hitBeat is animBeat-ticks since the last
-// landed combat_.step(), driving the post-hit impact punch/flash.
+// landed Combat::step(), driving the post-hit impact punch/flash.
 // What becomes of the beaten rival while the result beat is held. The two dissolves are a
 // VOCABULARY, not decoration:
 //

@@ -124,12 +124,10 @@ void Game::startBossRound(int carryHealth) {
     rng_ = rng_ * 1664525u + 1013904223u;
     // Live stakes; carryHealth < 0 on round 0 (full), else the wounded Health the
     // pet limped out of the previous round with (no heal between).
-    combat_.begin(p, e, Combat::Stakes::Live, rng_, /*forceEnemyFirst=*/false,
-                 carryHealth, exploitUsesPerBattle());
-    combatCaller_ = CombatCaller::Boss;
-    combatBeat_ = 0;
+    fight_ = Fight::started(FightCaller::Boss);
+    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, /*forceEnemyFirst=*/false,
+                        carryHealth, exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::BossStart);
@@ -146,7 +144,7 @@ void Game::finishBossRound() {
     // (buildPlayerCombatant) between rounds, so a drive spent in one round must neither
     // re-arm for the next nor lose the achievement it earned.
     settleBackupDrive();
-    if (combat_.outcome() == Combat::Outcome::Win) {
+    if (fight_.combat.outcome() == Combat::Outcome::Win) {
         // Bank this round's boss roll (a gauntlet pays the lump at the end).
         bossBitsAccrued_ += bossBitsReward(bossGauntlet_.stageRank, rng_);
         // ...and roll THIS round's boss for a move off its own kit, before the gauntlet
@@ -161,8 +159,8 @@ void Game::finishBossRound() {
         // wild rung, and a cleared gauntlet is a deliberate re-run, not a farm. The
         // not-yet-owned filter already makes a boss stop paying once it has taught
         // everything it knows, which is a cap that needs no curve.
-        rollEnemyMoveDrop(combat_.enemy(), kBossMoveDropPct);
-        const int surviving = combat_.player().health;
+        rollEnemyMoveDrop(fight_.combat.enemy(), kBossMoveDropPct);
+        const int surviving = fight_.combat.player().health;
         ++bossRound_;
         ++op_.tallies.bossWins;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten
         if (bossRound_ < static_cast<int>(bossGauntlet_.rounds.size())) {
@@ -217,8 +215,8 @@ void Game::finishBossRound() {
         // (×Bad-branch multiplier); a flee just bails (no penalty, same as a wild flee). A draw is
         // a loss. No sector clear either way. A boss loss ALSO cancels explore-mode + resets the
         // streak, but the boss-unlock PERSISTS, so the player can retry it without grinding again.
-        if (combat_.lostOrDrawn()) {
-            const int frag = kWildLossFrag * combat_.player().fragMultPct / 100;
+        if (fight_.combat.lostOrDrawn()) {
+            const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
             pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
             log_.push(LogEventType::CombatLost, "GAUNTLET FAILED");
         }

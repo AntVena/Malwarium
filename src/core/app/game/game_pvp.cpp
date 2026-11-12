@@ -410,7 +410,8 @@ void Game::startPvpBattle(uint32_t seed) {
     // seeded Combat reach the same result.
     const PvpFighter& host = pvpHost_ ? pvpLocalFighter_ : pvpRemoteFighter_;
     const PvpFighter& guest = pvpHost_ ? pvpRemoteFighter_ : pvpLocalFighter_;
-    beginPvpBattle(combat_, registry_, host, guest, seed);
+    fight_ = Fight::started(FightCaller::Duel);
+    beginPvpBattle(fight_.combat, registry_, host, guest, seed);
     // The one fight in the game whose opponent is a real species rather than a
     // malbeast/boss/dummy spec, so it is the one that can reveal a creature the
     // operator has never raised. Recorded at the START, not the verdict: facing a
@@ -423,11 +424,7 @@ void Game::startPvpBattle(uint32_t seed) {
     // ...and, on the same rule, the mirror: recorded at the START, as the reveal and the
     // duel above are.
     noteMirrorMatch(pvpRemoteFighter_.creatureId);
-    combatCaller_ = CombatCaller::Duel;   // see startSimBattle: never inherit a wild caller
-    combatBeat_ = 0;
     fxBeat_ = 0;
-    combatTurnBeat_ = 0;
-    combatHitBeat_ = 0;
     combatStatsPage_ = 0;
     pvpPhase_ = PvpPhase::Fighting;
     pvpPhaseStartMs_ = nowMs_;
@@ -443,8 +440,8 @@ void Game::finishPvpBattle() {
     // inverted: same fight, same winner, opposite pronoun.
     // A Draw (the turn limit, level on Health) is a loss for BOTH devices: neither side
     // won, so neither inverts it into a win.
-    const bool drawn = combat_.outcome() == Combat::Outcome::Draw;
-    const bool hostWon = combat_.outcome() == Combat::Outcome::Win;
+    const bool drawn = fight_.combat.outcome() == Combat::Outcome::Draw;
+    const bool hostWon = fight_.combat.outcome() == Combat::Outcome::Win;
     pvpWon_ = !drawn && pvpHost_ == hostWon;
     pvpPhase_ = PvpPhase::Result;
     pvpRetries_ = 0;
