@@ -314,11 +314,10 @@ void Game::onTourney(const ButtonEvent& ev) {
                                                : tourneyBriefRows();
         const int total = static_cast<int>(rows.size());
         // B scrolls by the window that was on screen and wraps at the end, as the
-        // STAT reader does (which is why proseRowsFitting is exported).
+        // STAT reader does.
         if (ev.button == Button::B && total > 0) {
             const int shown = proseRowsFitting(rows, tourneyScroll_, tourneyReaderTop(tourneyView_));
-            tourneyScroll_ += shown;
-            if (tourneyScroll_ >= total) tourneyScroll_ = 0;
+            tourneyScroll_ = nextWindowTop(tourneyScroll_, shown, total);
         } else if (ev.button == Button::C || ev.chordAC) {
             tourneyView_ = TourneyView::Bracket;
             tourneyScroll_ = 0;

@@ -56,6 +56,13 @@ constexpr int listScrollTop(int cursor, int n, int visible) {
     return top < 0 ? 0 : (top > maxTop ? maxTop : top);
 }
 
+// Where a paged reader's next window opens: just past the `shown` rows of the window at
+// `top`, or back at row 0 once that window reached the last of `total` rows. The press
+// steps by what the draw fitted, so the two never disagree about where a window ends.
+constexpr int nextWindowTop(int top, int shown, int total) {
+    return top + shown < total ? top + shown : 0;
+}
+
 // Text line pitch for a block of prose or a stacked multi-line row: one glyph
 // height plus leading.
 constexpr int kLineH = kFontH + 5;
