@@ -125,14 +125,24 @@ Drive deadline (`backupShieldUntilMs_`), the DeepWeb arming (`deepWebDepthMultip
 spent once-per-life grants (`yubiConsumed_`, `shieldItemConsumed_`). A new egg clears them
 (`resetToHatch`) but ARCH neither carries nor clears them, so a pet deployed from the rack takes
 over whatever the outgoing pet had armed or spent. The USB port (the evolve fields above) is
-cleared on a swap on purpose (`archDeployStored`), on the reading that the device is plugged
-into the rig; under this standard it is the pet's, and the row keeps the clear.
-Moving them onto `Pet` fixes that, which is this row's one behaviour change: give it a gate
-(arm a shield, store the pet, deploy another, and the new pet is unshielded), and decide per
-field whether the rack keeps it or clears it. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
+cleared on every swap (`archDeployStored`).
+Moving them onto `Pet` fixes that. The rack then:
+
+- **keeps** what came from a once-per-life item or a USB patch: the Restore Point shield and
+  both spent flags, and the USB port's override, soak and hold. A USB device is applied to the
+  pet, like an injection, so the patch stays with it on the shelf.
+- **clears** the armed buffs a player can buy again: the Backup Drive, the Ambig-USB divert,
+  the DeepWeb arming, the stacking-food run and any Lockout (which its modal already keeps
+  ARCH out of).
+
+These are the row's behaviour changes, each with a gate: a shield and a USB soak survive a
+store and deploy, a Backup Drive does not, and a deployed pet starts with nothing the outgoing
+pet had. Carrying the shield and the USB fields grows `SaveStoredPet` (a save bump), and
+`archDeployStored` stops calling `clearUsbPort`: Eject-USB becomes the only way to remove a
+patch. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
 `capturePetProgress`/`restorePetProgress` and `captureActivePet`/`restoreActivePet`;
-`game_lifecycle.cpp`'s reset | L | Pure move. Plus a save round-trip test on a v73 and a v74
-blob, active pet and rack. |
+`game_lifecycle.cpp`'s reset | L | A pure move apart from the rack rules above. Plus a save
+round-trip test on a v74 and a new blob, active pet and rack. |
 
 **STAT as a list of pages, over `const Pet&`.** STAT's pages are a `StatPage` enum read by a
 draw switch, a scroll switch (`Game::statScrollSpan`), the index builder, each page's header
