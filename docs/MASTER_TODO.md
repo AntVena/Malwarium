@@ -122,8 +122,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The explore walk**: `explore*` (10 fields), the walk's step and event beats. The DeepWeb
-  arming is the pet's (the `Pet` row); the walk reads it from there.
 - **A fight**: `combat_` and its animation beats, the camo state, the post-encounter result
   (`postEnc*`). `Combat` is already the turn engine; this row
   gives it the screen-side clock and result it lacks.
