@@ -1609,15 +1609,15 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         CHECK(d->type == ItemDef::Type::Food);
 
         Game g{StartMode::Hatched, "paypup"};
-        CHECK(g.statBonusPoint(stat) == 0);
+        CHECK(g.petRecord().statBonusPoint(stat) == 0);
         g.inventory().add(d->id, 2);
         g.debugUseItem(d->id);
-        CHECK(g.statBonusPoint(stat) == 1);
+        CHECK(g.petRecord().statBonusPoint(stat) == 1);
         // The moment is written down: a once-per-pet upgrade the operator can scroll
         // back to, not just a "FED <dish>" line like every other plate.
         const int loggedGrants = countLogLinesContaining(g, "FOR LIFE");
         CHECK(loggedGrants == 1);
-        CHECK(g.totalStatPoint(stat) == 1);
+        CHECK(g.petRecord().totalStatPoint(stat) == 1);
         CHECK(g.levelStatPoint(stat) == 0);        // not an EARNED point...
         CHECK(g.combatLevel() == 0);               // ...so the level has not moved
         // A second plate does not stack the grant (the pet already has the point),
@@ -1625,7 +1625,7 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         // becoming a dead row the moment it has paid out (Game::itemUseIsInert).
         CHECK(g.inventory().count(d->id) == 1);
         g.debugUseItem(d->id);
-        CHECK(g.statBonusPoint(stat) == 1);
+        CHECK(g.petRecord().statBonusPoint(stat) == 1);
         CHECK(g.inventory().count(d->id) == 0);
         CHECK(countLogLinesContaining(g, "FOR LIFE") == loggedGrants);  // granted once
     }
@@ -1662,7 +1662,7 @@ void test_rollback_cannot_shed_a_granted_point() {
     g.inventory().add(d->id, 1);
     g.debugUseItem(d->id);
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
-    CHECK(g.statBonusPoint(0) == 1);
+    CHECK(g.petRecord().statBonusPoint(0) == 1);
 
     // Earn exactly one level, then roll it back off.
     g.debugAddCombatXp(kLevelXpBase);
@@ -1675,8 +1675,8 @@ void test_rollback_cannot_shed_a_granted_point() {
     int earned = 0;
     for (int i = 0; i < kLevelStatCount; ++i) earned += g.levelStatPoint(i);
     CHECK(earned == 0);
-    CHECK(g.statBonusPoint(0) == 1);             // ...and the granted one is untouched
-    CHECK(g.totalStatPoint(0) == 1);
+    CHECK(g.petRecord().statBonusPoint(0) == 1);             // ...and the granted one is untouched
+    CHECK(g.petRecord().totalStatPoint(0) == 1);
 
     // With nothing earned left the picker is inert, so there is no second shed that
     // could reach the grant by going negative.
@@ -1732,22 +1732,22 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
     g.debugUseItem(xp->id);
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
-    CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
+    CHECK(g.petRecord().statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
 
     g.debugSeedRack("cryptoshell");
     enterArchStoredPet(g, "cryptoshell");
     archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);
-    CHECK(g.statBonusPoint(0) == 0 && g.xpRateBonusPct() == 0);  // never fed either
+    CHECK(g.petRecord().statBonusPoint(0) == 0 && g.xpRateBonusPct() == 0);  // never fed either
     enterArchStoredPet(g, "paypup");
     archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
-    CHECK(g.statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);   // came back with them
+    CHECK(g.petRecord().statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);   // came back with them
 
     // A new egg is a new pet, so it starts with nothing granted.
     g.resetToHatch();
     pickFirstEggLine(g);
-    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.statBonusPoint(i) == 0);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.petRecord().statBonusPoint(i) == 0);
     CHECK(g.xpRateBonusPct() == 0);
 }
 

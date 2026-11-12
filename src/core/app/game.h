@@ -262,10 +262,6 @@ public:
     PetLifetimeGates petLifetimeGates() const override {
         return {pet_.upgrades, pet_.grants.yubiSpent, pet_.grants.shieldSpent};
     }
-    // The active pet's off-level and total points, and its found favourite (Pet).
-    int statBonusPoint(int i) const { return pet_.statBonusPoint(i); }
-    const ItemDef* foundFavouriteFood() const { return pet_.foundFavouriteFood(); }
-    int totalStatPoint(int i) const { return pet_.totalStatPoint(i); }
     int xpRateBonusPct() const { return pet_.upgrades.xpRatePct; }
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard

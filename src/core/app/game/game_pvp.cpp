@@ -81,7 +81,7 @@ bool Game::buildPvpFighter(PvpFighter* out) const {
     // dish granted, which the pet fights with at home and would otherwise leave behind.
     f.level = static_cast<uint16_t>(std::min(pet_.level, 0xFFFF));
     for (int i = 0; i < 4; ++i)
-        f.statPoints[i] = static_cast<uint8_t>(std::min(totalStatPoint(i), 255));
+        f.statPoints[i] = static_cast<uint8_t>(std::min(pet_.totalStatPoint(i), 255));
     *out = f;
     return true;
 }

@@ -450,8 +450,8 @@ void test_tier_page_counts_off_level_points() {
     CHECK(before.empty());
 
     int points[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.totalStatPoint(i);
-    CHECK(points[0] == earned + g.statBonusPoint(0));
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.petRecord().totalStatPoint(i);
+    CHECK(points[0] == earned + g.petRecord().statBonusPoint(0));
     // What the page would draw for POWER's heading is that total, not the earned half.
     const auto rows = buildTierRows(points);
     char expect[16];
@@ -787,7 +787,7 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     // And the anchor is a HEADING, so the window opens on the section rather than
     // partway into it. Rebuilt from the pet's own points, which is what the page does.
     int points[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.totalStatPoint(i);
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.petRecord().totalStatPoint(i);
     const auto tierRows = buildTierRows(points);
     CHECK(anchor < static_cast<int>(tierRows.size()));
     CHECK(tierRows[anchor].header);
@@ -887,7 +887,7 @@ void test_palate_is_per_pet_and_counts_meals() {
 // Comfort Food row, a bracket on the FOODS grid and a PERMANENT row on BUFFS.
 void test_favourite_food_is_found_by_feeding_it() {
     Game g{StartMode::Hatched};
-    CHECK(g.foundFavouriteFood() == nullptr);
+    CHECK(g.petRecord().foundFavouriteFood() == nullptr);
 
     // A meal of anything rolls a favourite, and it is always an eligible dish: checked
     // over many pets so a roll that strays outside the pool has room to show up.
@@ -903,12 +903,12 @@ void test_favourite_food_is_found_by_feeding_it() {
         h.debugUseItem(snack->id);
         const ItemDef* fav = h.petUpgrades().favouriteFood;
         CHECK(fav != nullptr && favouriteFoodEligible(*fav));
-        CHECK(h.foundFavouriteFood() == nullptr);   // eating a snack finds nothing
+        CHECK(h.petRecord().foundFavouriteFood() == nullptr);   // eating a snack finds nothing
     }
 
     // Feed the favourite: the first eligible dish the ITEMS flow will actually serve.
     int before[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) before[i] = g.totalStatPoint(i);
+    for (int i = 0; i < kLevelStatCount; ++i) before[i] = g.petRecord().totalStatPoint(i);
     const ItemDef* fav = nullptr;
     for (const ItemDef* d : g.content().allItems()) {
         if (!d || !favouriteFoodEligible(*d)) continue;
@@ -919,15 +919,15 @@ void test_favourite_food_is_found_by_feeding_it() {
     }
     CHECK(fav != nullptr);
     if (!fav) return;
-    CHECK(g.foundFavouriteFood() == fav);
+    CHECK(g.petRecord().foundFavouriteFood() == fav);
     CHECK(g.hasAchievement(ach::kFavouriteFood));
     for (int i = 0; i < kLevelStatCount; ++i)
-        CHECK(g.totalStatPoint(i) == before[i] + kFavouriteFoodStatBonus);
+        CHECK(g.petRecord().totalStatPoint(i) == before[i] + kFavouriteFoodStatBonus);
     // Not an Epic-dish grant: the once-per-life gates still read the dishes alone.
     for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.petUpgrades().statBonus[i] == 0);
 
     int marked = 0;
-    for (const FoodRow& r : buildFoodRows(g.content(), {fav}, g.foundFavouriteFood()))
+    for (const FoodRow& r : buildFoodRows(g.content(), {fav}, g.petRecord().foundFavouriteFood()))
         for (int c = 0; c < r.count; ++c)
             if (r.favourite[c]) { ++marked; CHECK(r.cells[c] == fav); }
     CHECK(marked == 1);
@@ -938,8 +938,8 @@ void test_favourite_food_is_found_by_feeding_it() {
 
     // A new egg is a new pet with its own secret.
     g.resetToHatch();
-    CHECK(g.foundFavouriteFood() == nullptr);
-    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.statBonusPoint(i) == 0);
+    CHECK(g.petRecord().foundFavouriteFood() == nullptr);
+    for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.petRecord().statBonusPoint(i) == 0);
 }
 
 // The rack keeps what a pet has eaten and which dish it loves: through the freeze, the

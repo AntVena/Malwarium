@@ -93,7 +93,7 @@ Combatant Game::buildPlayerCombatant() {
     // and granted points go in as one total. An Epic dish's off-level point counts
     // fully in a fight; only the level and the Rollback picker tell them apart.
     int points[kLevelStatCount];
-    for (int i = 0; i < kLevelStatCount; ++i) points[i] = totalStatPoint(i);
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = pet_.totalStatPoint(i);
     applyLevelStatPoints(p, points);
     if (allyBuffBattlesLeft_ > 0) {
         p.powerMultPct += kAllyBuffPowerPct;
