@@ -92,42 +92,89 @@ question with the description beneath them, and open the confirm over the descri
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M**.
 
-### 1j. Architecture: SOLID and the Dependency Rule
+### 1j. Architecture: records, runs and screens
 
-Found by auditing the tree against Robert C. Martin's rules (single responsibility,
-interface segregation, the Dependency Rule, small functions with few arguments). The
-CONTRIBUTING *Structure* section states the rules these rows bring the code up to.
+`Game` holds every feature's state as its own fields (about 430 of them in `game.h`), so every
+`game_*.cpp` unit can touch every field and the 48 units are a physical split only. The
+CONTRIBUTING section *Where state lives* says where each field goes: a record (`Pet`,
+`Operator`, `Settings`), a run, or a screen. These rows move it there, one type at a time.
 
-**`Game` holds every feature's state, so every unit can touch every field.** `game.h` is
-about 4,700 lines declaring roughly 1,000 member functions and 640 data members, and 48
-`game_*.cpp` units implement them. The split into files is physical only. Three problems
-follow from it. Holds are routed by guessing which screen is up, because there is no screen
-object to ask: `tickHeldGestures` is a ladder of guarded `if`s, and on release `game_nav.cpp`
-calls all seven `*ReleaseB()` functions in turn, each returning early unless its own
-four-way condition holds. Tests reach state through 100 `debug*` hooks on the production
-class. The `nav_` vocabulary is tested in 129 places and switched on in 5. The fix is to
-extract feature objects that own their state and handlers, one slice at a time, with
-`Game` composing them and dispatching tap, hold and release to the active one.
+Every row lands green on its own: the native suite passes and a `tools/screens.sh` render is
+byte-identical to one taken before it, unless the row says otherwise. Each deletes the `debug*`
+hooks (about 100 on `Game` today) that its tests no longer need, and moves the tests onto the
+new type. `ItemsMenu` and `RigShopScreen` are the screens to copy: state and handlers in their
+own type, the game reached through `ItemsHost` and `RigShopHost`. `ItemsMenu` also shows how a
+screen keeps derived rows without a stale cache (it keys them on `Inventory::stamp`).
 
-SHOP and the ITEMS lists are done and are the pattern to copy: `RigShopScreen`
-(`game/rig_shop_screen.h`) and `ItemsMenu` (`game/items_menu.h`) own their views and
-cursors, and reach the game only through `RigShopHost` and `ItemsHost`, which `Game`
-implements privately. `ItemsMenu` also shows how a screen keeps derived rows without a
-stale-cache bug: it keys them on `Inventory::stamp`. The ITEMS detail page and its Use path
-are still `Game`'s (`onItemsDetail`, `useItem`, `detailItem_`). Next, in order:
+#### Records
 
-1. The Rig Shop ACCOUNT: `rigLevel_`, `rigServicesOff_` and `rigServicesAsk_` and the pure
-   queries over them (`rigFeatureActive`, `rigServiceMode` and the rest in `game.h`) become a
-   `RigAccount` value type. That shrinks `RigShopHost` and takes those queries out of `game.h`.
-2. Hold and release routing. `RigShopScreen` already takes `releaseB` and `openServiceInfo`;
-   give the active feature a hold and a release entry point and route to it, then move the
-   other hold screens (VAULT, ITEMS, MOVES, MODS, the bracket, STAT index) to the same shape.
-3. VAULT, CREW, the tourney and the other Hacker slots, each already in its own unit.
+**The `Pet` record.** The active pet is about 15 `Game` fields: `pet_`, `model_`, `generation_`,
+`defragCount_`, `combatLevel_`, `combatXp_`, `statPoints_`, `slotKinds_`, `moveLoadout_`,
+`loadout_`, `stageEnteredMs_`, `bestDeepWebDepth_`, `dyingElapsedMs_`, `upgrades_`,
+`petFoodsEaten_`, and the per-pet evolve state (`evolveBranchOverride_`, `evolveSoakFactor_`,
+`evolveHold_`). `freezePet` in `game_arch.cpp` takes 15 arguments to copy them onto the rack,
+and every new per-pet field needs a hand-written copy in the save, the load, the freeze and the
+thaw. Gather them into `Pet` with `Pet::save`/`Pet::load` against `SaveStoredPet`, so the
+active pet and a stored one use one mapping, and a new egg replaces the `Pet`. Sort the armed
+item buffs (Restore Point shield, Ambig-USB divert, Backup Drive) and the DeepWeb arming into
+pet or run as part of the row. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
+`capturePetProgress`/`restorePetProgress` and `captureActivePet`/`restoreActivePet`;
+`game_lifecycle.cpp`'s reset | L | Pure move. Plus a save round-trip test on a v73 and a v74
+blob, active pet and rack. |
 
-Each slice deletes the `debug*` hooks its tests no longer need. |
-`core/app/game.h`; `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge. |
-XL overall, M per slice | Verify each slice with the native suite and a `tools/screens.sh`
-render diffed byte-for-byte against one taken before it. |
+**STAT as a list of pages, over `const Pet&`.** STAT's pages are a `StatPage` enum read by a
+draw switch, a scroll switch (`Game::statScrollSpan`), the index builder, each page's header
+and `dump_frame`'s flags. Each list repeats the roster, and the scroll switch and the draw
+must agree on every flowed page's rows and row top or the page skips or repeats rows. Make
+each page an object that draws itself, reports its own next window and lists its own index
+rows; a `StatReader` screen holds one ordered table of them and the cursor, scroll and index
+state (`statPage_`, `statScroll_`, `statScreen_`, `statIndexRow_`). TIERS, LOADOUT and BUFFS
+are one flowed-page class over a row builder and a row top. `dump_frame` and the tests find a
+page by its title. | `core/ui/stat_screen.*`, `collect_screen.*`, `game_stat.cpp`,
+`tools/dump_frame.cpp`, `test_stat.cpp` | M | After the `Pet` row. Deletes the `StatPage` enum,
+`statScrollSpan` and the `*RowsFitting` exports. |
+
+**The `Operator` record.** Everything the player keeps across pets, tagged PLAYER-LEVEL in
+`save.h` (about 40 fields): Hacker rank and tag, Bits, the Rig Shop account (`rigLevel_`,
+`rigServicesOff_`, `rigServicesAsk_` and the queries over them, `rigFeatureActive`,
+`rigServiceMode`, which shrinks `RigShopHost`), achievements, arcade bests, plays and wins,
+story chapters read, tips seen, the network ledger and owned backgrounds. A factory reset
+replaces it. | `core/app/game.h`; `game_persist.cpp`'s `captureOperator`, `captureRig`,
+`captureRecords`, `captureReveals`, `captureHistory` and their restores; `game_reset.cpp` |
+L | Save round-trip test, as for `Pet`. |
+
+**The `Settings` record.** Theme, brightness, sound and volume, UI mode, care alerts, explore
+sound: the DEVICE-level fields, kept through a pet's death and a factory reset. |
+`game_persist.cpp`'s `captureSettings`/`restoreSettings` | S | |
+
+#### Runs
+
+Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
+random draws and its result, and is gone when it ends. Rows are M unless marked.
+
+- **The explore walk**: `explore*` (10 fields), the walk's step and event beats, the pending
+  DeepWeb arming if the `Pet` row files it here.
+- **A fight**: `combat_` and its animation beats, the camo state, the post-encounter result
+  (`postEnc*`). `Combat` is already the turn engine; this row
+  gives it the screen-side clock and result it lacks.
+- **The boss gauntlet**: `boss*`.
+- **The tourney**: `tourney*` (11 fields).
+- **A PvP session**: `pvp*` (19 fields).
+- **The minigame runs**: the arcade run (`arcadeRun_`, score and result fields), the egg pick
+  (`eggPick*`, 11 fields), the MAINT boards, the cryptogram run. One row each, S to M.
+- **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
+
+#### Screens
+
+1. **Hold and release routing.** `tickHeldGestures` is a ladder of guarded `if`s, and on
+   release `game_nav.cpp` calls all seven `*ReleaseB()` functions in turn, each returning
+   early unless its own condition holds. Give the active screen a hold and a release entry
+   point and route to it. `RigShopScreen` already takes `releaseB` and `openServiceInfo`. |
+   `game_core.cpp`'s `tickHeldGestures`; `game_nav.cpp`'s release edge | M |
+2. **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
+   the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the area SHOP, VAULT,
+   the arcade list, the story reader, tip cards, and the ITEMS detail page and its Use path
+   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s.
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which

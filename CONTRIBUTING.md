@@ -48,13 +48,17 @@ If it is not, bring it there in the same change. Then look one layer up and one 
 the same smell (a copied loop, a rebuild per call, a flag argument): fix what is small, and add
 a board row for what is not. The smallest patch that makes the symptom go away is not done.
 
+- **A list is one table.** Pages, rows, slots and tabs live in one ordered table. The table's
+  order is the order on screen, its length is the count, and code finds an entry by its name
+  or its object. A number that means "the third page" is a second copy of the table.
 - **One home per shared thing.** Drawing goes in `core/ui/widgets.h` and screen geometry in
   `core/ui/layout.h` (`listScrollTop`, the row grid). `game_internal.h` holds what only `game/`
   uses. Look for a helper before writing one. If it sits in a header your code can't include,
   move it to one every caller can reach, then call it.
 - **One reason to change per type.** A feature owns its state and its input handlers in its own
-  type, and `Game` composes features and routes input to the active one. `Game` itself breaks
-  this rule today; board section 1j extracts its features one slice at a time.
+  type (a record, a run or a screen, below), and `Game` composes them and routes input to the
+  active one. `Game` itself breaks this rule today; board section 1j extracts its state one
+  type at a time.
 - **Dependencies point down the layers:** `app`, `ui`, `model`, `content`, then `render`, `net`,
   `audio` and `device`. A header includes from its own layer or a lower one. An interface
   belongs to the layer that calls it, and the platform implements it: `core/device/platform.h`
@@ -77,6 +81,40 @@ a board row for what is not. The smallest patch that makes the symptom go away i
 - **Name a number once, where its reader is.** This is the `tunables.h` rule applied to
   layout. A magnitude one screen reads lives on that screen. One that two screens share is a
   single named constant.
+
+### Where state lives: records, runs and screens
+
+Three kinds of type hold the game's state. `Game` holds one of each record, the active run and
+the active screen, and routes input and ticks to them. A field added directly to `Game` belongs
+to one of the three and goes there instead.
+
+- **A record** is something with an identity that the save keeps: the `Pet`, the `Operator`
+  (the player, across every pet) and the device `Settings`. It owns its data and the rules
+  over it, and it maps itself to and from the save. Code reads a record by const reference
+  and changes it through the record's own methods. Storing a pet on the ARCH rack, hatching a
+  new egg and a factory reset each move or replace a whole record. `PetModel`, `Inventory`
+  and `PetUpgrades` are parts of the Pet record.
+- **A run** is one activity with a start and an end: an explore walk, a fight, the boss
+  gauntlet, a tourney, a PvP session, an arcade game. It owns its clocks, its random draws and
+  its result, and is destroyed when it ends. A run that must survive a reboot maps itself to
+  the save the way a record does. `Combat`, `Cryptogram` and `DiskDecryption` are runs.
+- **A screen** is the UI over records and runs: its cursor, scroll, confirm state, input
+  handlers and draw. It holds nothing that must outlive it, so leaving a screen loses no
+  progress. It reads records by const reference and reaches the game through a narrow host
+  interface. `ItemsMenu` and `RigShopScreen` are screens.
+
+To place a new field, ask whose it is:
+
+| It belongs to | Put it on |
+|---|---|
+| this creature, for its whole life | `Pet` |
+| the player, whichever pet is active | `Operator` |
+| the hardware | `Settings` |
+| one activity, while it runs | that run |
+| one screen, while it is open | that screen |
+
+A record's save mapping lives on the record, so adding a field is one edit to the type and one
+to its mapping. Freeze, thaw, reset and the save all go through that mapping.
 
 ## Comments and doc prose
 
