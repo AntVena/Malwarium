@@ -277,7 +277,7 @@ void Game::startDeepWebDive() {
     // with no bell armed pays no start bonus, whatever an earlier dive carried.
     pet_.armed.diveStartBonusPct = 0;
     if (pet_.armed.deepWebStartDepth != -1) {
-        exploreStreak_ = pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest
+        exploreStreak_ = pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest
                               ? pet_.bestDeepWebDepth
                               : pet_.armed.deepWebStartDepth;
         pet_.armed.deepWebStartDepth = -1;

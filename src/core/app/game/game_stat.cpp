@@ -47,7 +47,7 @@ std::vector<ProseRow> Game::statBuffRows() const {
     return buildBuffRows(registry_, pet_.grants.shieldActive, pet_.armed.trojanDivert,
                          backupShieldArmed(), backupRemainMs, pet_.armed.deepWebDepthMultiplier,
                          pet_.armed.deepWebStartDepth != -1,
-                         pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest,
+                         pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest,
                          pet_.armed.deepWebStartDepth, pet_.usb.branch,
                          pet_.usb.soakFactor, pet_.usb.hold, pet_.upgrades);
 }

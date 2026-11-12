@@ -64,7 +64,8 @@ struct PetArmed {
     // The DeepWeb Dive arming. The multiplier (Deep-Learning Module/Core, x2/x4) resets
     // wherever the dive streak does and does not stack. The start depth is armed by a
     // Bell and consumed when startDeepWebDive begins a fresh dive: -1 = none, or
-    // Game::kDeepWebStartDepthUseBest for the Checkpoint Bell.
+    // kStartDepthUseBest for the Checkpoint Bell.
+    static constexpr int kStartDepthUseBest = -2;
     int deepWebDepthMultiplier = 1;
     int deepWebStartDepth = -1;
     // DIVE PAY (ItemEffect DiveStartBonusPct / DiveStepBonusPct). The Bell's half waits in
@@ -128,6 +129,28 @@ struct Pet {
 
     // --- Armed for now -----------------------------------------------------------
     PetArmed armed;
+
+    // OFF-LEVEL points in combat stat `i` (0 power · 1 defense · 2 speed · 3 max-Health),
+    // granted by an Epic dish or a found favourite dish rather than earned: neither
+    // sheddable nor counted toward the level. Out-of-range → 0.
+    int statBonusPoint(int i) const {
+        if (i < 0 || i >= kLevelStatCount) return 0;
+        return upgrades.statBonus[i] + (upgrades.favouriteFound ? kFavouriteFoodStatBonus : 0);
+    }
+    // What combat actually fights with: earned + granted. The single answer to "how many
+    // points does this pet have in stat `i`", so no fighter is built from half of it.
+    int totalStatPoint(int i) const {
+        return ((i >= 0 && i < kLevelStatCount) ? statPoints[i] : 0) + statBonusPoint(i);
+    }
+    // The favourite dish, or nullptr while it is still a secret, so the FOODS grid and
+    // the 'Pedia cannot give it away.
+    const ItemDef* foundFavouriteFood() const {
+        return upgrades.favouriteFound ? upgrades.favouriteFood : nullptr;
+    }
+    // Still an unhatched egg: Boot stage with a live incubation clock.
+    bool inEggPhase() const {
+        return creature && creature->stage == Stage::BootSector && bootHatchRemainMs > 0;
+    }
 
     // This pet as a rack record, at game-ms `nowMs`. PetArmed is left behind.
     SaveStoredPet stored(uint32_t nowMs) const;

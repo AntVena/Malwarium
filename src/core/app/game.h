@@ -264,22 +264,10 @@ public:
     PetLifetimeGates petLifetimeGates() const override {
         return {pet_.upgrades, pet_.grants.yubiSpent, pet_.grants.shieldSpent};
     }
-    // OFF-LEVEL points in combat stat `i`, granted by an Epic dish or a found favourite
-    // dish rather than earned. Sibling to levelStatPoint(): that one is sheddable and
-    // counts toward the level, this one is neither. Out-of-range → 0.
-    int statBonusPoint(int i) const {
-        if (i < 0 || i >= kLevelStatCount) return 0;
-        return pet_.upgrades.statBonus[i] +
-               (pet_.upgrades.favouriteFound ? kFavouriteFoodStatBonus : 0);
-    }
-    // The active pet's favourite dish, or nullptr while it is still a secret, so
-    // the FOODS grid and the 'Pedia cannot give it away.
-    const ItemDef* foundFavouriteFood() const {
-        return pet_.upgrades.favouriteFound ? pet_.upgrades.favouriteFood : nullptr;
-    }
-    // What combat actually fights with: earned + granted. The single answer to "how many
-    // points does this pet have in stat `i`", so no fighter is built from half of it.
-    int totalStatPoint(int i) const { return levelStatPoint(i) + statBonusPoint(i); }
+    // The active pet's off-level and total points, and its found favourite (Pet).
+    int statBonusPoint(int i) const { return pet_.statBonusPoint(i); }
+    const ItemDef* foundFavouriteFood() const { return pet_.foundFavouriteFood(); }
+    int totalStatPoint(int i) const { return pet_.totalStatPoint(i); }
     int xpRateBonusPct() const { return pet_.upgrades.xpRatePct; }
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard
@@ -1650,9 +1638,7 @@ public:
     // the Boot-Sector creature, decrypting over kBootHatchMs. `inEggPhase()` is true
     // while it's still an unhatched egg (Boot stage + a live incubation clock);
     // `bootHatchRemainMs()` is the remaining clock (tests/UI).
-    bool inEggPhase() const {
-        return pet_.creature && pet_.creature->stage == Stage::BootSector && pet_.bootHatchRemainMs > 0;
-    }
+    bool inEggPhase() const { return pet_.inEggPhase(); }
     // Can the hatch REVEAL be played on demand? The home stretch of any incubation.
     // Every line's minigame is played when the egg is laid, so this last stretch is
     // common to all of them, and the chord cracks the shell here so the player sees the
@@ -3637,8 +3623,6 @@ private:
         pet_.armed.diveStepBonusPct = 0;
         pet_.armed.diveStartBonusPct = 0;
     }
-    static constexpr int kDeepWebStartDepthUseBest = -2;  // pet_.armed.deepWebStartDepth
-                                                          // sentinel for the Checkpoint Bell
     // The depth a dive would actually START at right now (-1 = nothing armed), with the
     // Checkpoint sentinel resolved through pet_.bestDeepWebDepth exactly as startDeepWebDive()
     // resolves it. Anything COMPARING bells reads this rather than the raw field: the
@@ -3646,7 +3630,7 @@ private:
     // "nothing armed" and lets a shallower bell overwrite it. The downgrade paid for
     // with an item that the inert check (itemUseIsInert) exists to refuse.
     int armedDeepWebStartDepth() const {
-        if (pet_.armed.deepWebStartDepth == kDeepWebStartDepthUseBest) return pet_.bestDeepWebDepth;
+        if (pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest) return pet_.bestDeepWebDepth;
         return pet_.armed.deepWebStartDepth;
     }
 

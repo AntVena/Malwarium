@@ -506,7 +506,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // Checkpoint Bell: arm the next dive to start at THIS PET's own
                 // pet_.bestDeepWebDepth, resolved at dive-start (not here) so improving
                 // the record between now and then is never stale.
-                pet_.armed.deepWebStartDepth = kDeepWebStartDepthUseBest;
+                pet_.armed.deepWebStartDepth = PetArmed::kStartDepthUseBest;
                 pet_.armed.pendingDiveStartBonusPct = 0;
                 break;
             case ItemEffect::Kind::ClearReplicationGhost:

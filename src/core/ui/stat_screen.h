@@ -146,7 +146,7 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v)
 // depthMultiplier: Game::deepWebDepthMultiplier_ (1 = none armed).
 // startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
 // Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
-// kDeepWebStartDepthUseBest sentinel, in which case startDepthValue is unused).
+// PetArmed::kStartDepthUseBest sentinel, in which case startDepthValue is unused).
 // upgrades: Game::petUpgrades(). The PERMANENT entries, one row per grant an Epic dish
 // has made this pet (core/model/pet_upgrades.h). They arm nothing and never lapse, so
 // they carry no timer and no home-screen icon (the idle status row is for states the
