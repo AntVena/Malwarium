@@ -108,21 +108,9 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 
 #### Records
 
-**The rest of the player-level state onto `Operator`.** `Operator` (`core/app/operator.h`)
-holds the identity, wallet, spare mods, Rig Shop account, tallies and reveals. Still on
-`Game` and still PLAYER-LEVEL in `save.h`: world progress (`sectorCleared_`, `subCleared_`,
-`subBossUnlocked_`, the Titles), the shelves (`collectedItems_`, `speciesDives_`,
-`raisedCreatures_`), the Cant (`cantSigils_`, `shakesSpent_`) with `handshakesSeen_`, and the
-ARCH rack and records. Each becomes a part of `Operator` with its fields in `SaveOperator`
-at their stream positions, which also shrinks `wipeDeviceProgress` to the radio consents.
-The SD-backed `networkLedger_` stays on `Game`: a wipe keeps the card file, and the record
-is replaced whole. | `core/app/game.h`; `game_persist.cpp`'s `captureWorldProgress`,
-`captureShelves`, `captureCant`, `captureHistory` and their restores; `game_reset.cpp` | M |
-Save bytes and screens unchanged; the v75 Operator blob gate covers the new fields. |
-
 **RESET PET restarts part of the `Operator`.** `resetToHatch` puts the HackerTag, the
-lifetime counters, Bits, the spare mods and the arcade tallies back to a fresh operator's,
-while the CFG screen says RESET PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it
+lifetime counters, Bits, the spare mods and the arcade tallies back to a fresh operator's
+and empties the ARCH rack and records (`OperatorArch`), while the CFG screen says RESET PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it
 keeps every player-level tally. Decide which is meant: either a pet reset leaves the record
 alone, or the part it restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`,
 `game_config.cpp`'s `executeFactoryReset`, `cfg_screen.cpp` | S |
