@@ -2,15 +2,14 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
-#include "core/content/effect_text.h"
-#include "core/content/registry.h"
+#include "core/model/event_log.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
-#include "core/model/stat_tiers.h"
+#include "core/model/pet.h"
+#include "core/model/pet_upgrades.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
@@ -31,15 +30,14 @@ constexpr int kGaugeW = 110;
 constexpr int kGaugeH = 10;
 constexpr int kNumX = 188;
 
-// STAT header: title at left, a dot pager at right (one dot per page, kStatPages
-// of them) with the active page filled. The pager is the non-colour channel for
-// "which page" (dot position), so the status pages stay distinguishable in grayscale.
-void statHeader(Framebuffer& fb, const char* title, StatPage page) {
+// STAT header: title at left, a dot pager at right (one dot per page) with the active
+// page filled. The pager is the non-colour channel for "which page" (dot position), so
+// the status pages stay distinguishable in grayscale.
+void statHeader(Framebuffer& fb, const char* title, StatPager pager) {
     drawHeaderBand(fb, title);
-    for (int i = 0; i < kStatPages; ++i) {
-        const int x = kActiveW - 8 - (kStatPages - i) * 8;
-        fb.fillRect(x, 8, 4, 4,
-                    i == static_cast<int>(page) ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+    for (int i = 0; i < pager.count; ++i) {
+        const int x = kActiveW - 8 - (pager.count - i) * 8;
+        fb.fillRect(x, 8, 4, 4, i == pager.index ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
     }
 }
 
@@ -53,28 +51,6 @@ void vitalsRow(Framebuffer& fb, int y, const char* label, int value, Zone zone,
     Rgb565 nc = (zone == Zone::Critical) ? palColor(Pal::HOT) : palColor(Pal::INK);
     drawText(fb, kNumX, y + 2, num, nc);
 }
-
-// The flowed pages' own row tops. The flow itself (row heights, the fit count, the
-// scrollbar) is shared in core/ui/prose_page.h.
-constexpr int kLoadoutRowTop = 26;
-constexpr int kBuffRowTop = 28;
-constexpr int kTierRowTop = 26;   // TIERS opens on a section heading, same as LOADOUT
-
-// --- The INDEX's own grid ---------------------------------------------------
-//
-// Tighter than the list grid's kRowH: the index earns its keep by showing as much of
-// the reader's map at once as it can, and a row here is a name and a number rather than
-// the icon-plus-label a carousel row carries.
-//
-// It still WINDOWS rather than shrinking to fit: the roster grows with the page count
-// and with each page's sections, and a pitch chased down to hold all of it would end up
-// unreadable to buy an ability the list contract already provides (the cursor drives the
-// window, listScrollTop, and A/hold-C walk it).
-constexpr int kIndexRowTop = kRowTop;
-constexpr int kIndexRowH = 15;
-constexpr int kIndexLabelX = 20;   // clear of the cursor marker at the left margin
-constexpr int kIndexSubX = 32;     // a section INSIDE a page, indented under it
-constexpr int kIndexVisible = (kProseBottom - kIndexRowTop) / kIndexRowH;
 
 // The band every STAT page ends with. Two things belong on it and they are not the
 // same kind of fact: what the key under the reader's thumb does right now, and that
@@ -102,229 +78,6 @@ void statProseHint(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrol
 }
 
 } // namespace
-
-std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
-                                       const MoveLoadout& moveLoad,
-                                       const ModSlots& modLoad,
-                                       Stage stage, bool isEgg) {
-    std::vector<ProseRow> out;
-    // An egg can't train or mod (Game::slotLocked): nothing to show.
-    if (isEgg) {
-        out.push_back({false, "- NO LOADOUT -", {}, {}});
-        return out;
-    }
-
-    out.push_back({true, "MOVES", {}, {}});
-    // One row per unlocked slot: the equipped move, or (when the slot is empty) the
-    // innate Quick Jab fallback marked (DEFAULT). Quick Jab is NOT a standalone row;
-    // it surfaces only in a slot that has no move (mirrors the combat per-slot fallback,
-    // ), so it never reads as a dedicated "default slot".
-    const MoveDef* def = reg.move(moveLoad.defaultMove());
-    const int unlocked = MoveLoadout::slotsForStage(stage);
-    for (int i = 0; i < unlocked; ++i) {
-        const char* id = moveLoad.equipped(i);
-        if (const MoveDef* m = id ? reg.move(id) : nullptr) {
-            out.push_back({false, m->displayName, {}, effectText(*m)});
-        } else if (def) {
-            out.push_back({false, def->displayName, {}, effectText(*def)});
-            setProseTag(out.back(), "DEFAULT");
-        }
-    }
-
-    out.push_back({true, "MODS", {}, {}});
-    bool anyMod = false;
-    for (int i = 0; i < kModSlots; ++i) {
-        if (const char* id = modLoad.equipped(i)) {
-            if (const ModDef* m = reg.mod(id)) {
-                out.push_back({false, m->displayName, {}, effectText(*m)});
-                anyMod = true;
-            }
-        }
-    }
-    if (!anyMod) out.push_back({false, "- NONE -", {}, {}});
-
-    return out;
-}
-
-std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
-    std::vector<ProseRow> out;
-    if (!statPoints) return out;
-    // Stat order, then rung order: the same order the shared table is written in, and
-    // the same order every other stat-indexed readout on the device uses (0 power ·
-    // 1 defense · 2 speed · 3 max-Health).
-    static const char* kStatNames[kLevelStatCount] = {"POWER", "DEFENSE", "SPEED",
-                                                      "MAX HEALTH"};
-    for (int i = 0; i < kLevelStatCount; ++i) {
-        const int points = statPoints[i];
-        const int reached = statTiersReached(points);
-        ProseRow head{};
-        head.header = true;
-        head.label = kStatNames[i];
-        // The stat's own point total rides its heading: it is the one number on the page
-        // that is about the STAT rather than about a rung, and every "N TO GO" below is
-        // measured from it, so the two have to be readable together.
-        setProseTag(head, "%d PTS", points);
-        out.push_back(head);
-        for (int t = 0; t < kStatTierCount; ++t) {
-            const StatTierDef& def = statTier(static_cast<LevelStat>(i), t);
-            ProseRow row{};
-            row.label = def.name;
-            row.body = statTierText(static_cast<LevelStat>(i), t);
-            // Through the shared helper, not `def.points - points`: "how far to the next
-            // rung" is the engine's answer to give, and a page that computes its own is
-            // how a screen starts disagreeing with the thing it reports on.
-            if (t < reached) setProseTag(row, "HELD");
-            else if (t == reached) setProseTag(row, "%d TO GO", statTierPointsToNext(points));
-            else setProseTag(row, "AT %d", def.points);
-            out.push_back(row);
-        }
-    }
-    return out;
-}
-
-int tierRowsFitting(const std::vector<ProseRow>& rows, int top) {
-    return proseRowsFitting(rows, top, kTierRowTop);
-}
-
-void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                     int beat) {
-    statHeader(fb, "TIERS", StatPage::Tiers);
-    // The flow draws no band of its own here (nullptr): every STAT page ends with the
-    // same one, and it says more than the flow can know to say.
-    drawProseRows(fb, {rows, scrollTop, kTierRowTop, beat, nullptr});
-    statProseHint(fb, rows, scrollTop, kTierRowTop);
-}
-
-int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top) {
-    return proseRowsFitting(rows, top, kLoadoutRowTop);
-}
-
-void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
-                       int scrollTop, int beat) {
-    statHeader(fb, "LOADOUT", StatPage::ModSlots);
-    drawProseRows(fb, {rows, scrollTop, kLoadoutRowTop, beat, nullptr});
-    statProseHint(fb, rows, scrollTop, kLoadoutRowTop);
-}
-
-std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
-                                    bool restorePointArmed,
-                                    bool trojanDivertArmed,
-                                    bool backupDriveArmed,
-                                    uint32_t backupDriveRemainMs,
-                                    int depthMultiplier,
-                                    bool startDepthArmed,
-                                    bool startDepthUsesBest,
-                                    int startDepthValue,
-                                    BranchOverride branchOverride,
-                                    int evolveSoakFactor,
-                                    bool evolveHoldArmed,
-                                    const PetUpgrades& upgrades) {
-    std::vector<ProseRow> out;
-    // The two headings are emitted LAZILY, by the first row that belongs under each:
-    // an empty section is not a section, and a page that says PERMANENT over nothing
-    // has told the reader something false about the pet.
-    auto section = [&](const char* label) {
-        for (const ProseRow& r : out)
-            if (r.header && std::strcmp(r.label, label) == 0) return;
-        ProseRow head{};
-        head.label = label;
-        head.header = true;
-        out.push_back(head);
-    };
-    auto entry = [&](const ItemDef& d) {
-        ProseRow row{};
-        row.label = d.displayName;
-        row.body = effectText(d);
-        out.push_back(row);
-        return &out.back();
-    };
-    auto add = [&](const char* itemId, bool armed) -> ProseRow* {
-        if (!armed) return nullptr;
-        section("ARMED");
-        if (const ItemDef* d = reg.item(itemId)) return entry(*d);
-        ProseRow row{};
-        row.label = itemId;
-        out.push_back(row);
-        return &out.back();
-    };
-    add("restore_point", restorePointArmed);
-    add("ambig_usb", trojanDivertArmed);
-    // The one timed buff: its countdown is the row's suffix, read fresh each repaint
-    // because the page rebuilds its rows every draw.
-    if (ProseRow* row = add("backup_drive", backupDriveArmed)) {
-        const uint32_t s = backupDriveRemainMs / 1000u;
-        std::snprintf(row->suffix, sizeof(row->suffix), "%u:%02u LEFT", s / 60u,
-                      static_cast<unsigned>(s % 60u));
-    }
-    // The two DeepWeb Dive depth buffs: which ITEM armed them isn't tracked
-    // directly (Game only keeps the raw multiplier/depth), so find the item whose
-    // effect matches the current state instead of hardcoding an id here.
-    // `heading` is which section the found row lands under: every arming lands under
-    // ARMED, and an Epic dish's standing grant under PERMANENT.
-    auto addByEffect = [&](ItemEffect::Kind kind, int magnitude, bool matchAnyMagnitude,
-                           const char* heading = "ARMED") {
-        for (const ItemDef* d : reg.allItems())
-            for (const ItemEffect& e : d->effects)
-                if (e.kind == kind && (matchAnyMagnitude || e.magnitude == magnitude)) {
-                    section(heading);
-                    entry(*d);
-                    return;
-                }
-    };
-    if (depthMultiplier > 1)
-        addByEffect(ItemEffect::Kind::ArmDeepWebDepthMultiplier, depthMultiplier, false);
-    if (startDepthArmed) {
-        if (startDepthUsesBest)
-            addByEffect(ItemEffect::Kind::SetDeepWebStartDepthToBest, 0, true);
-        else
-            addByEffect(ItemEffect::Kind::SetDeepWebStartDepth, startDepthValue, false);
-    }
-    // The rest of the USB port, found the same way and for the same reason: Game keeps
-    // the forced DIRECTION and the raw soak FACTOR, not which device wrote them, so the
-    // row names whichever item carries that effect. The soak matches on its magnitude
-    // (which is what tells a Sandbox-USB from a Hypervisor-USB); a forced branch has no
-    // magnitude at all, so it matches on the Kind alone.
-    if (branchOverride == BranchOverride::Good)
-        addByEffect(ItemEffect::Kind::ForceEvolveBranchGood, 0, true);
-    else if (branchOverride == BranchOverride::Bad)
-        addByEffect(ItemEffect::Kind::ForceEvolveBranchBad, 0, true);
-    if (evolveSoakFactor > 1) {
-        // Either soak Kind can be the one armed and Game keeps only the factor, so ask
-        // for the plain one first and fall back to the late one: the magnitude is what
-        // tells a Sandbox-USB from a Hypervisor-USB, and only one row carries each.
-        const std::size_t before = out.size();
-        addByEffect(ItemEffect::Kind::ArmEvolveSoak, evolveSoakFactor, false);
-        if (out.size() == before)
-            addByEffect(ItemEffect::Kind::ArmEvolveSoakLate, evolveSoakFactor, false);
-    }
-    if (evolveHoldArmed) addByEffect(ItemEffect::Kind::ArmEvolveHold, 0, true);
-    // Last, because these are the rows that never lapse: everything an Epic dish has
-    // permanently given this pet. Found by effect like the dive buffs above rather than
-    // by id, so a dish that grants one can be renamed without touching this file, and
-    // in stat order, so a pet carrying several reads as one block rather than in
-    // whichever order it happened to be fed.
-    if (upgrades.bandwidthRegenMin > 0)
-        addByEffect(ItemEffect::Kind::BandwidthRegenBonusMin, 0, true, "PERMANENT");
-    static const ItemEffect::Kind kStatGrants[kLevelStatCount] = {
-        ItemEffect::Kind::StatPointPower, ItemEffect::Kind::StatPointDefense,
-        ItemEffect::Kind::StatPointSpeed, ItemEffect::Kind::StatPointHealth};
-    for (int i = 0; i < kLevelStatCount; ++i)
-        if (upgrades.statBonus[i] > 0) addByEffect(kStatGrants[i], 0, true, "PERMANENT");
-    if (upgrades.xpRatePct > 0)
-        addByEffect(ItemEffect::Kind::XpRateBonusPct, 0, true, "PERMANENT");
-    if (upgrades.favouriteFound) {
-        section("PERMANENT");
-        ProseRow row{};
-        row.label = "FAVOURITE DISH";
-        std::snprintf(row.body.buf, sizeof(row.body.buf),
-                      "Loves %s. +%d to every combat stat.",
-                      upgrades.favouriteFood ? upgrades.favouriteFood->displayName
-                                             : "its favourite",
-                      kFavouriteFoodStatBonus);
-        out.push_back(row);
-    }
-    return out;
-}
 
 namespace {
 
@@ -369,10 +122,10 @@ void drawBondRow(Framebuffer& fb, int y, const char* name, const char* how, int 
     drawText(fb, kLabelX, y + kBondHowDy, how, palColor(Pal::INK_DIM));
 }
 
-}  // namespace
-
-void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades) {
-    statHeader(fb, "BOND", StatPage::Bond);
+// STAT BOND: the XP bonus Bond adds, then one bar per source filling toward its cap,
+// each with the action that fills it.
+void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades, StatPager pager) {
+    statHeader(fb, "BOND", pager);
 
     char total[16];
     formatBondPct(total, sizeof(total), bondTotalBp(upgrades));
@@ -394,28 +147,18 @@ void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades) {
     statHintBand(fb, 1, 1);
 }
 
-int buffRowsFitting(const std::vector<ProseRow>& rows, int top) {
-    return proseRowsFitting(rows, top, kBuffRowTop);
-}
-
-void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                     int beat) {
-    statHeader(fb, "BUFFS", StatPage::Buffs);
-    if (rows.empty()) {
-        drawText(fb, kMargin, 60, "- NO ACTIVE BUFFS -", palColor(Pal::INK_DIM));
-        statHintBand(fb, 1, 1);
-        return;
-    }
-    drawProseRows(fb, {rows, scrollTop, kBuffRowTop, beat, nullptr});
-    statProseHint(fb, rows, scrollTop, kBuffRowTop);
-}
-
-void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
+// STAT SPECIES: the pet's own lore, straight off its CreatureDef row (`hint`/`context`,
+// defs.h). `hint` is the snarky read, `context` the real infosec reference behind the
+// pun, set dim a paragraph below it as an unlabelled footnote. Either may be null (no
+// lore authored). Both are wrapped to as many lines as they need: `context` is measured
+// first and held back, and `hint` takes the room that leaves, so a Daemon's long read is
+// shown whole instead of stopping mid-sentence with the foot of the screen still empty.
+void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, StatPager pager, int beat) {
     const char* name = c.displayName;
     const char* line = c.line;
     const char* hint = c.hint;
     const char* context = c.context;
-    statHeader(fb, "SPECIES", StatPage::Species);
+    statHeader(fb, "SPECIES", pager);
 
     // Name and line tag are both content, and the widest pair of them wants more than
     // the line has: a twelve-letter creature beside METAMORPHIC LINE fills it exactly.
@@ -472,8 +215,6 @@ void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat) {
     statHintBand(fb, 1, 1);
 }
 
-namespace {
-
 // Care mistakes, labelled ERRORS, with the path they currently lead to spelled out
 // beside the pips: the pips show how many, and what a first-time player cannot read off
 // them is what the divider means. The word is the channel; its colour only grades it.
@@ -513,7 +254,7 @@ void drawEvolveRow(Framebuffer& fb, int y, const StatScreenView& v) {
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v) {
     const PulsePhase pulse = ((v.beat / 2) & 1) == 0 ? PulsePhase::Bright   // ~1Hz
                                                       : PulsePhase::Dim;
-    statHeader(fb, "STAT", StatPage::Vitals);
+    statHeader(fb, "STAT", v.pager);
 
     // Name · generation. The stage is NOT here: it is spelled out under its own node on
     // the indicator below, which is where the reader is already looking to see how far
@@ -573,10 +314,12 @@ const SpriteData* logGlyph(LogEventType t) {
     }
     return &ASSET_ICON_LOG_EVENT_ITEM;
 }
-} // namespace
 
-void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
-    statHeader(fb, "AUDIT LOG", StatPage::Log);
+// STAT AUDIT LOG: the rolling event history newest-first, each a type glyph + terse
+// text. The lifetime/uptime footer lives on the Hacker PROFILE slot, so this page is the
+// log alone and shows the whole ring.
+void drawAuditLog(Framebuffer& fb, const EventLog& log, StatPager pager) {
+    statHeader(fb, "AUDIT LOG", pager);
 
     // A full page to itself, so it shows the WHOLE ring newest-first rather than a
     // slice of it: the log holds eight and eight is what a page of this pitch fits, so
@@ -606,23 +349,116 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int /*beat*/) {
     statHintBand(fb, 1, 1);
 }
 
-// --- The INDEX ---------------------------------------------------------------
+} // namespace
+
+void drawStatHintBand(Framebuffer& fb, int window, int windows) {
+    statHintBand(fb, window, windows);
+}
+
+// --- The pages ---------------------------------------------------------------
 
 namespace {
 
-// One row, formatted. `label` is borrowed; the readout is not.
-StatIndexRow indexRow(const char* label, bool sub, StatPage page, int anchor,
-                      const char* fmt, ...) {
-    StatIndexRow r{};
-    r.label = label;
-    r.sub = sub;
-    r.page = page;
-    r.anchor = anchor;
-    va_list ap;
-    va_start(ap, fmt);
-    std::vsnprintf(r.value, sizeof(r.value), fmt, ap);
-    va_end(ap);
-    return r;
+Stage petStage(const Pet& pet) {
+    return pet.creature ? pet.creature->stage : Stage::BootSector;
+}
+
+class VitalsPage final : public StatPage {
+public:
+    const char* title() const override { return "VITALS"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager pager, int /*scrollTop*/,
+              int beat) const override {
+        StatScreenView v;
+        v.name = s.pet.creature->displayName;
+        v.stage = s.pet.creature->stage;
+        v.generation = s.pet.generation;
+        v.level = s.pet.level;
+        v.combatXp = s.pet.xp;
+        v.xpToNext = s.xpToNext;
+        v.hasNextEvo = s.hasNextEvo;
+        v.evoRemainMs = s.evoRemainMs;
+        v.beat = beat;
+        v.pager = pager;
+        drawStatScreen(fb, s.pet.model, v);
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        out.push_back(pageIndexRow(*this, "LVL %d", s.pet.level));
+    }
+};
+
+class BondPage final : public StatPage {
+public:
+    const char* title() const override { return "BOND"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager pager, int /*scrollTop*/,
+              int /*beat*/) const override {
+        drawBondScreen(fb, s.pet.upgrades, pager);
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        out.push_back(pageIndexRow(*this, "+%d%%", bondTotalBp(s.pet.upgrades) / 100));
+    }
+};
+
+// TIERS, LOADOUT and BUFFS: name + prose rows from `rows`, flowed down from `rowTop` (the
+// flow itself is core/ui/prose_page.h), B stepping a window at a time. The draw and the
+// window advance both measure the window off the same rows at the same row top, which is
+// what keeps B from skipping or repeating a row. `index` lists the page's INDEX rows off
+// those rows; `emptyText` stands in for an empty page (null on a page that always has
+// rows).
+class ProseStatPage final : public StatPage {
+public:
+    using Rows = std::vector<ProseRow> (*)(const StatSources&);
+    using Index = void (*)(const StatPage&, const StatSources&, const std::vector<ProseRow>&,
+                           std::vector<StatIndexRow>&);
+    constexpr ProseStatPage(const char* title, Rows rows, int rowTop, Index index,
+                            const char* emptyText)
+        : title_(title), rows_(rows), rowTop_(rowTop), index_(index), emptyText_(emptyText) {}
+
+    const char* title() const override { return title_; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager pager, int scrollTop,
+              int beat) const override {
+        const std::vector<ProseRow> rows = rows_(s);
+        statHeader(fb, title_, pager);
+        if (rows.empty() && emptyText_) {
+            drawText(fb, kMargin, 60, emptyText_, palColor(Pal::INK_DIM));
+            statHintBand(fb, 1, 1);
+            return;
+        }
+        // The flow draws no band of its own here (nullptr): every STAT page ends with the
+        // same one, and it says more than the flow can know to say.
+        drawProseRows(fb, {rows, scrollTop, rowTop_, beat, nullptr});
+        statProseHint(fb, rows, scrollTop, rowTop_);
+    }
+    int nextScroll(const StatSources& s, int scrollTop) const override {
+        const std::vector<ProseRow> rows = rows_(s);
+        return nextWindowTop(scrollTop, proseRowsFitting(rows, scrollTop, rowTop_),
+                             static_cast<int>(rows.size()));
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        index_(*this, s, rows_(s), out);
+    }
+
+private:
+    const char* title_;
+    Rows rows_;
+    int rowTop_;
+    Index index_;
+    const char* emptyText_;
+};
+
+// Where the section opened by the header at `from` ends (the next header, or the end).
+int sectionEnd(const std::vector<ProseRow>& rows, int from) {
+    for (int i = from + 1; i < static_cast<int>(rows.size()); ++i)
+        if (rows[i].header) return i;
+    return static_cast<int>(rows.size());
+}
+
+std::vector<ProseRow> tierRows(const StatSources& s) {
+    // TOTAL points, not earned ones: an Epic dish's off-level grant counts toward a rung
+    // exactly as an earned point does (applyLevelStatPoints resolves the tiers from the
+    // same sum), so the page has to read the stat the way the fight does.
+    int points[kLevelStatCount];
+    for (int i = 0; i < kLevelStatCount; ++i) points[i] = s.pet.totalStatPoint(i);
+    return buildTierRows(points);
 }
 
 // Rungs held in `rows[from..to)`: the TIERS page's own HELD tag counted back, so the
@@ -634,111 +470,122 @@ int rungsHeld(const std::vector<ProseRow>& rows, int from, int to) {
     return n;
 }
 
-// Where the section opened by the header at `from` ends (the next header, or the end).
-int sectionEnd(const std::vector<ProseRow>& rows, int from) {
-    for (int i = from + 1; i < static_cast<int>(rows.size()); ++i)
-        if (rows[i].header) return i;
-    return static_cast<int>(rows.size());
-}
-
-}  // namespace
-
-std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
-                                             const std::vector<ProseRow>& loadoutRows,
-                                             const StatIndexCounts& c) {
-    std::vector<StatIndexRow> out;
-
-    out.push_back(indexRow("VITALS", false, StatPage::Vitals, 0, "LVL %d", c.level));
-    out.push_back(indexRow("BOND", false, StatPage::Bond, 0, "+%d%%", c.bondBp / 100));
-
+void tierIndex(const StatPage& page, const StatSources& /*s*/,
+               const std::vector<ProseRow>& rows, std::vector<StatIndexRow>& out) {
     int rungTotal = 0;
-    for (const ProseRow& r : tierRows)
+    for (const ProseRow& r : rows)
         if (!r.header) ++rungTotal;
-    out.push_back(indexRow("TIERS", false, StatPage::Tiers, 0, "%d/%d",
-                           rungsHeld(tierRows, 0, static_cast<int>(tierRows.size())),
-                           rungTotal));
+    out.push_back(pageIndexRow(page, "%d/%d",
+                               rungsHeld(rows, 0, static_cast<int>(rows.size())), rungTotal));
     // One sub-row per stat, anchored at that stat's own heading: choosing MAX HEALTH
     // opens TIERS with MAX HEALTH's rungs already on screen, which on a levelled pet is
     // several scroll steps saved and the reason this page exists.
-    for (int i = 0; i < static_cast<int>(tierRows.size()); ++i) {
-        if (!tierRows[i].header) continue;
-        const int end = sectionEnd(tierRows, i);
-        out.push_back(indexRow(tierRows[i].label, true, StatPage::Tiers, i, "%d/%d",
-                               rungsHeld(tierRows, i, end), end - i - 1));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        if (!rows[i].header) continue;
+        const int end = sectionEnd(rows, i);
+        out.push_back(sectionIndexRow(page, rows[i].label, i, "%d/%d",
+                                      rungsHeld(rows, i, end), end - i - 1));
     }
-
-    out.push_back(indexRow("LOADOUT", false, StatPage::ModSlots, 0, "%d/%d",
-                           c.movesOn + c.modsOn, c.moveSlots + c.modSlots));
-    // The loadout's sections come off its own rows too, so an egg (whose page
-    // collapses to a single row and carries no headings) offers none of them.
-    for (int i = 0; i < static_cast<int>(loadoutRows.size()); ++i) {
-        if (!loadoutRows[i].header) continue;
-        const bool moves = std::strcmp(loadoutRows[i].label, "MOVES") == 0;
-        out.push_back(indexRow(loadoutRows[i].label, true, StatPage::ModSlots, i, "%d/%d",
-                               moves ? c.movesOn : c.modsOn,
-                               moves ? c.moveSlots : c.modSlots));
-    }
-
-    // The two COLLECTION pages read as scores, which is the only thing worth saying
-    // about them in a list: a row that says 41/195 has already told the reader whether
-    // opening it is a plan or a formality.
-    out.push_back(indexRow("MOVES", false, StatPage::Moves, 0, "%d/%d", c.movesKnown,
-                           c.movesLearnable));
-    out.push_back(indexRow("FOODS", false, StatPage::Foods, 0, "%d/%d", c.foodsEaten,
-                           c.foodsTotal));
-
-    out.push_back(c.buffs > 0 ? indexRow("BUFFS", false, StatPage::Buffs, 0, "%d", c.buffs)
-                              : indexRow("BUFFS", false, StatPage::Buffs, 0, "NONE"));
-
-    // The line, upper-cased: the same tag the SPECIES page heads itself with.
-    char tag[14] = "";
-    if (c.line && c.line[0]) {
-        std::snprintf(tag, sizeof(tag), "%s", c.line);
-        for (char* p = tag; *p; ++p)
-            *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
-    }
-    out.push_back(indexRow("SPECIES", false, StatPage::Species, 0, "%s", tag));
-
-    out.push_back(c.logEvents > 0
-                      ? indexRow("AUDIT LOG", false, StatPage::Log, 0, "%d", c.logEvents)
-                      : indexRow("AUDIT LOG", false, StatPage::Log, 0, "EMPTY"));
-
-    return out;
 }
 
-void drawStatIndex(Framebuffer& fb, const std::vector<StatIndexRow>& rows, int cursor,
-                   int beat) {
-    drawHeaderBand(fb, "STAT", "INDEX");
+std::vector<ProseRow> loadoutRows(const StatSources& s) {
+    return buildLoadoutRows(s.reg, s.pet.moves, s.pet.mods, petStage(s.pet),
+                            s.pet.inEggPhase());
+}
 
-    const int n = static_cast<int>(rows.size());
-    // One window, derived from the cursor the way every scrolling list on the device
-    // derives its own (layout.h), so the rows drawn and the thumb below can never
-    // disagree about where the list is.
-    const int top = listScrollTop(cursor, n, kIndexVisible);
-    for (int v = 0; v < kIndexVisible && top + v < n; ++v) {
-        const int i = top + v;
-        const StatIndexRow& r = rows[i];
-        const int y = kIndexRowTop + v * kIndexRowH;
-        if (i == cursor) {
-            fb.fillRect(4, y - 2, kActiveW - 8, kIndexRowH - 1, palColor(Pal::TRACK));
-            drawRowCursor(fb, 6, y, palColor(Pal::ACCENT));
+void loadoutIndex(const StatPage& page, const StatSources& s,
+                  const std::vector<ProseRow>& rows, std::vector<StatIndexRow>& out) {
+    // Counted the way the LOADOUT hub counts them (drawLoadoutHub, core/ui/mods_screen.h):
+    // equipped over the slots this stage has actually unlocked, so "4/4" on the index
+    // means the same thing it means there.
+    const int moveSlots = MoveLoadout::slotsForStage(petStage(s.pet));
+    int movesOn = 0;
+    for (int i = 0; i < moveSlots; ++i)
+        if (s.pet.moves.equipped(i)) ++movesOn;
+    int modsOn = 0;
+    for (int i = 0; i < kModSlots; ++i)
+        if (s.pet.mods.equipped(i)) ++modsOn;
+
+    out.push_back(pageIndexRow(page, "%d/%d", movesOn + modsOn, moveSlots + kModSlots));
+    // The sections come off the page's own rows, so an egg (whose page collapses to a
+    // single row and carries no headings) offers none of them.
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        if (!rows[i].header) continue;
+        const bool moves = std::strcmp(rows[i].label, "MOVES") == 0;
+        out.push_back(sectionIndexRow(page, rows[i].label, i, "%d/%d",
+                                      moves ? movesOn : modsOn,
+                                      moves ? moveSlots : kModSlots));
+    }
+}
+
+std::vector<ProseRow> buffRows(const StatSources& s) {
+    return buildBuffRows(s.reg, s.pet, s.backupRemainMs);
+}
+
+void buffIndex(const StatPage& page, const StatSources& /*s*/,
+               const std::vector<ProseRow>& rows, std::vector<StatIndexRow>& out) {
+    // The count is BUFFS, not its rows: the page's headings are signage and counting
+    // them would tell the reader they have two more buffs than they do.
+    int armed = 0;
+    for (const ProseRow& b : rows)
+        if (!b.header) ++armed;
+    out.push_back(armed > 0 ? pageIndexRow(page, "%d", armed) : pageIndexRow(page, "NONE"));
+}
+
+class SpeciesPage final : public StatPage {
+public:
+    const char* title() const override { return "SPECIES"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager pager, int /*scrollTop*/,
+              int beat) const override {
+        drawSpeciesScreen(fb, *s.pet.creature, pager, beat);
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        // The line, upper-cased: the same tag the SPECIES page heads itself with.
+        char tag[14] = "";
+        const char* line = s.pet.creature ? s.pet.creature->line : nullptr;
+        if (line && line[0]) {
+            std::snprintf(tag, sizeof(tag), "%s", line);
+            for (char* p = tag; *p; ++p)
+                *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
         }
-        // A section reads as part of the page above it: dimmer, and indented under it.
-        // The indent is the grayscale channel for that nesting: the dimming alone
-        // would not survive the gate.
-        const Rgb565 ink = r.sub ? palColor(Pal::INK_DIM) : palColor(Pal::INK);
-        const int x = r.sub ? kIndexSubX : kIndexLabelX;
-        drawLabelValue(fb, x, y, r.label, ink, r.value, palColor(Pal::INK_DIM), beat,
-                       scrollWhen(i == cursor));
+        out.push_back(pageIndexRow(*this, "%s", tag));
     }
+};
 
-    drawScrollbar(fb, kIndexRowTop, kIndexVisible * kIndexRowH, n, top, kIndexVisible);
+class LogPage final : public StatPage {
+public:
+    const char* title() const override { return "AUDIT LOG"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager pager, int /*scrollTop*/,
+              int /*beat*/) const override {
+        drawAuditLog(fb, s.log, pager);
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        out.push_back(s.log.size() > 0 ? pageIndexRow(*this, "%d", s.log.size())
+                                       : pageIndexRow(*this, "EMPTY"));
+    }
+};
 
-    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
-}
+// The flowed pages' own row tops. TIERS opens on a section heading, same as LOADOUT.
+constexpr int kTierRowTop = 26;
+constexpr int kLoadoutRowTop = 26;
+constexpr int kBuffRowTop = 28;
 
-void drawStatHintBand(Framebuffer& fb, int window, int windows) {
-    statHintBand(fb, window, windows);
-}
+const VitalsPage kVitals;
+const BondPage kBond;
+const ProseStatPage kTiers{"TIERS", tierRows, kTierRowTop, tierIndex, nullptr};
+const ProseStatPage kLoadout{"LOADOUT", loadoutRows, kLoadoutRowTop, loadoutIndex, nullptr};
+const ProseStatPage kBuffs{"BUFFS", buffRows, kBuffRowTop, buffIndex, "- NO ACTIVE BUFFS -"};
+const SpeciesPage kSpecies;
+const LogPage kLog;
+
+}  // namespace
+
+const StatPage& kStatVitalsPage = kVitals;
+const StatPage& kStatBondPage = kBond;
+const StatPage& kStatTiersPage = kTiers;
+const StatPage& kStatLoadoutPage = kLoadout;
+const StatPage& kStatBuffsPage = kBuffs;
+const StatPage& kStatSpeciesPage = kSpecies;
+const StatPage& kStatLogPage = kLog;
 
 } // namespace mal

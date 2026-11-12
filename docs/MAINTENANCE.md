@@ -205,7 +205,7 @@ The finder doesn't need clangd. `clang-tidy -p build -checks='-*,misc-include-cl
 the `src/` entries of `build/compile_commands.json` runs the same analysis, which is what a
 session without clangd (a remote one) reaches for. Its blind spot is the one `game.h` creates:
 a type `game.h` only forward-declares, used through a `Game` member that returns it by value
-(`statIndexRows()`'s vector of `StatIndexRow`), is instantiated in the calling unit without the
+(`statSources()`'s `StatSources`), is instantiated in the calling unit without the
 unit ever naming it, so the scan calls the header unused and the build disagrees. Put the
 reason on the include line when the build says keep, or the next run strips it again.
 

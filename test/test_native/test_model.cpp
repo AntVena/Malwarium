@@ -162,6 +162,7 @@ void test_carousel_enter_back() {
     sv.xpToNext = g.xpToNextLevel();
     sv.hasNextEvo = g.hasNextEvolution();
     sv.evoRemainMs = g.evolveRemainMs();
+    sv.pager = g.statReader().pager();
     drawStatScreen(ref, g.model(), sv);
     bool same = true;
     for (int y = 0; y < kActiveH && same; ++y)

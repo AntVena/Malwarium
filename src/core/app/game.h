@@ -16,6 +16,7 @@
 #include "core/app/game_rig_shop.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
+#include "core/app/game/stat_reader.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
 #include "core/device/power_status.h"
@@ -76,17 +77,14 @@
 namespace mal {
 
 struct SpriteData;
-// STAT's two flowed prose pages and the index over them (core/ui/stat_screen.h).
-// Named here only as the return type of the row builders below: the screen header
-// itself stays in game_stat.cpp, per the include note above.
+// A flowed reader's row (core/ui/prose_page.h). Named here only as the return type of
+// the row builders below, per the include note above.
 struct ProseRow;
 
 // EXPL's list view (core/ui/expl_screen.h). Named here only as explView()'s return
 // type, per the include note above: the screen header stays in the game_*.cpp units
 // that draw and navigate with it.
 struct ExplListView;
-struct StatIndexRow;
-struct FoodRow;
 struct PlayHud;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
@@ -94,7 +92,7 @@ struct PlayHud;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
-class Game : private RigShopHost, private ItemsHost {
+class Game : private RigShopHost, private ItemsHost, private StatReaderHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -2170,18 +2168,10 @@ public:
     // filtering without driving the tap/hold timing.
     void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
     ItemFilter itemFilter() const { return items_.filter(); }
-    // Where the STAT reader stands: which page, which row of it the window
-    // opens on, whether the INDEX is up, and its cursor. Read by the gates, which
-    // assert the page a jump landed on and the row it anchored to.
-    StatPage statPage() const { return statPage_; }
-    int statScroll() const { return statScroll_; }
-    StatScreen statScreen() const { return statScreen_; }
-    int statIndexRow() const { return statIndexRow_; }
-    // The INDEX's rows, marshalled from the two flowed pages' own rows plus the counts
-    // the LOADOUT hub already counts, so the index readout and the page it opens always
-    // agree. Public because the gates read the roster to find the row a jump should
-    // land on, the same way they read the pages' own row models.
-    std::vector<StatIndexRow> statIndexRows() const;
+    // The STAT reader, and what its pages read (game_stat.cpp). Public for the gates,
+    // which find a page by its title and assert where a jump landed.
+    const StatReader& statReader() const { return stat_; }
+    StatSources statSources() const override;
     // Which ITEMS L2 screen is showing, the picker's tile cursor and the list's row
     // cursor (tests / render).
     ItemsView itemsView() const { return items_.view(); }
@@ -2632,19 +2622,6 @@ private:
     void leaveFocusedList();
 
     // Per-state input handlers.
-    // STAT's two screens (game_stat.cpp). On a page: A cycles the six, B advances the
-    // flowed ones by a window, C leaves. On the INDEX: A steps a row, B opens it at its
-    // anchor, C returns to the page it was opened from.
-    void onStatPage(const ButtonEvent& ev);
-    // Back to the reader's front door: VITALS, unscrolled, no index open. Every route
-    // that puts the player somewhere else (entering the slot, the tree collapsing, a
-    // Lockout resolving out from under the screen) goes through this, so one function
-    // decides where STAT opens.
-    void resetStatReader();
-    void onStatIndex(const ButtonEvent& ev);
-    // Open the INDEX with the cursor already on whatever the reader is looking at, so
-    // the jump list opens as a map of where they ARE rather than at its own first row.
-    void openStatIndex();
     // Resolves STAT's hold-B gesture's SHORT-press half, the twin of itemFilterReleaseB:
     // a B that never reached kStatIndexHoldMs is the ordinary window advance.
     void statIndexReleaseB();
@@ -3634,38 +3611,6 @@ private:
         return pet_.armed.deepWebStartDepth;
     }
 
-    StatPage statPage_ = StatPage::Vitals;
-    // Which STAT screen is on: one of the pages, or the INDEX over them. STAT still
-    // OPENS on the page (VITALS), never on the index: hunger and frag are what the
-    // slot is entered for, and a menu in front of them would be a press charged to
-    // every visit to pay for the occasional long jump.
-    StatScreen statScreen_ = StatScreen::Page;
-    int statIndexRow_ = 0;
-    // Row-window scroll offset for whichever of STAT's three flowed prose pages is
-    // open (TIERS, LOADOUT and BUFFS): B advances it, wrapping, when that page's rows
-    // outrun one screen. ONE offset serves all three because a page change resets it
-    // anyway, alongside C backing out and every other statPage_ reset site.
-    int statScroll_ = 0;
-    // The rows those pages show. Game owns the state they report, stat_screen.h
-    // owns the shape, and these are the marshalling between the two: shared by the
-    // page draw (game_render.cpp) and the B-scroll, which has to advance by the same
-    // window the page drew or it skips and repeats rows.
-    std::vector<ProseRow> statTierRows() const;
-    std::vector<ProseRow> statLoadoutRows() const;
-    std::vector<ProseRow> statBuffRows() const;
-    // The two COLLECTION pages' rows (core/ui/collect_screen.h): every dish laid out in
-    // rarity groups against this pet's palate, and every move it could learn against
-    // what it has. Marshalled here for the same reason the three above are: Game owns
-    // the state, the screen owns the shape.
-    std::vector<FoodRow> statFoodRows() const;
-    std::vector<ProseRow> statMoveDexRows() const;
-    // The STAT screens' draws (game_stat.cpp), reached from drawSubmenu.
-    void drawStat(Framebuffer& fb) const;
-    // {rows on screen starting at statScroll_, rows in total} for the open STAT page;
-    // {0, 0} for a page that doesn't flow rows and so doesn't scroll.
-    struct StatScrollSpan { int shown; int total; };
-    StatScrollSpan statScrollSpan() const;
-
     // CFG submenu. cfgScreen_ is the entered L3; cfgGroupRow_ the focused row of a
     // group screen (DEVICE / RADIO), kept apart from listRow_ so backing out of a
     // group lands on the row that opened it; cfgUiPick_ the focused UI Mode option;
@@ -4385,6 +4330,7 @@ private:
     Face face_ = Face::Pet;
     RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
     ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
+    StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
     int hackerVaultRow_ = 0;  // VAULT list cursor: owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor: recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:

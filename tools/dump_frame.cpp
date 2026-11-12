@@ -495,29 +495,31 @@ int main(int argc, char** argv) {
         game.debugUseItem("repartition");
         if (hasFlag(argc, argv, "to")) game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "stat")) {
-        // STAT's pages, in StatPage order. "stat" alone shows vitals; the page names
-        // step to theirs; "index" then holds B to open the jump list over
-        // them. "ate:<n>" feeds the pet n dishes first, which is what puts lit cells in
-        // the FOODS grid.
+        // STAT's pages, by title. "stat" alone shows vitals; the page names turn to
+        // theirs; "index" then holds B to open the jump list over them. "ate:<n>" feeds
+        // the pet n dishes first, which is what puts lit cells in the FOODS grid.
         game.debugSetBits(1450);
         game.debugSetNetworksSeen(27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
-        const StatPage page = hasFlag(argc, argv, "bond")      ? StatPage::Bond
-                            : hasFlag(argc, argv, "tiers")   ? StatPage::Tiers
-                            : hasFlag(argc, argv, "loadout") ? StatPage::ModSlots
-                            : hasFlag(argc, argv, "movedex") ? StatPage::Moves
-                            : hasFlag(argc, argv, "foods")   ? StatPage::Foods
-                            : hasFlag(argc, argv, "buffs")   ? StatPage::Buffs
-                            : hasFlag(argc, argv, "species") ? StatPage::Species
-                            : hasFlag(argc, argv, "log")     ? StatPage::Log
-                                                             : StatPage::Vitals;
-        int steps = static_cast<int>(page);
+        const char* title = hasFlag(argc, argv, "bond")      ? "BOND"
+                          : hasFlag(argc, argv, "tiers")   ? "TIERS"
+                          : hasFlag(argc, argv, "loadout") ? "LOADOUT"
+                          : hasFlag(argc, argv, "movedex") ? "MOVES"
+                          : hasFlag(argc, argv, "foods")   ? "FOODS"
+                          : hasFlag(argc, argv, "buffs")   ? "BUFFS"
+                          : hasFlag(argc, argv, "species") ? "SPECIES"
+                          : hasFlag(argc, argv, "log")     ? "AUDIT LOG"
+                                                           : "VITALS";
         // "ate:<n>" puts n dishes on the pet's palate before the page draws, which is
         // the only way to see the FOODS grid half filled rather than wholly dim.
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "ate:", 4) == 0)
                 game.debugTasteFoods(std::atoi(argv[i] + 4));
-        while (steps-- > 0) game.onButton({Button::A, true, false});
+        // A turns the pages, as the player does, until the named one is up.
+        const StatPage* want = StatReader::findPage(title);
+        for (std::size_t n = StatReader::pages().size();
+             n > 0 && &game.statReader().page() != want; --n)
+            game.onButton({Button::A, true, false});
         // "scroll:<n>" then takes B n times, which on the three flowed pages
         // (TIERS/LOADOUT/BUFFS) advances the row window: the way to see the rows past
         // the first screenful, and that the last window lands clear of the hint band.

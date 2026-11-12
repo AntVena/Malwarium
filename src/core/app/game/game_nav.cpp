@@ -175,10 +175,7 @@ void Game::onButton(const ButtonEvent& ev) {
             switch (enteredId()) {
                 // STAT is two screens behind one slot (game_stat.cpp): the paged
                 // reader, and the INDEX that jumps between its pages and sections.
-                case SubmenuId::Stat:
-                    if (statScreen_ == StatScreen::Index) onStatIndex(ev);
-                    else onStatPage(ev);
-                    break;
+                case SubmenuId::Stat: stat_.onButton(*this, ev); break;
                 case SubmenuId::Items: items_.onButton(*this, ev); break;
                 case SubmenuId::Maint: onMaintList(ev); break;
                 case SubmenuId::Cfg: onCfgList(ev); break;
@@ -364,7 +361,7 @@ void Game::enterSubmenu() {
         // Entering STAT always lands on VITALS, never on the index or on the page last
         // read: the slot is entered to check on the pet, and where the last visit
         // happened to end is not that.
-        case SubmenuId::Stat: resetStatReader(); break;
+        case SubmenuId::Stat: stat_.reset(); break;
         default: break;
     }
 }
@@ -373,7 +370,7 @@ void Game::dropCursor() {
     nav_ = Nav::Idle;
     listRow_ = 0;
     detailItem_ = nullptr;
-    resetStatReader();
+    stat_.reset();
 }
 
 bool Game::slotLocked(SubmenuId id) const {

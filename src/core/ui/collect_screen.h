@@ -51,38 +51,17 @@ struct FoodRow {
 };
 
 // Every Food in the roster, laid into rows, one rarity group at a time. `eatenSet` is the
-// pet's palate (Game::petFoodsEaten_: borrowed registry pointers), passed in rather than
+// pet's palate (Pet::foodsEaten: borrowed registry pointers), passed in rather than
 // asked for, so this page has no opinion about where a palate is kept or how it persists.
 //
 // Rarity order rather than roster order because rarity is what tells a player whether a
 // gap is a shopping trip or a campaign: the commons are a kitchen you can fill
 // deliberately, and the epics are the ones a dive or a boss has to hand you.
-// `favourite` is the pet's favourite dish once FOUND (Game::foundFavouriteFood) and
+// `favourite` is the pet's favourite dish once FOUND (Pet::foundFavouriteFood) and
 // nullptr before, so the page can never give the secret away.
 std::vector<FoodRow> buildFoodRows(const ContentRegistry& reg,
                                    const std::vector<const ItemDef*>& eatenSet,
                                    const ItemDef* favourite = nullptr);
-
-// How many rows starting at `top` fit one screen, stopping at the next section for the
-// reason the prose flow does (prose_page.h).
-int foodRowsFitting(const std::vector<FoodRow>& rows, int top);
-
-// The page's window count and which one `scrollTop` opens, for the hint band's "n/m".
-int foodWindowCount(const std::vector<FoodRow>& rows);
-int foodWindowIndex(const std::vector<FoodRow>& rows, int scrollTop);
-
-// Where a collection page stands: its scroll, and the score heading it.
-struct CollectionPage {
-    int scrollTop = 0;
-    int have = 0;                    // dishes eaten, or moves known...
-    int total = 0;                   // ...of how many
-    int beat = 0;
-};
-
-// STAT's FOODS page: the windowed grid from buildFoodRows, tasted cells at full ink and
-// the rest dimmed.
-void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
-                     const std::vector<FoodRow>& rows, const CollectionPage& page);
 
 // STAT's MOVES page row model: every move `petLine` can hold, its own line's section
 // first and the generic pool second, tagged KNOWN where `owned` says the pet has it.
@@ -92,13 +71,5 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
 std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
                                        const MoveLoadout& moves, const char* petLine,
                                        Stage stage);
-
-// The MOVES page's window, the shared flow's own count at this page's row top.
-int moveDexRowsFitting(const std::vector<ProseRow>& rows, int top);
-
-// STAT's MOVES page: the windowed roster from buildMoveDexRows, headed by its score the
-// way FOODS is.
-void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
-                       const CollectionPage& page);
 
 } // namespace mal

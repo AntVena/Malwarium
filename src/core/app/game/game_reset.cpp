@@ -70,7 +70,7 @@ void Game::resetToHatch() {
     cursor_ = 0;
     listRow_ = 0;
     detailItem_ = nullptr;
-    resetStatReader();
+    stat_.reset();
     maintKind_ = MaintKind::Defrag;
     maintVariant_ = 0;
     maintPlayed_ = false;

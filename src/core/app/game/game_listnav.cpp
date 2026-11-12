@@ -19,7 +19,7 @@
 #include "core/ui/cfg_screen.h"
 #include "core/ui/expl_screen.h"
 #include "core/ui/mods_screen.h"
-#include "core/ui/stat_screen.h"   // StatIndexRow: statIndexRows() returns a vector of it, and game.h only forward-declares it
+#include "core/ui/stat_pages.h"   // StatSources: what the STAT index steps over
 #include "core/ui/train_screen.h"
 
 namespace mal {
@@ -78,8 +78,8 @@ Game::ListFocus Game::listFocus() const {
             // Only the INDEX is a list. The six pages behind it are readers: nothing
             // is selected, A turns the page, and C leaves as on every reader.
             case SubmenuId::Stat:
-                return statScreen_ == StatScreen::Index ? ListFocus::StatIndex
-                                                        : ListFocus::None;
+                return stat_.screen() == StatScreen::Index ? ListFocus::StatIndex
+                                                           : ListFocus::None;
             case SubmenuId::Items:
                 return items_.view() == ItemsView::Picker ? ListFocus::ItemsPicker
                                                           : ListFocus::ItemsList;
@@ -138,11 +138,9 @@ void Game::stepFocusedList(int dir) {
         case ListFocus::None:
             return;
 
-        case ListFocus::StatIndex: {
-            const int n = static_cast<int>(statIndexRows().size());
-            if (n > 0) statIndexRow_ = ((statIndexRow_ + dir) % n + n) % n;
+        case ListFocus::StatIndex:
+            stat_.stepIndex(statSources(), dir);
             break;
-        }
 
         case ListFocus::ItemsPicker:
         case ListFocus::ItemsList:
@@ -321,7 +319,7 @@ void Game::leaveFocusedList() {
     if (focus == ListFocus::None) return;
     const ButtonEvent back{Button::C, true, false};
     switch (focus) {
-        case ListFocus::StatIndex: onStatIndex(back); break;
+        case ListFocus::StatIndex: stat_.onButton(*this, back); break;
         case ListFocus::ItemsPicker:
         case ListFocus::ItemsList: items_.onButton(*this, back); break;
         case ListFocus::ArchPicker: onArchPicker(back); break;

@@ -6,7 +6,22 @@
 #include "test_gates.h"
 #include "core/content/items/item_families.h"
 
-// STAT is kStatPages paged screens in StatPage order, landing on VITALS (+ an XP bar).
+namespace {
+
+bool onStatPage(const Game& g, const char* title) {
+    return std::strcmp(g.statReader().page().title(), title) == 0;
+}
+
+// A turns STAT's pages until `title` is up, as a player looks for one.
+void openStatPage(Game& g, const char* title) {
+    for (std::size_t n = StatReader::pages().size(); n > 0 && !onStatPage(g, title); --n)
+        g.onButton(press(Button::A));
+    CHECK(onStatPage(g, title));
+}
+
+}  // namespace
+
+// STAT is the reader's table of pages in A order, landing on VITALS (+ an XP bar).
 // Cycled by A, and C backs out. (Device/account stats live on the Hacker PROFILE slot.)
 void test_stat_paging_loadout_xp() {
     Game g{StartMode::Hatched};
@@ -27,23 +42,24 @@ void test_stat_paging_loadout_xp() {
 
     // A -> BOND (a distinct page).
     g.onButton(press(Button::A));
+    CHECK(onStatPage(g, "BOND"));
     Framebuffer p1(kActiveW, kActiveH);
     g.render(p1);
     CHECK(!fbEqual(p0, p1));
 
     // A -> TIERS (distinct again), then LOADOUT.
     g.onButton(press(Button::A));
+    CHECK(onStatPage(g, "TIERS"));
     Framebuffer p2(kActiveW, kActiveH);
     g.render(p2);
     CHECK(!fbEqual(p1, p2));
-    g.onButton(press(Button::A));   // -> LOADOUT
+    g.onButton(press(Button::A));
+    CHECK(onStatPage(g, "LOADOUT"));
     Framebuffer p3(kActiveW, kActiveH);
     g.render(p3);
     CHECK(!fbEqual(p2, p3));
-    // ...and one lap of the rest puts VITALS back, whatever the roster grows to: the
-    // ring is kStatPages long by construction, so the walk is measured rather than
-    // counted out here.
-    for (int i = 3; i < kStatPages; ++i) g.onButton(press(Button::A));
+    // ...and the rest of the lap puts VITALS back, whatever the roster grows to.
+    openStatPage(g, "VITALS");
     Framebuffer wrap(kActiveW, kActiveH);
     g.render(wrap);
     CHECK(fbEqual(p0, wrap));                          // cycle wraps to VITALS
@@ -319,10 +335,10 @@ void test_stat_loadout_b_scroll() {
     // On to LOADOUT; TIERS flows rows of its own and is walked by its own gate below.
     // Confirm the starting loadout really does overflow the visible window (the
     // precondition this test needs).
-    while (g.statPage() != StatPage::ModSlots) g.onButton(press(Button::A));
+    openStatPage(g, "LOADOUT");
     auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.modSlots(),
                                  g.pet()->stage, g.inEggPhase());
-    CHECK(loadoutRowsFitting(rows, 0) < static_cast<int>(rows.size()));
+    CHECK(g.statReader().page().nextScroll(g.statSources(), 0) != 0);
 
     Framebuffer l0(kActiveW, kActiveH); g.render(l0);
     tapB(g);                                     // scroll forward one window
@@ -341,24 +357,24 @@ void test_stat_loadout_b_scroll() {
     }
     CHECK(wrapped);
 
-    // C -> back to the carousel (resets statPage_/statScroll_); B re-enters
-    // the submenu (cursor is still parked on STAT's slot); back on LOADOUT confirms
-    // the scroll reset (renders identically to the first LOADOUT view, l0).
+    // C -> back to the carousel (resets the reader); B re-enters the submenu (cursor
+    // is still parked on STAT's slot); back on LOADOUT confirms the scroll reset
+    // (renders identically to the first LOADOUT view, l0).
     tapC(g);
     tapB(g);
-    while (g.statPage() != StatPage::ModSlots) g.onButton(press(Button::A));
+    openStatPage(g, "LOADOUT");
     Framebuffer l3(kActiveW, kActiveH); g.render(l3);
     CHECK(fbEqual(l0, l3));
 
     // BUFFS flows rows too, but with nothing armed it has none to scroll, so B is
     // inert there; AUDIT LOG never scrolls at all.
-    while (g.statPage() != StatPage::Buffs) g.onButton(press(Button::A));
+    openStatPage(g, "BUFFS");
     Framebuffer b0(kActiveW, kActiveH); g.render(b0);
     tapB(g);
     Framebuffer b0b(kActiveW, kActiveH); g.render(b0b);
     CHECK(fbEqual(b0, b0b));
 
-    while (g.statPage() != StatPage::Log) g.onButton(press(Button::A));
+    openStatPage(g, "AUDIT LOG");
     Framebuffer a0(kActiveW, kActiveH); g.render(a0);
     tapB(g);
     Framebuffer a0b(kActiveW, kActiveH); g.render(a0b);
@@ -449,28 +465,33 @@ void test_tier_page_counts_off_level_points() {
     CHECK(pageSaysHeld == (c.piercePct > 0));
 }
 
-// The flowed pages TILE their rows: consecutive windows skip nothing and repeat
-// nothing, and the walk terminates. This is the invariant the engine's B press and
-// the page's own layout have to agree on: they measure the window separately
-// (game_core.cpp's statScrollSpan vs. the renderer), and a disagreement shows up as
-// a row that can never be read or one that shows twice. Checked on a Daemon holding
-// a full kit, the longest list the page can be handed.
+// The flowed pages TILE their rows: each B press opens the window just past the one
+// drawn, the walk moves forward every step, and it wraps home once the last row has
+// been shown. A stalled or backward step is a row that can never be read or one that
+// shows twice. Checked on a Daemon holding a full kit, the longest list the page can
+// be handed.
 void test_stat_prose_windows_tile_the_list() {
     Game g{StartMode::Hatched, "wire_heir"};
     g.debugFillLoadout();
     const auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.modSlots(),
                                        g.pet()->stage, g.inEggPhase());
     const int total = static_cast<int>(rows.size());
-    CHECK(loadoutRowsFitting(rows, 0) < total);   // it really does need scrolling
+    const StatPage* loadout = StatReader::findPage("LOADOUT");
+    CHECK(loadout != nullptr);
+    if (!loadout) return;
+    const StatSources src = g.statSources();
+    int top = loadout->nextScroll(src, 0);
+    CHECK(top != 0);             // it really does need scrolling
 
-    int covered = 0;
-    for (int top = 0; top < total;) {
-        const int n = loadoutRowsFitting(rows, top);
-        CHECK(n > 0);            // a zero-row window would never reach the end
-        covered += n;
-        top += n;
+    int windows = 1;
+    for (int prev = 0; top != 0 && windows <= total; ++windows) {
+        CHECK(top > prev);       // a window that does not move would never reach the end
+        CHECK(top < total);
+        prev = top;
+        top = loadout->nextScroll(src, top);
     }
-    CHECK(covered == total);     // every row seen exactly once
+    CHECK(top == 0);             // the walk wrapped home
+    CHECK(windows > 1);
 }
 
 // Release gate 1 (grayscale readability) on every screen that lacked a dedicated
@@ -517,9 +538,9 @@ void test_remaining_screens_grayscale() {
       CHECK(g.lockoutActive());
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, W, H)); }
 
-    // Hacker-Log (STAT page 2).
+    // STAT's AUDIT LOG.
     { Game g{StartMode::Hatched}; enterSubmenuId(g, SubmenuId::Stat);
-      g.onButton(press(Button::A));                 // page Vitals -> Log
+      openStatPage(g, "AUDIT LOG");
       g.render(fb); CHECK(hasDarkInk(fb, 0, 0, W, H)); }
 
     // TRAIN list shell (a submenu with a deferred ·soon· action).
@@ -593,9 +614,8 @@ void test_sprite_grayscale_legibility() {
 void test_buffs_page_lists_the_permanent_upgrades() {
     ContentRegistry r = ContentRegistry::embedded();
     // Nothing armed, and nothing granted: the page is empty.
-    CHECK(buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
-                        BranchOverride::None, 1, false, PetUpgrades{})
-              .empty());
+    Pet pet;
+    CHECK(buildBuffRows(r, pet, 0).empty());
 
     // The DISH that grants an effect, resolved off the item table rather than named by a
     // literal here: renaming a dish must not need a test edit to go with it.
@@ -620,11 +640,9 @@ void test_buffs_page_lists_the_permanent_upgrades() {
         return false;
     };
 
-    PetUpgrades u;
+    PetUpgrades& u = pet.upgrades;
     u.bandwidthRegenMin = 1;
-    const std::vector<ProseRow> one =
-        buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
-                      BranchOverride::None, 1, false, u);
+    const std::vector<ProseRow> one = buildBuffRows(r, pet, 0);
     CHECK(entries(one).size() == 1);
     // The standing grant is filed under PERMANENT, and nothing is armed, so the page
     // carries no ARMED heading over an empty section.
@@ -637,9 +655,7 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     // Everything at once: the regen shave, one row per off-level stat point, the XP rate.
     for (int& b : u.statBonus) b = 1;
     u.xpRatePct = 25;
-    const std::vector<ProseRow> all =
-        buildBuffRows(r, false, false, false, 0, 1, false, false, 0,
-                      BranchOverride::None, 1, false, u);
+    const std::vector<ProseRow> all = buildBuffRows(r, pet, 0);
     CHECK(entries(all).size() == static_cast<size_t>(2 + kLevelStatCount));
     for (const ProseRow& row : all) CHECK(!row.suffix[0]);
     // Each stat point is named by its own dish, in stat order.
@@ -707,9 +723,10 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     g.debugAddCombatXp(400000);              // far enough up the ladder for held rungs
     enterSubmenuId(g, SubmenuId::Stat);
 
+    const StatReader& reader = g.statReader();
     // The front door: VITALS, unscrolled, no index.
-    CHECK(g.statPage() == StatPage::Vitals);
-    CHECK(g.statScreen() == StatScreen::Page);
+    CHECK(onStatPage(g, "VITALS"));
+    CHECK(reader.screen() == StatScreen::Page);
 
     // A tap of B is the window advance, not the index: the two share the key and only
     // the dwell tells them apart.
@@ -718,50 +735,54 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     g.onButton(press(Button::B));
     g.tick(t += kStatIndexHoldMs / 2);
     g.onButton(lift(Button::B));
-    CHECK(g.statScreen() == StatScreen::Page);
+    CHECK(reader.screen() == StatScreen::Page);
 
     // Held past the dwell, it opens the index: with the cursor already on what was
     // being read, so backing straight out is a no-op rather than a jump.
     g.onButton(press(Button::B));
     g.tick(t += kStatIndexHoldMs + kHeartbeatMs);
-    CHECK(g.statScreen() == StatScreen::Index);
+    CHECK(reader.screen() == StatScreen::Index);
     g.onButton(lift(Button::B));
-    auto rows = g.statIndexRows();
-    CHECK(rows[g.statIndexRow()].page == StatPage::Vitals);   // parked on VITALS
+    auto rows = reader.indexRows(g.statSources());
+    const StatPage* vitals = StatReader::findPage("VITALS");
+    CHECK(rows[reader.indexRow()].page == vitals);   // parked on VITALS
     tapC(g);                                          // C leaves the index, not STAT
-    CHECK(g.statScreen() == StatScreen::Page);
-    CHECK(g.statPage() == StatPage::Vitals);
+    CHECK(reader.screen() == StatScreen::Page);
+    CHECK(onStatPage(g, "VITALS"));
     CHECK(g.nav() == Game::Nav::Submenu);
 
     // The roster: every page is reachable, and the two flowed ones carry a sub-row per
     // section. One per combat stat, and the loadout's two halves.
-    int pages[kStatPages] = {0};
     int subs = 0;
     for (const StatIndexRow& r : rows) {
-        CHECK(static_cast<int>(r.page) < kStatPages);
-        ++pages[static_cast<int>(r.page)];
+        CHECK(r.page != nullptr);
         if (r.sub) ++subs;
     }
-    for (int i = 0; i < kStatPages; ++i) CHECK(pages[i] >= 1);
+    for (const StatPage* p : StatReader::pages()) {
+        bool listed = false;
+        for (const StatIndexRow& r : rows) listed = listed || (r.page == p && !r.sub);
+        CHECK(listed);
+    }
     CHECK(subs == kLevelStatCount + 2);
 
     // Open the LAST stat's section off the index: the page it names, anchored at that
     // stat's own heading. The whole point, since walking there costs several windows.
+    const StatPage* tiers = StatReader::findPage("TIERS");
     int target = -1;
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
-        if (rows[i].sub && rows[i].page == StatPage::Tiers) target = i;
+        if (rows[i].sub && rows[i].page == tiers) target = i;
     CHECK(target >= 0);
     const int anchor = rows[target].anchor;
 
     g.onButton(press(Button::B));
     g.tick(t += kStatIndexHoldMs + kHeartbeatMs);
     g.onButton(lift(Button::B));
-    CHECK(g.statScreen() == StatScreen::Index);
-    while (g.statIndexRow() != target) g.onButton(press(Button::A));
+    CHECK(reader.screen() == StatScreen::Index);
+    while (reader.indexRow() != target) g.onButton(press(Button::A));
     tapB(g);
-    CHECK(g.statScreen() == StatScreen::Page);
-    CHECK(g.statPage() == StatPage::Tiers);
-    CHECK(g.statScroll() == anchor);
+    CHECK(reader.screen() == StatScreen::Page);
+    CHECK(onStatPage(g, "TIERS"));
+    CHECK(reader.scroll() == anchor);
 
     // And the anchor is a HEADING, so the window opens on the section rather than
     // partway into it. Rebuilt from the pet's own points, which is what the page does.
@@ -775,9 +796,9 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor);
     g.onButton(press(Button::B));
-    CHECK(g.statPage() == StatPage::Vitals);
-    CHECK(g.statScroll() == 0);
-    CHECK(g.statScreen() == StatScreen::Page);
+    CHECK(onStatPage(g, "VITALS"));
+    CHECK(reader.scroll() == 0);
+    CHECK(reader.screen() == StatScreen::Page);
 }
 
 // A flowed page is read a SECTION at a time. The window rule (prose_page.cpp) says a
@@ -792,9 +813,10 @@ void test_prose_windows_break_on_sections() {
     const auto rows = buildTierRows(points);
     const int total = static_cast<int>(rows.size());
 
+    constexpr int kTop = 26;   // TIERS' row top; the section rule is the flow's at any top
     int windows = 0;
     for (int top = 0; top < total; ++windows) {
-        const int shown = tierRowsFitting(rows, top);
+        const int shown = proseRowsFitting(rows, top, kTop);
         CHECK(shown >= 1);                          // the fit never stalls
         // No window ENDS on a heading: a fence with nothing behind it is not a fence.
         CHECK(!rows[top + shown - 1].header || shown == 1);
@@ -803,8 +825,8 @@ void test_prose_windows_break_on_sections() {
     // Every stat's heading opens a window of its own: the sections here are the whole
     // reason a reader presses the key, and there are four of them.
     CHECK(windows >= kLevelStatCount);
-    CHECK(proseWindowCount(rows, 26) == windows);
-    CHECK(proseWindowIndex(rows, 0, 26) == 0);
+    CHECK(proseWindowCount(rows, kTop) == windows);
+    CHECK(proseWindowIndex(rows, 0, kTop) == 0);
 }
 
 // STAT's two COLLECTION pages are the device's first per-PET progress readout: what this
@@ -910,9 +932,7 @@ void test_favourite_food_is_found_by_feeding_it() {
             if (r.favourite[c]) { ++marked; CHECK(r.cells[c] == fav); }
     CHECK(marked == 1);
     bool listed = false;
-    for (const ProseRow& b : buildBuffRows(g.content(), false, false, false, 0, 1, false,
-                                          false, 0, BranchOverride::None, 1, false,
-                                          g.petUpgrades()))
+    for (const ProseRow& b : buildBuffRows(g.content(), g.petRecord(), 0))
         if (!b.header && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;
     CHECK(listed);
 

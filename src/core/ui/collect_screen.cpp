@@ -6,6 +6,7 @@
 
 #include "core/content/registry.h"
 #include "core/model/move_loadout.h"
+#include "core/model/pet.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
@@ -92,6 +93,18 @@ std::vector<FoodRow> buildFoodRows(const ContentRegistry& reg,
     return out;
 }
 
+namespace {
+
+// Where a collection page stands: its scroll, and the score heading it.
+struct CollectionPage {
+    int scrollTop = 0;
+    int have = 0;                    // dishes eaten, or moves known...
+    int total = 0;                   // ...of how many
+    int beat = 0;
+};
+
+// How many rows starting at `top` fit one screen, stopping at the next section for the
+// reason the prose flow does (prose_page.h).
 int foodRowsFitting(const std::vector<FoodRow>& rows, int top) {
     int y = kGridTop;
     int n = 0;
@@ -109,6 +122,7 @@ int foodRowsFitting(const std::vector<FoodRow>& rows, int top) {
     return n;
 }
 
+// The page's window count and which one `scrollTop` opens, for the hint band's "n/m".
 int foodWindowCount(const std::vector<FoodRow>& rows) {
     int n = 0;
     for (int top = 0; top < static_cast<int>(rows.size()); ++n) {
@@ -130,6 +144,8 @@ int foodWindowIndex(const std::vector<FoodRow>& rows, int scrollTop) {
     return n;
 }
 
+// STAT's FOODS page: the windowed grid from buildFoodRows, tasted cells at full ink and
+// the rest dimmed.
 void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
                      const std::vector<FoodRow>& rows, const CollectionPage& page) {
     // The score rides the header band, because it is the one number the page is for and
@@ -198,6 +214,8 @@ void drawFoodsScreen(Framebuffer& fb, const ContentRegistry& reg,
         drawScrollbar(fb, kGridTop, kProseBottom - kGridTop, count, top, shown);
 }
 
+}  // namespace
+
 // --- The MOVES roster -------------------------------------------------------
 
 std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
@@ -255,10 +273,10 @@ std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
     return out;
 }
 
-int moveDexRowsFitting(const std::vector<ProseRow>& rows, int top) {
-    return proseRowsFitting(rows, top, kGridTop);
-}
+namespace {
 
+// STAT's MOVES page: the windowed roster from buildMoveDexRows, headed by its score the
+// way FOODS is.
 void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
                        const CollectionPage& page) {
     char score[16];
@@ -268,5 +286,94 @@ void drawMoveDexScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
     drawStatHintBand(fb, proseWindowIndex(rows, page.scrollTop, kGridTop) + 1,
                      proseWindowCount(rows, kGridTop));
 }
+
+// --- The pages ---------------------------------------------------------------
+//
+// Neither draws the dot pager: the score is what rides their header band.
+
+std::vector<ProseRow> moveDexRows(const StatSources& s) {
+    const CreatureDef* c = s.pet.creature;
+    return buildMoveDexRows(s.reg, s.pet.moves, c ? c->line : nullptr,
+                            c ? c->stage : Stage::BootSector);
+}
+
+// Moves known of moves learnable, off the rows the page draws.
+void moveDexScore(const std::vector<ProseRow>& rows, int& have, int& total) {
+    have = total = 0;
+    for (const ProseRow& r : rows) {
+        if (r.header) continue;
+        ++total;
+        if (r.tag[0]) ++have;   // a gap carries no tag (buildMoveDexRows)
+    }
+}
+
+class MovesPage final : public StatPage {
+public:
+    const char* title() const override { return "MOVES"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager /*pager*/, int scrollTop,
+              int beat) const override {
+        const std::vector<ProseRow> rows = moveDexRows(s);
+        CollectionPage page;
+        page.scrollTop = scrollTop;
+        page.beat = beat;
+        moveDexScore(rows, page.have, page.total);
+        drawMoveDexScreen(fb, rows, page);
+    }
+    int nextScroll(const StatSources& s, int scrollTop) const override {
+        const std::vector<ProseRow> rows = moveDexRows(s);
+        return nextWindowTop(scrollTop, proseRowsFitting(rows, scrollTop, kGridTop),
+                             static_cast<int>(rows.size()));
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        // The two COLLECTION pages read as scores, which is the only thing worth saying
+        // about them in a list: a row that says 41/195 has already told the reader
+        // whether opening it is a plan or a formality.
+        int have = 0, total = 0;
+        moveDexScore(moveDexRows(s), have, total);
+        out.push_back(pageIndexRow(*this, "%d/%d", have, total));
+    }
+};
+
+std::vector<FoodRow> foodRows(const StatSources& s) {
+    return buildFoodRows(s.reg, s.pet.foodsEaten, s.pet.foundFavouriteFood());
+}
+
+int dishTotal(const std::vector<FoodRow>& rows) {
+    int n = 0;
+    for (const FoodRow& r : rows) n += r.section ? r.total : 0;
+    return n;
+}
+
+class FoodsPage final : public StatPage {
+public:
+    const char* title() const override { return "FOODS"; }
+    void draw(Framebuffer& fb, const StatSources& s, StatPager /*pager*/, int scrollTop,
+              int beat) const override {
+        const std::vector<FoodRow> rows = foodRows(s);
+        CollectionPage page;
+        page.scrollTop = scrollTop;
+        page.have = static_cast<int>(s.pet.foodsEaten.size());
+        page.total = dishTotal(rows);
+        page.beat = beat;
+        drawFoodsScreen(fb, s.reg, rows, page);
+    }
+    int nextScroll(const StatSources& s, int scrollTop) const override {
+        const std::vector<FoodRow> rows = foodRows(s);
+        return nextWindowTop(scrollTop, foodRowsFitting(rows, scrollTop),
+                             static_cast<int>(rows.size()));
+    }
+    void indexRows(const StatSources& s, std::vector<StatIndexRow>& out) const override {
+        out.push_back(pageIndexRow(*this, "%d/%d", static_cast<int>(s.pet.foodsEaten.size()),
+                                   dishTotal(foodRows(s))));
+    }
+};
+
+const MovesPage kMoves;
+const FoodsPage kFoods;
+
+}  // namespace
+
+const StatPage& kStatMovesPage = kMoves;
+const StatPage& kStatFoodsPage = kFoods;
 
 }  // namespace mal

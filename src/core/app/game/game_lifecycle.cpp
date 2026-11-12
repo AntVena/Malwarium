@@ -60,7 +60,7 @@ void Game::expireLockout() {
     lockoutItemsContext_ = false;
     nav_ = Nav::Idle;
     detailItem_ = nullptr;
-    resetStatReader();
+    stat_.reset();
     markSaveDirty();
 }
 
@@ -75,7 +75,7 @@ void Game::resolveLockout() {
     nav_ = Nav::Idle;
     listRow_ = 0;
     detailItem_ = nullptr;
-    resetStatReader();
+    stat_.reset();
     markSaveDirty();
 }
 

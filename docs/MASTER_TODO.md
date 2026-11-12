@@ -119,18 +119,6 @@ moves and the first egg's sample mods as its two inputs. | `game_persist.cpp`,
 `game_lifecycle.cpp`'s `layEgg`, `core/model/save.*` | L | A save format change: a migration
 from the flat fields and a round-trip test on an old and a new blob. |
 
-**STAT as a list of pages, over `const Pet&`.** STAT's pages are a `StatPage` enum read by a
-draw switch, a scroll switch (`Game::statScrollSpan`), the index builder, each page's header
-and `dump_frame`'s flags. Each list repeats the roster, and the scroll switch and the draw
-must agree on every flowed page's rows and row top or the page skips or repeats rows. Make
-each page an object that draws itself, reports its own next window and lists its own index
-rows; a `StatReader` screen holds one ordered table of them and the cursor, scroll and index
-state (`statPage_`, `statScroll_`, `statScreen_`, `statIndexRow_`). TIERS, LOADOUT and BUFFS
-are one flowed-page class over a row builder and a row top. `dump_frame` and the tests find a
-page by its title. | `core/ui/stat_screen.*`, `collect_screen.*`, `game_stat.cpp`,
-`tools/dump_frame.cpp`, `test_stat.cpp` | M | Deletes the `StatPage` enum,
-`statScrollSpan` and the `*RowsFitting` exports. |
-
 **The `Operator` record.** Everything the player keeps across pets, tagged PLAYER-LEVEL in
 `save.h` (about 40 fields): Hacker rank and tag, Bits, the Rig Shop account (`rigLevel_`,
 `rigServicesOff_`, `rigServicesAsk_` and the queries over them, `rigFeatureActive`,

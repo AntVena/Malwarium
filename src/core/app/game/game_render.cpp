@@ -28,7 +28,7 @@
 #include "core/ui/maint_screen.h"
 #include "core/ui/modals.h"
 #include "core/ui/mods_screen.h"
-#include "core/ui/stat_screen.h"
+#include "core/ui/stat_pages.h"    // StatSources: what the STAT reader draws from
 #include "core/ui/train_screen.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
@@ -719,7 +719,7 @@ bool Game::captureBadge(char* out, unsigned n) const {
 void Game::drawSubmenu(Framebuffer& fb) const {
     switch (enteredId()) {
         // STAT's own two screens and the six pages behind them are game_stat.cpp's.
-        case SubmenuId::Stat: drawStat(fb); break;
+        case SubmenuId::Stat: stat_.draw(fb, statSources(), beat_); break;
         case SubmenuId::Items: items_.draw(fb, *this, beat_); break;
         case SubmenuId::Maint:
             drawMaintList(fb, pet_.model, listRow_, beat_);

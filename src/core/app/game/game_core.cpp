@@ -9,6 +9,7 @@
 #include "core/render/sprite.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/items_screen.h"
+#include "core/ui/stat_pages.h"    // StatSources: what the STAT index opens over
 
 namespace mal {
 
@@ -763,16 +764,16 @@ bool Game::tickHeldGestures(uint32_t nowMs) {
     }
 
     // STAT's hold-B gesture, the same shape as the ITEMS one above: crossing
-    // kStatIndexHoldMs on any of the reader's six pages opens the INDEX over them, with
-    // the cursor already on the page being read (openStatIndex). A release before it
+    // kStatIndexHoldMs on any of the reader's pages opens the INDEX over them, with the
+    // cursor already on the page being read (StatReader::openIndex). A release before it
     // fires resolves as the ordinary tap instead. Advance this page's window
     // (statIndexReleaseB). The tap and the hold both show a different part of the page,
     // at two ranges.
     if (bHeld_ && nav_ == Nav::Submenu && face_ == Face::Pet &&
-        enteredId() == SubmenuId::Stat && statScreen_ == StatScreen::Page &&
+        enteredId() == SubmenuId::Stat && stat_.screen() == StatScreen::Page &&
         nowMs_ - bDownMs_ >= kStatIndexHoldMs) {
         bHeld_ = false;
-        openStatIndex();
+        stat_.openIndex(statSources());
         lastInputMs_ = nowMs_;
         changed = true;
     }

@@ -1,5 +1,6 @@
-// stat_screen.h (STAT): a paged status viewer (read-only, StatPage) and the INDEX that
-// jumps between the pages.
+// stat_screen.h (STAT): the pet's status pages' draws and row models, and the INDEX
+// that jumps between the pages. The pages themselves are objects (stat_pages.h), and
+// StatReader (core/app/game/stat_reader.h) pages through them in this order:
 //   VITALS    the pet: gauges + care + level/XP + time-to-evolve (the landing)
 //   BOND      the pet's Bond: its XP bonus and a bar per source (PetUpgrades::bondBp)
 //   TIERS     the investment ladder: each combat stat's points, the rungs it
@@ -21,12 +22,9 @@
 #include <vector>
 
 #include "core/content/defs.h"
-#include "core/content/effect_text.h"
-#include "core/model/event_log.h"
 #include "core/model/pet_model.h"
-#include "core/model/pet_upgrades.h"
 #include "core/ui/prose_page.h"
-#include "core/ui/ui_state.h"   // StatPage
+#include "core/ui/stat_pages.h"
 
 namespace mal {
 
@@ -64,11 +62,6 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
                                        const ModSlots& modLoad,
                                        Stage stage, bool isEgg);
 
-// How many rows starting at `top` fit the LOADOUT page: the flow's own count
-// (proseRowsFitting) at this page's row top. Exported because the engine advances the
-// B-scroll by exactly what is on screen.
-int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top);
-
 // STAT TIERS row model: the investment ladder, as the same flowed prose rows
 // LOADOUT and BUFFS use (ProseRow). One `header` row per combat stat carrying that stat's
 // point total, then one row per rung: its name, what it does (straight off the shared
@@ -84,27 +77,6 @@ int loadoutRowsFitting(const std::vector<ProseRow>& rows, int top);
 // dish's off-level grant), the same count the fight resolves tiers from, so the page can
 // never promise a rung the engine will not honour.
 std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]);
-
-// The TIERS page's window, same flow and same reason as loadoutRowsFitting: sixteen rows
-// of authored prose is several screens of it.
-int tierRowsFitting(const std::vector<ProseRow>& rows, int top);
-
-// STAT TIERS: the windowed ladder from buildTierRows, scrolling on B like the
-// two prose pages after it.
-void drawTiersScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                     int beat);
-
-// STAT LOADOUT: the windowed row list from buildLoadoutRows, each row's
-// name + its effect text wrapped WHOLE beneath it, a scrollbar + "B SCROLL" hint
-// band when the list outruns one screen.
-// `scrollTop` is engine-owned: this page has no cursor to drive scrolling off
-// (it's read-only), so STAT's B press advances it instead (game_core.cpp).
-void drawLoadoutScreen(Framebuffer& fb, const std::vector<ProseRow>& rows,
-                       int scrollTop, int beat);
-
-// STAT BOND: the XP bonus Bond adds, then one bar per source filling toward its cap,
-// each with the action that fills it.
-void drawBondScreen(Framebuffer& fb, const PetUpgrades& upgrades);
 
 // STAT VITALS: name + generation + stage indicator, the three vitals
 // gauges (Hunger / Fragmentation / Happiness) with tabular numerics, the creature
@@ -122,6 +94,7 @@ struct StatScreenView {
     bool hasNextEvo = false;
     uint32_t evoRemainMs = 0;
     int beat = 0;                 // the Critical-pulse phase
+    StatPager pager;
 };
 void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v);
 
@@ -129,70 +102,22 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v)
 // questions (what is running out, and what this pet simply has now). The timed buff
 // carries its countdown as the row's suffix.
 //
-// Build the BUFFS page's rows from the armed-buff state Game tracks as plain
-// per-pet flags (game.h): Restore Point's mistake shield, Ambig-USB's forced
-// Trojan divert, Backup Drive's timed combat shield, and the two DeepWeb Dive
-// depth buffs (Deep-Learning Module/Core's win multiplier, a Bell's armed start
-// depth). Each armed flag becomes one row naming the ITEM that armed it:
-// resolved by scanning the registry for the item whose effect matches the raw
-// state, so the display and the item's own 'Pedia/detail text never drift
-// apart even if the item roster is renamed or rebalanced later.
-// branchOverride/evolveSoakFactor/evolveHoldArmed: the USB port. Game::evolveBranchOverride()
-// (None = nothing forced), Game::evolveSoakFactor() (1 = no soak armed) and
-// Game::evolveHoldArmed(). Each resolved to a row the same way the depth buffs are, by
-// finding the item whose effect matches the state. The hold earns its row more than any
-// of them: it is the reason STAT's own EVOLVE readout says MAX, and this page is where
-// that gets explained.
-// depthMultiplier: Game::deepWebDepthMultiplier_ (1 = none armed).
-// startDepthArmed/startDepthUsesBest/startDepthValue: resolved from
-// Game::pendingDeepWebStartDepth_ (armed = != -1; usesBest = the
-// PetArmed::kStartDepthUseBest sentinel, in which case startDepthValue is unused).
-// upgrades: Game::petUpgrades(). The PERMANENT entries, one row per grant an Epic dish
-// has made this pet (core/model/pet_upgrades.h). They arm nothing and never lapse, so
-// they carry no timer and no home-screen icon (the idle status row is for states the
-// operator has to act on); the BUFFS page is where a pet's standing upgrades are
-// readable, which is the only place they belong.
-std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg,
-                                    bool restorePointArmed,
-                                    bool trojanDivertArmed,
-                                    bool backupDriveArmed,
-                                    uint32_t backupDriveRemainMs,
-                                    int depthMultiplier,
-                                    bool startDepthArmed,
-                                    bool startDepthUsesBest,
-                                    int startDepthValue,
-                                    BranchOverride branchOverride,
-                                    int evolveSoakFactor,
-                                    bool evolveHoldArmed,
-                                    const PetUpgrades& upgrades);
-
-// The BUFFS page's own window, same flow and same reason as loadoutRowsFitting:
-// five buffs can be armed at once and their descriptions run to four lines, which
-// is more than one screen holds.
-int buffRowsFitting(const std::vector<ProseRow>& rows, int top);
-
-// STAT BUFFS: the armed-buff list from buildBuffRows, each with its
-// effect text wrapped WHOLE below the name (and a remaining-time readout for the
-// timed ones), scrolling on B like LOADOUT when more are armed than fit. Empty
-// list shows a plain "no active buffs" line.
-void drawBuffsScreen(Framebuffer& fb, const std::vector<ProseRow>& rows, int scrollTop,
-                     int beat);
-
-// STAT SPECIES: the pet's own lore, straight off its CreatureDef row
-// (`hint`/`context`, defs.h). The game owns this copy, same as an item's
-// `effect` text. `line` is the raw line id (e.g. "ransomware"), upper-cased
-// for display; `hint` is the snarky read, `context` the real infosec reference
-// behind the pun, set dim a paragraph below it as an unlabelled footnote. Either
-// may be null (no lore authored). Both are wrapped to as many lines as they need:
-// `context` is measured first and held back, and `hint` takes the room that
-// leaves, so a Daemon's long read is shown whole instead of stopping mid-sentence
-// with the foot of the screen still empty.
-void drawSpeciesScreen(Framebuffer& fb, const CreatureDef& c, int beat);
-
-// STAT AUDIT LOG: the rolling event history newest-first, each
-// a type glyph + terse text. The lifetime/uptime footer lives on the Hacker
-// PROFILE slot, so this page is the log alone and shows the whole ring.
-void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
+// Build the BUFFS page's rows from what is armed on `pet` (PetGrants, PetArmed, UsbPatch)
+// and its standing upgrades. Each armed effect becomes one row naming the ITEM that armed
+// it, resolved by scanning the registry for the item whose effect matches the raw state,
+// so the display and the item's own 'Pedia/detail text never drift apart even if the
+// item roster is renamed or rebalanced later. The USB hold earns its row more than any of
+// them: it is the reason STAT's own EVOLVE readout says MAX, and this page is where that
+// gets explained. `backupRemainMs` is the Backup Drive's time left (0 = not armed), which
+// the pet alone cannot say because its deadline is on the device's uptime clock.
+//
+// The PERMANENT entries are one row per grant an Epic dish has made this pet
+// (core/model/pet_upgrades.h). They arm nothing and never lapse, so they carry no timer
+// and no home-screen icon (the idle status row is for states the operator has to act
+// on); the BUFFS page is where a pet's standing upgrades are readable, which is the only
+// place they belong.
+std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
+                                    uint32_t backupRemainMs);
 
 // --- The INDEX -------------------------------------------------------------
 //
@@ -205,48 +130,6 @@ void drawAuditLog(Framebuffer& fb, const EventLog& log, int beat);
 // answered the question that would otherwise cost the page open plus a scroll, so the
 // index is a status screen the way the LOADOUT hub (mods_screen.h) is: you enter a
 // page when the summary is not enough, not to find out whether it is.
-
-// One index destination: a page, and the row of that page to open it AT.
-//
-// `anchor` is what makes a section reachable in one selection rather than in a page
-// open plus n scroll steps: it is an index into the flowed page's own rows
-// (buildTierRows / buildLoadoutRows), so choosing MAX HEALTH opens TIERS with MAX
-// HEALTH's heading at the top of the window. 0 on the pages that do not flow rows.
-// `sub` rows are the sections INSIDE a page (a stat's rungs, the MOVES half of a
-// loadout) and draw indented under the row that names their page.
-// `label` is borrowed (every producer names a string literal or a row label that
-// outlives the frame), and `value` is formatted, so it is stored.
-struct StatIndexRow {
-    const char* label = "";
-    char value[14] = {0};
-    bool sub = false;
-    StatPage page = StatPage::Vitals;
-    int anchor = 0;
-};
-
-// Build the INDEX from what the pages themselves report, so the two can never
-// disagree: the TIERS rows carry the rungs held, the LOADOUT rows carry the sections,
-// and the counts beside MOVES/MODS are the ones the LOADOUT hub already counts
-// (`movesOn`/`moveSlots`, `modsOn`/`modSlots`). `line` is the raw line id, upper-cased
-// for the SPECIES row; `buffs` and `logEvents` are the two roster sizes.
-//
-// The sub-rows are derived from the header rows of the two flowed pages rather than
-// listed here, which is what keeps an egg's collapsed LOADOUT (one "- NO LOADOUT -"
-// row, no headers) from offering sections it does not have.
-struct StatIndexCounts {
-    int level = 0;
-    int bondBp = 0;                     // bondTotalBp: the BOND row's readout
-    int movesOn = 0, moveSlots = 0;
-    int modsOn = 0, modSlots = 0;
-    int buffs = 0;
-    const char* line = nullptr;
-    int logEvents = 0;
-    int movesKnown = 0, movesLearnable = 0;
-    int foodsEaten = 0, foodsTotal = 0;
-};
-std::vector<StatIndexRow> buildStatIndexRows(const std::vector<ProseRow>& tierRows,
-                                             const std::vector<ProseRow>& loadoutRows,
-                                             const StatIndexCounts& c);
 
 // The INDEX: `rows` from top to bottom, the focused one banded, each with its readout
 // right-aligned. The roster has a ceiling (six pages, four stats, two loadout halves)
