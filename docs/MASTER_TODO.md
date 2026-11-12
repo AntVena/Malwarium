@@ -115,9 +115,21 @@ screen keeps derived rows without a stale cache (it keys them on `Inventory::sta
 `evolveHold_`). `freezePet` in `game_arch.cpp` takes 15 arguments to copy them onto the rack,
 and every new per-pet field needs a hand-written copy in the save, the load, the freeze and the
 thaw. Gather them into `Pet` with `Pet::save`/`Pet::load` against `SaveStoredPet`, so the
-active pet and a stored one use one mapping, and a new egg replaces the `Pet`. Sort the armed
-item buffs (Restore Point shield, Ambig-USB divert, Backup Drive) and the DeepWeb arming into
-pet or run as part of the row. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
+active pet and a stored one use one mapping, and a new egg replaces the `Pet`.
+
+The pet's armed and once-per-life state goes in too, as the record's armed part: the Restore
+Point shield (`mistakeShieldActive_`), the Ambig-USB divert (`forceTrojanDivert_`), the Backup
+Drive deadline (`backupShieldUntilMs_`), the DeepWeb arming (`deepWebDepthMultiplier_`,
+`pendingDeepWebStartDepth_`, `pendingDiveStartBonusPct_`), the Lockout (`lockoutActive_`,
+`lockoutDeadlineMs_`, `lockoutReminded_`), the stacking-food run (`stackingFoodRun_`) and the
+spent once-per-life grants (`yubiConsumed_`, `shieldItemConsumed_`). A new egg clears them
+(`resetToHatch`) but ARCH neither carries nor clears them, so a pet deployed from the rack takes
+over whatever the outgoing pet had armed or spent. The USB port (the evolve fields above) is
+cleared on a swap on purpose (`archDeployStored`), on the reading that the device is plugged
+into the rig; under this standard it is the pet's, and the row keeps the clear.
+Moving them onto `Pet` fixes that, which is this row's one behaviour change: give it a gate
+(arm a shield, store the pet, deploy another, and the new pet is unshielded), and decide per
+field whether the rack keeps it or clears it. | `core/app/game.h`; `game_arch.cpp`; `game_persist.cpp`'s
 `capturePetProgress`/`restorePetProgress` and `captureActivePet`/`restoreActivePet`;
 `game_lifecycle.cpp`'s reset | L | Pure move. Plus a save round-trip test on a v73 and a v74
 blob, active pet and rack. |
@@ -152,8 +164,8 @@ sound: the DEVICE-level fields, kept through a pet's death and a factory reset. 
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The explore walk**: `explore*` (10 fields), the walk's step and event beats, the pending
-  DeepWeb arming if the `Pet` row files it here.
+- **The explore walk**: `explore*` (10 fields), the walk's step and event beats. The DeepWeb
+  arming is the pet's (the `Pet` row); the walk reads it from there.
 - **A fight**: `combat_` and its animation beats, the camo state, the post-encounter result
   (`postEnc*`). `Combat` is already the turn engine; this row
   gives it the screen-side clock and result it lacks.

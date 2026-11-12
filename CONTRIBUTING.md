@@ -94,6 +94,12 @@ to one of the three and goes there instead.
   and changes it through the record's own methods. Storing a pet on the ARCH rack, hatching a
   new egg and a factory reset each move or replace a whole record. `PetModel`, `Inventory`
   and `PetUpgrades` are parts of the Pet record.
+- **A record is grouped by lifetime.** Everything about a pet is on `Pet`, however long it
+  lasts: what it keeps for life (upgrades, Bond, palate), its progress through the current
+  life (level, stage timer, care mistakes), and what is armed on it or happening to it now (an
+  item shield, a DeepWeb arming, a Lockout). Each lifetime is its own part of the record, and
+  the lifetime decides which part, never which record. So a pet's state is never found on the
+  `Operator`, a run or a screen, and anything that moves a pet moves all of it.
 - **A run** is one activity with a start and an end: an explore walk, a fight, the boss
   gauntlet, a tourney, a PvP session, an arcade game. It owns its clocks, its random draws and
   its result, and is destroyed when it ends. A run that must survive a reboot maps itself to
@@ -107,10 +113,10 @@ To place a new field, ask whose it is:
 
 | It belongs to | Put it on |
 |---|---|
-| this creature, for its whole life | `Pet` |
+| this creature, for life or for now | `Pet` (the part for its lifetime) |
 | the player, whichever pet is active | `Operator` |
 | the hardware | `Settings` |
-| one activity, while it runs | that run |
+| one activity, while it runs, and no pet's | that run |
 | one screen, while it is open | that screen |
 
 A record's save mapping lives on the record, so adding a field is one edit to the type and one
