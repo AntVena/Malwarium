@@ -95,7 +95,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // habitat opens the control overlay (A ping / B warp / C stop) instead of the
         // Hacker face. A deliberate tradeoff (the Hacker face is unreachable until you
         // Cancel explore). An egg can't explore, so the hatch chord below is unaffected.
-        else if (exploreActive_ && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
+        else if (walk_.active && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
             nav_ = Nav::ExploreControl;
             exploreCtlRow_ = 0;                     // always opens on the first action
         }

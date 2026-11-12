@@ -96,7 +96,7 @@ void Game::startWifiEvent() {
         wifiOutcome_ = WifiOutcome::FriendlyVisit;
         std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "A FRIEND STOPS BY...");
     }
-    exploreEventBeat_ = 0;   // start the hands-off hold clock
+    walk_.eventBeat = 0;   // start the hands-off hold clock
     fxBeat_ = 0;             // and the dissolve's, which no press restarts
     nav_ = Nav::Wifi;
 }
@@ -105,7 +105,7 @@ void Game::onWifi(const ButtonEvent& ev) {
     // B plays out the rolled outcome; A/C are no-ops: it resolves itself, with no
     // engage/flee choice. Any press restarts the hands-off hold so a watching player
     // isn't rushed.
-    exploreEventBeat_ = 0;
+    walk_.eventBeat = 0;
     if (ev.button == Button::B) resolveWifiOutcome();
 }
 
@@ -115,7 +115,7 @@ void Game::resolveWifiOutcome() {
         case WifiOutcome::OpenCache:
             // Sneak the cache / it's just sitting open: same reward pool as a
             // loot cache ("no new ones").
-            grantLootReward(exploreFlavor_, sizeof(exploreFlavor_));
+            grantLootReward(walk_.flavor, sizeof(walk_.flavor));
             returnToExplore();
             break;
         case WifiOutcome::AwakenedGuardian:
@@ -130,7 +130,7 @@ void Game::resolveWifiOutcome() {
             // v1 substitute for the doc-07 Met-Pets Roster (out of scope):
             // a generic ally buff rather than a named remembered pet.
             allyBuffBattlesLeft_ = kAllyBuffBattles;
-            std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "ALLY BUFF X%d",
+            std::snprintf(walk_.flavor, sizeof(walk_.flavor), "ALLY BUFF X%d",
                          kAllyBuffBattles);
             markSaveDirty();
             returnToExplore();
@@ -158,8 +158,8 @@ void Game::checkHackerRankUp() {
 
 void Game::applyPendingRankUp() {
     if (!rankUpPending_) return;
-    std::strncpy(exploreFlavor_, rankUpFlavor_, sizeof(exploreFlavor_) - 1);
-    exploreFlavor_[sizeof(exploreFlavor_) - 1] = '\0';
+    std::strncpy(walk_.flavor, rankUpFlavor_, sizeof(walk_.flavor) - 1);
+    walk_.flavor[sizeof(walk_.flavor) - 1] = '\0';
     rankUpPending_ = false;
 }
 

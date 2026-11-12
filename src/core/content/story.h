@@ -38,7 +38,7 @@ struct AreaStoryDef {
 // --- The archive index -------------------------------------------------------
 //
 // Addressed by SECTOR: the ladder is 0..kAreaCount-1 and the endless zones sit
-// immediately past it (area_defs.h), so this takes the engine's own `exploreSector_`.
+// immediately past it (area_defs.h), so this takes the engine's own `ExploreWalk::sector`.
 
 int storyZoneCount();
 const AreaStoryDef* storyZone(int sector);

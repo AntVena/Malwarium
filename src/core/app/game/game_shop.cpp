@@ -36,12 +36,12 @@ bool shopCostInRange(const AreaStorefrontDef* front, int i, int k) {
 void Game::startShopEvent() {
     // The current sector's ITEM storefront (BYTE TO EAT / PIER-TO-PEER /
     // MOOR-TO-MOOR). Refill this visit's per-listing stock from the area's OWN rows.
-    shopFront_ = &area(exploreSector_).shop;
+    shopFront_ = &area(walk_.sector).shop;
     shopIsModShop_ = false;
     for (int i = 0; i < shopFront_->listingCount && i < kMaxShopListings; ++i)
         shopStockLeft_[i] = shopFront_->listings[i].stock;
     shopCursor_ = 0;
-    exploreEventBeat_ = 0;   // start the hands-off decision hold
+    walk_.eventBeat = 0;   // start the hands-off decision hold
     nav_ = Nav::Shop;
 }
 
@@ -49,12 +49,12 @@ void Game::startModShopEvent() {
     // The current sector's MOD storefront (CHIP SHOP / PLUNDER PORT / MOOR TO MODS):
     // same shape as startShopEvent, just resolving through the area's modShop and
     // the mod registry (shopIsModShop_ picks that at render/buy time).
-    shopFront_ = &area(exploreSector_).modShop;
+    shopFront_ = &area(walk_.sector).modShop;
     shopIsModShop_ = true;
     for (int i = 0; i < shopFront_->listingCount && i < kMaxShopListings; ++i)
         shopStockLeft_[i] = shopFront_->listings[i].stock;
     shopCursor_ = 0;
-    exploreEventBeat_ = 0;
+    walk_.eventBeat = 0;
     nav_ = Nav::ModShop;
 }
 
@@ -190,7 +190,7 @@ void Game::onShop(const ButtonEvent& ev) {
     // (wraps): on a single-listing storefront it does nothing, so a stray Next
     // press never exits the shop. Any press restarts the hands-off hold so an
     // engaged shopper isn't auto-left.
-    exploreEventBeat_ = 0;
+    walk_.eventBeat = 0;
     if (!shopFront_) return;
     if (ev.button == Button::A) {
         if (shopFront_->listingCount > 0)
@@ -198,7 +198,7 @@ void Game::onShop(const ButtonEvent& ev) {
     } else if (ev.button == Button::B) {
         buyShopItem();
     } else if (ev.button == Button::C) {
-        std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "LEFT THE SHOP");
+        std::snprintf(walk_.flavor, sizeof(walk_.flavor), "LEFT THE SHOP");
         returnToExplore();
     }
 }

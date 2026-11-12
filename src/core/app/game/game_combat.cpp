@@ -218,7 +218,7 @@ void Game::advanceCombatTurn() {
 }
 
 bool Game::exploreFightLive() const {
-    return exploreActive_ && nav_ == Nav::Combat &&
+    return walk_.active && nav_ == Nav::Combat &&
            (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss);
 }
 
@@ -381,9 +381,9 @@ void Game::applyCombatResult() {
     // Are we farming an already-CLEARED sub-area? (re-farm context: drives the
     // diminishing-returns loot decay below, once the Bandwidth shield runs dry.)
     const bool refarm =
-        exploreSector_ >= 0 && exploreSector_ < kExplSectors &&
-        exploreSub_ >= 0 && exploreSub_ < kExplSubAreas &&
-        op_.world.subCleared[exploreSector_][exploreSub_];
+        walk_.sector >= 0 && walk_.sector < kExplSectors &&
+        walk_.sub >= 0 && walk_.sub < kExplSubAreas &&
+        op_.world.subCleared[walk_.sector][walk_.sub];
     // a resolved WILD (live, non-boss) fight fatigues the pet: a per-fight frag
     // (corruption) tax, win or lose (boss rounds never reach here; safe Sim is exempt). A
     // flee (Fled) isn't a fought battle, so it's excluded. Bandwidth is a per-fight
@@ -424,10 +424,10 @@ void Game::applyCombatResult() {
                 // because diffPips (and so the base roll) does not move with depth,
                 // and a deep dive would otherwise pay the same Bits as a fresh one.
                 if (inDeepWebDive())
-                    bits = bits * deepWebDepthBitsPct(exploreStreak_) / 100
+                    bits = bits * deepWebDepthBitsPct(walk_.streak) / 100
                                 * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
                 else if (inDarkWebCrawl())
-                    bits = bits * darkWebDepthBitsPct(exploreStreak_) / 100;
+                    bits = bits * darkWebDepthBitsPct(walk_.streak) / 100;
                 bits += sumEquippedModMagnitude(registry_, pet_.mods,
                             ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
                 op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
@@ -439,7 +439,7 @@ void Game::applyCombatResult() {
                 // An armed bell or Deep-Learning device adds its DIVE PAY on top (zero
                 // outside a dive): the run it buys is shorter and harder, so each win in
                 // it has to be worth more than the shallow ones it skipped.
-                const int winXp = wildWinXp(wildWinXpBase(exploreSector_),
+                const int winXp = wildWinXp(wildWinXpBase(walk_.sector),
                                             encounterEnemy_.level, pet_.level) *
                                   (100 + diveRewardBonusPct()) / 100;
                 addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
@@ -455,7 +455,7 @@ void Game::applyCombatResult() {
                 // already spent at the shield site above, on every fight.
                 int dropScalePct = 100;
                 if (refarm && !bandwidthShielded) {
-                    uint16_t& c = pet_.armed.subRefarmCount[exploreSector_][exploreSub_];
+                    uint16_t& c = pet_.armed.subRefarmCount[walk_.sector][walk_.sub];
                     dropScalePct = refarmDropScalePct(c);
                     if (c < kRefarmCountCap) ++c;
                 }
@@ -467,7 +467,7 @@ void Game::applyCombatResult() {
                     // content/areas/ carries its own wild drop table, including whichever
                     // Merge Hub ingredient it makes farmable here. Drawn by the same
                     // weighted walk every other pool uses.
-                    const AreaLootTable t = areaWildLootTable(exploreSector_);
+                    const AreaLootTable t = areaWildLootTable(walk_.sector);
                     drawCacheItem(t.rows, t.count);
                 }
                 // A separate, independent move-drop roll, mirroring the item roll above.
@@ -476,10 +476,10 @@ void Game::applyCombatResult() {
                 // roll on a win drops one of its permanent endgame mods (Deadman Switch /
                 // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop
                 // is held until the pet is deep enough to field it.
-                if (exploreSector_ == kDeepWebSector || exploreSector_ == kDarkWebSector) {
+                if (walk_.sector == kDeepWebSector || walk_.sector == kDarkWebSector) {
                     rng_ = rng_ * 1664525u + 1013904223u;
                     if (static_cast<int>((rng_ >> 16) % 100) < kModDeepWebDropPct)
-                        if (const char* id = rollAreaModId(exploreSector_))
+                        if (const char* id = rollAreaModId(walk_.sector))
                             grantMod(id);
                 }
                 log_.push(LogEventType::CombatWon, "WON BATTLE");
@@ -543,36 +543,36 @@ void Game::finishCombat() {
                 op_.reveals.malbeastDefeatedMask |= static_cast<uint16_t>(1u << idx);
                 markSaveDirty();
             }
-            if (exploreActive_) {
+            if (walk_.active) {
                 // In the endless DeepWeb Dive an armed Deep-Learning Module/Core advances
                 // the streak (= depth) by more than one step per win, so a
                 // blitzing endgame pet catches back up to a genuine struggle faster.
                 // Every other area always advances by exactly 1.
-                exploreStreak_ += inDeepWebDive() ? pet_.armed.deepWebDepthMultiplier : 1;
+                walk_.streak += inDeepWebDive() ? pet_.armed.deepWebDepthMultiplier : 1;
                 // 10 wins in a row unlock the ARMED sub-area's boss, unless
                 // it's already cleared (re-farming a done sub-area never re-arms it).
-                if (exploreStreak_ >= kExploreStreakToBoss &&
-                    exploreSector_ >= 0 && exploreSector_ < kExplSectors &&
-                    exploreSub_ >= 0 && exploreSub_ < kExplSubAreas &&
-                    !op_.world.subCleared[exploreSector_][exploreSub_])
-                    op_.world.subBossUnlocked[exploreSector_][exploreSub_] = true;
+                if (walk_.streak >= kExploreStreakToBoss &&
+                    walk_.sector >= 0 && walk_.sector < kExplSectors &&
+                    walk_.sub >= 0 && walk_.sub < kExplSubAreas &&
+                    !op_.world.subCleared[walk_.sector][walk_.sub])
+                    op_.world.subBossUnlocked[walk_.sector][walk_.sub] = true;
                 // In the endless DeepWeb Dive the streak IS the DEPTH. Two records get
                 // it: the pet's own (read back by the Checkpoint Bell) and its species'
                 // record, which outlives the pet and feeds the depth achievements
                 // (device best, best per line, and how many species have been taken
                 // deep).
                 if (inDeepWebDive()) {
-                    if (exploreStreak_ > pet_.bestDeepWebDepth) pet_.bestDeepWebDepth = exploreStreak_;
-                    recordSpeciesDive(pet_.creature, exploreStreak_);
+                    if (walk_.streak > pet_.bestDeepWebDepth) pet_.bestDeepWebDepth = walk_.streak;
+                    recordSpeciesDive(pet_.creature, walk_.streak);
                 }
                 // The crawl keeps its own record and pays the thing it exists to pay: a
                 // SIGIL every kDarkWebSigilEveryN wins. It is credited as a spent shake
                 // rather than as a free letter, so the two doors onto the Cant meet in one
                 // ledger and the aerial's captures are never devalued by the zone.
                 if (inDarkWebCrawl()) {
-                    if (exploreStreak_ > pet_.bestDarkWebDepth) pet_.bestDarkWebDepth = exploreStreak_;
-                    if (kDarkWebSigilEveryN > 0 && exploreStreak_ > 0 &&
-                        exploreStreak_ % kDarkWebSigilEveryN == 0 &&
+                    if (walk_.streak > pet_.bestDarkWebDepth) pet_.bestDarkWebDepth = walk_.streak;
+                    if (kDarkWebSigilEveryN > 0 && walk_.streak > 0 &&
+                        walk_.streak % kDarkWebSigilEveryN == 0 &&
                         sigilsKnown() < kCantSigils) {
                         op_.cant.sigils = learnSigil(op_.cant.sigils);
                         log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
@@ -581,11 +581,10 @@ void Game::finishCombat() {
             }
         } else if (combat_.lostOrDrawn()) {
             // A loss ends the run: a draw is one. Same rule as the Stop row: only a DIVE ending spends
-            // the depth multiplier, and inDeepWebDive() is derived from exploreActive_,
+            // the depth multiplier, and inDeepWebDive() is derived from walk_.active,
             // so it has to be read first.
             if (inEndlessZone()) clearDiveDepthBuffs();
-            exploreActive_ = false;
-            exploreStreak_ = 0;
+            walk_.end();
         }
         // Post-encounter status readout: a FOUGHT battle (win or loss, a draw
         // being a loss) parks on the BANDWIDTH/FRAG readout before the habitat. A
@@ -735,19 +734,19 @@ void Game::rollWild() {
     if (inEndlessZone()) {
         // Both endless zones field a tier-3 pair (the crawl its own, kDarkWebWilds) and
         // scale it to the PET's level, ramped by the run's current win-streak
-        // (exploreStreak_) so pushing deeper gradually punches the pet up instead of
+        // (walk_.streak) so pushing deeper gradually punches the pet up instead of
         // sitting at flat parity forever. The dive's curve has a foothold and spends a
         // fraction of a level's stat points; the crawl's has neither.
         encounterEnemy_ = inDarkWebCrawl() ? wildMalbeastOf(kDarkWebWilds, 3, rng_ >> 16)
                                            : wildMalbeast(3, rng_ >> 16);
         rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
         if (inDarkWebCrawl())
-            applyDarkWebScale(encounterEnemy_, pet_.level, exploreStreak_, rng_);
+            applyDarkWebScale(encounterEnemy_, pet_.level, walk_.streak, rng_);
         else
-            applyDeepWebScale(encounterEnemy_, pet_.level, exploreStreak_, rng_);
+            applyDeepWebScale(encounterEnemy_, pet_.level, walk_.streak, rng_);
     } else {
-        encounterEnemy_ = wildMalbeastIn(exploreSector_, rng_ >> 16);   // the area's pair
-        applyWildSubAreaRamp(encounterEnemy_, exploreSector_, exploreSub_);  // depth ramp
+        encounterEnemy_ = wildMalbeastIn(walk_.sector, rng_ >> 16);   // the area's pair
+        applyWildSubAreaRamp(encounterEnemy_, walk_.sector, walk_.sub);  // depth ramp
     }
     // 'Pedia malbeast "seen": the wild roll itself is the
     // glimpse, regardless of what happens next (fight/flee/sinkhole/auto-resolve).
@@ -767,7 +766,7 @@ void Game::startEncounter() {
     // story exists; when it answers true the reader has the screen and calls back into
     // this function once it is done, by which time the chapter is marked read and the
     // gate falls straight through.
-    if (fireStory(exploreSector_, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
+    if (fireStory(walk_.sector, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
     rollWild();
     encounterChoice_ = 0;
     encounterBypass_ = heldEncounterBypass();
@@ -777,7 +776,7 @@ void Game::startEncounter() {
     // held Sinkhole Trap still auto-bypasses for XP (its whole purpose);
     // otherwise the fight auto-starts. The Fight/Flee/Sinkhole intro stands only for a
     // (currently unused) manual encounter path.
-    if (exploreActive_) {
+    if (walk_.active) {
         if (encounterBypass_) resolveSinkhole();
         else startWildCombat(/*forceEnemyFirst=*/false);
         return;
@@ -802,7 +801,7 @@ void Game::resolveFlee() {
     rng_ = rng_ * 1664525u + 1013904223u;
     const bool escaped = static_cast<int>((rng_ >> 16) % 100) < kFleeChancePct;
     if (escaped) {
-        std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "GOT AWAY");
+        std::snprintf(walk_.flavor, sizeof(walk_.flavor), "GOT AWAY");
         playSound(Sound::Fled);
         returnToExplore();
     } else {
@@ -825,7 +824,7 @@ void Game::resolveSinkhole() {
     char used[36];
     std::snprintf(used, sizeof(used), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, used);
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "SINKHOLE +%d XP", xp);
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "SINKHOLE +%d XP", xp);
     // Persist now: the debounced autosave can lose a level-up to a reboot. Every other XP
     // grant (finishCombat, finishBossRound) does the same, and this source skips combat,
     // so it needs its own call.

@@ -92,7 +92,7 @@ const char* Game::guardianName() const {
     // The guardian of wherever the pet is standing. The DeepWeb has no AreaDef and so no
     // guardian of its own; nothing routes a dive here, and the clamp is what makes that
     // a dull fallback rather than a read off the end of the ladder.
-    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    const int a = (walk_.sector >= 0 && walk_.sector < kAreaCount) ? walk_.sector : 0;
     return area(a).guardian.name;
 }
 
@@ -148,16 +148,16 @@ void Game::startShiboleet() {
     // replies, and whatever the guardian says about the answer at the end are all drawn
     // in it, so a letter the pet cannot read is the same letter on every screen. Built
     // for every band and not just the asking one: a refusal is still spoken in the Cant.
-    shibCipher_.build(op_.cant.sigils, cipherSeed(rng_, exploreSector_, exploreSteps_));
+    shibCipher_.build(op_.cant.sigils, cipherSeed(rng_, walk_.sector, walk_.steps));
 
     // The BODY. Reset per meeting and seeded off the same walk position the cipher is,
     // so a guardian re-renders identically while it is on screen and takes a different
     // shape the next time it is met. The cell is the screen's (shiboleet_screen.h): a
     // flock knows how big the box is and nothing about where the box is.
-    guardianFlock_.seed(cipherSeed(rng_, exploreSector_, exploreSteps_) | 1u);
+    guardianFlock_.seed(cipherSeed(rng_, walk_.sector, walk_.steps) | 1u);
     guardianFlock_.reset(kGuardianSwarmMarks, kGuardianCellW, kGuardianCellH);
 
-    exploreEventBeat_ = 0;   // start the hail's hold (game_core.cpp's tick)
+    walk_.eventBeat = 0;   // start the hail's hold (game_core.cpp's tick)
     fxBeat_ = 0;
     nav_ = Nav::ShiboleetHail;
     dirty_ = true;
@@ -202,7 +202,7 @@ void Game::onShiboleetHail(const ButtonEvent& ev) {
     // A REVEAL, like the Wi-Fi event's: B plays it forward, and any press restarts the
     // hold so a player still reading a guardian's greeting is not hurried past it. There
     // is nothing to cancel: the meeting has already happened.
-    exploreEventBeat_ = 0;
+    walk_.eventBeat = 0;
     dirty_ = true;
     if (ev.button == Button::B) openShiboleetWelcome();
 }
@@ -228,7 +228,7 @@ void Game::openShiboleetWelcome() {
             return;
         case ShiboleetWelcome::Riddle:
             shibRow_ = 0;
-            exploreEventBeat_ = 0;   // start the ~15s answer clock (game_core.cpp's tick)
+            walk_.eventBeat = 0;   // start the ~15s answer clock (game_core.cpp's tick)
             fxBeat_ = 0;
             nav_ = Nav::Shiboleet;
             dirty_ = true;
@@ -243,7 +243,7 @@ void Game::onShiboleet(const ButtonEvent& ev) {
     if (shibReply_ != ShiboleetReply::Pending) return;
     if (ev.button == Button::A) {
         shibRow_ = (shibRow_ + 1) % kRiddleReplies;
-        exploreEventBeat_ = 0;   // a player who is reading is not being rushed
+        walk_.eventBeat = 0;   // a player who is reading is not being rushed
         dirty_ = true;
         return;
     }
@@ -328,19 +328,19 @@ bool Game::shiboleetVerdictFights() const {
 void Game::shiboleetOutcomeSpeech(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
-    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    const int a = (walk_.sector >= 0 && walk_.sector < kAreaCount) ? walk_.sector : 0;
     // The SAME cipher as the greeting and the riddle. The verdict stays in the Cant, so
     // it is exactly as legible as the question was.
     shibCipher_.applyTo(guardianOutcomeLine(area(a), shiboleetOutcome()).cant, out, cap);
 }
 
 const char* Game::shiboleetOutcomeSeen() const {
-    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    const int a = (walk_.sector >= 0 && walk_.sector < kAreaCount) ? walk_.sector : 0;
     return guardianOutcomeLine(area(a), shiboleetOutcome()).seen;
 }
 
 void Game::enterShiboleetVerdict() {
-    exploreEventBeat_ = 0;   // start the verdict's hold (game_core.cpp's tick)
+    walk_.eventBeat = 0;   // start the verdict's hold (game_core.cpp's tick)
     fxBeat_ = 0;
     nav_ = Nav::ShiboleetVerdict;
     dirty_ = true;
@@ -349,7 +349,7 @@ void Game::enterShiboleetVerdict() {
 void Game::onShiboleetVerdict(const ButtonEvent& ev) {
     // A REVEAL again: B plays out what the guardian decided, any press restarts the hold.
     // Nothing here asks for input; the reply already decided it.
-    exploreEventBeat_ = 0;
+    walk_.eventBeat = 0;
     dirty_ = true;
     if (ev.button == Button::B) finishShiboleet();
 }
@@ -360,8 +360,8 @@ void Game::finishShiboleet() {
     // consequence on the flavor line, so the encounter is still legible one screen later.
     if (shiboleetVerdictFights()) { startGuardianCombat(); return; }
     if (shibFlavor_[0]) {
-        std::strncpy(exploreFlavor_, shibFlavor_, sizeof(exploreFlavor_) - 1);
-        exploreFlavor_[sizeof(exploreFlavor_) - 1] = '\0';
+        std::strncpy(walk_.flavor, shibFlavor_, sizeof(walk_.flavor) - 1);
+        walk_.flavor[sizeof(walk_.flavor) - 1] = '\0';
     }
     returnToExplore();
 }
@@ -419,7 +419,7 @@ void Game::startGuardianCombat() {
     // any other, and the post-encounter readout, streak and loot rolls work as usual.
     // What makes it a guardian is the enemy (guardianEnemy, combat_factory.cpp), not a
     // second set of combat rules.
-    encounterEnemy_ = guardianEnemy(exploreSector_, exploreSub_);
+    encounterEnemy_ = guardianEnemy(walk_.sector, walk_.sub);
     startWildCombat(/*forceEnemyFirst=*/false);
 }
 
@@ -433,7 +433,7 @@ void Game::shiboleetRiddleText(char* out, int cap) const {
 void Game::shiboleetGreeting(char* out, int cap) const {
     if (!out || cap <= 0) return;
     out[0] = '\0';
-    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    const int a = (walk_.sector >= 0 && walk_.sector < kAreaCount) ? walk_.sector : 0;
     // The SAME cipher the riddle is drawn in, deliberately: a letter the pet cannot read
     // has to be unreadable everywhere on the screen, or the greeting would quietly leak
     // the mapping the riddle is asking it to work without.
@@ -441,7 +441,7 @@ void Game::shiboleetGreeting(char* out, int cap) const {
 }
 
 const char* Game::guardianDemeanour() const {
-    const int a = (exploreSector_ >= 0 && exploreSector_ < kAreaCount) ? exploreSector_ : 0;
+    const int a = (walk_.sector >= 0 && walk_.sector < kAreaCount) ? walk_.sector : 0;
     return guardianLine(area(a), shibLine_).seen;
 }
 

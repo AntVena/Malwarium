@@ -300,21 +300,21 @@ void Game::stepScreenBeat() {
         // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a choice. Hold ~3s
         // so it's readable, then auto-play it (an awakened guardian enters a fight, which
         // then auto-dismisses; the rest resolve to the habitat).
-        if (exploreActive_ && ++exploreEventBeat_ >= kExploreRevealHoldBeats)
+        if (walk_.active && ++walk_.eventBeat >= kExploreRevealHoldBeats)
             resolveWifiOutcome();
         break;
     case Nav::ShiboleetHail:
         // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH, not
         // a decision, so hold ~5s and then let the meeting go on to whatever the fluency
         // roll already decided (openShiboleetWelcome).
-        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetHailHoldBeats)
+        if (walk_.active && ++walk_.eventBeat >= kShiboleetHailHoldBeats)
             openShiboleetWelcome();
         break;
     case Nav::ShiboleetVerdict:
         // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and then
         // played out (finishShiboleet. Its fight, or back to the walk). The consequence is
         // already paid; this hold only decides how long it is read for.
-        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetVerdictHoldBeats)
+        if (walk_.active && ++walk_.eventBeat >= kShiboleetVerdictHoldBeats)
             finishShiboleet();
         break;
     case Nav::Shiboleet:
@@ -322,7 +322,7 @@ void Game::stepScreenBeat() {
         // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
         // restarts the hold (onShiboleet), so a player who is genuinely reading is never
         // timed out mid-sentence.
-        if (exploreActive_ && ++exploreEventBeat_ >= kShiboleetReplyHoldBeats)
+        if (walk_.active && ++walk_.eventBeat >= kShiboleetReplyHoldBeats)
             answerShiboleet(/*answered=*/false);
         break;
     case Nav::Shop:
@@ -330,13 +330,13 @@ void Game::stepScreenBeat() {
         // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so hold
         // ~10s to let a watching player act; if no button is pressed by then, auto-leave
         // and keep exploring.
-        if (exploreActive_ && ++exploreEventBeat_ >= kExploreDecisionHoldBeats) {
-            std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "LEFT THE SHOP");
+        if (walk_.active && ++walk_.eventBeat >= kExploreDecisionHoldBeats) {
+            std::snprintf(walk_.flavor, sizeof(walk_.flavor), "LEFT THE SHOP");
             returnToExplore();
         }
         break;
     case Nav::Idle:
-        if (exploreActive_) stepWalkPacer();
+        if (walk_.active) stepWalkPacer();
         break;
     default:
         break;
@@ -364,7 +364,7 @@ void Game::stepCombatBeat() {
     // press B, so hold it ~3s then auto-dismiss back to the habitat (finishCombat
     // advances the streak / cancels on a loss) or straight into the gauntlet's next round
     // (finishBossRound). Sim fights stay player-driven, with nothing automatic.
-    if (exploreActive_ &&
+    if (walk_.active &&
         (combatCaller_ == CombatCaller::Wild || combatCaller_ == CombatCaller::Boss) &&
         combatBeat_ >= kExploreRevealHoldBeats) {
         finishCombat();
@@ -381,8 +381,8 @@ void Game::stepCombatBeat() {
 // forces a step.
 void Game::stepWalkPacer() {
     if (pet_.model.fragmentation() >= kBattleFatigueAutoPauseFrag) {
-        std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "TOO FRAGMENTED - DEFRAG");
-    } else if (++exploreStepBeat_ >= kWalkAutoStepBeats) {
+        std::snprintf(walk_.flavor, sizeof(walk_.flavor), "TOO FRAGMENTED - DEFRAG");
+    } else if (++walk_.stepBeat >= kWalkAutoStepBeats) {
         doExploreStep();
     }
 }

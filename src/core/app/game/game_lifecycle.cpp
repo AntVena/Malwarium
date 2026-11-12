@@ -34,8 +34,7 @@ void Game::fireLockout() {
     log_.push(LogEventType::CareMistake, "went hungry");
     ++away_.hungry;
     // A crisis modal preempts AND cancels explore-mode: the streak resets.
-    exploreActive_ = false;
-    exploreStreak_ = 0;
+    walk_.end();
     clearDiveDepthBuffs();
     pet_.armed.lockoutActive = true;
     pet_.armed.lockoutDeadlineMs = nowMs_ + kLockoutDurationMs;
@@ -114,8 +113,7 @@ void Game::layEgg(const EggLineDef* line) {
                      op_.petsRaised > 0 ? ModSlots{} : pet_.mods, nowMs_);
     installPet(registry_.creature(line ? line->eggCreatureId : "cryptoshell"));
     lastLevelUpStat_ = -1;
-    exploreActive_ = false;              // an egg can't explore; clear any live mode
-    exploreStreak_ = 0;
+    walk_.end();   // an egg can't explore; clear any live mode
     lastModelMs_ = nowMs_;
     ++op_.petsRaised;                       // lifetime egg count; this pet's generation = its ordinal
     pet_.generation = op_.petsRaised;
@@ -502,8 +500,7 @@ void Game::fireCSF() {
     // The dying state's ageing window expired: terminal. CSF is the top modal
     // priority, so it clears any lower-priority modal state it preempts,
     // including explore-mode.
-    exploreActive_ = false;
-    exploreStreak_ = 0;
+    walk_.end();
     clearDiveDepthBuffs();
     pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;

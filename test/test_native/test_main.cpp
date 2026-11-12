@@ -424,6 +424,7 @@ int g_failures = 0;
     RUN(test_auto_progress_badge_counts_down)     \
     RUN(test_explore_badge_fields_never_collide)  \
     RUN(test_explore_xp_efficiency_reads_the_rung) \
+    RUN(test_explore_walk_starts_whole_and_ends_with_its_streak) \
     RUN(test_expl_nested_row_helpers)             \
     RUN(test_area_boss_gauntlet_composition)      \
     RUN(test_sub_boss_rounds_and_escorts)         \

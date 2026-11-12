@@ -2040,3 +2040,24 @@ void test_steps_achievement_tracks_the_walk() {
     CHECK(g.achValue(*legwork) > 0);
     CHECK(g.achValue(*legwork) == static_cast<int>(g.lifetimeSteps()));
 }
+
+// The walk is a run: arming replaces the last one whole, and ending keeps where it was
+// (EXPL's cursor and the just-ended walk's screens read it) while its streak goes.
+void test_explore_walk_starts_whole_and_ends_with_its_streak() {
+    ExploreWalk w = ExploreWalk::started(2, 3, 7);
+    CHECK(w.active && w.sector == 2 && w.sub == 3 && w.streak == 7);
+    CHECK(w.steps == 0 && w.stepBeat == 0 && w.eventBeat == 0 && w.flavor[0] == '\0');
+    w.steps = 5;
+    std::snprintf(w.flavor, sizeof(w.flavor), "GOT AWAY");
+    w.end();
+    CHECK(!w.active && w.streak == 0);
+    CHECK(w.sector == 2 && w.sub == 3 && w.steps == 5);
+
+    Game g{StartMode::Hatched, "paypup"};
+    g.debugArmExplore(0, 1);
+    g.debugSetExploreStreak(4);
+    CHECK(g.exploreActive() && g.exploreStreak() == 4);
+    g.debugArmExplore(0, 2);
+    CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2);
+    CHECK(g.exploreStreak() == 0 && g.exploreSteps() == 0 && g.exploreFlavor()[0] == '\0');
+}

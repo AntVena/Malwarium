@@ -222,8 +222,7 @@ void Game::finishBossRound() {
             pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
             log_.push(LogEventType::CombatLost, "GAUNTLET FAILED");
         }
-        exploreActive_ = false;
-        exploreStreak_ = 0;
+        walk_.end();
     }
     // A cleared area's two OUTRO chapters, read back to back: what was just beaten,
     // then the place closing behind the pet. They fire AFTER the clear bookkeeping (and

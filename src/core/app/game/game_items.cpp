@@ -436,7 +436,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // just replaces the multiplier. Armed AHEAD of the dive it applies to
                 // (Context::Anytime), so it is cleared only where a DIVE ENDS. The Stop
                 // row and a combat loss, both guarded on inDeepWebDive(), and on a new
-                // pet (game_lifecycle.cpp). Deliberately NOT tied to exploreStreak_'s
+                // pet (game_lifecycle.cpp). Deliberately NOT tied to walk_.streak's
                 // reset: the streak resets at both ends of a run, so following it would
                 // clear the buff on the way INTO the dive it was bought for.
                 pet_.armed.deepWebDepthMultiplier = e.magnitude;

@@ -35,6 +35,7 @@
 #include "core/model/cant.h"                // SigilSet / CantCipher: the guardian's tongue
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
+#include "core/model/explore_walk.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
@@ -391,21 +392,21 @@ public:
     // Which top-level face is showing. A+C flips PET ↔ HACKER at the top level.
     enum class Face { Pet, Hacker };
     Face face() const { return face_; }
-    int exploreSteps() const { return exploreSteps_; }  // steps this explore run
-    bool exploreActive() const { return exploreActive_; }   // explore-mode running
-    int exploreStreak() const { return exploreStreak_; }    // current win-streak
-    int exploreSector() const { return exploreSector_; }    // armed area (or last)
-    int exploreSub() const { return exploreSub_; }          // armed sub-area
+    int exploreSteps() const { return walk_.steps; }      // steps this explore run
+    bool exploreActive() const { return walk_.active; }   // explore-mode running
+    int exploreStreak() const { return walk_.streak; }    // current win-streak
+    int exploreSector() const { return walk_.sector; }    // armed area (or last)
+    int exploreSub() const { return walk_.sub; }          // armed sub-area
     // The line under the walk's badge: what the last resolved event left behind
     // (drawExploreScreen). Empty between events.
-    const char* exploreFlavor() const { return exploreFlavor_; }
+    const char* exploreFlavor() const { return walk_.flavor; }
     bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
     // How many more wins auto-progress needs before it steps off the armed rung:
     // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
     // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
     // meaningless with the mode off, since then nothing steps but the player.
     int winsToNextStage() const {
-        const int left = kExploreStreakToBoss - exploreStreak_;
+        const int left = kExploreStreakToBoss - walk_.streak;
         return left > 0 ? left : 0;
     }
     // What a WILD WIN on the armed rung pays right now, as a percentage of the flat base
@@ -426,13 +427,13 @@ public:
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector: no sub-area/boss, enemies scale to the pet.
     bool inDeepWebDive() const {
-        return exploreActive_ && exploreSector_ == kDeepWebSector;
+        return walk_.active && walk_.sector == kDeepWebSector;
     }
     // ...and the DARKWEB CRAWL, the terminal one. Same idle-background walk on its own
     // virtual sector, but every fight in it runs with the A+C picker scrambled,
     // because the Silk Lode's apex rider stays on (darkweb_crawl/area.h).
     bool inDarkWebCrawl() const {
-        return exploreActive_ && exploreSector_ == kDarkWebSector;
+        return walk_.active && walk_.sector == kDarkWebSector;
     }
     // Either endless zone: the two share the walk, the depth streak and the "a loss ends
     // the run" rule, and differ in what they field and what they take from you. Callers
@@ -458,7 +459,7 @@ public:
     // (battle fatigue climbed frag into the danger band)? The mode stays armed; a
     // defrag drops frag back below the gate and stepping resumes.
     bool exploreAutoPausedByFatigue() const {
-        return exploreActive_ && pet_.model.fragmentation() >= kBattleFatigueAutoPauseFrag;
+        return walk_.active && pet_.model.fragmentation() >= kBattleFatigueAutoPauseFrag;
     }
     // Has sub-area (`area`,`sub`)'s boss been UNLOCKED by a 10-win streak? A per-sub
     // flag, persisted (save v13). The streak is separate and not saved.
@@ -2262,7 +2263,7 @@ public:
         for (int i = 0, n = storyEntryCount(); i < n; ++i)
             markStoryRead(storyEntryAt(i).chapter);
     }
-    void debugSetExploreStreak(int v) { exploreStreak_ = v < 0 ? 0 : v; }
+    void debugSetExploreStreak(int v) { walk_.streak = v < 0 ? 0 : v; }
     // The composed walk-badge label (tests): the only string on that line whose width is
     // content-driven, so the gate that measures the badge's two fields against each other
     // has to read the real one rather than re-derive it and measure its own guess.
@@ -3673,28 +3674,19 @@ private:
     int repartitionRow_ = 0;
     int repartitionFrom_ = -1;
 
-    // Explore-mode, a background mode on the IDLE habitat: exploreActive_ arms it,
-    // exploreSector_ is the armed sector, exploreStreak_ the win-streak, exploreSteps_
-    // a run step counter, exploreStepBeat_ the auto-step pacer. Runtime-only: a reboot
-    // stops it and resets the streak. The wild-encounter intro / event screens are
-    // their own Nav states, past the 3-deep menu budget, and suspend the global
-    // auto-defocus. combatCaller_ tells finishCombat() where to return: the LOADOUT hub
-    // (Sim-Battle) or the explore habitat (a wild encounter), never the carousel.
-    //
+    // The explore walk (core/model/explore_walk.h), a background mode on the IDLE
+    // habitat. The wild-encounter intro and event screens are their own Nav states, past
+    // the 3-deep menu budget, and suspend the global auto-defocus. combatCaller_ tells
+    // finishCombat() where to return: the LOADOUT hub (Sim-Battle) or the explore habitat
+    // (a wild encounter), never the carousel.
+    ExploreWalk walk_;
+
     // Bandwidth is the FARMING resource: spent 1 per re-farm win to keep cleared-sub
     // loot full; when empty the decay curve applies until it regenerates on the
     // heartbeat over real time. Session-level, not per-pet, and not persisted.
     // bandwidthAccumMs_ carries the sub-step regen remainder.
     int bandwidth_ = kBandwidthMax;
     uint32_t bandwidthAccumMs_ = 0;
-    bool exploreActive_ = false;
-    int exploreSector_ = 0;
-    int exploreSub_ = 0;       // armed sub-area within exploreSector_
-    int exploreStreak_ = 0;    // per-sub-area win-streak (volatile, resets on any stop)
-    int exploreSteps_ = 0;
-    int exploreStepBeat_ = 0;  // heartbeats since the last auto-step (paces explore)
-    int exploreEventBeat_ = 0; // heartbeats a full-screen explore event (Wi-Fi/Shop) has
-                               // been held hands-off; auto-continues past its hold
     // THE dissolve clock (FX_ABSORB / FX_SHRED), on the fast kFxAnimMs tick rather than
     // the heartbeat: a sweep is redrawn every frame it is up, and stepping it at 4fps
     // is what made it read as jumping rather than moving. One counter serves all three
@@ -3702,7 +3694,7 @@ private:
     // event, and the beaten rival's combat outro. Each resets it as its own sweep opens
     // and gates its advance (game_core.cpp), so it always means beats-since-THIS-sweep.
     //
-    // Deliberately NOT exploreEventBeat_ / combatBeat_: a press restarts those, and a
+    // Deliberately NOT ExploreWalk::eventBeat / combatBeat_: a press restarts those, and a
     // dissolve animates something already resolved. Replaying it under a player leaning
     // on A would be a second helping that never happened.
     int fxBeat_ = 0;
@@ -3711,10 +3703,6 @@ private:
     // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
     // the fast frames, not a parallel list, so the two cannot drift.
     bool fastCadenceActive_ = false;
-    // Wide enough for the longest line any resolver composes: "<item> - DECRYPT IN
-    // VAULT" with the widest cache name in it. Transient (never saved), so the size is
-    // a rendering question only. Wrapped to two lines on screen (exploreStatusLines).
-    char exploreFlavor_[48] = "";
     CombatEnemy encounterEnemy_;
     int encounterChoice_ = 0;
     // The held item that can bypass this encounter (any row with a preEncounterXp), or

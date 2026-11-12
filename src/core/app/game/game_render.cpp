@@ -176,8 +176,8 @@ SceneId Game::habitatScene() const {
 SceneId Game::stageScene() const {
     // A fight inside an area is staged in that area, so the stage matches the EXPL
     // row the walk started from.
-    if (exploreActive_ && exploreSector_ >= 0 && exploreSector_ < kAreaCount) {
-        const SceneId s = area(exploreSector_).scene;
+    if (walk_.active && walk_.sector >= 0 && walk_.sector < kAreaCount) {
+        const SceneId s = area(walk_.sector).scene;
         if (s != SceneId::None) return s;
     }
     // The dive is not an area and has no AreaDef to name its place on, but it is still
@@ -210,9 +210,9 @@ constexpr int kExploreFlavorLines = 2;
 }  // namespace
 
 int Game::exploreStatusLines() const {
-    if (!exploreActive_) return 0;
-    if (!exploreFlavor_[0]) return 2;             // the badge + the Bandwidth readout
-    const int wrapped = textWrapLines(exploreFlavor_, kExploreStatusW);
+    if (!walk_.active) return 0;
+    if (!walk_.flavor[0]) return 2;             // the badge + the Bandwidth readout
+    const int wrapped = textWrapLines(walk_.flavor, kExploreStatusW);
     return 2 + (wrapped < 1 ? 1
                             : (wrapped > kExploreFlavorLines ? kExploreFlavorLines
                                                              : wrapped));
@@ -233,7 +233,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     drawFeedingMail(fb);
     // The squat writes on the caption row, so only while that row is free: no menu
     // summoned, no nudge, and no explore readout hanging off the corner beside it.
-    if (cursor < 0 && tipSeen(Tip::MenuOpened) && !exploreActive_) drawSquatLogin(fb);
+    if (cursor < 0 && tipSeen(Tip::MenuOpened) && !walk_.active) drawSquatLogin(fb);
 
     drawHabitatPrompt(fb, pet);
     drawFailingBanner(fb);
@@ -249,7 +249,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
 
     drawHabitatStatusColumn(fb);
     drawAuditBadge(fb);
-    if (exploreActive_) drawExploreStatus(fb);
+    if (walk_.active) drawExploreStatus(fb);
 
     // The achievement announcement, over everything else in the living area (it is
     // transient, and the pet is still there underneath when it clears).
@@ -411,7 +411,7 @@ void Game::drawHabitatStatusColumn(Framebuffer& fb) const {
     // all of them hang off it. Explore wins the corner outright because its lines
     // are the live readout; the rest slide below the block it occupies.
     int statusY = kLivingTop + 4;
-    if (exploreActive_) statusY += exploreStatusLines() * (kFontH + 2) + 2;
+    if (walk_.active) statusY += exploreStatusLines() * (kFontH + 2) + 2;
 
     // SD-present flash: clear of the hunger alert (top-right) and the carousel
     // tracks (top/bottom bands). A distinct icon shape + slot so it reads in
@@ -492,9 +492,9 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
     // sub-boss shows BOSS READY; otherwise WINS n/10 progress.
     ExploreBadgeMode mode;
     if (inDeepWebDive()) mode = ExploreBadgeMode::DeepDive;
-    else if (subCleared(exploreSector_, exploreSub_))
+    else if (subCleared(walk_.sector, walk_.sub))
         mode = autoProgress_ ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
-    else if (subBossUnlocked(exploreSector_, exploreSub_)) mode = ExploreBadgeMode::BossReady;
+    else if (subBossUnlocked(walk_.sector, walk_.sub)) mode = ExploreBadgeMode::BossReady;
     else mode = ExploreBadgeMode::Wins;
     char label[20];
     exploreBadgeLabel(label, sizeof(label));
@@ -504,7 +504,7 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
     // streak instead: the pool is spelled out on the status line right below, and
     // the question a hands-off run leaves open is when it moves on, not what is left
     // in a shield the operator is not spending by hand.
-    int badgeCount = exploreStreak_, badgeMax = kExploreStreakToBoss;
+    int badgeCount = walk_.streak, badgeMax = kExploreStreakToBoss;
     if (mode == ExploreBadgeMode::Farming) {
         badgeCount = bandwidth_; badgeMax = bandwidthMax();
     }
@@ -528,9 +528,9 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
         // Wrapped, not clipped: a flavor line names the item it found, and the
         // longest of those is wider than the column. Plain text would cut the tail
         // with no ellipsis, and the tail says where the reward went.
-        if (exploreFlavor_[0])
+        if (walk_.flavor[0])
             drawTextWrapped(fb, kExploreStatusX, bwLineY + kFontH + 2,
-                            kExploreStatusW, exploreFlavor_, palColor(Pal::INK_DIM),
+                            kExploreStatusW, walk_.flavor, palColor(Pal::INK_DIM),
                             kFontH + 2, kExploreFlavorLines);
     }
 }
@@ -543,7 +543,7 @@ void Game::drawHabitatCarousel(Framebuffer& fb, int cursor) const {
     for (int i = 0; i < kCarouselSlots; ++i) {
         const SubmenuId id = carouselSlots()[i].id;
         if (slotLocked(id)) marks.locked |= (1u << i);
-        if (id == SubmenuId::Expl && autoProgress_ && exploreActive_)
+        if (id == SubmenuId::Expl && autoProgress_ && walk_.active)
             marks.spin |= (1u << i);
     }
     // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside
@@ -787,7 +787,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             v.subBossUnlocked = boss;
             v.cat = explCat_;
             v.navArea = explNavArea_;
-            v.streakWins = exploreStreak_;
+            v.streakWins = walk_.streak;
             v.winsToBoss = kExploreStreakToBoss;
             // Only the rows this level draws are counted (explRowInLevel), so STORY's
             // zone list pays for the area pools, an opened area pays for its own five
@@ -1127,7 +1127,7 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
             v.absorb = WifiAbsorb::Untouched; v.banner = "HOME TURF"; break;
         case NetDiscovery::None: break;
     }
-    v.sectorName = explSectorName(exploreSector_);
+    v.sectorName = explSectorName(walk_.sector);
     v.outcomeLine = wifiFlavor_;
     v.discoveryLine = netDiscoveryFlavor_;
     v.pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
@@ -1152,7 +1152,7 @@ void Game::drawShiboleetScreen(Framebuffer& fb) const {
     r.riddle = riddle;
     r.replies = rows;
     r.cursor = shibRow_;
-    r.holdFrac = static_cast<float>(exploreEventBeat_) / kShiboleetReplyHoldBeats;
+    r.holdFrac = static_cast<float>(walk_.eventBeat) / kShiboleetReplyHoldBeats;
     GuardianView g;
     g.name = guardianName();
     g.demeanour = guardianDemeanour();

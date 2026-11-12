@@ -75,8 +75,8 @@ bool Game::explRowLandable(int row) const {
     bool cleared[kSubFlags], boss[kSubFlags];
     flattenSubFlags(cleared, boss);
     const ExplRowState st = explRowState(row, op_.world.sectorCleared, cleared, boss,
-                                         exploreActive_ ? exploreSector_ : -1,
-                                         exploreActive_ ? exploreSub_ : -1,
+                                         walk_.active ? walk_.sector : -1,
+                                         walk_.active ? walk_.sub : -1,
                                          tourneyRunning());
     // An AREA HEADER at STORY's own level is the one row that is landable while not
     // selectable: you enter an open area whether or not its gauntlet is standing yet,
@@ -98,8 +98,8 @@ bool Game::explCatLandable(int catRow) const {
 ExplListView Game::explView() const {
     ExplListView v;
     v.areaCleared = op_.world.sectorCleared;
-    v.exploringSector = exploreActive_ ? exploreSector_ : -1;
-    v.exploringSub = exploreActive_ ? exploreSub_ : -1;
+    v.exploringSector = walk_.active ? walk_.sector : -1;
+    v.exploringSub = walk_.active ? walk_.sub : -1;
     v.bestDeepWebDepth = pet_.bestDeepWebDepth;
     v.bestDarkWebDepth = pet_.bestDarkWebDepth;
     v.tourneyRunning = tourneyRunning();
@@ -122,16 +122,16 @@ void Game::openExplList() {
     // RESUMES where the pet is, at the level it is standing on: a ladder area drills
     // straight to the armed sub-area, an endless zone parks on its own row. So the
     // ACTIVITY PICKER adds no press to returning to the walk you are on.
-    if (exploreActive_) {
-        if (exploreSector_ >= 0 && exploreSector_ < kExplSectors) {
+    if (walk_.active) {
+        if (walk_.sector >= 0 && walk_.sector < kExplSectors) {
             explCat_ = ExplCat::Story;
-            explNavArea_ = exploreSector_;
-            listRow_ = areaHeaderRow(exploreSector_) + 1 + exploreSub_;
+            explNavArea_ = walk_.sector;
+            listRow_ = areaHeaderRow(walk_.sector) + 1 + walk_.sub;
             if (explRowLandable(listRow_)) return;
         } else if (inEndlessZone()) {
             explCat_ = ExplCat::Endless;
             explNavArea_ = -1;
-            listRow_ = exploreSector_ == kDeepWebSector ? 0 : 1;
+            listRow_ = walk_.sector == kDeepWebSector ? 0 : 1;
             if (explRowLandable(listRow_)) return;
         }
     }
@@ -178,8 +178,8 @@ void Game::onExplList(const ButtonEvent& ev) {
     if (explCat_ == ExplCat::None) { onExplCategories(ev); return; }
     bool cleared[kSubFlags], boss[kSubFlags];
     flattenSubFlags(cleared, boss);
-    const int exSec = exploreActive_ ? exploreSector_ : -1;
-    const int exSub = exploreActive_ ? exploreSub_ : -1;
+    const int exSec = walk_.active ? walk_.sector : -1;
+    const int exSub = walk_.active ? walk_.sub : -1;
     const int n = explRowCount();
     auto stateOf = [&](int r) {
         return explRowState(r, op_.world.sectorCleared, cleared, boss, exSec, exSub,
@@ -241,13 +241,7 @@ void Game::startExplore(int sector, int sub) {
     // habitat. There is no walk screen. The badge appears; the tick auto-steps from
     // Idle. The streak resets on a fresh arm (per-sub-area); durable sub-area
     // clear/boss-unlock persist.
-    exploreActive_ = true;
-    exploreSector_ = sector;
-    exploreSub_ = sub;
-    exploreStreak_ = 0;
-    exploreSteps_ = 0;
-    exploreStepBeat_ = 0;
-    exploreFlavor_[0] = '\0';
+    walk_ = ExploreWalk::started(sector, sub, 0);
     // A fresh walk starts with a clean slate for the empty-queue Happiness-penalty
     // throttle too: a drought from an earlier walk must not suppress this walk's
     // first miss (see game.h's comment on emptyQueueStreak_).
@@ -263,10 +257,6 @@ void Game::startDeepWebDive() {
     // doExploreStep()/startEncounter() special-case it to scale enemies to the pet and
     // never reach the (nonexistent) boss ladder. A loss ends the dive like any wild.
     if (!deepWebUnlocked()) return;
-    exploreActive_ = true;
-    exploreSector_ = kDeepWebSector;
-    exploreSub_ = 0;
-    exploreStreak_ = 0;
     // NB: pet_.armed.deepWebDepthMultiplier is deliberately NOT reset here. A Deep-Learning
     // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) so it applies
     // to this dive. Clearing it on the way in would waste it. It is cleared where a
@@ -277,17 +267,16 @@ void Game::startDeepWebDive() {
     // The bell's DIVE PAY half goes live with it, for this dive only; a dive started
     // with no bell armed pays no start bonus, whatever an earlier dive carried.
     pet_.armed.diveStartBonusPct = 0;
+    int depth = 0;
     if (pet_.armed.deepWebStartDepth != -1) {
-        exploreStreak_ = pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest
-                              ? pet_.bestDeepWebDepth
-                              : pet_.armed.deepWebStartDepth;
+        depth = pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest
+                    ? pet_.bestDeepWebDepth
+                    : pet_.armed.deepWebStartDepth;
         pet_.armed.deepWebStartDepth = -1;
         pet_.armed.diveStartBonusPct = pet_.armed.pendingDiveStartBonusPct;
         pet_.armed.pendingDiveStartBonusPct = 0;
     }
-    exploreSteps_ = 0;
-    exploreStepBeat_ = 0;
-    exploreFlavor_[0] = '\0';
+    walk_ = ExploreWalk::started(kDeepWebSector, 0, depth);
     emptyQueueStreak_ = 0;  // see startExplore's comment above
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
@@ -303,13 +292,7 @@ void Game::startDarkWebCrawl() {
     // What it does NOT share is the dive's start-depth items: a Bell buys a head start in
     // the farm, and the end of the map is not a thing you skip the front of.
     if (!darkWebUnlocked()) return;
-    exploreActive_ = true;
-    exploreSector_ = kDarkWebSector;
-    exploreSub_ = 0;
-    exploreStreak_ = 0;
-    exploreSteps_ = 0;
-    exploreStepBeat_ = 0;
-    exploreFlavor_[0] = '\0';
+    walk_ = ExploreWalk::started(kDarkWebSector, 0, 0);
     emptyQueueStreak_ = 0;
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
@@ -324,12 +307,12 @@ void Game::exploreBadgeLabel(char* out, size_t n) const {
     // "CITRUS 3": sized to clear the right-anchored status field, and measured against it
     // by a native gate. A row that names none falls back to the first word of its display
     // name, which fits only by luck; the same gate is what says whether it did.
-    const char* badge = explSectorBadge(exploreSector_);
+    const char* badge = explSectorBadge(walk_.sector);
     char word[12];
     size_t w = 0;
     for (; badge[w] && badge[w] != ' ' && w < sizeof(word) - 1; ++w) word[w] = badge[w];
     word[w] = '\0';
-    std::snprintf(out, n, "%s %d", word, exploreSub_ + 1);
+    std::snprintf(out, n, "%s %d", word, walk_.sub + 1);
 }
 
 void Game::doExploreStep() {
@@ -337,10 +320,10 @@ void Game::doExploreStep() {
     // from the sector's weighted table. Wild encounters DOMINATE (the streak
     // needs wins); loot / Wi-Fi / shop / cache / key are the breather + reward beats.
     // The boss is NOT on this table: it's a manual trigger. No "quiet" rolls.
-    exploreStepBeat_ = 0;
-    ++exploreSteps_;
+    walk_.stepBeat = 0;
+    ++walk_.steps;
     // The lifetime tally the STEPS ladder is measured against (AchSeries::StepsWalked)
-    // and the PROFILE row reads. exploreSteps_ is this RUN and resets with every walk;
+    // and the PROFILE row reads. walk_.steps is this RUN and resets with every walk;
     // this one outlives the pet, so it is the save's counter rather than the screen's.
     // Dirtying per step is safe: the debounce is measured from the last WRITE, not the
     // last change, so a long walk still lands one write every kSaveDebounceMs rather
@@ -364,7 +347,7 @@ void Game::returnToExplore() {
     // running. Re-arm the step pacer so the next auto-step waits a full beat,
     // and surface any pending Hacker Rank-up on the flavor line.
     nav_ = Nav::Idle;
-    exploreStepBeat_ = 0;
+    walk_.stepBeat = 0;
     applyPendingRankUp();
     autoArmBackupShield(kRigRowContinuousBackup);   // Rig Shop h: mid-run re-arm
     maybeAutoDefrag();                              // Rig Shop i: hands-off upkeep
@@ -376,11 +359,11 @@ void Game::autoProgressStep() {
     // condition decides when a step happens: the armed sub-area has to have met its win
     // target. Below that, nothing (the player is still grinding it), which is why an
     // unrelated hand-back like a resolved shop is harmless.
-    if (!autoProgress_ || !exploreActive_) return;
+    if (!autoProgress_ || !walk_.active) return;
     if (inEndlessZone()) return;                    // endless: depth IS the progress
-    const int a = exploreSector_, s = exploreSub_;
+    const int a = walk_.sector, s = walk_.sub;
     if (a < 0 || a >= kExplSectors || s < 0 || s >= kExplSubAreas) return;
-    if (exploreStreak_ < kExploreStreakToBoss) return;
+    if (walk_.streak < kExploreStreakToBoss) return;
     // A boss unlocked by that streak and still standing is the step. A sub-area that's
     // already cleared never unlocks one again (game_combat.cpp), so on a re-run of a
     // done area this falls through to the positional advance below, so the loop keeps
@@ -426,7 +409,7 @@ int Game::exploreXpEfficiencyPct() const {
     // that pays a multiple of the flat one reads as that multiple instead of flattening
     // back to 100% against itself.
     const int base = kWildWinXpReward;
-    const int zoneBase = wildWinXpBase(exploreSector_);
+    const int zoneBase = wildWinXpBase(walk_.sector);
     // The rung's enemy level. A ladder sub-area's is its GLOBAL depth rung
     // (applyWildSubAreaRamp); an endless zone's is the pet's own plus the logarithmic
     // depth bonus the streak has earned (applyDeepWebScale / applyDarkWebScale), which is
@@ -435,24 +418,24 @@ int Game::exploreXpEfficiencyPct() const {
     // Keyed off the armed sector's IDENTITY rather than inDeepWebDive(), so a walk that
     // has since been stopped still reads as the zone it was aimed at instead of decoding
     // the dive's one-past-the-ladder index as a ladder rung.
-    if (exploreSector_ == kDeepWebSector) {
+    if (walk_.sector == kDeepWebSector) {
         // The dive's FOOTHOLD is part of its curve: inside it every dive is the same
         // parity fight, so the readout has to wait it out exactly as applyDeepWebScale
         // does or it advertises a ramp the walk is not paying yet.
-        const int rampDepth = exploreStreak_ > kDeepWebRampFreeDepth
-                            ? exploreStreak_ - kDeepWebRampFreeDepth : 0;
+        const int rampDepth = walk_.streak > kDeepWebRampFreeDepth
+                            ? walk_.streak - kDeepWebRampFreeDepth : 0;
         enemyLevel = pet_.level + kDeepWebEnemyLevelOffset +
                      kDeepWebDepthLevelPerLog2 * floorLog2(rampDepth + 1);
-    } else if (exploreSector_ == kDarkWebSector) {
+    } else if (walk_.sector == kDarkWebSector) {
         // ...and the crawl's has no foothold to wait out (applyDarkWebScale), so its
         // streak rides the curve from the first win.
         enemyLevel = pet_.level + kDarkWebEnemyLevelOffset +
-                     kDarkWebDepthLevelPerLog2 * floorLog2(exploreStreak_ + 1);
+                     kDarkWebDepthLevelPerLog2 * floorLog2(walk_.streak + 1);
     } else {
-        const int a = exploreSector_ < 0 ? 0
-                    : exploreSector_ >= kExplSectors ? kExplSectors - 1 : exploreSector_;
-        const int sub = exploreSub_ < 0 ? 0
-                      : exploreSub_ >= kExplSubAreas ? kExplSubAreas - 1 : exploreSub_;
+        const int a = walk_.sector < 0 ? 0
+                    : walk_.sector >= kExplSectors ? kExplSectors - 1 : walk_.sector;
+        const int sub = walk_.sub < 0 ? 0
+                      : walk_.sub >= kExplSubAreas ? kExplSubAreas - 1 : walk_.sub;
         enemyLevel = a * kExplSubAreas + sub;
     }
     const int xp = scaleXp(applyCombatXpBonus(wildWinXp(zoneBase, enemyLevel, pet_.level)));
@@ -516,13 +499,12 @@ void Game::onExploreControl(const ButtonEvent& ev) {
             setExploreSound(!settings_.exploreSound);      // a mode too: the overlay stays open
             break;
         case ExploreControlRow::Stop:
-            // Read the dive flag BEFORE clearing exploreActive_: inDeepWebDive() is
+            // Read the dive flag BEFORE clearing walk_.active: inDeepWebDive() is
             // derived from it. Only a DIVE ending spends the depth multiplier; stopping
             // a sector walk leaves an armed Module/Core armed for the dive it was for.
             if (inDeepWebDive()) clearDiveDepthBuffs();
-            exploreActive_ = false;
-            exploreStreak_ = 0;
-            exploreFlavor_[0] = '\0';
+            walk_.end();
+            walk_.flavor[0] = '\0';
             nav_ = Nav::Idle;
             markSaveDirty();
             break;
@@ -582,14 +564,14 @@ void Game::resolveSafeRestEvent(const ItemDef& d) {
     // near clean doesn't get told it shed more than it had.
     const int before = pet_.model.fragmentation();
     applyItemEffects(d);
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_),
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor),
                  "SAFE MODE - RESTED (-%d FRAG)", before - pet_.model.fragmentation());
     markSaveDirty();
     returnToExplore();
 }
 
 void Game::debugSetExploreFlavor(const char* s) {
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s", s ? s : "");
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s", s ? s : "");
     dirty_ = true;
 }
 
@@ -623,7 +605,7 @@ void Game::resolveCacheEvent() {
     // ITEMS refuses one with this exact sentence (itemUsable's "OPEN IN VAULT (A+C)").
     // The two say the same words so the walk never sends a player to a screen that
     // will turn them away.
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s - OPEN IN VAULT (A+C)",
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s - OPEN IN VAULT (A+C)",
                  d->displayName);
     markSaveDirty();
 }
@@ -643,7 +625,7 @@ void Game::resolveKeyItemEvent() {
     char buf[32];
     std::snprintf(buf, sizeof(buf), "FOUND %s", d.displayName);
     log_.push(LogEventType::ItemGained, buf);
-    std::snprintf(exploreFlavor_, sizeof(exploreFlavor_), "%s - WARP KEY (A+C)",
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s - WARP KEY (A+C)",
                   d.displayName);
     markSaveDirty();
 }
@@ -651,7 +633,7 @@ void Game::resolveKeyItemEvent() {
 void Game::resolveLootEvent() {
     // A loot-cache event resolves IN PLACE (no sub-activity), then
     // explore-mode keeps stepping.
-    grantLootReward(exploreFlavor_, sizeof(exploreFlavor_));
+    grantLootReward(walk_.flavor, sizeof(walk_.flavor));
 }
 
 void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
