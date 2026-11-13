@@ -77,12 +77,7 @@ void Game::captureRadio(SaveData& d) const {
 void Game::captureOperator(SaveData& d) const { d.op = op_.saved(registry_, nowMs_); }
 
 void Game::captureTourneyRun(SaveData& d) const {
-    // v53: ROCK THE DOCK's run in play. Four bytes plus a bitmask, because every entrant is
-    // derived from the seed (core/model/tournament.h) rather than written down.
-    d.tourneySeed = tourneySeed_;
-    d.tourneyAlive = tourneyAlive_;
-    d.tourneyRound = tourneyRound_;
-    d.tourneyPhase = static_cast<uint8_t>(tourneyPhase_);
+    d.tourney = tourney_ ? tourney_->saved() : SaveTourney{};
 }
 
 void Game::captureActivePet(SaveData& d) const {
@@ -170,19 +165,7 @@ void Game::restoreOperator(const SaveData& d) {
     bandwidth_ = bandwidthMax();
 }
 
-// v53: the arena run. A blob written before the arena existed reads back a zero seed,
-// which IS "no bracket in play"; a phase byte naming a value this build does not have
-// falls back to Ready, so a stale save resumes a fightable run rather than a screen
-// stuck on a verdict it cannot dismiss.
-void Game::restoreTourneyRun(const SaveData& d) {
-    tourneySeed_ = d.tourneySeed;
-    tourneyAlive_ = d.tourneyAlive;
-    tourneyRound_ = d.tourneyRound < kTourneyRounds
-                        ? d.tourneyRound : static_cast<uint8_t>(kTourneyRounds - 1);
-    tourneyPhase_ = d.tourneyPhase <= static_cast<uint8_t>(TourneyPhase::Champion)
-                        ? static_cast<TourneyPhase>(d.tourneyPhase)
-                        : TourneyPhase::Ready;
-}
+void Game::restoreTourneyRun(const SaveData& d) { tourney_ = TourneyRun::loaded(d.tourney); }
 
 // The active pet, through the same mapping as a rack Deploy, then what the save keeps of
 // its armed part. Runs after restoreOperator, which replaces the raised-species tally

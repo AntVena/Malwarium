@@ -527,10 +527,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v53: ROCK THE DOCK's run in play. The seed the whole bracket is derived from, plus
     // the three bytes of state that seed cannot express (who is still standing, which
     // round, and the verdict of a finished run the operator has yet to dismiss).
-    w.u32(d.tourneySeed);
-    w.u8(d.tourneyAlive);
-    w.u8(d.tourneyRound);
-    w.u8(d.tourneyPhase);
+    w.u32(d.tourney.seed);
+    w.u8(d.tourney.alive);
+    w.u8(d.tourney.round);
+    w.u8(d.tourney.phase);
 
     // v55: the arcade's per-cabinet high score, in the same order as the v47 arcadeIds
     // run above. Its own tail rather than a fourth column up there, so a pre-v55 build
@@ -1196,10 +1196,10 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, meaning
     // no bracket in play. No migration is needed.
     if (version >= 53) {
-        d.tourneySeed = r.u32();
-        d.tourneyAlive = r.u8();
-        d.tourneyRound = r.u8();
-        d.tourneyPhase = r.u8();
+        d.tourney.seed = r.u32();
+        d.tourney.alive = r.u8();
+        d.tourney.round = r.u8();
+        d.tourney.phase = r.u8();
     }
 
     // v55 tail: the per-cabinet high score, positionally matched to the v47 arcadeIds

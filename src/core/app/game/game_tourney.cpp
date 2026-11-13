@@ -61,27 +61,25 @@ inline int tourneyReaderTop(Game::TourneyView v) {
 }
 }  // namespace
 
-int Game::tourneySlot() const { return tourneyPlayerSlot(tourneySeed_); }
+int Game::tourneySlot() const { return tourneyPlayerSlot(tourneySeed()); }
 
-int Game::tourneyOpponentSlot() const {
-    if (!tourneyRunning() || tourneyPhase_ != TourneyPhase::Ready) return -1;
-    if (tourneyRound_ >= kTourneyRounds) return -1;
-    return mal::tourneyOpponentSlot(tourneyAlive_, tourneySlot(), tourneyRound_);
+int Game::tourneyOpponentSlot() const { return tourney_ ? tourney_->opponentSlot() : -1; }
+
+const TourneyFighter& Game::tourneyOpponent() const {
+    static const TourneyFighter kNone{};
+    return tourney_ ? tourney_->opponent : kNone;
 }
 
 void Game::openTourney() {
     // A run in play RESUMES exactly as it stood; otherwise draw a fresh bracket.
     // Only the seed is rolled; the eight entrants follow from it.
-    if (!tourneyRunning()) {
+    if (!tourney_) {
         rng_ = rng_ * 1664525u + 1013904223u;
-        tourneySeed_ = rng_ ? rng_ : 1u;
-        tourneyAlive_ = static_cast<uint8_t>((1u << kTourneySlots) - 1);
-        tourneyRound_ = 0;
-        tourneyPhase_ = TourneyPhase::Ready;
+        tourney_ = TourneyRun::drawn(rng_);
         // Resolve the first round's other pairings now, so the field the operator reads
         // before their own opening match is already the true one.
-        tourneyResolveRound(registry_, tourneySeed_, tourneyRound_, tourneySlot(),
-                            tourneyAlive_);
+        tourneyResolveRound(registry_, tourney_->seed, tourney_->round,
+                            tourney_->playerSlot(), tourney_->alive);
         char entered[28];
         std::snprintf(entered, sizeof(entered), "ENTERED %s", kTourneyName);
         log_.push(LogEventType::CombatWon, entered);
@@ -91,50 +89,42 @@ void Game::openTourney() {
     tourneyView_ = TourneyView::Bracket;
     tourneyScroll_ = 0;
     tourneyScoutedSlot_ = -1;
-    // The opponent is rebuilt on every entry rather than persisted: it is derivable,
+    // The opponent is reseated on every entry rather than persisted: it is derivable,
     // and a resumed run must not be able to disagree with the bracket it came back to.
-    if (const int opp = tourneyOpponentSlot(); opp >= 0)
-        tourneyOpponent_ = tourneyEntrant(registry_, tourneySeed_, opp);
-    else
-        tourneyOpponent_ = TourneyFighter{};
+    tourney_->seatOpponent(registry_);
     nav_ = Nav::Tourney;
     dirty_ = true;
 }
 
 void Game::abandonTourney() {
-    tourneySeed_ = 0;
-    tourneyAlive_ = 0;
-    tourneyRound_ = 0;
-    tourneyPhase_ = TourneyPhase::Ready;
-    tourneyOpponent_ = TourneyFighter{};
+    tourney_.reset();
     tourneyView_ = TourneyView::Bracket;
     tourneyScoutedSlot_ = -1;
     markSaveDirty();
 }
 
 void Game::startTourneyMatch() {
-    if (!pet_.creature || tourneyPhase_ != TourneyPhase::Ready) return;
-    const int opp = tourneyOpponentSlot();
-    if (opp < 0) return;
+    if (!pet_.creature || !tourney_ || tourney_->opponentSlot() < 0) return;
+    const TourneyRun& run = *tourney_;
     Combatant p = buildPlayerCombatant();
     // With no stakes there is no death to prevent, so a Rare item's shield is not
     // spent here. PRACTISE does the same.
     p.itemShield = false;
-    Combatant e = makeTourneyCombatant(registry_, tourneyOpponent_);
+    Combatant e = makeTourneyCombatant(registry_, run.opponent);
     // Facing a real species counts as seeing it, as in a duel. The arena is the
     // other place an unraised creature appears.
-    markCreatureSeen(tourneyOpponent_.spec.creatureId);
+    markCreatureSeen(run.opponent.spec.creatureId);
     // The arena is the other place the operator's own species can walk on opposite them,
     // so it fires the mirror on the same terms the duel does.
-    noteMirrorMatch(tourneyOpponent_.spec.creatureId);
+    noteMirrorMatch(run.opponent.spec.creatureId);
     // The operator's own Exploit allowance is the normal one. THIS is the difference
     // from a linked duel, which grants zero: there, opening the picker would pause a
     // fight the other device is still stepping. Here both fighters are local, so the
     // arena is the only full-kit pet-vs-pet fight with Exploits on both sides.
     fight_ = Fight::started(FightCaller::Tourney);
     fight_.combat.begin(p, e, Combat::Stakes::Safe,
-                        tourneyMatchSeed(tourneySeed_, tourneyRound_,
-                                         tourneyBlockStart(tourneySlot(), tourneyRound_)),
+                        tourneyMatchSeed(run.seed, run.round,
+                                         tourneyBlockStart(run.playerSlot(), run.round)),
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
     fxBeat_ = 0;
@@ -145,38 +135,35 @@ void Game::startTourneyMatch() {
 }
 
 void Game::finishTourneyMatch() {
-    const int opp = mal::tourneyOpponentSlot(tourneyAlive_, tourneySlot(), tourneyRound_);
+    // An arena bout is only ever opened by startTourneyMatch, which needs a run.
+    TourneyRun& run = *tourney_;
+    const int me = run.playerSlot();
+    const int opp = mal::tourneyOpponentSlot(run.alive, me, run.round);
     const bool won = fight_.combat.outcome() == Combat::Outcome::Win;
     char line[28];
     if (!won) {
         // A loss, a walk-out (there is no fleeing a bracket, only forfeiting), or a
         // draw all count as a loss. The run ends and the banner waits.
-        tourneyPhase_ = TourneyPhase::Eliminated;
-        if (opp >= 0) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
-        std::snprintf(line, sizeof(line), "OUT TO %s",
-                      tourneyCard(tourneySeed_, opp).handle);
+        run.phase = TourneyPhase::Eliminated;
+        if (opp >= 0) run.alive &= static_cast<uint8_t>(~(1u << me));
+        std::snprintf(line, sizeof(line), "OUT TO %s", tourneyCard(run.seed, opp).handle);
         log_.push(LogEventType::CombatLost, line);
     } else {
-        if (opp >= 0) tourneyAlive_ &= static_cast<uint8_t>(~(1u << opp));
-        std::snprintf(line, sizeof(line), "BEAT %s",
-                      tourneyCard(tourneySeed_, opp).handle);
+        if (opp >= 0) run.alive &= static_cast<uint8_t>(~(1u << opp));
+        std::snprintf(line, sizeof(line), "BEAT %s", tourneyCard(run.seed, opp).handle);
         log_.push(LogEventType::CombatWon, line);
-        ++tourneyRound_;
-        if (tourneyRound_ >= kTourneyRounds) {
-            tourneyPhase_ = TourneyPhase::Champion;
+        ++run.round;
+        if (run.round >= kTourneyRounds) {
+            run.phase = TourneyPhase::Champion;
             awardTourneyPurse();
         } else {
             // Open the next round: the other survivors settle their own match before the
             // operator sees who they climbed to.
-            tourneyResolveRound(registry_, tourneySeed_, tourneyRound_, tourneySlot(),
-                                tourneyAlive_);
+            tourneyResolveRound(registry_, run.seed, run.round, me, run.alive);
         }
     }
-    if (const int next = tourneyOpponentSlot(); next >= 0)
-        tourneyOpponent_ = tourneyEntrant(registry_, tourneySeed_, next);
-    else
-        tourneyOpponent_ = TourneyFighter{};
-    tourneyCursor_ = tourneySlot();
+    run.seatOpponent(registry_);
+    tourneyCursor_ = me;
     tourneyView_ = TourneyView::Bracket;
     tourneyScoutedSlot_ = -1;
     nav_ = Nav::Tourney;
@@ -200,7 +187,7 @@ void Game::awardTourneyPurse() {
         if (b.source == BackgroundSource::Bracket && b.rung == op_.tallies.tourneyWins)
             announceBackground(b.scene);
     // The two rows that describe what the bracket was taken WITH, which the tally above
-    // cannot say. Both are read HERE, before the caller clears tourneyOpponent_: the
+    // cannot say. Both are read HERE, before the caller clears the run's opponent: the
     // final's opponent is still seated and its level is still the one the seed rolled,
     // so neither needs a byte of save or a flag carried through the run.
     //
@@ -208,7 +195,7 @@ void Game::awardTourneyPurse() {
     // level. Strictly above: matching the band is the expected fight, and the arena
     // draws levels uniformly, so this is a genuine draw of the short straw rather than
     // a rung that always lands on the third win.
-    if (tourneyOpponent_.spec.level > pet_.level) unlockAchievement(ach::kDockUnderdog);
+    if (tourneyOpponent().spec.level > pet_.level) unlockAchievement(ach::kDockUnderdog);
     // PUNCHING UP: the whole bracket taken by a pet that never reached Daemon. The
     // entrants' stage follows their rolled level (kTourneyScriptLevel /
     // kTourneyDaemonLevel), so the top of a bracket is Daemon country; arriving there
@@ -283,7 +270,7 @@ void Game::openTourneyScout() {
     if (tourneyView_ != TourneyView::Bracket || !tourneyRunning()) return;
     // Building an entrant walks the whole move and mod tables, so it happens HERE, on
     // the press, and the sheet reads the held copy for as long as it is open.
-    tourneyScouted_ = tourneyEntrant(registry_, tourneySeed_, tourneyCursor_);
+    tourneyScouted_ = tourneyEntrant(registry_, tourney_->seed, tourneyCursor_);
     tourneyScoutedSlot_ = tourneyCursor_;
     tourneyView_ = TourneyView::Scout;
     tourneyScroll_ = 0;
@@ -338,7 +325,7 @@ void Game::onTourney(const ButtonEvent& ev) {
     // A terminal banner is a read, not a menu: any of the three keys clears the run and
     // returns to EXPL. All three answer, because nothing here is destructive and a
     // verdict already read should not need a specific button.
-    if (tourneyPhase_ != TourneyPhase::Ready) {
+    if (tourneyPhase() != TourneyPhase::Ready) {
         abandonTourney();
         nav_ = Nav::Submenu;
         openExplList();

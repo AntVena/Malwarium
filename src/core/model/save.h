@@ -805,6 +805,20 @@ struct SaveSettings {
     uint8_t exploreSound = 1;
 };
 
+// What a save keeps of the arena run (TourneyRun::saved / TourneyRun::loaded): the whole
+// bracket, because the seed IS the bracket (core/model/tournament.h). `seed` 0 means no
+// run, `alive` is one bit per original slot, `round` is 0-based, and `phase` is
+// TourneyPhase. Persisted so a device put down on a verdict is still showing it after a
+// reboot. Player-level, not per-pet: the operator entered the draw, and a run outlives a
+// pet the way the HackerTag and the earned Titles do. Pre-v53 → a zero seed (no run).
+// Grouped here in memory only, for the reason SaveOperator gives.
+struct SaveTourney {
+    uint32_t seed = 0;
+    uint8_t alive = 0;
+    uint8_t round = 0;
+    uint8_t phase = 0;
+};
+
 // The full snapshot. Defaults describe an empty save (no active pet).
 struct SaveData {
     // The active pet, in the rack's record (Pet::stored / Pet::thawed), so the Pet has
@@ -867,17 +881,8 @@ struct SaveData {
     // left to persist. Kept as a placeholder because the v39+ tail sits behind it.
     bool netReserved = false;
 
-    // --- v53: ROCK THE DOCK's run in play ----------------------------------------
-    // The whole bracket, because the seed IS the bracket (core/model/tournament.h):
-    // `tourneySeed` 0 means no run, `tourneyAlive` is one bit per original slot,
-    // `tourneyRound` is 0-based, and `tourneyPhase` is Game::TourneyPhase. Persisted
-    // so a device put down on a verdict is still showing it after a reboot. Player-
-    // level, not per-pet: the operator entered the draw, and a run outlives a pet the
-    // way the HackerTag and the earned Titles do. Pre-v53 → a zero seed (no run).
-    uint32_t tourneySeed = 0;
-    uint8_t tourneyAlive = 0;
-    uint8_t tourneyRound = 0;
-    uint8_t tourneyPhase = 0;
+    // v53: ROCK THE DOCK's run in play (TourneyRun::saved / TourneyRun::loaded).
+    SaveTourney tourney;
 };
 
 // Read/write one mod's spare count in the v45 packed pool (SaveOperator::ownedModCounts) by

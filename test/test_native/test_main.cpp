@@ -617,6 +617,7 @@ int g_failures = 0;
     RUN(test_tourney_brief_fits_its_page) \
     RUN(test_tourney_scout_shows_the_rivals_whole_kit) \
     RUN(test_tourney_run_survives_a_reboot) \
+    RUN(test_tourney_run_maps_itself_and_is_dropped_on_dismissal) \
     RUN(test_combat_ransom_pool_grayscale)  \
     RUN(test_combat_panel_reports_every_live_state) \
     RUN(test_combat_panel_pages_cycle)      \

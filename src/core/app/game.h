@@ -39,6 +39,7 @@
 #include "core/model/explore_walk.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
+#include "core/model/tourney_run.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
@@ -476,12 +477,7 @@ public:
     // Is the AREA boss reachable? All 5 sub-areas cleared, area not yet.
     bool areaBossReady(int area) const;
 
-    // --- ROCK THE DOCK: the operator bracket (game_tourney.cpp) -------------- How a
-    // run ENDS, which is also what the bracket screen is showing. Ready is a run
-    // still being fought (or none at all); the other two are terminal banners the
-    // operator has yet to dismiss, and they persist, so a device put down on the
-    // verdict still shows it after a reboot.
-    enum class TourneyPhase : uint8_t { Ready, Eliminated, Champion };
+    // --- ROCK THE DOCK: the operator bracket (game_tourney.cpp) --------------
     // Which of the arena screen's three READS is showing. One Nav, three views,
     // because all three are the same screen answering different questions about the
     // same run, and a Nav per reader would put the run's lifecycle in three places.
@@ -502,20 +498,22 @@ public:
     //   Archive: opened from the CHAPTERS list with nothing happening on the walk. C
     //               goes back to the list.
     enum class StoryThen : uint8_t { Walk, Encounter, AreaBoss, Archive };
-    // A bracket is in play. The seed IS the run (core/model/tournament.h), so a zero
-    // seed means "no run" and nothing else has to be checked.
-    bool tourneyRunning() const { return tourneySeed_ != 0; }
-    uint32_t tourneySeed() const { return tourneySeed_; }
-    uint8_t tourneyAlive() const { return tourneyAlive_; }   // survivor bitmask
-    int tourneyRound() const { return tourneyRound_; }       // 0-based
-    TourneyPhase tourneyPhase() const { return tourneyPhase_; }
+    // A bracket is in play (core/model/tourney_run.h), verdict included. With none, the
+    // seed reads 0, the bitmask and round 0, and the phase Ready.
+    bool tourneyRunning() const { return tourney_.has_value(); }
+    uint32_t tourneySeed() const { return tourney_ ? tourney_->seed : 0; }
+    uint8_t tourneyAlive() const { return tourney_ ? tourney_->alive : 0; }  // survivors
+    int tourneyRound() const { return tourney_ ? tourney_->round : 0; }      // 0-based
+    TourneyPhase tourneyPhase() const {
+        return tourney_ ? tourney_->phase : TourneyPhase::Ready;
+    }
     // The operator's own slot, and the slot they face next (-1 once the run is over).
     int tourneySlot() const;
     int tourneyOpponentSlot() const;
     // The opponent as a built fighter: resolved once when a round opens, so the
     // bracket screen can name its species and Exploit without walking the content
     // tables every repaint.
-    const TourneyFighter& tourneyOpponent() const { return tourneyOpponent_; }
+    const TourneyFighter& tourneyOpponent() const;
     TourneyView tourneyView() const { return tourneyView_; }
     int tourneyCursor() const { return tourneyCursor_; }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
@@ -2230,15 +2228,15 @@ public:
     // The two verdict screens are otherwise reachable only by winning or losing three
     // matches, which is not what a screen gate is asking about.
     void debugEndTourneyRun(bool champion) {
-        if (!tourneyRunning()) return;
-        tourneyPhase_ = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
-        if (!champion) tourneyAlive_ &= static_cast<uint8_t>(~(1u << tourneySlot()));
+        if (!tourney_) return;
+        tourney_->phase = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
+        if (!champion) tourney_->alive &= static_cast<uint8_t>(~(1u << tourneySlot()));
         // A champion run pays out like the real third win, including the two shape
         // achievements, which read the final's opponent BEFORE it is cleared below. A
         // hook that ended a run in the title but skipped the purse would be a hook the
         // purse could not be tested through.
         if (champion) awardTourneyPurse();
-        tourneyOpponent_ = TourneyFighter{};
+        tourney_->opponent = TourneyFighter{};
         dirty_ = true;
     }
     void debugArmExplore(int area, int sub) {
@@ -3969,21 +3967,13 @@ private:
     uint32_t pvpSeed_ = 0;
     char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
 
-    // --- ROCK THE DOCK's run state (game_tourney.cpp) -----------------------
-    // Four bytes plus a byte of verdict is the WHOLE bracket: every entrant (handle,
-    // species, level, stat spread, kit, mods, Exploit) is derived from the seed
-    // (core/model/tournament.h) rather than stored, and `tourneyAlive_` is one bit per
-    // original slot. So a run costs almost nothing to persist and reloads identical.
-    // Persisted at save v53.
-    uint32_t tourneySeed_ = 0;           // 0 = no run in play
-    uint8_t tourneyAlive_ = 0;           // survivor bitmask over kTourneySlots
-    uint8_t tourneyRound_ = 0;           // 0..kTourneyRounds-1
-    TourneyPhase tourneyPhase_ = TourneyPhase::Ready;
-    // Runtime only. The bracket screen's read cursor (A steps it, nothing acts on it)
-    // and the built opponent behind the round's match card: rebuilt whenever a round
-    // opens or a run is resumed, never persisted, because both are derivable.
+    // --- ROCK THE DOCK (game_tourney.cpp) -------------------------------------
+    // The bracket in play, verdict included (core/model/tourney_run.h); empty between
+    // runs. Saved at v53.
+    std::optional<TourneyRun> tourney_;
+    // The bracket screen's: its read cursor (A steps it, nothing acts on it) and which
+    // of its three reads is up.
     int tourneyCursor_ = 0;
-    TourneyFighter tourneyOpponent_;
     TourneyView tourneyView_ = TourneyView::Bracket;
 
     // --- THE STORY (game_story.cpp) -----------------------------------------

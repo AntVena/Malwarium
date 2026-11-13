@@ -68,23 +68,23 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
     // header survives grayscale, and the two verdicts take the same slot because
     // CHAMPION is also a position in the bracket.
     char where[16];
-    if (tourneyPhase_ == TourneyPhase::Champion)
+    if (tourneyPhase() == TourneyPhase::Champion)
         std::snprintf(where, sizeof(where), "CHAMPION");
-    else if (tourneyPhase_ == TourneyPhase::Eliminated)
+    else if (tourneyPhase() == TourneyPhase::Eliminated)
         std::snprintf(where, sizeof(where), "ELIMINATED");
     else
-        std::snprintf(where, sizeof(where), "ROUND %d/%d", tourneyRound_ + 1,
+        std::snprintf(where, sizeof(where), "ROUND %d/%d", tourneyRound() + 1,
                       kTourneyRounds);
     drawHeaderBandOver(fb, kTourneyName, where);
 
     const int me = tourneySlot();
     const int opp = tourneyOpponentSlot();
-    const uint8_t alive = tourneyAlive_;
+    const uint8_t alive = tourneyAlive();
     const int cur = tourneyCursor_;
 
     // The tree goes down before the rows, so a row's own highlight can never break a
     // bracket line the row is hanging off.
-    const int round = tourneyRound_ < kTourneyRounds ? tourneyRound_ : kTourneyRounds - 1;
+    const int round = tourneyRound() < kTourneyRounds ? tourneyRound() : kTourneyRounds - 1;
     drawDockTies(fb, alive, cur, round, me);
 
     for (int slot = 0; slot < kTourneySlots; ++slot) {
@@ -97,7 +97,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
         if (!live && !focused) {
             fb.fillRect(kDockTextX, y + kDockOutRowH / 2,
                         textWidth(slot == me ? op_.hackerTag
-                                             : tourneyCard(tourneySeed_, slot).handle),
+                                             : tourneyCard(tourneySeed(), slot).handle),
                         1, palColor(Pal::INK_DIM));
             continue;
         }
@@ -106,7 +106,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
                         kDockLiveRowH - 1, palColor(Pal::TRACK));
             drawRowCursor(fb, 2, y, palColor(Pal::ACCENT));
         }
-        const TourneyCard card = tourneyCard(tourneySeed_, slot);
+        const TourneyCard card = tourneyCard(tourneySeed(), slot);
         // The operator's own row shows their tag like every other entrant, so all
         // eight rows compare the same way.
         const char* name = slot == me ? op_.hackerTag : card.handle;
@@ -131,7 +131,7 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
 
     drawTourneyFoot(fb);
 
-    if (tourneyPhase_ == TourneyPhase::Ready) {
+    if (tourneyPhase() == TourneyPhase::Ready) {
         drawText(fb, kMargin, kDockGestureY, "HOLD B SCOUT  A+C BRIEF",
                  palColor(Pal::INK_DIM));
         drawHintBand(fb, "A NEXT   B BOUT   C BACK");
@@ -142,20 +142,20 @@ void Game::drawTourneyBracket(Framebuffer& fb) const {
 
 void Game::drawTourneyFoot(Framebuffer& fb) const {
     const int opp = tourneyOpponentSlot();
-    const bool ready = tourneyPhase_ == TourneyPhase::Ready;
+    const bool ready = tourneyPhase() == TourneyPhase::Ready;
     // WHOSE drawing stands on the dock. Waiting on a bout it shows only the opponent,
     // because the operator's pet appears everywhere else. It is also the only way a
     // 96-wide Daemon and a column of copy fit on one 224px screen. Taking the bracket
     // is the exception, and it is the pet's: a title is a picture of your own pet
     // alone on a dock everybody else has gone home from. Being knocked out draws
     // nobody, and an empty dock is the right picture for that.
-    const bool mine = tourneyPhase_ == TourneyPhase::Champion;
+    const bool mine = tourneyPhase() == TourneyPhase::Champion;
     const CreatureDef* c =
-        ready && opp >= 0 ? registry_.creature(tourneyOpponent_.spec.creatureId) : nullptr;
+        ready && opp >= 0 ? registry_.creature(tourneyOpponent().spec.creatureId) : nullptr;
     // A field too full to seat anyone takes the same exit as a verdict: no drawing, and
     // the copy moves to the foot and takes the whole width.
     const SpriteData* s =
-        !dockFaceoffFits(tourneyAlive_) ? nullptr
+        !dockFaceoffFits(tourneyAlive()) ? nullptr
         : mine ? (pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr)
         : c    ? registry_.sprite(c->spriteName)
                : nullptr;
@@ -172,7 +172,7 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
     // promises the operator they can learn, stated up front because the arena is the
     // one place where knowing it early costs the run nothing.
     char line[kDockCardLines][32] = {};
-    if (tourneyPhase_ == TourneyPhase::Champion) {
+    if (tourneyPhase() == TourneyPhase::Champion) {
         // A receipt, one item to a line. The purse lands in one lump and is the only
         // thing the arena ever pays, so it is itemised. The band above already says
         // CHAMPION.
@@ -180,21 +180,21 @@ void Game::drawTourneyFoot(Framebuffer& fb) const {
         std::snprintf(line[1], sizeof(line[1]), "+%d BITS", kTourneyWinBits);
         std::snprintf(line[2], sizeof(line[2]), "+%d XP", kTourneyWinXp);
         std::snprintf(line[3], sizeof(line[3]), "+1 MOD");
-    } else if (tourneyPhase_ == TourneyPhase::Eliminated) {
+    } else if (tourneyPhase() == TourneyPhase::Eliminated) {
         // Nobody is standing on the dock for this one, so the copy has the whole width
         // and gets to say it in the words it was written in.
         std::snprintf(line[0], sizeof(line[0]), "KNOCKED OUT OF THE DRAW");
         std::snprintf(line[1], sizeof(line[1]), "THE BRACKET GOES ON");
     } else if (opp >= 0) {
         std::snprintf(line[0], sizeof(line[0]), "%s",
-                      tourneyCard(tourneySeed_, opp).handle);
+                      tourneyCard(tourneySeed(), opp).handle);
         std::snprintf(line[1], sizeof(line[1]), "%s  L%d", c ? c->displayName : "UNKNOWN",
-                      static_cast<int>(tourneyOpponent_.spec.level));
+                      static_cast<int>(tourneyOpponent().spec.level));
         // The Exploit's tag (crewExploitTag), the short word other screens use and
         // the only form that fits.
         std::snprintf(line[2], sizeof(line[2]), "%s",
-                      crewExploitTag(tourneyOpponent_.exploit.kind));
-        exploitTell(tourneyOpponent_.exploitAtHealthPct, tourneyOpponent_.exploitOnEitherHealth,
+                      crewExploitTag(tourneyOpponent().exploit.kind));
+        exploitTell(tourneyOpponent().exploitAtHealthPct, tourneyOpponent().exploitOnEitherHealth,
                     line[3], sizeof(line[3]));
     }
     // The first line is the NAME and the rest describe it, which is the same weight
@@ -219,7 +219,7 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
     // Everything under it is the shared flow.
     const int slot = tourneyScoutedSlot_;
     const bool self = slot == tourneySlot();
-    drawHeaderBand(fb, self ? op_.hackerTag : tourneyCard(tourneySeed_, slot).handle,
+    drawHeaderBand(fb, self ? op_.hackerTag : tourneyCard(tourneySeed(), slot).handle,
                    "SCOUT");
     const CreatureDef* c = registry_.creature(tourneyScouted_.spec.creatureId);
     const SpriteData* s = c ? registry_.sprite(c->spriteName) : nullptr;
@@ -240,7 +240,7 @@ void Game::drawTourneyScout(Framebuffer& fb) const {
     std::snprintf(lvl, sizeof(lvl), "LEVEL %d",
                   static_cast<int>(tourneyScouted_.spec.level));
     drawText(fb, kMargin, kDockSubY + kLineH, lvl, palColor(Pal::INK_DIM));
-    const char* state = !(tourneyAlive_ & (1u << slot)) ? "OUT OF THE DRAW"
+    const char* state = !(tourneyAlive() & (1u << slot)) ? "OUT OF THE DRAW"
                         : slot == tourneyOpponentSlot() ? "YOU FACE THIS"
                         : self                          ? "THIS IS YOURS"
                                                         : "STILL IN";

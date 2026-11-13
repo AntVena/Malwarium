@@ -281,9 +281,9 @@ void test_tourney_run_from_the_expl_row() {
     if (won) {
         CHECK(g.tourneyRound() == 1);
         CHECK(!(g.tourneyAlive() & (1u << opp)));              // the beaten one is out
-        CHECK(g.tourneyPhase() == Game::TourneyPhase::Ready);
+        CHECK(g.tourneyPhase() == TourneyPhase::Ready);
     } else {
-        CHECK(g.tourneyPhase() == Game::TourneyPhase::Eliminated);
+        CHECK(g.tourneyPhase() == TourneyPhase::Eliminated);
         // A dismissed verdict forgets the run and hands the operator back to EXPL.
         tapB(g);
         CHECK(!g.tourneyRunning() && g.nav() == Game::Nav::Submenu);
@@ -593,14 +593,49 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
 // otherwise a run resumed after a power cycle would be a different tournament.
 void test_tourney_run_survives_a_reboot() {
     SaveData d;
-    d.tourneySeed = 0xABCD1234u;
-    d.tourneyAlive = 0x5A;
-    d.tourneyRound = 2;
-    d.tourneyPhase = static_cast<uint8_t>(Game::TourneyPhase::Champion);
+    d.tourney.seed = 0xABCD1234u;
+    d.tourney.alive = 0x5A;
+    d.tourney.round = 2;
+    d.tourney.phase = static_cast<uint8_t>(TourneyPhase::Champion);
     SaveData back;
     CHECK(deserializeSave(serializeSave(d), back));
-    CHECK(back.tourneySeed == d.tourneySeed);
-    CHECK(back.tourneyAlive == d.tourneyAlive);
-    CHECK(back.tourneyRound == d.tourneyRound);
-    CHECK(back.tourneyPhase == d.tourneyPhase);
+    CHECK(back.tourney.seed == d.tourney.seed);
+    CHECK(back.tourney.alive == d.tourney.alive);
+    CHECK(back.tourney.round == d.tourney.round);
+    CHECK(back.tourney.phase == d.tourney.phase);
+}
+
+// The run maps itself to the save: a zero seed is no run, a stale round or phase byte
+// loads as a run that can still be played, and a fresh draw has everyone standing. In a
+// game, a verdict survives a reboot and dismissing it drops the run.
+void test_tourney_run_maps_itself_and_is_dropped_on_dismissal() {
+    CHECK(!TourneyRun::loaded(SaveTourney{}));
+    const TourneyRun fresh = TourneyRun::drawn(0);
+    CHECK(fresh.seed != 0 && fresh.round == 0 && fresh.phase == TourneyPhase::Ready);
+    CHECK(tourneyAliveCount(fresh.alive) == kTourneySlots);
+    SaveTourney stale;
+    stale.seed = 77;
+    stale.round = 9;
+    stale.phase = 9;
+    const std::optional<TourneyRun> r = TourneyRun::loaded(stale);
+    CHECK(r && r->seed == 77 && r->round == kTourneyRounds - 1);
+    CHECK(r->phase == TourneyPhase::Ready);
+    const SaveTourney back = r->saved();
+    CHECK(back.seed == 77 && back.round == kTourneyRounds - 1 && back.phase == 0);
+
+    MemSaveStore store;
+    {
+        Game g(StartMode::Hatched, "bruinforce", &store);
+        openBracket(g);
+        g.debugEndTourneyRun(/*champion=*/false);
+        CHECK(g.saveNow());
+    }
+    Game g(StartMode::Hatched, "bruinforce", &store);
+    CHECK(g.tourneyRunning() && g.tourneyPhase() == TourneyPhase::Eliminated);
+    CHECK(g.tourneyOpponentSlot() < 0);
+    enterSubmenuId(g, SubmenuId::Expl);
+    armBracket(g);                                // resumes on the verdict
+    CHECK(g.nav() == Game::Nav::Tourney);
+    tapB(g);                                      // dismissed
+    CHECK(!g.tourneyRunning() && g.tourneySeed() == 0 && g.tourneyAlive() == 0);
 }

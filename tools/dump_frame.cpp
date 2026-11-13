@@ -1129,7 +1129,7 @@ int main(int argc, char** argv) {
             // lands on a field that has already collapsed, which is the only way to
             // LOOK at the later rounds' tree and at the room they open up.
             for (int r = 0; r < kTourneyRounds &&
-                            game.tourneyPhase() == Game::TourneyPhase::Ready; ++r) {
+                            game.tourneyPhase() == TourneyPhase::Ready; ++r) {
                 tapB();
                 for (int i = 1; i <= 4000 &&
                                 game.combat().outcome() == Combat::Outcome::Ongoing; ++i)

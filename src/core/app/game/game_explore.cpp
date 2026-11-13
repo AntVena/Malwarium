@@ -103,8 +103,8 @@ ExplListView Game::explView() const {
     v.bestDeepWebDepth = pet_.bestDeepWebDepth;
     v.bestDarkWebDepth = pet_.bestDarkWebDepth;
     v.tourneyRunning = tourneyRunning();
-    v.tourneyAlive = tourneyAliveCount(tourneyAlive_);
-    v.tourneyRound = tourneyRound_;
+    v.tourneyAlive = tourneyAliveCount(tourneyAlive());
+    v.tourneyRound = tourneyRound();
     v.storyChapters = storyChapterCount();
     return v;
 }
