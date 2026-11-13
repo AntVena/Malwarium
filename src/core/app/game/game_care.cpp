@@ -208,161 +208,47 @@ bool Game::rollMaintSuccess() {
     return roll >= maintFailPct();
 }
 
-// MODS: the LOADOUT hub ----------------------------------------
-
-void Game::onLoadoutHub(const ButtonEvent& ev) {
-    if (ev.button == Button::A) {
-        loadoutHubRow_ = (loadoutHubRow_ + 1) % kLoadoutHubRows;
-    } else if (ev.button == Button::B) {
-        // Row order is the hub's draw order, which is LoadoutTab's own order past Hub.
-        openLoadoutTab(static_cast<LoadoutTab>(loadoutHubRow_ + 1));
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
-    }
-}
-
-void Game::openLoadoutTab(LoadoutTab tab) {
-    loadoutTab_ = tab;
-    switch (tab) {
-        case LoadoutTab::Mods:
-            listRow_ = 0;
-            modConfirm_.close();
-            modDetail_ = false;
-            modDetailId_ = nullptr;
-            nav_ = Nav::Submenu;
-            break;
-        case LoadoutTab::Moves:
-            trainRow_ = 0;
-            trainScreen_ = TrainScreen::MovePicker;
-            moveConfirm_.close();
-            movePendingId_ = nullptr;
-            nav_ = Nav::Submenu;
-            break;
-        case LoadoutTab::Practise:
-            // The dummy fight has no list of its own. The hub row is its L2, so it
-            // opens straight into the tier pick.
-            trainScreen_ = TrainScreen::SimTier;
-            simTier_ = 0;
-            nav_ = Nav::Detail;
-            break;
-        case LoadoutTab::Hub:
-            nav_ = Nav::Submenu;
-            break;
-    }
-}
+// LOADOUT: the rules its screen asks, and the way back to its hub ------------
 
 void Game::leaveLoadoutTab() {
-    // Also re-park the cursor, because one caller (finishCombat, off PRACTISE) gets
-    // here from a full-screen activity rather than from inside the hub.
-    loadoutTab_ = LoadoutTab::Hub;
+    // Re-parks the cursor too: the caller (finishCombat, off PRACTISE) gets here from a
+    // full-screen activity rather than from inside the hub.
+    loadout_.showHub();
     cursor_ = carouselSlotOf(SubmenuId::Mods);
     nav_ = Nav::Submenu;
 }
 
-void Game::onModsList(const ButtonEvent& ev) {
-    if (ev.button == Button::A) {
-        listRow_ = (listRow_ + 1) % kModSlots;          // next slot, wraps
-    } else if (ev.button == Button::B) {                 // open the slot's picker
-        modSlot_ = listRow_;
-        modPick_ = 0;
-        modConfirm_.close();
-        modPendingId_ = nullptr;
-        modDetail_ = false;
-        modDetailId_ = nullptr;
-        nav_ = Nav::Detail;
-    } else if (ev.button == Button::C) {
-        leaveLoadoutTab();
-    }
-}
-
-void Game::onModPicker(const ButtonEvent& ev) {
-    // The same five arguments drawModPicker draws with, so the cursor indexes the rows
-    // the player is looking at: fittable mods first, locked ones after them.
-    const auto owned = ownedModList(registry_, modHoldings(), pet_.level,
-                                    pet_.creature ? pet_.creature->line : nullptr, modSlot_);
-    const int rows = static_cast<int>(owned.size());      // available spares to install
-
-    if (modConfirm_.isOpen()) {                           // inline overwrite confirm
-        const InlineConfirm::Answer answer = modConfirm_.onButton(ev);
-        if (answer == InlineConfirm::Answer::Pending) return;
-        // B answers and goes back to the slots; C backs out to the picker.
-        if (answer != InlineConfirm::Answer::Back) {
-            const ModDef* pendMod = modPendingId_ ? registry_.mod(modPendingId_) : nullptr;
-            const bool lineOk = !pendMod || !pendMod->requiresLine ||
-                (pet_.creature && pet_.creature->line && std::strcmp(pendMod->requiresLine, pet_.creature->line) == 0);
-            if (answer == InlineConfirm::Answer::Yes && modPendingId_ && lineOk && pendMod &&
-                modEquipLevel(*pendMod) <= pet_.level) {
-                // D3: consumes the new mod AND discards the one already in the slot.
-                // (Re-check the equip-LEVEL + hard line gates defensively: commitModEquip
-                // already gated both before setting modPendingId_.)
-                pet_.mods.install(modSlot_, modPendingId_, op_.modPool);
-                markSaveDirty();
-            }
-            nav_ = Nav::Submenu;
-        }
-        modPendingId_ = nullptr;
-        return;
-    }
-
-    if (ev.button == Button::A) {
-        if (rows > 0) modPick_ = (modPick_ + 1) % rows;
-    } else if (ev.button == Button::B) {
-        if (rows > 0) {                                   // inspect before equipping
-            if (modPick_ >= rows) modPick_ = rows - 1;
-            modDetailId_ = owned[modPick_]->id;           // open the detail
-            modDetail_ = true;
-        }
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Submenu;
-    }
-}
-
-// mod detail (mirrors ITEMS list -> detail -> use): B commits the equip,
-// C backs to the picker. The equip runs the same overwrite gate as the picker.
-void Game::onModDetail(const ButtonEvent& ev) {
-    if (ev.button == Button::B) commitModEquip();
-    else if (ev.button == Button::C) modDetail_ = false;  // back to the picker
-}
-
-// Shared equip-or-confirm for the detail's inspected mod (modDetailId_). An empty
-// slot consumes + installs straight away; a slot already holding a DIFFERENT mod
-// hands off to the picker's inline overwrite confirm (the "discards {current})
-// permanent" warning, since the overwrite is irreversible. A slot that
-// already holds this exact mod is a no-op (don't burn a spare for no change).
-void Game::commitModEquip() {
-    const char* id = modDetailId_;
-    if (!id) return;
-    // The equip-LEVEL gate: a mod is held forever but equippable only once the pet is
-    // high enough. The gate is the MOD's (modEquipLevel, off its power tier), the same
-    // for every copy; a sub-level mod is blocked here, and the detail already shows
-    // LOCKED + the requirement.
+bool Game::modEquippable(int slot, const char* id) const {
+    if (!id) return false;
     const ModDef* md = registry_.mod(id);
-    if (md && modEquipLevel(*md) > pet_.level) return;
-    // Niche-flavour pass: the HARD line gate (ModDef::requiresLine). Distinct from the
-    // soft `line`/`affinityBonus` bonus every other mod uses. A mod like Phishing Rod or
-    // Extortion Ledger simply cannot be installed unless the active pet's line matches;
-    // it can still drop and sit in inventory for whenever the player raises that line.
+    // A mod is held forever but equippable only once the pet is high enough. The gate is
+    // the mod's (modEquipLevel, off its power tier), the same for every copy.
+    if (md && modEquipLevel(*md) > pet_.level) return false;
+    // The hard line gate (ModDef::requiresLine), distinct from the soft affinity bonus:
+    // such a mod can drop and wait in the pool for a pet of its line.
     if (md && md->requiresLine &&
-        (!pet_.creature || !pet_.creature->line || std::strcmp(md->requiresLine, pet_.creature->line) != 0))
-        return;
-    // One slot per id per pet, so a mod already installed on this pet is a no-op.
+        (!pet_.creature || !pet_.creature->line ||
+         std::strcmp(md->requiresLine, pet_.creature->line) != 0))
+        return false;
+    // One slot per id per pet.
     const int elsewhere = pet_.mods.slotOf(id);
-    if (elsewhere >= 0 && elsewhere != modSlot_) return;
-    const char* cur = pet_.mods.equipped(modSlot_);
-    if (cur && std::strcmp(cur, id) == 0) {               // already installed here
-        modDetail_ = false;
-        nav_ = Nav::Submenu;
-    } else if (cur) {                                     // replacing a different mod
-        modConfirm_.open();
-        modPendingId_ = id;
-        modDetail_ = false;                               // confirm shows on the picker
-    } else {                                              // empty slot: consume + install
-        pet_.mods.install(modSlot_, id, op_.modPool);
-        markSaveDirty();
-        modDetail_ = false;
-        nav_ = Nav::Submenu;
-    }
+    return elsewhere < 0 || elsewhere == slot;
 }
 
+void Game::installMod(int slot, const char* id) {
+    if (!registry_.mod(id) || !modEquippable(slot, id)) return;
+    pet_.mods.install(slot, id, op_.modPool);
+    markSaveDirty();
+}
+
+void Game::equipMove(int slot, const char* id) {
+    pet_.moves.equip(slot, id);
+    markSaveDirty();
+}
+
+void Game::unequipMove(int slot) {
+    pet_.moves.unequip(slot);
+    markSaveDirty();
+}
 
 }  // namespace mal

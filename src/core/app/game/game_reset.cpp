@@ -54,16 +54,10 @@ void Game::resetToHatch() {
     // split (Reset Pet keeps 'Pedia) lands with the SD store: both wipe today.
     op_.arch.rack.clear();
     op_.arch.records.clear();
-    loadoutTab_ = LoadoutTab::Hub;
-    loadoutHubRow_ = 0;
+    loadout_.reset();
     arcadeScreen_.reset();
     arcade_.reset();                     // nothing can be mid-cabinet after a wipe
     cryptogramRun_.reset();              // ...nor mid-board
-    trainRow_ = 0;
-    trainScreen_ = TrainScreen::MovePicker;
-    moveConfirm_.close();
-    movePendingId_ = nullptr;
-    simTier_ = 0;
     fight_ = Fight{};                    // nothing can be mid-fight after a reset
     gauntlet_.reset();
     fxBeat_ = 0;

@@ -102,14 +102,14 @@ Combatant Game::buildPlayerCombatant() {
     return p;
 }
 
-void Game::startSimBattle() {
+void Game::startSimBattle(int tier) {
     if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
     // A Sim Battle has no stakes (losing costs nothing), so there is no death to save
     // the pet from and no reason to spend a Rare item's shield on training. Stripped
     // here rather than in buildPlayerCombatant, which doesn't know the stakes.
     p.itemShield = false;
-    CombatEnemy dummy = simDummy(simTier_);
+    CombatEnemy dummy = simDummy(tier);
     applySimDummyLevelScale(dummy, pet_.level);
     Combatant e = makeEnemyCombatant(registry_, dummy);
     rng_ = rng_ * 1664525u + 1013904223u;     // advance for a fresh deterministic seed
@@ -547,7 +547,6 @@ void Game::finishCombat() {
     } else {
         // Sim-Battle came from PRACTISE, so it returns to the LOADOUT hub with that
         // row still focused.
-        trainScreen_ = TrainScreen::MovePicker;
         leaveLoadoutTab();
     }
     dirty_ = true;
@@ -597,7 +596,7 @@ void Game::debugStartCombat(bool live, bool lethal) {
         // An unbeatable enemy: huge Health + an overwhelming move so a loss is
         // deterministic (exercises the live-vs-safe stakes contract).
         ? CombatEnemy{"Lethal", "SPR_PET_CACHEMUTT", 3, 9999, 99, {"packet_storm"}}
-        : simDummy(simTier_);
+        : simDummy(loadout_.simTier());
     if (lethal) {
         // Give the lethal enemy a one-shot kill regardless of move power.
         p.maxHealth = 1;

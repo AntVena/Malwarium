@@ -102,16 +102,10 @@ Game::ListTarget Game::submenuListTarget() const {
         case SubmenuId::Games:
             return {[](Game& g, int dir) { g.arcadeScreen_.stepList(g, dir); },
                     [](Game& g) { g.arcadeScreen_.onList(g, kTapC); }};
+        // The move slot list rests at L2 without the list gestures: its B is a tap/hold.
         case SubmenuId::Mods:
-            if (loadoutTab_ == LoadoutTab::Mods)
-                return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, kModSlots, dir); },
-                        [](Game& g) { g.onModsList(kTapC); }};
-            if (loadoutTab_ == LoadoutTab::Hub)
-                return {[](Game& g, int dir) {
-                            g.loadoutHubRow_ = stepRow(g.loadoutHubRow_, kLoadoutHubRows, dir);
-                        },
-                        [](Game& g) { g.onLoadoutHub(kTapC); }};
-            return {};   // MOVES rests in its L3, never here
+            if (loadout_.tab() == LoadoutTab::Moves) return {};
+            return screenList<&Game::loadout_>();
         default: return {};
     }
 }
@@ -125,37 +119,10 @@ Game::ListTarget Game::detailListTarget() const {
             if (!cfg_.detailIsList()) return {};
             return {[](Game& g, int dir) { g.cfg_.stepGroup(dir); },
                     [](Game& g) { g.cfg_.onDetail(g, kTapC); }};
-        // An open inline confirm owns A and C (choice and abort), and a detail page is a
-        // reader: neither is a list.
         case SubmenuId::Mods:
-            if (loadoutTab_ == LoadoutTab::Mods) {
-                if (modConfirm_.isOpen() || modDetail_) return {};
-                return {[](Game& g, int dir) {
-                            const int n = static_cast<int>(
-                                ownedModList(g.registry_, g.modHoldings(), g.pet_.level,
-                                             g.pet_.creature ? g.pet_.creature->line : nullptr,
-                                             g.modSlot_).size());
-                            g.modPick_ = stepRow(g.modPick_, n, dir);
-                        },
-                        [](Game& g) { g.onModPicker(kTapC); }};
-            }
-            if (loadoutTab_ == LoadoutTab::Moves) {
-                if (moveConfirm_.isOpen() || trainScreen_ != TrainScreen::MovePicker) return {};
-                return {[](Game& g, int dir) {
-                            // Row 0 is the unequip row, so the walk covers one more than
-                            // the roster.
-                            const auto* c = g.pet_.creature;
-                            const int n = 1 + static_cast<int>(
-                                ownedMoveList(g.registry_, g.pet_.moves,
-                                              g.slotRequiredKind(g.moveSlot_),
-                                              c ? c->stage : Stage::BootSector,
-                                              c ? c->line : nullptr, g.moveSlot_,
-                                              g.moveShowAll_).size());
-                            g.movePick_ = stepRow(g.movePick_, n, dir);
-                        },
-                        [](Game& g) { g.onMovePicker(kTapC); }};
-            }
-            return {};
+            if (!loadout_.detailIsList()) return {};
+            return {[](Game& g, int dir) { g.loadout_.stepDetail(g, dir); },
+                    [](Game& g) { g.loadout_.onDetail(g, kTapC); }};
         default: return {};
     }
 }

@@ -171,9 +171,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 // one is open is loadoutTab_ (PRACTISE never rests here. It opens
                 // straight into its L3).
                 case SubmenuId::Mods:
-                    if (loadoutTab_ == LoadoutTab::Mods) onModsList(ev);
-                    else if (loadoutTab_ == LoadoutTab::Moves) onTrainList(ev);
-                    else onLoadoutHub(ev);
+                    loadout_.onButton(*this, ev);
                     break;
                 case SubmenuId::Games: arcadeScreen_.onList(*this, ev); break;
                 case SubmenuId::Expl: onExplList(ev); break;
@@ -187,10 +185,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Cfg: cfg_.onDetail(*this, ev); break;
                 case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
                 case SubmenuId::Mods:
-                    if (loadoutTab_ == LoadoutTab::Practise) onSimTier(ev);
-                    else if (loadoutTab_ == LoadoutTab::Moves) onTrainDetail(ev);
-                    else if (modDetail_) onModDetail(ev);
-                    else onModPicker(ev);
+                    loadout_.onDetail(*this, ev);
                     break;
                 case SubmenuId::Games: arcadeScreen_.onCabinet(*this, ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
@@ -332,11 +327,7 @@ void Game::enterSubmenu() {
         case SubmenuId::Arch: arch_.enter(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:
-            loadoutTab_ = LoadoutTab::Hub; loadoutHubRow_ = 0;
-            listRow_ = 0; modConfirm_.close(); modDetail_ = false;
-            modDetailId_ = nullptr;
-            trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
-            moveConfirm_.close(); movePendingId_ = nullptr; moveDetailEquipped_ = false;
+            loadout_.enter();
             break;
         case SubmenuId::Games: arcadeScreen_.enter(); break;
         case SubmenuId::Expl: openExplList(); break;

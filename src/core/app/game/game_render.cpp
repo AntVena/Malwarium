@@ -727,29 +727,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             break;
         case SubmenuId::Cfg: cfg_.draw(fb, *this); break;
         case SubmenuId::Arch: arch_.draw(fb, *this); break;
-        case SubmenuId::Mods: {
-            const Stage st = pet_.creature ? pet_.creature->stage : Stage::BootSector;
-            if (loadoutTab_ == LoadoutTab::Mods) {
-                drawModsList(fb, registry_, modHoldings(), listRow_, beat_);
-            } else if (loadoutTab_ == LoadoutTab::Moves) {
-                // Each slot's stamped required kind, for the row tags.
-                MoveDef::Kind sk[kMaxMoveSlots];
-                for (int i = 0; i < kMaxMoveSlots; ++i) sk[i] = slotRequiredKind(i);
-                LoadoutView v;
-                v.stage = st;
-                v.cursor = trainRow_;
-                v.slotKinds = sk;
-                v.beat = beat_;
-                drawLoadout(fb, registry_, pet_.moves, v);
-            } else {
-                LoadoutHubView v;
-                v.stage = st;
-                v.cursor = loadoutHubRow_;
-                v.beat = beat_;
-                drawLoadoutHub(fb, modHoldings(), pet_.moves, v);
-            }
-            break;
-        }
+        case SubmenuId::Mods: loadout_.draw(fb, *this); break;
         case SubmenuId::Games:
             arcadeScreen_.drawList(fb, *this);
             break;
@@ -811,78 +789,12 @@ void Game::drawDetail(Framebuffer& fb) const {
             break;
         case SubmenuId::Cfg: cfg_.drawDetail(fb, *this); break;
         case SubmenuId::Arch: arch_.drawDetail(fb, *this); break;
-        case SubmenuId::Mods:
-            if (loadoutTab_ == LoadoutTab::Practise) {
-                drawSimTier(fb, simTier_, kSimDummyTiers);
-                break;
-            }
-            if (loadoutTab_ == LoadoutTab::Moves) {
-                drawTrain(fb);
-                break;
-            }
-            if (modDetail_ && modDetailId_) {
-                const ModDef* md = registry_.mod(modDetailId_);
-                if (md) {
-                    const char* cur = pet_.mods.equipped(modSlot_);
-                    ModDetailView dv;
-                    dv.slot = modSlot_;
-                    dv.equippedHere = cur && std::strcmp(cur, modDetailId_) == 0;
-                    dv.reqLevel = modEquipLevel(*md);
-                    dv.petLevel = pet_.level;
-                    dv.petLine = pet_.creature ? pet_.creature->line : nullptr;
-                    dv.storageCap = modStorageCap();
-                    dv.beat = beat_;
-                    drawModDetail(fb, registry_, modHoldings(), *md, dv);
-                    break;
-                }
-            }
-            {
-                ModPickerView pv;
-                pv.slot = modSlot_;
-                pv.pick = modPick_;
-                pv.petLevel = pet_.level;
-                pv.petLine = pet_.creature ? pet_.creature->line : nullptr;
-                pv.confirmActive = modConfirm_.isOpen();
-                pv.confirmChoice = modConfirm_.choice();
-                pv.pendingId = modPendingId_;
-                pv.beat = beat_;
-                drawModPicker(fb, registry_, modHoldings(), pv);
-            }
-            break;
+        case SubmenuId::Mods: loadout_.drawDetail(fb, *this); break;
         case SubmenuId::Games:
             arcadeScreen_.drawCabinet(fb, *this);
             break;
         default: break;
     }
-}
-
-void Game::drawTrain(Framebuffer& fb) const {
-    if (trainScreen_ == TrainScreen::MoveDetail) {
-        // The reader half of the picker (hold-B). A cursor that has somehow lost its
-        // move falls back to the picker rather than drawing an empty page.
-        if (const MoveDef* m = focusedPickerMove()) {
-            const char* eq = pet_.moves.equipped(moveSlot_);
-            MoveDetailView dv;
-            dv.petStage = pet_.creature ? pet_.creature->stage : Stage::BootSector;
-            dv.equippedHere = eq && std::strcmp(eq, m->id) == 0;
-            dv.proseScroll = moveProseScroll_;
-            dv.beat = beat_;
-            drawMoveDetail(fb, registry_, *m, dv);
-            return;
-        }
-    }
-    MovePickerView v;
-    v.slot = moveSlot_;
-    v.requiredKind = slotRequiredKind(moveSlot_);
-    v.petStage = pet_.creature ? pet_.creature->stage : Stage::BootSector;
-    v.petLine = pet_.creature ? pet_.creature->line : nullptr;
-    v.pick = movePick_;
-    v.showAll = moveShowAll_;
-    v.confirmActive = moveConfirm_.isOpen();
-    v.confirmChoice = moveConfirm_.choice();
-    v.pendingId = movePendingId_;
-    v.beat = beat_;
-    drawMovePicker(fb, registry_, pet_.moves, v);
 }
 
 // Which art a CamoTarget names: the contract is on the declaration (game.h).

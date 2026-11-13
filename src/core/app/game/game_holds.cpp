@@ -25,7 +25,6 @@ Game::HoldTarget Game::holdTarget() const {
             default: return {};
         }
     }
-    const bool movesTab = loadoutTab_ == LoadoutTab::Moves;
     if (nav_ == Nav::Submenu) {
         switch (enteredId()) {
             case SubmenuId::Items: return screenHold<&Game::items_>();
@@ -33,9 +32,9 @@ Game::HoldTarget Game::holdTarget() const {
                 return {[](Game& g, uint32_t held) { return g.stat_.holdB(g.statSources(), held); },
                         [](Game& g) { g.stat_.releaseB(g); }};
             case SubmenuId::Mods:
-                if (!movesTab) return {};
-                return {[](Game& g, uint32_t held) { return g.moveSlotsHoldB(held); },
-                        [](Game& g) { g.moveSlotsReleaseB(); }};
+                if (loadout_.tab() != LoadoutTab::Moves) return {};
+                return {[](Game& g, uint32_t held) { return g.loadout_.moveSlotsHoldB(g, held); },
+                        [](Game& g) { g.loadout_.moveSlotsReleaseB(g); }};
             default: return {};
         }
     }
@@ -44,12 +43,10 @@ Game::HoldTarget Game::holdTarget() const {
             // Letting go early abandons the reveal or the commit, so the release is empty.
             case SubmenuId::Cfg:
                 return screenHold<&Game::cfg_>();
-            // trainScreen_ keeps its value across a hub page change, so the MODS picker
-            // sits at the same Nav::Detail with a stale MovePicker beside it.
             case SubmenuId::Mods:
-                if (!movesTab || trainScreen_ != TrainScreen::MovePicker) return {};
-                return {[](Game& g, uint32_t held) { return g.movePickerHoldB(held); },
-                        [](Game& g) { g.movePickerReleaseB(); }};
+                if (!loadout_.movePickerUp()) return {};
+                return {[](Game& g, uint32_t held) { return g.loadout_.movePickerHoldB(held); },
+                        [](Game& g) { g.loadout_.movePickerReleaseB(g); }};
             default: return {};
         }
     }

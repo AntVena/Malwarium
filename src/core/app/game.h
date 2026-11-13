@@ -27,6 +27,7 @@
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
+#include "core/app/game/loadout_screen.h"
 #include "core/app/game/maint_screen.h"
 #include "core/app/game/merge_screen.h"
 #include "core/app/game/peers_screen.h"
@@ -124,7 +125,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
              private MergeHost, private PeersHost, private ChaptersHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
-             private CfgHost {
+             private CfgHost, private LoadoutHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -196,7 +197,7 @@ public:
     const ModSlots& modSlots() const { return pet_.mods; }
     const ModPool& modPool() const { return op_.modPool; }
     // The two halves the MODS screen reads together.
-    ModHoldings modHoldings() const { return {pet_.mods, op_.modPool}; }
+    ModHoldings modHoldings() const override { return {pet_.mods, op_.modPool}; }
     const MoveLoadout& moveLoadout() const { return pet_.moves; }
     // The stamped kind for `slot`, or Unset if it hasn't
     // unlocked for this pet yet (out-of-range also reads Unset).
@@ -204,10 +205,10 @@ public:
         return (slot >= 0 && slot < kMaxMoveSlots) ? pet_.slotKinds[slot] : SlotKind::Unset;
     }
     // The MoveDef::Kind an equip into `slot` must match. Unset defensively reads as
-    // Attack. Unreachable in normal play: onTrainList only lets the cursor reach an
+    // Attack. Unreachable in normal play: the MOVES slot list only lets the cursor reach an
     // UNLOCKED slot, and stampSlotKinds() runs on every pet install, so every
     // reachable slot is stamped before the player can ever open its picker.
-    MoveDef::Kind slotRequiredKind(int slot) const {
+    MoveDef::Kind slotRequiredKind(int slot) const override {
         return slotKind(slot) == SlotKind::Defend ? MoveDef::Kind::Defend
                                                    : MoveDef::Kind::Attack;
     }
@@ -356,7 +357,7 @@ public:
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
     // bench of a favourite mod buys the room for it rather than accumulating copies
     // nobody counted.
-    int modStorageCap() const { return modCopyCap(op_.rig.level[kRigRowModStorage]); }
+    int modStorageCap() const override { return modCopyCap(op_.rig.level[kRigRowModStorage]); }
     // The Operator record, read by const reference: the player across every pet.
     const Operator& operatorRecord() const override { return op_; }
     // The Settings record, read by const reference: the device's preferences.
@@ -2059,15 +2060,15 @@ public:
     // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
     // which is the one thing a rendered frame states least directly.
     int listRow() const { return listRow_; }
-    int modPick() const { return modPick_; }
-    const char* modDetailId() const { return modDetailId_; }
+    int modPick() const { return loadout_.modPick(); }
+    const char* modDetailId() const { return loadout_.modDetailId(); }
     // Grant mods in tests without walking a boss drop or a cache roll.
     ModPool& debugModPool() { return op_.modPool; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
-    void debugSetMoveShowAll(bool v) { moveShowAll_ = v; dirty_ = true; }
-    bool moveShowAll() const { return moveShowAll_; }
+    void debugSetMoveShowAll(bool v) { loadout_.setMoveShowAll(v); dirty_ = true; }
+    bool moveShowAll() const { return loadout_.moveShowAll(); }
     // Fill every unlocked move slot and every mod slot (tests / tools/dump_frame.cpp).
     // A Daemon carrying a full kit is the state STAT's LOADOUT page has to WINDOW
     // rather than run down the screen, and it is otherwise only reachable by playing
@@ -2428,7 +2429,6 @@ private:
     void drawFragger(Framebuffer& fb) const;
     void drawEvolve(Framebuffer& fb) const;
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
-    void drawTrain(Framebuffer& fb) const;        // MOVES L3 (move picker / detail)
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
@@ -2619,34 +2619,16 @@ private:
     bool onGameBriefInput(const ButtonEvent& ev);
     void drawGameBrief(Framebuffer& fb) const;
 
-    // MODS: the LOADOUT hub (L2) and the mod-slot half it fronts.
-    void onLoadoutHub(const ButtonEvent& ev);
-    void openLoadoutTab(LoadoutTab tab);        // hub row -> its page, seeding the page
-    void leaveLoadoutTab();                     // any page -> back to the hub
-    void onModsList(const ButtonEvent& ev);
-    void onModPicker(const ButtonEvent& ev);
-    void onModDetail(const ButtonEvent& ev);   // mod detail (read-then-act)
-    void commitModEquip();                      // shared equip-or-confirm for a mod
-
-    // MOVES: slot list (L2) -> move picker / Sim-Battle tier (L3) -> combat.
-    void onTrainList(const ButtonEvent& ev);
-    void onTrainDetail(const ButtonEvent& ev);     // dispatch MovePicker / MoveDetail / SimTier
-    void onMovePicker(const ButtonEvent& ev);
-    // The MOVES picker's B: a hold toggles the full roster, a tap unequips (on the
-    // first row) or drills into the focused move's detail.
-    bool movePickerHoldB(uint32_t heldMs);
-    void movePickerReleaseB();
-    // The MOVES slot list's B: a hold reads the move in the slot, a tap opens its picker.
-    bool moveSlotsHoldB(uint32_t heldMs);
-    void moveSlotsReleaseB();
-    void onMoveDetail(const ButtonEvent& ev);      // A pages prose, B equips, C backs
-    // The move the picker's cursor is on, or nullptr on the unequip row: shared by
-    // the drill-down, its input handler and the MoveDetail render.
-    const MoveDef* focusedPickerMove() const;
-    void onSimTier(const ButtonEvent& ev);
     // The fight's lifecycle. Its screen, the one pet-side screen where A+C is live, is
     // fightScreen_ (game/fight_screen.h).
-    void startSimBattle();                          // build combat (safe stakes) + enter
+    // LoadoutHost: the LOADOUT screen's way back into the game (game_care.cpp).
+    bool modEquippable(int slot, const char* id) const override;
+    void installMod(int slot, const char* id) override;
+    void equipMove(int slot, const char* id) override;
+    void unequipMove(int slot) override;
+    // Back to the LOADOUT hub from outside it: the Sim Battle PRACTISE started.
+    void leaveLoadoutTab();
+    void startSimBattle(int tier) override;          // build combat (safe stakes) + enter
     void finishCombat();                            // apply result, return to caller
     // Feeding-frenzy pacing: resolves one Combat::step(), then updates the
     // same-actor streak counters off who just acted (Combat::playerTurnNext()
@@ -3432,54 +3414,7 @@ private:
 
     ArchScreen arch_;   // the ARCH slot's cursors, group and confirm (game/arch_screen.h)
 
-    // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
-    // whose picker is open; modPick_ the picker row (0 = unequip). The inline
-    // overwrite confirm is a picker sub-state (modConfirm_ and the pending
-    // mod id). Mod EFFECTS apply in combat: equip is real.
-    int modSlot_ = 0;
-    int modPick_ = 0;
-    InlineConfirm modConfirm_;
-    const char* modPendingId_ = nullptr;
-    // selecting a mod in the picker opens its detail (read-then-act, mirrors
-    // ITEMS). modDetail_ overlays the picker; modDetailId_ is the inspected mod.
-    bool modDetail_ = false;
-    const char* modDetailId_ = nullptr;
-
-    // Which half of the LOADOUT hub is open (ui_state.h). Hub is the three-row menu
-    // itself; the other three route the SAME Nav::Submenu/Nav::Detail pair to the
-    // mod slots, the move slots, or the Sim-Battle tier pick, so C from any of them
-    // returns here rather than to the carousel. loadoutHubRow_ is the hub's own
-    // cursor, kept across an entry so leaving a page lands back on the row that
-    // opened it.
-    LoadoutTab loadoutTab_ = LoadoutTab::Hub;
-    int loadoutHubRow_ = 0;
-
-    // MOVES + PRACTISE (the LOADOUT hub's other two rows) + the shared combat
-    // engine. trainRow_ is the focused MOVES row (always an unlocked slot); the L3
-    // Detail is either the move picker or, under PRACTISE, the Sim-Battle tier pick
-    // (trainScreen_).
-    // The move picker mirrors MODS (slot/pick/confirm + pending). A fight's Health lives
-    // in fight_ and is never persisted; pet_.xp/pet_.level persist (save v2).
-    int trainRow_ = 0;
-    // MoveDetail is the picker's reader half (hold-B): the picker chooses, the detail
-    // page explains, so neither has to shrink to fit the other.
-    enum class TrainScreen { MovePicker, MoveDetail, SimTier };
-    TrainScreen trainScreen_ = TrainScreen::MovePicker;
-    int moveSlot_ = 0;
-    int movePick_ = 0;
-    // First prose line drawn on MoveDetail: B advances it, wrapping past the end
-    // (drawMoveDetail / moveProseLines, train_screen.h). Reset on every entry.
-    int moveProseScroll_ = 0;
-    // Move picker default view: only moves the pet can actually equip into
-    // `moveSlot_` right now. Holding A past kMoveFilterHoldMs toggles the full
-    // list (tick()); reset false whenever the picker is (re)entered (onTrainList).
-    bool moveShowAll_ = false;
-    // MoveDetail was opened by holding B on the SLOT LIST, so it reads the move already in
-    // `moveSlot_` rather than the picker's cursor, and C returns to the slot list.
-    bool moveDetailEquipped_ = false;
-    InlineConfirm moveConfirm_;
-    const char* movePendingId_ = nullptr;
-    int simTier_ = 0;
+    LoadoutScreen loadout_;   // the LOADOUT hub, MODS, MOVES and PRACTISE (game/loadout_screen.h)
     // The fight on screen, or the last one (core/model/fight.h).
     Fight fight_;
     // The Combat screen (game/fight_screen.h): its stats panel, stage clock and camo.
