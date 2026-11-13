@@ -330,10 +330,7 @@ void Game::stepScreenBeat() {
         // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so hold
         // ~10s to let a watching player act; if no button is pressed by then, auto-leave
         // and keep exploring.
-        if (walk_.active && ++walk_.eventBeat >= kExploreDecisionHoldBeats) {
-            std::snprintf(walk_.flavor, sizeof(walk_.flavor), "LEFT THE SHOP");
-            returnToExplore();
-        }
+        if (walk_.active && ++walk_.eventBeat >= kExploreDecisionHoldBeats) leaveShop();
         break;
     case Nav::Idle:
         if (walk_.active) stepWalkPacer();

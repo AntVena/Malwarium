@@ -89,6 +89,8 @@
 #include "core/model/isolation.h"
 #include "core/model/fragger.h"
 #include "core/model/stacker.h"
+#include "core/model/storefront_visit.h"
+#include "core/model/story_run.h"
 #include "core/model/tournament.h"
 #include "core/net/audit_capture.h"
 #include "core/net/handshake_ledger.h"
@@ -683,9 +685,9 @@ public:
     // Storefront (item shop AND mod shop share this accessor set: shopIsModShop()
     // says which registry a row's `id` resolves through). `i` is bounds-clamped to
     // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
-    bool shopIsModShop() const { return shopIsModShop_; }       // false = item shop, true = mod shop
-    const char* shopStoreName() const override { return shopFront_ ? shopFront_->name : ""; }
-    int shopListingCount() const override { return shopFront_ ? shopFront_->listingCount : 0; }
+    bool shopIsModShop() const;                                 // false = item shop, true = mod shop
+    const char* shopStoreName() const override;
+    int shopListingCount() const override;
     int shopCursor() const { return shop_.row(); }              // A-cycled row selection
     const char* shopListingId(int i) const;                     // raw content id (tests/debug)
     const char* shopListingName(int i) const override;                   // resolved display name
@@ -2846,21 +2848,18 @@ private:
     void resolveNetworkDiscovery();
 
     // Shop event: a storefront explore event, either the current sector's item shop
-    // (startShopEvent, Nav::Shop) or its mod shop (startModShopEvent, Nav::ModShop).
-    // Both resolve to shopFront_, an AreaStorefrontDef (src/core/content/areas/) whose
-    // arbitrary-length `listings` is the ONE place a row's stock/Bits price/item
-    // costs live (the area's own price, distinct from an item's own Pedia-facing
-    // bitsPrice). A cycles the cursor through every listing (wraps); B buys the
-    // SELECTED row (Bits + every item cost -> inventory add / mod grant) while its
-    // stock + wallet + item costs allow; C leaves back to the Walk. Stock is
-    // per-visit (shopStockLeft_, refilled from each row's own ShopListingDef::stock
-    // on entry, not persisted). shopStatusLine() derives the grayscale-safe reason a
-    // buy is/isn't available for the selected row.
+    // (startShopEvent, Nav::Shop) or its mod shop (startModShopEvent, Nav::ModShop),
+    // each opening a StorefrontVisit over the area's AreaStorefrontDef, the one place a
+    // row's stock, Bits price and item costs live (the area's own price, distinct from
+    // an item's own Pedia-facing bitsPrice). B buys the selected row while its stock,
+    // the wallet and its item costs allow; C leaves back to the walk. shopStatusLine()
+    // derives the grayscale-safe reason a buy is or is not available.
     void startShopEvent();
     void startModShopEvent();
     // ShopHost.
     void buyShopItem(int i) override;
     void leaveShop() override;
+    const ShopListingDef* shopListing(int i) const;   // the visit's row, or null
     void holdShopOpen() override { walk_.eventBeat = 0; }
     // Why row `i` cannot be bought, as the spelled-out WORDS the sign shows, or nullptr
     // when it can. One function so the till and the sign are the same answer rather than
@@ -3756,17 +3755,8 @@ private:
     void finishPvpBattle();
 
 
-    // Shop event. shopFront_ points at the CURRENT area's AreaStorefrontDef (its
-    // .shop or .modShop, picked by startShopEvent/startModShopEvent): a stable
-    // pointer into compiled-in content, valid for the whole visit. shopIsModShop_
-    // says which registry resolves a listing's `id` (item vs mod). shopStockLeft_ is
-    // the per-visit remaining stock for each listing (index-aligned with
-    // shopFront_->listings; refilled from each row's own ShopListingDef::stock on
-    // entry, NOT persisted). The cursor is shop_'s. All transient run state, like the
-    // boss/gauntlet fields above.
-    const AreaStorefrontDef* shopFront_ = nullptr;
-    bool shopIsModShop_ = false;
-    int shopStockLeft_[kMaxShopListings] = {};
+    // The storefront being visited (core/model/storefront_visit.h), while one is.
+    std::optional<StorefrontVisit> shopVisit_;
     ShopScreen shop_;   // the storefront's cursor (game/shop_screen.h)
 
     // Hacker face (07). face_ is the top-level PET/HACKER mode (transient: a

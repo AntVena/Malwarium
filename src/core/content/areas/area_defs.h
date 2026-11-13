@@ -44,8 +44,8 @@ constexpr int arrLen(const char* const (&)[N]) { return N; }
 template <typename T, int N>
 constexpr int arrLen(const T (&)[N]) { return N; }
 
-// Runtime cap for a storefront's listing count (Game::shopStockLeft_'s sizing,
-// game.h): headroom above any shipped area's listing count. A plain fixed-size
+// Runtime cap for a storefront's listing count (StorefrontVisit's stock sizing,
+// core/model/storefront_visit.h): headroom above any shipped area's listing count. A plain fixed-size
 // row list, not a second ladder, so unlike kAreaCount there is no derived count to
 // keep in sync: just don't let one area's listings[] grow past this.
 constexpr int kMaxShopListings = 6;
