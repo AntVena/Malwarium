@@ -83,12 +83,7 @@ void Game::enterHackerSubmenu() {
     rigShop_.enter();
     vault_.enter();
     hackerMergeRow_ = 0;
-    crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
-    crewHubRow_ = 0;
-    crewTeamRow_ = 0;
-    crewDetail_ = -1;
-    crewProseScroll_ = 0;
-    crewNetRow_ = 0;
+    crew_.enter();
     peerRow_ = 0;
     pvpRow_ = 0;
 }
@@ -96,7 +91,7 @@ void Game::enterHackerSubmenu() {
 void Game::onHackerSubmenu(const ButtonEvent& ev) {
     switch (enteredHackerId()) {
         case HackerSlotId::Crew:
-            onHackerCrew(ev);
+            crew_.onButton(*this, ev);
             break;
         case HackerSlotId::Shop:
             rigShop_.onButton(*this, ev);
@@ -248,7 +243,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         // only the screen knows its title, tint and position note.
         case HackerSlotId::Shop: rigShop_.draw(fb, *this, beat_); break;   // rig_shop_screen.cpp
         case HackerSlotId::Vault: vault_.draw(fb, *this); break;
-        case HackerSlotId::Crew: drawHackerCrew(fb); break;       // game_crew.cpp
+        case HackerSlotId::Crew: crew_.draw(fb, *this); break;
         case HackerSlotId::Peers: drawHackerPeers(fb); break;     // game_peers.cpp
         case HackerSlotId::Link: drawHackerLink(fb); break;       // game_pvp.cpp
         case HackerSlotId::Merge: drawHackerMerge(fb); break;     // game_merge.cpp

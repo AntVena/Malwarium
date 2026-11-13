@@ -1,0 +1,516 @@
+#include "core/app/game/crew_screen.h"
+
+#include <algorithm>
+#include <cstdio>
+
+#include "core/app/game_internal.h"   // kNetMaxRows, drawScrollbar
+#include "core/app/operator.h"
+#include "core/content/content_crews.h"
+#include "core/content/effect_text.h"  // effectText: the Exploit's description prose
+#include "core/render/canvas.h"
+#include "core/render/font.h"
+#include "core/render/palette.h"
+#include "core/render/sprite.h"
+#include "core/ui/layout.h"
+#include "core/ui/theme.h"
+#include "core/ui/widgets.h"
+#include "generated/assets.h"
+
+// The Hacker-face CREW slot: enlist in a crew (content_crews.h) and designate the HOME
+// NETWORK that membership hangs off.
+//
+// FOUR VIEWS, not one list (CrewView). Enlisting is player identity that
+// outlives every pet, so the roster gets its own pages; one scrolling list would
+// make it look like a settings row. So the screen spends the space instead:
+//
+//   Hub     · who you are now (the allegiance card), and the two SIDES to browse.
+//   Team    · one side's roster, a row per crew: name at title weight, motto under it,
+//             and the Exploit's mechanic word right-aligned so the side is comparable
+//             down a column.
+//   Detail  · one crew's page: glyph, motto, the Exploit named and described in full,
+//             and the one action (ENLIST / LEAVE).
+//   Picker  · the home-network chooser, a modal over the Hub rather than a step past
+//             it: designating turf is the PRECONDITION for all of the above, not a
+//             stage of the browse.
+//
+// C walks back up that order, and only leaves the screen from the Hub, so the deeper
+// views cost a press to escape and never strand the player. The picker asks which
+// in-range network the operator claims, so its rows are the live in-range snapshot the
+// passive scan refreshes (Game::registerNetwork -> visibleNetworks_), and opening the
+// screen arms that scan on its own (Game::radioScanWanted). The SD-backed NetworkLedger
+// (core/net/network_ledger.h) supplies each row's walked-in tally as evidence for the
+// choice; it never contributes a row of its own.
+//
+// The side is dual-coded everywhere, in this order: the word (RED/BLUE, and the
+// doctrine under it), the glyph (ICON_TEAM_RED/BLUE. Different shapes, not one shape
+// recoloured), and only then the tint. The tint is the channel that can be lost, so
+// nothing on these screens is distinguishable by it alone.
+
+namespace mal {
+
+namespace {
+// The picker window. Each row is a name line plus room for the HOME/LIVE sub-tags
+// beneath it; six of them clear the body between the header rule and the hint band.
+constexpr int kNetRowPitch = kFontH + 14;
+constexpr int kNetVisibleRows = 6;
+constexpr int kGlyph = 16;   // ICON_TEAM_RED / ICON_TEAM_BLUE are 16x16
+
+// --- The Hub --------------------------------------------------------------- The
+// allegiance card: a raised TRACK panel given the top of the body, so the first thing
+// the screen says is who you are. Three lines, each sized for the longest row the table
+// holds: the crew name gets the full width beside the glyph, the side word and the
+// Exploit's meter share the second, and the Exploit's name has the third to itself.
+// Nothing on this card clips. Fixed height whether or not you belong to a crew, so
+// enlisting never shifts the two side rows out from under the cursor.
+constexpr int kCardTop = 50;
+constexpr int kCardH = 46;
+constexpr int kCardPad = 6;
+constexpr int kCardTextTop = kCardTop + 6;
+// ...and the two sides under it: glyph, the side at title weight, doctrine + count.
+constexpr int kSideTop = kCardTop + kCardH + 12;   // 108
+constexpr int kSideH = 38;
+
+// --- The Team roster --------------------------------------------------------
+// Three lines a row (name at title weight, the motto, then the Exploit's mechanic word),
+// and a row pitch with real air in it. That is the whole point of the side having a
+// screen of its own: five crews stacked two-to-a-row was the cramped thing this pass
+// exists to undo, and a column of NEGATE / ESCALATE / RALLY is what makes a side a
+// choice rather than five paragraphs read in turn.
+// Four line-heights per row (name, up to two wrapped tagline lines, then the
+// Exploit tag), plus real gap to the next row. Fixed, not measured per-row: the
+// tagline's slot is reserved at its worst case (2 lines) whether a given crew's
+// motto needs it or not, so a long one never competes with the row below for the
+// same pixels. The Exploit tag rides up under a short motto, which puts the air it
+// leaves between crews rather than inside one.
+constexpr int kTeamRowH = 60;
+constexpr int kTeamVisibleRows = 3;
+
+// --- The Detail page --------------------------------------------------------
+// The motto WRAPS rather than travelling: it is the crew's voice and the reason the
+// page exists, so it gets two lines of its own instead of a marquee the reader has to
+// wait out. Everything below is measured from where that block ends.
+constexpr int kDetailMottoY = 28;
+// Three, not two: the longest motto in the table needs all three beside the glyph, and
+// a motto cut at "...'send it straight over'," has lost the joke it was written for.
+constexpr int kDetailMottoLines = 3;
+constexpr int kDetailRule = 66;
+constexpr int kDetailExploitY = 72;
+constexpr int kDetailProseTop = kDetailExploitY + kLineH * 2 + 2;   // 100
+constexpr int kDetailVerbY = kActiveH - 46;                         // 178
+// Prose gets whatever is left between the Exploit block and the verb row, and pages
+// on A when it wants more (the same bargain drawMoveDetail strikes: the derived
+// readout is bounded and never cut, the authored prose is elastic and scrolls).
+constexpr int kDetailProseLines = (kDetailVerbY - kDetailProseTop) / kLineH;
+
+// A raised panel, the same TRACK fill the combat picker and stat panels use:
+// which marks a block as an object and not a list row.
+void drawPanel(Framebuffer& fb, int x, int y, int w, int h) {
+    fb.fillRect(x, y, w, h, palColor(Pal::TRACK));
+}
+
+}  // namespace
+
+// --- Input ------------------------------------------------------------------
+
+void CrewScreen::stepList(const CrewHost& host, int dir) {
+    switch (view_) {
+        case CrewView::Hub: hubRow_ = stepRow(hubRow_, kHubRows, dir); break;
+        case CrewView::Team: teamRow_ = stepRow(teamRow_, crewTeamCount(team_), dir); break;
+        case CrewView::Picker: {
+            CrewNetRow rows[kNetMaxRows];
+            netRow_ = stepRow(netRow_, host.crewNetworkRows(rows, kNetMaxRows), dir);
+            break;
+        }
+        case CrewView::Detail: break;
+    }
+}
+
+void CrewScreen::onButton(CrewHost& host, const ButtonEvent& ev) {
+    // C is the same key at every depth: step back ONE view, and leave the screen only
+    // from the Hub. Written once here rather than per-view so a view added later
+    // cannot forget to be escapable.
+    if (ev.button == Button::C) {
+        switch (view_) {
+            case CrewView::Detail: view_ = CrewView::Team; break;
+            case CrewView::Team:
+            case CrewView::Picker: view_ = CrewView::Hub;  break;
+            case CrewView::Hub:    host.leaveToCarousel(); return;
+        }
+        return;
+    }
+
+    switch (view_) {
+        case CrewView::Picker: {
+            CrewNetRow rows[kNetMaxRows];
+            const int n = host.crewNetworkRows(rows, kNetMaxRows);
+            if (n == 0) return;                        // empty state: A/B inert
+            if (netRow_ >= n) netRow_ = 0;
+            if (ev.button == Button::A) {
+                stepList(host, +1);
+            } else if (ev.button == Button::B) {
+                host.setHomeNetwork(rows[netRow_].key, rows[netRow_].name);
+                view_ = CrewView::Hub;
+            }
+            return;
+        }
+        case CrewView::Hub:
+            if (ev.button == Button::A) {
+                stepList(host, +1);
+            } else if (ev.button == Button::B) {
+                if (hubRow_ == 0) {                // HOME NET row -> the modal
+                    view_ = CrewView::Picker;
+                    netRow_ = 0;
+                } else {                           // a side -> its roster
+                    team_ = hubRow_ == 1 ? CrewTeam::Red : CrewTeam::Blue;
+                    teamRow_ = 0;
+                    view_ = CrewView::Team;
+                }
+            }
+            break;
+        case CrewView::Team: {
+            const int n = crewTeamCount(team_);
+            if (n == 0) return;                        // a side with no crews yet
+            if (teamRow_ >= n) teamRow_ = 0;
+            if (ev.button == Button::A) {
+                stepList(host, +1);
+            } else if (ev.button == Button::B) {
+                detail_ = crewByTeam(team_, teamRow_);
+                proseScroll_ = 0;
+                view_ = CrewView::Detail;
+            }
+            break;
+        }
+        case CrewView::Detail: {
+            const CrewDef* c = crew(detail_);
+            if (!c) { view_ = CrewView::Team; break; }
+            if (ev.button == Button::B) {              // the one verb on this page
+                if (host.operatorRecord().crewIndex == detail_) host.leaveCrew();
+                else host.joinCrew(detail_);           // no-op without a home network
+            } else if (ev.button == Button::A) {
+                // A already means "advance", so paging the description with it needs no
+                // exception to the A/B/C contract, and a page that fits never moves,
+                // because the wrap count is what bounds the offset.
+                const EffectText prose = effectText(c->exploit);
+                const int lines = textWrapLines(prose.c_str(), kActiveW - 2 * kMargin);
+                if (lines > kDetailProseLines)
+                    proseScroll_ =
+                        (proseScroll_ + 1) % (lines - kDetailProseLines + 1);
+            }
+            break;
+        }
+    }
+}
+
+// --- Rendering ---------------------------------------------------------------
+
+// The one dispatch, and the only place the header band is chosen. The CREW title
+// depends on the view (the sibling Hacker sub-screens get a fixed band from their
+// caller), and the deeper two are tinted by their side, so the band carries Red/Blue
+// as you go deeper.
+void CrewScreen::draw(Framebuffer& fb, const CrewHost& host) const {
+    switch (view_) {
+        case CrewView::Hub:
+            drawHeaderBand(fb, "CREW");
+            drawHub(fb, host);
+            return;
+        case CrewView::Picker:
+            drawHeaderBand(fb, "HOME NET");
+            drawNetPicker(fb, host);
+            return;
+        case CrewView::Team:
+            drawHeaderBand(fb, crewTeamName(team_), crewTeamDoctrine(team_),
+                           palColor(Pal::INK_DIM),
+                           teamColor(team_ == CrewTeam::Red));
+            drawTeam(fb, host);
+            return;
+        case CrewView::Detail: {
+            const CrewDef* c = crew(detail_);
+            if (!c) { drawHeaderBand(fb, "CREW"); return; }
+            const bool red = c->team == CrewTeam::Red;
+            drawHeaderBand(fb, c->displayName, crewTeamName(c->team), teamColor(red),
+                           teamColor(red));
+            drawDetail(fb, host);
+            return;
+        }
+    }
+}
+
+// --- Hub ----------------------------------------------------------------------
+
+void CrewScreen::drawHub(Framebuffer& fb, const CrewHost& host) const {
+    // HOME NET keeps the Hacker face's context band (layout.h's kContextY/kContextRule):
+    // it is a precondition the rows below it are read against, which is exactly what
+    // that band is for. It is also row 0, so it carries the cursor like any other.
+    const bool homeSel = hubRow_ == 0;
+    if (homeSel) drawRowCursor(fb, 2, kContextY + 1, palColor(Pal::ACCENT));
+    const char* homeVal = (host.operatorRecord().homeNetworkKey != 0) ? host.operatorRecord().homeNetworkName : "NOT SET";
+    drawLabelValue(fb, kMargin + 10, kContextY, "HOME NET",
+                   homeSel ? palColor(Pal::INK) : palColor(Pal::INK_DIM), homeVal,
+                   (host.operatorRecord().homeNetworkKey != 0) ? palColor(Pal::INK) : palColor(Pal::WARN), host.screenBeat(),
+                   scrollWhen(homeSel));
+    fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
+
+    // The allegiance card, shown before any navigation. Not selectable: there is
+    // nothing to DO to your own membership from here that leaving through the crew's
+    // own page doesn't say better.
+    drawPanel(fb, kMargin, kCardTop, kActiveW - 2 * kMargin, kCardH);
+    const int cx = kMargin + kCardPad;
+    const int cRight = kActiveW - kMargin - kCardPad;
+    const CrewDef* mine = crew(host.operatorRecord().crewIndex);
+    if (mine) {
+        const bool red = mine->team == CrewTeam::Red;
+        const Rgb565 side = teamColor(red);
+        // The glyph anchors the top two lines the way a detail page's icon does, and
+        // the two of them indent past it; the third runs the full width beneath.
+        drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0, cx,
+                         kCardTextTop - 2, side);
+        const int tx = cx + kGlyph + 6;
+        // The name in the side's colour, with the whole card width to scroll in.
+        // Regular weight: colour and the card's top line already carry it, and Bold
+        // here only outranked the header.
+        drawTextMarquee(fb, tx, kCardTextTop, cRight - tx, mine->displayName, side,
+                        host.screenBeat(), Overflow::Scroll);
+        // The side spelled out beside its glyph (never the tint alone), against what
+        // the Exploit meters.
+        char tag[16];
+        crewExploitLabel(tag, sizeof(tag), mine->exploit.kind, mine->exploit.magnitude);
+        drawLabelValueIn(fb, tx, kCardTextTop + kLineH, cRight, crewTeamName(mine->team),
+                         side, tag, palColor(Pal::ACCENT), host.screenBeat(), Overflow::Clip);
+        // ...and the Exploit you actually carry into a fight, which is what makes the
+        // card worth its space rather than a restatement of the header.
+        drawTextMarquee(fb, cx, kCardTextTop + kLineH * 2, cRight - cx,
+                        mine->exploit.name, palColor(Pal::INK), host.screenBeat(), Overflow::Clip);
+    } else {
+        // The same three lines, so the two side rows never move under the cursor when
+        // membership changes, and the empty state says what to do about it, in the
+        // order it has to be done.
+        drawText(fb, cx, kCardTextTop, "UNAFFILIATED", palColor(Pal::INK_DIM));
+        drawText(fb, cx, kCardTextTop + kLineH, "no crew, no exploit",
+                 palColor(Pal::INK_DIM));
+        drawText(fb, cx, kCardTextTop + kLineH * 2,
+                 (host.operatorRecord().homeNetworkKey != 0) ? "PICK A SIDE BELOW" : "SET A HOME NET FIRST",
+                 (host.operatorRecord().homeNetworkKey != 0) ? palColor(Pal::INK) : palColor(Pal::WARN));
+    }
+
+    // The two sides. A fixed pair rather than a loop over what the roster happens to
+    // contain: an empty side still has to be reachable, or the first crew added to it
+    // would have nowhere to appear.
+    for (int i = 0; i < 2; ++i) {
+        const CrewTeam team = i == 0 ? CrewTeam::Red : CrewTeam::Blue;
+        const bool red = team == CrewTeam::Red;
+        const Rgb565 side = teamColor(red);
+        const int y = kSideTop + i * kSideH;
+        const bool sel = hubRow_ == i + 1;
+        if (sel) drawRowCursor(fb, 2, y + 5, palColor(Pal::ACCENT));
+        drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0,
+                         kMargin + 8, y, side);
+        const int nameX = kMargin + 8 + kGlyph + 8;
+        // The side is the row's heading and the line under it the caption: bright in
+        // the side's colour over INK_DIM, the split every other roster uses.
+        drawText(fb, nameX, y + 2, crewTeamName(team), side);
+        char sub[32];
+        const int n = crewTeamCount(team);
+        std::snprintf(sub, sizeof(sub), "%s - %d CREW%s", crewTeamDoctrine(team), n,
+                      n == 1 ? "" : "S");
+        drawText(fb, nameX, y + 2 + kLineH, sub, palColor(Pal::INK_DIM));
+        // Where your allegiance sits, said on the row you'd have to open to change it.
+        if (mine && mine->team == team)
+            drawText(fb, kActiveW - kMargin - textWidth("YOURS"), y + 2, "YOURS", side);
+    }
+
+    drawHackerHint(fb, "A NEXT", homeSel ? "B PICK NET" : "B OPEN");
+}
+
+// --- Home-network picker (the modal over the Hub) ------------------------------
+
+void CrewScreen::drawNetPicker(Framebuffer& fb, const CrewHost& host) const {
+    CrewNetRow rows[kNetMaxRows];
+    const int n = host.crewNetworkRows(rows, kNetMaxRows);
+    // The radio has exactly ONE owner (platform RadioArbiter, priority AP >
+    // CAPTURE > SCAN), so name whoever actually holds it rather than claiming
+    // SCANNING unconditionally: an empty list means something completely
+    // different when the 'Pedia AP has the radio than when nothing is in range.
+    // Doubles as the notice that entering this screen arms the scan by itself, so
+    // a player who deliberately keeps AUDIT off isn't surprised by a live radio.
+    const bool starved = host.apEnabled() || host.captureHoldsRadio();
+    const char* radioState = host.apEnabled()                 ? "AP HAS RADIO"
+                             : host.captureHoldsRadio() ? "CAPTURE HAS RADIO"
+                                                         : "SCANNING";
+    // Alone on the context line: "CAPTURE HAS RADIO" is already 17 characters, and the
+    // header band above has named the screen, so anything sharing this row overprints
+    // it in exactly the case the message matters most.
+    drawText(fb, kActiveW - kMargin - textWidth(radioState), kContextY, radioState,
+             starved ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
+    fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
+
+    if (n == 0) {
+        // Empty for two different reasons, and the screen says which, so a radio
+        // that has not scanned never reads as nothing in range. Words, never
+        // colour alone.
+        drawText(fb, kMargin, 56, starved ? "SCAN CANT RUN" : "NO NETWORKS IN RANGE",
+                 palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 56 + kLineH,
+                 host.apEnabled()                  ? "TURN OFF AP IN CFG"
+                 : host.captureHoldsRadio() ? "CAPTURE IN PROGRESS"
+                                             : "LISTENING...",
+                 palColor(Pal::INK_DIM));
+    } else {
+        int sel = netRow_;
+        if (sel >= n) sel = 0;
+        int scrollTop = 0;
+        if (n > kNetVisibleRows) {
+            if (sel >= kNetVisibleRows) scrollTop = sel - kNetVisibleRows + 1;
+            scrollTop = std::min(scrollTop, n - kNetVisibleRows);
+        }
+        for (int v = 0; v < kNetVisibleRows && scrollTop + v < n; ++v) {
+            const CrewNetRow& row = rows[scrollTop + v];
+            const int rowY = 52 + v * kNetRowPitch;
+            const bool s = scrollTop + v == sel;
+            if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
+            // Sighting count doubles as the "is this really home?" evidence, and is
+            // the grayscale-safe ordering cue for the sort. A network in range that
+            // no walk has resolved yet has no tally, so it shows NEW.
+            char seen[16];
+            if (row.count == 0) std::snprintf(seen, sizeof(seen), "NEW");
+            else std::snprintf(seen, sizeof(seen), "x%u",
+                               static_cast<unsigned>(row.count));
+            drawLabelValue(fb, kMargin + 10, rowY, row.name,
+                           s ? palColor(Pal::INK) : palColor(Pal::INK_DIM), seen,
+                           palColor(Pal::INK_DIM), host.screenBeat(), scrollWhen(s));
+            // No LIVE tag: every row on this screen is in range by construction, so
+            // the tag would mark nothing. HOME still needs saying: it's the one
+            // row whose meaning differs. Word, never colour alone.
+            if (row.key == host.operatorRecord().homeNetworkKey)
+                drawText(fb, kMargin + 10, rowY + kFontH + 1, "HOME",
+                         palColor(Pal::ACCENT));
+        }
+        drawScrollbar(fb, 52, kNetVisibleRows * kNetRowPitch, n, scrollTop,
+                      kNetVisibleRows);
+    }
+
+    drawHackerHint(fb, "A NEXT", "B SET  C BACK",
+                   n > 0 ? VerbState::Ready : VerbState::Unavailable);
+}
+
+// --- Team roster ---------------------------------------------------------------
+
+void CrewScreen::drawTeam(Framebuffer& fb, const CrewHost& host) const {
+    const bool red = team_ == CrewTeam::Red;
+    const Rgb565 side = teamColor(red);
+    const int n = crewTeamCount(team_);
+    if (n == 0) {
+        drawText(fb, kMargin, 56, "NO CREWS ON THIS SIDE", palColor(Pal::INK_DIM));
+        drawText(fb, kMargin, 56 + kLineH, "YET.", palColor(Pal::INK_DIM));
+        drawHintBand(fb, "C BACK");
+        return;
+    }
+    int sel = teamRow_;
+    if (sel >= n) sel = 0;
+    int scrollTop = 0;
+    if (n > kTeamVisibleRows)
+        scrollTop = std::min(std::max(0, sel - kTeamVisibleRows + 1),
+                             n - kTeamVisibleRows);
+
+    for (int v = 0; v < kTeamVisibleRows && scrollTop + v < n; ++v) {
+        const int i = crewByTeam(team_, scrollTop + v);
+        const CrewDef& c = kCrews[i];
+        const int y = kRowTop + v * kTeamRowH;
+        const bool s = scrollTop + v == sel;
+        const bool joined = host.operatorRecord().crewIndex == i;
+        if (s) drawRowCursor(fb, 2, y + 1, palColor(Pal::ACCENT));
+        // One job per line, each with the full row, so a long crew name never clips.
+        const int tx = kMargin + 10;
+        const int w = kActiveW - kMargin - tx;
+        // 1: the name. Bold only while focused (VISUAL_LANGUAGE §2.3): the focused name
+        // is side-coloured, and in grayscale that colour sits at the motto's dim level.
+        // An unfocused name is ink over a dim motto, so colour already separates them.
+        drawTextMarquee(fb, tx, y, w, c.displayName, s ? side : palColor(Pal::INK),
+                        host.screenBeat(), scrollWhen(s), s ? FontFace::Bold : FontFace::Regular);
+        // 2: the motto. WRAPPED, not marqueed: a marquee only ever ran for the
+        // focused row, so an unselected crew with a long motto (e.g. "fail to plan;
+        // plan to fail") was silently cut mid-word with no indication there was
+        // more. Wrapping shows the whole thing on every row, focused or not.
+        const int mottoEnd = drawTextWrapped(fb, tx, y + kLineH, w, c.tagline,
+                                             palColor(Pal::INK_DIM), kLineH, 2);
+        // 3: the Exploit's mechanic word, and where you already belong. The tag is the
+        // comparable thing here: a column of NEGATE / STAT LOCK / RALLY is what makes a
+        // side a choice you can read down rather than three pages to visit in turn.
+        // It follows the motto's LAST line rather than the reserved slot's, so a
+        // one-line motto's spare line falls at the seam to the next crew. Parked at the
+        // slot's bottom, the tag sat as far from its own crew as from the next one and
+        // read as a crew of its own.
+        const int tagY = std::max(mottoEnd, y + kLineH * 2);
+        char tag[16];
+        crewExploitLabel(tag, sizeof(tag), c.exploit.kind, c.exploit.magnitude);
+        drawText(fb, tx, tagY, tag, palColor(Pal::INK));
+        if (joined)
+            drawText(fb, kActiveW - kMargin - textWidth("JOINED"), tagY, "JOINED",
+                     palColor(Pal::ACCENT));
+    }
+    if (n > kTeamVisibleRows)
+        drawScrollbar(fb, kRowTop, kTeamVisibleRows * kTeamRowH, n, scrollTop,
+                      kTeamVisibleRows);
+    drawHintBand(fb, "A NEXT   B VIEW   C BACK");
+}
+
+// --- Crew detail ---------------------------------------------------------------
+
+void CrewScreen::drawDetail(Framebuffer& fb, const CrewHost& host) const {
+    const CrewDef* c = crew(detail_);
+    if (!c) return;
+    const bool red = c->team == CrewTeam::Red;
+    const Rgb565 side = teamColor(red);
+    const bool joined = host.operatorRecord().crewIndex == detail_;
+
+    // Glyph + motto. The name is already the header band's title, so this block holds
+    // the motto. It wraps instead of scrolling, so the reader never waits for it.
+    drawSpriteTinted(fb, red ? ASSET_ICON_TEAM_RED : ASSET_ICON_TEAM_BLUE, 0, kMargin,
+                     kDetailMottoY - 3, side);
+    const int mottoX = kMargin + kGlyph + 8;
+    drawTextWrapped(fb, mottoX, kDetailMottoY, kActiveW - kMargin - mottoX, c->tagline,
+                    palColor(Pal::INK_DIM), kLineH, kDetailMottoLines);
+    fb.fillRect(kMargin, kDetailRule, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
+
+    // The Exploit, given the page's middle: what it is called, what it meters, and
+    // what it does. The heading line carries the derived "<TAG> xN" so the NAME gets
+    // the next line whole: the longest of them ("MALBEAST IN THE MIDDLE") is 22
+    // characters and would clip if it shared a line with its meter. Name and meter
+    // are the bounded half and are never cut; the description under them is the
+    // elastic half and pages on A.
+    char tag[16];
+    crewExploitLabel(tag, sizeof(tag), c->exploit.kind, c->exploit.magnitude);
+    drawLabelValue(fb, kMargin, kDetailExploitY, "EXPLOIT", palColor(Pal::INK_DIM), tag,
+                   palColor(Pal::INK), host.screenBeat(), Overflow::Clip);
+    // Bold earned (VISUAL_LANGUAGE §2.3): the name heads the prose under it, and in
+    // grayscale its accent lands between that prose and the dim readout above.
+    drawTextMarquee(fb, kMargin, kDetailExploitY + kLineH, kActiveW - 2 * kMargin,
+                    c->exploit.name, palColor(Pal::ACCENT), host.screenBeat(), Overflow::Scroll,
+                    FontFace::Bold);
+    const EffectText prose = effectText(c->exploit);
+    const int lines = textWrapLines(prose.c_str(), kActiveW - 2 * kMargin);
+    drawTextWrapped(fb, kMargin, kDetailProseTop, kActiveW - 2 * kMargin, prose.c_str(),
+                    palColor(Pal::INK), kLineH, kDetailProseLines, proseScroll_);
+
+    // The one verb, and the gate on it, in words. A crew member is always somebody's
+    // defender, so a player without a home network is told the precondition rather
+    // than offered a button that would silently do nothing.
+    if (joined) {
+        drawRowCursor(fb, kMargin, kDetailVerbY, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, kDetailVerbY, "JOINED - B TO LEAVE",
+                 palColor(Pal::ACCENT));
+    } else if ((host.operatorRecord().homeNetworkKey != 0)) {
+        drawRowCursor(fb, kMargin, kDetailVerbY, palColor(Pal::ACCENT));
+        drawText(fb, kMargin + 10, kDetailVerbY, "ENLIST", palColor(Pal::ACCENT));
+    } else {
+        drawText(fb, kMargin, kDetailVerbY, "NEEDS A HOME NET", palColor(Pal::WARN));
+    }
+
+    const bool pages = lines > kDetailProseLines;
+    const char* hint = joined ? (pages ? "A MORE  B LEAVE  C BACK" : "B LEAVE   C BACK")
+                      : (host.operatorRecord().homeNetworkKey != 0)
+                          ? (pages ? "A MORE  B ENLIST  C BACK" : "B ENLIST   C BACK")
+                          : (pages ? "A MORE   C BACK" : "C BACK");
+    drawHintBand(fb, hint);
+}
+
+}  // namespace mal

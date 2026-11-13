@@ -54,8 +54,11 @@ Game::ListTarget Game::listTarget() const {
                             g.peerRow_ = stepRow(g.peerRow_, g.peerRows(rows, kPeerMaxRows), dir);
                         },
                         [](Game& g) { g.onHackerPeers(kTapC); }};
+            // CREW's Detail is a prose reader: its A pages the description, which is
+            // not a row step.
             case HackerSlotId::Crew:
-                return crewListTarget();
+                if (crew_.view() == CrewView::Detail) return {};
+                return screenList<&Game::crew_>();
             default: return {};
         }
     }
@@ -73,33 +76,6 @@ Game::ListTarget Game::listTarget() const {
                 },
                 [](Game& g) { g.onStoryArchive(kTapC); }};
     return {};
-}
-
-Game::ListTarget Game::crewListTarget() const {
-    // CREW is four screens behind one slot; only the three that are row lists take the
-    // contract. Detail is a prose reader: its A pages the description, which is not a
-    // row step. All three share one C, the slot's own handler.
-    constexpr auto leave = [](Game& g) { g.onHackerCrew(kTapC); };
-    switch (crewView_) {
-        case CrewView::Hub:
-            return {[](Game& g, int dir) {
-                        g.crewHubRow_ = stepRow(g.crewHubRow_, kCrewHubRows, dir);
-                    },
-                    leave};
-        case CrewView::Team:
-            return {[](Game& g, int dir) {
-                        g.crewTeamRow_ = stepRow(g.crewTeamRow_, crewTeamCount(g.crewTeam_), dir);
-                    },
-                    leave};
-        case CrewView::Picker:
-            return {[](Game& g, int dir) {
-                        CrewNetRow rows[kNetMaxRows];
-                        g.crewNetRow_ =
-                            stepRow(g.crewNetRow_, g.crewNetworkRows(rows, kNetMaxRows), dir);
-                    },
-                    leave};
-        default: return {};
-    }
 }
 
 Game::ListTarget Game::submenuListTarget() const {

@@ -18,6 +18,7 @@
 #include "core/app/operator.h"
 #include "core/app/settings.h"
 #include "core/app/game/arcade_screen.h"
+#include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
@@ -112,7 +113,7 @@ enum class StartMode { FreshHatch, Hatched };
 
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
-             private ArcadeHost {
+             private ArcadeHost, private CrewHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1283,7 +1284,7 @@ public:
     // on it is the radio's TOP owner (SoftAP + the HTTP 'Pedia server), standing
     // the audit scan/capture down, and handing the radio back to whichever of
     // those is still toggled on the moment the AP is switched off.
-    bool apEnabled() const { return apEnabled_; }
+    bool apEnabled() const override { return apEnabled_; }
     void setApEnabled(bool on);
 
     // Audit-mode handshake CAPTURE. A sibling authorized-use opt-in
@@ -1772,41 +1773,27 @@ public:
     // one is the precondition for belonging to a crew (joinCrew refuses without it).
     int crewIndex() const { return op_.crewIndex; }            // kCrews row, or -1
     const CrewDef* activeCrew() const { return crew(op_.crewIndex); }
-    // The CREW screen's four views, deepest last. Enlisting is the one piece of player
-    // IDENTITY this device asks you to author, so the screen gives it room rather than
-    // stacking a roster into one list: the Hub states who you are and offers the two
-    // sides, a side opens its own roster, and a crew opens a page of its own. `Picker`
-    // is the home-network chooser, a modal over the Hub, because the rest of the
-    // screen needs a home network first. Public so the render path and the gates can
-    // name a view; the transitions are Game::onHackerCrew's alone.
-    enum class CrewView : uint8_t { Hub, Picker, Team, Detail };
-    CrewView crewView() const { return crewView_; }
+    // The CREW screen's views (game/crew_screen.h), named here so the gates can say
+    // which is up.
+    using CrewView = mal::CrewView;
+    CrewView crewView() const { return crew_.view(); }
     bool hasHomeNetwork() const { return op_.homeNetworkKey != 0; }
     uint64_t homeNetworkKey() const { return op_.homeNetworkKey; }
     const char* homeNetworkName() const { return op_.homeNetworkName; }
     // Designate `key` (a packed 48-bit BSSID, as Game::registerNetwork builds them)
     // as the home network. An explicit pick, replacing any earlier inference from
     // sighting counts. key 0 clears it (and any crew that depended on it).
-    void setHomeNetwork(uint64_t key, const char* name);
+    void setHomeNetwork(uint64_t key, const char* name) override;
     // Enlist in kCrews row `index`. Returns false (changing nothing) without a home
     // network, or for an out-of-range row.
-    bool joinCrew(int index);
-    void leaveCrew();
+    bool joinCrew(int index) override;
+    void leaveCrew() override;
 
-    // One offer in the home-network picker: a network the operator can claim. Every
-    // row is a network the radio can hear RIGHT NOW (visibleNetworks_): you designate
-    // the turf you're standing on, so networks out of range are not offered. The
-    // SD-backed ledger contributes no rows; it only supplies `count`, the evidence
-    // that says which of the networks in front of you is the familiar one.
-    struct CrewNetRow {
-        uint64_t key = 0;
-        const char* name = "";
-        uint32_t count = 0;   // ledger sighting tally; 0 = never resolved by a walk yet
-    };
-    // Fills `rows` with the in-range offers, most-sighted first, capped at `max`.
-    // Returns the count written. Read-only: the picker's render + input and tests all
-    // walk the same list.
-    int crewNetworkRows(CrewNetRow* rows, int max) const;
+    // The home-network picker's offers: every network the radio can hear RIGHT NOW
+    // (visibleNetworks_), most-sighted first, capped at `max`. Returns the count. The
+    // picker's render and input and the gates all walk the same list.
+    using CrewNetRow = mal::CrewNetRow;
+    int crewNetworkRows(CrewNetRow* rows, int max) const override;
 
     // Achievements (save v40) --------------------------------------------------
     // Player-level, surviving a pet reset like the Titles above. The catalogue is data
@@ -2525,8 +2512,7 @@ private:
     // own onButton for C.
     template <auto Screen>
     static ListTarget screenList();
-    // listTarget's three branches by where the list sits.
-    ListTarget crewListTarget() const;
+    // listTarget's branches by where the list sits.
     ListTarget submenuListTarget() const;
     ListTarget detailListTarget() const;
     // The A-repeat and the C-hold back-out, both driven off the held-button clocks.
@@ -3051,19 +3037,9 @@ private:
     // the whole screen, and unlike its sibling Hacker sub-screens it draws its OWN
     // header band, because the title changes with the view (CREW / RED / the crew's
     // own name) and only the screen knows which one is up.
-    void onHackerCrew(const ButtonEvent& ev);      // A cycle · B enter/act · C up a view
-    void drawHackerCrew(Framebuffer& fb) const;    // CREW screen, header band included
     void onHackerPeers(const ButtonEvent& ev);     // PEERS list: A cycle · C back (B unbound)
     void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen, header band included
-    // Per-view helpers, one pair each, so no single function carries all four layouts.
-    void drawCrewHub(Framebuffer& fb) const;
-    void drawCrewNetPicker(Framebuffer& fb) const;
-    void drawCrewTeam(Framebuffer& fb) const;
-    void drawCrewDetail(Framebuffer& fb) const;
-    // Rows on the Hub: HOME NET, then one per side. The sides are the fixed pair, not
-    // a count over the roster: an empty side still has to be visitable, or a crew
-    // added to it would have nowhere to appear.
-    static constexpr int kCrewHubRows = 3;
+    bool captureHoldsRadio() const override { return auditCapture_.capturing(); }
     // The crew Exploit row the A+C picker should offer, or a default-constructed
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
@@ -4033,18 +4009,7 @@ private:
     ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
     StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor: recipe row
-    // CREW screen state. The screen is four views and `crewView_` IS the navigation:
-    // Hub (the home network and the two sides), Team (one side's roster), Detail (one
-    // crew's page), plus Picker. The home-network chooser, a modal over the Hub. C
-    // walks back up that order and only leaves the screen from the Hub. All transient
-    // UI state; the membership + home network below are what persist.
-    CrewView crewView_ = CrewView::Hub;
-    int crewHubRow_ = 0;                   // 0 = HOME NET, 1 = RED, 2 = BLUE
-    CrewTeam crewTeam_ = CrewTeam::Red;    // the side Team/Detail are showing
-    int crewTeamRow_ = 0;                  // cursor within that side's roster
-    int crewDetail_ = -1;                  // the kCrews row Detail is showing
-    int crewProseScroll_ = 0;              // Detail: first prose line drawn (A pages it)
-    int crewNetRow_ = 0;
+    CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
     // Warp-key picker. warpRow_ is the focused row into the live
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the
     // keys themselves persist in the inventory, but the picker cursor does not).
