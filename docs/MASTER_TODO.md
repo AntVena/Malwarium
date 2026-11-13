@@ -122,8 +122,7 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The minigame runs**: the egg pick (`eggPick*`, 11 fields), the MAINT boards, the
-  cryptogram run. One row each, S to M.
+- **The minigame runs**: the MAINT boards, the cryptogram run. One row each, S to M.
 - **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
 
 #### Screens
