@@ -2093,3 +2093,48 @@ void test_fight_result_outlives_the_walk_and_the_next_start_replaces_it() {
     CHECK(g.fight().turnBeat == 0 && g.fight().resultBeat == 0 && g.fight().hitBeat == 0);
     CHECK(g.fight().result.fragAfter == 0 && g.fight().result.readoutUntilMs == 0);
 }
+
+// A gauntlet is a run that is gone when it ends. Round one's win carries into round two
+// (the round count and the banked Bits), and the loss there drops the whole run along
+// with the walk. A fresh Phishlet against area 4's gauntlet is the deterministic
+// win-then-loss.
+void test_gauntlet_carries_its_rounds_and_is_dropped_when_it_ends() {
+    GauntletRun r =
+        GauntletRun::started(2, -1, BossGauntlet{"G", 3, {CombatEnemy{}, CombatEnemy{}}});
+    CHECK(r.sector == 2 && r.clearsArea() && r.round == 0 && r.bitsAccrued == 0);
+    CHECK(r.foe() == &r.gauntlet.rounds[0] && !r.cleared());
+    r.round = 2;
+    CHECK(r.cleared() && r.foe() == nullptr);
+
+    const int area = 4;
+    Game g{StartMode::Hatched, "phishlet"};
+    g.debugSeedRng(12);
+    g.debugMarkStoryRead();
+    for (int a = 0; a < area; ++a) g.debugSetSectorCleared(a, true);
+    for (int sub = 0; sub < kExplSubAreas; ++sub) g.debugSetSubCleared(area, sub, true);
+    g.debugArmExplore(area, kExplSubAreas - 1);
+    g.debugSetAutoProgress(false);
+    CHECK(g.gauntlet() == nullptr);
+    enterSubmenuId(g, SubmenuId::Expl);           // a running walk resumes INSIDE the area
+    g.onButton(press(Button::A));                 // armed sub -> boss-ready header
+    g.onButton(press(Button::B));                 // AREA BOSS
+    CHECK(g.nav() == Game::Nav::Combat && g.fight().caller == FightCaller::Boss);
+    CHECK(g.gauntlet() && g.gauntlet()->sector == area && g.gauntlet()->clearsArea());
+    CHECK(g.gauntlet()->round == 0 && g.gauntlet()->bitsAccrued == 0);
+
+    uint32_t t = 0;
+    auto ride = [&] {
+        for (int j = 0; j < 2000 && g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+            g.tick(t += kHeartbeatMs);
+    };
+    ride();
+    CHECK(g.combat().outcome() == Combat::Outcome::Win);
+    g.onButton(press(Button::B));                 // round two, no heal
+    CHECK(g.nav() == Game::Nav::Combat);
+    CHECK(g.gauntlet() && g.gauntlet()->round == 1 && g.gauntlet()->bitsAccrued > 0);
+    ride();
+    CHECK(g.combat().lostOrDrawn());
+    g.onButton(press(Button::B));
+    CHECK(g.gauntlet() == nullptr);
+    CHECK(!g.exploreActive() && !g.sectorCleared(area));
+}

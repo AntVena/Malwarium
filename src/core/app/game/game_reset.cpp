@@ -74,6 +74,7 @@ void Game::resetToHatch() {
     movePendingId_ = nullptr;
     simTier_ = 0;
     fight_ = Fight{};                    // nothing can be mid-fight after a reset
+    gauntlet_.reset();
     fxBeat_ = 0;
     lastLevelUpStat_ = -1;
     // RESET PET also restarts this much of the Operator: the tag, the lifetime counters,

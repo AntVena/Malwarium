@@ -91,11 +91,7 @@ void Game::startSubAreaBoss(int area, int sub) {
     // A sub-area boss: a single strong malbeast, manually triggered from EXPL
     // once a 10-win streak unlocked it. A full clear marks the SUB-AREA cleared.
     if (!pet_.creature) return;
-    bossSector_ = area;
-    bossSub_ = sub;                                 // >=0 → record a sub-area clear
-    bossGauntlet_ = subAreaBoss(area, sub);
-    bossRound_ = 0;
-    bossBitsAccrued_ = 0;
+    gauntlet_ = GauntletRun::started(area, sub, subAreaBoss(area, sub));
     startBossRound(/*carryHealth=*/-1);             // round 0 starts at full Health
 }
 
@@ -109,18 +105,18 @@ void Game::startAreaBoss(int area) {
     // area, because by the time the reader hands back nothing else remembers which
     // gauntlet was being opened.
     if (fireStory(area, StoryBeat::BossIntro, StoryThen::AreaBoss, area)) return;
-    bossSector_ = area;
-    bossSub_ = -1;                                  // -1 → record an AREA clear
-    bossGauntlet_ = areaBoss(area);
-    bossRound_ = 0;
-    bossBitsAccrued_ = 0;
+    gauntlet_ = GauntletRun::started(area, /*sub=*/-1, areaBoss(area));
     startBossRound(/*carryHealth=*/-1);
 }
 
 void Game::startBossRound(int carryHealth) {
-    if (bossRound_ >= static_cast<int>(bossGauntlet_.rounds.size())) return;
+    const CombatEnemy* foe = gauntlet_ ? gauntlet_->foe() : nullptr;
+    if (!foe) {
+        gauntlet_.reset();                          // a gauntlet with no rounds never ran
+        return;
+    }
     Combatant p = buildPlayerCombatant();
-    Combatant e = makeEnemyCombatant(registry_, bossGauntlet_.rounds[bossRound_]);
+    Combatant e = makeEnemyCombatant(registry_, *foe);
     rng_ = rng_ * 1664525u + 1013904223u;
     // Live stakes; carryHealth < 0 on round 0 (full), else the wounded Health the
     // pet limped out of the previous round with (no heal between).
@@ -144,9 +140,12 @@ void Game::finishBossRound() {
     // (buildPlayerCombatant) between rounds, so a drive spent in one round must neither
     // re-arm for the next nor lose the achievement it earned.
     settleBackupDrive();
+    // A boss fight is only ever opened by startBossRound, which holds a gauntlet.
+    GauntletRun& run = *gauntlet_;
+    const int sector = run.sector;                  // the outro chapters read it after the run ends
     if (fight_.combat.outcome() == Combat::Outcome::Win) {
         // Bank this round's boss roll (a gauntlet pays the lump at the end).
-        bossBitsAccrued_ += bossBitsReward(bossGauntlet_.stageRank, rng_);
+        run.bitsAccrued += bossBitsReward(run.gauntlet.stageRank, rng_);
         // ...and roll THIS round's boss for a move off its own kit, before the gauntlet
         // advances and replaces the combatant. Per round rather than once at the clear,
         // because each round is a different boss with a different kit: the signature
@@ -161,20 +160,20 @@ void Game::finishBossRound() {
         // everything it knows, which is a cap that needs no curve.
         rollEnemyMoveDrop(fight_.combat.enemy(), kBossMoveDropPct);
         const int surviving = fight_.combat.player().health;
-        ++bossRound_;
+        ++run.round;
         ++op_.tallies.bossWins;   // per ROUND, so a three-boss gauntlet counts as three bosses beaten
-        if (bossRound_ < static_cast<int>(bossGauntlet_.rounds.size())) {
+        if (!run.cleared()) {
             startBossRound(surviving);              // next round, no heal: stays in Combat
             return;
         }
-        // Boss beaten: pay the lump, record the clear. A SUB-AREA boss
-        // (bossSub_ >= 0) marks just that sub-area cleared; the AREA boss (bossSub_ ==
-        // 1) clears the whole area → the next area unlocks + the Title is granted.
-        op_.bits += applyCombatBitsBonus(bossBitsAccrued_);   // Scraping Cluster Expansion
+        // Boss beaten: pay the lump, record the clear. A SUB-AREA boss marks just that
+        // sub-area cleared; the AREA boss clears the whole area → the next area unlocks +
+        // the Title is granted.
+        op_.bits += applyCombatBitsBonus(run.bitsAccrued);   // Scraping Cluster Expansion
         addFightXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
-        if (bossSub_ >= 0 && bossSub_ < kExplSubAreas) {
-            const bool firstClear = !op_.world.subCleared[bossSector_][bossSub_];
-            op_.world.subCleared[bossSector_][bossSub_] = true;
+        if (!run.clearsArea() && run.sub < kExplSubAreas) {
+            const bool firstClear = !op_.world.subCleared[sector][run.sub];
+            op_.world.subCleared[sector][run.sub] = true;
             log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
             // a sub-area boss's FIRST clear has a chance to drop one of the
             // area's mods (rarity-weighted). Re-clears never re-roll: permanent items
@@ -182,16 +181,16 @@ void Game::finishBossRound() {
             if (firstClear) {
                 rng_ = rng_ * 1664525u + 1013904223u;
                 if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
-                    if (const char* id = rollAreaModId(bossSector_))
+                    if (const char* id = rollAreaModId(sector))
                         grantMod(id);
             }
         } else {
             clearedArea = true;
-            const bool firstClear = !op_.world.sectorCleared[bossSector_];
-            const SceneId placeWon = area(bossSector_).scene;
+            const bool firstClear = !op_.world.sectorCleared[sector];
+            const SceneId placeWon = area(sector).scene;
             const bool hadPlace = backgroundOwned(placeWon);
-            op_.world.sectorCleared[bossSector_] = true;
-            unlockTitle(bossSector_);       // clearing the area grants its Title
+            op_.world.sectorCleared[sector] = true;
+            unlockTitle(sector);            // clearing the area grants its Title
             // ...and the AREA ITSELF, as a background the operator may stand their pet
             // in. The Title says where they have been; this is a piece of it to keep.
             if (!hadPlace) announceBackground(placeWon);
@@ -201,14 +200,14 @@ void Game::finishBossRound() {
             // so it pays its Bits lump and XP (above) and no mod: the same rule a
             // re-farmed sub-area follows.
             if (firstClear)
-                if (const char* id = rollAreaModId(bossSector_))
+                if (const char* id = rollAreaModId(sector))
                     grantMod(id);
             // Auto-progress moves off the gauntlet here. autoProgressStep cannot tell
             // whether the gauntlet is next or just finished, because the armed sub-area
             // is the area's last either way. Re-aiming at the next area resets the
             // streak, so the shared hook finds nothing to do and the rotation carries
             // on.
-            if (autoProgress_) startExplore(nextOpenArea(bossSector_), 0);
+            if (autoProgress_) startExplore(nextOpenArea(sector), 0);
         }
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard live-stakes Frag hit once
@@ -222,12 +221,14 @@ void Game::finishBossRound() {
         }
         walk_.end();
     }
+    // Cleared, lost or fled, the gauntlet is over.
+    gauntlet_.reset();
     // A cleared area's two OUTRO chapters, read back to back: what was just beaten,
     // then the place closing behind the pet. They fire AFTER the clear bookkeeping (and
     // after auto-progress has re-aimed the walk at the next area), so the reader hands
     // back to a walk already aimed at its next stop: StoryThen::Walk is the
     // returnToExplore below, deferred until the chapters are done.
-    if (!(clearedArea && fireStoryPair(bossSector_, StoryBeat::BossOutro,
+    if (!(clearedArea && fireStoryPair(sector, StoryBeat::BossOutro,
                                        StoryBeat::AreaOutro, StoryThen::Walk)))
         returnToExplore();                           // back to the idle habitat
     dirty_ = true;

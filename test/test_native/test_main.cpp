@@ -426,6 +426,7 @@ int g_failures = 0;
     RUN(test_explore_xp_efficiency_reads_the_rung) \
     RUN(test_explore_walk_starts_whole_and_ends_with_its_streak) \
     RUN(test_fight_result_outlives_the_walk_and_the_next_start_replaces_it) \
+    RUN(test_gauntlet_carries_its_rounds_and_is_dropped_when_it_ends) \
     RUN(test_expl_nested_row_helpers)             \
     RUN(test_area_boss_gauntlet_composition)      \
     RUN(test_sub_boss_rounds_and_escorts)         \

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "tunables.h"
@@ -37,6 +38,7 @@
 #include "core/model/cryptogram.h"
 #include "core/model/explore_walk.h"
 #include "core/model/fight.h"
+#include "core/model/gauntlet_run.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
 #include "core/model/flock.h"          // the guardian's body: a boids swarm, not a sheet
@@ -194,6 +196,8 @@ public:
     const Combat& combat() const { return fight_.combat; }
     // The current fight, or the last one after it ends (core/model/fight.h).
     const Fight& fight() const { return fight_; }
+    // The boss gauntlet in play, or nullptr between gauntlets.
+    const GauntletRun* gauntlet() const { return gauntlet_ ? &*gauntlet_ : nullptr; }
     int combatXp() const { return pet_.xp; }        // XP banked toward the next level
     int combatLevel() const { return pet_.level; }  // 0-based creature level
     // What this pet actually banks from a raw award: the USB soak, then the Epic dish's
@@ -2851,9 +2855,8 @@ private:
     //   • startAreaBoss(area): a 5-stage gauntlet of the area's sub-area bosses,
     //     reachable once all 5 sub-areas are cleared; a full clear marks the AREA
     // cleared (OperatorWorld::sectorCleared → next area) + grants the Title.
-    // bossSub_ (>=0 = a sub-area boss for that sub · -1 = the area boss) tells
-    // finishBossRound() which clear to record. startBossRound(carryHealth) begins one
-    // round; finishBossRound() advances/clears/fails it. Always a MANUAL trigger.
+    // Each opens a GauntletRun (core/model/gauntlet_run.h). startBossRound(carryHealth)
+    // begins one round; finishBossRound() advances, clears or fails it.
     void startSubAreaBoss(int area, int sub);
     void startAreaBoss(int area);
     void startBossRound(int carryHealth);
@@ -3699,16 +3702,9 @@ private:
     int encounterChoice_ = 0;
     const ItemDef* encounterBypass_ = nullptr;
 
-    // The boss gauntlet in play. Which bosses have been beaten is the Operator's
-    // (OperatorWorld). bossGauntlet_ is the active gauntlet's rounds, bossRound_ the
-    // current round, bossSector_ which area it belongs to, bossSub_ the sub-area (>=0) or
-    // -1 for the area boss (tells finishBossRound which clear to record),
-    // bossBitsAccrued_ the banked lump paid on a full clear.
-    BossGauntlet bossGauntlet_{"", 0, {}};
-    int bossRound_ = 0;
-    int bossSector_ = 0;
-    int bossSub_ = -1;
-    int bossBitsAccrued_ = 0;
+    // The boss gauntlet in play (core/model/gauntlet_run.h), empty between gauntlets.
+    // Which bosses have been beaten is the Operator's (OperatorWorld).
+    std::optional<GauntletRun> gauntlet_;
 
     // Grant an area's Title (OperatorWorld::titlesUnlocked). Called from the sector-clear
     // path.
