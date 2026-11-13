@@ -44,9 +44,9 @@ void Game::onMaintAction(const ButtonEvent& ev) {
 }
 
 void Game::startMaint() {
-    maintPlayed_ = false;
     const bool defrag = maintKind_ == MaintKind::Defrag;
     const bool played = maintVariant_ == (defrag ? kDefragVariants : kAvVariants) - 1;
+    bool success = false;
     if (defrag) {
         if (defragGated(pet_.model)) return;                 // nothing to defragment
         // a Defrag costs stage-scaled Bits: inert if the wallet can't
@@ -63,24 +63,24 @@ void Game::startMaint() {
         if (!played) {
             if (tool) {
                 inventory_.remove(kDefragToolId, 1);
-                maintSuccess_ = true;                    // a Tool defrag never fails
+                success = true;                          // a Tool defrag never fails
             } else {
-                maintSuccess_ = rollMaintSuccess();
+                success = rollMaintSuccess();
             }
         }
     } else {
         if (avGated(pet_.model)) return;                     // inert
-        if (!played) maintSuccess_ = rollMaintSuccess();
+        if (!played) success = rollMaintSuccess();
     }
+    maint_ = MaintRun::started(maintKind_, played, maintDifficulty_);
+    maint_->success = success;
     // The PLAYED variant buys nothing but the attempt (a Defrag's Bits are already
     // spent; AV is free). It hands off to the process's game instead of the process bar,
     // and rejoins at settlePlayedRun.
     if (played) {
-        maintPlayLive_ = beginPlayedGame(maintPlayedGame(maintKind_));
+        if (!beginPlayedGame(maintPlayedGame(maintKind_))) maint_.reset();
         return;
     }
-    processBeat_ = 0;
-    processResolved_ = false;
     nav_ = Nav::Process;
 }
 
@@ -154,8 +154,10 @@ void Game::resolveMaint() {
     // A failed Defrag/AV costs +1 care mistake: routed through the SHIELDED path (v21
     // Restore Point covers maint fails too), so PetModel reports the failure and the
     // Game applies the mistake here (the frag +penalty already landed model-side).
-    if (maintKind_ == MaintKind::Defrag) {
-        const bool failed = pet_.model.applyDefrag(maintSuccess_);
+    // Only a rolled or bought run reaches here, and startMaint opened it.
+    MaintRun& run = *maint_;
+    if (run.kind == MaintKind::Defrag) {
+        const bool failed = pet_.model.applyDefrag(run.success);
         if (!failed) ++pet_.defragCount;          // this pet's defrag tally
         else {
             addCareMistakeShielded(1);
@@ -179,11 +181,11 @@ void Game::resolveMaint() {
             }
         }
     } else {
-        const bool failed = pet_.model.applyAntivirus(maintSuccess_);
+        const bool failed = pet_.model.applyAntivirus(run.success);
         if (failed) { addCareMistakeShielded(1); log_.push(LogEventType::CareMistake, "FAILED AV SCAN"); }
     }
     markSaveDirty();
-    processResolved_ = true;
+    run.resolved = true;
 }
 
 void Game::maybeAutoDefrag() {
@@ -211,10 +213,10 @@ void Game::debugResolveDefrag(bool success) {
     // Deterministic maint outcome for tests: drive the real resolveMaint() seam with a
     // forced success/failure (rollMaintSuccess is otherwise RNG-gated). A failure routes
     // its +1 care mistake through addCareMistakeShielded, so the shield gate is assertable.
-    maintKind_ = MaintKind::Defrag;
-    maintPlayed_ = false;
-    maintSuccess_ = success;
+    maint_ = MaintRun::started(MaintKind::Defrag, /*played=*/false, maintDifficulty_);
+    maint_->success = success;
     resolveMaint();
+    maint_.reset();
 }
 
 int Game::maintFailPct() const {

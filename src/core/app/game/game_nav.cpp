@@ -231,8 +231,11 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ArcadeResult: onArcadeResult(ev); break;
         case Nav::Process:
             // Non-interruptible: ignored while running; the outcome dismisses.
-            if (processResolved_ && (ev.button == Button::B || ev.button == Button::C))
+            if (maint_ && maint_->resolved &&
+                (ev.button == Button::B || ev.button == Button::C)) {
+                maint_.reset();
                 nav_ = Nav::Detail;
+            }
             break;
         case Nav::ModalFeeding:
             if (ev.button == Button::B || ev.button == Button::C) endFeeding();

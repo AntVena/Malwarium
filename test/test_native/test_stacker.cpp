@@ -456,6 +456,39 @@ void test_maint_played_variant_walks_the_dial() {
     CHECK(q.nav() == Game::Nav::Process);
 }
 
+// A MAINT process is a run from B on the action page until its outcome is dismissed:
+// a played one's board is live until it settles, the run takes the dial with it, and
+// nothing is left once the outcome goes. The debug resolve leaves nothing behind either.
+void test_maint_run_lives_from_the_run_to_the_dismissed_outcome() {
+    const MaintRun quick = MaintRun::started(MaintKind::Av, false, ArcadeDifficulty::Hard);
+    CHECK(quick.kind == MaintKind::Av && !quick.played && !quick.boardLive());
+    MaintRun board = MaintRun::started(MaintKind::Defrag, true, ArcadeDifficulty::Hard);
+    CHECK(board.boardLive() && board.difficulty == ArcadeDifficulty::Hard);
+    board.resolved = true;
+    CHECK(!board.boardLive());
+
+    Game d{StartMode::Hatched};
+    d.debugSetBits(1000);
+    d.model().setFragmentation(40);
+    d.debugSetMaintPlayedGame(MaintKind::Av, ArcadeGameKind::Stacker);   // C can bank it
+    enterSubmenuId(d, SubmenuId::Maint);
+    d.onButton(press(Button::A));                       // the AV row
+    d.onButton(press(Button::B));
+    for (int i = 0; i < kAvVariants - 1 + 1; ++i) d.onButton(press(Button::A));
+    CHECK(d.maintDifficulty() == ArcadeDifficulty::Medium && d.maintRun() == nullptr);
+    d.onButton(press(Button::B));                       // run the played variant
+    CHECK(d.maintRun() && d.maintRun()->played && d.maintRun()->boardLive());
+    CHECK(d.maintRun()->kind == MaintKind::Av);
+    CHECK(d.maintRun()->difficulty == ArcadeDifficulty::Medium);
+    tapC(d);                                            // bank the board
+    CHECK(d.nav() == Game::Nav::Process && d.maintRun()->resolved);
+    d.onButton(press(Button::B));                       // dismiss the outcome
+    CHECK(d.nav() == Game::Nav::Detail && d.maintRun() == nullptr);
+
+    d.debugResolveDefrag(true);
+    CHECK(d.maintRun() == nullptr);
+}
+
 // The wiring is content, not a rule of either process: point each process at the OTHER
 // engine and both still settle on their own terms. A won FRAGGER run as an AV scan is a
 // full scan; a Stacker board as a DEFRAG pays its blocks in frag, and (having no Bits

@@ -874,6 +874,7 @@ int g_failures = 0;
     RUN(test_stacker_short_board_pays_what_it_stacked_and_costs_nothing) \
     RUN(test_stacker_cleared_board_is_a_full_scan) \
     RUN(test_maint_played_variant_walks_the_dial) \
+    RUN(test_maint_run_lives_from_the_run_to_the_dismissed_outcome) \
     RUN(test_played_maint_engines_are_interchangeable) \
     RUN(test_fragger_lanes_follow_the_dial) \
     RUN(test_fragger_catch_needs_the_head_under_it) \

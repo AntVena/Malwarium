@@ -39,13 +39,13 @@ void Game::settlePlayedRun(const PlayOutcome& o) {
 
 int Game::playedFragWorth(int units) const {
     const int worth = units * kPlayFragPerUnit * arcadeRewardMult(runDifficulty());
-    const int cap = maintKind_ == MaintKind::Av ? kAvReduction : pet_.model.fragmentation();
+    const int cap = maint_->kind == MaintKind::Av ? kAvReduction : pet_.model.fragmentation();
     const int capped = worth > cap ? cap : worth;
     return capped > pet_.model.fragmentation() ? pet_.model.fragmentation() : capped;
 }
 
 int Game::playedBitsWorth(int bitsUnits) const {
-    if (maintKind_ != MaintKind::Defrag) return 0;
+    if (maint_->kind != MaintKind::Defrag) return 0;
     return bitsUnits * kPlayBitsPerUnit * arcadeRewardMult(runDifficulty());
 }
 
@@ -60,13 +60,16 @@ PlayHud Game::playHud(const PlayOutcome& sofar) const {
         h.scoreMax = sofar.scoreMax;
         return h;
     }
-    h.title = maintKind_ == MaintKind::Defrag ? "DEFRAGMENTING" : "SCANNING";
+    // Neither context: a played board is only ever opened by a cabinet or a MAINT run.
+    if (!maint_) return h;
+    const MaintKind kind = maint_->kind;
+    h.title = kind == MaintKind::Defrag ? "DEFRAGMENTING" : "SCANNING";
     h.fragOff = playedFragWorth(sofar.units);
     h.fragNow = pet_.model.fragmentation() - h.fragOff;
     h.bits = playedBitsWorth(sofar.bitsUnits);
     // The Bits readout only where Bits can be earned: a DEFRAG, by a game with a Bits unit.
-    const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_));
-    h.paysBits = maintKind_ == MaintKind::Defrag && g && g->bitsUnitName;
+    const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(kind));
+    h.paysBits = kind == MaintKind::Defrag && g && g->bitsUnitName;
     return h;
 }
 
@@ -81,27 +84,28 @@ void Game::settleMaintPlay(const PlayOutcome& o) {
     // playing on. AV is a scan:
     // a WON run is a full one, exactly what a passed Quick scan does, and a run that came
     // up short pays its units off the disk up to that same amount but cleans no process.
-    maintPlayLive_ = false;
-    maintPlayed_ = true;
-    if (maintKind_ == MaintKind::Av && o.won) {
-        playedFragRemoved_ = pet_.model.fragmentation() < kAvReduction ? pet_.model.fragmentation()
-                                                                   : kAvReduction;
-        playedBitsEarned_ = 0;
+    //
+    // A board outside a cabinet is only ever opened by a played MAINT run.
+    MaintRun& run = *maint_;
+    if (run.kind == MaintKind::Av && o.won) {
+        run.fragRemoved = pet_.model.fragmentation() < kAvReduction ? pet_.model.fragmentation()
+                                                                    : kAvReduction;
+        run.bitsEarned = 0;
         pet_.model.applyAntivirus(true);
-        maintSuccess_ = true;
+        run.success = true;
     } else {
-        playedFragRemoved_ = playedFragWorth(o.units);
-        playedBitsEarned_ = playedBitsWorth(o.bitsUnits);
-        pet_.model.applyPlayedDefrag(playedFragRemoved_);
-        op_.bits += playedBitsEarned_;
-        maintSuccess_ = maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0 &&
-                        pet_.model.fragmentation() == 0;
+        run.fragRemoved = playedFragWorth(o.units);
+        run.bitsEarned = playedBitsWorth(o.bitsUnits);
+        pet_.model.applyPlayedDefrag(run.fragRemoved);
+        op_.bits += run.bitsEarned;
+        run.success = run.kind == MaintKind::Defrag && run.fragRemoved > 0 &&
+                      pet_.model.fragmentation() == 0;
     }
     // The per-pet tally counts disks that got cleaner, so a run worth nothing doesn't.
-    if (maintKind_ == MaintKind::Defrag && playedFragRemoved_ > 0) ++pet_.defragCount;
+    if (run.kind == MaintKind::Defrag && run.fragRemoved > 0) ++pet_.defragCount;
     markSaveDirty();
-    processBeat_ = kProcessBeats;                // the work is done; show the outcome
-    processResolved_ = true;
+    run.beat = kProcessBeats;                    // the work is done; show the outcome
+    run.resolved = true;
     nav_ = Nav::Process;
 }
 

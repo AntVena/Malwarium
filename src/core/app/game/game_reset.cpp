@@ -43,8 +43,7 @@ void Game::resetToHatch() {
     stat_.reset();
     maintKind_ = MaintKind::Defrag;
     maintVariant_ = 0;
-    maintPlayed_ = false;
-    processResolved_ = false;
+    maint_.reset();
     feedItem_ = nullptr;
     feedFromLockout_ = false;
     lockoutItemsContext_ = false;

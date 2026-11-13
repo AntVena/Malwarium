@@ -274,7 +274,7 @@ void Game::stepScreenBeat() {
         if (++feedBeat_ >= kFeedBeats) endFeeding();
         break;
     case Nav::Process:
-        if (!processResolved_ && ++processBeat_ >= kProcessBeats) resolveMaint();
+        if (maint_ && !maint_->resolved && ++maint_->beat >= kProcessBeats) resolveMaint();
         break;
     case Nav::ModalEvolve:
         // Cinematic advances on the heartbeat: hold -> flash -> reveal, then it parks at

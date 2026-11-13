@@ -197,7 +197,7 @@ int Game::arcadeBestById(const char* id) const {
 }
 
 int Game::playStepMs(int baseMs) const {
-    if (!arcade_ && !maintPlayLive_) return baseMs;
+    if (!arcade_ && !(maint_ && maint_->boardLive())) return baseMs;
     int pct = kArcadeSpeedPctMedium;
     if (runDifficulty() == ArcadeDifficulty::Easy) pct = kArcadeSpeedPctEasy;
     else if (runDifficulty() == ArcadeDifficulty::Hard) pct = kArcadeSpeedPctHard;

@@ -1337,21 +1337,22 @@ void Game::drawStacker(Framebuffer& fb) const {
 }
 
 void Game::drawProcess(Framebuffer& fb) const {
-    if (!processResolved_) {
-        drawMaintProcess(fb, maintKind_,
-                         static_cast<float>(processBeat_) / kProcessBeats);
+    if (!maint_) return;
+    const MaintRun& run = *maint_;
+    if (!run.resolved) {
+        drawMaintProcess(fb, run.kind, static_cast<float>(run.beat) / kProcessBeats);
         return;
     }
     // A PLAYED run reports what its own board was worth and can come up short without
     // failing; a rolled or bought one reports the fixed reduction it either got or missed.
-    if (maintPlayed_)
-        drawMaintOutcome(fb, maintKind_,
-                         maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Partial,
-                         playedFragRemoved_, playedBitsEarned_);
+    if (run.played)
+        drawMaintOutcome(fb, run.kind,
+                         run.success ? MaintOutcome::Cleaned : MaintOutcome::Partial,
+                         run.fragRemoved, run.bitsEarned);
     else
-        drawMaintOutcome(fb, maintKind_,
-                         maintSuccess_ ? MaintOutcome::Cleaned : MaintOutcome::Failed,
-                         maintKind_ == MaintKind::Defrag ? kDefragReduction : kAvReduction);
+        drawMaintOutcome(fb, run.kind,
+                         run.success ? MaintOutcome::Cleaned : MaintOutcome::Failed,
+                         run.kind == MaintKind::Defrag ? kDefragReduction : kAvReduction);
 }
 
 void Game::drawEvolve(Framebuffer& fb) const {

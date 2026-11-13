@@ -39,6 +39,7 @@
 #include "core/model/arcade_run.h"
 #include "core/model/egg_pick.h"
 #include "core/model/explore_walk.h"
+#include "core/model/maint_run.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
 #include "core/model/pvp_session.h"
@@ -1604,6 +1605,8 @@ public:
     // The MAINT action screen's own dial for its played row: reset to EASY each time the
     // screen opens, and separate from the cabinets' so neither moves the other.
     ArcadeDifficulty maintDifficulty() const { return maintDifficulty_; }
+    // The MAINT process in play (its board or its process screen), or nullptr.
+    const MaintRun* maintRun() const { return maint_ ? &*maint_ : nullptr; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
     ArcadeGameKind maintPlayedGame(MaintKind k) const {
         return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
@@ -2158,7 +2161,8 @@ public:
     // the real settlePlayedRun, which is where the process takes its payout.
     void debugStartPlayedMaint(MaintKind k) {
         maintKind_ = k;
-        beginPlayedGame(maintPlayedGame(k));
+        maint_ = MaintRun::started(k, /*played=*/true, maintDifficulty_);
+        if (!beginPlayedGame(maintPlayedGame(k))) maint_.reset();
     }
     // Point a process's played variant at a different engine, so a test can swap them
     // without editing the content table.
@@ -2605,7 +2609,7 @@ private:
     int playStepMs(int baseMs) const;
     // The dial the run on screen was started under: the cabinet's, or MAINT's.
     ArcadeDifficulty runDifficulty() const {
-        return arcade_ ? arcade_->difficulty : maintDifficulty_;
+        return arcade_ ? arcade_->difficulty : maint_ ? maint_->difficulty : maintDifficulty_;
     }
     void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
     void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
@@ -3448,6 +3452,7 @@ private:
     struct BulkTallyEntry { const ItemDef* def = nullptr; int count = 0; };
     std::vector<BulkTallyEntry> bulkYieldTally_;
     int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
+    // The MAINT action page's: which process it has open.
     MaintKind maintKind_ = MaintKind::Defrag;
     // The focused payment VARIANT on the open MAINT action. DEFRAG: 0 = Quick (Bits,
     // may fail) · 1 = Tool (an item, guaranteed) · 2 = Played. AV: 0 = Quick · 1 = Played.
@@ -3456,11 +3461,11 @@ private:
     // Which engine each process's played variant runs (debugSetMaintPlayedGame).
     ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;
     ArcadeGameKind avPlayedGame_ = kAvPlayedGame;
-    bool maintPlayLive_ = false;           // a played MAINT run is on screen right now
+    // The action page's dial for its PLAYED row; a run takes a copy when it starts.
     ArcadeDifficulty maintDifficulty_ = ArcadeDifficulty::Easy;
-    bool maintPlayed_ = false;             // the last run was played, not rolled/bought
-    // Neither played run is saved: one interrupted by a power cycle forfeits its entry,
-    // board and all.
+    // The MAINT process in play (core/model/maint_run.h): its board or its process
+    // screen. Empty otherwise.
+    std::optional<MaintRun> maint_;
     Stacker stacker_;
     uint32_t lastStackerStepMs_ = 0;
     Fragger fragger_;
@@ -3468,11 +3473,6 @@ private:
     // The last shot, for the beam the screen draws up its lane until the next row falls.
     int fraggerShotLane_ = -1;
     int fraggerShotRow_ = -1;
-    // What the last played run took off the disk and paid (settleMaintPlay). Held only so the outcome toast can print what the run earned,
-    // which (unlike the fixed reduction a rolled or bought run reports) isn't
-    // knowable from the variant.
-    int playedFragRemoved_ = 0;
-    int playedBitsEarned_ = 0;
     // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
     // a dive, so a sector walk never collects a bonus armed for the dive after it.
     int diveRewardBonusPct() const {
@@ -4127,10 +4127,6 @@ private:
     // The arbiter's resolved radio owner (runtime-only; None on host).
     RadioOwner radioOwner_ = RadioOwner::None;
 
-    // MAINT process.
-    bool maintSuccess_ = false;
-    int processBeat_ = 0;
-    bool processResolved_ = false;         // true once running -> outcome
 
     // Feeding modal. feedBefore_ is the vitals snapshot taken the instant before
     // the food is applied, so the modal can report the change it actually made

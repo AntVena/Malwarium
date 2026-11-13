@@ -19,6 +19,8 @@
 
 #include <cstdint>
 
+#include "core/model/maint_run.h"   // MaintKind
+
 namespace mal {
 
 // Which submenu an L1 carousel slot routes to on B. The engine dispatches on this
@@ -85,8 +87,6 @@ enum class ItemFilter { All, Food, Buffs, Quest, Keys, Tools, Ingredients };
 // item into a RESOLVE group at the top, for ITEMS opened from the Lockout modal.
 enum class ItemOrder { ByGroup, LockoutFirst };
 
-// The two MAINT actions.
-enum class MaintKind { Defrag, Av };
 
 // The ARCH record actions, cycled by A in the L3 record: active → Store; stored →
 // Deploy + Release. Selling is not one of them: it is the SELL group's own counter
