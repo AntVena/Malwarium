@@ -117,19 +117,12 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 `executeFactoryReset`, `cfg_screen.cpp` | S |
 `test_cfg_factory_reset_scopes_differ` states the answer. |
 
-#### Runs
-
-Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
-random draws and its result, and is gone when it ends. Rows are M unless marked.
-
-- **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
-
 #### Screens
 
 - **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
   the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the MAINT action
-  page (`maintKind_`, `maintVariant_`, `maintDifficulty_`), the area SHOP, VAULT,
-  the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
+  page (`maintKind_`, `maintVariant_`, `maintDifficulty_`), the area SHOP, VAULT and its
+  two cache reveals (`cacheReveal_`, `bulkReveal_`), the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
   `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
   arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
