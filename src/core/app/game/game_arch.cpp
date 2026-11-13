@@ -43,8 +43,7 @@ void Game::onArchPicker(const ButtonEvent& ev) {
         archPickRow_ = (archPickRow_ + 1) % n;
     } else if (ev.button == Button::B) {
         archGroup_ = tiles[archPickRow_].group;
-        archConfirm_ = false;
-        archConfirmChoice_ = 0;
+        archConfirm_.close();
         // NEW EGG is an ACTION, so it opens its own L3 confirm rather than a list. An
         // empty group still opens, showing "- NOTHING HERE -", so B never does
         // nothing on a row the screen drew.
@@ -89,7 +88,7 @@ void Game::onArchList(const ButtonEvent& ev) {
             archAction_ = r.kind == ArchRow::Kind::Active ? ArchAction::Store
                                                           : ArchAction::Deploy;
         archSaleOffer_ = SaleOffer::Bits;
-        archConfirm_ = false;
+        archConfirm_.close();
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) {
         archScreen_ = ArchScreen::Picker;
@@ -100,7 +99,7 @@ void Game::archHatchNewEgg() {
     // The NEW EGG row's commit. With a pet to set aside this is archStoreActive: the
     // freeze and the hatch are one act. With no pet (the two-room state after a Store)
     // there is nothing to freeze and the egg is laid outright.
-    archConfirm_ = false;
+    archConfirm_.close();
     archScreen_ = ArchScreen::Picker;
     if (pet_.creature) archStoreActive();
     else startHatch();
@@ -121,20 +120,13 @@ void Game::onArchRecord(const ButtonEvent& ev) {
     if (archOnNewEgg()) {
         const bool rackFull =
             pet_.creature && static_cast<int>(op_.arch.rack.size()) >= rackSlots();
-        if (archConfirm_) {
-            if (ev.button == Button::A) archConfirmChoice_ ^= 1;
-            else if (ev.button == Button::B) {
-                if (archConfirmChoice_ == 1) { archHatchNewEgg(); return; }
-                archConfirm_ = false;
-            } else if (ev.button == Button::C) {
-                archConfirm_ = false;
-            }
+        if (archConfirm_.isOpen()) {
+            if (archConfirm_.onButton(ev) == InlineConfirm::Answer::Yes) archHatchNewEgg();
             return;
         }
         if (ev.button == Button::B) {
             if (rackFull) return;                 // no free slot -> blocked (gate shown)
-            archConfirm_ = true;
-            archConfirmChoice_ = 0;               // default Cancel
+            archConfirm_.open();
         } else if (ev.button == Button::C) {
             nav_ = Nav::Submenu;
         }
@@ -150,22 +142,12 @@ void Game::onArchRecord(const ButtonEvent& ev) {
         if (ev.button == Button::C) nav_ = Nav::Submenu;
         return;
     }
-    // Inline confirm for Store/Deploy: A toggles, B commits the choice, C aborts.
-    if (archConfirm_) {
-        if (ev.button == Button::A) archConfirmChoice_ ^= 1;
-        else if (ev.button == Button::B) {
-            if (archConfirmChoice_ == 1) {
-                if (archAction_ == ArchAction::Store) archStoreActive();
-                else if (archAction_ == ArchAction::Deploy)
-                    archDeployStored(row.index);
-                else if (archAction_ == ArchAction::Release)
-                    archReleaseStored(row.index);
-                return;   // the commit set nav_/state itself
-            }
-            archConfirm_ = false;     // Cancel -> stay in the record
-        } else if (ev.button == Button::C) {
-            archConfirm_ = false;
-        }
+    // Every answer but YES stays in the record; the commit sets nav_ itself.
+    if (archConfirm_.isOpen()) {
+        if (archConfirm_.onButton(ev) != InlineConfirm::Answer::Yes) return;
+        if (archAction_ == ArchAction::Store) archStoreActive();
+        else if (archAction_ == ArchAction::Deploy) archDeployStored(row.index);
+        else if (archAction_ == ArchAction::Release) archReleaseStored(row.index);
         return;
     }
 
@@ -180,8 +162,7 @@ void Game::onArchRecord(const ButtonEvent& ev) {
         if (archAction_ == ArchAction::Store &&
             static_cast<int>(op_.arch.rack.size()) >= rackSlots())
             return;                                     // rack full -> blocked (gate shown)
-        archConfirm_ = true;                            // Store/Deploy/Release -> confirm
-        archConfirmChoice_ = 0;                         // default Cancel
+        archConfirm_.open();                            // Store/Deploy/Release -> confirm
     } else if (ev.button == Button::C) {
         nav_ = Nav::Submenu;
     }
@@ -223,7 +204,7 @@ void Game::archStoreActive() {
     // swept off a count, because "full" compares against rackSlots(), which the player
     // can raise. A slot bought later must not un-earn the row.
     if (static_cast<int>(op_.arch.rack.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
-    archConfirm_ = false;
+    archConfirm_.close();
     listRow_ = 0;
     startHatch();        // pet_.creature = nullptr -> line-select, then a fresh egg
     persistSave();
@@ -255,7 +236,7 @@ void Game::archDeployStored(int storedIdx) {
     stampSlotKinds();
     enforceSlotKindInvariant();
     noteRackDuplicates();   // the swap can drop this pet in beside a twin on the shelf
-    archConfirm_ = false;
+    archConfirm_.close();
     listRow_ = 0;
     nav_ = Nav::Idle;                              // show the newly-active pet
     persistSave();
@@ -267,7 +248,7 @@ void Game::archReleaseStored(int storedIdx) {
     // record: a plain release, unlike a CSF or a sale.
     if (storedIdx < 0 || storedIdx >= static_cast<int>(op_.arch.rack.size())) return;
     op_.arch.rack.erase(op_.arch.rack.begin() + storedIdx);
-    archConfirm_ = false;
+    archConfirm_.close();
     listRow_ = 0;
     nav_ = Nav::Submenu;   // back to the (now shorter) rack list
     persistSave();

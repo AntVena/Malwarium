@@ -113,8 +113,8 @@ ArchSaleSheet Game::archSaleSheet() const {
         std::snprintf(sh.reimageTo, sizeof(sh.reimageTo), "%s",
                       reimageScript(pet_.creature)->displayName);
     sh.focus = archSaleOffer_;
-    sh.confirmOpen = archConfirm_;
-    sh.confirmChoice = archConfirmChoice_;
+    sh.confirmOpen = archConfirm_.isOpen();
+    sh.confirmChoice = archConfirm_.choice();
     return sh;
 }
 
@@ -124,16 +124,9 @@ void Game::onArchSale(const ButtonEvent& ev) {
         if (ev.button == Button::C) nav_ = Nav::Submenu;
         return;
     }
-    // Inline confirm, the record's own: A toggles, B commits the choice, C aborts.
-    if (archConfirm_) {
-        if (ev.button == Button::A) {
-            archConfirmChoice_ ^= 1;
-        } else if (ev.button == Button::B) {
-            if (archConfirmChoice_ == 1) { archSellStored(row.index, archSaleOffer_); return; }
-            archConfirm_ = false;
-        } else if (ev.button == Button::C) {
-            archConfirm_ = false;
-        }
+    if (archConfirm_.isOpen()) {
+        if (archConfirm_.onButton(ev) == InlineConfirm::Answer::Yes)
+            archSellStored(row.index, archSaleOffer_);
         return;
     }
     if (ev.button == Button::A) {
@@ -143,8 +136,7 @@ void Game::onArchSale(const ButtonEvent& ev) {
             (static_cast<int>(archSaleOffer_) + 1) % kSaleOfferCount);
     } else if (ev.button == Button::B) {
         if (archSaleBlocker(archSaleOffer_, op_.arch.rack[row.index])) return;   // row says why
-        archConfirm_ = true;
-        archConfirmChoice_ = 0;                                         // default Cancel
+        archConfirm_.open();
     } else if (ev.button == Button::C) {
         nav_ = Nav::Submenu;
     }
@@ -205,7 +197,7 @@ void Game::archSellStored(int storedIdx, SaleOffer offer) {
     rec.generation = sold.generation;
     op_.arch.records.push_back(rec);
 
-    archConfirm_ = false;
+    archConfirm_.close();
     archSaleOffer_ = SaleOffer::Bits;
     listRow_ = 0;
     // A reimage changes the pet on screen, so the habitat is where to see it; the other

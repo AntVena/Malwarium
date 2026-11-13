@@ -62,25 +62,21 @@ int RigShopScreen::nextSlot(const RigShopHost& host, int cur, int dir) const {
     // slot and the walk is the same arithmetic for both. A cursor on a slot that has
     // just left the list steps from where it was, so a bought-out row hands the cursor
     // to its neighbour.
-    const int total = kRigUpgradeCount + 1;
-    for (int step = 1; step <= total; ++step) {
-        const int idx = (((cur + 1) + dir * step) % total + total) % total;
+    const auto offered = [&host](int idx) {
         const int slot = idx - 1;
-        if (slot == kRigSlotServices ? account(host).servicesOffered()
-                                     : account(host).offered(slot))
-            return slot;
+        return slot == kRigSlotServices ? account(host).servicesOffered()
+                                        : account(host).offered(slot);
+    };
+    return stepRow(cur + 1, kRigUpgradeCount + 1, dir, offered) - 1;
+}
+
+void RigShopScreen::stepList(const RigShopHost& host, int dir) {
+    if (view_ == ShopView::Rows) {
+        slot_ = nextSlot(host, slot_, dir);
+    } else if (view_ == ShopView::Services) {
+        int rows[kRigUpgradeCount];
+        serviceRow_ = stepRow(serviceRow_, account(host).serviceRows(rows, kRigUpgradeCount), dir);
     }
-    return cur;
-}
-
-void RigShopScreen::stepSlot(const RigShopHost& host, int dir) {
-    slot_ = nextSlot(host, slot_, dir);
-}
-
-void RigShopScreen::stepService(const RigShopHost& host, int dir) {
-    int rows[kRigUpgradeCount];
-    const int n = account(host).serviceRows(rows, kRigUpgradeCount);
-    if (n > 0) serviceRow_ = ((serviceRow_ + dir) % n + n) % n;
 }
 
 void RigShopScreen::onButton(RigShopHost& host, const ButtonEvent& ev) {

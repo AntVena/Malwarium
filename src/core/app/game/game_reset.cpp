@@ -66,7 +66,7 @@ void Game::resetToHatch() {
     maintDifficulty_ = ArcadeDifficulty::Easy;
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
-    moveConfirm_ = false;
+    moveConfirm_.close();
     movePendingId_ = nullptr;
     simTier_ = 0;
     fight_ = Fight{};                    // nothing can be mid-fight after a reset
@@ -87,7 +87,7 @@ void Game::resetToHatch() {
     std::memcpy(t.arcadePlays, fresh.tallies.arcadePlays, sizeof(t.arcadePlays));
     std::memcpy(t.arcadeWins, fresh.tallies.arcadeWins, sizeof(t.arcadeWins));
     std::memcpy(t.arcadeBest, fresh.tallies.arcadeBest, sizeof(t.arcadeBest));
-    archConfirm_ = false;
+    archConfirm_.close();
     saveDirty_ = false;
     lastSaveMs_ = nowMs_;
     if (store_) store_->clear();

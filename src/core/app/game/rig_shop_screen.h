@@ -49,11 +49,10 @@ public:
     // focused service's info page and leaves the service switched as it was. True once
     // the hold has landed, so the release that follows is not also a tap.
     bool holdB(RigShopHost& host, uint32_t heldMs);
-    // Step the storefront cursor `dir` slots over the SERVICES head slot and every
-    // offered row, wrapping. The one walk the A-cycle, the hold-repeat and the
-    // post-buy re-aim share.
-    void stepSlot(const RigShopHost& host, int dir);
-    void stepService(const RigShopHost& host, int dir);
+    // Step the open view's cursor `dir`, wrapping: the storefront's walks the SERVICES
+    // head slot and every offered row, the board's walks the owned services. The info
+    // page has no cursor.
+    void stepList(const RigShopHost& host, int dir);
     void draw(Framebuffer& fb, const RigShopHost& host, int beat) const;
 
     ShopView view() const { return view_; }

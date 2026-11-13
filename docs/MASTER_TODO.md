@@ -103,8 +103,11 @@ Every row lands green on its own: the native suite passes and a `tools/screens.s
 byte-identical to one taken before it, unless the row says otherwise. Each deletes the `debug*`
 hooks (about 100 on `Game` today) that its tests no longer need, and moves the tests onto the
 new type. `ItemsMenu` and `RigShopScreen` are the screens to copy: state and handlers in their
-own type, the game reached through `ItemsHost` and `RigShopHost`. `ItemsMenu` also shows how a
-screen keeps derived rows without a stale cache (it keys them on `Inventory::stamp`).
+own type, the game reached through `ItemsHost` and `RigShopHost`, joined to the list and hold
+gestures by `screenList` and `screenHold`, stepping with `stepRow`. A screen's confirm moves as
+its `InlineConfirm`. `ItemsMenu` also shows how a screen keeps derived rows without a stale
+cache (it keys them on `Inventory::stamp`). Small screens go in batches, one commit each,
+checked together.
 
 #### Records
 
@@ -119,13 +122,13 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
+- **The rest**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
   the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the MAINT action
   page (`maintKind_`, `maintVariant_`, `maintDifficulty_`), the area SHOP, VAULT and its
   two cache reveals (`cacheReveal_`, `bulkReveal_`), the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
   `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
-  arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
+  arms B moves its `holdTarget` entry onto the new type, as `screenHold`.
 - **The arena screen**: `tourneyCursor_`, `tourneyView_`, `tourneyScroll_`,
   `tourneyScouted_`, `tourneyScoutedSlot_`. It reads `TourneyRun` through the `tourney*()`
   accessors. S.

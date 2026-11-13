@@ -3,6 +3,7 @@
 #include "tunables.h"
 #include "core/model/inventory.h"
 #include "core/ui/items_screen.h"
+#include "core/ui/layout.h"
 
 namespace mal {
 
@@ -49,7 +50,7 @@ void ItemsMenu::onButton(ItemsHost& host, const ButtonEvent& ev) {
 void ItemsMenu::onPicker(ItemsHost& host, const ButtonEvent& ev) {
     if (pickRow_ < 0 || pickRow_ >= kItemPickerTileCount) pickRow_ = 0;
     if (ev.button == Button::A) {
-        step(host, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         // An EMPTY category still opens: the list says "- NO MATCHING ITEMS -" and C
         // walks back, which reads better than a dead button on a row the screen drew.
@@ -64,7 +65,7 @@ void ItemsMenu::onPicker(ItemsHost& host, const ButtonEvent& ev) {
 
 void ItemsMenu::onList(ItemsHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::A) {
-        step(host, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         // With the type-tabs upgrade, B is a tap/hold pair settled on the release
         // (releaseB) or on the hold (holdB). Without it B opens on the press.
@@ -77,10 +78,9 @@ void ItemsMenu::onList(ItemsHost& host, const ButtonEvent& ev) {
     }
 }
 
-void ItemsMenu::step(const ItemsHost& host, int dir) {
+void ItemsMenu::stepList(const ItemsHost& host, int dir) {
     if (view_ == ItemsView::Picker) {
-        constexpr int n = kItemPickerTileCount;
-        pickRow_ = ((pickRow_ + dir) % n + n) % n;
+        pickRow_ = stepRow(pickRow_, kItemPickerTileCount, dir);
         return;
     }
     // Section headers are drawn but never landed on, in either direction.

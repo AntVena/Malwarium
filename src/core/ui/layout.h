@@ -56,6 +56,23 @@ constexpr int listScrollTop(int cursor, int n, int visible) {
     return top < 0 ? 0 : (top > maxTop ? maxTop : top);
 }
 
+// The row a list cursor lands on stepping `dir` from `cur` through `n` rows, wrapping. An
+// empty list leaves it where it is.
+constexpr int stepRow(int cur, int n, int dir) {
+    return n > 0 ? ((cur + dir) % n + n) % n : cur;
+}
+
+// The same walk, stopping only on a row `ok` accepts. With none acceptable the cursor
+// stays where the player last saw it rather than snapping to a row that isn't there.
+template <typename Ok>
+int stepRow(int cur, int n, int dir, Ok ok) {
+    for (int step = 1; step <= n; ++step) {
+        const int next = stepRow(cur, n, dir * step);
+        if (ok(next)) return next;
+    }
+    return cur;
+}
+
 // Where a paged reader's next window opens: just past the `shown` rows of the window at
 // `top`, or back at row 0 once that window reached the last of `total` rows. The press
 // steps by what the draw fitted, so the two never disagree about where a window ends.

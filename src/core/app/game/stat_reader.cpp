@@ -4,6 +4,7 @@
 
 #include "tunables.h"
 #include "core/model/pet.h"
+#include "core/ui/layout.h"
 #include "core/ui/stat_pages.h"
 #include "core/ui/stat_screen.h"
 
@@ -88,8 +89,7 @@ void StatReader::openIndex(const StatSources& s) {
 }
 
 void StatReader::stepIndex(const StatSources& s, int dir) {
-    const int n = static_cast<int>(indexRows(s).size());
-    if (n > 0) indexRow_ = ((indexRow_ + dir) % n + n) % n;
+    indexRow_ = stepRow(indexRow_, static_cast<int>(indexRows(s).size()), dir);
 }
 
 void StatReader::onIndex(const StatSources& s, const ButtonEvent& ev) {

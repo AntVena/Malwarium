@@ -43,7 +43,7 @@ void Game::moveSlotsReleaseB() {
     moveSlot_ = trainRow_;
     movePick_ = 0;
     moveShowAll_ = false;
-    moveConfirm_ = false;
+    moveConfirm_.close();
     moveDetailEquipped_ = false;
     movePendingId_ = nullptr;
     nav_ = Nav::Detail;
@@ -101,8 +101,7 @@ void Game::onMoveDetail(const ButtonEvent& ev) {
     if (cur && std::strcmp(cur, m->id) != 0) {
         // Replacing a DIFFERENT move: hand back to the picker, which owns the inline
         // overwrite confirm (drawMovePicker / onMovePicker) rather than duplicating it.
-        moveConfirm_ = true;
-        moveConfirmChoice_ = 0;
+        moveConfirm_.open();
         movePendingId_ = m->id;
         trainScreen_ = TrainScreen::MovePicker;
         return;
@@ -127,20 +126,16 @@ void Game::onMovePicker(const ButtonEvent& ev) {
                                      pet_.creature ? pet_.creature->line : nullptr, moveSlot_, moveShowAll_);
     const int rows = 1 + static_cast<int>(owned.size());   // [0] = unequip
 
-    if (moveConfirm_) {
-        if (ev.button == Button::A) moveConfirmChoice_ ^= 1;
-        else if (ev.button == Button::B) {
-            if (moveConfirmChoice_ == 1 && movePendingId_) {
-                pet_.moves.equip(moveSlot_, movePendingId_);
-                markSaveDirty();
-            }
-            moveConfirm_ = false;
-            movePendingId_ = nullptr;
-            nav_ = Nav::Submenu;
-        } else if (ev.button == Button::C) {
-            moveConfirm_ = false;
-            movePendingId_ = nullptr;
+    if (moveConfirm_.isOpen()) {
+        // B answers and goes back to the slots; C backs out to the picker.
+        const InlineConfirm::Answer answer = moveConfirm_.onButton(ev);
+        if (answer == InlineConfirm::Answer::Pending) return;
+        if (answer == InlineConfirm::Answer::Yes && movePendingId_) {
+            pet_.moves.equip(moveSlot_, movePendingId_);
+            markSaveDirty();
         }
+        if (answer != InlineConfirm::Answer::Back) nav_ = Nav::Submenu;
+        movePendingId_ = nullptr;
         return;
     }
 
@@ -160,14 +155,14 @@ void Game::onMovePicker(const ButtonEvent& ev) {
 // The row set changes size with the roster, so the cursor re-parks at row 0. No unlock
 // gate, unlike the ITEMS filter.
 bool Game::movePickerHoldB(uint32_t heldMs) {
-    if (moveConfirm_ || heldMs < kMoveFilterHoldMs) return false;
+    if (moveConfirm_.isOpen() || heldMs < kMoveFilterHoldMs) return false;
     moveShowAll_ = !moveShowAll_;
     movePick_ = 0;
     return true;
 }
 
 void Game::movePickerReleaseB() {
-    if (moveConfirm_) return;
+    if (moveConfirm_.isOpen()) return;
     if (movePick_ == 0) {                              // unequip this slot
         pet_.moves.unequip(moveSlot_);
         markSaveDirty();

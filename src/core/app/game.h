@@ -19,6 +19,7 @@
 #include "core/app/settings.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
+#include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
@@ -2505,21 +2506,26 @@ private:
     // A steps forward (held, it repeats), C steps BACKWARD (held, it backs out of the
     // list), and the row set each one walks is whatever the focused screen draws.
     //
-    // listFocus reports which list (if any) is under the cursor right now, and is
-    // the single gate all three gestures ask. A screen absent from it keeps the plain
-    // A/B/C contract untouched: an inline confirm, a detail page, a modal and a
-    // minigame all answer None, so C stays the instant tap-to-cancel there.
-    enum class ListFocus {
-        None, StatIndex, ItemsPicker, ItemsList, ArchPicker, ArchList, CfgList, CfgGroup,
-        ModSlots, LoadoutHub,
-        ModPicker, MovePicker, Expl, StoryArchive, Maint, Arcade, HackerShop,
-        HackerServices, HackerVault, HackerPeers, CrewHub, CrewTeam, CrewPicker,
+    // ListTarget is a list the three gestures can drive: how its cursor steps by `dir` (wrapping, and
+    // skipping whatever it considers unselectable), and what a tap of C means on it.
+    // listTarget names the list under the cursor right now, and is the single gate all
+    // three gestures ask. A screen absent from it keeps the plain A/B/C contract: an
+    // inline confirm, a detail page, a modal and a minigame answer an empty target, so C
+    // stays the instant tap-to-cancel there.
+    struct ListTarget {
+        void (*step)(Game&, int dir) = nullptr;
+        void (*leave)(Game&) = nullptr;
+        explicit operator bool() const { return step != nullptr; }
     };
-    ListFocus listFocus() const;
-    // Move the focused list's cursor by `dir` (+1/-1), wrapping, skipping whatever
-    // that list considers unselectable (ITEMS headers, unoffered SHOP rows, unlandable
-    // EXPL rows). Inert when listFocus() is None.
-    void stepFocusedList(int dir);
+    ListTarget listTarget() const;
+    // The target for a screen type that owns its list: its stepList(host, dir), and its
+    // own onButton for C.
+    template <auto Screen>
+    static ListTarget screenList();
+    // listTarget's three branches by where the list sits.
+    ListTarget crewListTarget() const;
+    ListTarget submenuListTarget() const;
+    ListTarget detailListTarget() const;
     // The A-repeat and the C-hold back-out, both driven off the held-button clocks.
     // Returns true if either fired and the screen needs a repaint.
     bool tickListNav();
@@ -2530,15 +2536,20 @@ private:
     // Resolve that press on the release edge: a tap cancels, a hold that already walked
     // the cursor backward does not.
     void listBackRelease();
-    // The focused list's own C case, replayed: what a tap of C on it means.
-    void leaveFocusedList();
 
     // The hold-B gestures (game_holds.cpp), routed the way the list gestures are:
-    // holdFocus reports which tap/hold screen is up right now, and the hold tick and the
-    // release edge each switch over it to that screen's own entry points. A screen absent
-    // from it has no second action on B.
-    enum class HoldFocus { None, Cfg, Items, Stat, MoveSlots, MovePicker, Tourney, Shop, Vault };
-    HoldFocus holdFocus() const;
+    // holdTarget names the tap/hold screen that is up right now, with its second action
+    // (true once its own dwell has passed and it landed) and the tap under a hold that
+    // never landed. An empty target has no second action on B.
+    struct HoldTarget {
+        bool (*hold)(Game&, uint32_t heldMs) = nullptr;
+        void (*release)(Game&) = nullptr;
+        explicit operator bool() const { return hold != nullptr; }
+    };
+    HoldTarget holdTarget() const;
+    // The target for a screen type that owns its hold: its holdB(host, ms) and releaseB(host).
+    template <auto Screen>
+    static HoldTarget screenHold();
     // The hold half: the focused screen's second action, once its own dwell has passed.
     // True if it landed, which disarms B.
     bool tickHoldB();
@@ -3563,8 +3574,7 @@ private:
     // (OperatorArch). archConfirm_ is the inline confirm for Store/Deploy.
     ArchAction archAction_ = ArchAction::Store;
     SaleOffer archSaleOffer_ = SaleOffer::Bits;    // the SELL sheet's focused offer
-    bool archConfirm_ = false;
-    int archConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
+    InlineConfirm archConfirm_;
     // Which of ARCH's two L2 screens is showing, which group the list is showing, and
     // the picker's own cursor. archGroup_ also survives into L3: the detail screen asks
     // it whether it is drawing the NEW EGG confirm or a pet's record.
@@ -3574,12 +3584,11 @@ private:
 
     // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline
-    // overwrite confirm is a picker sub-state (modConfirm_ + the choice +
-    // the pending mod id). Mod EFFECTS apply in combat: equip is real.
+    // overwrite confirm is a picker sub-state (modConfirm_ and the pending
+    // mod id). Mod EFFECTS apply in combat: equip is real.
     int modSlot_ = 0;
     int modPick_ = 0;
-    bool modConfirm_ = false;
-    int modConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
+    InlineConfirm modConfirm_;
     const char* modPendingId_ = nullptr;
     // selecting a mod in the picker opens its detail (read-then-act, mirrors
     // ITEMS). modDetail_ overlays the picker; modDetailId_ is the inspected mod.
@@ -3618,8 +3627,7 @@ private:
     // MoveDetail was opened by holding B on the SLOT LIST, so it reads the move already in
     // `moveSlot_` rather than the picker's cursor, and C returns to the slot list.
     bool moveDetailEquipped_ = false;
-    bool moveConfirm_ = false;
-    int moveConfirmChoice_ = 0;          // 0 Cancel · 1 Confirm
+    InlineConfirm moveConfirm_;
     const char* movePendingId_ = nullptr;
     int simTier_ = 0;
     // The fight on screen, or the last one (core/model/fight.h).

@@ -123,8 +123,8 @@ void Game::onButton(const ButtonEvent& ev) {
     // release edge is lost, which is why tick()'s auto-defocus does not consult it
     // and why this does not set it in the first place. C's press is
     // claimed outright. It settles on the release, as a tap (cancel) or a hold (the
-    // backward walk), and the screen's own C case is reached through leaveFocusedList.
-    if (listFocus() != ListFocus::None) {
+    // backward walk), and the screen's own C case is reached through listTarget's leave.
+    if (listTarget()) {
         if (ev.button == Button::A) {
             aHeld_ = true;
             aDownMs_ = nowMs_;
@@ -337,14 +337,14 @@ void Game::enterSubmenu() {
         case SubmenuId::Arch:
             archScreen_ = ArchScreen::Picker; archPickRow_ = 0;
             archGroup_ = ArchGroup{};
-            listRow_ = 0; archAction_ = ArchAction::Store; archConfirm_ = false; break;
+            listRow_ = 0; archAction_ = ArchAction::Store; archConfirm_.close(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:
             loadoutTab_ = LoadoutTab::Hub; loadoutHubRow_ = 0;
-            listRow_ = 0; modConfirm_ = false; modDetail_ = false;
+            listRow_ = 0; modConfirm_.close(); modDetail_ = false;
             modDetailId_ = nullptr;
             trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
-            moveConfirm_ = false; movePendingId_ = nullptr; moveDetailEquipped_ = false;
+            moveConfirm_.close(); movePendingId_ = nullptr; moveDetailEquipped_ = false;
             break;
         case SubmenuId::Games: arcadeRow_ = 0; break;
         case SubmenuId::Expl: openExplList(); break;

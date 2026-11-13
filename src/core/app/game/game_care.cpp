@@ -248,7 +248,7 @@ void Game::openLoadoutTab(LoadoutTab tab) {
     switch (tab) {
         case LoadoutTab::Mods:
             listRow_ = 0;
-            modConfirm_ = false;
+            modConfirm_.close();
             modDetail_ = false;
             modDetailId_ = nullptr;
             nav_ = Nav::Submenu;
@@ -256,7 +256,7 @@ void Game::openLoadoutTab(LoadoutTab tab) {
         case LoadoutTab::Moves:
             trainRow_ = 0;
             trainScreen_ = TrainScreen::MovePicker;
-            moveConfirm_ = false;
+            moveConfirm_.close();
             movePendingId_ = nullptr;
             nav_ = Nav::Submenu;
             break;
@@ -287,7 +287,7 @@ void Game::onModsList(const ButtonEvent& ev) {
     } else if (ev.button == Button::B) {                 // open the slot's picker
         modSlot_ = listRow_;
         modPick_ = 0;
-        modConfirm_ = false;
+        modConfirm_.close();
         modPendingId_ = nullptr;
         modDetail_ = false;
         modDetailId_ = nullptr;
@@ -304,13 +304,15 @@ void Game::onModPicker(const ButtonEvent& ev) {
                                     pet_.creature ? pet_.creature->line : nullptr, modSlot_);
     const int rows = static_cast<int>(owned.size());      // available spares to install
 
-    if (modConfirm_) {                                    // inline overwrite confirm
-        if (ev.button == Button::A) modConfirmChoice_ ^= 1;
-        else if (ev.button == Button::B) {
+    if (modConfirm_.isOpen()) {                           // inline overwrite confirm
+        const InlineConfirm::Answer answer = modConfirm_.onButton(ev);
+        if (answer == InlineConfirm::Answer::Pending) return;
+        // B answers and goes back to the slots; C backs out to the picker.
+        if (answer != InlineConfirm::Answer::Back) {
             const ModDef* pendMod = modPendingId_ ? registry_.mod(modPendingId_) : nullptr;
             const bool lineOk = !pendMod || !pendMod->requiresLine ||
                 (pet_.creature && pet_.creature->line && std::strcmp(pendMod->requiresLine, pet_.creature->line) == 0);
-            if (modConfirmChoice_ == 1 && modPendingId_ && lineOk && pendMod &&
+            if (answer == InlineConfirm::Answer::Yes && modPendingId_ && lineOk && pendMod &&
                 modEquipLevel(*pendMod) <= pet_.level) {
                 // D3: consumes the new mod AND discards the one already in the slot.
                 // (Re-check the equip-LEVEL + hard line gates defensively: commitModEquip
@@ -318,13 +320,9 @@ void Game::onModPicker(const ButtonEvent& ev) {
                 pet_.mods.install(modSlot_, modPendingId_, op_.modPool);
                 markSaveDirty();
             }
-            modConfirm_ = false;
-            modPendingId_ = nullptr;
-            nav_ = Nav::Submenu;                          // resolved -> back to slots
-        } else if (ev.button == Button::C) {
-            modConfirm_ = false;                          // cancel -> stay in picker
-            modPendingId_ = nullptr;
+            nav_ = Nav::Submenu;
         }
+        modPendingId_ = nullptr;
         return;
     }
 
@@ -377,8 +375,7 @@ void Game::commitModEquip() {
         modDetail_ = false;
         nav_ = Nav::Submenu;
     } else if (cur) {                                     // replacing a different mod
-        modConfirm_ = true;
-        modConfirmChoice_ = 0;                            // default Cancel
+        modConfirm_.open();
         modPendingId_ = id;
         modDetail_ = false;                               // confirm shows on the picker
     } else {                                              // empty slot: consume + install

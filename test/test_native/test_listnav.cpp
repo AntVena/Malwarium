@@ -220,3 +220,31 @@ void test_list_rows_leave_room_for_the_name() {
         CHECK(room >= kMinNameChars * kFontAdvance);
     }
 }
+
+// The shared row step wraps both ways, leaves an empty list alone, and with a filter
+// stops only on accepted rows, staying put when none is.
+void test_step_row_wraps_and_skips() {
+    CHECK(stepRow(4, 5, +1) == 0 && stepRow(0, 5, -1) == 4 && stepRow(2, 0, +1) == 2);
+    const auto even = [](int r) { return r % 2 == 0; };
+    CHECK(stepRow(0, 5, +1, even) == 2 && stepRow(4, 5, +1, even) == 0);
+    CHECK(stepRow(0, 5, -1, even) == 4);
+    CHECK(stepRow(3, 5, +1, [](int) { return false; }) == 3);
+}
+
+// The shared confirm opens on the safe choice, A flips it, and B answers and closes it
+// with the highlighted choice, while C closes it as a back-out distinct from B's NO.
+void test_inline_confirm_answers() {
+    InlineConfirm c;
+    CHECK(!c.isOpen());
+    c.open();
+    CHECK(c.isOpen() && c.choice() == 0);
+    CHECK(c.onButton(press(Button::B)) == InlineConfirm::Answer::No && !c.isOpen());
+    c.open();
+    CHECK(c.onButton(press(Button::A)) == InlineConfirm::Answer::Pending && c.choice() == 1);
+    CHECK(c.onButton(press(Button::B)) == InlineConfirm::Answer::Yes && !c.isOpen());
+    c.open();
+    c.onButton(press(Button::A));
+    CHECK(c.onButton(press(Button::C)) == InlineConfirm::Answer::Back && !c.isOpen());
+    c.open();
+    CHECK(c.choice() == 0);   // reopening forgets the last answer
+}

@@ -63,7 +63,7 @@ public:
     void onButton(ItemsHost& host, const ButtonEvent& ev);
     // Step the focused screen's cursor by `dir`, wrapping. The A tap, the A hold-repeat
     // and the C backward walk (game_listnav.cpp) all land here.
-    void step(const ItemsHost& host, int dir);
+    void stepList(const ItemsHost& host, int dir);
     // B released on the list before the filter hold landed: open the focused item.
     void releaseB(ItemsHost& host);
     // B held `heldMs` so far. On the list, once the type tabs are owned, past

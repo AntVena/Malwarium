@@ -17,10 +17,13 @@ to repeat the step, hold **B** for the screen's second action (the ITEMS type fi
 MOVES show-all, the VAULT bulk-open, the CFG factory reset), hold **C** to walk a list
 backward. A hold never means something unrelated to the tap under it, and C's tap is Cancel
 on every screen, with no exceptions. The row-stepping half is implemented once, in
-[`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it by gaining a case
-there rather than by writing its own cursor arithmetic. B's tap/hold pair is routed the same
-way, in [`game_holds.cpp`](src/core/app/game/game_holds.cpp): a screen joins by gaining a
-`HoldFocus` case and its own hold and release entry points. A tap/hold button settles on the
+[`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it with one
+`listTarget` entry (how it steps, what C does there) and steps with `stepRow` rather than its
+own cursor arithmetic. B's tap/hold pair is routed the same way, in
+[`game_holds.cpp`](src/core/app/game/game_holds.cpp): a screen joins with one `holdTarget`
+entry naming its hold and release. A screen type that owns its list or hold joins with
+`screenList` or `screenHold`. A confirm before an action that cannot be taken back is an
+`InlineConfirm`. A tap/hold button settles on the
 RELEASE edge, so anything driving one (a gate, `tools/dump_frame.cpp`) must send both edges.
 
 **Dual-coding release gate:** every status meaning carries a non-colour channel, so **a

@@ -769,7 +769,9 @@ int g_failures = 0;
     RUN(test_list_hold_a_repeats_the_step)        \
     RUN(test_list_hold_c_steps_back_tap_cancels)  \
     RUN(test_list_contract_skips_non_lists)       \
-    /* Hold-B routing (game_core.cpp's holdFocus) */ \
+    RUN(test_step_row_wraps_and_skips)          \
+    RUN(test_inline_confirm_answers)            \
+    /* Hold-B routing (game_holds.cpp's holdTarget) */ \
     RUN(test_hold_b_reaches_only_the_screen_that_is_up) \
     RUN(test_mod_picker_orders_fittable_first)    \
     RUN(test_mod_picker_cursor_matches_drawn_order) \

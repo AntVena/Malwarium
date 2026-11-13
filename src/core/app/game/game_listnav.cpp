@@ -7,10 +7,11 @@
 // per screen is how one list wraps while a mis-stepped row on its sibling costs a full
 // lap of the table.
 //
-// The gate is Game::listFocus(): it names the list under the cursor right now, or None.
-// An inline confirm, a detail page, a modal or a minigame answer None, so C stays an
-// instant cancel on them. A screen joins the contract by gaining a case here, not by
-// growing its own stepping code.
+// The gate is Game::listTarget(): the list under the cursor right now, as how it steps and
+// what C's tap does there, or an empty target. An inline confirm, a detail page, a modal
+// or a minigame answer empty, so C stays an instant cancel on them. A screen joins the
+// contract by gaining one entry there, and steps with stepRow (core/ui/layout.h) rather
+// than its own arithmetic.
 
 #include "core/app/game.h"
 #include "core/app/game_internal.h"
@@ -18,6 +19,7 @@
 #include "tunables.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/expl_screen.h"
+#include "core/ui/layout.h"
 #include "core/ui/mods_screen.h"
 #include "core/ui/stat_pages.h"   // StatSources: what the STAT index steps over
 #include "core/ui/train_screen.h"
@@ -25,237 +27,203 @@
 namespace mal {
 
 namespace {
-
-// Step `cur` through `n` slots by `dir`, wrapping, and stop on the first one `ok`
-// accepts. Returns `cur` unchanged when nothing qualifies, so a roster with no
-// selectable row leaves the cursor where the player last saw it rather than snapping
-// it to a row that isn't there. The one walk behind the SHOP's offered rows, the
-// ARCADE's offered cabinets and the EXPL ladder's landable rows.
-template <typename Ok>
-int stepWrapping(int cur, int n, int dir, Ok ok) {
-    if (n <= 0) return cur;
-    for (int step = 1; step <= n; ++step) {
-        const int next = ((cur + dir * step) % n + n) % n;
-        if (ok(next)) return next;
-    }
-    return cur;
-}
-
+constexpr ButtonEvent kTapC{Button::C, true, false};
 }  // namespace
 
-Game::ListFocus Game::listFocus() const {
+template <auto Screen>
+Game::ListTarget Game::screenList() {
+    return {[](Game& g, int dir) { (g.*Screen).stepList(g, dir); },
+            [](Game& g) { (g.*Screen).onButton(g, kTapC); }};
+}
+
+Game::ListTarget Game::listTarget() const {
     // The Hacker face first: it reuses Nav::Submenu with its own slot roster, so
     // asking enteredId() there would read a pet submenu that isn't on screen.
     if (face_ == Face::Hacker) {
-        if (nav_ != Nav::Submenu) return ListFocus::None;
+        if (nav_ != Nav::Submenu) return {};
         switch (enteredHackerId()) {
             case HackerSlotId::Shop:
-                // Two screens behind one slot, the shape CREW's views take: the
-                // storefront list, and the SERVICES switchboard its head slot opens.
-                // The info page is a reader with nothing selected, so it takes no row
-                // contract and C stays an instant back.
-                if (rigShop_.view() == ShopView::ServiceInfo) return ListFocus::None;
-                return rigShop_.view() == ShopView::Services ? ListFocus::HackerServices
-                                                             : ListFocus::HackerShop;
-            case HackerSlotId::Vault: return ListFocus::HackerVault;
-            case HackerSlotId::Peers: return ListFocus::HackerPeers;
+                // The service info page is a reader with nothing selected, so it takes
+                // no row contract and C stays an instant back.
+                if (rigShop_.view() == ShopView::ServiceInfo) return {};
+                return screenList<&Game::rigShop_>();
+            case HackerSlotId::Vault:
+                return {[](Game& g, int dir) {
+                            const ItemDef* rows[16];
+                            g.hackerVaultRow_ =
+                                stepRow(g.hackerVaultRow_, g.vaultOwnedRows(rows, 16), dir);
+                        },
+                        [](Game& g) { g.onHackerVault(kTapC); }};
+            case HackerSlotId::Peers:
+                return {[](Game& g, int dir) {
+                            PeerRow rows[kPeerMaxRows];
+                            g.peerRow_ = stepRow(g.peerRow_, g.peerRows(rows, kPeerMaxRows), dir);
+                        },
+                        [](Game& g) { g.onHackerPeers(kTapC); }};
             case HackerSlotId::Crew:
-                // CREW is four screens behind one slot; only the three that are row
-                // lists take the contract. Detail is a prose reader: its A pages the
-                // description, which is not a row step.
-                switch (crewView_) {
-                    case CrewView::Hub: return ListFocus::CrewHub;
-                    case CrewView::Team: return ListFocus::CrewTeam;
-                    case CrewView::Picker: return ListFocus::CrewPicker;
-                    default: return ListFocus::None;
-                }
-            default: return ListFocus::None;
+                return crewListTarget();
+            default: return {};
         }
     }
-
-    if (nav_ == Nav::Submenu) {
-        switch (enteredId()) {
-            // Only the INDEX is a list. The six pages behind it are readers: nothing
-            // is selected, A turns the page, and C leaves as on every reader.
-            case SubmenuId::Stat:
-                return stat_.screen() == StatScreen::Index ? ListFocus::StatIndex
-                                                           : ListFocus::None;
-            case SubmenuId::Items:
-                return items_.view() == ItemsView::Picker ? ListFocus::ItemsPicker
-                                                          : ListFocus::ItemsList;
-            // ARCH is two L2 screens now, the same shape ITEMS is above: the group
-            // picker and the rows behind one group. Both are row lists and both want
-            // the hold-repeat, so both take the contract, as separate cases because
-            // C's tap differs (out to the carousel, or back to the picker) and
-            // leaveFocusedList replays it.
-            case SubmenuId::Arch:
-                return archScreen_ == ArchScreen::Picker ? ListFocus::ArchPicker
-                                                         : ListFocus::ArchList;
-            case SubmenuId::Cfg: return ListFocus::CfgList;
-            case SubmenuId::Maint: return ListFocus::Maint;
-            case SubmenuId::Expl: return ListFocus::Expl;
-            case SubmenuId::Games: return ListFocus::Arcade;
-            case SubmenuId::Mods:
-                if (loadoutTab_ == LoadoutTab::Mods) return ListFocus::ModSlots;
-                if (loadoutTab_ == LoadoutTab::Hub) return ListFocus::LoadoutHub;
-                return ListFocus::None;   // MOVES rests in its L3, never here
-            default: return ListFocus::None;
-        }
-    }
-
-    if (nav_ == Nav::Detail) {
-        switch (enteredId()) {
-            // The two CFG GROUP screens (DEVICE / RADIO) are row lists wearing an L3's
-            // Nav state; every other CFG L3 is a single setting, where A cycles a value
-            // and stepping backward would mean nothing.
-            case SubmenuId::Cfg:
-                return (cfgScreen_ == CfgScreen::Device || cfgScreen_ == CfgScreen::Radio)
-                           ? ListFocus::CfgGroup : ListFocus::None;
-            case SubmenuId::Mods:
-                // An open inline confirm owns A and C (choice + abort), and a detail
-                // page is a reader: neither is a list.
-                if (loadoutTab_ == LoadoutTab::Mods)
-                    return (modConfirm_ || modDetail_) ? ListFocus::None
-                                                       : ListFocus::ModPicker;
-                if (loadoutTab_ == LoadoutTab::Moves)
-                    return (moveConfirm_ || trainScreen_ != TrainScreen::MovePicker)
-                               ? ListFocus::None : ListFocus::MovePicker;
-                return ListFocus::None;
-            default: return ListFocus::None;
-        }
-    }
+    if (nav_ == Nav::Submenu) return submenuListTarget();
+    if (nav_ == Nav::Detail) return detailListTarget();
 
     // The CHAPTERS archive is a row list with its own Nav. It grows with the ladder,
     // so it takes the shared cursor and its hold-repeat. The chapter READER beside
     // it does not: nothing on that page is selected, its B is "next window" rather
     // than a row step, and its C is the tap-to-leave every other reader's is.
-    if (nav_ == Nav::StoryArchive) return ListFocus::StoryArchive;
-    return ListFocus::None;
+    if (nav_ == Nav::StoryArchive)
+        return {[](Game& g, int dir) {
+                    g.storyArchiveRow_ = stepRow(
+                        g.storyArchiveRow_, static_cast<int>(g.storyArchiveEntries().size()), dir);
+                },
+                [](Game& g) { g.onStoryArchive(kTapC); }};
+    return {};
 }
 
-void Game::stepFocusedList(int dir) {
-    switch (listFocus()) {
-        case ListFocus::None:
-            return;
-
-        case ListFocus::StatIndex:
-            stat_.stepIndex(statSources(), dir);
-            break;
-
-        case ListFocus::ItemsPicker:
-        case ListFocus::ItemsList:
-            items_.step(*this, dir);
-            break;
-        case ListFocus::ArchPicker: {
-            const int n = archPickRowCount();
-            if (n > 0) archPickRow_ = ((archPickRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::ArchList: {
-            const int n = archRowCount();
-            if (n > 0) listRow_ = ((listRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::CfgList: {
-            const CfgRow* rows = nullptr;
-            const int n = cfgRows(rows);
-            if (n > 0) listRow_ = ((listRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::CfgGroup: {
-            const CfgRow* rows = nullptr;
-            const int n = cfgGroupRows(cfgScreen_, rows);
-            if (n > 0) cfgGroupRow_ = ((cfgGroupRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::ModSlots:
-            listRow_ = ((listRow_ + dir) % kModSlots + kModSlots) % kModSlots;
-            break;
-        case ListFocus::LoadoutHub:
-            loadoutHubRow_ =
-                ((loadoutHubRow_ + dir) % kLoadoutHubRows + kLoadoutHubRows) % kLoadoutHubRows;
-            break;
-        case ListFocus::ModPicker: {
-            const int n = static_cast<int>(
-                ownedModList(registry_, modHoldings(), pet_.level,
-                             pet_.creature ? pet_.creature->line : nullptr, modSlot_).size());
-            if (n > 0) modPick_ = ((modPick_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::MovePicker: {
-            // Row 0 is the unequip row, so the walk covers one more than the roster.
-            const int n = 1 + static_cast<int>(
-                ownedMoveList(registry_, pet_.moves, slotRequiredKind(moveSlot_),
-                              pet_.creature ? pet_.creature->stage : Stage::BootSector,
-                              pet_.creature ? pet_.creature->line : nullptr, moveSlot_,
-                              moveShowAll_).size());
-            movePick_ = ((movePick_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::Expl:
-            // TWO cursor spaces behind one focus (see game.h's explCat_): the ACTIVITY
-            // PICKER's four rows at EXPL's own top level, and the ladder's row space
-            // inside an open category. Both walk the same way; what differs is how long
-            // the list is and which rows the cursor stops on.
-            if (explCat_ == ExplCat::None)
-                listRow_ = stepWrapping(listRow_, kExplCatRows, dir,
-                                        [this](int r) { return explCatLandable(r); });
-            else
-                listRow_ = stepWrapping(listRow_, explRowCount(), dir,
-                                        [this](int r) { return explRowLandable(r); });
-            break;
-        case ListFocus::StoryArchive: {
-            const int n = static_cast<int>(storyArchiveEntries().size());
-            if (n > 0) storyArchiveRow_ = ((storyArchiveRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::Maint:
-            listRow_ ^= 1;            // two rows: either direction is the same toggle
-            break;
-        case ListFocus::Arcade:
-            arcadeRow_ = stepWrapping(arcadeRow_, arcadeGameCount(), dir,
-                                      [this](int r) { return arcadeCabinetOffered(r); });
-            break;
-        case ListFocus::HackerShop:
-            // Not stepWrapping: the SHOP's cursor space carries a head slot that is not
-            // a row, so the walk over it lives with the list that owns it.
-            rigShop_.stepSlot(*this, dir);
-            break;
-        case ListFocus::HackerServices:
-            rigShop_.stepService(*this, dir);
-            break;
-        case ListFocus::HackerVault: {
-            const ItemDef* rows[16];
-            const int n = vaultOwnedRows(rows, 16);
-            if (n > 0) hackerVaultRow_ = ((hackerVaultRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::HackerPeers: {
-            PeerRow rows[kPeerMaxRows];
-            const int n = peerRows(rows, kPeerMaxRows);
-            if (n > 0) peerRow_ = ((peerRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::CrewHub:
-            crewHubRow_ = ((crewHubRow_ + dir) % kCrewHubRows + kCrewHubRows) % kCrewHubRows;
-            break;
-        case ListFocus::CrewTeam: {
-            const int n = crewTeamCount(crewTeam_);
-            if (n > 0) crewTeamRow_ = ((crewTeamRow_ + dir) % n + n) % n;
-            break;
-        }
-        case ListFocus::CrewPicker: {
-            CrewNetRow rows[kNetMaxRows];
-            const int n = crewNetworkRows(rows, kNetMaxRows);
-            if (n > 0) crewNetRow_ = ((crewNetRow_ + dir) % n + n) % n;
-            break;
-        }
+Game::ListTarget Game::crewListTarget() const {
+    // CREW is four screens behind one slot; only the three that are row lists take the
+    // contract. Detail is a prose reader: its A pages the description, which is not a
+    // row step. All three share one C, the slot's own handler.
+    constexpr auto leave = [](Game& g) { g.onHackerCrew(kTapC); };
+    switch (crewView_) {
+        case CrewView::Hub:
+            return {[](Game& g, int dir) {
+                        g.crewHubRow_ = stepRow(g.crewHubRow_, kCrewHubRows, dir);
+                    },
+                    leave};
+        case CrewView::Team:
+            return {[](Game& g, int dir) {
+                        g.crewTeamRow_ = stepRow(g.crewTeamRow_, crewTeamCount(g.crewTeam_), dir);
+                    },
+                    leave};
+        case CrewView::Picker:
+            return {[](Game& g, int dir) {
+                        CrewNetRow rows[kNetMaxRows];
+                        g.crewNetRow_ =
+                            stepRow(g.crewNetRow_, g.crewNetworkRows(rows, kNetMaxRows), dir);
+                    },
+                    leave};
+        default: return {};
     }
-    dirty_ = true;
+}
+
+Game::ListTarget Game::submenuListTarget() const {
+    switch (enteredId()) {
+        // Only the INDEX is a list. The six pages behind it are readers: nothing is
+        // selected, A turns the page, and C leaves as on every reader.
+        case SubmenuId::Stat:
+            if (stat_.screen() != StatScreen::Index) return {};
+            return {[](Game& g, int dir) { g.stat_.stepIndex(g.statSources(), dir); },
+                    [](Game& g) { g.stat_.onButton(g, kTapC); }};
+        case SubmenuId::Items:
+            return screenList<&Game::items_>();
+        // ARCH is two L2 screens, the shape ITEMS takes: the group picker and the rows
+        // behind one group. Both are row lists and both want the hold-repeat; C's tap
+        // differs (out to the carousel, or back to the picker).
+        case SubmenuId::Arch:
+            if (archScreen_ == ArchScreen::Picker)
+                return {[](Game& g, int dir) {
+                            g.archPickRow_ = stepRow(g.archPickRow_, g.archPickRowCount(), dir);
+                        },
+                        [](Game& g) { g.onArchPicker(kTapC); }};
+            return {[](Game& g, int dir) {
+                        g.listRow_ = stepRow(g.listRow_, g.archRowCount(), dir);
+                    },
+                    [](Game& g) { g.onArchList(kTapC); }};
+        case SubmenuId::Cfg:
+            return {[](Game& g, int dir) {
+                        const CfgRow* rows = nullptr;
+                        g.listRow_ = stepRow(g.listRow_, cfgRows(rows), dir);
+                    },
+                    [](Game& g) { g.onCfgList(kTapC); }};
+        case SubmenuId::Maint:
+            return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, 2, dir); },
+                    [](Game& g) { g.onMaintList(kTapC); }};
+        case SubmenuId::Expl:
+            // TWO cursor spaces behind one list (see game.h's explCat_): the ACTIVITY
+            // PICKER's rows at EXPL's own top level, and the ladder's rows inside an open
+            // category. Both walk the same way; what differs is how long the list is and
+            // which rows the cursor stops on.
+            return {[](Game& g, int dir) {
+                        if (g.explCat_ == ExplCat::None)
+                            g.listRow_ = stepRow(g.listRow_, kExplCatRows, dir,
+                                                 [&g](int r) { return g.explCatLandable(r); });
+                        else
+                            g.listRow_ = stepRow(g.listRow_, explRowCount(), dir,
+                                                 [&g](int r) { return g.explRowLandable(r); });
+                    },
+                    [](Game& g) { g.onExplList(kTapC); }};
+        case SubmenuId::Games:
+            return {[](Game& g, int dir) {
+                        g.arcadeRow_ = stepRow(g.arcadeRow_, arcadeGameCount(), dir,
+                                               [&g](int r) { return g.arcadeCabinetOffered(r); });
+                    },
+                    [](Game& g) { g.onArcadeList(kTapC); }};
+        case SubmenuId::Mods:
+            if (loadoutTab_ == LoadoutTab::Mods)
+                return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, kModSlots, dir); },
+                        [](Game& g) { g.onModsList(kTapC); }};
+            if (loadoutTab_ == LoadoutTab::Hub)
+                return {[](Game& g, int dir) {
+                            g.loadoutHubRow_ = stepRow(g.loadoutHubRow_, kLoadoutHubRows, dir);
+                        },
+                        [](Game& g) { g.onLoadoutHub(kTapC); }};
+            return {};   // MOVES rests in its L3, never here
+        default: return {};
+    }
+}
+
+Game::ListTarget Game::detailListTarget() const {
+    switch (enteredId()) {
+        // The two CFG GROUP screens (DEVICE / RADIO) are row lists wearing an L3's Nav
+        // state; every other CFG L3 is a single setting, where A cycles a value and
+        // stepping backward would mean nothing.
+        case SubmenuId::Cfg:
+            if (cfgScreen_ != CfgScreen::Device && cfgScreen_ != CfgScreen::Radio) return {};
+            return {[](Game& g, int dir) {
+                        const CfgRow* rows = nullptr;
+                        g.cfgGroupRow_ =
+                            stepRow(g.cfgGroupRow_, cfgGroupRows(g.cfgScreen_, rows), dir);
+                    },
+                    [](Game& g) { g.onCfgGroup(kTapC); }};
+        // An open inline confirm owns A and C (choice and abort), and a detail page is a
+        // reader: neither is a list.
+        case SubmenuId::Mods:
+            if (loadoutTab_ == LoadoutTab::Mods) {
+                if (modConfirm_.isOpen() || modDetail_) return {};
+                return {[](Game& g, int dir) {
+                            const int n = static_cast<int>(
+                                ownedModList(g.registry_, g.modHoldings(), g.pet_.level,
+                                             g.pet_.creature ? g.pet_.creature->line : nullptr,
+                                             g.modSlot_).size());
+                            g.modPick_ = stepRow(g.modPick_, n, dir);
+                        },
+                        [](Game& g) { g.onModPicker(kTapC); }};
+            }
+            if (loadoutTab_ == LoadoutTab::Moves) {
+                if (moveConfirm_.isOpen() || trainScreen_ != TrainScreen::MovePicker) return {};
+                return {[](Game& g, int dir) {
+                            // Row 0 is the unequip row, so the walk covers one more than
+                            // the roster.
+                            const auto* c = g.pet_.creature;
+                            const int n = 1 + static_cast<int>(
+                                ownedMoveList(g.registry_, g.pet_.moves,
+                                              g.slotRequiredKind(g.moveSlot_),
+                                              c ? c->stage : Stage::BootSector,
+                                              c ? c->line : nullptr, g.moveSlot_,
+                                              g.moveShowAll_).size());
+                            g.movePick_ = stepRow(g.movePick_, n, dir);
+                        },
+                        [](Game& g) { g.onMovePicker(kTapC); }};
+            }
+            return {};
+        default: return {};
+    }
 }
 
 bool Game::listBackStep(const ButtonEvent& ev) {
-    if (ev.button != Button::C || listFocus() == ListFocus::None) return false;
+    if (ev.button != Button::C || !listTarget()) return false;
     // Arm and wait. C's meaning is decided by how long it is held: released before
     // kListRepeatDelayMs it was a tap and cancels (listBackRelease below), held past it
     // it walks the cursor backward and cancels nothing. Nothing happens on the press
@@ -272,21 +240,24 @@ void Game::listBackRelease() {
     // A press that stepped was a hold, and a hold is not a cancel. Only a press that
     // never reached the repeat resolves as the tap it looked like.
     if (listBackStepped_) { listBackStepped_ = false; return; }
-    leaveFocusedList();
+    if (const ListTarget t = listTarget()) {
+        t.leave(*this);
+        dirty_ = true;
+    }
     lastInputMs_ = nowMs_;
 }
 
 bool Game::tickListNav() {
     bool changed = false;
 
-    // A's repeat. Only where A is a plain step: listFocus() is re-read every tick, so a
+    // A's repeat. Only where A is a plain step: listTarget() is re-read every tick, so a
     // hold that walks the cursor onto a screen change stops with it rather than
     // scrubbing a list the player is no longer looking at.
-    if (aHeld_ && listFocus() != ListFocus::None &&
-        nowMs_ - aDownMs_ >= kListRepeatDelayMs &&
+    const ListTarget list = listTarget();
+    if (aHeld_ && list && nowMs_ - aDownMs_ >= kListRepeatDelayMs &&
         nowMs_ - listRepeatLastMs_ >= kListRepeatMs) {
         listRepeatLastMs_ = nowMs_;
-        stepFocusedList(+1);
+        list.step(*this, +1);
         lastInputMs_ = nowMs_;   // a held step is activity (no defocus mid-scroll)
         changed = true;
     } else if (!aHeld_) {
@@ -296,54 +267,19 @@ bool Game::tickListNav() {
     // C's backward walk. Crossing kListRepeatDelayMs is what turns the press from a tap
     // into a hold, so the first backward step and the decision that this is not a
     // cancel happen together: listBackStepped_ latches it for the release edge.
-    if (cHeld_ && listFocus() != ListFocus::None &&
-        nowMs_ - cDownMs_ >= kListRepeatDelayMs &&
+    if (cHeld_ && list && nowMs_ - cDownMs_ >= kListRepeatDelayMs &&
         nowMs_ - listBackRepeatLastMs_ >= kListRepeatMs) {
         listBackRepeatLastMs_ = nowMs_;
         listBackStepped_ = true;
-        stepFocusedList(-1);
+        list.step(*this, -1);
         lastInputMs_ = nowMs_;
         changed = true;
     } else if (!cHeld_) {
         listBackRepeatLastMs_ = nowMs_;
     }
 
+    if (changed) dirty_ = true;
     return changed;
-}
-
-void Game::leaveFocusedList() {
-    // What C's tap used to do on each of these screens, which is what the hold now
-    // does. Routed back through the screen's own handler rather than restated here, so
-    // a screen that changes where its C goes changes it in one place.
-    const ListFocus focus = listFocus();
-    if (focus == ListFocus::None) return;
-    const ButtonEvent back{Button::C, true, false};
-    switch (focus) {
-        case ListFocus::StatIndex: stat_.onButton(*this, back); break;
-        case ListFocus::ItemsPicker:
-        case ListFocus::ItemsList: items_.onButton(*this, back); break;
-        case ListFocus::ArchPicker: onArchPicker(back); break;
-        case ListFocus::ArchList: onArchList(back); break;
-        case ListFocus::CfgList: onCfgList(back); break;
-        case ListFocus::CfgGroup: onCfgGroup(back); break;
-        case ListFocus::ModSlots: onModsList(back); break;
-        case ListFocus::LoadoutHub: onLoadoutHub(back); break;
-        case ListFocus::ModPicker: onModPicker(back); break;
-        case ListFocus::MovePicker: onMovePicker(back); break;
-        case ListFocus::Expl: onExplList(back); break;
-        case ListFocus::StoryArchive: onStoryArchive(back); break;
-        case ListFocus::Maint: onMaintList(back); break;
-        case ListFocus::Arcade: onArcadeList(back); break;
-        case ListFocus::HackerShop:
-        case ListFocus::HackerServices: rigShop_.onButton(*this, back); break;
-        case ListFocus::HackerVault: onHackerVault(back); break;
-        case ListFocus::HackerPeers: onHackerPeers(back); break;
-        case ListFocus::CrewHub:
-        case ListFocus::CrewTeam:
-        case ListFocus::CrewPicker: onHackerCrew(back); break;
-        case ListFocus::None: break;
-    }
-    dirty_ = true;
 }
 
 }  // namespace mal

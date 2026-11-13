@@ -864,8 +864,8 @@ void Game::drawDetail(Framebuffer& fb) const {
             // NEW EGG is an action rather than a row, so its L3 is its own screen: the
             // one place that says what laying an egg costs before it is laid.
             ArchConfirmView v;
-            v.confirmOpen = archConfirm_;
-            v.confirmChoice = archConfirmChoice_;
+            v.confirmOpen = archConfirm_.isOpen();
+            v.confirmChoice = archConfirm_.choice();
             if (archOnNewEgg()) {
                 v.pet = pet_.creature;
                 v.rackFull = pet_.creature && rackFull;
@@ -920,8 +920,8 @@ void Game::drawDetail(Framebuffer& fb) const {
                 pv.pick = modPick_;
                 pv.petLevel = pet_.level;
                 pv.petLine = pet_.creature ? pet_.creature->line : nullptr;
-                pv.confirmActive = modConfirm_;
-                pv.confirmChoice = modConfirmChoice_;
+                pv.confirmActive = modConfirm_.isOpen();
+                pv.confirmChoice = modConfirm_.choice();
                 pv.pendingId = modPendingId_;
                 pv.beat = beat_;
                 drawModPicker(fb, registry_, modHoldings(), pv);
@@ -956,8 +956,8 @@ void Game::drawTrain(Framebuffer& fb) const {
     v.petLine = pet_.creature ? pet_.creature->line : nullptr;
     v.pick = movePick_;
     v.showAll = moveShowAll_;
-    v.confirmActive = moveConfirm_;
-    v.confirmChoice = moveConfirmChoice_;
+    v.confirmActive = moveConfirm_.isOpen();
+    v.confirmChoice = moveConfirm_.choice();
     v.pendingId = movePendingId_;
     v.beat = beat_;
     drawMovePicker(fb, registry_, pet_.moves, v);
