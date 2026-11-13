@@ -17,7 +17,7 @@
 // the backdrop and dead still; only the live tile animates, so MOTION is the only tell
 // and the puzzle reads with the colour stripped out.
 //
-// The player then halves the clutch Game::kEggPickRounds times: A aims at the first half
+// The player then halves the clutch kEggPickRounds times: A aims at the first half
 // (left / top), C at the second (right / bottom), B commits. The split alternates axis
 // each round, so 8x4 slots narrow 8x4 -> 4x4 -> 4x2 -> 2x2. Finish with the live egg
 // still inside and the incubation clock halves (Game::startEggPick's caller keeps the
@@ -40,7 +40,7 @@ constexpr int kClutchW = 112;
 constexpr int kClutchH = 56;
 constexpr int kCell = 14;
 constexpr int kOddRowShift = kCell / 2;
-constexpr int kSlots = Game::kEggPickCols * Game::kEggPickRows;
+constexpr int kSlots = kEggPickCols * kEggPickRows;
 
 // The panel draws at x2, not the engine's usual x1.75: 112 doubles to exactly the
 // 224-wide active canvas, and every cell/shift stays whole-pixel, so the live tile lands
@@ -61,8 +61,8 @@ constexpr int kPanelY = (kActiveH - kClutchH * kZoom) / 2;
 constexpr uint8_t kScrimDead = 216;   // halved away in an earlier round
 constexpr uint8_t kScrimIdle = 124;   // still in play, but not the aimed half
 
-int slotCol(int slot) { return slot % Game::kEggPickCols; }
-int slotRow(int slot) { return slot / Game::kEggPickCols; }
+int slotCol(int slot) { return slot % kEggPickCols; }
+int slotRow(int slot) { return slot / kEggPickCols; }
 
 // Top-left of a slot's cell in panel space. Odd rows are shifted, which can push a cell
 // past the right edge; it wraps modulo the panel width and is ALSO drawn one panel to
@@ -89,90 +89,40 @@ void Game::startEggPick(int rounds) {
     int n = 0;
     for (int s = 0; s < kSlots; ++s)
         if (!slotWraps(s)) pool[n++] = s;
-    eggPickTarget_ = static_cast<uint8_t>(pool[(rng_ >> 16) % n]);
-
-    eggPickRounds_ = static_cast<uint8_t>(rounds < 1 ? 1 : rounds);
-    eggPickRound_ = 0;
-    eggPickCol_ = 0;
-    eggPickColSpan_ = kEggPickCols;
-    eggPickRow_ = 0;
-    eggPickRowSpan_ = kEggPickRows;
-    eggPickSecondHalf_ = false;
-    eggPickResolved_ = false;
-    eggPickWon_ = false;
+    eggPick_ = EggPick::started(pool[(rng_ >> 16) % n], rounds);
     closeGameBrief();   // a stale flag from a previous clutch must not open paused
     nav_ = Nav::ModalEggPick;
     dirty_ = true;
 }
 
-bool Game::eggPickTargetInSpan() const {
-    const int c = slotCol(eggPickTarget_), r = slotRow(eggPickTarget_);
-    return c >= eggPickCol_ && c < eggPickCol_ + eggPickColSpan_ &&
-           r >= eggPickRow_ && r < eggPickRow_ + eggPickRowSpan_;
-}
-
-namespace {
-
-// Which axis this round halves. Rounds alternate columns/rows so the surviving span
-// stays as square as it can, falling back to the other axis if one is already down to a
-// single track (a guard, not a case the shipped 8x4/3-round shape reaches).
-bool splitsColumns(int round, int colSpan, int rowSpan) {
-    if (colSpan < 2) return false;
-    if (rowSpan < 2) return true;
-    return (round % 2) == 0;
-}
-
-}  // namespace
-
 void Game::eggPickAim(bool secondHalf) {
-    if (eggPickResolved_) return;   // the reveal is a read-only screen; only B leaves it
-    if (eggPickSecondHalf_ == secondHalf) return;
-    eggPickSecondHalf_ = secondHalf;
-    dirty_ = true;
+    if (eggPick_ && eggPick_->aim(secondHalf)) dirty_ = true;
 }
 
 void Game::eggPickCommit() {
-    if (eggPickResolved_) {
+    if (!eggPick_) return;
+    if (eggPick_->resolved) {
+        const bool won = eggPick_->won;
+        eggPick_.reset();
         // An arcade raft has no egg and no clock to halve, so the till takes the
         // verdict. Win-or-lose: a halving either kept the live egg or it didn't, and
         // there is no partial credit to award.
         if (inArcadeRun()) {
-            finishArcadeRun(eggPickWon_, 0, 0);
+            finishArcadeRun(won, 0, 0);
             return;
         }
         // The reveal has been read: bank the result and drop the player at idle with
         // their egg. Winning halves what's left of the incubation clock; that IS the
         // whole prize, since this line never opens the decrypt modal to grind down.
-        if (eggPickWon_ && pet_.bootHatchRemainMs > 0) pet_.bootHatchRemainMs /= 2;
+        if (won && pet_.bootHatchRemainMs > 0) pet_.bootHatchRemainMs /= 2;
         nav_ = Nav::Idle;
         dirty_ = true;
         markSaveDirty();
         return;
     }
-
-    if (splitsColumns(eggPickRound_, eggPickColSpan_, eggPickRowSpan_)) {
-        const uint8_t half = eggPickColSpan_ / 2;
-        if (eggPickSecondHalf_) eggPickCol_ = static_cast<uint8_t>(eggPickCol_ + half);
-        eggPickColSpan_ = half;
-    } else {
-        const uint8_t half = eggPickRowSpan_ / 2;
-        if (eggPickSecondHalf_) eggPickRow_ = static_cast<uint8_t>(eggPickRow_ + half);
-        eggPickRowSpan_ = half;
-    }
-    ++eggPickRound_;
-    eggPickSecondHalf_ = false;   // every round re-opens aimed at its first half
-
-    // Once the live egg falls outside the surviving span the run is lost, so it
-    // ends without playing the remaining rounds. Resolve here, on the turn that
-    // actually lost it, rather than at the scheduled last round.
-    if (!eggPickTargetInSpan()) {
-        eggPickResolved_ = true;
-        eggPickWon_ = false;
-    } else if (eggPickRound_ >= eggPickRounds_) {
-        eggPickResolved_ = true;
-        eggPickWon_ = true;   // still in span at the last round = the live egg survived
-    }
-    playSound(!eggPickResolved_ ? Sound::Point : eggPickWon_ ? Sound::Clear : Sound::Crash);
+    eggPick_->commit();
+    const EggPick& p = *eggPick_;
+    playSound(!p.resolved ? Sound::Point : p.won ? Sound::Clear : Sound::Crash);
     dirty_ = true;
 }
 
@@ -238,6 +188,8 @@ void drawClutchCrop(Framebuffer& fb, int srcX0, int srcY0, int srcW, int srcH,
 void Game::drawEggPick(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
     fb.clear(palColor(Pal::PAPER));
+    if (!eggPick_) return;
+    const EggPick& p = *eggPick_;
 
     const char* title = "SPOT THE PHISH";
     drawText(fb, (kActiveW - textWidth(title)) / 2, 14, title, palColor(Pal::INK));
@@ -250,32 +202,32 @@ void Game::drawEggPick(Framebuffer& fb) const {
     // the panel allows, so a miss shows the actual tile that got away rather than
     // asking the player to spot it in the full raft.
     int srcX0, srcY0, srcW, srcH, zoom;
-    if (eggPickResolved_) {
-        srcX0 = slotX(eggPickTarget_);
-        srcY0 = slotY(eggPickTarget_);
+    if (p.resolved) {
+        srcX0 = slotX(p.target);
+        srcY0 = slotY(p.target);
         srcW = kCell;
         srcH = kCell;
         zoom = cropZoom(1, 1);
     } else {
-        srcX0 = eggPickCol_ * kCell;
-        srcY0 = eggPickRow_ * kCell;
+        srcX0 = p.col * kCell;
+        srcY0 = p.row * kCell;
         // The shift only ever widens the box; a span already covering every column
         // wraps back onto itself rather than actually needing the extra width, so cap
         // it at the sheet's own size instead of overhanging both panel edges.
-        srcW = std::min(eggPickColSpan_ * kCell + kOddRowShift, kClutchW);
-        srcH = eggPickRowSpan_ * kCell;
-        zoom = cropZoom(eggPickColSpan_, eggPickRowSpan_);
+        srcW = std::min(p.colSpan * kCell + kOddRowShift, kClutchW);
+        srcH = p.rowSpan * kCell;
+        zoom = cropZoom(p.colSpan, p.rowSpan);
     }
     const int destX = kActiveW / 2 - (srcW * zoom) / 2;
     const int destY = kActiveH / 2 - (srcH * zoom) / 2;
     drawClutchCrop(fb, srcX0, srcY0, srcW, srcH, destX, destY, zoom);
 
     // The live egg, in that same cropped/zoomed space. It's always inside the crop.
-    // Running, because eggPickCommit resolves the run the instant it isn't; resolved,
+    // Running, because EggPick::commit resolves the pick the instant it isn't; resolved,
     // because the crop IS its cell, so its offset from the crop's own origin is what
     // places it, wrapping the same way slotX() does.
     {
-        const int tx = slotX(eggPickTarget_), ty = slotY(eggPickTarget_);
+        const int tx = slotX(p.target), ty = slotY(p.target);
         int dx = tx - srcX0;
         if (dx < 0) dx += kClutchW;
         const int dy = ty - srcY0;
@@ -283,29 +235,29 @@ void Game::drawEggPick(Framebuffer& fb) const {
                            destY + dy * zoom, zoom, 1);
     }
 
-    if (eggPickResolved_) {
-        const char* verdict = eggPickWon_ ? "LIVE EGG FOUND" : "DECOY - IT GOT AWAY";
+    if (p.resolved) {
+        const char* verdict = p.won ? "LIVE EGG FOUND" : "DECOY - IT GOT AWAY";
         // The effect line is the one thing an arcade raft can't inherit: there is no
         // egg behind it, so it names the payout screen that comes next instead of a
         // clock it didn't touch.
-        const char* effect = inArcadeRun() ? (eggPickWon_ ? "CABINET CLEARED" : "NO PRIZE")
-                             : eggPickWon_ ? "HATCHES TWICE AS FAST"
+        const char* effect = inArcadeRun() ? (p.won ? "CABINET CLEARED" : "NO PRIZE")
+                             : p.won ? "HATCHES TWICE AS FAST"
                                            : "HATCHES ON ITS OWN CLOCK";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, 30, verdict,
                  palColor(Pal::INK));
         drawText(fb, (kActiveW - textWidth(effect)) / 2, 186, effect,
-                 eggPickWon_ ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
+                 p.won ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
         const char* hint = "B CONTINUE   C DISABLED";
         drawText(fb, (kActiveW - textWidth(hint)) / 2, 204, hint, palColor(Pal::INK_DIM));
         return;
     }
 
     char round[24];
-    std::snprintf(round, sizeof(round), "ROUND %d / %d", eggPickRound_ + 1,
-                  eggPickRounds_);
+    std::snprintf(round, sizeof(round), "ROUND %d / %d", p.round + 1,
+                  p.rounds);
     drawText(fb, (kActiveW - textWidth(round)) / 2, 30, round, palColor(Pal::INK_DIM));
 
-    const bool byColumn = splitsColumns(eggPickRound_, eggPickColSpan_, eggPickRowSpan_);
+    const bool byColumn = p.splitsColumns();
 
     // A solid bar down the outer edge of the aimed half, against the crop, because
     // eliminated cells are not drawn. The aim reads by shape and position alone.
@@ -313,15 +265,15 @@ void Game::drawEggPick(Framebuffer& fb) const {
     const Rgb565 aim = palColor(Pal::ACCENT);
     const int dw = srcW * zoom, dh = srcH * zoom;
     if (byColumn) {
-        fb.fillRect(eggPickSecondHalf_ ? destX + dw - kEdge : destX, destY, kEdge, dh,
+        fb.fillRect(p.secondHalf ? destX + dw - kEdge : destX, destY, kEdge, dh,
                     aim);
     } else {
-        fb.fillRect(destX, eggPickSecondHalf_ ? destY + dh - kEdge : destY, dw, kEdge,
+        fb.fillRect(destX, p.secondHalf ? destY + dh - kEdge : destY, dw, kEdge,
                     aim);
     }
 
-    const char* aimed = byColumn ? (eggPickSecondHalf_ ? "RIGHT HALF" : "LEFT HALF")
-                                 : (eggPickSecondHalf_ ? "BOTTOM HALF" : "TOP HALF");
+    const char* aimed = byColumn ? (p.secondHalf ? "RIGHT HALF" : "LEFT HALF")
+                                 : (p.secondHalf ? "BOTTOM HALF" : "TOP HALF");
     drawText(fb, (kActiveW - textWidth(aimed)) / 2, 186, aimed, palColor(Pal::INK));
 
     // UI_HINT_BAND. A and C aim here instead of stepping and cancelling, so the band
@@ -331,8 +283,8 @@ void Game::drawEggPick(Framebuffer& fb) const {
     constexpr int kHintY = 204;
     constexpr int kPad = 10;
     const Rgb565 lit = palColor(Pal::ACCENT), dim = palColor(Pal::INK_DIM);
-    const Rgb565 aCol = eggPickSecondHalf_ ? dim : lit;
-    const Rgb565 cCol = eggPickSecondHalf_ ? lit : dim;
+    const Rgb565 aCol = p.secondHalf ? dim : lit;
+    const Rgb565 cCol = p.secondHalf ? lit : dim;
     const Arrow aDir = byColumn ? Arrow::Left : Arrow::Up;
     const Arrow cDir = byColumn ? Arrow::Right : Arrow::Down;
 

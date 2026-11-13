@@ -1778,10 +1778,10 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "win")) {
             // Play it perfectly to land on the won reveal: aim at whichever half holds
             // the live egg each round, following game_eggpick.cpp's alternating cut.
-            const int col = game.eggPickTargetSlot() % Game::kEggPickCols;
-            const int row = game.eggPickTargetSlot() / Game::kEggPickCols;
-            int c0 = 0, cw = Game::kEggPickCols, r0 = 0, rh = Game::kEggPickRows;
-            for (int i = 0; i < Game::kEggPickRounds; ++i) {
+            const int col = game.eggPickTargetSlot() % kEggPickCols;
+            const int row = game.eggPickTargetSlot() / kEggPickCols;
+            int c0 = 0, cw = kEggPickCols, r0 = 0, rh = kEggPickRows;
+            for (int i = 0; i < kEggPickRounds; ++i) {
                 bool second;
                 if (i % 2 == 0) { cw /= 2; second = col >= c0 + cw; if (second) c0 += cw; }
                 else            { rh /= 2; second = row >= r0 + rh; if (second) r0 += rh; }
@@ -1793,9 +1793,9 @@ int main(int argc, char** argv) {
             // so the run resolves on round one every time, deterministic regardless of
             // seed. The clutch now ends the instant the target leaves the span (see
             // game_eggpick.cpp), so unlike "win" this never needs more than one commit.
-            const int col = game.eggPickTargetSlot() % Game::kEggPickCols;
-            const int row = game.eggPickTargetSlot() / Game::kEggPickCols;
-            const bool second = col < Game::kEggPickCols / 2;   // wrong half of round 1's column cut
+            const int col = game.eggPickTargetSlot() % kEggPickCols;
+            const int row = game.eggPickTargetSlot() / kEggPickCols;
+            const bool second = col < kEggPickCols / 2;   // wrong half of round 1's column cut
             (void)row;
             game.onButton({second ? Button::C : Button::A, true, false});
             game.onButton({Button::B, true, false});
@@ -1899,7 +1899,7 @@ int main(int argc, char** argv) {
         game.resetToHatch();
         game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
-        for (int i = 0; i < Game::kEggPickRounds; ++i) {
+        for (int i = 0; i < kEggPickRounds; ++i) {
             game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});
         }

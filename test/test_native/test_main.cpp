@@ -800,6 +800,7 @@ int g_failures = 0;
     RUN(test_line_select_grayscale)               \
     RUN(test_eggpick_win_halves_incubation)       \
     RUN(test_eggpick_miss_keeps_full_incubation)  \
+    RUN(test_eggpick_rules_live_on_the_run) \
     RUN(test_eggpick_aim_is_not_cancel)           \
     RUN(test_eggpick_target_never_wraps)          \
     RUN(test_eggpick_line_has_nothing_mid_clock)    \

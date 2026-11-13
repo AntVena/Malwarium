@@ -328,10 +328,10 @@ static Game phishingEgg() {
 // game_eggpick.cpp documents (alternating columns/rows over the 8x4 clutch), so it
 // also pins that order: a change to the split axis or count fails here.
 static void eggPickPlayPerfect(Game& g) {
-    const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
-    const int row = g.eggPickTargetSlot() / Game::kEggPickCols;
-    int c0 = 0, cw = Game::kEggPickCols, r0 = 0, rh = Game::kEggPickRows;
-    for (int i = 0; i < Game::kEggPickRounds; ++i) {
+    const int col = g.eggPickTargetSlot() % kEggPickCols;
+    const int row = g.eggPickTargetSlot() / kEggPickCols;
+    int c0 = 0, cw = kEggPickCols, r0 = 0, rh = kEggPickRows;
+    for (int i = 0; i < kEggPickRounds; ++i) {
         bool second;
         if (i % 2 == 0) { cw /= 2; second = col >= c0 + cw; if (second) c0 += cw; }
         else            { rh /= 2; second = row >= r0 + rh; if (second) r0 += rh; }
@@ -347,7 +347,7 @@ void test_eggpick_win_halves_incubation() {
     CHECK(g.eggPickRound() == 0 && !g.eggPickResolved());
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);
     eggPickPlayPerfect(g);
-    CHECK(g.eggPickRound() == Game::kEggPickRounds);
+    CHECK(g.eggPickRound() == kEggPickRounds);
     CHECK(g.eggPickResolved() && g.eggPickWon());
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);   // banked on the reveal's B, not before
     g.onButton(press(Button::B));
@@ -361,8 +361,8 @@ void test_eggpick_win_halves_incubation() {
 // length.
 void test_eggpick_miss_keeps_full_incubation() {
     Game g = phishingEgg();
-    const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
-    const bool correct = col >= Game::kEggPickCols / 2;
+    const int col = g.eggPickTargetSlot() % kEggPickCols;
+    const bool correct = col >= kEggPickCols / 2;
     g.onButton(press(correct ? Button::A : Button::C));   // aim at the half it ISN'T in
     g.onButton(press(Button::B));
     CHECK(!g.eggPickTargetInSpan());                      // already lost
@@ -371,6 +371,36 @@ void test_eggpick_miss_keeps_full_incubation() {
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
     CHECK(g.bootHatchRemainMs() == kBootHatchMs);         // no bonus, no penalty
+}
+
+// The pick's rules, off any screen: a run asks for at least one round, the first cut
+// halves the columns and the next the rows, aiming at the half already aimed at is no
+// change, a cut that loses the live egg resolves on that turn, and a dismissed reveal
+// leaves no pick behind.
+void test_eggpick_rules_live_on_the_run() {
+    EggPick p = EggPick::started(/*target=*/5, /*rounds=*/0);
+    CHECK(p.rounds == 1 && p.colSpan == kEggPickCols && p.rowSpan == kEggPickRows);
+    CHECK(p.targetInSpan() && p.splitsColumns());
+    CHECK(!p.aim(false) && p.aim(true));          // the A half is where it starts
+    p.commit();                                   // keep columns 4..7: slot 5 is column 5
+    CHECK(p.col == 4 && p.colSpan == kEggPickCols / 2 && p.rowSpan == kEggPickRows);
+    CHECK(p.resolved && p.won && !p.aim(false));  // the one round, survived
+
+    EggPick q = EggPick::started(5, kEggPickRounds);
+    q.commit();                                   // keeps columns 0..3: the egg is gone
+    CHECK(q.resolved && !q.won && q.round == 1);
+
+    EggPick r = EggPick::started(0, kEggPickRounds);
+    r.commit();
+    CHECK(!r.resolved && !r.splitsColumns());     // round two cuts the rows
+    r.commit();
+    CHECK(r.rowSpan == kEggPickRows / 2 && !r.resolved);
+
+    Game g = phishingEgg();
+    eggPickPlayPerfect(g);
+    CHECK(g.eggPickResolved());
+    g.onButton(press(Button::B));
+    CHECK(!g.eggPickResolved() && g.eggPickRound() == 0 && !g.eggPickTargetInSpan());
 }
 
 // A and C AIM here rather than step/cancel: C can't back out of the modal, and
@@ -396,14 +426,14 @@ void test_eggpick_target_never_wraps() {
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));
         const int slot = g.eggPickTargetSlot();
-        const int col = slot % Game::kEggPickCols, row = slot / Game::kEggPickCols;
-        CHECK(!(row % 2 == 1 && col == Game::kEggPickCols - 1));
+        const int col = slot % kEggPickCols, row = slot / kEggPickCols;
+        CHECK(!(row % 2 == 1 && col == kEggPickCols - 1));
     }
 }
 
 // Take a laid Phishing egg through its Clutch Pick and back out to idle.
 static void settleEggPick(Game& g) {
-    for (int i = 0; i < Game::kEggPickRounds; ++i) {
+    for (int i = 0; i < kEggPickRounds; ++i) {
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));
     }

@@ -123,9 +123,9 @@ void test_arcade_clutch_rounds_follow_the_dial() {
         // Mirror game_eggpick.cpp's splitsColumns: columns halve first, alternating
         // with rows, except once one axis is down to a single track the other takes
         // every remaining round.
-        const int col = g.eggPickTargetSlot() % Game::kEggPickCols;
-        const int row = g.eggPickTargetSlot() / Game::kEggPickCols;
-        int c0 = 0, cw = Game::kEggPickCols, r0 = 0, rh = Game::kEggPickRows;
+        const int col = g.eggPickTargetSlot() % kEggPickCols;
+        const int row = g.eggPickTargetSlot() / kEggPickCols;
+        int c0 = 0, cw = kEggPickCols, r0 = 0, rh = kEggPickRows;
         int commits = 0;
         while (!g.eggPickResolved() && commits < 16) {
             const bool byColumn = cw >= 2 && (rh < 2 || commits % 2 == 0);

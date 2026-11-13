@@ -37,6 +37,7 @@
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
 #include "core/model/arcade_run.h"
+#include "core/model/egg_pick.h"
 #include "core/model/explore_walk.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
@@ -1562,19 +1563,17 @@ public:
     // one's swimmer animates: motion is the only tell, so the puzzle survives
     // grayscale. The player halves the clutch kEggPickRounds times (A = left/top,
     // C = right/bottom, B = commit); finishing with the live egg still inside
-    // halves the incubation clock, missing it costs nothing but the bonus.
-    // Geometry, logic and draw all live in game_eggpick.cpp.
-    static constexpr int kEggPickRounds = 3;
-    static constexpr int kEggPickCols = 8;   // the clutch grid BG_EGG_CLUTCH bakes
-    static constexpr int kEggPickRows = 4;
+    // halves the incubation clock, missing it costs nothing but the bonus. The rules
+    // are the EggPick run (core/model/egg_pick.h); the raft and its draw live in
+    // game_eggpick.cpp. With no pick on screen these read 0 / false.
     bool inEggPick() const { return nav_ == Nav::ModalEggPick; }
-    int eggPickRound() const { return eggPickRound_; }        // halvings committed, 0..kEggPickRounds
-    int eggPickTargetSlot() const { return eggPickTarget_; }  // the live egg's slot (tests)
-    bool eggPickResolved() const { return eggPickResolved_; } // all rounds in -> the reveal is up
-    bool eggPickWon() const { return eggPickWon_; }
-    // True once the live egg's slot is outside the surviving span: i.e. the run is
-    // already lost, even though the remaining rounds still play out.
-    bool eggPickTargetInSpan() const;
+    int eggPickRound() const { return eggPick_ ? eggPick_->round : 0; }   // halvings committed
+    int eggPickTargetSlot() const { return eggPick_ ? eggPick_->target : 0; }  // (tests)
+    bool eggPickResolved() const { return eggPick_ && eggPick_->resolved; }   // reveal is up
+    bool eggPickWon() const { return eggPick_ && eggPick_->won; }
+    // True while the live egg's slot is inside the surviving span. A miss resolves the
+    // pick on the turn it happens, so false here is a pick already lost.
+    bool eggPickTargetInSpan() const { return eggPick_ && eggPick_->targetInSpan(); }
 
     // --- GAMES (the arcade) ------------------------------------------------ The
     // same minigames the hatches and the Defrag run, off their stakes: a cabinet
@@ -4180,28 +4179,13 @@ private:
     ArcadeDifficulty arcadeDifficulty_ = ArcadeDifficulty::Medium;
     ArcadeResult arcadeResult_;
 
-    // Clutch Pick modal (the Phishing hatch minigame, game_eggpick.cpp). Runtime-only
-    // and deliberately un-persisted: the whole game is played in the seconds after the
-    // egg is laid, so a reboot mid-pick simply forfeits the bonus and leaves a normal
-    // egg incubating. No save field, no schema bump.
-    uint8_t eggPickTarget_ = 0;      // slot 0..kEggPickCols*kEggPickRows-1 holding the live egg
-    uint8_t eggPickRound_ = 0;       // halvings committed so far
-    uint8_t eggPickCol_ = 0;         // surviving column span [eggPickCol_, +eggPickColSpan_)
-    uint8_t eggPickColSpan_ = 0;
-    uint8_t eggPickRow_ = 0;         // surviving row span
-    uint8_t eggPickRowSpan_ = 0;
-    bool eggPickSecondHalf_ = false; // C-half (right/bottom) aimed at, vs the A-half
-    bool eggPickResolved_ = false;   // rounds done -> the reveal, waiting on B
-    bool eggPickWon_ = false;
-    // How many halvings THIS run asks for. The hatch always plays kEggPickRounds; the
-    // arcade's difficulty dial is this number, since a narrower survivor is the only
-    // axis a puzzle with no clock has.
-    uint8_t eggPickRounds_ = kEggPickRounds;
+    // The Clutch Pick on screen (core/model/egg_pick.h), empty otherwise.
+    std::optional<EggPick> eggPick_;
 
     // Isolation Protocol (the Worm hatch minigame, game_isolation.cpp). Un-persisted for
-    // the same reason the Clutch Pick above is: it is played out in the minute after the
-    // egg is laid, so a reboot mid-run forfeits the bonus and leaves a normal egg
-    // incubating. The run's own step clock is real-ms, like the Stacker's.
+    // the same reason the Clutch Pick is (core/model/egg_pick.h): it is played out in the
+    // minute after the egg is laid, so a reboot mid-run forfeits the bonus and leaves a
+    // normal egg incubating. The run's own step clock is real-ms, like the Stacker's.
     Isolation isolation_;
     uint32_t lastIsolationStepMs_ = 0;
     int isolationBanked_ = 0;        // bytes already spent on the clock, so B can't double-pay
