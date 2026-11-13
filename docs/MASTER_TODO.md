@@ -94,8 +94,8 @@ question with the description beneath them, and open the confirm over the descri
 
 ### 1j. Architecture: records, runs and screens
 
-`Game` holds every feature's state as its own fields (about 430 of them in `game.h`), so every
-`game_*.cpp` unit can touch every field and the 48 units are a physical split only. The
+`Game` holds most features' state as its own fields (several hundred of them in `game.h`), so every
+`game_*.cpp` unit can touch every field and the units are a physical split only. The
 CONTRIBUTING section *Where state lives* says where each field goes: a record (`Pet`,
 `Operator`, `Settings`), a run, or a screen. These rows move it there, one type at a time.
 
@@ -117,8 +117,17 @@ How a screen is cut, as the twenty-odd types in `src/core/app/game/` now show:
   shared moves between them.
 - Lists join the gestures with one `listTarget` entry (`screenList`), holds with one
   `holdTarget` entry (`screenHold`), step with `stepRow`, confirm with `InlineConfirm`.
-- A thing on its own clock with a continuation (the story reader) or a lifetime of its own
-  (a storefront visit) is a run, not a screen.
+- A thing on its own clock with a continuation (`StoryRun`) or a lifetime of its own
+  (`StorefrontVisit`) is a run, not a screen. Layout stays out of a run: the reader tells
+  `StoryRun::turn` how many rows the window showed.
+- What outlives a screen is no screen's, even when only one screen draws it: why the last
+  duel ended stays beside the session that writes it. A queue that faces the world (the
+  duel outbox, `PvpOutbox`) is a type in its own layer, held by `Game` beside the entry
+  point that feeds it.
+- Pages behind one slot that are never open together share one focus field (`CfgMenu`'s
+  `pick_`, seeded as each page opens) instead of a field each.
+- A screen header that would clash with an existing name takes `*Menu` (`CfgMenu`, since
+  `CfgScreen` names the page) or renames the enum to `*View` (`ArchView`).
 - Small screens go in batches, one commit each, checked together.
 
 #### Records
@@ -134,21 +143,24 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **The rest**: ARCH (`arch*`, game_arch.cpp + game_arch_sale.cpp, about 480 lines), CFG
-  (`cfg*`, 15 fields, game_config.cpp, about 700 lines), the MODS and MOVES pickers
-  (`mod*`, `move*` cursors and confirms; both behind the loadout tab, so one type), and the
-  MAINT list, which still steps `Game`'s shared `listRow_`. `listRow_` itself is a smell: one
-  cursor several screens share, so each of these takes its own. Each one that arms B moves
-  its `holdTarget` entry onto the new type, as `screenHold`.
-- **Two runs the screens left behind.** The STORY reader (`storyChapter_`, `storyNext_`,
-  `storyScroll_`, `storyPanelDeadlineMs_`, `storyThen_`, `storyThenArea_`) turns its own
-  pages on a deadline and carries a queue and a continuation that re-enters the walk, the
-  encounter or the boss, so it is a run, with a thin screen over it. A storefront visit
-  (`shopFront_`, `shopIsModShop_`, `shopStockLeft_`) is one too: its stock lives for the
-  visit, and the `shopListing*` accessors `ShopHost` reads are its methods. M.
-- **The LINK screen**: `pvpRow_` and `pvpStatus_` (why the last duel ended). The outbound
-  frame queue (`pvpOutbox_`, `pvpOutCount_`) outlives a session but is no screen's: it is
-  the radio link's, so this row also decides its home. S.
+- **Still dispatched to `Game` methods.** The first list here covered ARCH, CFG, LOADOUT,
+  MAINT, LINK, the story reader and the storefront; these states route to `Game` too and
+  take the same cut. The EXPL list (`explRow_`, `explCat_`, `explNavArea_`,
+  game_explore.cpp) is the largest. Then the explore control and post-encounter readout,
+  the away digest, the Wi-Fi event, the three SHIBOLEET pages, the WARP / ROLLBACK /
+  REPARTITION pickers, the item offer, the modals (feeding, line select, egg pick, hatch
+  reveal, evolve, CSF), and the input and draw of the minigame boards whose runs already
+  exist (Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram). Batch the small
+  ones. | game_nav.cpp's `onButton` and game_render.cpp's dispatch list them | L |
+- **`CfgHost` is wide** (about sixty methods), because CFG fronts every subsystem that has a
+  setting. UPDATES is the part with a reason of its own to change: its row, confirm and
+  three faces, and a third of the host's reads. It can be its own page type under
+  `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
+- **The sweep**, once every state above has its first cut: the ~100 `debug*` hooks, the
+  read-only forwarders (`arch*()`, `modPick()`, `pediaQrPage()`, `storyWindow()`, the
+  `shopListing*()` reads), and the gates that read them, under one rule applied across the
+  board. Then the per-screen table (onButton / draw / tick) that replaces `Game`'s Nav
+  switches. | XL |
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which

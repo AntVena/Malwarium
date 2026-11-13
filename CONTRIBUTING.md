@@ -116,7 +116,8 @@ to one of the three and goes there instead.
 - **A run** is one activity with a start and an end: an explore walk, a fight, the boss
   gauntlet, a tourney, a PvP session, an arcade game. It owns its clocks, its random draws and
   its result, and is destroyed when it ends. A run that must survive a reboot maps itself to
-  the save the way a record does. `Combat`, `Cryptogram` and `DiskDecryption` are runs.
+  the save the way a record does. `Combat`, `Cryptogram`, `StoryRun` and `StorefrontVisit`
+  are runs.
 - **A screen** is the UI over records and runs: its cursor, scroll, confirm state, input
   handlers and draw. It holds nothing that must outlive it, so leaving a screen loses no
   progress. It reads records by const reference and reaches the game through a narrow host
