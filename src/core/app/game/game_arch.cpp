@@ -1,5 +1,5 @@
-// game_arch.cpp (the ARCH rack): freezing a pet, thawing one back, and the two
-// screens that drive it (part of the Game unit split, core/app/game.h).
+// game_arch.cpp (the ARCH rack): freezing a pet, thawing one back, and releasing one
+// (part of the Game unit split, core/app/game.h). ArchScreen drives them.
 //
 // ARCH is cold storage for pets. The rack holds live pets frozen mid-lifecycle; what
 // a rack slot keeps is the Pet record's decision (Pet::stored / Pet::thawed). The
@@ -13,94 +13,17 @@
 #include <cstring>
 
 #include "tunables.h"
-#include "core/ui/arch_screen.h"
+#include "core/ui/arch_screen.h"   // ArchSaleSheet
 #include "core/ui/carousel.h"
 
 namespace mal {
 
-std::vector<ArchRow> Game::archRows() const {
-    return buildArchRows(registry_, archGroup_, pet_.creature, pet_.generation, op_.arch.rack,
-                         op_.arch.records);
-}
-
-ArchRow Game::archFocusedRow() const {
-    const auto rows = archRows();
-    if (listRow_ < 0 || listRow_ >= static_cast<int>(rows.size())) return ArchRow{};
-    return rows[listRow_];
-}
-
-void Game::onArchPicker(const ButtonEvent& ev) {
-    // The L2 group picker: NEW EGG, ACTIVE, one row per creature family, RECORDS. A
-    // walks (wraps), B opens, C backs out: the ITEMS type-picker's gestures, because
-    // this is the same kind of screen one level up.
-    const auto tiles =
-        buildArchPickerRows(registry_, pet_.creature, op_.arch.rack, op_.arch.records);
-    const int n = static_cast<int>(tiles.size());
-    if (n <= 0) { if (ev.button == Button::C) nav_ = Nav::Cursor; return; }
-    if (archPickRow_ < 0 || archPickRow_ >= n) archPickRow_ = 0;
-
-    if (ev.button == Button::A) {
-        archPickRow_ = (archPickRow_ + 1) % n;
-    } else if (ev.button == Button::B) {
-        archGroup_ = tiles[archPickRow_].group;
-        archConfirm_.close();
-        // NEW EGG is an ACTION, so it opens its own L3 confirm rather than a list. An
-        // empty group still opens, showing "- NOTHING HERE -", so B never does
-        // nothing on a row the screen drew.
-        if (archGroup_.kind == ArchGroup::Kind::NewEgg) {
-            nav_ = Nav::Detail;
-        } else {
-            archScreen_ = ArchScreen::List;
-            listRow_ = 0;
-            archAction_ = archGroup_.kind == ArchGroup::Kind::Active ? ArchAction::Store
-                                                                     : ArchAction::Deploy;
-        }
-    } else if (ev.button == Button::C) {
-        // With no active pet there is no carousel. The player is between a Store and the
-        // next egg, and can be only here or on line-select. C returns to the choice
-        // rather than out to a habitat with nothing living in it (the mirror of the
-        // modal's own C, game_nav.cpp).
-        //
-        // startHatch() rather than a nav_ poke, because it is the same call that put the
-        // player here and re-derives what is on offer. It cannot lay an egg by surprise:
-        // it only skips straight to layEgg with ONE unlocked line, and with one line
-        // there is no line-select to have been backed out of, so this state needs the
-        // modal, which means two or more lines.
-        if (!pet_.creature && !op_.arch.rack.empty()) startHatch();
-        else nav_ = Nav::Cursor;
-    }
-}
-
-void Game::onArchList(const ButtonEvent& ev) {
-    // One group's rows. A walks (wraps), B opens the focused entry, C backs to the
-    // picker. Which LIST a row came from and where it sits in it is on the row itself
-    // (ArchRow), so nothing here re-derives a section from a bare cursor.
-    const auto rows = archRows();
-    const int n = static_cast<int>(rows.size());
-    if (ev.button == Button::A) {
-        if (n > 0) listRow_ = (listRow_ + 1) % n;
-    } else if (ev.button == Button::B) {
-        if (n <= 0) return;                       // an empty group has nothing to open
-        const ArchRow& r = rows[listRow_ % n];
-        // Records open a read-only detail; live pets open the action set, or the SELL
-        // sheet when it was the SELL counter that listed them.
-        if (r.kind != ArchRow::Kind::Record)
-            archAction_ = r.kind == ArchRow::Kind::Active ? ArchAction::Store
-                                                          : ArchAction::Deploy;
-        archSaleOffer_ = SaleOffer::Bits;
-        archConfirm_.close();
-        nav_ = Nav::Detail;
-    } else if (ev.button == Button::C) {
-        archScreen_ = ArchScreen::Picker;
-    }
-}
+ArchSaleSheet Game::archSaleSheet() const { return arch_.saleSheet(*this); }
 
 void Game::archHatchNewEgg() {
     // The NEW EGG row's commit. With a pet to set aside this is archStoreActive: the
     // freeze and the hatch are one act. With no pet (the two-room state after a Store)
     // there is nothing to freeze and the egg is laid outright.
-    archConfirm_.close();
-    archScreen_ = ArchScreen::Picker;
     if (pet_.creature) archStoreActive();
     else startHatch();
 }
@@ -113,59 +36,6 @@ void Game::archReturnFromLineSelect() {
         if (carouselSlots()[i].id == SubmenuId::Arch) { summonCursor(i); break; }
     enterSubmenu();
     dirty_ = true;
-}
-
-void Game::onArchRecord(const ButtonEvent& ev) {
-    // The NEW EGG confirm is its own L3: no action set to cycle, just the prompt.
-    if (archOnNewEgg()) {
-        const bool rackFull =
-            pet_.creature && static_cast<int>(op_.arch.rack.size()) >= rackSlots();
-        if (archConfirm_.isOpen()) {
-            if (archConfirm_.onButton(ev) == InlineConfirm::Answer::Yes) archHatchNewEgg();
-            return;
-        }
-        if (ev.button == Button::B) {
-            if (rackFull) return;                 // no free slot -> blocked (gate shown)
-            archConfirm_.open();
-        } else if (ev.button == Button::C) {
-            nav_ = Nav::Submenu;
-        }
-        return;
-    }
-
-    if (archGroup_.kind == ArchGroup::Kind::Sell) { onArchSale(ev); return; }
-
-    const ArchRow row = archFocusedRow();
-    // A RETIRED/CORRUPTED record is read-only: no actions, C backs. So is an empty
-    // group, which has no row to act on at all.
-    if (row.kind == ArchRow::Kind::Record || !row.def) {
-        if (ev.button == Button::C) nav_ = Nav::Submenu;
-        return;
-    }
-    // Every answer but YES stays in the record; the commit sets nav_ itself.
-    if (archConfirm_.isOpen()) {
-        if (archConfirm_.onButton(ev) != InlineConfirm::Answer::Yes) return;
-        if (archAction_ == ArchAction::Store) archStoreActive();
-        else if (archAction_ == ArchAction::Deploy) archDeployStored(row.index);
-        else if (archAction_ == ArchAction::Release) archReleaseStored(row.index);
-        return;
-    }
-
-    const bool active = row.kind == ArchRow::Kind::Active;
-    if (ev.button == Button::A) {
-        // Cycle within the pet's action set. Active has Store alone; a stored pet adds
-        // the no-reward Release valve beside Deploy.
-        if (!active)
-            archAction_ = archAction_ == ArchAction::Deploy ? ArchAction::Release
-                                                            : ArchAction::Deploy;
-    } else if (ev.button == Button::B) {
-        if (archAction_ == ArchAction::Store &&
-            static_cast<int>(op_.arch.rack.size()) >= rackSlots())
-            return;                                     // rack full -> blocked (gate shown)
-        archConfirm_.open();                            // Store/Deploy/Release -> confirm
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Submenu;
-    }
 }
 
 // Freeze a SaveStoredPet snapshot of a live pet (active save → rack, or the
@@ -204,8 +74,6 @@ void Game::archStoreActive() {
     // swept off a count, because "full" compares against rackSlots(), which the player
     // can raise. A slot bought later must not un-earn the row.
     if (static_cast<int>(op_.arch.rack.size()) >= rackSlots()) unlockAchievement(ach::kNoVacancy);
-    archConfirm_.close();
-    listRow_ = 0;
     startHatch();        // pet_.creature = nullptr -> line-select, then a fresh egg
     persistSave();
 }
@@ -236,8 +104,6 @@ void Game::archDeployStored(int storedIdx) {
     stampSlotKinds();
     enforceSlotKindInvariant();
     noteRackDuplicates();   // the swap can drop this pet in beside a twin on the shelf
-    archConfirm_.close();
-    listRow_ = 0;
     nav_ = Nav::Idle;                              // show the newly-active pet
     persistSave();
 }
@@ -248,8 +114,6 @@ void Game::archReleaseStored(int storedIdx) {
     // record: a plain release, unlike a CSF or a sale.
     if (storedIdx < 0 || storedIdx >= static_cast<int>(op_.arch.rack.size())) return;
     op_.arch.rack.erase(op_.arch.rack.begin() + storedIdx);
-    archConfirm_.close();
-    listRow_ = 0;
     nav_ = Nav::Submenu;   // back to the (now shorter) rack list
     persistSave();
 }

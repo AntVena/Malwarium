@@ -83,65 +83,6 @@ bool Game::daemonOnRack() const {
     return false;
 }
 
-ArchSaleSheet Game::archSaleSheet() const {
-    ArchSaleSheet sh;
-    const ArchRow row = archFocusedRow();
-    if (!row.def || row.kind != ArchRow::Kind::Stored || row.index < 0 ||
-        row.index >= static_cast<int>(op_.arch.rack.size()))
-        return sh;
-    const SaveStoredPet& sold = op_.arch.rack[row.index];
-    sh.daemon = row.def;
-    sh.level = sold.combatLevel;
-    sh.generation = sold.generation;
-    for (int i = 0; i < kSaleOfferCount; ++i) {
-        const SaleOffer o = static_cast<SaleOffer>(i);
-        ArchSaleSheet::Offer& out = sh.offers[i];
-        const char* block = archSaleBlocker(o, sold);
-        out.available = block == nullptr;
-        if (block) {
-            std::snprintf(out.value, sizeof(out.value), "%s", block);
-        } else if (o == SaleOffer::Bits) {
-            std::snprintf(out.value, sizeof(out.value), "+%d B",
-                          daemonSaleBits(sold.combatLevel));
-        } else {
-            // A patch's value names the pet that receives it, which is the active pet
-            // and never the Daemon being sold.
-            std::snprintf(out.value, sizeof(out.value), "FOR %s", pet_.creature->displayName);
-        }
-    }
-    if (sh.offers[static_cast<int>(SaleOffer::Reimage)].available)
-        std::snprintf(sh.reimageTo, sizeof(sh.reimageTo), "%s",
-                      reimageScript(pet_.creature)->displayName);
-    sh.focus = archSaleOffer_;
-    sh.confirmOpen = archConfirm_.isOpen();
-    sh.confirmChoice = archConfirm_.choice();
-    return sh;
-}
-
-void Game::onArchSale(const ButtonEvent& ev) {
-    const ArchRow row = archFocusedRow();
-    if (!row.def || row.kind != ArchRow::Kind::Stored) {
-        if (ev.button == Button::C) nav_ = Nav::Submenu;
-        return;
-    }
-    if (archConfirm_.isOpen()) {
-        if (archConfirm_.onButton(ev) == InlineConfirm::Answer::Yes)
-            archSellStored(row.index, archSaleOffer_);
-        return;
-    }
-    if (ev.button == Button::A) {
-        // Every offer is on the cycle, open or not: a closed one still says what it
-        // would take, which is how a player learns a twin is worth deploying first.
-        archSaleOffer_ = static_cast<SaleOffer>(
-            (static_cast<int>(archSaleOffer_) + 1) % kSaleOfferCount);
-    } else if (ev.button == Button::B) {
-        if (archSaleBlocker(archSaleOffer_, op_.arch.rack[row.index])) return;   // row says why
-        archConfirm_.open();
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Submenu;
-    }
-}
-
 void Game::reimageActivePet() {
     const CreatureDef* script = reimageScript(pet_.creature);
     if (!script) return;
@@ -197,9 +138,6 @@ void Game::archSellStored(int storedIdx, SaleOffer offer) {
     rec.generation = sold.generation;
     op_.arch.records.push_back(rec);
 
-    archConfirm_.close();
-    archSaleOffer_ = SaleOffer::Bits;
-    listRow_ = 0;
     // A reimage changes the pet on screen, so the habitat is where to see it; the other
     // two leave the player at the (now shorter) counter for the next sale.
     nav_ = offer == SaleOffer::Reimage ? Nav::Idle : Nav::Submenu;

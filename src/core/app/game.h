@@ -18,6 +18,7 @@
 #include "core/app/operator.h"
 #include "core/app/settings.h"
 #include "core/app/game/arcade_screen.h"
+#include "core/app/game/arch_screen.h"
 #include "core/app/game/arena_screen.h"
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
@@ -96,7 +97,6 @@
 // ui_state.h ONLY, never a core/ui/*_screen.h: Game holds the ids below as members
 // but draws nothing itself, and this header is included by every TU in the engine.
 // A screen header belongs in the game_*.cpp unit that calls its draw functions.
-#include "core/ui/arch_screen.h"   // ArchRow: the ARCH list's row model
 #include "core/ui/ui_state.h"
 #include "core/device/platform.h"
 
@@ -122,7 +122,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
              private MergeHost, private PeersHost, private ChaptersHost,
-             private MaintHost, private ShopHost, private TipCardHost {
+             private MaintHost, private ShopHost, private TipCardHost, private ArchHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -140,11 +140,6 @@ public:
     //   Process:     a running MAINT process (non-interruptible).
     //   ModalFeeding / ModalLockout: event overlays.
     enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
-
-    // ARCH's two L2 screens, the same shape ITEMS uses: the group picker, then the rows
-    // behind whichever group was opened. This picker is free (the ITEMS one is bought):
-    // a 64-slot shelf cannot be navigated without it.
-    enum class ArchScreen : uint8_t { Picker, List };
 
     // Wi-Fi network event sub-outcomes. Public so tests/dev tools can
     // steer/inspect which outcome the step-roll landed on.
@@ -370,7 +365,7 @@ public:
     // like bwUpgradeCount(). All three price off RigAccount::costFor so balance is a
     // start-price/max-purchase edit on the row (game_rig_shop.h), not new code.
     int rackSlotUpgradeCount() const { return op_.rig.level[kRigRowRackSlot]; }
-    int rackSlots() const { return kRackSlots + op_.rig.level[kRigRowRackSlot]; }  // ARCH capacity
+    int rackSlots() const override { return kRackSlots + op_.rig.level[kRigRowRackSlot]; }  // ARCH capacity
     int rackSlotUpgradeCost() const { return op_.rig.costFor(kRigRowRackSlot); }
     int scrapingClusterLevel() const { return op_.rig.level[kRigRowScraping]; }
     int combatBitsBonusPct() const {
@@ -1734,27 +1729,13 @@ public:
     bool setHackerTag(const char* s);
     const std::vector<SaveStoredPet>& rack() const { return op_.arch.rack; }
     int rackCount() const { return static_cast<int>(op_.arch.rack.size()); }
-    // Where the ARCH cursor is, for the screens that draw it and the gates that drive
-    // it. The same read-only surface ITEMS and GAMES already expose (itemsScreen,
-    // arcadeRow): enough to say which shelf is open and what is focused, without
-    // exposing the rack.
-    ArchScreen archScreen() const { return archScreen_; }
-    ArchGroup archGroup() const { return archGroup_; }
-    int archPickRow() const { return archPickRow_; }
-    int archPickRowCount() const {
-        return static_cast<int>(
-            buildArchPickerRows(registry_, pet_.creature, op_.arch.rack, op_.arch.records)
-                .size());
-    }
-    int archRowCount() const { return static_cast<int>(archRows().size()); }
-    // The species id under the ARCH cursor, or nullptr on an empty group, a record with
-    // an id the tables no longer answer to, or the NEW EGG row (which names no pet).
-    const char* archFocusedPetId() const {
-        const ArchRow r = archFocusedRow();
-        return r.def ? r.def->id : nullptr;
-    }
-    // The SELL sheet for the focused row, in one piece: what the L3 draws, and what a
-    // gate reads to see which offers are open without driving the screen.
+    // Read-only forwarders onto ArchScreen for the gates that drive ARCH.
+    ArchView archScreen() const { return arch_.view(); }
+    ArchGroup archGroup() const { return arch_.group(); }
+    int archPickRow() const { return arch_.pickRow(); }
+    int archPickRowCount() const { return arch_.pickRowCount(*this); }
+    int archRowCount() const { return arch_.rowCount(*this); }
+    const char* archFocusedPetId() const { return arch_.focusedPetId(*this); }
     ArchSaleSheet archSaleSheet() const;
 
     // Zone-completion Titles --------------------------------
@@ -2567,40 +2548,24 @@ private:
     void leaveCfgScreen();                         // back to the group, else the list
     void drawCfg(Framebuffer& fb) const;          // L3 dispatch for the CFG screens
     void executeFactoryReset();                    // hold-B commit
-    void onArchList(const ButtonEvent& ev);
-    void onArchRecord(const ButtonEvent& ev);
-    void archStoreActive();                        // active pet → rack → new egg
-    void archDeployStored(int storedIdx);          // stored pet → active (slot-neutral)
-    void archReleaseStored(int storedIdx);         // stored pet → gone (frees a slot, no reward)
+    // ArchHost: the ARCH screen's way back into the game (game_arch.cpp).
+    void archStoreActive() override;                  // active pet → rack → new egg
+    void archDeployStored(int storedIdx) override;    // stored pet → active (slot-neutral)
+    void archReleaseStored(int storedIdx) override;   // stored pet → gone (no reward)
     // The SELL counter (game_arch_sale.cpp). A stored Daemon is traded for ONE offer and
     // leaves a RETIRED record. archSaleBlocker is the single answer to "can this offer be
-    // taken for this pet" (nullptr when it can, else the short reason its row shows),
-    // so the sheet and the commit can never disagree about it.
-    void onArchSale(const ButtonEvent& ev);
-    const char* archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) const;
-    void archSellStored(int storedIdx, SaleOffer offer);
+    // taken for this pet", so the sheet and the commit can never disagree about it.
+    const char* archSaleBlocker(SaleOffer offer, const SaveStoredPet& sold) const override;
+    void archSellStored(int storedIdx, SaleOffer offer) override;
     void reimageActivePet();                       // Reimage's effect on the active twin
     bool daemonOnRack() const;                     // anything for the SELL counter to take
     void noteRackDuplicates();                     // two of one species on the shelf → SECOND_INSTANCE
-    void onArchPicker(const ButtonEvent& ev);       // L2 group picker
-    // The rows behind the open group, and the focused one. Rebuilt on demand rather
-    // than cached: the rack changes under this screen (a Store, a Deploy, a Release) and
-    // a cached row list is exactly the thing that would then be describing a shelf that
-    // no longer exists.
-    std::vector<ArchRow> archRows() const;
-    // The focused row, or a default-constructed one (kind Active, index -1, no def) when
-    // the group is empty: every caller checks `def` before using it, so an empty group
-    // reads as "nothing to act on" without a second null check at each site.
-    ArchRow archFocusedRow() const;
-    bool archRowIsActive() const { return archFocusedRow().kind == ArchRow::Kind::Active; }
-    bool archRowIsRecord() const { return archFocusedRow().kind == ArchRow::Kind::Record; }
-    // Is the ARCH detail screen the NEW EGG confirm rather than a pet's record?
-    bool archOnNewEgg() const { return archGroup_.kind == ArchGroup::Kind::NewEgg; }
     // Commit the NEW EGG row: set the active pet aside (if there is one) and hatch.
-    void archHatchNewEgg();
+    void archHatchNewEgg() override;
+    void reopenLineSelect() override { startHatch(); }
     // The Script a Daemon is reimaged back to: whichever Script's evolution reaches it,
     // by its care branch, its Daemon pool or a Trojan divert. Null for anything else.
-    const CreatureDef* reimageScript(const CreatureDef* daemon) const;
+    const CreatureDef* reimageScript(const CreatureDef* daemon) const override;
     // Leave the line-select modal for the ARCH picker, without laying an egg. Only ever
     // reachable with something on the rack to go back TO: see the modal's own comment.
     void archReturnFromLineSelect();
@@ -3512,17 +3477,7 @@ private:
     char editTag_[kHackerTagMax + 1] = {0};
     int editCaret_ = 0;
 
-    // ARCH submenu: the focused record action. The rack itself is the Operator's
-    // (OperatorArch). archConfirm_ is the inline confirm for Store/Deploy.
-    ArchAction archAction_ = ArchAction::Store;
-    SaleOffer archSaleOffer_ = SaleOffer::Bits;    // the SELL sheet's focused offer
-    InlineConfirm archConfirm_;
-    // Which of ARCH's two L2 screens is showing, which group the list is showing, and
-    // the picker's own cursor. archGroup_ also survives into L3: the detail screen asks
-    // it whether it is drawing the NEW EGG confirm or a pet's record.
-    ArchScreen archScreen_ = ArchScreen::Picker;
-    ArchGroup archGroup_;
-    int archPickRow_ = 0;
+    ArchScreen arch_;   // the ARCH slot's cursors, group and confirm (game/arch_screen.h)
 
     // MODS submenu. pet_.mods is the equip state; modSlot_ is the slot
     // whose picker is open; modPick_ the picker row (0 = unequip). The inline

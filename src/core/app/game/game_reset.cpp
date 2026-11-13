@@ -83,7 +83,7 @@ void Game::resetToHatch() {
     std::memcpy(t.arcadePlays, fresh.tallies.arcadePlays, sizeof(t.arcadePlays));
     std::memcpy(t.arcadeWins, fresh.tallies.arcadeWins, sizeof(t.arcadeWins));
     std::memcpy(t.arcadeBest, fresh.tallies.arcadeBest, sizeof(t.arcadeBest));
-    archConfirm_.close();
+    arch_.reset();
     saveDirty_ = false;
     lastSaveMs_ = nowMs_;
     if (store_) store_->clear();

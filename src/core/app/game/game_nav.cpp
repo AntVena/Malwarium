@@ -166,10 +166,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Items: items_.onButton(*this, ev); break;
                 case SubmenuId::Maint: onMaintList(ev); break;
                 case SubmenuId::Cfg: onCfgList(ev); break;
-                case SubmenuId::Arch:
-                    if (archScreen_ == ArchScreen::Picker) onArchPicker(ev);
-                    else onArchList(ev);
-                    break;
+                case SubmenuId::Arch: arch_.onButton(*this, ev); break;
                 // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
                 // one is open is loadoutTab_ (PRACTISE never rests here. It opens
                 // straight into its L3).
@@ -188,7 +185,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Items: items_.onDetail(*this, ev); break;
                 case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
                 case SubmenuId::Cfg: onCfgDetail(ev); break;
-                case SubmenuId::Arch: onArchRecord(ev); break;
+                case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
                 case SubmenuId::Mods:
                     if (loadoutTab_ == LoadoutTab::Practise) onSimTier(ev);
                     else if (loadoutTab_ == LoadoutTab::Moves) onTrainDetail(ev);
@@ -332,12 +329,7 @@ void Game::enterSubmenu() {
         }
         case SubmenuId::Maint: listRow_ = 0; break;
         case SubmenuId::Cfg: listRow_ = 0; bHeld_ = false; break;
-        // ARCH always opens on its group picker: a 64-slot shelf plus a record tail is
-        // not one list, and the picker is where NEW EGG lives.
-        case SubmenuId::Arch:
-            archScreen_ = ArchScreen::Picker; archPickRow_ = 0;
-            archGroup_ = ArchGroup{};
-            listRow_ = 0; archAction_ = ArchAction::Store; archConfirm_.close(); break;
+        case SubmenuId::Arch: arch_.enter(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:
             loadoutTab_ = LoadoutTab::Hub; loadoutHubRow_ = 0;

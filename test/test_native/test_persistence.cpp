@@ -955,7 +955,7 @@ void test_arch_picker_groups_the_rack_by_line() {
     g.debugSeedRack("cryptoshell");              // ransomware
 
     enterSubmenuId(g, SubmenuId::Arch);
-    CHECK(g.archScreen() == Game::ArchScreen::Picker);
+    CHECK(g.archScreen() == ArchView::Picker);
     const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(),
                                            g.rack(), g.records());
     // NEW EGG leads, ACTIVE follows, SELL and RECORDS trail: the families sit between.
@@ -1036,7 +1036,7 @@ void test_arch_sell_counter_lists_only_stored_daemons() {
     CHECK(tiles[tiles.size() - 2].count == 2);
 
     enterArchSellList(g);
-    CHECK(g.archScreen() == Game::ArchScreen::List && g.archRowCount() == 2);
+    CHECK(g.archScreen() == ArchView::List && g.archRowCount() == 2);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
@@ -1150,7 +1150,7 @@ void test_line_select_backs_out_to_arch_when_the_rack_has_a_pet() {
 
     tapC(g);                                      // back out: no egg laid
     CHECK(!g.inLineSelect());
-    CHECK(g.nav() == Game::Nav::Submenu && g.archScreen() == Game::ArchScreen::Picker);
+    CHECK(g.nav() == Game::Nav::Submenu && g.archScreen() == ArchView::Picker);
     CHECK(g.rackCount() == 1 && !g.pet());        // still parked between the two rooms
 
     // C from the picker returns to the choice rather than dropping the player into a

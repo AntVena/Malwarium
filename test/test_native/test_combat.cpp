@@ -11,7 +11,7 @@ void test_arch_list_and_record() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.archScreen() == Game::ArchScreen::Picker);  // ARCH opens on its groups
+    CHECK(g.archScreen() == ArchView::Picker);  // ARCH opens on its groups
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // picker reads in grayscale
@@ -24,9 +24,9 @@ void test_arch_list_and_record() {
     CHECK(g.nav() == Game::Nav::Detail);                // still on the record
     tapC(g);                       // back to the group's list
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.archScreen() == Game::ArchScreen::List);
+    CHECK(g.archScreen() == ArchView::List);
     tapC(g);                       // back to the picker
-    CHECK(g.archScreen() == Game::ArchScreen::Picker);
+    CHECK(g.archScreen() == ArchView::Picker);
     tapC(g);                       // back to the carousel
     CHECK(g.nav() == Game::Nav::Cursor);
 }

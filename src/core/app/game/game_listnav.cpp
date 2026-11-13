@@ -79,19 +79,8 @@ Game::ListTarget Game::submenuListTarget() const {
                     [](Game& g) { g.stat_.onButton(g, kTapC); }};
         case SubmenuId::Items:
             return screenList<&Game::items_>();
-        // ARCH is two L2 screens, the shape ITEMS takes: the group picker and the rows
-        // behind one group. Both are row lists and both want the hold-repeat; C's tap
-        // differs (out to the carousel, or back to the picker).
-        case SubmenuId::Arch:
-            if (archScreen_ == ArchScreen::Picker)
-                return {[](Game& g, int dir) {
-                            g.archPickRow_ = stepRow(g.archPickRow_, g.archPickRowCount(), dir);
-                        },
-                        [](Game& g) { g.onArchPicker(kTapC); }};
-            return {[](Game& g, int dir) {
-                        g.listRow_ = stepRow(g.listRow_, g.archRowCount(), dir);
-                    },
-                    [](Game& g) { g.onArchList(kTapC); }};
+        // ARCH's picker and group rows are both lists; the screen knows which is up.
+        case SubmenuId::Arch: return screenList<&Game::arch_>();
         case SubmenuId::Cfg:
             return {[](Game& g, int dir) {
                         const CfgRow* rows = nullptr;
