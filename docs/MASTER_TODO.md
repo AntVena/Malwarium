@@ -122,13 +122,14 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The minigame runs**: the MAINT boards, the cryptogram run. One row each, S to M.
+- **The cryptogram run**: the VAULT cash-in's board and prize (`cryptogram*`). S to M.
 - **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
 
 #### Screens
 
 - **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
-  the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the area SHOP, VAULT,
+  the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the MAINT action
+  page (`maintKind_`, `maintVariant_`, `maintDifficulty_`), the area SHOP, VAULT,
   the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
   `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
