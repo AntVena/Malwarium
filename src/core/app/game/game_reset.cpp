@@ -41,8 +41,7 @@ void Game::resetToHatch() {
     listRow_ = 0;
     detailItem_ = nullptr;
     stat_.reset();
-    maintKind_ = MaintKind::Defrag;
-    maintVariant_ = 0;
+    maintScreen_ = MaintScreen{};
     maint_.reset();
     feeding_.reset();
     lockoutItemsContext_ = false;
@@ -62,7 +61,6 @@ void Game::resetToHatch() {
     arcadeScreen_.reset();
     arcade_.reset();                     // nothing can be mid-cabinet after a wipe
     cryptogramRun_.reset();              // ...nor mid-board
-    maintDifficulty_ = ArcadeDifficulty::Easy;
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;
     moveConfirm_.close();

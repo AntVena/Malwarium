@@ -359,7 +359,7 @@ const char* modShopName(int sector);
 
 // One rendered shop row for drawShop: resolved display strings/counts so the
 // render layer stays registry-agnostic (Game resolves ids -> names via
-// shopListingName/shopListingDescription/etc, game_render.cpp's drawShopScreen).
+// shopListingName/shopListingDescription/etc, ShopScreen::draw).
 struct ShopRowView {
     const char* name = "";
     int bitsPrice = 0;

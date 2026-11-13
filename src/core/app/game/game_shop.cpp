@@ -40,7 +40,7 @@ void Game::startShopEvent() {
     shopIsModShop_ = false;
     for (int i = 0; i < shopFront_->listingCount && i < kMaxShopListings; ++i)
         shopStockLeft_[i] = shopFront_->listings[i].stock;
-    shopCursor_ = 0;
+    shop_.enter();
     walk_.eventBeat = 0;   // start the hands-off decision hold
     nav_ = Nav::Shop;
 }
@@ -53,7 +53,7 @@ void Game::startModShopEvent() {
     shopIsModShop_ = true;
     for (int i = 0; i < shopFront_->listingCount && i < kMaxShopListings; ++i)
         shopStockLeft_[i] = shopFront_->listings[i].stock;
-    shopCursor_ = 0;
+    shop_.enter();
     walk_.eventBeat = 0;
     nav_ = Nav::ModShop;
 }
@@ -151,16 +151,8 @@ bool Game::shopRowBuyable(int i) const {
     return shopRowInRange(shopFront_, i) && shopRowRefusal(i) == nullptr;
 }
 
-const char* Game::shopStatusLine() const {
-    // Spelled out so the buy-availability reason survives grayscale (dual-coding).
-    if (!shopRowInRange(shopFront_, shopCursor_)) return "";
-    const char* why = shopRowRefusal(shopCursor_);
-    return why ? why : "B TO BUY";
-}
-
-void Game::buyShopItem() {
-    if (!shopRowBuyable(shopCursor_)) return;   // inert: the sign says which reason
-    const int i = shopCursor_;
+void Game::buyShopItem(int i) {
+    if (!shopRowBuyable(i)) return;   // inert: the sign says which reason
     const ShopListingDef& def = shopFront_->listings[i];
 
     op_.bits -= def.bitsPrice;
@@ -184,23 +176,9 @@ void Game::buyShopItem() {
     markSaveDirty();
 }
 
-void Game::onShop(const ButtonEvent& ev) {
-    // B buys the SELECTED row (while stock + wallet + item costs allow); C leaves
-    // back to the idle habitat. A cycles the selection through every listing
-    // (wraps): on a single-listing storefront it does nothing, so a stray Next
-    // press never exits the shop. Any press restarts the hands-off hold so an
-    // engaged shopper isn't auto-left.
-    walk_.eventBeat = 0;
-    if (!shopFront_) return;
-    if (ev.button == Button::A) {
-        if (shopFront_->listingCount > 0)
-            shopCursor_ = (shopCursor_ + 1) % shopFront_->listingCount;
-    } else if (ev.button == Button::B) {
-        buyShopItem();
-    } else if (ev.button == Button::C) {
-        std::snprintf(walk_.flavor, sizeof(walk_.flavor), "LEFT THE SHOP");
-        returnToExplore();
-    }
+void Game::leaveShop() {
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "LEFT THE SHOP");
+    returnToExplore();
 }
 
 }  // namespace mal

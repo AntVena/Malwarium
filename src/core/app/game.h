@@ -25,10 +25,13 @@
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
+#include "core/app/game/maint_screen.h"
 #include "core/app/game/merge_screen.h"
 #include "core/app/game/peers_screen.h"
+#include "core/app/game/shop_screen.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
+#include "core/app/game/tip_card_screen.h"
 #include "core/app/game/vault_screen.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
@@ -118,7 +121,8 @@ enum class StartMode { FreshHatch, Hatched };
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
-             private MergeHost, private PeersHost, private ChaptersHost {
+             private MergeHost, private PeersHost, private ChaptersHost,
+             private MaintHost, private ShopHost, private TipCardHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -575,7 +579,7 @@ public:
     // FAILING banner's B or the Lockout's feed row. False if it would not save the pet.
     // The one-time TIP CARD (Nav::TipCard): which tip it is showing, and the page it
     // shows as prose rows. Public so a gate can assert what a card SAYS.
-    Tip tipCard() const { return tipCard_; }
+    Tip tipCard() const { return tipCardScreen_.tip(); }
     std::vector<ProseRow> tipCardRows() const;
     // CFG > DEVICE > TIPS: the cards this device has shown, in a fixed order, to read
     // again (game_onboard.cpp). A card not yet shown is not listed, so the list never
@@ -606,7 +610,7 @@ public:
     void debugClearTips() { for (uint8_t& b : op_.reveals.tipsSeen) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
     // Fragmentation: what rollMaintSuccess rolls against and MAINT prints.
-    int maintFailPct() const;
+    int maintFailPct() const override;
     // The two readers' row models (core/ui/prose_page.h), built on demand: both walk
     // the content tables, so they are called on a press or a repaint, never held.
     // Public so a gate can assert what a sheet SAYS instead of reading it out of pixels.
@@ -687,21 +691,21 @@ public:
     // says which registry a row's `id` resolves through). `i` is bounds-clamped to
     // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
     bool shopIsModShop() const { return shopIsModShop_; }       // false = item shop, true = mod shop
-    const char* shopStoreName() const { return shopFront_ ? shopFront_->name : ""; }
-    int shopListingCount() const { return shopFront_ ? shopFront_->listingCount : 0; }
-    int shopCursor() const { return shopCursor_; }              // A-cycled row selection
+    const char* shopStoreName() const override { return shopFront_ ? shopFront_->name : ""; }
+    int shopListingCount() const override { return shopFront_ ? shopFront_->listingCount : 0; }
+    int shopCursor() const { return shop_.row(); }              // A-cycled row selection
     const char* shopListingId(int i) const;                     // raw content id (tests/debug)
-    const char* shopListingName(int i) const;                   // resolved display name
+    const char* shopListingName(int i) const override;                   // resolved display name
     // Resolved concrete-effect text: the listing's own description with its
     // magnitudes substituted in (core/content/effect_text.h). Returned by value
     // because the text is rendered from the row.
-    EffectText shopListingDescription(int i) const;
-    int shopListingStock(int i) const;                          // remaining THIS visit
-    int shopListingBitsPrice(int i) const;
-    int shopListingCostCount(int i) const;                      // non-empty extra item costs
+    EffectText shopListingDescription(int i) const override;
+    int shopListingStock(int i) const override;                          // remaining THIS visit
+    int shopListingBitsPrice(int i) const override;
+    int shopListingCostCount(int i) const override;                      // non-empty extra item costs
     const char* shopListingCostId(int i, int k) const;          // raw content id (tests/debug)
-    const char* shopListingCostName(int i, int k) const;        // display name of cost item k
-    int shopListingCostQty(int i, int k) const;
+    const char* shopListingCostName(int i, int k) const override;        // display name of cost item k
+    int shopListingCostQty(int i, int k) const override;
     int shopListingCostHave(int i, int k) const;                // held count, for the buy gate
     // How many of the row's own goods the player already holds, and the ceiling that
     // count is measured against (0 = no ceiling). A MOD row reads the un-equipped spare
@@ -709,8 +713,8 @@ public:
     // cap at all. A capped row shows the pair as "HAVE n/cap", so a storefront answers
     // "have I got this already, and can I take another" before the Bits are spent.
     // STORAGE FULL is the same pair given as the reason a buy is refused.
-    int shopListingHeld(int i) const;
-    int shopListingHeldCap(int i) const;
+    int shopListingHeld(int i) const override;
+    int shopListingHeldCap(int i) const override;
     // Is this row's buy available right now? The single answer the till (buyShopItem)
     // and the sign (shopStatusLine) both defer to, so a shop can never refuse a
     // purchase it drew as available, or take Bits for one it drew as refused.
@@ -719,7 +723,7 @@ public:
     // "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY". Spelled
     // out rather than coloured so the buy reason survives grayscale (the dual-coding
     // rule); the shop screen prints it verbatim.
-    const char* shopStatusLine() const;
+    const char* shopStatusLine() const { return shop_.statusLine(*this); }
     // EXPL sector-clear flags: has sector `idx`'s boss/gauntlet
     // been cleared? Drives the linear unlock (sector N+1 opens when N clears).
     bool sectorCleared(int idx) const {
@@ -1610,11 +1614,11 @@ public:
     ArcadeDifficulty arcadeDifficulty() const { return arcadeScreen_.difficulty(); }
     // The MAINT action screen's own dial for its played row: reset to EASY each time the
     // screen opens, and separate from the cabinets' so neither moves the other.
-    ArcadeDifficulty maintDifficulty() const { return maintDifficulty_; }
+    ArcadeDifficulty maintDifficulty() const { return maintScreen_.difficulty(); }
     // The MAINT process in play (its board or its process screen), or nullptr.
     const MaintRun* maintRun() const { return maint_ ? &*maint_ : nullptr; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
-    ArcadeGameKind maintPlayedGame(MaintKind k) const {
+    ArcadeGameKind maintPlayedGame(MaintKind k) const override {
         return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
     }
     // The cabinet list's cursor, as a roster index (content_arcade.h's order). It
@@ -2153,8 +2157,8 @@ public:
     // dump_frame). From here onButton drives the REAL board, and a finished run lands in
     // the real settlePlayedRun, which is where the process takes its payout.
     void debugStartPlayedMaint(MaintKind k) {
-        maintKind_ = k;
-        maint_ = MaintRun::started(k, /*played=*/true, maintDifficulty_);
+        maintScreen_.setKind(k);
+        maint_ = MaintRun::started(k, /*played=*/true, maintScreen_.difficulty());
         if (!beginPlayedGame(maintPlayedGame(k))) maint_.reset();
     }
     // Point a process's played variant at a different engine, so a test can swap them
@@ -2162,7 +2166,7 @@ public:
     void debugSetMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
         (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
     }
-    void debugSetMaintDifficulty(ArcadeDifficulty d) { maintDifficulty_ = d; }
+    void debugSetMaintDifficulty(ArcadeDifficulty d) { maintScreen_.setDifficulty(d); }
     // Set the Bits wallet directly (tests / economy-gated flows like the shop's
     // "not enough Bits" gate). Clamped at 0.
     void debugSetBits(int n);
@@ -2469,7 +2473,6 @@ private:
     void drawShiboleetHailScreen(Framebuffer& fb) const;
     void drawShiboleetScreen(Framebuffer& fb) const;
     void drawShiboleetVerdictScreen(Framebuffer& fb) const;
-    void drawShopScreen(Framebuffer& fb) const;
     void drawPostEncounterScreen(Framebuffer& fb) const;
 
     // Navigation.
@@ -2543,7 +2546,6 @@ private:
     // Per-state input handlers.
     void onItemsDetail(const ButtonEvent& ev);
     void onMaintList(const ButtonEvent& ev);
-    void onMaintAction(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
     void onFragger(const ButtonEvent& ev);
     void onCfgList(const ButtonEvent& ev);
@@ -2618,7 +2620,7 @@ private:
     int playStepMs(int baseMs) const;
     // The dial the run on screen was started under: the cabinet's, or MAINT's.
     ArcadeDifficulty runDifficulty() const {
-        return arcade_ ? arcade_->difficulty : maint_ ? maint_->difficulty : maintDifficulty_;
+        return arcade_ ? arcade_->difficulty : maint_ ? maint_->difficulty : maintScreen_.difficulty();
     }
 
     // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
@@ -2634,20 +2636,15 @@ private:
     bool gameBriefOpen_ = false;
     int gameBriefScroll_ = 0;
     bool gameBriefIntro_ = false;            // opened by the hatch, not the chord
-    // The tip card on screen (game_onboard.cpp): which tip, the window it is scrolled
-    // to, where dismissing it returns, and whether it leads with the "!" explainer
-    // (the first CARE card a device ever shows).
-    Tip tipCard_ = Tip::MenuOpened;
-    int tipCardScroll_ = 0;
+    // The tip card on screen (game/tip_card_screen.h), and where dismissing it returns.
+    TipCardScreen tipCardScreen_;
     Nav tipCardReturn_ = Nav::Idle;
-    bool tipCardMarkRow_ = false;
     void openTipCard(Tip t, Nav returnTo);
+    void closeTipCard() override;
     // On a carousel summon: open the one-time card that is due, most urgent first. One
     // error short of failing, then the first error, then each need's CARE card, then
     // the first cache. Returns whether it opened one.
     bool openCareTipIfDue();
-    void onTipCard(const ButtonEvent& ev);
-    void drawTipCard(Framebuffer& fb) const;
     int cfgTipsRow_ = 0;                     // CFG > TIPS cursor
     AwayTally away_;
     bool awayDigestOn_ = true;
@@ -2931,7 +2928,7 @@ private:
     // Both resolve to shopFront_, an AreaStorefrontDef (src/core/content/areas/) whose
     // arbitrary-length `listings` is the ONE place a row's stock/Bits price/item
     // costs live (the area's own price, distinct from an item's own Pedia-facing
-    // bitsPrice). A cycles shopCursor_ through every listing (wraps); B buys the
+    // bitsPrice). A cycles the cursor through every listing (wraps); B buys the
     // SELECTED row (Bits + every item cost -> inventory add / mod grant) while its
     // stock + wallet + item costs allow; C leaves back to the Walk. Stock is
     // per-visit (shopStockLeft_, refilled from each row's own ShopListingDef::stock
@@ -2939,13 +2936,15 @@ private:
     // buy is/isn't available for the selected row.
     void startShopEvent();
     void startModShopEvent();
-    void onShop(const ButtonEvent& ev);
-    void buyShopItem();
+    // ShopHost.
+    void buyShopItem(int i) override;
+    void leaveShop() override;
+    void holdShopOpen() override { walk_.eventBeat = 0; }
     // Why row `i` cannot be bought, as the spelled-out WORDS the sign shows, or nullptr
     // when it can. One function so the till and the sign are the same answer rather than
     // two lists of conditions that have to be kept in step: shopRowBuyable() is this
     // asked as a yes/no, and shopStatusLine() is it asked about the selected row.
-    const char* shopRowRefusal(int i) const;
+    const char* shopRowRefusal(int i) const override;
 
     // Key warp items. A "Key-item find" walk event drops a
     // random warp key into the inventory (non-interrupting, like the Sealed Cache);
@@ -3160,7 +3159,7 @@ private:
     // point is already on is a no-op, and the picker should never offer one).
     int nextRepartitionTarget(int cur) const;
     void drawRepartitionPickerScreen(Framebuffer& fb) const;
-    void startMaint();
+    void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) override;
     // What every played game reports when it ends, whoever was paying for it. `units`
     // and `bitsUnits` are what a MAINT process prices (ArcadeGameDef::unitName /
     // bitsUnitName: cleaning, and Bits); `score` / `scoreMax` are what the arcade till
@@ -3423,17 +3422,10 @@ private:
     // The two cache reveals (core/ui/items_screen.h), each held only while it is up.
     std::optional<CacheReveal> cacheReveal_;
     std::optional<BulkReveal> bulkReveal_;
-    // The MAINT action page's: which process it has open.
-    MaintKind maintKind_ = MaintKind::Defrag;
-    // The focused payment VARIANT on the open MAINT action. DEFRAG: 0 = Quick (Bits,
-    // may fail) · 1 = Tool (an item, guaranteed) · 2 = Played. AV: 0 = Quick · 1 = Played.
-    // The played one is the only one that can come up short without failing.
-    int maintVariant_ = 0;
+    MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)
     // Which engine each process's played variant runs (debugSetMaintPlayedGame).
     ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;
     ArcadeGameKind avPlayedGame_ = kAvPlayedGame;
-    // The action page's dial for its PLAYED row; a run takes a copy when it starts.
-    ArcadeDifficulty maintDifficulty_ = ArcadeDifficulty::Easy;
     // The MAINT process in play (core/model/maint_run.h): its board or its process
     // screen. Empty otherwise.
     std::optional<MaintRun> maint_;
@@ -3966,13 +3958,12 @@ private:
     // says which registry resolves a listing's `id` (item vs mod). shopStockLeft_ is
     // the per-visit remaining stock for each listing (index-aligned with
     // shopFront_->listings; refilled from each row's own ShopListingDef::stock on
-    // entry, NOT persisted). shopCursor_ is the A-cycled row selection (wraps
-    // 0..listingCount-1). All transient run state, like the boss/gauntlet fields
-    // above.
+    // entry, NOT persisted). The cursor is shop_'s. All transient run state, like the
+    // boss/gauntlet fields above.
     const AreaStorefrontDef* shopFront_ = nullptr;
     bool shopIsModShop_ = false;
     int shopStockLeft_[kMaxShopListings] = {};
-    int shopCursor_ = 0;
+    ShopScreen shop_;   // the storefront's cursor (game/shop_screen.h)
 
     // Hacker face (07). face_ is the top-level PET/HACKER mode (transient: a
     // reboot always boots PET; not persisted). It gates the carousel + submenu dispatch

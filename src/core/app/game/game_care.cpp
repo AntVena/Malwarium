@@ -6,7 +6,7 @@
 #include "tunables.h"
 #include "core/app/game_rig_shop.h"
 #include "core/content/content_tables.h"
-#include "core/ui/maint_screen.h"
+#include "core/ui/maint_screen.h"   // defragGated, avGated
 #include "core/ui/mods_screen.h"
 
 namespace mal {
@@ -16,36 +16,14 @@ namespace mal {
 void Game::onMaintList(const ButtonEvent& ev) {
     if (ev.button == Button::A) listRow_ ^= 1;          // toggle the 2 rows
     else if (ev.button == Button::B) {
-        maintKind_ = (listRow_ == 0) ? MaintKind::Defrag : MaintKind::Av;
-        maintVariant_ = 0;                               // default to QUICK
-        maintDifficulty_ = ArcadeDifficulty::Easy;
+        maintScreen_.open(listRow_ == 0 ? MaintKind::Defrag : MaintKind::Av);
         nav_ = Nav::Detail;
     } else if (ev.button == Button::C) nav_ = Nav::Cursor;
 }
 
-void Game::onMaintAction(const ButtonEvent& ev) {
-    // A cycles the payment VARIANT. DEFRAG: Quick / Tool / Played; AV: Quick / Played,
-    // and on the PLAYED row it walks MAINT's difficulty dial first, EASY up to HARD,
-    // before wrapping back to Quick (and the dial back to EASY). One button for both, the way the arcade cabinet page
-    // cycles its dial, so the screen never needs a second gesture to set the stakes.
-    // B runs the focused one.
-    if (ev.button == Button::A) {
-        const int n = maintKind_ == MaintKind::Defrag ? kDefragVariants : kAvVariants;
-        const bool played = maintVariant_ == n - 1;
-        if (played && maintDifficulty_ != ArcadeDifficulty::Hard) {
-            maintDifficulty_ =
-                static_cast<ArcadeDifficulty>(static_cast<int>(maintDifficulty_) + 1);
-        } else {
-            if (played) maintDifficulty_ = ArcadeDifficulty::Easy;
-            maintVariant_ = (maintVariant_ + 1) % n;
-        }
-    } else if (ev.button == Button::B) startMaint();
-    else if (ev.button == Button::C) nav_ = Nav::Submenu;
-}
-
-void Game::startMaint() {
-    const bool defrag = maintKind_ == MaintKind::Defrag;
-    const bool played = maintVariant_ == (defrag ? kDefragVariants : kAvVariants) - 1;
+void Game::startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) {
+    const bool defrag = kind == MaintKind::Defrag;
+    const bool played = variant == (defrag ? kDefragVariants : kAvVariants) - 1;
     bool success = false;
     if (defrag) {
         if (defragGated(pet_.model)) return;                 // nothing to defragment
@@ -57,7 +35,7 @@ void Game::startMaint() {
         // the TOOL variant additionally spends one Defrag Tool for a
         // GUARANTEED clean (no fail roll). Inert if none held; the QUICK variant is
         // Bits-only with the normal success roll.
-        const bool tool = maintVariant_ == 1;
+        const bool tool = variant == 1;
         if (tool && inventory_.count(kDefragToolId) <= 0) return;   // no tool: inert
         op_.bits -= cost;
         if (!played) {
@@ -72,13 +50,13 @@ void Game::startMaint() {
         if (avGated(pet_.model)) return;                     // inert
         if (!played) success = rollMaintSuccess();
     }
-    maint_ = MaintRun::started(maintKind_, played, maintDifficulty_);
+    maint_ = MaintRun::started(kind, played, dial);
     maint_->success = success;
     // The PLAYED variant buys nothing but the attempt (a Defrag's Bits are already
     // spent; AV is free). It hands off to the process's game instead of the process bar,
     // and rejoins at settlePlayedRun.
     if (played) {
-        if (!beginPlayedGame(maintPlayedGame(maintKind_))) maint_.reset();
+        if (!beginPlayedGame(maintPlayedGame(kind))) maint_.reset();
         return;
     }
     nav_ = Nav::Process;
@@ -213,7 +191,7 @@ void Game::debugResolveDefrag(bool success) {
     // Deterministic maint outcome for tests: drive the real resolveMaint() seam with a
     // forced success/failure (rollMaintSuccess is otherwise RNG-gated). A failure routes
     // its +1 care mistake through addCareMistakeShielded, so the shield gate is assertable.
-    maint_ = MaintRun::started(MaintKind::Defrag, /*played=*/false, maintDifficulty_);
+    maint_ = MaintRun::started(MaintKind::Defrag, /*played=*/false, maintScreen_.difficulty());
     maint_->success = success;
     resolveMaint();
     maint_.reset();

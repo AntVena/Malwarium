@@ -186,7 +186,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Detail:
             switch (enteredId()) {
                 case SubmenuId::Items: onItemsDetail(ev); break;
-                case SubmenuId::Maint: onMaintAction(ev); break;
+                case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
                 case SubmenuId::Cfg: onCfgDetail(ev); break;
                 case SubmenuId::Arch: onArchRecord(ev); break;
                 case SubmenuId::Mods:
@@ -203,7 +203,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ExploreControl: onExploreControl(ev); break;
         case Nav::Tourney: arena_.onButton(*this, ev); break;
         case Nav::Story: onStory(ev); break;
-        case Nav::TipCard: onTipCard(ev); break;
+        case Nav::TipCard: tipCardScreen_.onButton(*this, ev); break;
         case Nav::AwayDigest: onAwayDigest(ev); break;
         case Nav::StoryArchive: chapters_.onButton(*this, ev); break;
         case Nav::Encounter: encounter_.onButton(*this, ev); break;
@@ -211,8 +211,8 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ShiboleetHail: onShiboleetHail(ev); break;
         case Nav::Shiboleet: onShiboleet(ev); break;
         case Nav::ShiboleetVerdict: onShiboleetVerdict(ev); break;
-        case Nav::Shop: onShop(ev); break;
-        case Nav::ModShop: onShop(ev); break;
+        case Nav::Shop:
+        case Nav::ModShop: shop_.onButton(*this, ev); break;
         case Nav::WarpPicker: onWarpPicker(ev); break;
         case Nav::ItemOffer: onItemOffer(ev); break;
         case Nav::RollbackPicker: onRollbackPicker(ev); break;

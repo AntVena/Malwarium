@@ -60,7 +60,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Combat: fightScreen_.draw(fb, *this); break;
         case Nav::Tourney: arena_.draw(fb, *this); break;
         case Nav::Story: drawStoryScreen(fb); break;
-        case Nav::TipCard: drawTipCard(fb); break;
+        case Nav::TipCard: tipCardScreen_.draw(fb, *this); break;
         case Nav::AwayDigest: drawAwayDigest(fb); break;
         case Nav::StoryArchive: chapters_.draw(fb, *this); break;
         case Nav::ExploreControl: {
@@ -82,8 +82,8 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;
         case Nav::Shiboleet: drawShiboleetScreen(fb); break;
         case Nav::ShiboleetVerdict: drawShiboleetVerdictScreen(fb); break;
-        case Nav::Shop: drawShopScreen(fb); break;
-        case Nav::ModShop: drawShopScreen(fb); break;
+        case Nav::Shop:
+        case Nav::ModShop: shop_.draw(fb, *this); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
         case Nav::ItemOffer: drawItemOfferScreen(fb); break;
         case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
@@ -838,24 +838,9 @@ void Game::drawDetail(Framebuffer& fb) const {
                 drawItemDetail(fb, *detailItem_, v);
             }
             break;
-        case SubmenuId::Maint: {
-            MaintActionView v;
-            if (const ArcadeGameDef* g = arcadeGameByKind(maintPlayedGame(maintKind_))) {
-                v.played.name = g->displayName;
-                v.played.unit = g->unitName ? g->unitName : "RUN";
-                v.played.bitsUnit = g->bitsUnitName;
-            }
-            v.played.difficulty = maintDifficulty_;
-            v.kind = maintKind_;
-            v.variant = maintVariant_;
-            v.cost = maintKind_ == MaintKind::Defrag ? defragCost() : 0;
-            v.walletBits = op_.bits;
-            v.toolCount = inventory_.count(kDefragToolId);
-            v.defragCount = pet_.defragCount;
-            v.failPct = maintFailPct();
-            drawMaintAction(fb, pet_.model, v);
+        case SubmenuId::Maint:
+            maintScreen_.draw(fb, *this);
             break;
-        }
         case SubmenuId::Cfg:
             drawCfg(fb);
             break;
@@ -1125,38 +1110,6 @@ void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
     g.sigils = op_.cant.sigils;
     g.swarm = &swarm;
     drawShiboleetVerdict(fb, g, v);
-}
-
-void Game::drawShopScreen(Framebuffer& fb) const {
-    // Resolves every listing (id -> display name/description/costs) through the
-    // registry into plain ShopRowView rows, so expl_screen.cpp's drawShop stays
-    // registry-agnostic: mirrors drawHackerSubmenu building its row strings before
-    // handing them to the generic windowed-list draw.
-    const int n = std::min(shopListingCount(), kMaxShopListings);
-    ShopRowView rows[kMaxShopListings];
-    for (int i = 0; i < n; ++i) {
-        rows[i].name = shopListingName(i);
-        rows[i].bitsPrice = shopListingBitsPrice(i);
-        rows[i].stock = shopListingStock(i);
-        rows[i].costCount = std::min(shopListingCostCount(i), kMaxShopCostItems);
-        for (int k = 0; k < rows[i].costCount; ++k) {
-            rows[i].costName[k] = shopListingCostName(i, k);
-            rows[i].costQty[k] = shopListingCostQty(i, k);
-        }
-        rows[i].held = shopListingHeld(i);
-        rows[i].heldCap = shopListingHeldCap(i);
-    }
-    const EffectText description = shopListingDescription(shopCursor_);   // outlives the draw
-    StorefrontView v;
-    v.storeName = shopStoreName();
-    v.walletBits = op_.bits;
-    v.rows = rows;
-    v.rowCount = n;
-    v.cursor = shopCursor_;
-    v.selectedDescription = description.c_str();
-    v.statusLine = shopStatusLine();
-    v.beat = beat_;
-    drawShop(fb, v);
 }
 
 void Game::drawPostEncounterScreen(Framebuffer& fb) const {
