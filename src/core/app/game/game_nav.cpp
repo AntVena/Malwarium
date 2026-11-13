@@ -185,7 +185,7 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::Detail:
             switch (enteredId()) {
-                case SubmenuId::Items: onItemsDetail(ev); break;
+                case SubmenuId::Items: items_.onDetail(*this, ev); break;
                 case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
                 case SubmenuId::Cfg: onCfgDetail(ev); break;
                 case SubmenuId::Arch: onArchRecord(ev); break;
@@ -217,8 +217,8 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ItemOffer: onItemOffer(ev); break;
         case Nav::RollbackPicker: onRollbackPicker(ev); break;
         case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
-        case Nav::CacheYield: onCacheYield(ev); break;
-        case Nav::BulkYield: onBulkYield(ev); break;
+        case Nav::CacheYield: vault_.onReveal(*this, ev); break;
+        case Nav::BulkYield: vault_.onBulkReveal(*this, ev); break;
         // Post-encounter status readout: informational only. ANY
         // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
         case Nav::PostEncounter: dismissPostEncounter(); break;
@@ -359,7 +359,6 @@ void Game::enterSubmenu() {
 void Game::dropCursor() {
     nav_ = Nav::Idle;
     listRow_ = 0;
-    detailItem_ = nullptr;
     stat_.reset();
 }
 

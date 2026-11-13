@@ -1458,8 +1458,8 @@ public:
     }
     // Cache-yield reveal inspection (tests): what the opened cache produced, while
     // nav() == Nav::CacheYield; 0 with no reveal up.
-    int cacheYieldItemCount() const { return cacheReveal_ ? cacheReveal_->itemCount : 0; }
-    int cacheYieldBits() const { return cacheReveal_ ? cacheReveal_->bits : 0; }
+    int cacheYieldItemCount() const { return vault_.reveal() ? vault_.reveal()->itemCount : 0; }
+    int cacheYieldBits() const { return vault_.reveal() ? vault_.reveal()->bits : 0; }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const override {
         // An egg has nothing to defragment, so it is never charged for one.
@@ -2113,18 +2113,18 @@ public:
         if (const ItemDef* d = registry_.item(id)) openAllCachesOfRarity(*d);
     }
     // The bulk-open reveal (tests), while nav() == Nav::BulkYield; 0 / empty with none.
-    int bulkYieldCachesOpened() const { return bulkReveal_ ? bulkReveal_->cachesOpened : 0; }
-    int bulkYieldBits() const { return bulkReveal_ ? bulkReveal_->bits : 0; }
+    int bulkYieldCachesOpened() const { return vault_.bulkReveal() ? vault_.bulkReveal()->cachesOpened : 0; }
+    int bulkYieldBits() const { return vault_.bulkReveal() ? vault_.bulkReveal()->bits : 0; }
     int bulkYieldTallyCount() const {
-        return bulkReveal_ ? static_cast<int>(bulkReveal_->tally.size()) : 0;
+        return vault_.bulkReveal() ? static_cast<int>(vault_.bulkReveal()->tally.size()) : 0;
     }
     // The i'th tally entry's item id + count (tests). Empty id / 0 count if out of range.
     const char* bulkYieldTallyId(int i) const {
-        return (i >= 0 && i < bulkYieldTallyCount() && bulkReveal_->tally[i].def)
-                   ? bulkReveal_->tally[i].def->id : "";
+        return (i >= 0 && i < bulkYieldTallyCount() && vault_.bulkReveal()->tally[i].def)
+                   ? vault_.bulkReveal()->tally[i].def->id : "";
     }
     int bulkYieldTallyCountAt(int i) const {
-        return (i >= 0 && i < bulkYieldTallyCount()) ? bulkReveal_->tally[i].count : 0;
+        return (i >= 0 && i < bulkYieldTallyCount()) ? vault_.bulkReveal()->tally[i].count : 0;
     }
     // Resolve a Defrag with a forced success/failure via the real resolveMaint() path
     // (tests): a deterministic maint outcome (rollMaintSuccess is otherwise RNG-gated),
@@ -2409,7 +2409,6 @@ private:
     void markDirty() override;
     // ItemsHost: the ITEMS screen's way back into the game (game_items.cpp).
     bool itemsFromLockout() const override { return lockoutItemsContext_; }
-    void openItemDetail(const ItemDef& d) override;
     void returnToLockout() override;
     // FightScreenHost: the Combat screen's way back into the game (game_combat.cpp).
     // The rest of it is public above (fight, pvpFighting, stageScene, playSound, ...)
@@ -2544,7 +2543,6 @@ private:
     void releaseHoldB();
 
     // Per-state input handlers.
-    void onItemsDetail(const ButtonEvent& ev);
     void onMaintList(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
     void onFragger(const ButtonEvent& ev);
@@ -3083,14 +3081,14 @@ private:
     void markSaveDirty() { saveDirty_ = true; }    // schedule a debounced write
 
     // Raising-loop actions.
-    bool itemUsable(const ItemDef& d, const char*& gateMsg) const;
+    bool itemUsable(const ItemDef& d, const char*& gateMsg) const override;
     // Would consuming this row change nothing? An arming effect whose state is
     // ALREADY set spends the item and buys the pet nothing, so itemUsable turns
     // that into a stated gate instead of a silent evaporation. Reads the effect
     // vocabulary (ItemEffect::Kind), never a per-id branch, so a new arming
     // mechanic joins by adding its case beside its applier in applyItemEffects.
     bool itemUseIsInert(const ItemDef& d, const char*& why) const;
-    void useItem();
+    void useItem(const ItemDef& d, ItemUseFrom from) override;
     void startFeeding(const ItemDef& d, bool fromLockout);
     // Roll every held perishable (ItemDef::spoil) once. Called on the beats that already
     // disturb the bag rather than from a clock of its own; advances rng_.
@@ -3122,23 +3120,19 @@ private:
     // Draw one item from a cache pool (adds to inventory + logs); returns the def.
     const ItemDef* drawCacheItem(const LootEntry* pool, int poolSize);
     // The cache-yield reveal: B/C dismisses back to the ITEMS list.
-    void onCacheYield(const ButtonEvent& ev);
-    void drawCacheYieldScreen(Framebuffer& fb) const;
     // e: bulk-open every OWNED cache sharing `focused`'s rarity tier in one
     // action (grantCacheReward per cache, tallied), then surface the aggregate
     // reveal (Nav::BulkYield). `focused` is the VAULT row the hold-B fired on.
     void openAllCachesOfRarity(const ItemDef& focused) override;
     // The bulk-yield reveal: A scrolls the tally if it overflows the window, B/C
     // dismisses back to the VAULT list (Nav::Submenu. Mirrors onCacheYield).
-    void onBulkYield(const ButtonEvent& ev);
-    void drawBulkYieldScreen(Framebuffer& fb) const;
     // Boot Accelerator: consume it + apply its CutIncubationMin to the incubation.
     void useBootAccelerator(const ItemDef& d);
     // Rollback: open the stat picker (nav_ = RollbackPicker) parked on the
     // first eligible stat; onRollbackPicker drives A cycle / B shed / C cancel;
     // rollbackEligible tests a stat has ≥1 earned point (skipped otherwise);
     // drawRollbackPickerScreen renders it.
-    void openRollbackPicker();
+    void openRollbackPicker(const ItemDef& item);
     void onRollbackPicker(const ButtonEvent& ev);
     bool rollbackEligible(int stat) const {
         return stat >= 0 && stat < kLevelStatCount && pet_.statPoints[stat] > 0;
@@ -3153,7 +3147,7 @@ private:
     // once it is set the cursor is picking the stat to move it TO. B advances the step
     // then commits; C walks it back one step rather than straight out, so a mis-picked
     // source costs one press. Nothing is spent until the commit.
-    void openRepartitionPicker();
+    void openRepartitionPicker(const ItemDef& item);
     void onRepartitionPicker(const ButtonEvent& ev);
     // The TO step's A-cycle target: any stat but the source (a move onto the stat the
     // point is already on is a no-op, and the picker should never offer one).
@@ -3418,10 +3412,8 @@ private:
     // the first action each time the chord opens it, so the list never reopens pointing
     // at whatever was last pressed.
     int exploreCtlRow_ = 0;
-    const ItemDef* detailItem_ = nullptr;  // ITEMS detail subject
-    // The two cache reveals (core/ui/items_screen.h), each held only while it is up.
-    std::optional<CacheReveal> cacheReveal_;
-    std::optional<BulkReveal> bulkReveal_;
+    // The Rollback or Repartition item the open stat picker spends on its commit.
+    const ItemDef* statPickerItem_ = nullptr;
     MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)
     // Which engine each process's played variant runs (debugSetMaintPlayedGame).
     ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;

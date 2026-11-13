@@ -39,6 +39,7 @@ void ItemsMenu::enter(const ItemsHost& host) {
     const bool picker = !host.itemsFromLockout() && host.itemPickerUnlocked();
     view_ = picker ? ItemsView::Picker : ItemsView::List;
     pickRow_ = 0;
+    detail_ = nullptr;
     parkOnFirstRow(host);
 }
 
@@ -93,7 +94,8 @@ void ItemsMenu::stepList(const ItemsHost& host, int dir) {
 void ItemsMenu::openFocused(ItemsHost& host) {
     const auto& r = rows(host);
     if (row_ < 0 || row_ >= static_cast<int>(r.size()) || r[row_].header) return;
-    host.openItemDetail(*r[row_].def);
+    detail_ = r[row_].def;
+    host.openDetail();
 }
 
 void ItemsMenu::releaseB(ItemsHost& host) {
@@ -129,6 +131,25 @@ void ItemsMenu::draw(Framebuffer& fb, const ItemsHost& host, int beat) const {
     v.gates = &gates;
     v.beat = beat;
     drawItemsList(fb, rows(host), v);
+}
+
+void ItemsMenu::onDetail(ItemsHost& host, const ButtonEvent& ev) {
+    if (ev.button == Button::B && detail_) {
+        host.useItem(*detail_, host.itemsFromLockout() ? ItemUseFrom::Lockout : ItemUseFrom::Bag);
+    } else if (ev.button == Button::C) {
+        host.closeDetail();
+    }
+}
+
+void ItemsMenu::drawDetail(Framebuffer& fb, const ItemsHost& host, int beat) const {
+    if (!detail_) return;
+    ItemDetailView v;
+    v.usable = host.itemUsable(*detail_, v.gateMsg);
+    v.icon = itemIcon(host.content(), detail_->id);
+    v.qty = host.inventory().count(detail_->id);
+    v.lifetime = lifetimeMark(*detail_, host.petLifetimeGates());
+    v.beat = beat;
+    drawItemDetail(fb, *detail_, v);
 }
 
 }  // namespace mal

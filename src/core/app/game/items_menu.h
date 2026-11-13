@@ -4,8 +4,8 @@
 // Type-Picker is owned) and the grouped list behind it. ItemsMenu holds which screen is
 // up, both cursors, the active filter and the list's rows. The rows are rebuilt only
 // when the bag, the filter or the order changes, so stepping and redrawing reuse them.
-// The item detail page and the Use path stay on the game, which ItemsMenu reaches
-// through ItemsHost.
+// It also holds the item detail page's subject. What using an item does is the game's,
+// which ItemsMenu reaches through ItemsHost.
 //
 // This header names no core/ui type, so game.h can hold an ItemsMenu by value: the
 // rows' element type is only declared here, and every member that needs it complete is
@@ -29,6 +29,10 @@ struct ItemDef;
 
 enum class ItemsView : uint8_t { Picker, List };
 
+// Where an item is being used from. From the Lockout, a meal or a resolving item clears
+// the crisis instead of returning to the ITEMS list.
+enum class ItemUseFrom : uint8_t { Bag, Lockout };
+
 // What ITEMS needs from the game. Game implements it; a test can too.
 class ItemsHost {
 public:
@@ -40,8 +44,12 @@ public:
     virtual bool itemTabsUnlocked() const = 0;
     virtual bool itemPickerUnlocked() const = 0;
     virtual PetLifetimeGates petLifetimeGates() const = 0;
+    // Can `d` be used right now? When not, `gateMsg` says why, in the words the page shows.
+    virtual bool itemUsable(const ItemDef& d, const char*& gateMsg) const = 0;
 
-    virtual void openItemDetail(const ItemDef& d) = 0;
+    virtual void useItem(const ItemDef& d, ItemUseFrom from) = 0;
+    virtual void openDetail() = 0;        // the list -> the focused item's page
+    virtual void closeDetail() = 0;       // the page -> the list
     virtual void returnToLockout() = 0;   // C on a list opened from the Lockout modal
     virtual void leaveToCarousel() = 0;
     virtual void armHoldB() = 0;          // B pressed; the release or the hold decides
@@ -72,6 +80,11 @@ public:
     // not also a tap.
     bool holdB(const ItemsHost& host, uint32_t heldMs);
     void draw(Framebuffer& fb, const ItemsHost& host, int beat) const;
+    // The item detail page (Nav::Detail under ITEMS): B uses the item, C goes back.
+    void onDetail(ItemsHost& host, const ButtonEvent& ev);
+    void drawDetail(Framebuffer& fb, const ItemsHost& host, int beat) const;
+    // The item the detail page is showing, or null before one is opened.
+    const ItemDef* detail() const { return detail_; }
 
     ItemsView view() const { return view_; }
     ItemFilter filter() const { return filter_; }
@@ -90,6 +103,7 @@ private:
     ItemsView view_ = ItemsView::List;
     ItemFilter filter_ = ItemFilter::All;
     int row_ = 0;       // index into rows(); -1 on an empty list
+    const ItemDef* detail_ = nullptr;
     int pickRow_ = 0;   // index into kItemPickerTiles
 
     // What rows_ was built from. A draw is const and still has to see a bag that changed

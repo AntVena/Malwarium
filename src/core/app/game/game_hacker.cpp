@@ -51,7 +51,6 @@ void Game::toggleFace() {
     }
     rigShop_.enter();
     listRow_ = 0;
-    detailItem_ = nullptr;
     dirty_ = true;
 }
 

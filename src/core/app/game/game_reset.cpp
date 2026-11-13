@@ -39,7 +39,6 @@ void Game::resetToHatch() {
     log_ = EventLog{};
     cursor_ = 0;
     listRow_ = 0;
-    detailItem_ = nullptr;
     stat_.reset();
     maintScreen_ = MaintScreen{};
     maint_.reset();

@@ -88,8 +88,8 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ItemOffer: drawItemOfferScreen(fb); break;
         case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
         case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
-        case Nav::CacheYield: drawCacheYieldScreen(fb); break;
-        case Nav::BulkYield: drawBulkYieldScreen(fb); break;
+        case Nav::CacheYield: vault_.drawReveal(fb, *this); break;
+        case Nav::BulkYield: vault_.drawBulkReveal(fb, *this); break;
         case Nav::PostEncounter: drawPostEncounterScreen(fb); break;
         case Nav::ModalLineSelect: drawLineSelect(fb); break;
         case Nav::Decryption: drawDecryption(fb); break;
@@ -828,15 +828,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
 void Game::drawDetail(Framebuffer& fb) const {
     switch (enteredId()) {
         case SubmenuId::Items:
-            if (detailItem_) {
-                ItemDetailView v;
-                v.usable = itemUsable(*detailItem_, v.gateMsg);
-                v.icon = itemIcon(registry_, detailItem_->id);
-                v.qty = inventory_.count(detailItem_->id);
-                v.lifetime = lifetimeMark(*detailItem_, petLifetimeGates());
-                v.beat = beat_;
-                drawItemDetail(fb, *detailItem_, v);
-            }
+            items_.drawDetail(fb, *this, beat_);
             break;
         case SubmenuId::Maint:
             maintScreen_.draw(fb, *this);
@@ -1172,38 +1164,6 @@ void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
     const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],
                            pet_.statPoints[3]};
     drawRepartitionPicker(fb, points, repartitionRow_, repartitionFrom_);
-}
-
-void Game::drawCacheYieldScreen(Framebuffer& fb) const {
-    if (!cacheReveal_ || !cacheReveal_->cache) return;
-    const CacheReveal& r = *cacheReveal_;
-    YieldItem items[2];
-    for (int i = 0; i < r.itemCount && i < 2; ++i) {
-        items[i].def = r.items[i];
-        items[i].icon = items[i].def ? itemIcon(registry_, items[i].def->id) : nullptr;
-    }
-    drawCacheYield(fb, *r.cache, r.bits, items, r.itemCount);
-}
-
-void Game::drawBulkYieldScreen(Framebuffer& fb) const {
-    if (!bulkReveal_ || !bulkReveal_->cache) return;
-    const BulkReveal& r = *bulkReveal_;
-    BulkYieldRow rows[16];
-    int n = static_cast<int>(r.tally.size());
-    if (n > 16) n = 16;
-    for (int i = 0; i < n; ++i) {
-        rows[i].def = r.tally[i].def;
-        rows[i].icon = r.tally[i].def ? itemIcon(registry_, r.tally[i].def->id) : nullptr;
-        rows[i].count = r.tally[i].count;
-    }
-    BulkYieldView v;
-    v.cachesOpened = r.cachesOpened;
-    v.bits = r.bits;
-    v.rows = rows;
-    v.count = n;
-    v.cursor = r.row;
-    v.beat = beat_;
-    drawBulkYield(fb, *r.cache, v);
 }
 
 void Game::drawStacker(Framebuffer& fb) const {

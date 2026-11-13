@@ -14,11 +14,6 @@ namespace mal {
 
 // --- ITEMS -----------------------------------------------------------------
 
-void Game::openItemDetail(const ItemDef& d) {
-    detailItem_ = &d;
-    nav_ = Nav::Detail;
-}
-
 void Game::returnToLockout() { nav_ = Nav::ModalLockout; }
 
 bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
@@ -262,16 +257,10 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
     return true;
 }
 
-void Game::onItemsDetail(const ButtonEvent& ev) {
-    if (ev.button == Button::B) useItem();
-    else if (ev.button == Button::C) nav_ = Nav::Submenu;
-}
-
-void Game::useItem() {
-    if (!detailItem_) return;
+void Game::useItem(const ItemDef& d, ItemUseFrom from) {
     const char* gate = "";
-    if (!itemUsable(*detailItem_, gate)) return;   // inert when gated
-    const ItemDef& d = *detailItem_;
+    if (!itemUsable(d, gate)) return;   // inert when gated
+    const bool fromLockout = from == ItemUseFrom::Lockout;
 
     // Openable containers (sealed caches) are decrypted from the Hacker VAULT: itemUsable
     // gates them ("OPEN IN VAULT (A+C)"), so useItem never reaches this point for one.
@@ -279,23 +268,23 @@ void Game::useItem() {
 
     // Rollback: Use opens the stat picker instead of feeding/buffing. The
     // item is only consumed when a shed is confirmed (onRollbackPicker B): cancelling
-    // (C) leaves it in the bag. detailItem_ stays set so the shed path can consume it.
-    if (d.use == ItemDef::Use::Rollback) { openRollbackPicker(); return; }
+    // (C) leaves it in the bag.
+    if (d.use == ItemDef::Use::Rollback) { openRollbackPicker(d); return; }
 
     // Repartition: the same hand-off, to the two-step picker that moves a point instead
     // of shedding one. Consumed only on the commit (onRepartitionPicker B at the TO
     // step): backing out of either step leaves it in the bag.
-    if (d.use == ItemDef::Use::Repartition) { openRepartitionPicker(); return; }
+    if (d.use == ItemDef::Use::Repartition) { openRepartitionPicker(d); return; }
 
     // Boot Accelerator: Use shortens the egg's incubation instead of feeding.
     if (d.use == ItemDef::Use::DecryptEgg) { useBootAccelerator(d); return; }
 
     if (d.type == ItemDef::Type::Food) {
-        startFeeding(d, lockoutItemsContext_);
+        startFeeding(d, fromLockout);
         return;
     }
     // Active quest item used inside a Lockout: resolves it immediately.
-    if (lockoutItemsContext_ && itemResolvesLockout(d)) {
+    if (fromLockout && itemResolvesLockout(d)) {
         inventory_.remove(d.id, 1);
         char buf[28];
         std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
@@ -600,10 +589,11 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
 
 void Game::endFeeding() {
     const bool fromLockout = feeding_ && feeding_->fromLockout;
+    const ItemDef* fed = feeding_ ? feeding_->item : nullptr;
     feeding_.reset();
     if (fromLockout) {
         resolveLockout();                 // -> idle
-    } else if (detailItem_ && inventory_.count(detailItem_->id) > 0) {
+    } else if (fed && fed == items_.detail() && inventory_.count(fed->id) > 0) {
         nav_ = Nav::Detail;               // back to the detail it came from
     } else {
         nav_ = Nav::Submenu;              // item ran out -> back to the list

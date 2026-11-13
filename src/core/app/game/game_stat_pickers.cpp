@@ -15,10 +15,10 @@ int Game::nextEligibleStat(int cur) const {
     return rollbackEligible(cur) ? cur : -1;
 }
 
-void Game::openRollbackPicker() {
+void Game::openRollbackPicker(const ItemDef& item) {
     // Park on the first eligible stat (itemUsable already guaranteed ≥1 point exists,
-    // so nextEligibleStat can't return -1 here). detailItem_ (the Rollback item) stays
-    // set so a confirmed shed consumes it.
+    // so nextEligibleStat can't return -1 here). A confirmed shed consumes `item`.
+    statPickerItem_ = &item;
     int first = -1;
     for (int i = 0; i < kLevelStatCount; ++i)
         if (rollbackEligible(i)) { first = i; break; }
@@ -41,14 +41,14 @@ void Game::onRollbackPicker(const ButtonEvent& ev) {
         // next award. The floor division also keeps it strictly under that need (it was
         // strictly under the taller one), so the shed can never undo itself. Consume
         // the Rollback item + log.
-        if (rollbackEligible(rollbackRow_) && detailItem_) {
+        if (rollbackEligible(rollbackRow_) && statPickerItem_) {
             --pet_.statPoints[rollbackRow_];
             const int wasNeed = xpToNextLevel();
             --pet_.level;
             if (wasNeed > 0)
                 pet_.xp = static_cast<int>(static_cast<long long>(pet_.xp) *
                                              xpToNextLevel() / wasNeed);
-            inventory_.remove(detailItem_->id, 1);
+            inventory_.remove(statPickerItem_->id, 1);
             char buf[28];
             // Surface the shed explicitly, which stat and by how much (
             // "show the -1 <stat> on a Rollback"). The stat WORD + signed number are
@@ -76,10 +76,11 @@ int Game::nextRepartitionTarget(int cur) const {
     return cur;
 }
 
-void Game::openRepartitionPicker() {
+void Game::openRepartitionPicker(const ItemDef& item) {
     // Step one: park on the first stat with a point to give up. itemUsable already
     // guaranteed one exists (level > 0 == at least one earned point), so the scan
-    // always lands. detailItem_ (the Repartition item) stays set for the commit.
+    // always lands. The commit consumes `item`.
+    statPickerItem_ = &item;
     int first = -1;
     for (int i = 0; i < kLevelStatCount; ++i)
         if (rollbackEligible(i)) { first = i; break; }
@@ -104,14 +105,14 @@ void Game::onRepartitionPicker(const ButtonEvent& ev) {
                 repartitionRow_ = nextRepartitionTarget(repartitionRow_);
             }
         } else if (rollbackEligible(repartitionFrom_) &&
-                   repartitionRow_ != repartitionFrom_ && detailItem_) {
+                   repartitionRow_ != repartitionFrom_ && statPickerItem_) {
             // The move: one point off the source, one onto the target. The level and the
             // XP bucket are untouched, because nothing was un-earned. The item changes
             // only the table's shape, and level == the sum of earned points still holds.
             // Consume the item + log.
             --pet_.statPoints[repartitionFrom_];
             ++pet_.statPoints[repartitionRow_];
-            inventory_.remove(detailItem_->id, 1);
+            inventory_.remove(statPickerItem_->id, 1);
             char buf[28];
             // Both ends, in words: which stat paid and which one grew. The stat WORDS
             // are the non-colour channel, so the line reads in a grayscale log.

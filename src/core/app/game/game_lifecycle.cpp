@@ -58,7 +58,6 @@ void Game::expireLockout() {
     pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
     nav_ = Nav::Idle;
-    detailItem_ = nullptr;
     stat_.reset();
     markSaveDirty();
 }
@@ -73,7 +72,6 @@ void Game::resolveLockout() {
     if (pet_.model.hunger() == 0) pet_.model.setHunger(kLockoutRecoveryHunger);
     nav_ = Nav::Idle;
     listRow_ = 0;
-    detailItem_ = nullptr;
     stat_.reset();
     markSaveDirty();
 }

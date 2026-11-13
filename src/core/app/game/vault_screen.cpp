@@ -128,4 +128,52 @@ void VaultScreen::draw(Framebuffer& fb, const VaultHost& host) const {
                    ticket ? "B PLAY" : "B DECRYPT");
 }
 
+void VaultScreen::onReveal(VaultHost& host, const ButtonEvent& ev) {
+    if (ev.button == Button::B || ev.button == Button::C) {
+        reveal_.reset();
+        host.closeDetail();
+    }
+}
+
+void VaultScreen::onBulkReveal(VaultHost& host, const ButtonEvent& ev) {
+    if (!bulk_) return;
+    if (ev.button == Button::A) {
+        bulk_->row = stepRow(bulk_->row, static_cast<int>(bulk_->tally.size()), +1);
+    } else if (ev.button == Button::B || ev.button == Button::C) {
+        bulk_.reset();
+        host.closeDetail();
+    }
+}
+
+void VaultScreen::drawReveal(Framebuffer& fb, const VaultHost& host) const {
+    if (!reveal_ || !reveal_->cache) return;
+    const CacheReveal& r = *reveal_;
+    YieldItem items[2];
+    for (int i = 0; i < r.itemCount && i < 2; ++i) {
+        items[i].def = r.items[i];
+        items[i].icon = items[i].def ? itemIcon(host.content(), items[i].def->id) : nullptr;
+    }
+    drawCacheYield(fb, *r.cache, r.bits, items, r.itemCount);
+}
+
+void VaultScreen::drawBulkReveal(Framebuffer& fb, const VaultHost& host) const {
+    if (!bulk_ || !bulk_->cache) return;
+    const BulkReveal& r = *bulk_;
+    BulkYieldRow rows[kMaxRows];
+    const int n = std::min(static_cast<int>(r.tally.size()), kMaxRows);
+    for (int i = 0; i < n; ++i) {
+        rows[i].def = r.tally[i].def;
+        rows[i].icon = r.tally[i].def ? itemIcon(host.content(), r.tally[i].def->id) : nullptr;
+        rows[i].count = r.tally[i].count;
+    }
+    BulkYieldView v;
+    v.cachesOpened = r.cachesOpened;
+    v.bits = r.bits;
+    v.rows = rows;
+    v.count = n;
+    v.cursor = r.row;
+    v.beat = host.screenBeat();
+    drawBulkYield(fb, *r.cache, v);
+}
+
 }  // namespace mal

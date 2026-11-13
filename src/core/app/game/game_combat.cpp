@@ -632,9 +632,8 @@ void Game::debugSetNetworksSeen(int n) {
 void Game::debugUseItem(const char* id) {
     const ItemDef* d = registry_.item(id);
     if (!d) return;
-    detailItem_ = d;
-    lockoutItemsContext_ = false;   // normal (non-Lockout) use context
-    useItem();                      // real path: gate -> effect -> consume -> log
+    lockoutItemsContext_ = false;
+    useItem(*d, ItemUseFrom::Bag);   // real path: gate -> effect -> consume -> log
 }
 
 void Game::debugOpenCache(const char* id) {

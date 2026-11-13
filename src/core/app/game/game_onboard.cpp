@@ -320,10 +320,9 @@ bool Game::feedYubiToSave() {
     if (!yubiWouldSave()) return false;
     const ItemDef* cookie = registry_.item("yubi_cookie");
     if (!cookie) return false;
-    detailItem_ = cookie;
     // From the Lockout it is also the meal that clears the Lockout (startFeeding).
     lockoutItemsContext_ = pet_.armed.lockoutActive;
-    useItem();
+    useItem(*cookie, lockoutItemsContext_ ? ItemUseFrom::Lockout : ItemUseFrom::Bag);
     return nav_ == Nav::ModalFeeding;
 }
 

@@ -2,11 +2,14 @@
 //
 // The VAULT cashes in what a pet has no use for: sealed caches, opened for a reward draw,
 // and Decryptograms, played as a board. Its rows are the owned stacks of either kind,
-// read off the inventory each time. The screen holds only its cursor; what a row is
-// spent on is the game's, reached through VaultHost.
+// read off the inventory each time. The screen holds its cursor and the reveal of what
+// the last opening paid (one cache, or a bulk open); what a row is spent on, and the
+// payout itself, are the game's, reached through VaultHost.
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 #include "core/device/platform.h"
 
@@ -17,11 +20,36 @@ class Framebuffer;
 class Inventory;
 struct ItemDef;
 
+// What the cache-yield reveal (Nav::CacheYield) shows: one opened cache's result. The
+// opening has already paid it by the time the reveal is up, so this is the screen's
+// alone, held while it is open. The ItemDefs live in the static registry.
+struct CacheReveal {
+    const ItemDef* cache = nullptr;
+    int bits = 0;
+    const ItemDef* items[2] = {nullptr, nullptr};
+    int itemCount = 0;
+};
+
+// What the bulk-open reveal (Nav::BulkYield) shows: the totals across every cache opened
+// in one action, one tally row per distinct item, and the reveal's scroll cursor.
+struct BulkReveal {
+    struct Tally {
+        const ItemDef* def = nullptr;
+        int count = 0;
+    };
+    const ItemDef* cache = nullptr;   // the cache that was opened in bulk
+    int cachesOpened = 0;
+    int bits = 0;
+    std::vector<Tally> tally;
+    int row = 0;
+};
+
 // What the VAULT needs from the game. Game implements it; a test can too.
 class VaultHost {
 public:
     virtual const Inventory& inventory() const = 0;
     virtual const ContentRegistry& content() const = 0;
+    virtual int screenBeat() const = 0;
     // Bulk Open (a Rig Shop row): a held B opens every cache of the focused row's rarity.
     virtual bool bulkOpenUnlocked() const = 0;
 
@@ -29,7 +57,8 @@ public:
     virtual void cashVaultRow(const ItemDef& d) = 0;
     virtual void openAllCachesOfRarity(const ItemDef& focused) = 0;
     virtual void leaveToCarousel() = 0;
-    virtual void armHoldB() = 0;   // B pressed; the release or the hold decides
+    virtual void closeDetail() = 0;   // off a reveal, back to the list
+    virtual void armHoldB() = 0;      // B pressed; the release or the hold decides
 
 protected:
     ~VaultHost() = default;
@@ -50,7 +79,18 @@ public:
     void releaseB(VaultHost& host);
     void draw(Framebuffer& fb, const VaultHost& host) const;
 
+    // The reveals (Nav::CacheYield, Nav::BulkYield). The opening has already paid by the
+    // time one is up, so any confirm or back dismisses it to the list.
+    void showReveal(const CacheReveal& r) { reveal_ = r; }
+    void showBulkReveal(BulkReveal r) { bulk_ = std::move(r); }
+    void onReveal(VaultHost& host, const ButtonEvent& ev);
+    void onBulkReveal(VaultHost& host, const ButtonEvent& ev);
+    void drawReveal(Framebuffer& fb, const VaultHost& host) const;
+    void drawBulkReveal(Framebuffer& fb, const VaultHost& host) const;
+
     int row() const { return row_; }
+    const CacheReveal* reveal() const { return reveal_ ? &*reveal_ : nullptr; }
+    const BulkReveal* bulkReveal() const { return bulk_ ? &*bulk_ : nullptr; }
 
 private:
     // The focused row, re-parked on the first when the list shrank under the cursor.
@@ -59,6 +99,8 @@ private:
 
     static constexpr int kMaxRows = 16;
     int row_ = 0;
+    std::optional<CacheReveal> reveal_;
+    std::optional<BulkReveal> bulk_;
 };
 
 }  // namespace mal
