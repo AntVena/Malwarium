@@ -122,7 +122,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The tourney**: `tourney*` (11 fields).
 - **A PvP session**: `pvp*` (19 fields).
 - **The minigame runs**: the arcade run (`arcadeRun_`, score and result fields), the egg pick
   (`eggPick*`, 11 fields), the MAINT boards, the cryptogram run. One row each, S to M.
@@ -140,6 +139,9 @@ random draws and its result, and is gone when it ends. Rows are M unless marked.
   up, across a gauntlet's rounds, so they stayed off `Fight`. It reads `Game::fight()`.
 - **The encounter intro**: `encounterEnemy_`, `encounterChoice_`, `encounterBypass_`. It
   hands the wild to `startWildCombat` and keeps nothing once a fight opens. S.
+- **The arena screen**: `tourneyCursor_`, `tourneyView_`, `tourneyScroll_`,
+  `tourneyScouted_`, `tourneyScoutedSlot_`. It reads `TourneyRun` through the `tourney*()`
+  accessors. S.
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which
