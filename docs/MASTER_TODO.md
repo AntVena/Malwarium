@@ -123,14 +123,18 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 #### Screens
 
 - **The rest**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), the MODS and MOVES pickers
-  (`mod*`, `move*` cursors and confirms), the MAINT action page (`maintKind_`,
-  `maintVariant_`, `maintDifficulty_`), the area SHOP, the two cache reveals
-  (`cacheReveal_`, `bulkReveal_`), MERGE (`hackerMergeRow_`), PEERS (`peerRow_`), the story
-  reader and CHAPTERS archive, tip cards, and the ITEMS detail page and its Use path
-  (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
-  arms B moves its `holdTarget` entry onto the new type, as `screenHold`. `VaultScreen`,
-  `ArcadeScreen`, `CrewScreen` and `ArenaScreen` are the newest to copy; the host's
-  `openDetail` / `closeDetail` / `leaveToCarousel` are the shared L2/L3 moves.
+  (`mod*`, `move*` cursors and confirms), the two cache reveals (`cacheReveal_`,
+  `bulkReveal_`), the MAINT list (it still steps `Game`'s shared `listRow_`), and the ITEMS
+  detail page and its Use path (`onItemsDetail`, `useItem`, `detailItem_`), which are still
+  `Game`'s. Each one that arms B moves its `holdTarget` entry onto the new type, as
+  `screenHold`. The newest screen types are the ones to copy; the host's `openDetail` /
+  `closeDetail` / `leaveToCarousel` are the shared L2/L3 moves.
+- **Two runs the screens left behind.** The STORY reader (`storyChapter_`, `storyNext_`,
+  `storyScroll_`, `storyPanelDeadlineMs_`, `storyThen_`, `storyThenArea_`) turns its own
+  pages on a deadline and carries a queue and a continuation that re-enters the walk, the
+  encounter or the boss, so it is a run, with a thin screen over it. A storefront visit
+  (`shopFront_`, `shopIsModShop_`, `shopStockLeft_`) is one too: its stock lives for the
+  visit, and the `shopListing*` accessors `ShopHost` reads are its methods. M.
 - **The LINK screen**: `pvpRow_` and `pvpStatus_` (why the last duel ended). The outbound
   frame queue (`pvpOutbox_`, `pvpOutCount_`) outlives a session but is no screen's: it is
   the radio link's, so this row also decides its home. S.
