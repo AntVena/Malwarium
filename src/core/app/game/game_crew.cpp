@@ -42,7 +42,7 @@
 // choice; it never contributes a row of its own.
 //
 // Membership's payoff in play is the crew's signature Exploit: crewExploitOption()
-// hands it to Combat as the A+C picker's last row (Game::onCombat → openOverride).
+// hands it to Combat as the A+C picker's last row (Game::openExploitPicker → openOverride).
 //
 // The side is dual-coded everywhere, in this order: the word (RED/BLUE, and the
 // doctrine under it), the glyph (ICON_TEAM_RED/BLUE. Different shapes, not one shape

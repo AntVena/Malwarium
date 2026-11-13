@@ -659,6 +659,74 @@ void test_combat_item_in_game() {
     CHECK(!g.combat().overrideReady());            // single use spent
 }
 
+namespace {
+// The least of a game the Combat screen needs: one fight, and a tally of what the screen
+// asked the game to do with it.
+struct FightScreenProbe : FightScreenHost {
+    ContentRegistry reg = ContentRegistry::embedded();
+    Fight run;
+    int turns = 0, finishes = 0, turnSounds = 0;
+    const Fight& fight() const override { return run; }
+    Fight& liveFight() override { return run; }
+    const ContentRegistry& content() const override { return reg; }
+    const SpriteData* petSprite() const override { return nullptr; }
+    bool pvpFighting() const override { return false; }
+    bool combatLocalIsEnemySide() const override { return false; }
+    bool combatOutroEligible() const override { return false; }
+    uint32_t rivalTeachableMoveMask() const override { return 0; }
+    int fxBeat() const override { return 0; }
+    int screenBeat() const override { return 0; }
+    SceneId stageScene() const override { return SceneId{}; }
+    const SpriteData* camoSpriteForTarget(const CamoTarget&, const char*,
+                                          Stage) const override { return nullptr; }
+    SwarmView guardianSwarm() const override { return SwarmView{}; }
+    void stepGuardianFlock() override {}
+    void openExploitPicker() override {}
+    void consumeCombatItem(const char*) override {}
+    void advanceCombatTurn() override { ++turns; }
+    void playCombatTurnSound() override { ++turnSounds; }
+    void playSound(Sound) override {}
+    void finishCombat() override { ++finishes; }
+};
+}  // namespace
+
+// The Combat screen owns its panel, its stage clock and its input, and drives the fight
+// only through its host. B pages the panel and wraps; A asks for a turn; C flees, except
+// from an arena bout; the clock steps on kCombatAnimMs and, each time, ages the fight's
+// hit clock; closing the screen re-primes the clock.
+void test_fight_screen_owns_its_panel_clock_and_input() {
+    FightScreenProbe host;
+    host.run = Fight::started(FightCaller::Sim);
+    host.run.combat.begin(mkCombatant(host.reg, "A", 40, 10, {"packet_storm"}),
+                          mkCombatant(host.reg, "B", 40, 10, {"packet_storm"}),
+                          Combat::Stakes::Safe, 7, false, -1, 1);
+    FightScreen screen;
+    for (int i = 1; i <= kCombatStatPages; ++i) {
+        screen.onButton(host, press(Button::B));
+        CHECK(screen.statsPage() == i);
+    }
+    screen.onButton(host, press(Button::B));
+    CHECK(screen.statsPage() == 0);                      // wrapped shut
+    screen.onButton(host, press(Button::A));
+    CHECK(host.turns == 1);
+
+    host.run.caller = FightCaller::Tourney;
+    screen.onButton(host, press(Button::C));
+    CHECK(host.turnSounds == 0 && host.run.combat.outcome() == Combat::Outcome::Ongoing);
+    host.run.caller = FightCaller::Sim;
+    screen.onButton(host, press(Button::C));
+    CHECK(host.turnSounds == 1);                         // the flee was tried
+
+    screen.closed(1000);
+    CHECK(!screen.tick(host, 1000 + kCombatAnimMs - 1));
+    const int hit = host.run.hitBeat;
+    CHECK(screen.tick(host, 1000 + kCombatAnimMs));
+    CHECK(host.run.hitBeat == hit + 1);
+    screen.onButton(host, press(Button::B));
+    screen.shutPanel();
+    CHECK(screen.statsPage() == 0);
+}
+
 // A multi-turn channel move winds up (no damage) then detonates for full power.
 void test_combat_channel() {
     ContentRegistry r = ContentRegistry::embedded();

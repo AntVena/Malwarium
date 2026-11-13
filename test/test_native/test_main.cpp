@@ -250,6 +250,7 @@ int g_failures = 0;
     RUN(test_combat_override_item_use)      \
     RUN(test_exploit_uses_per_battle)       \
     RUN(test_combat_item_in_game)           \
+    RUN(test_fight_screen_owns_its_panel_clock_and_input) \
     RUN(test_combat_channel)                \
     RUN(test_combat_mod_passives)           \
     RUN(test_combat_builders_and_flee)      \

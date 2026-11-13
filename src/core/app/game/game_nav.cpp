@@ -65,7 +65,7 @@ void Game::onButton(const ButtonEvent& ev) {
     // override. The early-out is bypassed only in the combat Nav state, which
     // routes the chord to the override picker.
     if (ev.chordAC) {
-        if (nav_ == Nav::Combat) onCombat(ev);
+        if (nav_ == Nav::Combat) fightScreen_.onButton(*this, ev);
         // ROCK THE DOCK: the arena's BRIEFING. The chord is the device's one spare
         // gesture and the bracket screen has already spent A, B and C, so the explainer
         // (the only thing that tells an operator what an arena bout even is) rides
@@ -199,7 +199,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
             break;
-        case Nav::Combat: onCombat(ev); break;
+        case Nav::Combat: fightScreen_.onButton(*this, ev); break;
         case Nav::ExploreControl: onExploreControl(ev); break;
         case Nav::Tourney: onTourney(ev); break;
         case Nav::Story: onStory(ev); break;

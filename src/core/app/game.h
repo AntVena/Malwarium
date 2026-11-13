@@ -17,6 +17,7 @@
 #include "core/app/game_rig_shop.h"
 #include "core/app/operator.h"
 #include "core/app/settings.h"
+#include "core/app/game/fight_screen.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
@@ -105,7 +106,8 @@ struct PlayHud;
 // seam that keeps the tests green without going through the egg).
 enum class StartMode { FreshHatch, Hatched };
 
-class Game : private RigShopHost, private ItemsHost, private StatReaderHost {
+class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
+             private FightScreenHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -178,7 +180,7 @@ public:
     const Inventory& inventory() const override { return inventory_; }
     const EventLog& log() const { return log_; }
     // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
-    int combatStatsPage() const { return combatStatsPage_; }
+    int combatStatsPage() const { return fightScreen_.statsPage(); }
     const ModSlots& modSlots() const { return pet_.mods; }
     const ModPool& modPool() const { return op_.modPool; }
     // The two halves the MODS screen reads together.
@@ -1211,9 +1213,9 @@ public:
     // must not pin the radio (and, through radioScreenOpen, the panel) awake for as
     // long as nobody presses a button.
     bool pvpSessionLive() const { return pvp_ && pvp_->phase != PvpPhase::Result; }
-    // True while a duel is actually resolving, which is what makes onCombat suppress
-    // the A+C Exploit picker and the C flee: both would pause or end THIS device's copy
-    // of a fight the other device is still playing out.
+    // True while a duel is actually resolving, which is what makes the Combat screen
+    // suppress the A+C Exploit picker and the C flee: both would pause or end THIS
+    // device's copy of a fight the other device is still playing out.
     bool pvpFighting() const { return pvpPhase() == PvpPhase::Fighting; }
     // Which side of Combat the local pet occupies. The HOST is always player_ on both
     // devices (core/model/pvp_battle.h), so the guest's own pet is the enemy_ row and
@@ -1221,7 +1223,7 @@ public:
     bool pvpLocalIsHost() const { return pvp_ && pvp_->host; }
     // The same fact in the combat screen's terms (CombatSides::localIsEnemySide): the
     // one fight where the local pet is not Combat's player_ slot is a duel this device
-    // guests. Shared by drawCombatScreen and by anything that has to bind a resolved
+    // guests. Shared by the Combat screen and by anything that has to bind a resolved
     // turn to the LOCAL seat rather than to Combat's own.
     bool combatLocalIsEnemySide() const { return pvpFighting() && !pvpLocalIsHost(); }
     const char* pvpOpponentTag() const { return pvp_ ? pvp_->peerTag : ""; }
@@ -2418,6 +2420,16 @@ private:
     bool itemsFromLockout() const override { return lockoutItemsContext_; }
     void openItemDetail(const ItemDef& d) override;
     void returnToLockout() override;
+    // FightScreenHost: the Combat screen's way back into the game (game_combat.cpp).
+    // The rest of it is public above (fight, pvpFighting, stageScene, playSound, ...)
+    // or the fight's own lifecycle below (advanceCombatTurn, finishCombat, ...).
+    Fight& liveFight() override { return fight_; }
+    const SpriteData* petSprite() const override;
+    int fxBeat() const override { return fxBeat_; }
+    int screenBeat() const override { return beat_; }
+    SwarmView guardianSwarm() const override;
+    void stepGuardianFlock() override;
+    void openExploitPicker() override;
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const;
     // drawHabitat's steps, in the order it draws them (back to front).
@@ -2452,7 +2464,6 @@ private:
     void drawEvolve(Framebuffer& fb) const;
     void drawCSF(Framebuffer& fb) const;          // Critical System Failure
     void drawTrain(Framebuffer& fb) const;        // MOVES L3 (move picker / detail)
-    void drawCombatScreen(Framebuffer& fb) const;
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
@@ -2700,14 +2711,14 @@ private:
     // the drill-down, its input handler and the MoveDetail render.
     const MoveDef* focusedPickerMove() const;
     void onSimTier(const ButtonEvent& ev);
-    // Combat activity: the one pet-side screen where A+C is live.
-    void onCombat(const ButtonEvent& ev);
+    // The fight's lifecycle. Its screen, the one pet-side screen where A+C is live, is
+    // fightScreen_ (game/fight_screen.h).
     void startSimBattle();                          // build combat (safe stakes) + enter
     void finishCombat();                            // apply result, return to caller
     // Feeding-frenzy pacing: resolves one Combat::step(), then updates the
     // same-actor streak counters off who just acted (Combat::playerTurnNext()
     // is stable until step() runs, so it IS "who's about to act"). Shared by the
-    // heartbeat auto-pace (game_core.cpp) and the A fast-forward (onCombat) so
+    // heartbeat auto-pace (game_core.cpp) and the A fast-forward (FightScreen) so
     // skipping a beat doesn't desync the streak read.
     void advanceCombatTurn();
     // The cue for whatever the last step/flee/commit resolved; shared by every path
@@ -3252,7 +3263,6 @@ private:
     // Fired: it stepped this tick and the screen needs a repaint.
     enum class Cadence : uint8_t { Closed, Open, Fired };
     Cadence tickCombatAnim(uint32_t nowMs);
-    void stepCombatCamo();
     Cadence tickFxSweep(uint32_t nowMs);
     Cadence tickCryptogramRepeat(uint32_t nowMs);
     Cadence tickStackerSlide(uint32_t nowMs);
@@ -3382,8 +3392,8 @@ private:
     // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
     IdleWander petWander_;
     // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
-    // the art it is currently sampling. Same split as the combat stage's
-    // combatCamoWorn_ pair: the tick holds a level and a sprite, the draw ranks that
+    // the art it is currently sampling. Same split as the Combat screen's camo
+    // (game/fight_screen.h): the tick holds a level and a sprite, the draw ranks that
     // sprite into a ladder.
     // Null between drifts, which is also what says nothing is worn.
     IdleCamo petCamo_;
@@ -3613,29 +3623,8 @@ private:
     int simTier_ = 0;
     // The fight on screen, or the last one (core/model/fight.h).
     Fight fight_;
-    // The combat stage's sprite motion, on its own faster tick (kCombatAnimMs) instead of
-    // the shared beat_ (tickCombatAnim). It and the camo below run while the Combat
-    // screen is up, across a gauntlet's rounds, so they are the screen's and not a fight's.
-    int combatAnimBeat_ = 0;
-    uint32_t lastCombatAnimMs_ = 0;
-    // Whose colours the pet is wearing (FX_CAMO): the ART being sampled plus a LEVEL,
-    // neither of which is a beat. The tick reads the pet's live cast (camoTarget),
-    // resolves it to a sprite (camoSpriteForTarget) and eases the level toward it
-    // (camoAdvance), so the colours hold while the pet holds the move.
-    //
-    // The SPRITE is what is held rather than the target that named it, because the
-    // sprite decides whether the palette is actually changing: a cast onto a fighter
-    // whose line the pet already wears must sit still rather than dissolve into itself.
-    // `combatCamoLeaving_` is the art a swap is coming off, held until the dissolve
-    // finishes. All three clear when the Combat screen closes.
-    const SpriteData* combatCamoWorn_ = nullptr;
-    const SpriteData* combatCamoLeaving_ = nullptr;
-    uint8_t combatCamoLevel_ = 0;
-    // Which page of the mid-combat panel is showing: 0 closed, else 1..kCombatStatPages
-    // (combat_screen.h). B CYCLES it: the panel grew a second page when opponents
-    // started arriving with real loadouts, and a second key to reach it would have had
-    // to come out of the three combat already spends.
-    int combatStatsPage_ = 0;
+    // The Combat screen (game/fight_screen.h): its stats panel, stage clock and camo.
+    FightScreen fightScreen_;
     // The stat index (0..3) of the most-recent level-up, or -1 if none yet: the
     // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
     int lastLevelUpStat_ = -1;

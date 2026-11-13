@@ -405,7 +405,7 @@ void Game::startPvpBattle(uint32_t seed) {
     // duel above are.
     noteMirrorMatch(p.remote.creatureId);
     fxBeat_ = 0;
-    combatStatsPage_ = 0;
+    fightScreen_.shutPanel();
     p.enter(PvpPhase::Fighting, nowMs_);
     nav_ = Nav::Combat;
     sendPvpPending();      // host: the START; guest-that-answered: its fighter, again

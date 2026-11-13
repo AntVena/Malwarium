@@ -327,10 +327,10 @@ struct CombatOutro {
 // A LEVEL, not a window. Every other cue here decays off `hitBeat`, which lasts one strike
 // by either fighter. A borrowed colour has to hold as long as the pet holds what it
 // borrowed, so it keeps its own state. So the level is carried by the caller
-// (Game::combatCamoLevel_), eased toward the pet's LIVE cast (camoTarget) once per anim
+// (FightScreen::camoLevel_), eased toward the pet's LIVE cast (camoTarget) once per anim
 // tick, and read here as a fact.
 //
-// The RAMPS are resolved by the caller too (Game::drawCombatScreen), since turning a
+// The RAMPS are resolved by the caller too (FightScreen::draw), since turning a
 // CamoTarget into a palette means sampling a sprite out of the registry. `ramp` is what the
 // pet wears at `level`; `leaving` is the palette the un-flipped pixels still hold while one
 // borrowed palette dissolves into another (camo.h's `from`), empty for a change that starts

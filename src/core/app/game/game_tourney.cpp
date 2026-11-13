@@ -128,7 +128,7 @@ void Game::startTourneyMatch() {
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
     fxBeat_ = 0;
-    combatStatsPage_ = 0;
+    fightScreen_.shutPanel();
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::CombatStart);

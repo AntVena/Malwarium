@@ -412,65 +412,14 @@ bool Game::tickAnimClocks(uint32_t nowMs) {
     return changed;
 }
 
-// Combat sprite motion ticks on its own faster cadence (kCombatAnimMs) instead of the
-// shared heartbeat, so a feeding-frenzy streak's accelerated turn pacing still shows real
-// sprite motion between repaints rather than a stuck pose.
+// The Combat screen's stage clock (FightScreen::tick): sprite motion, the hit punch, a
+// guardian's swarm and the camo, on kCombatAnimMs.
 Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
     if (nav_ != Nav::Combat) {
-        lastCombatAnimMs_ = nowMs;
-        // Off the fight, off the disguise: every fight opens bare.
-        combatCamoLevel_ = 0;
-        combatCamoWorn_ = nullptr;
-        combatCamoLeaving_ = nullptr;
+        fightScreen_.closed(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastCombatAnimMs_ < static_cast<uint32_t>(kCombatAnimMs)) return Cadence::Open;
-    lastCombatAnimMs_ = nowMs;
-    combatAnimBeat_++;
-    fight_.hitBeat++;
-    // A guardian's SWARM is a fighter, so it moves on the clock the fighters move on
-    // rather than on the dissolve's: the stage is an ~8fps screen, and a body stepping
-    // four times faster than the creature beside it would read as two screens composited
-    // together. The mood is a health band (Game::guardianFlockMood), so the flock visibly
-    // comes apart as it loses.
-    if (fight_.combat.enemy().isSwarm) guardianFlock_.step(guardianFlockMood());
-    stepCombatCamo();
-    return Cadence::Fired;
-}
-
-// FX_CAMO. Whose colours the pet is in is read fresh every tick rather than latched at
-// the swing: a borrowed move is still the pet's last cast while the rival takes its turn,
-// so the colours hold until the pet itself casts something else. A beat driving this
-// instead would hand the change to whichever fighter swung last, and a counter-attack
-// would strip it.
-//
-// Both seats are passed, because the question is about the PAIR: which source a cast
-// names depends on what the fighter opposite is carrying (camoTarget). Only the target is
-// resolved here. Turning it into tones ranks a sprite's colours, which the draw does once
-// per repaint.
-void Game::stepCombatCamo() {
-    const bool flip = combatLocalIsEnemySide();
-    const Combatant& self = flip ? fight_.combat.enemy() : fight_.combat.player();
-    const Combatant& rival = flip ? fight_.combat.player() : fight_.combat.enemy();
-    const SpriteData* wear =
-        camoSpriteForTarget(camoTarget(self, rival), rival.spriteName, self.stage);
-    // Trading one borrowed palette for ANOTHER restarts the scatter with the old one held
-    // behind it (drawCombatScreen passes it as camo.h's `from`), so the change reads as
-    // one disguise dissolving into the next. Gated on the art: consecutive casts that name
-    // the same creature (the fighter opposite, or its line) keep one disguise, and
-    // re-running the dissolve into the same colour would flicker the pet. Only while it
-    // is actually wearing something, too: from bare there is nothing to dissolve out of
-    // and the level simply rises.
-    if (wear && wear != combatCamoWorn_ && combatCamoLevel_ > 0) {
-        combatCamoLeaving_ = combatCamoWorn_;
-        combatCamoLevel_ = 0;
-    }
-    if (wear) combatCamoWorn_ = wear;
-    combatCamoLevel_ = camoAdvance(combatCamoLevel_, wear != nullptr);
-    // The palette being left is only true mid-dissolve. Once the front is past every
-    // pixel, or the pet is returning to its own colours, what the unflipped pixels wear
-    // is the creature itself.
-    if (!wear || combatCamoLevel_ == 255) combatCamoLeaving_ = nullptr;
+    return fightScreen_.tick(*this, nowMs) ? Cadence::Fired : Cadence::Open;
 }
 
 // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the only one

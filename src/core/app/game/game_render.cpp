@@ -57,7 +57,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Stacker: drawStacker(fb); break;
         case Nav::Fragger: drawFragger(fb); break;
         case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
-        case Nav::Combat: drawCombatScreen(fb); break;
+        case Nav::Combat: fightScreen_.draw(fb, *this); break;
         case Nav::Tourney: drawTourney(fb); break;
         case Nav::Story: drawStoryScreen(fb); break;
         case Nav::TipCard: drawTipCard(fb); break;
@@ -1032,71 +1032,7 @@ SwarmView swarmViewOf(const Flock& f) {
 }
 }  // namespace
 
-void Game::drawCombatScreen(Framebuffer& fb) const {
-    // In a duel BOTH combatants are remote-describable pets, so the player-side sprite
-    // comes from the fight: on a guest's screen the player_ slot holds the HOST's
-    // creature (core/model/pvp_battle.h).
-    const bool duel = pvpFighting();
-    const SpriteData* ps = duel ? registry_.sprite(fight_.combat.player().spriteName)
-                                : (pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr);
-    const SpriteData* es = registry_.sprite(fight_.combat.enemy().spriteName);
-
-    // Both duellists read their own pet in the left seat on the zoned gauge, like every
-    // other fight: `localIsEnemySide` tells the screen to swap the roles for the guest,
-    // whose pet occupies Combat's enemy_ slot. Display only: mirroring the fight itself
-    // would desync the two devices.
-    CombatSides sides;
-    if (duel) {
-        sides.rivalLabel = "RIVAL";
-        sides.localLabel = "YOU";
-        sides.localIsEnemySide = combatLocalIsEnemySide();
-    }
-    // An arena bout is the other pet-vs-pet fight, and the other one with no way out,
-    // so it borrows the duel's caption for the opposite seat and drops the RUN hint.
-    if (fight_.caller == FightCaller::Tourney) sides.rivalLabel = "RIVAL";
-    sides.canRun = !duel && fight_.caller != FightCaller::Tourney;
-
-    // The beaten rival's outro, over the beats finishCombat() holds the result for.
-    // WHICH fights get one is combatOutroEligible(): shared with the tick, which has
-    // to hold the auto-dismiss back for the same fights. This side only picks which of
-    // the two dissolves plays.
-    CombatOutro outro;
-    if (combatOutroEligible()) {
-        outro.kind = rivalFieldsUnknownMove() ? CombatOutro::Kind::Absorb
-                                              : CombatOutro::Kind::Shred;
-        outro.beat = fxBeat_;
-    }
-    // What the KIT page marks as worth winning: the same mask the outro's dissolve
-    // decides from, so the panel and the fight's last beat agree.
-    RivalPrizes prizes;
-    prizes.mask = rivalTeachableMoveMask();
-    // What the pet is currently wearing (FX_CAMO). The level and both sprites are standing
-    // state the tick maintains; this draw only ranks each one's colours into a ladder.
-    CombatCamo camo;
-    camo.level = combatCamoLevel_;
-    camo.ramp = combatCamoWorn_ ? camoRampFrom(*combatCamoWorn_) : CamoRamp{};
-    camo.leaving = combatCamoLeaving_ ? camoRampFrom(*combatCamoLeaving_) : CamoRamp{};
-    // A rival with no sheet that is nonetheless a creature: the area guardian, drawn as
-    // its flock into the seat the stage reserved (FX_SWARM). The same body the pet
-    // spoke to on the hail, moved into the fighter's cell when the fight opened.
-    SwarmView rivalSwarm;
-    const bool swarmRival = fight_.combat.enemy().isSwarm && !sides.localIsEnemySide;
-    if (swarmRival) rivalSwarm = swarmViewOf(guardianFlock_);
-    CombatView v;
-    v.playerSprite = ps;
-    v.enemySprite = es;
-    v.beat = beat_;
-    v.animBeat = combatAnimBeat_;
-    v.hitBeat = fight_.hitBeat;
-    v.statPage = combatStatsPage_;
-    v.sides = sides;
-    v.outro = outro;
-    v.prizes = prizes;
-    v.camo = camo;
-    v.scene = stageScene();
-    v.rivalSwarm = swarmRival ? &rivalSwarm : nullptr;
-    drawCombat(fb, fight_.combat, v);
-}
+SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
 
 void Game::drawEncounterScreen(Framebuffer& fb) const {
     EncounterIntroView v;

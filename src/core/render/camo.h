@@ -27,7 +27,7 @@
 // Like the other two it allocates nothing, stores nothing, and is a pure function of
 // the source pixel and the current level, which is what lets the ~4fps event-driven
 // repaint run it and lets the frame gates dump it. The one thing that IS remembered is
-// the level itself, which is a single byte on the caller (Game::combatCamoLevel_).
+// the level itself, which is a single byte on the caller (FightScreen::camoLevel_).
 #pragma once
 
 #include <cstdint>
@@ -57,7 +57,7 @@ struct CamoRamp {
 
 // WHOSE colours a creature is wearing: the palette named as a source rather than as a
 // ramp, so a caller can carry the answer around, compare it, and resolve it to tones only
-// where it has the sprites to sample (Game::drawCombatScreen). Which source a fight picks,
+// where it has the sprites to sample (FightScreen::draw). Which source a fight picks,
 // and why the fighter opposite outranks the line, is camoTarget (core/ui/combat_screen.h).
 struct CamoTarget {
     // Whose colours, in the order camoTarget ranks them.

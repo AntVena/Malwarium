@@ -122,71 +122,20 @@ void Game::startSimBattle() {
     playSound(Sound::CombatStart);
 }
 
-void Game::onCombat(const ButtonEvent& ev) {
-    // Once resolved, the result beat waits for B/C to return to the caller.
-    if (fight_.combat.outcome() != Combat::Outcome::Ongoing) {
-        if (ev.button == Button::B || ev.button == Button::C) finishCombat();
-        return;
-    }
-    // A linked duel is running the SAME fight on two devices with no turn-by-turn
-    // traffic (game_pvp.cpp), so anything that pauses or ends this copy of it would
-    // desync the pair: the Exploit picker stops the clock for a human, and fleeing ends
-    // a fight the opponent is still playing. Both are inert for the duration.
-    // beginPvpBattle grants zero Exploit uses, and this blocks the input side.
-    const bool duel = pvpFighting();
+// --- FightScreenHost: the Combat screen's way back into the game --------------
 
-    // A+C opens the Exploit picker: the chord arrives here because
-    // onButton bypasses its early-out in the combat state. The picker lists the
-    // pet's moves, any combat-usable items from the live inventory, and (while the
-    // player belongs to one) their crew's signature Exploit (game_crew.cpp).
-    if (ev.chordAC) {
-        // The pet's Cant goes in with the picker, because it decides how much of a
-        // scrambled move the pet can read (MoveDef::scrambleTurns) and Combat has no
-        // other source for it. The sigils are the device's, not the fight's.
-        if (!duel)
-            fight_.combat.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
-        return;
-    }
-    if (fight_.combat.overrideOpen()) {           // standard A/B/C inside the picker
-        if (ev.button == Button::A) fight_.combat.cycleOverride();
-        else if (ev.button == Button::B) {
-            // B descends at the band level and commits inside a band, so each level
-            // gives B one meaning. A picker holding a single band never has a level
-            // to descend, so B commits there as it always did.
-            if (fight_.combat.enterOverrideBand()) return;
-            fight_.combat.commitOverride();
-            playSound(Sound::ExploitFire);
-            // If a USE-ITEM was committed, Combat has already patched Health; the
-            // Game now consumes the stack + applies the item's out-of-combat effect.
-            if (const char* id = fight_.combat.takeCommittedItem()) consumeCombatItem(id);
-        } else if (ev.button == Button::C) {
-            // C is Cancel at both levels; what it cancels is the band you opened,
-            // and then the picker.
-            if (!fight_.combat.leaveOverrideBand()) fight_.combat.cancelOverride();
-        }
-        return;
-    }
-    // B CYCLES the stat panel: closed -> VS -> KIT -> closed (combat_screen.h). A
-    // live readout that does NOT pause the fight, so paging through it costs turns and
-    // is a real decision rather than a free look.
-    if (ev.button == Button::B) {
-        combatStatsPage_ = (combatStatsPage_ + 1) % (kCombatStatPages + 1);
-        return;
-    }
-    // Auto-play: A fast-forwards the current beat, C flees / quits. A fast-forward is
-    // safe in a duel (it only advances THIS screen's playback of an already-decided
-    // fight), but fleeing is not (see `duel` above). ...and an arena bout is the
-    // second fight with no exit: forfeiting a bracket mid-match would let a losing
-    // draw be replayed, which is the whole stake gone. The way out of the arena is
-    // the bracket screen, before a match starts.
-    const bool noExit = duel || fight_.caller == FightCaller::Tourney;
-    if (ev.button == Button::A) {
-        advanceCombatTurn();
-    } else if (ev.button == Button::C && !noExit) {
-        fight_.combat.flee();
-        playCombatTurnSound();   // a failed flee hands the rival a free swing
-    }
+const SpriteData* Game::petSprite() const {
+    return pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
 }
+
+void Game::openExploitPicker() {
+    // The pet's Cant goes in with the picker, because it decides how much of a
+    // scrambled move the pet can read (MoveDef::scrambleTurns) and Combat has no
+    // other source for it. The sigils are the device's, not the fight's.
+    fight_.combat.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
+}
+
+void Game::stepGuardianFlock() { guardianFlock_.step(guardianFlockMood()); }
 
 int Game::combatBeatsForTurn() const {
     // Combat already tracks the same-actor streak for its own combo-damage bonus
@@ -509,7 +458,7 @@ void Game::applyCombatResult() {
 }
 
 void Game::finishCombat() {
-    combatStatsPage_ = 0;       // clear the stat panel so the next fight opens closed
+    fightScreen_.shutPanel();   // the next fight opens with the panel shut
     if (fight_.combat.outcome() == Combat::Outcome::Win) playSound(Sound::BattleWin);
     else if (fight_.combat.lostOrDrawn()) playSound(Sound::BattleLose);
     // A duel has its own result path (a banner on the LINK screen and a log line; a
