@@ -122,15 +122,16 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The minigame runs**: the arcade run (`arcadeRun_`, score and result fields), the egg pick
-  (`eggPick*`, 11 fields), the MAINT boards, the cryptogram run. One row each, S to M.
+- **The minigame runs**: the egg pick (`eggPick*`, 11 fields), the MAINT boards, the
+  cryptogram run. One row each, S to M.
 - **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
 
 #### Screens
 
 - **The rest, one screen per row**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
   the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the area SHOP, VAULT,
-  the arcade list, the story reader, tip cards, and the ITEMS detail page and its Use path
+  the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
+  `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
   arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
 - **The combat screen**: `combatStatsPage_`, the stage's anim clock (`combatAnimBeat_`,
