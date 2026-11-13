@@ -62,9 +62,7 @@ void Game::resetToHatch() {
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;
     arcade_.reset();                     // nothing can be mid-cabinet after a wipe
-    cryptogramQuote_ = -1;               // ...nor mid-board
-    cryptogramPrizeBits_ = 0;
-    cryptogramPrize_ = {};
+    cryptogramRun_.reset();              // ...nor mid-board
     arcadeDifficulty_ = ArcadeDifficulty::Medium;
     maintDifficulty_ = ArcadeDifficulty::Easy;
     trainRow_ = 0;

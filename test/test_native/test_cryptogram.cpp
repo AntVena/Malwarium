@@ -444,6 +444,26 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);   // Easy is the floor
 }
 
+// A board is a run: cashing a ticket opens one with its quote and its stake already
+// fixed, and leaving the verdict drops it, so nothing of the quote is left to read.
+void test_cryptogram_run_holds_its_stake_until_the_verdict_is_left() {
+    const QuoteReward prize{QuoteReward::Kind::Item, 2, "dyno_nuggets"};
+    const CryptogramRun r = CryptogramRun::started(7, kQuoteWinBits, prize);
+    CHECK(r.quote == 7 && r.prizeBits == kQuoteWinBits && r.prize.magnitude == 2);
+
+    Game g{StartMode::Hatched};
+    CHECK(g.cryptogramQuote() == -1 && !g.cryptogram().running());
+    cashADecryptogram(g);
+    const int quote = g.cryptogramQuote();
+    CHECK(quote >= 0 && g.cryptogram().running());
+    CHECK(g.quoteTier(quote) == CryptogramTier::Hard);
+    missOnce(g);
+    CHECK(!g.cryptogram().running() && g.cryptogramQuote() == quote);   // the verdict
+    g.onButton(press(Button::B));                 // leave it
+    CHECK(g.nav() == Game::Nav::Submenu);
+    CHECK(g.cryptogramQuote() == -1 && g.cryptogram().poolSize() == 0);
+}
+
 // An achievement-gated quote is not in the pool until it is earned: the second
 // eligibility axis, and the one that lets the table hold quotes worth waiting for.
 void test_cryptogram_gated_quotes_wait_for_their_achievement() {

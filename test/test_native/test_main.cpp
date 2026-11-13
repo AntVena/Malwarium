@@ -915,6 +915,7 @@ int g_failures = 0;
     RUN(test_quote_prize_falls_back_without_a_kitchen) \
     RUN(test_cryptogram_vault_ticket_pays_bits_and_an_upgrade) \
     RUN(test_cryptogram_losing_ratchets_the_quote_easier) \
+    RUN(test_cryptogram_run_holds_its_stake_until_the_verdict_is_left) \
     RUN(test_cryptogram_gated_quotes_wait_for_their_achievement) \
     RUN(test_cryptogram_states_persist)           \
     RUN(test_cryptogram_arcade_cabinet_waits_for_eight_wins) \

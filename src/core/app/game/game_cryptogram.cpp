@@ -115,20 +115,25 @@ QuoteReward Game::quoteFirstSolvePrize() const {
 
 // --- Lifecycle --------------------------------------------------------------
 
+const Cryptogram& Game::cryptogram() const {
+    static const Cryptogram kNone{};
+    return cryptogramRun_ ? cryptogramRun_->board : kNone;
+}
+
 void Game::startCryptogram(int quote, int extraReveals) {
     if (quote < 0 || quote >= quoteCount()) return;
-    cryptogramQuote_ = quote;
     // The stake is decided at the START, not at the payout, so the board can state what
     // is riding on the next placement while the player is still deciding to make it.
     // A cabinet run has no stake of its own (the arcade's till prices it on the way out),
     // and a quote already solved has no first-solve prize left to win twice.
     const bool firstSolve = !inArcadeRun() && quoteTier(quote) != CryptogramTier::Solved;
-    cryptogramPrizeBits_ = inArcadeRun() ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
-    cryptogramPrize_ = firstSolve ? quoteFirstSolvePrize() : QuoteReward{};
+    cryptogramRun_ = CryptogramRun::started(
+        quote, inArcadeRun() ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits),
+        firstSolve ? quoteFirstSolvePrize() : QuoteReward{});
     // A quote the content gate has passed always fits, so the return is ignored here
     // and asserted by the gate. A board that failed to load at runtime would waste a
     // spent ticket.
-    cryptogram_.reset(quotes()[quote].text, extraReveals);
+    cryptogramRun_->board.reset(quotes()[quote].text, extraReveals);
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Cryptogram;
     dirty_ = true;
@@ -136,7 +141,9 @@ void Game::startCryptogram(int quote, int extraReveals) {
 
 void Game::onCryptogram(const ButtonEvent& ev) {
     if (onGameBriefInput(ev)) return;
-    if (!cryptogram_.running()) {
+    if (!cryptogramRun_) return;
+    Cryptogram& board = cryptogramRun_->board;
+    if (!board.running()) {
         // Parked on the verdict, which the settle has already banked. B leaves. C is
         // disabled, as on every board, because the ticket is spent either way.
         if (ev.button == Button::B) finishCryptogram();
@@ -156,70 +163,72 @@ void Game::onCryptogram(const ButtonEvent& ev) {
     // (PickCell) still gets the drop, never the page, so the chord can never strand a
     // held letter behind an overlay.
     if (ev.chordAC) {
-        if (cryptogram_.stage() == Cryptogram::Stage::PickCell) cryptogram_.dropLetter();
+        if (board.stage() == Cryptogram::Stage::PickCell) board.dropLetter();
         else openGameBrief();
         dirty_ = true;
         return;
     }
     if (ev.button == Button::A) {
-        cryptogram_.cycle();
+        board.cycle();
         aHeld_ = true;              // ...and holding it repeats (tick, kCryptogramRepeatMs)
         aDownMs_ = nowMs_;
     } else if (ev.button == Button::C) {
-        cryptogram_.cycleBack();
+        board.cycleBack();
         cHeld_ = true;
         cDownMs_ = nowMs_;
     } else if (ev.button == Button::B) {
-        const int opened = cryptogram_.score();
-        cryptogram_.accept();
-        if (cryptogram_.solved()) playSound(Sound::Clear);
-        else if (!cryptogram_.running()) playSound(Sound::Crash);
-        else if (cryptogram_.score() > opened) playSound(Sound::Point);
+        const int opened = board.score();
+        board.accept();
+        if (board.solved()) playSound(Sound::Clear);
+        else if (!board.running()) playSound(Sound::Crash);
+        else if (board.score() > opened) playSound(Sound::Point);
     }
-    if (!cryptogram_.running()) settleCryptogram();
+    if (!board.running()) settleCryptogram();
     dirty_ = true;
 }
 
 void Game::settleCryptogram() {
     // An arcade run is played off a solved quote for Bits; it has no standing to move
     // and no first-solve prize to pay. Its till is finishArcadeRun, on the way out.
-    if (inArcadeRun() || cryptogramQuote_ < 0) return;
+    if (inArcadeRun() || !cryptogramRun_ || cryptogramRun_->quote < 0) return;
+    const int quote = cryptogramRun_->quote;
 
-    const CryptogramTier before = quoteTier(cryptogramQuote_);
-    if (cryptogram_.solved()) {
+    const CryptogramTier before = quoteTier(quote);
+    if (cryptogramRun_->board.solved()) {
         // Both halves of the stake were fixed at the start; this only banks them. A
         // replay (the whole pool already won) carries Bits and a None unlock, so the
         // same two lines pay it.
-        setQuoteTier(cryptogramQuote_, CryptogramTier::Solved);
+        setQuoteTier(quote, CryptogramTier::Solved);
         applyQuoteReward();
     } else if (before == CryptogramTier::Hard) {
-        setQuoteTier(cryptogramQuote_, CryptogramTier::Medium);
+        setQuoteTier(quote, CryptogramTier::Medium);
     } else if (before == CryptogramTier::Medium) {
-        setQuoteTier(cryptogramQuote_, CryptogramTier::Easy);
+        setQuoteTier(quote, CryptogramTier::Easy);
     }
     // Easy is the floor and Solved never moves: both fall through untouched.
     markSaveDirty();
 }
 
 void Game::applyQuoteReward() {
-    op_.bits += cryptogramPrizeBits_;
-    switch (cryptogramPrize_.kind) {
+    // Only settleCryptogram calls this, on a solved board.
+    const QuoteReward& prize = cryptogramRun_->prize;
+    op_.bits += cryptogramRun_->prizeBits;
+    switch (prize.kind) {
         case QuoteReward::Kind::RigGrant: {
             // Free, but otherwise a purchase: grantRigLevel is the same call
             // buyRigUpgrade makes once it has taken the Bits, so a granted Bandwidth
             // level tops the live pool up the way a bought one does.
-            const int row = rigRowIndexById(cryptogramPrize_.id);
-            if (row >= 0) grantRigLevel(row, cryptogramPrize_.magnitude);
+            const int row = rigRowIndexById(prize.id);
+            if (row >= 0) grantRigLevel(row, prize.magnitude);
             break;
         }
         case QuoteReward::Kind::Item:
-            if (cryptogramPrize_.id && registry_.item(cryptogramPrize_.id))
-                inventory_.add(cryptogramPrize_.id, cryptogramPrize_.magnitude);
+            if (prize.id && registry_.item(prize.id)) inventory_.add(prize.id, prize.magnitude);
             break;
         case QuoteReward::Kind::Recipe:
             // The prize was picked at board start; the kitchen can't have changed under
             // it mid-board, and grantRecipe is idempotent besides.
-            grantRecipe(recipeIndexByOutput(cryptogramPrize_.id));
+            grantRecipe(recipeIndexByOutput(prize.id));
             break;
         case QuoteReward::Kind::None:
             break;
@@ -228,8 +237,13 @@ void Game::applyQuoteReward() {
 }
 
 void Game::finishCryptogram() {
+    // The board is done with: its verdict is banked, and the till or the VAULT is next.
+    const Cryptogram& b = cryptogramRun_->board;
+    const bool solved = b.solved();
+    const int score = b.score(), maxScore = b.maxScore();
+    cryptogramRun_.reset();
     if (inArcadeRun()) {
-        finishArcadeRun(cryptogram_.solved(), cryptogram_.score(), cryptogram_.maxScore());
+        finishArcadeRun(solved, score, maxScore);
         return;
     }
     // Back to the VAULT the ticket was cashed at, which shows whether another
@@ -244,20 +258,21 @@ void Game::finishCryptogram() {
 // than on the screen because it is a lookup across two content tables (the Rig Shop's
 // rows, the item registry) and core/ui has no business knowing either.
 const char* Game::cryptogramPrizeLabel() const {
-    switch (cryptogramPrize_.kind) {
+    if (!cryptogramRun_) return nullptr;
+    const QuoteReward& prize = cryptogramRun_->prize;
+    switch (prize.kind) {
         case QuoteReward::Kind::RigGrant: {
-            const int row = rigRowIndexById(cryptogramPrize_.id);
+            const int row = rigRowIndexById(prize.id);
             return row >= 0 ? kRigUpgrades[row].displayName : nullptr;
         }
         case QuoteReward::Kind::Item: {
-            const ItemDef* d = cryptogramPrize_.id ? registry_.item(cryptogramPrize_.id)
-                                                   : nullptr;
+            const ItemDef* d = prize.id ? registry_.item(prize.id) : nullptr;
             return d ? d->displayName : nullptr;
         }
         case QuoteReward::Kind::Recipe: {
             // The recipe's name, because the prize is the method, and the board names
             // it while the run is live.
-            const int i = recipeIndexByOutput(cryptogramPrize_.id);
+            const int i = recipeIndexByOutput(prize.id);
             return i >= 0 ? kMergeRecipes[i].displayName : nullptr;
         }
         case QuoteReward::Kind::None:
@@ -268,16 +283,18 @@ const char* Game::cryptogramPrizeLabel() const {
 
 void Game::drawCryptogram(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    const QuoteDef* q = (cryptogramQuote_ >= 0 && cryptogramQuote_ < quoteCount())
-                            ? &quotes()[cryptogramQuote_] : nullptr;
+    if (!cryptogramRun_) return;
+    const CryptogramRun& run = *cryptogramRun_;
+    const QuoteDef* q = (run.quote >= 0 && run.quote < quoteCount()) ? &quotes()[run.quote]
+                                                                     : nullptr;
     CryptogramView v;
     v.attribution = q ? q->attribution : "";
-    v.tier = quoteTier(cryptogramQuote_);
-    v.prizeBits = cryptogramPrizeBits_;
+    v.tier = quoteTier(run.quote);
+    v.prizeBits = run.prizeBits;
     v.prizeLabel = cryptogramPrizeLabel();
     v.arcade = inArcadeRun();
     v.beat = beat_;
-    drawCryptogramBoard(fb, cryptogram_, v);
+    drawCryptogramBoard(fb, run.board, v);
 }
 
 }  // namespace mal

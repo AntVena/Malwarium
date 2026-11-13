@@ -36,6 +36,7 @@
 #include "core/model/cant.h"                // SigilSet / CantCipher: the guardian's tongue
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
+#include "core/model/cryptogram_run.h"
 #include "core/model/arcade_run.h"
 #include "core/model/egg_pick.h"
 #include "core/model/explore_walk.h"
@@ -1506,9 +1507,10 @@ public:
     // solved, from its own arcade cabinet. Rules: core/model/cryptogram.h; the pool:
     // core/content/content_quotes.h.
     bool inCryptogram() const { return nav_ == Nav::Cryptogram; }
-    const Cryptogram& cryptogram() const { return cryptogram_; }
+    // The board in play (core/model/cryptogram_run.h), or an empty one with none.
+    const Cryptogram& cryptogram() const;
     // The roster row (content_quotes.h index) the board is playing, or -1.
-    int cryptogramQuote() const { return cryptogramQuote_; }
+    int cryptogramQuote() const { return cryptogramRun_ ? cryptogramRun_->quote : -1; }
     // This device's standing with the quote on roster row `i`. Out-of-range, and any
     // row whose wire is past kQuoteWireCap, read Hard, never played.
     CryptogramTier quoteTier(int i) const;
@@ -4149,19 +4151,11 @@ private:
     DiskDecryption decryption_;
     bool decryptionEasy_ = false;
 
-    // THE DECRYPTOGRAM (game_cryptogram.cpp). The BOARD is un-persisted like the three
-    // above: a reboot mid-quote forfeits the Decryptogram, which is the same deal
-    // every other minigame offers. What does persist (save v48) is
+    // THE DECRYPTOGRAM (game_cryptogram.cpp): the board in play and its stake
+    // (core/model/cryptogram_run.h), empty otherwise. What persists (save v48) is
     // OperatorTallies::quoteStates: two bits per QuoteDef::wire holding the tier ladder,
     // which is at once the loss ratchet and the "already won" record.
-    //
-    // cryptogramPrize_ is the finished run frozen for the verdict screen, for the same
-    // reason the arcade's result block is: the payout has already landed on the wallet and
-    // the rig by the time the player reads it.
-    Cryptogram cryptogram_;
-    int cryptogramQuote_ = -1;        // roster row being played, or -1
-    int cryptogramPrizeBits_ = 0;     // what the solve actually paid
-    QuoteReward cryptogramPrize_ = {};  // ...and the unlock beside it (None = replay)
+    std::optional<CryptogramRun> cryptogramRun_;
 
     // GAMES / the arcade (game_arcade.cpp). arcade_ is the cabinet run in play
     // (core/model/arcade_run.h), empty between runs: a minigame reads it to know it is

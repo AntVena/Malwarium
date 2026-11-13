@@ -506,7 +506,7 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
 // of the two held. Both held is the drop chord, which has already fired and must not move
 // the cursor.
 Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
-    if (nav_ != Nav::Cryptogram || !cryptogram_.running() || aHeld_ == cHeld_ ||
+    if (nav_ != Nav::Cryptogram || !cryptogram().running() || aHeld_ == cHeld_ ||
         gameBriefOpen_) {
         cryptoRepeatLastMs_ = nowMs;
         return Cadence::Closed;
@@ -516,8 +516,8 @@ Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
         nowMs - cryptoRepeatLastMs_ < kCryptogramRepeatMs)
         return Cadence::Open;
     cryptoRepeatLastMs_ = nowMs;
-    if (aHeld_) cryptogram_.cycle();
-    else cryptogram_.cycleBack();
+    if (aHeld_) cryptogramRun_->board.cycle();
+    else cryptogramRun_->board.cycleBack();
     return Cadence::Fired;
 }
 
