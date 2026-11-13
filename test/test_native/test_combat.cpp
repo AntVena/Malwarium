@@ -727,6 +727,56 @@ void test_fight_screen_owns_its_panel_clock_and_input() {
     CHECK(screen.statsPage() == 0);
 }
 
+namespace {
+// The least of a game the encounter intro needs: a bypass item that can be held or not,
+// and a record of which way out the screen took, with which wild.
+struct EncounterProbe : EncounterHost {
+    ContentRegistry reg = ContentRegistry::embedded();
+    const ItemDef* bypass = nullptr;
+    int fights = 0, flees = 0, sinkholes = 0;
+    std::string lastWild;
+    const ContentRegistry& content() const override { return reg; }
+    int screenBeat() const override { return 0; }
+    const ItemDef* heldEncounterBypass() const override { return bypass; }
+    void fightWild(const CombatEnemy& w) override { ++fights; lastWild = w.name; }
+    void resolveFlee(const CombatEnemy& w) override { ++flees; lastWild = w.name; }
+    void resolveSinkhole(const ItemDef& d) override { ++sinkholes; CHECK(&d == bypass); }
+};
+}  // namespace
+
+// The intro cycles Fight and Flee on A, and Sinkhole too only while a bypass is held. B
+// takes the row under the cursor and C is the flee shortcut from any row; each hands the
+// wild it was opened with to the game, and opening again puts the cursor back on Fight.
+void test_encounter_screen_offers_its_wild_three_ways_out() {
+    EncounterProbe host;
+    CombatEnemy wild{};
+    wild.name = "Glitchhog";
+    EncounterScreen screen;
+    screen.open(wild);
+    CHECK(screen.choice() == 0);
+    screen.onButton(host, press(Button::A));
+    screen.onButton(host, press(Button::A));
+    CHECK(screen.choice() == 0);                         // two rows: wrapped to Fight
+    screen.onButton(host, press(Button::B));
+    CHECK(host.fights == 1 && host.lastWild == "Glitchhog");
+    screen.onButton(host, press(Button::A));
+    screen.onButton(host, press(Button::B));
+    CHECK(host.flees == 1);
+    screen.onButton(host, press(Button::C));
+    CHECK(host.flees == 2);
+
+    host.bypass = host.reg.item("sinkhole_trap");
+    CHECK(host.bypass != nullptr);
+    screen.open(wild);
+    screen.onButton(host, press(Button::A));
+    screen.onButton(host, press(Button::A));
+    CHECK(screen.choice() == 2);                         // the third row shows
+    screen.onButton(host, press(Button::B));
+    CHECK(host.sinkholes == 1 && host.fights == 1 && host.flees == 2);
+    screen.onButton(host, press(Button::A));
+    CHECK(screen.choice() == 0);
+}
+
 // A multi-turn channel move winds up (no damage) then detonates for full power.
 void test_combat_channel() {
     ContentRegistry r = ContentRegistry::embedded();

@@ -251,6 +251,7 @@ int g_failures = 0;
     RUN(test_exploit_uses_per_battle)       \
     RUN(test_combat_item_in_game)           \
     RUN(test_fight_screen_owns_its_panel_clock_and_input) \
+    RUN(test_encounter_screen_offers_its_wild_three_ways_out) \
     RUN(test_combat_channel)                \
     RUN(test_combat_mod_passives)           \
     RUN(test_combat_builders_and_flee)      \

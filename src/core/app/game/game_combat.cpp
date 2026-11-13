@@ -714,9 +714,7 @@ void Game::startEncounter() {
     // this function once it is done, by which time the chapter is marked read and the
     // gate falls straight through.
     if (fireStory(walk_.sector, StoryBeat::AreaIntro, StoryThen::Encounter)) return;
-    encounterEnemy_ = rollWild();
-    encounterChoice_ = 0;
-    encounterBypass_ = heldEncounterBypass();
+    const CombatEnemy wild = rollWild();
     // Auto-explore is a hands-off background mode: a wild encounter resolves
     // itself. There's no human at the intro to press Fight, and Flee is pointless
     // since a loss already cancels the mode + zeroes the streak (finishCombat). A
@@ -724,27 +722,19 @@ void Game::startEncounter() {
     // otherwise the fight auto-starts. The Fight/Flee/Sinkhole intro stands only for a
     // (currently unused) manual encounter path.
     if (walk_.active) {
-        if (encounterBypass_) resolveSinkhole();
-        else startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/false);
+        if (const ItemDef* bypass = heldEncounterBypass()) resolveSinkhole(*bypass);
+        else fightWild(wild);
         return;
     }
+    encounter_.open(wild);
     nav_ = Nav::Encounter;
 }
 
-void Game::onEncounter(const ButtonEvent& ev) {
-    const int options = encounterBypass_ ? 3 : 2;
-    if (ev.button == Button::A) {
-        encounterChoice_ = (encounterChoice_ + 1) % options;
-    } else if (ev.button == Button::B) {
-        if (encounterChoice_ == 0) startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/false);
-        else if (encounterChoice_ == 1) resolveFlee();
-        else resolveSinkhole();
-    } else if (ev.button == Button::C) {
-        resolveFlee();                              // flee shortcut
-    }
+void Game::fightWild(const CombatEnemy& wild) {
+    startWildCombat(wild, /*forceEnemyFirst=*/false);
 }
 
-void Game::resolveFlee() {
+void Game::resolveFlee(const CombatEnemy& wild) {
     rng_ = rng_ * 1664525u + 1013904223u;
     const bool escaped = static_cast<int>((rng_ >> 16) % 100) < kFleeChancePct;
     if (escaped) {
@@ -753,7 +743,7 @@ void Game::resolveFlee() {
         returnToExplore();
     } else {
         // A failed flee forces the fight, enemy first (retreat isn't free).
-        startWildCombat(encounterEnemy_, /*forceEnemyFirst=*/true);
+        startWildCombat(wild, /*forceEnemyFirst=*/true);
     }
 }
 
@@ -763,8 +753,7 @@ const ItemDef* Game::heldEncounterBypass() const {
     return nullptr;
 }
 
-void Game::resolveSinkhole() {
-    const ItemDef& d = *encounterBypass_;
+void Game::resolveSinkhole(const ItemDef& d) {
     const int xp = d.preEncounterXp;
     inventory_.remove(d.id, 1);
     addCombatXp(xp);

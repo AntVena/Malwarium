@@ -77,7 +77,7 @@ void Game::render(Framebuffer& fb) const {
             drawExploreControl(fb, v);
             break;
         }
-        case Nav::Encounter: drawEncounterScreen(fb); break;
+        case Nav::Encounter: encounter_.draw(fb, *this); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
         case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;
         case Nav::Shiboleet: drawShiboleetScreen(fb); break;
@@ -1033,18 +1033,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawEncounterScreen(Framebuffer& fb) const {
-    EncounterIntroView v;
-    v.enemyName = encounterEnemy_.name;
-    v.enemySprite = registry_.sprite(encounterEnemy_.spriteName);
-    v.level = encounterEnemy_.level;
-    v.diffPips = encounterEnemy_.diffPips;
-    v.sinkholeAvailable = encounterBypass_ != nullptr;
-    v.choice = encounterChoice_;
-    v.beat = beat_;
-    drawEncounterIntro(fb, v);
-}
 
 void Game::drawWifiScreen(Framebuffer& fb) const {
     // The discovery beat's reward, as the thing the pet does to the network glyph.

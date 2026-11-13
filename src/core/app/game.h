@@ -17,6 +17,7 @@
 #include "core/app/game_rig_shop.h"
 #include "core/app/operator.h"
 #include "core/app/settings.h"
+#include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
@@ -107,7 +108,7 @@ struct PlayHud;
 enum class StartMode { FreshHatch, Hatched };
 
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
-             private FightScreenHost {
+             private FightScreenHost, private EncounterHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -2478,7 +2479,6 @@ private:
     // back to back. A family added to the roster joins automatically. Resolved once per
     // drift by the tick, never per repaint.
     const SpriteData* idleCamoSprite(int slot) const;
-    void drawEncounterScreen(Framebuffer& fb) const;
     void drawWifiScreen(Framebuffer& fb) const;
     void drawShiboleetHailScreen(Framebuffer& fb) const;
     void drawShiboleetScreen(Framebuffer& fb) const;
@@ -2843,10 +2843,11 @@ private:
     bool combatCanTeach() const;
     void startEncounter();                          // roll the malbeast, open the intro
     CombatEnemy rollWild();                         // the wild for this zone, scaled
-    void onEncounter(const ButtonEvent& ev);        // Fight / Flee / Sinkhole
-    void resolveFlee();                             // pre-fight escape roll
-    const ItemDef* heldEncounterBypass() const;
-    void resolveSinkhole();                         // spend encounterBypass_ -> XP lump
+    // EncounterHost: the intro's three ways out, which the walk's auto-resolve takes too.
+    const ItemDef* heldEncounterBypass() const override;
+    void fightWild(const CombatEnemy& wild) override;
+    void resolveFlee(const CombatEnemy& wild) override;
+    void resolveSinkhole(const ItemDef& bypass) override;   // spend it for its XP
     // Live-stakes combat against `wild`: an encounter's roll, or an area guardian.
     void startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst);
     // The tail both debug combat hooks share once the player is built: roll the fight
@@ -3661,13 +3662,7 @@ private:
     // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
     // the fast frames, not a parallel list, so the two cannot drift.
     bool fastCadenceActive_ = false;
-    // The wild-encounter intro (Nav::Encounter), a screen: the wild it presents, its
-    // cursor, and the held item that can bypass the fight (any row with a
-    // preEncounterXp), or nullptr; that item is what the third option spends. A fight
-    // opened from it is handed the wild (startWildCombat) and keeps nothing of the intro.
-    CombatEnemy encounterEnemy_;
-    int encounterChoice_ = 0;
-    const ItemDef* encounterBypass_ = nullptr;
+    EncounterScreen encounter_;   // the wild-encounter intro (game/encounter_screen.h)
 
     // The boss gauntlet in play (core/model/gauntlet_run.h), empty between gauntlets.
     // Which bosses have been beaten is the Operator's (OperatorWorld).
