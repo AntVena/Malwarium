@@ -250,16 +250,16 @@ void test_pvp_two_devices_duel_end_to_end() {
     uint64_t keys[8];
     CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
     CHECK(a.pvpChallenge(keys[0]));
-    CHECK(a.pvpPhase() == Game::PvpPhase::Inviting);
+    CHECK(a.pvpPhase() == PvpPhase::Inviting);
     CHECK(a.pvpLocalIsHost() && !b.pvpLocalIsHost());   // ...before B has even heard
 
     CHECK(relayPvp(a, macA, b, macB) == 1);                   // the INVITE lands
-    CHECK(b.pvpPhase() == Game::PvpPhase::Invited);
+    CHECK(b.pvpPhase() == PvpPhase::Invited);
     CHECK(std::strcmp(b.pvpOpponentTag(), "NETRUNNER_99") == 0);
 
     // B's human accepts. B is the guest, so it sends its fighter and waits.
     b.pvpAcceptChallenge();
-    CHECK(b.pvpPhase() == Game::PvpPhase::Arming);
+    CHECK(b.pvpPhase() == PvpPhase::Arming);
     CHECK(relayPvp(b, macB, a, macA) >= 1);                   // the ACCEPT lands
     CHECK(a.pvpFighting());                             // the host starts at once
     CHECK(a.nav() == Game::Nav::Combat);
@@ -297,8 +297,8 @@ void test_pvp_two_devices_duel_end_to_end() {
 
     a.onButton(press(Button::B));                       // dismiss the result
     b.onButton(press(Button::B));
-    CHECK(a.pvpPhase() == Game::PvpPhase::Result);
-    CHECK(b.pvpPhase() == Game::PvpPhase::Result);
+    CHECK(a.pvpPhase() == PvpPhase::Result);
+    CHECK(b.pvpPhase() == PvpPhase::Result);
     // Exactly one of them won, and each was told so from its own side.
     CHECK(a.pvpLocalWon() != b.pvpLocalWon());
 
@@ -313,7 +313,7 @@ void test_pvp_two_devices_duel_end_to_end() {
 
     // Any key clears the verdict back to the challengeable list.
     a.onButton(press(Button::A));
-    CHECK(a.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(a.pvpPhase() == PvpPhase::Idle);
     CHECK(a.linkScreenOpen());
 }
 
@@ -391,7 +391,7 @@ void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
     CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
     CHECK(a.pvpChallenge(keys[0]));
     CHECK(relayPvp(a, macA, b, macB) == 1);
-    CHECK(b.pvpPhase() == Game::PvpPhase::Invited);
+    CHECK(b.pvpPhase() == PvpPhase::Invited);
 
     // B's human dithers for several seconds while A keeps retrying. Every retry must
     // land on a still-Invited B and produce NOTHING back.
@@ -399,9 +399,9 @@ void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
         a.tick(t += kPvpRetryMs);
         b.tick(t);
         relayPvp(a, macA, b, macB);
-        CHECK(b.pvpPhase() == Game::PvpPhase::Invited);   // prompt still up
+        CHECK(b.pvpPhase() == PvpPhase::Invited);   // prompt still up
         CHECK(relayPvp(b, macB, a, macA) == 0);                 // ...and B said nothing back
-        CHECK(a.pvpPhase() == Game::PvpPhase::Inviting);  // so A is still waiting
+        CHECK(a.pvpPhase() == PvpPhase::Inviting);  // so A is still waiting
     }
 
     // Now the human finally accepts, and the duel proceeds normally.
@@ -424,7 +424,7 @@ void test_pvp_invite_retries_do_not_decline_the_pending_challenge() {
     CHECK(c.pvpChallenge(ckeys[0]));
     relayPvp(c, macC, b, macB);
     CHECK(relayPvp(b, macB, c, macC) >= 1);                     // B answered the newcomer
-    CHECK(c.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(c.pvpPhase() == PvpPhase::Idle);
     CHECK(std::strcmp(c.pvpStatusText(), "OPERATOR BUSY") == 0);
     CHECK(a.pvpFighting() && b.pvpFighting());            // ...without disturbing the duel
 }
@@ -453,20 +453,20 @@ void test_pvp_challenge_needs_a_human_on_the_link_screen() {
     // B is sitting on its idle habitat, not the LINK screen.
     CHECK(!b.linkScreenOpen());
     relayPvp(a, macA, b, macB);
-    CHECK(b.pvpPhase() == Game::PvpPhase::Idle);        // never even prompted
+    CHECK(b.pvpPhase() == PvpPhase::Idle);        // never even prompted
     relayPvp(b, macB, a, macA);                                // ...but it did answer
-    CHECK(a.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(a.pvpPhase() == PvpPhase::Idle);
     CHECK(std::strcmp(a.pvpStatusText(), "OPERATOR BUSY") == 0);
 
     // And a refusal by the human reads differently from being busy.
     enterHackerSlot(b, HackerSlotId::Link);
     CHECK(a.pvpChallenge(keys[0]));
     relayPvp(a, macA, b, macB);
-    CHECK(b.pvpPhase() == Game::PvpPhase::Invited);
+    CHECK(b.pvpPhase() == PvpPhase::Invited);
     b.pvpDeclineChallenge();
-    CHECK(b.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(b.pvpPhase() == PvpPhase::Idle);
     relayPvp(b, macB, a, macA);
-    CHECK(a.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(a.pvpPhase() == PvpPhase::Idle);
     CHECK(std::strcmp(a.pvpStatusText(), "DECLINED") == 0);
 }
 
@@ -488,8 +488,45 @@ void test_pvp_unanswered_challenge_times_out() {
     CHECK(a.pvpActive() && a.linkWanted());
 
     a.tick(t += kPvpInviteTimeoutMs + 1);
-    CHECK(a.pvpPhase() == Game::PvpPhase::Idle);
+    CHECK(a.pvpPhase() == PvpPhase::Idle);
     CHECK(std::strcmp(a.pvpStatusText(), "NO ANSWER") == 0);
+}
+
+// A session is a run: it opens with its first phase, a new phase restarts its clock and
+// retry budget, and once it ends nothing of it is left to read but the LINK screen's
+// line saying why.
+void test_pvp_session_opens_whole_and_is_gone_when_it_ends() {
+    const uint8_t mac[6] = {0x02, 0, 0, 0, 0, 0x07};
+    PvpSession s = PvpSession::opened(PvpPhase::Inviting, 9, 7, mac, "", true, 100);
+    CHECK(s.phase == PvpPhase::Inviting && s.challenger && s.host && s.id == 9);
+    CHECK(std::strcmp(s.peerTag, "UNKNOWN OP") == 0 && s.phaseStartMs == 100);
+    s.retries = 3;
+    s.enter(PvpPhase::Arming, 250);
+    CHECK(s.phase == PvpPhase::Arming && s.retries == 0 && s.phaseStartMs == 250);
+    CHECK(!PvpSession::opened(PvpPhase::Invited, 9, 7, mac, "OP", false, 0).challenger);
+
+    const uint8_t macA[6] = {0x02, 0, 0, 0, 0, 0x01};
+    const uint8_t macB[6] = {0x02, 0, 0, 0, 0, 0x02};
+    Game a{StartMode::Hatched, "paypup"};
+    Game b{StartMode::Hatched, "paypup"};
+    a.setLocalRadioMac(macA);
+    b.setLocalRadioMac(macB);
+    uint32_t t = 0;
+    a.tick(t += 1000);
+    b.tick(t);
+    enterHackerSlot(a, HackerSlotId::Link);
+    enterHackerSlot(b, HackerSlotId::Link);
+    hearBeacon(a, macB, "OPERATOR_B");
+    CHECK(!a.pvpActive() && a.pvpOpponentTag()[0] == '\0');
+    uint64_t keys[8];
+    CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
+    CHECK(a.pvpChallenge(keys[0]));
+    CHECK(a.pvpActive() && a.pvpLocalIsHost());
+    relayPvp(a, macA, b, macB);
+    b.pvpDeclineChallenge();
+    relayPvp(b, macB, a, macA);
+    CHECK(!a.pvpActive() && !a.pvpLocalIsHost() && a.pvpOpponentTag()[0] == '\0');
+    CHECK(std::strcmp(a.pvpStatusText(), "DECLINED") == 0);
 }
 
 // The bottom row owns the zoned Health gauge with its Critical pulse (the "my pet is

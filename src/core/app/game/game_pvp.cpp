@@ -117,12 +117,14 @@ bool Game::takePvpOut(uint8_t* mac, uint8_t* buf, size_t cap, size_t* len) {
 }
 
 void Game::sendPvpPending() {
+    if (!pvp_) return;
+    PvpSession& p = *pvp_;
     uint8_t buf[kPvpFrameCap];
     size_t n = 0;
-    switch (pvpPhase_) {
+    switch (p.phase) {
         case PvpPhase::Inviting:
-            n = encodePvpInvite(pvpSession_, pvpLocalFighter_, buf, sizeof(buf));
-            if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+            n = encodePvpInvite(p.id, p.local, buf, sizeof(buf));
+            if (n) queuePvpFrame(p.peerMac, buf, n);
             break;
         case PvpPhase::Arming:
         case PvpPhase::Fighting:
@@ -130,18 +132,16 @@ void Game::sendPvpPending() {
             // the challenger already sent theirs inside the INVITE. Repeating it
             // alongside START is what lets a host that was also the target get both
             // frames across without a second handshake stage.
-            if (!pvpChallenger_) {
-                n = encodePvpAccept(pvpSession_, pvpLocalFighter_, buf, sizeof(buf));
-                if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+            if (!p.challenger) {
+                n = encodePvpAccept(p.id, p.local, buf, sizeof(buf));
+                if (n) queuePvpFrame(p.peerMac, buf, n);
             }
             // Only the host announces the fight, and it is the same START every time:
             // the guest dedupes on already being in the fight.
-            if (pvpHost_) {
-                n = encodePvpStart(pvpSession_, pvpSeed_,
-                                   pvpCommitHash(pvpSeed_, pvpLocalFighter_,
-                                                 pvpRemoteFighter_),
+            if (p.host) {
+                n = encodePvpStart(p.id, p.seed, pvpCommitHash(p.seed, p.local, p.remote),
                                    buf, sizeof(buf));
-                if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+                if (n) queuePvpFrame(p.peerMac, buf, n);
             }
             break;
         case PvpPhase::Idle:
@@ -149,55 +149,54 @@ void Game::sendPvpPending() {
         case PvpPhase::Result:
             break;
     }
-    pvpLastSendMs_ = nowMs_;
-    ++pvpRetries_;
+    p.lastSendMs = nowMs_;
+    ++p.retries;
 }
 
 void Game::endPvpSession(const char* why, bool notify) {
-    if (notify && pvpPhase_ != PvpPhase::Idle && pvpSession_ != 0) {
+    if (notify && pvp_ && pvp_->id != 0) {
         uint8_t buf[kPvpFrameCap];
-        const size_t n = encodePvpBye(pvpSession_, buf, sizeof(buf));
-        if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+        const size_t n = encodePvpBye(pvp_->id, buf, sizeof(buf));
+        if (n) queuePvpFrame(pvp_->peerMac, buf, n);
     }
-    pvpPhase_ = PvpPhase::Idle;
-    pvpSession_ = 0;
-    pvpRetries_ = 0;
+    pvp_.reset();
     std::snprintf(pvpStatus_, sizeof(pvpStatus_), "%s", why ? why : "");
     dirty_ = true;
 }
 
 void Game::pvpTick() {
-    if (pvpPhase_ == PvpPhase::Idle || pvpPhase_ == PvpPhase::Result) return;
+    if (!pvp_ || pvp_->phase == PvpPhase::Result) return;
+    const PvpPhase phase = pvp_->phase;
 
     // A duel that lost its screen lost its fight: a modal (Lockout, Critical System
     // Failure) preempting Nav::Combat means this device stopped playing the fight the
     // other one is still stepping. End it honestly rather than leaving a zombie session.
-    if (pvpPhase_ == PvpPhase::Fighting && nav_ != Nav::Combat) {
+    if (phase == PvpPhase::Fighting && nav_ != Nav::Combat) {
         endPvpSession("DUEL INTERRUPTED", /*notify=*/true);
         return;
     }
 
     // The handshake stages fail out; Fighting doesn't, because it is purely local from
     // here and always terminates.
-    if (pvpPhase_ != PvpPhase::Fighting &&
-        nowMs_ - pvpPhaseStartMs_ >= kPvpInviteTimeoutMs) {
-        endPvpSession(pvpPhase_ == PvpPhase::Invited ? "CHALLENGE EXPIRED" : "NO ANSWER",
+    if (phase != PvpPhase::Fighting && nowMs_ - pvp_->phaseStartMs >= kPvpInviteTimeoutMs) {
+        endPvpSession(phase == PvpPhase::Invited ? "CHALLENGE EXPIRED" : "NO ANSWER",
                       /*notify=*/true);
         return;
     }
 
-    if (pvpRetries_ >= kPvpMaxRetries) return;
-    if (nowMs_ - pvpLastSendMs_ >= kPvpRetryMs) sendPvpPending();
+    if (pvp_->retries >= kPvpMaxRetries) return;
+    if (nowMs_ - pvp_->lastSendMs >= kPvpRetryMs) sendPvpPending();
 }
 
 // --- Starting a duel ---------------------------------------------------------
 
 bool Game::pvpChallenge(uint64_t key) {
-    if (pvpPhase_ != PvpPhase::Idle) return false;
+    if (pvp_) return false;
     // Without a local MAC there is no way to pick the host, so the host build and any
     // board without one cannot duel. Inert, not broken.
     if (localRadioKey_ == 0 || key == 0 || key == localRadioKey_) return false;
-    if (!buildPvpFighter(&pvpLocalFighter_)) {
+    PvpFighter local;
+    if (!buildPvpFighter(&local)) {
         endPvpSession("NO PET TO FIGHT", /*notify=*/false);
         return false;
     }
@@ -209,17 +208,12 @@ bool Game::pvpChallenge(uint64_t key) {
             live = &livePeers_[i].hello;
     if (!live) return false;
 
-    pvpPeerKey_ = key;
-    unpackPeerKey(key, pvpPeerMac_);
-    std::snprintf(pvpPeerTag_, sizeof(pvpPeerTag_), "%s",
-                  live->tag[0] ? live->tag : "UNKNOWN OP");
+    uint8_t mac[6];
+    unpackPeerKey(key, mac);
     rng_ = rng_ * 1664525u + 1013904223u;
-    pvpSession_ = rng_ ? rng_ : 1u;
-    pvpChallenger_ = true;
-    pvpHost_ = pvpHostIsLocal(localRadioKey_, key);
-    pvpPhase_ = PvpPhase::Inviting;
-    pvpPhaseStartMs_ = nowMs_;
-    pvpRetries_ = 0;
+    pvp_ = PvpSession::opened(PvpPhase::Inviting, rng_ ? rng_ : 1u, key, mac, live->tag,
+                              pvpHostIsLocal(localRadioKey_, key), nowMs_);
+    pvp_->local = local;
     pvpStatus_[0] = '\0';
     sendPvpPending();
     dirty_ = true;
@@ -227,19 +221,17 @@ bool Game::pvpChallenge(uint64_t key) {
 }
 
 void Game::pvpAcceptChallenge() {
-    if (pvpPhase_ != PvpPhase::Invited) return;
-    if (!buildPvpFighter(&pvpLocalFighter_)) {
+    if (pvpPhase() != PvpPhase::Invited) return;
+    PvpSession& p = *pvp_;
+    if (!buildPvpFighter(&p.local)) {
         uint8_t buf[kPvpFrameCap];
-        const size_t n = encodePvpDecline(pvpSession_, PvpDeclineReason::NoPet, buf,
-                                          sizeof(buf));
-        if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+        const size_t n = encodePvpDecline(p.id, PvpDeclineReason::NoPet, buf, sizeof(buf));
+        if (n) queuePvpFrame(p.peerMac, buf, n);
         endPvpSession("NO PET TO FIGHT", /*notify=*/false);
         return;
     }
-    pvpPhase_ = PvpPhase::Arming;
-    pvpPhaseStartMs_ = nowMs_;
-    pvpRetries_ = 0;
-    if (pvpHost_) {
+    p.enter(PvpPhase::Arming, nowMs_);
+    if (p.host) {
         // We host: pick the seed and start immediately. sendPvpPending then carries our
         // fighter and the START together, repeated until the retry budget runs out: the
         // guest only needs one of them to land.
@@ -252,16 +244,15 @@ void Game::pvpAcceptChallenge() {
 }
 
 void Game::pvpDeclineChallenge() {
-    if (pvpPhase_ != PvpPhase::Invited) return;
+    if (pvpPhase() != PvpPhase::Invited) return;
     uint8_t buf[kPvpFrameCap];
-    const size_t n = encodePvpDecline(pvpSession_, PvpDeclineReason::Refused, buf,
-                                      sizeof(buf));
-    if (n) queuePvpFrame(pvpPeerMac_, buf, n);
+    const size_t n = encodePvpDecline(pvp_->id, PvpDeclineReason::Refused, buf, sizeof(buf));
+    if (n) queuePvpFrame(pvp_->peerMac, buf, n);
     endPvpSession("", /*notify=*/false);   // the DECLINE above IS the notification
 }
 
 void Game::pvpCancel() {
-    if (pvpPhase_ == PvpPhase::Idle) return;
+    if (!pvp_) return;
     endPvpSession("", /*notify=*/true);
 }
 
@@ -281,8 +272,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
     // An INVITE opens a session, so it is the one frame that doesn't have to match the
     // one we're already in. Everything else must, which is what makes a stale or
     // foreign frame inert.
-    if (f.type != PvpFrameType::Invite &&
-        (pvpPhase_ == PvpPhase::Idle || f.session != pvpSession_ || key != pvpPeerKey_))
+    if (f.type != PvpFrameType::Invite && (!pvp_ || f.session != pvp_->id || key != pvp_->peerKey))
         return false;
 
     switch (f.type) {
@@ -293,9 +283,9 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
             // up. Ignoring them is the only correct answer: replying BUSY here would
             // decline the very challenge this device is displaying, and the challenger
             // would give up before its opponent could possibly accept.
-            if (pvpSession_ == f.session && pvpPeerKey_ == key) return false;
+            if (pvp_ && pvp_->id == f.session && pvp_->peerKey == key) return false;
 
-            if (pvpPhase_ != PvpPhase::Idle) {
+            if (pvp_) {
                 // A DIFFERENT session: someone else (or the same operator starting
                 // over) challenging a device that is already in a duel. That one really
                 // is busy, and saying so beats letting them wait for a timeout.
@@ -326,17 +316,9 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
                 if (n) queuePvpFrame(mac, buf, n);
                 return false;
             }
-            pvpSession_ = f.session;
-            pvpPeerKey_ = key;
-            std::memcpy(pvpPeerMac_, mac, 6);
-            pvpRemoteFighter_ = f.fighter;
-            std::snprintf(pvpPeerTag_, sizeof(pvpPeerTag_), "%s",
-                          f.fighter.tag[0] ? f.fighter.tag : "UNKNOWN OP");
-            pvpChallenger_ = false;
-            pvpHost_ = pvpHostIsLocal(localRadioKey_, key);
-            pvpPhase_ = PvpPhase::Invited;
-            pvpPhaseStartMs_ = nowMs_;
-            pvpRetries_ = 0;
+            pvp_ = PvpSession::opened(PvpPhase::Invited, f.session, key, mac, f.fighter.tag,
+                                      pvpHostIsLocal(localRadioKey_, key), nowMs_);
+            pvp_->remote = f.fighter;
             pvpStatus_[0] = '\0';
             dirty_ = true;
             return true;
@@ -345,19 +327,16 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         case PvpFrameType::Accept: {
             // Only the challenger is waiting on one, and only once: a repeat
             // after the fight has started is just the retry.
-            if (pvpPhase_ != PvpPhase::Inviting) return false;
+            if (pvp_->phase != PvpPhase::Inviting) return false;
             if (f.rules != kPvpRulesVersion ||
                 !canBuildPvpCombatant(registry_, f.fighter)) {
                 endPvpSession("BUILD MISMATCH", /*notify=*/true);
                 return true;
             }
-            pvpRemoteFighter_ = f.fighter;
-            if (f.fighter.tag[0])
-                std::snprintf(pvpPeerTag_, sizeof(pvpPeerTag_), "%s", f.fighter.tag);
-            pvpPhase_ = PvpPhase::Arming;
-            pvpPhaseStartMs_ = nowMs_;
-            pvpRetries_ = 0;
-            if (pvpHost_) {
+            pvp_->remote = f.fighter;
+            if (f.fighter.tag[0]) pvp_->setTag(f.fighter.tag);
+            pvp_->enter(PvpPhase::Arming, nowMs_);
+            if (pvp_->host) {
                 rng_ = rng_ * 1664525u + 1013904223u;
                 startPvpBattle(rng_ ? rng_ : 1u);
             }
@@ -366,12 +345,12 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         }
 
         case PvpFrameType::Start: {
-            if (pvpHost_) return false;                  // we pick the seed, not them
-            if (pvpPhase_ != PvpPhase::Arming) return false;   // already fighting, or too early
+            if (pvp_->host) return false;                    // we pick the seed, not them
+            if (pvp_->phase != PvpPhase::Arming) return false;  // already fighting, or too early
             // The divergence guard. Recomputed over OUR copies of the two specs, in the
             // host-then-guest order both devices seat them in; a mismatch means we would
             // have played a different fight, so refuse instead.
-            if (pvpCommitHash(f.seed, pvpRemoteFighter_, pvpLocalFighter_) != f.commit) {
+            if (pvpCommitHash(f.seed, pvp_->remote, pvp_->local) != f.commit) {
                 endPvpSession("FIGHT DESYNC", /*notify=*/true);
                 return true;
             }
@@ -380,7 +359,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         }
 
         case PvpFrameType::Decline: {
-            if (pvpPhase_ != PvpPhase::Inviting) return false;
+            if (pvp_->phase != PvpPhase::Inviting) return false;
             const char* why = "DECLINED";
             switch (f.reason) {
                 case PvpDeclineReason::Busy:     why = "OPERATOR BUSY"; break;
@@ -395,7 +374,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         case PvpFrameType::Bye:
             // They walked away. Nothing to send. A fight already resolved locally
             // keeps its result, because the verdict is computed on each device.
-            if (pvpPhase_ == PvpPhase::Result) return false;
+            if (pvp_->phase == PvpPhase::Result) return false;
             endPvpSession("OPPONENT LEFT", /*notify=*/false);
             return true;
     }
@@ -405,11 +384,12 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
 // --- The fight ---------------------------------------------------------------
 
 void Game::startPvpBattle(uint32_t seed) {
-    pvpSeed_ = seed;
+    PvpSession& p = *pvp_;
+    p.seed = seed;
     // Host first on both devices. That fixed seating makes two runs of the same
     // seeded Combat reach the same result.
-    const PvpFighter& host = pvpHost_ ? pvpLocalFighter_ : pvpRemoteFighter_;
-    const PvpFighter& guest = pvpHost_ ? pvpRemoteFighter_ : pvpLocalFighter_;
+    const PvpFighter& host = p.host ? p.local : p.remote;
+    const PvpFighter& guest = p.host ? p.remote : p.local;
     fight_ = Fight::started(FightCaller::Duel);
     beginPvpBattle(fight_.combat, registry_, host, guest, seed);
     // The one fight in the game whose opponent is a real species rather than a
@@ -417,18 +397,16 @@ void Game::startPvpBattle(uint32_t seed) {
     // operator has never raised. Recorded at the START, not the verdict: facing a
     // species is the glimpse, and a duel that desyncs or is walked out of was still
     // fought. This is reveal state, not a stake: a duel still pays nothing.
-    markCreatureSeen(pvpRemoteFighter_.creatureId);
+    markCreatureSeen(p.remote.creatureId);
     // ...and on the same rule, the achievement for facing another operator at all. A duel
     // pays nothing, so recording that it HAPPENED is the whole reward.
     unlockAchievement(ach::kFirstDuel);
     // ...and, on the same rule, the mirror: recorded at the START, as the reveal and the
     // duel above are.
-    noteMirrorMatch(pvpRemoteFighter_.creatureId);
+    noteMirrorMatch(p.remote.creatureId);
     fxBeat_ = 0;
     combatStatsPage_ = 0;
-    pvpPhase_ = PvpPhase::Fighting;
-    pvpPhaseStartMs_ = nowMs_;
-    pvpRetries_ = 0;
+    p.enter(PvpPhase::Fighting, nowMs_);
     nav_ = Nav::Combat;
     sendPvpPending();      // host: the START; guest-that-answered: its fighter, again
     dirty_ = true;
@@ -440,22 +418,23 @@ void Game::finishPvpBattle() {
     // inverted: same fight, same winner, opposite pronoun.
     // A Draw (the turn limit, level on Health) is a loss for BOTH devices: neither side
     // won, so neither inverts it into a win.
+    PvpSession& p = *pvp_;
     const bool drawn = fight_.combat.outcome() == Combat::Outcome::Draw;
     const bool hostWon = fight_.combat.outcome() == Combat::Outcome::Win;
-    pvpWon_ = !drawn && pvpHost_ == hostWon;
-    pvpPhase_ = PvpPhase::Result;
-    pvpRetries_ = 0;
+    p.won = !drawn && p.host == hostWon;
+    p.phase = PvpPhase::Result;
+    p.retries = 0;
 
     char line[28];
-    std::snprintf(line, sizeof(line), "%s %s", pvpWon_ ? "BEAT" : "LOST TO", pvpPeerTag_);
-    log_.push(pvpWon_ ? LogEventType::CombatWon : LogEventType::CombatLost, line);
+    std::snprintf(line, sizeof(line), "%s %s", p.won ? "BEAT" : "LOST TO", p.peerTag);
+    log_.push(p.won ? LogEventType::CombatWon : LogEventType::CombatLost, line);
     // The lifetime duel-win tally (save v56), and the one thing this function persists.
     // It is not a payout and does not make the duel one: RECORDING a result costs the
     // loser nothing and hands the winner nothing they can spend, which is the same
     // footing FIRST_DUEL already stands on above (it fires at the start of every duel
     // and marks the save then). A duel still pays no XP, Bits, Fragmentation or care
     // signal.
-    if (pvpWon_) {
+    if (p.won) {
         ++op_.tallies.pvpWins;
         markSaveDirty();
     }
@@ -468,7 +447,7 @@ void Game::finishPvpBattle() {
 // --- Input -------------------------------------------------------------------
 
 void Game::onHackerLink(const ButtonEvent& ev) {
-    switch (pvpPhase_) {
+    switch (pvpPhase()) {
         case PvpPhase::Invited:
             // The consent gate. B accepts, C refuses; A is inert so a stray cycle press
             // can never answer for the human.
@@ -481,8 +460,7 @@ void Game::onHackerLink(const ButtonEvent& ev) {
             return;
         case PvpPhase::Result:
             // Any button clears the verdict back to the challengeable list.
-            pvpPhase_ = PvpPhase::Idle;
-            pvpSession_ = 0;
+            pvp_.reset();
             pvpStatus_[0] = '\0';
             dirty_ = true;
             return;
@@ -530,12 +508,12 @@ void Game::drawHackerLink(Framebuffer& fb) const {
 
     // Every non-Idle phase takes over the body: what the operator needs to know is the
     // state of the one session, not a list they can't act on.
-    if (pvpPhase_ != PvpPhase::Idle) {
+    if (pvp_) {
         const char* head = "";
         const char* sub = "";
         const char* secondary = "";
         const char* hint = "";
-        switch (pvpPhase_) {
+        switch (pvp_->phase) {
             case PvpPhase::Inviting:
                 head = "CHALLENGE SENT"; sub = "WAITING FOR ANSWER"; hint = "C CANCEL";
                 break;
@@ -551,13 +529,13 @@ void Game::drawHackerLink(Framebuffer& fb) const {
                 break;
             case PvpPhase::Result:
                 // The verdict is a WORD, never a colour: it has to survive grayscale.
-                head = pvpWon_ ? "YOU WON" : "YOU LOST"; sub = ""; hint = "ANY KEY";
+                head = pvp_->won ? "YOU WON" : "YOU LOST"; sub = ""; hint = "ANY KEY";
                 break;
             case PvpPhase::Idle:
                 break;
         }
         drawText(fb, kMargin, 56, head, palColor(Pal::INK));
-        drawText(fb, kMargin, 56 + kLineH, pvpPeerTag_, palColor(Pal::ACCENT));
+        drawText(fb, kMargin, 56 + kLineH, pvp_->peerTag, palColor(Pal::ACCENT));
         if (sub[0]) drawText(fb, kMargin, 56 + kLineH * 2, sub, palColor(Pal::INK_DIM));
         drawHackerHint(fb, secondary, hint);
         return;

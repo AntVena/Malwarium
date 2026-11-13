@@ -577,6 +577,7 @@ int g_failures = 0;
     RUN(test_pvp_invite_retries_do_not_decline_the_pending_challenge) \
     RUN(test_pvp_challenge_needs_a_human_on_the_link_screen) \
     RUN(test_pvp_unanswered_challenge_times_out) \
+    RUN(test_pvp_session_opens_whole_and_is_gone_when_it_ends) \
     RUN(test_pvp_link_screen_verdict_grayscale) \
     RUN(test_pvp_guest_sees_its_own_pet_on_the_bottom_gauge) \
     RUN(test_combat_seats_local_pet_on_the_left) \

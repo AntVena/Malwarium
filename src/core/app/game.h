@@ -39,6 +39,7 @@
 #include "core/model/explore_walk.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
+#include "core/model/pvp_session.h"
 #include "core/model/tourney_run.h"
 #include "core/model/disk_decryption.h"
 #include "core/model/event_log.h"
@@ -1197,43 +1198,31 @@ public:
     // Bits, Fragmentation or care signal moves, and the wire format is unauthenticated
     // on the strength of exactly that. Adding a reward means adding signing first.
 
-    // Where the local device is in a duel. Idle is "no session"; every other phase
-    // holds pvpPeerKey_/pvpSession_ and keeps the LINK radio up.
-    enum class PvpPhase : uint8_t {
-        Idle,        // nothing in flight
-        Inviting,    // we challenged; waiting for their accept/decline
-        Invited,     // they challenged us; waiting on THIS human to accept or refuse
-        Arming,      // both fighters known; host is sending / guest awaiting START
-        Fighting,    // the shared fight is running (nav_ == Nav::Combat)
-        Result,      // it finished; the LINK screen is showing who won
-    };
-
-    PvpPhase pvpPhase() const { return pvpPhase_; }
-    bool pvpActive() const { return pvpPhase_ != PvpPhase::Idle; }
+    // The open duel session (core/model/pvp_session.h), or Idle when there is none.
+    PvpPhase pvpPhase() const { return pvp_ ? pvp_->phase : PvpPhase::Idle; }
+    bool pvpActive() const { return pvp_.has_value(); }
     // A session that still NEEDS the air: mid-handshake, or a fight whose host is still
     // repeating its START. Result is deliberately excluded: a verdict left on screen
     // must not pin the radio (and, through radioScreenOpen, the panel) awake for as
     // long as nobody presses a button.
-    bool pvpSessionLive() const {
-        return pvpPhase_ != PvpPhase::Idle && pvpPhase_ != PvpPhase::Result;
-    }
+    bool pvpSessionLive() const { return pvp_ && pvp_->phase != PvpPhase::Result; }
     // True while a duel is actually resolving, which is what makes onCombat suppress
     // the A+C Exploit picker and the C flee: both would pause or end THIS device's copy
     // of a fight the other device is still playing out.
-    bool pvpFighting() const { return pvpPhase_ == PvpPhase::Fighting; }
+    bool pvpFighting() const { return pvpPhase() == PvpPhase::Fighting; }
     // Which side of Combat the local pet occupies. The HOST is always player_ on both
     // devices (core/model/pvp_battle.h), so the guest's own pet is the enemy_ row and
     // the combat screen relabels rather than resolving a mirrored fight.
-    bool pvpLocalIsHost() const { return pvpHost_; }
+    bool pvpLocalIsHost() const { return pvp_ && pvp_->host; }
     // The same fact in the combat screen's terms (CombatSides::localIsEnemySide): the
     // one fight where the local pet is not Combat's player_ slot is a duel this device
     // guests. Shared by drawCombatScreen and by anything that has to bind a resolved
     // turn to the LOCAL seat rather than to Combat's own.
     bool combatLocalIsEnemySide() const { return pvpFighting() && !pvpLocalIsHost(); }
-    const char* pvpOpponentTag() const { return pvpPeerTag_; }
+    const char* pvpOpponentTag() const { return pvp_ ? pvp_->peerTag : ""; }
     // The finished duel's verdict from the LOCAL operator's point of view. Only
     // meaningful in PvpPhase::Result.
-    bool pvpLocalWon() const { return pvpWon_; }
+    bool pvpLocalWon() const { return pvp_ && pvp_->won; }
     // Why the last session ended without a fight (empty = it didn't). Rendered by the
     // LINK screen so a refusal never reads as a hang.
     const char* pvpStatusText() const { return pvpStatus_; }
@@ -3949,23 +3938,11 @@ private:
     // PEERS screen cursor (game_peers.cpp).
     int peerRow_ = 0;
 
-    // 1v1 duels (game_pvp.cpp). One session at a time, held entirely in RAM: a duel is
-    // worth nothing and survives nothing, so none of this is saved. pvpSession_ is the
-    // id every frame of one duel carries: it is what makes a stale or foreign frame
-    // inert, and it is NOT a credential (core/net/pvp_link.h).
-    PvpPhase pvpPhase_ = PvpPhase::Idle;
-    uint32_t pvpSession_ = 0;
-    uint64_t pvpPeerKey_ = 0;            // opponent's packed radio MAC
-    uint8_t pvpPeerMac_[6] = {0};        // ...and the raw form, for addressing replies
-    char pvpPeerTag_[kPvpTagCap] = {0};  // their HackerTag, for every line the UI draws
-    PvpFighter pvpLocalFighter_;         // our own spec: encoded, then built FROM
-    PvpFighter pvpRemoteFighter_;        // theirs, as decoded off the wire
-    bool pvpChallenger_ = false;         // we opened the session, so we already sent our
-                                          // fighter inside the INVITE and owe no ACCEPT
-    bool pvpHost_ = false;               // we hold the player_ slot and pick the seed
-    bool pvpWon_ = false;                // the finished duel's verdict, locally framed
-    uint32_t pvpSeed_ = 0;
-    char pvpStatus_[32] = "";            // why the last session ended (empty = it didn't)
+    // 1v1 duels (game_pvp.cpp): the open session (core/model/pvp_session.h), empty
+    // between sessions. pvpStatus_ is the LINK screen's line saying why the last one
+    // ended (empty = it didn't), so it outlives the session.
+    std::optional<PvpSession> pvp_;
+    char pvpStatus_[32] = "";
 
     // --- ROCK THE DOCK (game_tourney.cpp) -------------------------------------
     // The bracket in play, verdict included (core/model/tourney_run.h); empty between
@@ -4000,9 +3977,6 @@ private:
     // building one walks the whole move and mod tables, which is not a per-frame cost.
     TourneyFighter tourneyScouted_;
     int tourneyScoutedSlot_ = -1;
-    uint32_t pvpPhaseStartMs_ = 0;       // for the phase timeout
-    uint32_t pvpLastSendMs_ = 0;         // retry pacing for the frame holding the session
-    int pvpRetries_ = 0;
     uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
     // Outbound frames waiting for the device tier to drain (takePvpOut). A tiny ring
