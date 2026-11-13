@@ -73,6 +73,13 @@ a board row for what is not. The smallest patch that makes the symptom go away i
 - **Route input by state.** Behaviour that differs per screen reaches the screen through the
   same dispatch as its taps. Guards that each work out which screen is up from
   `face_`/`nav_`/a sub-view drift apart.
+- **Every input has exactly one owner at any moment.** A press goes to the screen that is up
+  and to nothing else; no input is broadcast for several handlers to share. A UI gesture from
+  another sensor (a shake or tilt off the IMU, a touch) is shaped into a gesture by the
+  platform layer, the way buttons are debounced, and reaches the screen through that same
+  dispatch. A world event (a radio frame, a network sighting, a status snapshot) goes to the
+  run or record that owns it through its own `Game` entry point (`onPvpFrame`,
+  `registerNetwork`), whatever screen is up, and the screen reads the result.
 - **Share what is the same, and explain what differs.** When two sites draw or compute the
   same thing, they call one function. When one site must differ, its comment says why. A
   comment reading "same as X" means the two are kept equal by hand.
