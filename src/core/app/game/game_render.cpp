@@ -56,7 +56,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Process: drawProcess(fb); break;
         case Nav::Stacker: drawStacker(fb); break;
         case Nav::Fragger: drawFragger(fb); break;
-        case Nav::ArcadeResult: drawArcadeOutcome(fb); break;
+        case Nav::ArcadeResult: arcadeScreen_.drawResult(fb, *this); break;
         case Nav::Combat: fightScreen_.draw(fb, *this); break;
         case Nav::Tourney: drawTourney(fb); break;
         case Nav::Story: drawStoryScreen(fb); break;
@@ -775,7 +775,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             break;
         }
         case SubmenuId::Games:
-            drawArcade(fb);
+            arcadeScreen_.drawList(fb, *this);
             break;
         case SubmenuId::Expl: {
             bool cleared[kExplSectors * kExplSubAreas];
@@ -928,7 +928,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             }
             break;
         case SubmenuId::Games:
-            drawArcadeDetail(fb);
+            arcadeScreen_.drawCabinet(fb, *this);
             break;
         default: break;
     }

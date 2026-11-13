@@ -5,7 +5,6 @@
 #include "tunables.h"
 #include "core/content/content_arcade.h"
 #include "core/content/content_quotes.h"
-#include "core/ui/arcade_screen.h"
 #include "core/ui/prose_page.h"
 #include "core/ui/widgets.h"
 
@@ -141,8 +140,7 @@ void Game::drawGameBrief(Framebuffer& fb) const {
 //
 // A locked cabinet is ABSENT from the list, not greyed in it. The Rig Shop's rule
 // (RigAccount::offered), and for the same reason: a menu should not advertise a door the
-// player has no key to. arcadeRow_ stays a ROSTER index throughout, so the tallies and
-// the START call index the same space whether or not anything is hidden.
+// player has no key to. The cursor stays a ROSTER index throughout (ArcadeScreen::row).
 
 bool Game::arcadeCabinetOffered(int i) const {
     if (i < 0 || i >= arcadeGameCount()) return false;
@@ -160,36 +158,7 @@ int Game::arcadeOfferedRows(int* out, int max) const {
     return n;
 }
 
-void Game::onArcadeList(const ButtonEvent& ev) {
-    const int total = arcadeGameCount();
-    if (ev.button == Button::A) {
-        // Step through raw table order to the next offered row, wrapping; a roster with
-        // nothing offered leaves the cursor where it is.
-        for (int step = 1; step <= total; ++step) {
-            const int next = (arcadeRow_ + step) % total;
-            if (arcadeCabinetOffered(next)) { arcadeRow_ = next; break; }
-        }
-    } else if (ev.button == Button::B) {
-        if (!arcadeCabinetOffered(arcadeRow_)) return;
-        nav_ = Nav::Detail;
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
-    }
-}
-
 // --- One cabinet (L3) ------------------------------------------------------
-
-void Game::onArcadeCabinet(const ButtonEvent& ev) {
-    if (ev.button == Button::A) {
-        arcadeDifficulty_ = static_cast<ArcadeDifficulty>(
-            (static_cast<int>(arcadeDifficulty_) + 1) % kArcadeDifficulties);
-    } else if (ev.button == Button::B) {
-        startArcadeRun();
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Submenu;
-    }
-    dirty_ = true;
-}
 
 int Game::arcadeBestById(const char* id) const {
     const int row = arcadeGameIndexById(id);
@@ -205,10 +174,12 @@ int Game::playStepMs(int baseMs) const {
     return ms < 1 ? 1 : ms;
 }
 
-void Game::startArcadeRun() {
-    if (!arcadeCabinetOffered(arcadeRow_)) return;   // range + the unlock, in one ask
-    arcade_ = ArcadeRun::started(arcadeRow_, arcadeDifficulty_);
-    const ArcadeDifficulty dial = arcade_->difficulty;
+void Game::openDetail() { nav_ = Nav::Detail; }
+void Game::closeDetail() { nav_ = Nav::Submenu; }
+
+void Game::startArcadeRun(int cabinet, ArcadeDifficulty dial) {
+    if (!arcadeCabinetOffered(cabinet)) return;   // range + the unlock, in one ask
+    arcade_ = ArcadeRun::started(cabinet, dial);
     const ArcadeGameKind kind = arcadeGames()[arcade_->cabinet].kind;
     switch (kind) {
         case ArcadeGameKind::Stacker:
@@ -271,14 +242,15 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     // A finish only ever comes from a board a cabinet started.
     const ArcadeRun run = *arcade_;
     arcade_.reset();
-    arcadeResult_ = run.settled(won, score, scoreMax, arcadeBest(run.cabinet));
-    op_.bits += arcadeResult_.bits;
+    const ArcadeResult result = run.settled(won, score, scoreMax, arcadeBest(run.cabinet));
+    arcadeScreen_.showResult(result);
+    op_.bits += result.bits;
     pet_.model.setHappiness(pet_.model.happiness() + kArcadePlayHappy);   // clamps at the cap
 
     if (run.cabinet >= 0 && run.cabinet < kArcadeMaxCabinets) {
         ++op_.tallies.arcadePlays[run.cabinet];
         if (won) ++op_.tallies.arcadeWins[run.cabinet];
-        if (arcadeResult_.newBest) op_.tallies.arcadeBest[run.cabinet] = score;
+        if (result.newBest) op_.tallies.arcadeBest[run.cabinet] = score;
     }
     addBond(pet_.upgrades, BondSource::Games, kBondGameBp);
     markSaveDirty();
@@ -286,54 +258,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     cursor_ = carouselSlotOf(SubmenuId::Games);
     nav_ = Nav::ArcadeResult;
     dirty_ = true;
-    playSound(arcadeResult_.newBest ? Sound::NewBest : won ? Sound::GameWin : Sound::GameLose);
-}
-
-void Game::onArcadeResult(const ButtonEvent& ev) {
-    // Informational: the run is banked already, so any press leaves. C returns to
-    // the cabinet list.
-    (void)ev;
-    nav_ = Nav::Submenu;
-    dirty_ = true;
-}
-
-// --- Render ----------------------------------------------------------------
-
-void Game::drawArcade(Framebuffer& fb) const {
-    int plays[kArcadeMaxCabinets] = {0};
-    for (int i = 0; i < arcadeGameCount() && i < kArcadeMaxCabinets; ++i)
-        plays[i] = op_.tallies.arcadePlays[i];
-    int rows[kArcadeMaxCabinets] = {0};
-    ArcadeListView v;
-    v.rows = rows;
-    v.n = arcadeOfferedRows(rows, kArcadeMaxCabinets);
-    v.plays = plays;
-    v.cursor = arcadeRow_;
-    v.beat = beat_;
-    drawArcadeList(fb, registry_, v);
-}
-
-void Game::drawArcadeDetail(Framebuffer& fb) const {
-    if (arcadeRow_ < 0 || arcadeRow_ >= arcadeGameCount()) return;
-    ArcadeTally tally;
-    tally.plays = arcadePlays(arcadeRow_);
-    tally.wins = arcadeWins(arcadeRow_);
-    tally.best = arcadeBest(arcadeRow_);
-    drawArcadeCabinet(fb, registry_, arcadeGames()[arcadeRow_], arcadeDifficulty_, tally);
-}
-
-void Game::drawArcadeOutcome(Framebuffer& fb) const {
-    const ArcadeResult& r = arcadeResult_;
-    if (r.cabinet < 0 || r.cabinet >= arcadeGameCount()) return;
-    ArcadeResultView v;
-    v.won = r.won;
-    v.score = r.score;
-    v.scoreMax = r.scoreMax;
-    v.best = arcadeBest(r.cabinet);
-    v.newBest = r.newBest;
-    v.bits = r.bits;
-    v.happy = kArcadePlayHappy;
-    drawArcadeResult(fb, arcadeGames()[r.cabinet], v);
+    playSound(result.newBest ? Sound::NewBest : won ? Sound::GameWin : Sound::GameLose);
 }
 
 }  // namespace mal

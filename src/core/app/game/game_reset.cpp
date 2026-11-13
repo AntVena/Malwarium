@@ -59,10 +59,9 @@ void Game::resetToHatch() {
     op_.arch.records.clear();
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
-    arcadeRow_ = 0;
+    arcadeScreen_.reset();
     arcade_.reset();                     // nothing can be mid-cabinet after a wipe
     cryptogramRun_.reset();              // ...nor mid-board
-    arcadeDifficulty_ = ArcadeDifficulty::Medium;
     maintDifficulty_ = ArcadeDifficulty::Easy;
     trainRow_ = 0;
     trainScreen_ = TrainScreen::MovePicker;

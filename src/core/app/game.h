@@ -17,12 +17,14 @@
 #include "core/app/game_rig_shop.h"
 #include "core/app/operator.h"
 #include "core/app/settings.h"
+#include "core/app/game/arcade_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
+#include "core/app/game/vault_screen.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
 #include "core/device/power_status.h"
@@ -109,7 +111,8 @@ struct PlayHud;
 enum class StartMode { FreshHatch, Hatched };
 
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
-             private FightScreenHost, private EncounterHost {
+             private FightScreenHost, private EncounterHost, private VaultHost,
+             private ArcadeHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -302,7 +305,7 @@ public:
     // tiers, just owned or not. itemTabsUnlocked arms the ITEMS hold-B filter cycle;
     // bulkOpenUnlocked arms the VAULT hold-B bulk-open.
     bool itemTabsUnlocked() const override { return op_.rig.level[kRigRowItemTabs] > 0; }
-    bool bulkOpenUnlocked() const { return op_.rig.level[kRigRowBulkOpen] > 0; }
+    bool bulkOpenUnlocked() const override { return op_.rig.level[kRigRowBulkOpen] > 0; }
     // ITEMS Type-Picker (Rig Shop): another one-time unlock. The ITEMS submenu
     // opens on the category tile screen (ItemsView::Picker) instead of straight
     // onto the list, and hold-B's cycle steps up to the finer category axis.
@@ -1592,23 +1595,23 @@ public:
     bool inArcadeRun() const { return arcade_.has_value(); }
     // Lifetime tallies per roster row (content_arcade.h's index order). Out-of-range
     // reads 0, so a caller iterating a roster that shrank can't fall off the array.
-    int arcadePlays(int i) const {
+    int arcadePlays(int i) const override {
         return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadePlays[i] : 0;
     }
-    int arcadeWins(int i) const {
+    int arcadeWins(int i) const override {
         return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadeWins[i] : 0;
     }
     // The best score a cabinet has ever been played to. Only meaningful where a run
     // HAS a score: a win-or-lose cabinet (the Clutch) reports 0 forever, which is why
     // the cabinet page shows this only when the roster row scores incrementally.
-    int arcadeBest(int i) const {
+    int arcadeBest(int i) const override {
         return (i >= 0 && i < kArcadeMaxCabinets) ? op_.tallies.arcadeBest[i] : 0;
     }
     // ...by cabinet id, which is what an achievement row keys on (AchSeries::
     // ArcadeCabinetBest). The roster is free to reorder, so a wire-stable question has
     // to be asked by id rather than by index.
     int arcadeBestById(const char* id) const;
-    ArcadeDifficulty arcadeDifficulty() const { return arcadeDifficulty_; }
+    ArcadeDifficulty arcadeDifficulty() const { return arcadeScreen_.difficulty(); }
     // The MAINT action screen's own dial for its played row: reset to EASY each time the
     // screen opens, and separate from the cabinets' so neither moves the other.
     ArcadeDifficulty maintDifficulty() const { return maintDifficulty_; }
@@ -1620,13 +1623,13 @@ public:
     }
     // The cabinet list's cursor, as a roster index (content_arcade.h's order). It
     // differs from the row position whenever a cabinet is locked out of the list.
-    int arcadeRow() const { return arcadeRow_; }
+    int arcadeRow() const { return arcadeScreen_.row(); }
     // Is cabinet `i` in the GAMES list right now (ArcadeUnlock)? A locked cabinet is
     // absent, not greyed. Shared by the A-cycle, the render loop and B, so the list can
     // never show a row the cursor skips or start one it never drew.
-    bool arcadeCabinetOffered(int i) const;
+    bool arcadeCabinetOffered(int i) const override;
     // The roster indices of every offered cabinet, in table order. Returns the count.
-    int arcadeOfferedRows(int* out, int max) const;
+    int arcadeOfferedRows(int* out, int max) const override;
 
     // --- Isolation Protocol (the Worm line's hatch minigame) ---------------
     // A Vermicell egg turns the worm inside it loose in a quarantine buffer: A steers
@@ -2621,12 +2624,11 @@ private:
     // reachable with something on the rack to go back TO: see the modal's own comment.
     void archReturnFromLineSelect();
     // GAMES: the cabinet list (L2) -> one cabinet (L3) -> a real minigame -> payout.
-    void onArcadeList(const ButtonEvent& ev);
-    void onArcadeCabinet(const ButtonEvent& ev);
-    void onArcadeResult(const ButtonEvent& ev);
     // Launch the focused cabinet's minigame as an ArcadeRun. The one place a cabinet's
     // ArcadeGameKind turns into behaviour.
-    void startArcadeRun();
+    void startArcadeRun(int cabinet, ArcadeDifficulty dial) override;
+    void openDetail() override;
+    void closeDetail() override;
     // Bank a finished run and open the payout screen. `scoreMax` 0 means the cabinet
     // scores win-or-lose, which is what decides how the bonus half is worked out.
     void finishArcadeRun(bool won, int score, int scoreMax);
@@ -2637,9 +2639,6 @@ private:
     ArcadeDifficulty runDifficulty() const {
         return arcade_ ? arcade_->difficulty : maint_ ? maint_->difficulty : maintDifficulty_;
     }
-    void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
-    void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
-    void drawArcadeOutcome(Framebuffer& fb) const;  // the payout screen
 
     // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
     // A+C on any of the game engines (Stacker/Fragger/Isolation/Decryption/Cryptogram/
@@ -3027,7 +3026,6 @@ private:
     bool hackerSlotAccessible(int slot) const;     // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
-    void onHackerVault(const ButtonEvent& ev);     // VAULT list: A cycle · B decrypt · C back
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
     // offered/afford, deducts Bits, bumps op_.rig.level[row], applies the row's
     // RigEffectKind (only Bandwidth has one. The live-pool grant), logs, persists. One
@@ -3089,19 +3087,11 @@ private:
     }
     void drawHackerHome(Framebuffer& fb, int cursor) const;  // terminal centre + identity + carousel
     void drawHackerSubmenu(Framebuffer& fb) const;  // L2 dispatch, one case per HackerSlotId
-    void drawHackerVault(Framebuffer& fb) const;
     void drawHackerProfile(Framebuffer& fb) const;
-    // VAULT's owned-openable row list (shared by input + render + the bulk-open
-    // trigger), capped at `max`. Returns the count written into `rows`.
-    int vaultOwnedRows(const ItemDef** rows, int max) const;
-    // Spend the focused VAULT row on whatever it is for: a cache opens for a reward
-    // draw, a Decryptogram rolls a quote and starts a board. The one place a VAULT B
-    // resolves, so the tap path and the bulk-hold's release path cannot diverge.
-    void cashVaultRow(const ItemDef& d);
-    // The VAULT's B once Bulk-Open is owned: a hold opens every cache of the focused
-    // row's rarity, a tap cashes the focused row alone.
-    bool vaultHoldB(uint32_t heldMs);
-    void vaultReleaseB();
+    // VaultHost. A cache opens for a reward draw, a Decryptogram rolls a quote and
+    // starts a board: the one place a VAULT row resolves, so the tap and the bulk hold
+    // cannot diverge.
+    void cashVaultRow(const ItemDef& d) override;
 
     // Persistence ------------------------------------
     SaveData captureSave() const;                  // snapshot all persisted state
@@ -3170,7 +3160,7 @@ private:
     // e: bulk-open every OWNED cache sharing `focused`'s rarity tier in one
     // action (grantCacheReward per cache, tallied), then surface the aggregate
     // reveal (Nav::BulkYield). `focused` is the VAULT row the hold-B fired on.
-    void openAllCachesOfRarity(const ItemDef& focused);
+    void openAllCachesOfRarity(const ItemDef& focused) override;
     // The bulk-yield reveal: A scrolls the tally if it overflows the window, B/C
     // dismisses back to the VAULT list (Nav::Submenu. Mirrors onCacheYield).
     void onBulkYield(const ButtonEvent& ev);
@@ -4038,10 +4028,10 @@ private:
     // and the render path. cursor_/nav_ are SHARED with the pet face (a flip drops to
     // Idle), so the hacker carousel reuses the same cursor cycling.
     Face face_ = Face::Pet;
+    VaultScreen vault_;       // the VAULT slot's cursor (game/vault_screen.h)
     RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
     ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
     StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
-    int hackerVaultRow_ = 0;  // VAULT list cursor: owned sealed-cache row
     int hackerMergeRow_ = 0;  // MERGE HUB list cursor: recipe row
     // CREW screen state. The screen is four views and `crewView_` IS the navigation:
     // Hub (the home network and the two sides), Team (one side's roster), Detail (one
@@ -4135,15 +4125,10 @@ private:
 
     // GAMES / the arcade (game_arcade.cpp). arcade_ is the cabinet run in play
     // (core/model/arcade_run.h), empty between runs: a minigame reads it to know it is
-    // being played for fun, which redirects the payout and scales the pacing. The rest is
-    // the GAMES screens': the cabinet list's cursor, the cabinet page's dial (a run takes
-    // a copy when it starts), and the payout screen's frozen result. The list cursor and
-    // the running cabinet part company as soon as a run starts, the list staying where
-    // the player left it. Only the tallies persist (save v47, on the Operator).
+    // being played for fun, which redirects the payout and scales the pacing. The GAMES
+    // screens are arcadeScreen_'s. Only the tallies persist (save v47, on the Operator).
     std::optional<ArcadeRun> arcade_;
-    int arcadeRow_ = 0;
-    ArcadeDifficulty arcadeDifficulty_ = ArcadeDifficulty::Medium;
-    ArcadeResult arcadeResult_;
+    ArcadeScreen arcadeScreen_;
 
     // The Clutch Pick on screen (core/model/egg_pick.h), empty otherwise.
     std::optional<EggPick> eggPick_;

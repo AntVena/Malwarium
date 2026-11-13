@@ -639,7 +639,7 @@ void Game::debugUseItem(const char* id) {
 
 void Game::debugOpenCache(const char* id) {
     // Sealed caches decrypt from the Hacker VAULT: this seam drives the same real
-    // reward path (openSealedCache) onHackerVault uses.
+    // reward path (openSealedCache) the VAULT uses.
     const ItemDef* d = registry_.item(id);
     if (d) openSealedCache(*d);
 }

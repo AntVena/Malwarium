@@ -81,7 +81,7 @@ void Game::enterHackerSubmenu() {
     if (!hackerSlotAccessible(cursor_)) return;
     nav_ = Nav::Submenu;
     rigShop_.enter();
-    hackerVaultRow_ = 0;
+    vault_.enter();
     hackerMergeRow_ = 0;
     crewView_ = CrewView::Hub;   // every entry opens at the top of the CREW screen
     crewHubRow_ = 0;
@@ -102,7 +102,7 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
             rigShop_.onButton(*this, ev);
             break;
         case HackerSlotId::Vault:
-            onHackerVault(ev);
+            vault_.onButton(*this, ev);
             break;
         case HackerSlotId::Merge:
             onHackerMerge(ev);
@@ -122,36 +122,6 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
     }
 }
 
-namespace {
-// Is this an item the VAULT cashes in? Two Use-actions qualify: a sealed cache opens
-// for a reward draw, and a Decryptogram buys a board. Both are spent here because
-// their payout is player-level; itemUsable's two gate messages point here.
-bool vaultCashable(const ItemDef& d) {
-    return d.use == ItemDef::Use::OpenContainer || d.use == ItemDef::Use::PlayCryptogram;
-}
-}  // namespace
-
-int Game::vaultOwnedRows(const ItemDef** rows, int max) const {
-    int n = 0;
-    for (const auto& s : inventory_.stacks()) {
-        if (s.qty <= 0) continue;
-        const ItemDef* d = registry_.item(s.id);
-        if (d && vaultCashable(*d) && n < max) rows[n++] = d;
-    }
-    // Tickets above caches, then richest draw first: a cache's rarity IS its payout
-    // tier (its row grades bits/draws/pool by it), so the top cache row is
-    // always the best thing to open, and a Decryptogram outranks all of them because it
-    // is the only row here that is a GAME rather than a draw. Inventory order is
-    // insertion order, which says nothing a player cares about.
-    std::stable_sort(rows, rows + n, [](const ItemDef* a, const ItemDef* b) {
-        const bool at = a->use == ItemDef::Use::PlayCryptogram;
-        const bool bt = b->use == ItemDef::Use::PlayCryptogram;
-        if (at != bt) return at;
-        return a->rarity > b->rarity;
-    });
-    return n;
-}
-
 void Game::cashVaultRow(const ItemDef& d) {
     if (d.use != ItemDef::Use::PlayCryptogram) { openSealedCache(d); return; }
     // Spend the ticket FIRST: the board cannot be walked out of, so there is no path
@@ -169,57 +139,6 @@ void Game::cashVaultRow(const ItemDef& d) {
     log_.push(LogEventType::ItemUsed, buf);
     markSaveDirty();
     startCryptogram(quote, cryptogramExtraReveals(quoteTier(quote)));
-}
-
-void Game::onHackerVault(const ButtonEvent& ev) {
-    // VAULT: cash in what a pet has no use for, OFF pet ITEMS. Build the list of owned
-    // cashable stacks (caches to decrypt, Decryptograms to play); A cycles, C backs to
-    // the carousel. B: unowned e resolves the focused row immediately (cashVaultRow);
-    // owned, B becomes a tap/hold gesture on a cache row. Arm here and resolve on the
-    // button-RELEASE edge (vaultReleaseB, a short tap cashes just the one) or on the
-    // hold crossing kBulkOpenHoldMs (vaultHoldB bulk-opens every cache sharing the row's
-    // rarity instead).
-    const ItemDef* rows[16];
-    const int n = vaultOwnedRows(rows, 16);
-    if (ev.button == Button::C) { nav_ = Nav::Cursor; return; }
-    if (n == 0) return;                                       // empty state: A/B inert
-    if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-    if (ev.button == Button::A) {
-        hackerVaultRow_ = (hackerVaultRow_ + 1) % n;
-    } else if (ev.button == Button::B) {
-        // The hold opens every cache of one rarity, so it is armed only on cache rows. On
-        // a Decryptogram it would swallow the tap that starts a board. A ticket row
-        // therefore always resolves on the press.
-        if (bulkOpenUnlocked() &&
-            rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer) {
-            armHoldB();
-        } else {
-            cashVaultRow(*rows[hackerVaultRow_]);   // a reward draw, or a board
-        }
-    }
-}
-
-bool Game::vaultHoldB(uint32_t heldMs) {
-    if (!bulkOpenUnlocked() || heldMs < kBulkOpenHoldMs) return false;
-    const ItemDef* rows[16];
-    const int n = vaultOwnedRows(rows, 16);
-    if (n > 0) {
-        if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-        // Caches only: the row can move under a held B, and a Decryptogram cannot be
-        // bulk-opened.
-        if (rows[hackerVaultRow_]->use == ItemDef::Use::OpenContainer)
-            openAllCachesOfRarity(*rows[hackerVaultRow_]);
-    }
-    return true;
-}
-
-void Game::vaultReleaseB() {
-    if (!bulkOpenUnlocked()) return;
-    const ItemDef* rows[16];
-    const int n = vaultOwnedRows(rows, 16);
-    if (n == 0) return;
-    if (hackerVaultRow_ >= n) hackerVaultRow_ = 0;
-    cashVaultRow(*rows[hackerVaultRow_]);
 }
 
 // --- Rendering -------------------------------------------------------------
@@ -328,7 +247,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         // Each slot's screen lives in its own unit and draws its own header band, since
         // only the screen knows its title, tint and position note.
         case HackerSlotId::Shop: rigShop_.draw(fb, *this, beat_); break;   // rig_shop_screen.cpp
-        case HackerSlotId::Vault: drawHackerVault(fb); break;
+        case HackerSlotId::Vault: vault_.draw(fb, *this); break;
         case HackerSlotId::Crew: drawHackerCrew(fb); break;       // game_crew.cpp
         case HackerSlotId::Peers: drawHackerPeers(fb); break;     // game_peers.cpp
         case HackerSlotId::Link: drawHackerLink(fb); break;       // game_pvp.cpp
@@ -340,49 +259,6 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
             drawHackerProfile(fb);
             break;
     }
-}
-
-void Game::drawHackerVault(Framebuffer& fb) const {
-    // VAULT: cash in what a pet has no use for, OFF pet ITEMS. One row per owned
-    // cashable stack (name + count); A cycles, B spends it (cashVaultRow), C exits.
-    drawHeaderBand(fb, "VAULT");
-
-    const ItemDef* rows[16];
-    const int n = vaultOwnedRows(rows, 16);
-    if (n == 0) {
-        drawText(fb, kMargin, 40, "NOTHING TO CASH IN", palColor(Pal::INK_DIM));
-        return;
-    }
-    int sel = hackerVaultRow_;
-    if (sel >= n) sel = 0;
-    const int scrollTop = listScrollTop(sel, n, kHackerListRows);
-    for (int v = 0; v < kHackerListRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
-        const int rowY = kHackerListTop + v * kHackerListRowH;
-        const bool s = i == sel;
-        if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
-        // The cache glyph takes its rarity's colour. The tint is extra: every
-        // container's name carries the tier word ("Epic Cache"), and the list is
-        // ordered by it. See core/ui/theme.h.
-        if (const SpriteData* icon = itemIcon(registry_, rows[i]->id))
-            drawSpriteTinted(fb, *icon, 0, kMargin, rowY - 7,
-                             rarityColor(rows[i]->rarity));
-        char line[40];
-        std::snprintf(line, sizeof(line), "%s x%d", rows[i]->displayName,
-                      inventory_.count(rows[i]->id));
-        drawText(fb, kMargin + 26, rowY, line,
-                 s ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-    }
-    drawScrollbar(fb, kHackerListTop, kHackerListRows * kHackerListRowH, n, scrollTop,
-                  kHackerListRows);
-    // B does two different things here, so it says which: a cache is DECRYPTED for
-    // a draw, a Decryptogram is PLAYED as a board.
-    const bool ticket = rows[sel]->use == ItemDef::Use::PlayCryptogram;
-    // The bulk-open hint (exception rule, VISUAL_LANGUAGE §4.2), only once owned, so
-    // an unowned player is never shown a gesture they don't have. Never on a ticket
-    // row, which has no bulk gesture to advertise.
-    drawHackerHint(fb, bulkOpenUnlocked() && !ticket ? "HOLD - OPEN ALL" : nullptr,
-                   ticket ? "B PLAY" : "B DECRYPT");
 }
 
 void Game::drawHackerProfile(Framebuffer& fb) const {

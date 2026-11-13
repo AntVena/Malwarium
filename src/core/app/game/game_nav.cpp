@@ -178,7 +178,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     else if (loadoutTab_ == LoadoutTab::Moves) onTrainList(ev);
                     else onLoadoutHub(ev);
                     break;
-                case SubmenuId::Games: onArcadeList(ev); break;
+                case SubmenuId::Games: arcadeScreen_.onList(*this, ev); break;
                 case SubmenuId::Expl: onExplList(ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
@@ -195,7 +195,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     else if (modDetail_) onModDetail(ev);
                     else onModPicker(ev);
                     break;
-                case SubmenuId::Games: onArcadeCabinet(ev); break;
+                case SubmenuId::Games: arcadeScreen_.onCabinet(*this, ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
             break;
@@ -228,7 +228,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Chroma: onChroma(ev); break;
         // The arcade payout: informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).
-        case Nav::ArcadeResult: onArcadeResult(ev); break;
+        case Nav::ArcadeResult: arcadeScreen_.onResult(*this, ev); break;
         case Nav::Process:
             // Non-interruptible: ignored while running; the outcome dismisses.
             if (maint_ && maint_->resolved &&
@@ -346,7 +346,7 @@ void Game::enterSubmenu() {
             trainRow_ = 0; trainScreen_ = TrainScreen::MovePicker;
             moveConfirm_.close(); movePendingId_ = nullptr; moveDetailEquipped_ = false;
             break;
-        case SubmenuId::Games: arcadeRow_ = 0; break;
+        case SubmenuId::Games: arcadeScreen_.enter(); break;
         case SubmenuId::Expl: openExplList(); break;
         // Entering STAT always lands on VITALS, never on the index or on the page last
         // read: the slot is entered to check on the pet, and where the last visit

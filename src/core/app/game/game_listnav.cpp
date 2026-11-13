@@ -47,13 +47,7 @@ Game::ListTarget Game::listTarget() const {
                 // no row contract and C stays an instant back.
                 if (rigShop_.view() == ShopView::ServiceInfo) return {};
                 return screenList<&Game::rigShop_>();
-            case HackerSlotId::Vault:
-                return {[](Game& g, int dir) {
-                            const ItemDef* rows[16];
-                            g.hackerVaultRow_ =
-                                stepRow(g.hackerVaultRow_, g.vaultOwnedRows(rows, 16), dir);
-                        },
-                        [](Game& g) { g.onHackerVault(kTapC); }};
+            case HackerSlotId::Vault: return screenList<&Game::vault_>();
             case HackerSlotId::Peers:
                 return {[](Game& g, int dir) {
                             PeerRow rows[kPeerMaxRows];
@@ -155,11 +149,8 @@ Game::ListTarget Game::submenuListTarget() const {
                     },
                     [](Game& g) { g.onExplList(kTapC); }};
         case SubmenuId::Games:
-            return {[](Game& g, int dir) {
-                        g.arcadeRow_ = stepRow(g.arcadeRow_, arcadeGameCount(), dir,
-                                               [&g](int r) { return g.arcadeCabinetOffered(r); });
-                    },
-                    [](Game& g) { g.onArcadeList(kTapC); }};
+            return {[](Game& g, int dir) { g.arcadeScreen_.stepList(g, dir); },
+                    [](Game& g) { g.arcadeScreen_.onList(g, kTapC); }};
         case SubmenuId::Mods:
             if (loadoutTab_ == LoadoutTab::Mods)
                 return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, kModSlots, dir); },

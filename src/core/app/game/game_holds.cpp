@@ -23,9 +23,7 @@ Game::HoldTarget Game::holdTarget() const {
         if (nav_ != Nav::Submenu) return {};
         switch (enteredHackerId()) {
             case HackerSlotId::Shop: return screenHold<&Game::rigShop_>();
-            case HackerSlotId::Vault:
-                return {[](Game& g, uint32_t held) { return g.vaultHoldB(held); },
-                        [](Game& g) { g.vaultReleaseB(); }};
+            case HackerSlotId::Vault: return screenHold<&Game::vault_>();
             default: return {};
         }
     }

@@ -275,7 +275,7 @@ void Game::useItem() {
 
     // Openable containers (sealed caches) are decrypted from the Hacker VAULT: itemUsable
     // gates them ("OPEN IN VAULT (A+C)"), so useItem never reaches this point for one.
-    // openSealedCache lives on and is called from onHackerVault.
+    // openSealedCache lives on Game and the VAULT (VaultScreen) calls it.
 
     // Rollback: Use opens the stat picker instead of feeding/buffing. The
     // item is only consumed when a shed is confirmed (onRollbackPicker B): cancelling
