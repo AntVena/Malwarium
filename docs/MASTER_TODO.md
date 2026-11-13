@@ -122,7 +122,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **The boss gauntlet**: `boss*`.
 - **The tourney**: `tourney*` (11 fields).
 - **A PvP session**: `pvp*` (19 fields).
 - **The minigame runs**: the arcade run (`arcadeRun_`, score and result fields), the egg pick
