@@ -101,10 +101,12 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModalFeeding: {
             FeedingView v;
             v.pet = pet;
-            v.food = feedItem_;
-            v.foodIcon = feedItem_ ? itemIcon(registry_, feedItem_->id) : nullptr;
-            v.before = feedBefore_;
-            v.beat = feedBeat_;
+            if (feeding_) {
+                v.food = feeding_->item;
+                v.foodIcon = itemIcon(registry_, feeding_->item->id);
+                v.before = feeding_->before;
+                v.beat = feeding_->beat;
+            }
             v.fxBeat = fxBeat_;
             drawFeedingModal(fb, pet_.model, v);
             break;
@@ -1296,35 +1298,35 @@ void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
 }
 
 void Game::drawCacheYieldScreen(Framebuffer& fb) const {
-    if (!cacheYieldCache_) return;
+    if (!cacheReveal_ || !cacheReveal_->cache) return;
+    const CacheReveal& r = *cacheReveal_;
     YieldItem items[2];
-    for (int i = 0; i < cacheYieldItemCount_ && i < 2; ++i) {
-        items[i].def = cacheYieldItems_[i];
+    for (int i = 0; i < r.itemCount && i < 2; ++i) {
+        items[i].def = r.items[i];
         items[i].icon = items[i].def ? itemIcon(registry_, items[i].def->id) : nullptr;
     }
-    drawCacheYield(fb, *cacheYieldCache_, cacheYieldBits_, items, cacheYieldItemCount_);
+    drawCacheYield(fb, *r.cache, r.bits, items, r.itemCount);
 }
 
 void Game::drawBulkYieldScreen(Framebuffer& fb) const {
-    if (!bulkYieldCache_) return;
+    if (!bulkReveal_ || !bulkReveal_->cache) return;
+    const BulkReveal& r = *bulkReveal_;
     BulkYieldRow rows[16];
-    int n = static_cast<int>(bulkYieldTally_.size());
+    int n = static_cast<int>(r.tally.size());
     if (n > 16) n = 16;
     for (int i = 0; i < n; ++i) {
-        rows[i].def = bulkYieldTally_[i].def;
-        rows[i].icon = bulkYieldTally_[i].def
-                           ? itemIcon(registry_, bulkYieldTally_[i].def->id)
-                           : nullptr;
-        rows[i].count = bulkYieldTally_[i].count;
+        rows[i].def = r.tally[i].def;
+        rows[i].icon = r.tally[i].def ? itemIcon(registry_, r.tally[i].def->id) : nullptr;
+        rows[i].count = r.tally[i].count;
     }
     BulkYieldView v;
-    v.cachesOpened = bulkYieldCachesOpened_;
-    v.bits = bulkYieldBits_;
+    v.cachesOpened = r.cachesOpened;
+    v.bits = r.bits;
     v.rows = rows;
     v.count = n;
-    v.cursor = bulkYieldRow_;
+    v.cursor = r.row;
     v.beat = beat_;
-    drawBulkYield(fb, *bulkYieldCache_, v);
+    drawBulkYield(fb, *r.cache, v);
 }
 
 void Game::drawStacker(Framebuffer& fb) const {

@@ -18,7 +18,9 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
+#include "core/model/feeding.h"     // FeedVitals
 #include "core/model/maint_run.h"   // MaintKind
 
 namespace mal {
@@ -124,15 +126,28 @@ struct ArchGroup {
     }
 };
 
-// The pet's vitals as they stood BEFORE the food was applied. The feeding modal
-// reports the change that actually happened, which is the only way a pull TOWARD
-// 50% Happiness, or a top-up onto an already-full stat, can state its own
-// direction: the magnitude on the row doesn't know either. Game::startFeeding
-// snapshots this the instant before Game::applyItemEffects.
-struct FeedVitals {
-    int hunger = 0;
-    int frag = 0;
-    int happy = 0;
+// What the cache-yield reveal (Nav::CacheYield) shows: one opened cache's result. The
+// opening has already paid it by the time the reveal is up, so this is the screen's
+// alone, held while it is open. The ItemDefs live in the static registry.
+struct CacheReveal {
+    const ItemDef* cache = nullptr;
+    int bits = 0;
+    const ItemDef* items[2] = {nullptr, nullptr};
+    int itemCount = 0;
+};
+
+// What the bulk-open reveal (Nav::BulkYield) shows: the totals across every cache opened
+// in one action, one tally row per distinct item, and the reveal's scroll cursor.
+struct BulkReveal {
+    struct Tally {
+        const ItemDef* def = nullptr;
+        int count = 0;
+    };
+    const ItemDef* cache = nullptr;   // the cache that was opened in bulk
+    int cachesOpened = 0;
+    int bits = 0;
+    std::vector<Tally> tally;
+    int row = 0;
 };
 
 }  // namespace mal

@@ -577,11 +577,12 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     inventory_.remove(d.id, 1);
     // Snapshot first: the modal's gauges report the DELTA this bite achieved, and
     // a stat that was already capped has none to show.
-    feedBefore_ = {pet_.model.hunger(), pet_.model.fragmentation(), pet_.model.happiness()};
+    const FeedVitals before{pet_.model.hunger(), pet_.model.fragmentation(),
+                            pet_.model.happiness()};
     applyItemEffects(d);                        // Hunger/Happy fill + any frag/happy-pull
     // A meal builds Bond only when the pet had room for it: stuffing a full pet is not
     // looking after it.
-    if (feedBefore_.hunger < 100) addBond(pet_.upgrades, BondSource::Food, kBondFoodBp);
+    if (before.hunger < 100) addBond(pet_.upgrades, BondSource::Food, kBondFoodBp);
     // Feeding from the crisis resolves it immediately: disarm the deadline so it
     // can't penalise the pet mid-eat (endFeeding finalises the return to idle).
     if (fromLockout) pet_.armed.lockoutActive = false;
@@ -590,25 +591,23 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     log_.push(LogEventType::ItemUsed, buf);
     // After the FED line, so a favourite found by this bite logs as its consequence.
     markFoodEaten(d);                          // this pet's palate (STAT's FOODS grid)
-    feedItem_ = &d;
-    feedBeat_ = 0;
+    feeding_ = Feeding::started(d, before, fromLockout);
     fxBeat_ = 0;              // the bite's own dissolve clock
-    feedFromLockout_ = fromLockout;
     rollPantrySpoilage();          // opening the bag is what disturbs the rest of it
     markSaveDirty();
     nav_ = Nav::ModalFeeding;
 }
 
 void Game::endFeeding() {
-    if (feedFromLockout_) {
+    const bool fromLockout = feeding_ && feeding_->fromLockout;
+    feeding_.reset();
+    if (fromLockout) {
         resolveLockout();                 // -> idle
     } else if (detailItem_ && inventory_.count(detailItem_->id) > 0) {
         nav_ = Nav::Detail;               // back to the detail it came from
     } else {
         nav_ = Nav::Submenu;              // item ran out -> back to the list
     }
-    feedItem_ = nullptr;
-    feedFromLockout_ = false;
 }
 
 

@@ -760,6 +760,7 @@ int g_failures = 0;
     RUN(test_item_picker_nav_drills_in_and_back)  \
     RUN(test_inventory_stamp_tracks_changes)      \
     RUN(test_items_list_sees_bag_change_while_open) \
+    RUN(test_reveals_hold_their_result_only_while_up) \
     RUN(test_item_picker_skipped_in_lockout)      \
     RUN(test_item_hold_b_follows_picker_axis)     \
     /* The shared list-navigation contract (game_listnav.cpp) */ \

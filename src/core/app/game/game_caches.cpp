@@ -85,10 +85,10 @@ void Game::openSealedCache(const ItemDef& d) {
     std::snprintf(opened, sizeof(opened), "OPENED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, opened);
 
-    cacheYieldCache_ = &d;   // ItemDef lives in the static registry: stable pointer
-    cacheYieldItemCount_ = 0;
-    cacheYieldBits_ = 0;
-    grantCacheReward(d, cacheYieldBits_, cacheYieldItems_, cacheYieldItemCount_, 2);
+    CacheReveal r;
+    r.cache = &d;            // ItemDef lives in the static registry: stable pointer
+    grantCacheReward(d, r.bits, r.items, r.itemCount, 2);
+    cacheReveal_ = r;
 
     markSaveDirty();
     nav_ = Nav::CacheYield;   // show what came out
@@ -97,7 +97,10 @@ void Game::openSealedCache(const ItemDef& d) {
 void Game::onCacheYield(const ButtonEvent& ev) {
     // Any confirm/back dismisses the reveal to the ITEMS list (the container is
     // already gone; the yield is in the bag + logged).
-    if (ev.button == Button::B || ev.button == Button::C) nav_ = Nav::Submenu;
+    if (ev.button == Button::B || ev.button == Button::C) {
+        cacheReveal_.reset();
+        nav_ = Nav::Submenu;
+    }
 }
 
 void Game::openAllCachesOfRarity(const ItemDef& focused) {
@@ -114,44 +117,44 @@ void Game::openAllCachesOfRarity(const ItemDef& focused) {
         if (std::strcmp(d->id, focused.id) == 0) targets.push_back({d, s.qty});
     }
 
-    bulkYieldCache_ = &focused;
-    bulkYieldCachesOpened_ = 0;
-    bulkYieldBits_ = 0;
-    bulkYieldTally_.clear();
-    bulkYieldRow_ = 0;
+    BulkReveal r;
+    r.cache = &focused;
 
     for (const Target& t : targets) {
         for (int i = 0; i < t.qty; ++i) {
             inventory_.remove(t.def->id, 1);
-            ++bulkYieldCachesOpened_;
+            ++r.cachesOpened;
             int oneBits = 0;
             const ItemDef* oneItems[2] = {nullptr, nullptr};
             int oneCount = 0;
             grantCacheReward(*t.def, oneBits, oneItems, oneCount, 2);
-            bulkYieldBits_ += oneBits;
+            r.bits += oneBits;
             for (int k = 0; k < oneCount; ++k) {
                 if (!oneItems[k]) continue;
                 bool merged = false;
-                for (auto& tally : bulkYieldTally_)
+                for (BulkReveal::Tally& tally : r.tally)
                     if (tally.def == oneItems[k]) { ++tally.count; merged = true; break; }
-                if (!merged) bulkYieldTally_.push_back({oneItems[k], 1});
+                if (!merged) r.tally.push_back({oneItems[k], 1});
             }
         }
     }
 
     char opened[40];
-    std::snprintf(opened, sizeof(opened), "BULK OPENED %d %s", bulkYieldCachesOpened_,
+    std::snprintf(opened, sizeof(opened), "BULK OPENED %d %s", r.cachesOpened,
                   rarityName(focused.rarity));
     log_.push(LogEventType::ItemUsed, opened);
+    bulkReveal_ = std::move(r);
     markSaveDirty();
     nav_ = Nav::BulkYield;
 }
 
 void Game::onBulkYield(const ButtonEvent& ev) {
-    const int n = static_cast<int>(bulkYieldTally_.size());
+    if (!bulkReveal_) return;
+    const int n = static_cast<int>(bulkReveal_->tally.size());
     if (ev.button == Button::A) {
-        if (n > 0) bulkYieldRow_ = (bulkYieldRow_ + 1) % n;
+        if (n > 0) bulkReveal_->row = (bulkReveal_->row + 1) % n;
     } else if (ev.button == Button::B || ev.button == Button::C) {
+        bulkReveal_.reset();
         nav_ = Nav::Submenu;   // back to the VAULT list the bulk-open came from
     }
 }

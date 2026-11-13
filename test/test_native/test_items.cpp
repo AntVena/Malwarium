@@ -2016,3 +2016,32 @@ void test_items_list_sees_bag_change_while_open() {
     g.inventory().add("polltatoes", 1);
     CHECK(stepsToWrap() == before + 1);
 }
+
+// The three reveals hold what they show only while they are up. A feeding starts with
+// its food, its before-snapshot and where it hands back to; a cache reveal and a bulk
+// reveal carry their result until dismissed, and nothing of either is left after.
+void test_reveals_hold_their_result_only_while_up() {
+    const ItemDef* food = ContentRegistry::embedded().item("dyno_nuggets");
+    CHECK(food != nullptr);
+    const Feeding f = Feeding::started(*food, FeedVitals{40, 10, 70}, /*fromLockout=*/true);
+    CHECK(f.item == food && f.before.hunger == 40 && f.before.happy == 70);
+    CHECK(f.beat == 0 && f.fromLockout);
+
+    Game g{StartMode::Hatched};
+    g.inventory().add("sealed_cache_epic", 1);
+    g.inventory().add("sealed_cache_common", 3);
+    CHECK(g.cacheYieldItemCount() == 0 && g.bulkYieldCachesOpened() == 0);
+    g.debugOpenCache("sealed_cache_epic");
+    CHECK(g.nav() == Game::Nav::CacheYield && g.cacheYieldItemCount() > 0);
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::Submenu && g.cacheYieldItemCount() == 0);
+    CHECK(g.cacheYieldBits() == 0);
+
+    g.debugBulkOpenCaches("sealed_cache_common");
+    CHECK(g.nav() == Game::Nav::BulkYield && g.bulkYieldCachesOpened() == 3);
+    g.onButton(press(Button::A));                 // scrolling keeps it up
+    CHECK(g.bulkYieldCachesOpened() == 3);
+    g.onButton(press(Button::C));
+    CHECK(g.nav() == Game::Nav::Submenu && g.bulkYieldCachesOpened() == 0);
+    CHECK(g.bulkYieldTallyCount() == 0 && g.bulkYieldBits() == 0);
+}

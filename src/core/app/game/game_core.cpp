@@ -271,7 +271,7 @@ void Game::stepRestingTricks(const CreatureLine* petLine, RestingTrick trick) {
 void Game::stepScreenBeat() {
     switch (nav_) {
     case Nav::ModalFeeding:
-        if (++feedBeat_ >= kFeedBeats) endFeeding();
+        if (feeding_ && ++feeding_->beat >= kFeedBeats) endFeeding();
         break;
     case Nav::Process:
         if (maint_ && !maint_->resolved && ++maint_->beat >= kProcessBeats) resolveMaint();

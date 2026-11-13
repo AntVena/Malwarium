@@ -40,6 +40,7 @@
 #include "core/model/arcade_run.h"
 #include "core/model/egg_pick.h"
 #include "core/model/explore_walk.h"
+#include "core/model/feeding.h"
 #include "core/model/maint_run.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
@@ -1448,10 +1449,10 @@ public:
     bool tagEditorActive() const {
         return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::HackerTag;
     }
-    // Cache-yield reveal inspection (tests): what the last-opened cache
-    // produced, valid while nav() == Nav::CacheYield.
-    int cacheYieldItemCount() const { return cacheYieldItemCount_; }
-    int cacheYieldBits() const { return cacheYieldBits_; }
+    // Cache-yield reveal inspection (tests): what the opened cache produced, while
+    // nav() == Nav::CacheYield; 0 with no reveal up.
+    int cacheYieldItemCount() const { return cacheReveal_ ? cacheReveal_->itemCount : 0; }
+    int cacheYieldBits() const { return cacheReveal_ ? cacheReveal_->bits : 0; }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const override {
         // An egg has nothing to defragment, so it is never charged for one.
@@ -2118,18 +2119,19 @@ public:
     void debugBulkOpenCaches(const char* id) {
         if (const ItemDef* d = registry_.item(id)) openAllCachesOfRarity(*d);
     }
-    int bulkYieldCachesOpened() const { return bulkYieldCachesOpened_; }
-    int bulkYieldBits() const { return bulkYieldBits_; }
-    int bulkYieldTallyCount() const { return static_cast<int>(bulkYieldTally_.size()); }
+    // The bulk-open reveal (tests), while nav() == Nav::BulkYield; 0 / empty with none.
+    int bulkYieldCachesOpened() const { return bulkReveal_ ? bulkReveal_->cachesOpened : 0; }
+    int bulkYieldBits() const { return bulkReveal_ ? bulkReveal_->bits : 0; }
+    int bulkYieldTallyCount() const {
+        return bulkReveal_ ? static_cast<int>(bulkReveal_->tally.size()) : 0;
+    }
     // The i'th tally entry's item id + count (tests). Empty id / 0 count if out of range.
     const char* bulkYieldTallyId(int i) const {
-        return (i >= 0 && i < static_cast<int>(bulkYieldTally_.size()) &&
-                bulkYieldTally_[i].def)
-                   ? bulkYieldTally_[i].def->id : "";
+        return (i >= 0 && i < bulkYieldTallyCount() && bulkReveal_->tally[i].def)
+                   ? bulkReveal_->tally[i].def->id : "";
     }
     int bulkYieldTallyCountAt(int i) const {
-        return (i >= 0 && i < static_cast<int>(bulkYieldTally_.size()))
-                   ? bulkYieldTally_[i].count : 0;
+        return (i >= 0 && i < bulkYieldTallyCount()) ? bulkReveal_->tally[i].count : 0;
     }
     // Resolve a Defrag with a forced success/failure via the real resolveMaint() path
     // (tests): a deterministic maint outcome (rollMaintSuccess is otherwise RNG-gated),
@@ -3438,22 +3440,9 @@ private:
     // at whatever was last pressed.
     int exploreCtlRow_ = 0;
     const ItemDef* detailItem_ = nullptr;  // ITEMS detail subject
-    // Cache-yield reveal: what the just-opened cache produced, held for
-    // the Nav::CacheYield overlay. The ItemDef* point into the static registry (stable
-    // after the container leaves the bag). cacheYieldCache_ = the opened container.
-    const ItemDef* cacheYieldCache_ = nullptr;
-    const ItemDef* cacheYieldItems_[2] = {nullptr, nullptr};
-    int cacheYieldItemCount_ = 0;
-    int cacheYieldBits_ = 0;
-    // e VAULT bulk-open reveal (Nav::BulkYield): the rarity group + totals
-    // from the just-run openAllCachesOfRarity, held for the reveal screen. Mirrors
-    // the cacheYield* fields above but tallies across N caches instead of one.
-    const ItemDef* bulkYieldCache_ = nullptr;
-    int bulkYieldCachesOpened_ = 0;
-    int bulkYieldBits_ = 0;
-    struct BulkTallyEntry { const ItemDef* def = nullptr; int count = 0; };
-    std::vector<BulkTallyEntry> bulkYieldTally_;
-    int bulkYieldRow_ = 0;   // A-scroll cursor into bulkYieldTally_
+    // The two cache reveals (core/ui/items_screen.h), each held only while it is up.
+    std::optional<CacheReveal> cacheReveal_;
+    std::optional<BulkReveal> bulkReveal_;
     // The MAINT action page's: which process it has open.
     MaintKind maintKind_ = MaintKind::Defrag;
     // The focused payment VARIANT on the open MAINT action. DEFRAG: 0 = Quick (Bits,
@@ -4130,13 +4119,8 @@ private:
     RadioOwner radioOwner_ = RadioOwner::None;
 
 
-    // Feeding modal. feedBefore_ is the vitals snapshot taken the instant before
-    // the food is applied, so the modal can report the change it actually made
-    // rather than the change its magnitudes asked for (ui/modals.h).
-    const ItemDef* feedItem_ = nullptr;
-    FeedVitals feedBefore_{};
-    int feedBeat_ = 0;
-    bool feedFromLockout_ = false;
+    // The feeding in progress (core/model/feeding.h), held while its modal is up.
+    std::optional<Feeding> feeding_;
 
     // Lockout modal.
     bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits

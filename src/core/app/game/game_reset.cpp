@@ -44,8 +44,7 @@ void Game::resetToHatch() {
     maintKind_ = MaintKind::Defrag;
     maintVariant_ = 0;
     maint_.reset();
-    feedItem_ = nullptr;
-    feedFromLockout_ = false;
+    feeding_.reset();
     lockoutItemsContext_ = false;
     evolveTo_ = nullptr;
     evolveBeat_ = 0;
