@@ -122,7 +122,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 Each owns its clocks (the `last*Ms_` fields on `Game` are mostly one run's step clock), its
 random draws and its result, and is gone when it ends. Rows are M unless marked.
 
-- **A PvP session**: `pvp*` (19 fields).
 - **The minigame runs**: the arcade run (`arcadeRun_`, score and result fields), the egg pick
   (`eggPick*`, 11 fields), the MAINT boards, the cryptogram run. One row each, S to M.
 - **The reveals**: cache yield, bulk yield and the feeding modal's snapshot. S.
@@ -142,6 +141,9 @@ random draws and its result, and is gone when it ends. Rows are M unless marked.
 - **The arena screen**: `tourneyCursor_`, `tourneyView_`, `tourneyScroll_`,
   `tourneyScouted_`, `tourneyScoutedSlot_`. It reads `TourneyRun` through the `tourney*()`
   accessors. S.
+- **The LINK screen**: `pvpRow_` and `pvpStatus_` (why the last duel ended). The outbound
+  frame queue (`pvpOutbox_`, `pvpOutCount_`) outlives a session but is no screen's: it is
+  the radio link's, so this row also decides its home. S.
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which
