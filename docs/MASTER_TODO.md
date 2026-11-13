@@ -126,9 +126,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
   arms B moves its `HoldFocus` case's hold and release entry points onto the new type.
-- **The combat screen**: `combatStatsPage_`, the stage's anim clock (`combatAnimBeat_`,
-  `lastCombatAnimMs_`) and the camo (`combatCamo*`). They live while the Combat screen is
-  up, across a gauntlet's rounds, so they stayed off `Fight`. It reads `Game::fight()`.
 - **The encounter intro**: `encounterEnemy_`, `encounterChoice_`, `encounterBypass_`. It
   hands the wild to `startWildCombat` and keeps nothing once a fight opens. S.
 - **The arena screen**: `tourneyCursor_`, `tourneyView_`, `tourneyScroll_`,
