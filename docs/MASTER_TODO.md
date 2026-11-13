@@ -99,15 +99,27 @@ question with the description beneath them, and open the confirm over the descri
 CONTRIBUTING section *Where state lives* says where each field goes: a record (`Pet`,
 `Operator`, `Settings`), a run, or a screen. These rows move it there, one type at a time.
 
-Every row lands green on its own: the native suite passes and a `tools/screens.sh` render is
-byte-identical to one taken before it, unless the row says otherwise. Each deletes the `debug*`
-hooks (about 100 on `Game` today) that its tests no longer need, and moves the tests onto the
-new type. `ItemsMenu` and `RigShopScreen` are the screens to copy: state and handlers in their
-own type, the game reached through `ItemsHost` and `RigShopHost`, joined to the list and hold
-gestures by `screenList` and `screenHold`, stepping with `stepRow`. A screen's confirm moves as
-its `InlineConfirm`. `ItemsMenu` also shows how a screen keeps derived rows without a stale
-cache (it keys them on `Inventory::stamp`). Small screens go in batches, one commit each,
-checked together.
+Every row builds on its own, and a `tools/screens.sh` render stays byte-identical to one
+taken before it unless the row says otherwise. A screen extraction keeps the gates compiling
+with read-only forwarders on `Game` (`crewView()`, `tourneyCursor()`, `shopStatusLine()`) rather
+than rewriting gates as it goes. The `debug*` hooks (about 100) and those forwarders are swept
+in one pass once the first cut of every screen and run is done, gates moved onto the new types
+or dropped by one rule, since they all break the same way.
+
+How a screen is cut, as the twenty-odd types in `src/core/app/game/` now show:
+- The screen holds only what dies with it (cursor, view, scroll, a frozen result, the subject
+  of a page), owns its input and its draw, and reaches the game through a narrow `*Host`.
+  The rules stay `Game`'s (or a record's, or a run's): the host carries verbs, never fields.
+- A flow that acts on a thing is handed the thing. `useItem(item, ItemUseFrom)` replaced a
+  shared `detailItem_` that half the Use path read implicitly; look for the same shape.
+- A slot's L2 list and L3 page are one screen type (`ArcadeScreen`, `ItemsMenu`, `VaultScreen`
+  with its reveals). The host's `openDetail` / `closeDetail` / `leaveToCarousel` are the
+  shared moves between them.
+- Lists join the gestures with one `listTarget` entry (`screenList`), holds with one
+  `holdTarget` entry (`screenHold`), step with `stepRow`, confirm with `InlineConfirm`.
+- A thing on its own clock with a continuation (the story reader) or a lifetime of its own
+  (a storefront visit) is a run, not a screen.
+- Small screens go in batches, one commit each, checked together.
 
 #### Records
 
@@ -122,13 +134,12 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **The rest**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), the MODS and MOVES pickers
-  (`mod*`, `move*` cursors and confirms), the two cache reveals (`cacheReveal_`,
-  `bulkReveal_`), the MAINT list (it still steps `Game`'s shared `listRow_`), and the ITEMS
-  detail page and its Use path (`onItemsDetail`, `useItem`, `detailItem_`), which are still
-  `Game`'s. Each one that arms B moves its `holdTarget` entry onto the new type, as
-  `screenHold`. The newest screen types are the ones to copy; the host's `openDetail` /
-  `closeDetail` / `leaveToCarousel` are the shared L2/L3 moves.
+- **The rest**: ARCH (`arch*`, game_arch.cpp + game_arch_sale.cpp, about 480 lines), CFG
+  (`cfg*`, 15 fields, game_config.cpp, about 700 lines), the MODS and MOVES pickers
+  (`mod*`, `move*` cursors and confirms; both behind the loadout tab, so one type), and the
+  MAINT list, which still steps `Game`'s shared `listRow_`. `listRow_` itself is a smell: one
+  cursor several screens share, so each of these takes its own. Each one that arms B moves
+  its `holdTarget` entry onto the new type, as `screenHold`.
 - **Two runs the screens left behind.** The STORY reader (`storyChapter_`, `storyNext_`,
   `storyScroll_`, `storyPanelDeadlineMs_`, `storyThen_`, `storyThenArea_`) turns its own
   pages on a deadline and carries a queue and a continuation that re-enters the walk, the
