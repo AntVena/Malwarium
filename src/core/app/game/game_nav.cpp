@@ -165,7 +165,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 case SubmenuId::Stat: stat_.onButton(*this, ev); break;
                 case SubmenuId::Items: items_.onButton(*this, ev); break;
                 case SubmenuId::Maint: onMaintList(ev); break;
-                case SubmenuId::Cfg: onCfgList(ev); break;
+                case SubmenuId::Cfg: cfg_.onButton(*this, ev); break;
                 case SubmenuId::Arch: arch_.onButton(*this, ev); break;
                 // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
                 // one is open is loadoutTab_ (PRACTISE never rests here. It opens
@@ -184,7 +184,7 @@ void Game::onButton(const ButtonEvent& ev) {
             switch (enteredId()) {
                 case SubmenuId::Items: items_.onDetail(*this, ev); break;
                 case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
-                case SubmenuId::Cfg: onCfgDetail(ev); break;
+                case SubmenuId::Cfg: cfg_.onDetail(*this, ev); break;
                 case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
                 case SubmenuId::Mods:
                     if (loadoutTab_ == LoadoutTab::Practise) onSimTier(ev);
@@ -328,7 +328,7 @@ void Game::enterSubmenu() {
             break;
         }
         case SubmenuId::Maint: listRow_ = 0; break;
-        case SubmenuId::Cfg: listRow_ = 0; bHeld_ = false; break;
+        case SubmenuId::Cfg: cfg_.enter(); bHeld_ = false; break;
         case SubmenuId::Arch: arch_.enter(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:

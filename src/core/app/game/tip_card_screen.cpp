@@ -166,4 +166,17 @@ void TipCardScreen::draw(Framebuffer& fb, const TipCardHost& host) const {
     drawHintBand(fb, hint);
 }
 
+const char* TipCardScreen::title(Tip t) {
+    switch (t) {
+        case Tip::CareFed: return "HUNGRY";
+        case Tip::CareFrag: return "GLITCHY";
+        case Tip::CareHappy: return "BORED";
+        case Tip::FirstWalk: return "THE WALK";
+        case Tip::FirstCache: return "CACHES + THE VAULT";
+        case Tip::FirstError: return "ERRORS";
+        case Tip::NearTheLine: return "ONE MORE ERROR";
+        default: return "";
+    }
+}
+
 }  // namespace mal

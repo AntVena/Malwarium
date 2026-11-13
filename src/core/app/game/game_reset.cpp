@@ -47,8 +47,7 @@ void Game::resetToHatch() {
     evolveTo_ = nullptr;
     evolveBeat_ = 0;
     csfBeat_ = 0;
-    cfgScreen_ = CfgScreen::SysInfo;
-    factoryScope_ = 0;
+    cfg_.reset();
     bHeld_ = false;
     // A full wipe: clear the persisted save + the rack + lifetime/identity state,
     // so the next boot is a genuine first boot. The scope

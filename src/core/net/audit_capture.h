@@ -36,6 +36,12 @@ namespace mal {
 //             kAuditRearmCooldownMs elapses (then auto-arms iff the toggle is on).
 enum class AuditPhase : uint8_t { Disarmed, Armed, Hot, Cooldown };
 
+// The escalating audit control, the single CFG setting over scan and capture. One
+// ordered dial instead of two toggles, so "capture needs scan" cannot be violated:
+// Off leaves the radio idle, Scan is passive discovery only, ScanCapture adds the
+// passive handshake capture.
+enum class AuditMode : uint8_t { Off = 0, Scan = 1, ScanCapture = 2 };
+
 class AuditCapture {
 public:
     AuditPhase phase() const { return phase_; }

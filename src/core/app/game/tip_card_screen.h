@@ -46,6 +46,8 @@ public:
     std::vector<ProseRow> rows(const TipCardHost& host) const;
 
     Tip tip() const { return tip_; }
+    // The short name CFG > TIPS lists a card under.
+    static const char* title(Tip t);
 
 private:
     Tip tip_ = Tip::MenuOpened;

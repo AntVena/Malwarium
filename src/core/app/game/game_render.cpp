@@ -725,9 +725,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Maint:
             drawMaintList(fb, pet_.model, listRow_, beat_);
             break;
-        case SubmenuId::Cfg:
-            drawCfgList(fb, listRow_, op_.hackerTag, equippedTitleName(), radioOwner_);
-            break;
+        case SubmenuId::Cfg: cfg_.draw(fb, *this); break;
         case SubmenuId::Arch: arch_.draw(fb, *this); break;
         case SubmenuId::Mods: {
             const Stage st = pet_.creature ? pet_.creature->stage : Stage::BootSector;
@@ -811,9 +809,7 @@ void Game::drawDetail(Framebuffer& fb) const {
         case SubmenuId::Maint:
             maintScreen_.draw(fb, *this);
             break;
-        case SubmenuId::Cfg:
-            drawCfg(fb);
-            break;
+        case SubmenuId::Cfg: cfg_.drawDetail(fb, *this); break;
         case SubmenuId::Arch: arch_.drawDetail(fb, *this); break;
         case SubmenuId::Mods:
             if (loadoutTab_ == LoadoutTab::Practise) {

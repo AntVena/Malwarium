@@ -43,8 +43,7 @@ Game::HoldTarget Game::holdTarget() const {
         switch (enteredId()) {
             // Letting go early abandons the reveal or the commit, so the release is empty.
             case SubmenuId::Cfg:
-                return {[](Game& g, uint32_t held) { return g.cfgHoldB(held); },
-                        [](Game&) {}};
+                return screenHold<&Game::cfg_>();
             // trainScreen_ keeps its value across a hub page change, so the MODS picker
             // sits at the same Nav::Detail with a stale MovePicker beside it.
             case SubmenuId::Mods:

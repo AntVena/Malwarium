@@ -19,6 +19,7 @@
 #include "core/app/settings.h"
 #include "core/app/game/arcade_screen.h"
 #include "core/app/game/arch_screen.h"
+#include "core/app/game/cfg_menu.h"
 #include "core/app/game/arena_screen.h"
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
@@ -122,7 +123,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
              private MergeHost, private PeersHost, private ChaptersHost,
-             private MaintHost, private ShopHost, private TipCardHost, private ArchHost {
+             private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
+             private CfgHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -358,7 +360,7 @@ public:
     // The Operator record, read by const reference: the player across every pet.
     const Operator& operatorRecord() const override { return op_; }
     // The Settings record, read by const reference: the device's preferences.
-    const Settings& settingsRecord() const { return settings_; }
+    const Settings& settingsRecord() const override { return settings_; }
     // Price of the NEXT "Increase Bandwidth" upgrade (climbs per purchase, a).
     int bandwidthUpgradeCost() const { return op_.rig.costFor(kRigRowBandwidth); }
     // rig upgrades: player-level, persisted (save v27), survive lifecycles
@@ -579,7 +581,7 @@ public:
     // CFG > DEVICE > TIPS: the cards this device has shown, in a fixed order, to read
     // again (game_onboard.cpp). A card not yet shown is not listed, so the list never
     // spoils it.
-    std::vector<Tip> replayableTips() const;
+    std::vector<Tip> replayableTips() const override;
     static const char* tipTitle(Tip t);
     // WHILE YOU WERE AWAY (game_onboard.cpp): what happened since the last button press,
     // shown on the first press after kAwayDigestMs of powered-on quiet, but only when
@@ -751,7 +753,7 @@ public:
         power_ = next;
         batteryLevel_ = level;
     }
-    const PowerStatus& powerStatus() const { return power_; }
+    const PowerStatus& powerStatus() const override { return power_; }
     // Which ICON_SYS_BATTERY frame the current reading draws as, or -1 when there is
     // no reading to draw (host builds, or a board with the monitor disabled).
     int batteryLevel() const { return batteryLevel_; }
@@ -817,7 +819,7 @@ public:
         sdStatus_ = s;
         dirty_ = true;
     }
-    const SdStatus& sdStatus() const { return sdStatus_; }
+    const SdStatus& sdStatus() const override { return sdStatus_; }
 
     // Idle-screen status icons (host-testable). sdIconVisible() is true for
     // kSdIconRevealMs after the card became present (a transient "card mounted"
@@ -853,7 +855,7 @@ public:
     // until this one-shot flag asks the device loop to unmount + remount and push
     // a fresh setSdStatus(). CFG sets it (requestSdRecheck); the device tier reads
     // sdRecheckRequested(), acts, then clears it. No-op on host / card-less boards.
-    void requestSdRecheck() { sdRecheckRequested_ = true; }
+    void requestSdRecheck() override { sdRecheckRequested_ = true; }
     bool sdRecheckRequested() const { return sdRecheckRequested_; }
     void clearSdRecheck() { sdRecheckRequested_ = false; }
 
@@ -864,13 +866,13 @@ public:
     // Latched rather than pulsed for the reason travel sleep is: the device tier may
     // decline a pass (an update job is writing to the card) and be asked again.
     // Host and browser tiers have no card, so they answer finishSdFormat(false).
-    void requestSdFormat() { sdFormatState_ = SdFormatState::Working; dirty_ = true; }
+    void requestSdFormat() override { sdFormatState_ = SdFormatState::Working; dirty_ = true; }
     bool sdFormatRequested() const { return sdFormatState_ == SdFormatState::Working; }
     void finishSdFormat(bool ok) {
         sdFormatState_ = ok ? SdFormatState::Done : SdFormatState::Failed;
         dirty_ = true;
     }
-    SdFormatState sdFormatState() const { return sdFormatState_; }
+    SdFormatState sdFormatState() const override { return sdFormatState_; }
 
     // Travel-mode seam (CFG → DEVICE → TRAVEL MODE): a deliberate indefinite pause.
     // Set here, acted on by the device tier, which powers the radio down, lands a save
@@ -887,8 +889,8 @@ public:
     // Latched rather than pulsed: the device tier may have to hold it for a moment (an
     // OTA image on trial must commit before a reset is safe). The host tier clears it
     // without sleeping.
-    void requestTravelSleep() { travelSleepRequested_ = true; dirty_ = true; }
-    bool travelSleepRequested() const { return travelSleepRequested_; }
+    void requestTravelSleep() override { travelSleepRequested_ = true; dirty_ = true; }
+    bool travelSleepRequested() const override { return travelSleepRequested_; }
     void clearTravelSleep() { travelSleepRequested_ = false; dirty_ = true; }
 
     // Write the current state now, reporting whether it landed. Unconditional: it
@@ -910,7 +912,7 @@ public:
         radioOwner_ = o;
         dirty_ = true;
     }
-    RadioOwner radioOwner() const { return radioOwner_; }
+    RadioOwner radioOwner() const override { return radioOwner_; }
     int hackerRank() const { return op_.hackerRank; }              // (unbounded)
 
     // Audit-mode passive Wi-Fi discovery scan. Runtime opt-in, persisted (save
@@ -985,8 +987,8 @@ public:
         return crewScreenOpen() || peersScreenOpen() || linkScreenOpen() ||
                pvpSessionLive() || netConnectWanted();
     }
-    bool linkEnabled() const { return linkEnabled_; }
-    void setLinkEnabled(bool on);
+    bool linkEnabled() const override { return linkEnabled_; }
+    void setLinkEnabled(bool on) override;
 
     // Whether a home network is STORED, pushed from the platform tier at boot and
     // again whenever the setup page writes one (platform/esp32/net_credentials.h).
@@ -999,7 +1001,7 @@ public:
         netProvisioned_ = on;
         dirty_ = true;
     }
-    bool netProvisioned() const { return netProvisioned_; }
+    bool netProvisioned() const override { return netProvisioned_; }
 
     // What platform/esp32/net_sta.h asks each loop, and what the arbiter reads to pick
     // the Update owner. ONE ASKER: the device joins a network for exactly as long as an
@@ -1028,7 +1030,7 @@ public:
         }
         dirty_ = true;
     }
-    const NetStatus& netStatus() const { return netStatus_; }
+    const NetStatus& netStatus() const override { return netStatus_; }
 
     // Whether this device knows WHERE to check, pushed from the platform tier at
     // boot (platform/esp32/update_source.h). Runtime-only and just a bool, like
@@ -1039,7 +1041,7 @@ public:
         updateSourceKnown_ = on;
         dirty_ = true;
     }
-    bool updateSourceKnown() const { return updateSourceKnown_; }
+    bool updateSourceKnown() const override { return updateSourceKnown_; }
 
     // The manifest address itself, pushed from the platform tier
     // (platform/esp32/update_source.h) at boot and again whenever the 'Pedia's
@@ -1054,7 +1056,7 @@ public:
         updateSourceKnown_ = updateManifestUrl_[0] != '\0';
         dirty_ = true;
     }
-    const char* updateManifestUrl() const { return updateManifestUrl_; }
+    const char* updateManifestUrl() const override { return updateManifestUrl_; }
 
     // What web 'Pedia bundle is on the card, read off its marker by the platform
     // tier (platform/esp32/web_bundle.h) and refreshed after an install. Display
@@ -1067,19 +1069,19 @@ public:
         webBundleVersion_[sizeof(webBundleVersion_) - 1] = '\0';
         dirty_ = true;
     }
-    const char* webBundleVersion() const { return webBundleVersion_; }
+    const char* webBundleVersion() const override { return webBundleVersion_; }
 
     // Everything a check needs before it can even start: a network to reach through
     // and somewhere to look. Both are setup. Pressing the button is the consent, so
     // there is no consent bit to arm first. The UPDATES screen reads this to say
     // which piece is missing instead of offering a button that would silently do
     // nothing.
-    bool updateCheckReady() const { return netProvisioned_ && updateSourceKnown_; }
+    bool updateCheckReady() const override { return netProvisioned_ && updateSourceKnown_; }
 
     // Ask what is published. Raises the connection itself and seeds the CONNECTING
     // step the screen reports, because the radio comes up only for the job, with
     // nothing to switch on before it or left on after.
-    void requestUpdateCheck() {
+    void requestUpdateCheck() override {
         if (!updateCheckReady()) return;
         if (updateJob_) return;                    // already running; don't restart it
         updateJob_ = true;
@@ -1095,7 +1097,7 @@ public:
     // separate, explicit act that writes something. It refuses any target the last
     // check didn't actually report as newer, so an install can never run against a
     // stale screen or a version the device never confirmed exists.
-    void requestUpdateInstall(UpdateTarget t) {
+    void requestUpdateInstall(UpdateTarget t) override {
         if (!updateCheckReady() || updateJob_) return;
         if (t == UpdateTarget::Firmware && !updateStatus_.firmwareNewer) return;
         else if (t == UpdateTarget::Web && !updateStatus_.webNewer) return;
@@ -1130,10 +1132,10 @@ public:
     // the radio (see netConnectWanted) and what platform/esp32/net_update.h
     // services, so it is latched (leaving the screen does not end it) and must
     // always reach a terminal outcome, since nothing else releases the radio.
-    bool updateJobLive() const { return updateJob_; }
+    bool updateJobLive() const override { return updateJob_; }
     // What the live job is doing. None means a check; anything else is an install,
     // which is also how the screen knows which of the two to render.
-    UpdateTarget updateJobTarget() const { return jobTarget_; }
+    UpdateTarget updateJobTarget() const override { return jobTarget_; }
 
     // The check's outcome, pushed back by the device tier. Any terminal state ends
     // the job and hands the radio back; Checking is the device saying "still
@@ -1143,7 +1145,7 @@ public:
         if (s.state != UpdateState::Checking) endJob();
         dirty_ = true;
     }
-    const UpdateStatus& updateStatus() const { return updateStatus_; }
+    const UpdateStatus& updateStatus() const override { return updateStatus_; }
 
     // The install's progress, same contract: Done and Failed are terminal and hand
     // the radio back, everything else keeps it. A finished install's status is left
@@ -1153,7 +1155,7 @@ public:
         if (s.state == InstallState::Done || s.state == InstallState::Failed) endJob();
         dirty_ = true;
     }
-    const InstallStatus& installStatus() const { return installStatus_; }
+    const InstallStatus& installStatus() const override { return installStatus_; }
 
     // True when LINK is on but has no ambient airtime to use. Ambient discovery
     // borrows the audit scan's radio-up window rather than powering the radio on its
@@ -1279,7 +1281,7 @@ public:
     // the audit scan/capture down, and handing the radio back to whichever of
     // those is still toggled on the moment the AP is switched off.
     bool apEnabled() const override { return apEnabled_; }
-    void setApEnabled(bool on);
+    void setApEnabled(bool on) override;
 
     // Audit-mode handshake CAPTURE. A sibling authorized-use opt-in
     // (persisted, save v6, default OFF) driving the passive WPA-handshake -> .pcap
@@ -1291,21 +1293,16 @@ public:
     const AuditCapture& auditCapture() const { return auditCapture_; }
     AuditCapture& auditCapture() { return auditCapture_; }
 
-    // The escalating audit control (single CFG setting). One ordered dial instead
-    // of two independent toggles, so the radio-cost ladder is explicit and
-    // "capture needs scan" cannot be violated:
-    //   Off:         radio idle (best battery)
-    //   Scan:        passive discovery only (feeds NETS / Hacker Rank)
-    //   ScanCapture. Scan + passive handshake->pcap (most battery, authorized use)
-    // Derived from the two persisted opt-ins; setAuditMode() sets them consistently
-    // (and the low-level setters above enforce the same invariant on their own).
-    enum class AuditMode : uint8_t { Off = 0, Scan = 1, ScanCapture = 2 };
-    AuditMode auditMode() const {
+    // The audit dial (core/net/audit_capture.h), derived from the two persisted opt-ins;
+    // setAuditMode() sets them consistently, and the low-level setters above enforce the
+    // same invariant on their own.
+    using AuditMode = mal::AuditMode;
+    AuditMode auditMode() const override {
         return auditCapture_.enabled() ? AuditMode::ScanCapture
              : netScanEnabled_         ? AuditMode::Scan
                                        : AuditMode::Off;
     }
-    void setAuditMode(AuditMode m);
+    void setAuditMode(AuditMode m) override;
     // Note a network observed by the device-tier passive scan (net_sniff.h calls this
     // once per heard AP per sweep, dups included). Feeds two independent structures:
     // visibleNetworks_, the in-range snapshot the CREW picker reads, and
@@ -1408,11 +1405,11 @@ public:
     int allyBuffBattlesLeft() const { return allyBuffBattlesLeft_; }  // friendly-visit buff
     bool lockoutActive() const { return pet_.armed.lockoutActive; }
     Nav nav() const { return nav_; }
-    CfgScreen cfgScreen() const { return cfgScreen_; }  // active CFG L3 (tests/inspection)
+    CfgScreen cfgScreen() const { return cfg_.page(); }  // active CFG L3 (tests/inspection)
     // Which QR step is showing. The steps run in the order they happen: join the
     // AP, set up the home network (only while none is stored), open the 'Pedia,
     // so the index of the last one depends on netProvisioned() (pediaQrPages).
-    int pediaQrPage() const { return pediaQrPage_; }
+    int pediaQrPage() const { return cfg_.pediaQrPage(); }
 
     // True while either QR page is showing: the 'Pedia AP steps or the USB
     // flasher's address. The device tier reads this to keep the panel AWAKE (a code
@@ -1420,8 +1417,8 @@ public:
     // likewise suspends its 5s menu auto-defocus here. Both resume normally the
     // moment the player exits the page (C).
     bool qrScreenActive() const {
-        return nav_ == Nav::Detail && (cfgScreen_ == CfgScreen::PediaQr ||
-                                       cfgScreen_ == CfgScreen::UpdateQr);
+        return nav_ == Nav::Detail && (cfg_.page() == CfgScreen::PediaQr ||
+                                       cfg_.page() == CfgScreen::UpdateQr);
     }
     // True while the current screen runs an animation cadence FASTER than the shared
     // ~4fps heartbeat (combat sprite motion, the dissolve/swarm sweep, the arcade boards,
@@ -1442,14 +1439,14 @@ public:
     // Kept out of radioScreenOpen(), which also arms a radio: only a job the
     // operator started puts this device on a network (netConnectWanted).
     bool updateScreenOpen() const {
-        return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::Update;
+        return nav_ == Nav::Detail && cfg_.page() == CfgScreen::Update;
     }
     // True while the HackerTag arcade editor is open. Composing a tag one A-press
     // per letter has real pauses in it, and the 5s auto-defocus would throw the
     // half-typed buffer away mid-thought, so the editor holds the menu open the
     // same way the QR page does, and releases it on save or back-out.
     bool tagEditorActive() const {
-        return nav_ == Nav::Detail && cfgScreen_ == CfgScreen::HackerTag;
+        return nav_ == Nav::Detail && cfg_.page() == CfgScreen::HackerTag;
     }
     // Cache-yield reveal inspection (tests): what the opened cache produced, while
     // nav() == Nav::CacheYield; 0 with no reveal up.
@@ -1655,29 +1652,29 @@ public:
     UiMode uiMode() const { return settings_.uiMode; }
     // How the carousel draws its slots (icons + label / icons / text). Persisted (save
     // v67), so it survives a reboot and an update; setUiMode persists on change.
-    void setUiMode(UiMode m);
+    void setUiMode(UiMode m) override;
     void cycleUiMode();
     // CFG > DEVICE > CARE ALERTS: whether the carousel draws its "!" needs-attention
     // marks (Game::careAttention). Persisted beside UI MODE (save v67). Off hides the
     // marks only: the vitals, the lockout and the care cards are unchanged.
     bool careAlerts() const { return settings_.careAlerts; }
-    void setCareAlerts(bool on);
+    void setCareAlerts(bool on) override;
     // Screen-brightness level: a 0-based backlight index (0..kBrightnessLevels-1),
     // persisted (save v14). The device tier reads this to drive the backlight PWM; the
     // host tier ignores it. setBrightness clamps + persists.
     int brightness() const { return settings_.brightness; }
-    void setBrightness(int level);
+    void setBrightness(int level) override;
     SoundMode soundMode() const { return settings_.soundMode; }
-    void setSoundMode(SoundMode m);
+    void setSoundMode(SoundMode m) override;
     int volume() const { return settings_.volume; }
-    void setVolume(int level);
+    void setVolume(int level) override;
     // The walk's A+C SOUND row: false mutes every Event cue an explore fight would play.
     bool exploreSound() const { return settings_.exploreSound; }
     void setExploreSound(bool on);
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
     void playSound(Sound s);
     // Ignores the SOUND mode on purpose: the VOLUME picker's sample.
-    void previewVolume(int level);
+    void previewVolume(int level) override;
     // The PAL_CORE colour set the interface is drawn in: an index into the generated
     // theme table (0 = base), persisted by NAME (save v64). setThemePick is the ONLY
     // caller of setPalTheme (core/render/palette.h): the applied theme and the stored
@@ -1685,18 +1682,18 @@ public:
     // It refuses a set this device has not unlocked and answers whether it took, the
     // way setBackgroundPick refuses a locked place.
     int themePick() const { return settings_.theme; }
-    const char* themeName() const;
-    bool setThemePick(int index);
+    const char* themeName() const override;
+    bool setThemePick(int index) override;
     // Whether row `i` of kThemes (content_themes.h) is unlocked: Start rows always, a
     // Chip row once this device has EVER held its chip. Derived, never stored: see the
     // banner on that header.
     bool themeRowUnlocked(int row) const;
     // Which kThemes row the applied set is: the picker's ACTIVE tag and its opening
     // focus. A lookup, not a cast: the table and the palette are ordered separately.
-    int themeRow() const;
+    int themeRow() const override;
     // One bit per kThemes row, for the picker. Built on demand for the same reason the
     // backgrounds' mask is: ownership is derived, so a held copy could only ever go stale.
-    uint32_t themesUnlockedMask() const;
+    uint32_t themesUnlockedMask() const override;
     // Has this DEVICE ever held `id`? The ever-held shelf (OperatorShelves), which the
     // 'Pedia already draws from and a palette chip's unlock is read out of.
     bool hasCollectedItem(const char* id) const;
@@ -1726,7 +1723,7 @@ public:
     // 1..kHackerTagMax chars, every char in [A-Z0-9_] (the same alphabet the
     // on-device arcade editor cycles through), then commit + persist. Returns
     // false (no mutation) on an invalid tag.
-    bool setHackerTag(const char* s);
+    bool setHackerTag(const char* s) override;
     const std::vector<SaveStoredPet>& rack() const { return op_.arch.rack; }
     int rackCount() const { return static_cast<int>(op_.arch.rack.size()); }
     // Read-only forwarders onto ArchScreen for the gates that drive ARCH.
@@ -1745,7 +1742,7 @@ public:
     int titlesUnlockedCount() const;
     int equippedTitle() const { return op_.world.equippedTitle; }   // sector index, or -1
     // The equipped Title's display name, or "NONE" when nothing is equipped.
-    const char* equippedTitleName() const;
+    const char* equippedTitleName() const override;
 
     // Crew + home network (game_crew.cpp) ----------------------------------
     // Player-level, persisted (survive a pet reset, like the Titles above). The HOME
@@ -1907,7 +1904,7 @@ public:
     // --- Dev shortcuts (host key / device dev gesture / tests) --------------
     // Wipe back to a fresh empty save and re-enter the Decryption Hatch, so the
     // hatch + raising loop can be retested without reflashing / relaunching.
-    void resetToHatch();
+    void resetToHatch() override;
     // Clear the player-level state a pet reset deliberately leaves standing: a fresh
     // Operator record, the Titles, world progress, the shelves, the Cant and the radio
     // consents. Paired with resetToHatch() by the
@@ -1984,9 +1981,6 @@ public:
     // dump_frame): the real path is a sector clear (unlockTitle). Auto-equips the
     // first Title, exactly like the real grant. No-op for an out-of-range sector.
     void debugUnlockTitle(int sector) { unlockTitle(sector); }
-    // The Factory Reset scope A cycles on its screen (0 = Reset Pet, 1 = Wipe
-    // Everything), so a gate can exercise executeFactoryReset() without holding B.
-    void debugSetFactoryScope(int scope) { factoryScope_ = scope; }
     // Use the inventory item with `id` as if selected in ITEMS (tests): runs the
     // real useItem() path so its full effect + consume + log fire. No-op if the
     // id is unknown. Add the item to inventory() first.
@@ -2371,12 +2365,12 @@ public:
     // is theirs yet, and it is DERIVED rather than stored: every background is earned by
     // something the save already records, so a parallel bitmask would be a second copy of
     // facts already on the blob and the failure mode of a second copy is disagreement.
-    bool backgroundOwned(SceneId s) const;
+    bool backgroundOwned(SceneId s) const override;
     // AUTO is SceneId::None: the pet decides, which is what the habitat did before any
     // of this could be chosen. A pick the operator does not own is refused, so nothing
     // can place them somewhere they have not been.
     SceneId backgroundPick() const { return op_.backgroundPick; }
-    bool setBackgroundPick(SceneId s);
+    bool setBackgroundPick(SceneId s) override;
     // How many of the arena's backgrounds the brackets taken so far have paid out. The
     // picker's own rung check and the announcement both read this, so "which win pays
     // what" is stated once.
@@ -2527,27 +2521,18 @@ private:
     void onMaintList(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
     void onFragger(const ButtonEvent& ev);
-    void onCfgList(const ButtonEvent& ev);
-    void onCfgGroup(const ButtonEvent& ev);        // DISPLAY / RADIO row lists
-    void onCfgDetail(const ButtonEvent& ev);
-    // onCfgDetail's screens. The picker is a template defined beside its only callers in
-    // game_config.cpp.
-    template <class Step, class Apply>
-    void onCfgPicker(const ButtonEvent& ev, Step step, Apply apply);
-    void onCfgTravel(const ButtonEvent& ev);
-    void onCfgFormatSd(const ButtonEvent& ev);
-    void onCfgSysInfo(const ButtonEvent& ev);
-    bool cfgHoldB(uint32_t heldMs);   // System Info / Factory Reset's hidden hold
-    void onCfgHackerTag(const ButtonEvent& ev);
-    void onCfgUpdate(const ButtonEvent& ev);
-    void onCfgUpdateJob(const ButtonEvent& ev);
-    void onCfgUpdateConfirm(const ButtonEvent& ev);
-    void onCfgUpdateRows(const ButtonEvent& ev);
-    void onCfgPediaQr(const ButtonEvent& ev);
-    void enterCfgScreen(CfgScreen target);         // open an L3, seeding its picker
-    void leaveCfgScreen();                         // back to the group, else the list
-    void drawCfg(Framebuffer& fb) const;          // L3 dispatch for the CFG screens
-    void executeFactoryReset();                    // hold-B commit
+    // CfgHost: the CFG pages' way back into the game (game_config.cpp).
+    void executeFactoryReset(FactoryScope scope) override;   // the hold-B commit
+    uint32_t uptimeMs() const override { return nowMs_; }
+    int32_t heldBMs() const override {
+        return bHeld_ ? static_cast<int32_t>(nowMs_ - bDownMs_) : -1;
+    }
+    bool captureEnabled() const override { return auditCapture_.enabled(); }
+    void equipTitle(int sector) override;
+    void clearSdFormatResult() override { sdFormatState_ = SdFormatState::Idle; }
+    void clearInstallReport() override { installStatus_ = InstallStatus{}; }
+    void openTip(Tip t) override { openTipCard(t, Nav::Detail); }
+    void disarmHoldB() override { bHeld_ = false; }
     // ArchHost: the ARCH screen's way back into the game (game_arch.cpp).
     void archStoreActive() override;                  // active pet → rack → new egg
     void archDeployStored(int storedIdx) override;    // stored pet → active (slot-neutral)
@@ -2608,7 +2593,6 @@ private:
     // error short of failing, then the first error, then each need's CARE card, then
     // the first cache. Returns whether it opened one.
     bool openCareTipIfDue();
-    int cfgTipsRow_ = 0;                     // CFG > TIPS cursor
     AwayTally away_;
     bool awayDigestOn_ = true;
     uint32_t awayQuietMs_ = 0;               // the absence the open summary covers
@@ -2619,8 +2603,6 @@ private:
     bool openAwayDigestIfDue(uint32_t quietMs);
     void onAwayDigest(const ButtonEvent& ev);
     void drawAwayDigest(Framebuffer& fb) const;
-    void onTipsList(const ButtonEvent& ev);
-    void drawTipsList(Framebuffer& fb) const;
     // Is the engine on screen being played for an egg's hatch bonus (rather than at a
     // cabinet, or for MAINT)? That is what the briefing's lead panel is about.
     bool hatchGameLive() const;
@@ -2953,8 +2935,6 @@ private:
     void checkHackerRankUp();
     void applyPendingRankUp();
 
-    void enterHackerTagEditor();                   // copy the tag into the edit buffer
-    void saveHackerTag();                          // commit the edit buffer to the tag
 
     // Hacker face (07) ----------------------------------------
     // The parallel operator interface reached by A+C at the top level. It reuses the
@@ -3416,30 +3396,6 @@ private:
         return pet_.armed.deepWebStartDepth;
     }
 
-    // CFG submenu. cfgScreen_ is the entered L3; cfgGroupRow_ the focused row of a
-    // group screen (DEVICE / RADIO), kept apart from listRow_ so backing out of a
-    // group lands on the row that opened it; cfgUiPick_ the focused UI Mode option;
-    // factoryScope_ the Factory-Reset scope. bHeld_/bDownMs_ track a held B for the
-    // hidden hold-to-reveal / hold-to-commit gestures.
-    CfgScreen cfgScreen_ = CfgScreen::SysInfo;
-    int cfgGroupRow_ = 0;
-    int cfgUiPick_ = 0;
-    int cfgBrightPick_ = 0;   // Brightness picker focus (0..kBrightnessLevels-1)
-    int cfgSoundPick_ = 0;
-    int cfgVolumePick_ = 0;
-    int cfgThemePick_ = 0;    // Theme picker focus (0..kPalThemeCount-1)
-    int cfgAuditPick_ = 0;    // Audit level picker focus (0 OFF, 1 SCAN, 2 SCAN+CAP)
-    int cfgTravelPick_ = 0;   // Travel-mode confirm focus (0 = NO, 1 = YES)
-    int cfgSdFormatPick_ = 0; // FORMAT SD confirm focus (0 = NO, 1 = YES)
-    int cfgApPick_ = 0;       // 'Pedia AP toggle focus (0 = OFF, 1 = ON)
-    int cfgLinkPick_ = 0;     // pet-to-pet LINK toggle focus (0 = OFF, 1 = ON)
-    int pediaQrPage_ = 0;     // PEDIA QR step (see pediaQrPage())
-    int cfgTitlePick_ = 0;    // Titles picker focus (0 = NONE, else 1+sector index)
-    // BACKGROUND picker focus: 0 = AUTO, else 1 + the row's index in kBackgrounds.
-    // A row index rather than a SceneId, because the picker walks LOCKED rows too and a
-    // locked row is a position in a list rather than a place the operator has.
-    int cfgBgPick_ = 0;
-    int factoryScope_ = 0;
     // Every screen-level hold on the device is a held B: the CFG Factory Reset, the
     // Hacker VAULT's bulk-open, the ITEMS type-filter cycle and the MOVES picker's
     // show-all. They share this one flag because they are guarded to four different
@@ -3472,10 +3428,7 @@ private:
     // tell a hold from a tap: a press that moved the cursor has done its job and must
     // not ALSO cancel out of the list on the way up.
     bool listBackStepped_ = false;
-    // HackerTag on-device arcade editor: a working buffer + caret. Caret
-    // kHackerTagMax = the ⏎ confirm cell.
-    char editTag_[kHackerTagMax + 1] = {0};
-    int editCaret_ = 0;
+    CfgMenu cfg_;   // the CFG slot's pages, cursors and focus (game/cfg_menu.h)
 
     ArchScreen arch_;   // the ARCH slot's cursors, group and confirm (game/arch_screen.h)
 
@@ -3578,7 +3531,7 @@ private:
     void unlockTitle(int sector);
     // The next selectable Title after `cur` (wraps): NONE (-1) plus each UNLOCKED
     // sector, in order. Locked sectors are skipped. Drives the CFG picker's A-cycle.
-    int nextSelectableTitle(int cur) const;
+    int nextSelectableTitle(int cur) const override;
 
     // --- Achievements (game_pedia.cpp) -----------------------------------------------
     // The earned and notified bitsets are the Operator's (OperatorReveals).
@@ -3801,12 +3754,6 @@ private:
     UpdateTarget jobTarget_ = UpdateTarget::None;
     UpdateStatus updateStatus_;
     InstallStatus installStatus_;
-    // UPDATES screen: which row the cursor is on, and (once an install row is
-    // pressed), which target is sitting at its yes/no confirm. Nav state, not job
-    // state: the confirm clears on the way out, the job doesn't.
-    int updateRow_ = 0;
-    UpdateTarget updateConfirm_ = UpdateTarget::None;
-    int updateConfirmPick_ = 0;   // 0 = NO, and NO is always where it starts
 
     // One job ends the same way whatever it was. Keeps the two setters from
     // drifting on which fields a finished job leaves behind.

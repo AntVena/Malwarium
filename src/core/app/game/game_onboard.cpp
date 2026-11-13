@@ -170,62 +170,13 @@ constexpr Game::Tip kReplayable[] = {
 };
 }  // namespace
 
-const char* Game::tipTitle(Tip t) {
-    switch (t) {
-        case Tip::CareFed: return "HUNGRY";
-        case Tip::CareFrag: return "GLITCHY";
-        case Tip::CareHappy: return "BORED";
-        case Tip::FirstWalk: return "THE WALK";
-        case Tip::FirstCache: return "CACHES + THE VAULT";
-        case Tip::FirstError: return "ERRORS";
-        case Tip::NearTheLine: return "ONE MORE ERROR";
-        default: return "";
-    }
-}
+const char* Game::tipTitle(Tip t) { return TipCardScreen::title(t); }
 
 std::vector<Game::Tip> Game::replayableTips() const {
     std::vector<Tip> out;
     for (Tip t : kReplayable)
         if (tipSeen(t)) out.push_back(t);
     return out;
-}
-
-void Game::onTipsList(const ButtonEvent& ev) {
-    const std::vector<Tip> tips = replayableTips();
-    const int n = static_cast<int>(tips.size());
-    if (ev.button == Button::A && n > 0) {
-        cfgTipsRow_ = (cfgTipsRow_ + 1) % n;
-        dirty_ = true;
-    } else if (ev.button == Button::B && n > 0) {
-        if (cfgTipsRow_ >= n) cfgTipsRow_ = 0;
-        openTipCard(tips[cfgTipsRow_], Nav::Detail);   // back here when it is read
-    } else if (ev.button == Button::C) {
-        leaveCfgScreen();
-    }
-}
-
-void Game::drawTipsList(Framebuffer& fb) const {
-    fb.clear(palColor(Pal::PAPER));
-    drawHeaderBand(fb, "TIPS");
-    const std::vector<Tip> tips = replayableTips();
-    const int n = static_cast<int>(tips.size());
-    if (n == 0) {
-        const char* none = "- NONE SHOWN YET -";
-        drawText(fb, (kActiveW - textWidth(none)) / 2, kActiveH / 2, none,
-                 palColor(Pal::INK_DIM));
-        drawHintBand(fb, "C BACK");
-        return;
-    }
-    const int cursor = cfgTipsRow_ < n ? cfgTipsRow_ : 0;
-    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
-    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
-        const int y = kRowTop + v * kRowH;
-        if (i == cursor) drawRowSelection(fb, y, kRowH);
-        drawText(fb, 22, y + (kRowH - kFontH) / 2, tipTitle(tips[i]),
-                 i == cursor ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-    }
-    drawHintBand(fb, "A NEXT  B READ  C BACK");
 }
 
 int32_t Game::failingLeftMs() const {

@@ -81,12 +81,7 @@ Game::ListTarget Game::submenuListTarget() const {
             return screenList<&Game::items_>();
         // ARCH's picker and group rows are both lists; the screen knows which is up.
         case SubmenuId::Arch: return screenList<&Game::arch_>();
-        case SubmenuId::Cfg:
-            return {[](Game& g, int dir) {
-                        const CfgRow* rows = nullptr;
-                        g.listRow_ = stepRow(g.listRow_, cfgRows(rows), dir);
-                    },
-                    [](Game& g) { g.onCfgList(kTapC); }};
+        case SubmenuId::Cfg: return screenList<&Game::cfg_>();
         case SubmenuId::Maint:
             return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, 2, dir); },
                     [](Game& g) { g.onMaintList(kTapC); }};
@@ -127,13 +122,9 @@ Game::ListTarget Game::detailListTarget() const {
         // state; every other CFG L3 is a single setting, where A cycles a value and
         // stepping backward would mean nothing.
         case SubmenuId::Cfg:
-            if (cfgScreen_ != CfgScreen::Device && cfgScreen_ != CfgScreen::Radio) return {};
-            return {[](Game& g, int dir) {
-                        const CfgRow* rows = nullptr;
-                        g.cfgGroupRow_ =
-                            stepRow(g.cfgGroupRow_, cfgGroupRows(g.cfgScreen_, rows), dir);
-                    },
-                    [](Game& g) { g.onCfgGroup(kTapC); }};
+            if (!cfg_.detailIsList()) return {};
+            return {[](Game& g, int dir) { g.cfg_.stepGroup(dir); },
+                    [](Game& g) { g.cfg_.onDetail(g, kTapC); }};
         // An open inline confirm owns A and C (choice and abort), and a detail page is a
         // reader: neither is a list.
         case SubmenuId::Mods:
