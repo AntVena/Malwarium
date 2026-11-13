@@ -71,7 +71,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // (the only thing that tells an operator what an arena bout even is) rides
         // the same "chord opens a reader, then plain A/B/C drive it" shape the explore
         // control overlay uses.
-        else if (nav_ == Nav::Tourney) onTourney(ev);
+        else if (nav_ == Nav::Tourney) arena_.onButton(*this, ev);
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
         // already spent on handing a taken letter back to the pool. onCryptogram sorts
         // the two meanings out itself (a letter held drops it; nothing held opens the
@@ -201,7 +201,7 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::Combat: fightScreen_.onButton(*this, ev); break;
         case Nav::ExploreControl: onExploreControl(ev); break;
-        case Nav::Tourney: onTourney(ev); break;
+        case Nav::Tourney: arena_.onButton(*this, ev); break;
         case Nav::Story: onStory(ev); break;
         case Nav::TipCard: onTipCard(ev); break;
         case Nav::AwayDigest: onAwayDigest(ev); break;

@@ -16,9 +16,7 @@ Game::HoldTarget Game::screenHold() {
 }
 
 Game::HoldTarget Game::holdTarget() const {
-    if (nav_ == Nav::Tourney)
-        return {[](Game& g, uint32_t held) { return g.tourneyHoldB(held); },
-                [](Game& g) { g.tourneyReleaseB(); }};
+    if (nav_ == Nav::Tourney) return screenHold<&Game::arena_>();
     if (face_ == Face::Hacker) {
         if (nav_ != Nav::Submenu) return {};
         switch (enteredHackerId()) {

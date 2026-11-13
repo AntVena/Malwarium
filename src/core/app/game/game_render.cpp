@@ -58,7 +58,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Fragger: drawFragger(fb); break;
         case Nav::ArcadeResult: arcadeScreen_.drawResult(fb, *this); break;
         case Nav::Combat: fightScreen_.draw(fb, *this); break;
-        case Nav::Tourney: drawTourney(fb); break;
+        case Nav::Tourney: arena_.draw(fb, *this); break;
         case Nav::Story: drawStoryScreen(fb); break;
         case Nav::TipCard: drawTipCard(fb); break;
         case Nav::AwayDigest: drawAwayDigest(fb); break;

@@ -18,6 +18,7 @@
 #include "core/app/operator.h"
 #include "core/app/settings.h"
 #include "core/app/game/arcade_screen.h"
+#include "core/app/game/arena_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
@@ -113,7 +114,7 @@ enum class StartMode { FreshHatch, Hatched };
 
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
-             private ArcadeHost, private CrewHost {
+             private ArcadeHost, private CrewHost, private ArenaHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -498,7 +499,7 @@ public:
     //   Bracket  the field: who is left, at what level, and who is next
     //   Scout    the focused entrant's full kit, on the LOADOUT page's own flow
     //   Brief    the arena explaining itself (content_tournament.h's kTourneyBrief)
-    enum class TourneyView : uint8_t { Bracket, Scout, Brief };
+    using TourneyView = mal::TourneyView;   // game/arena_screen.h
 
     // What the STORY reader hands back to when the chapter it is showing runs out
     // (game_story.cpp). A chapter fires IN FRONT OF something (the encounter that
@@ -528,8 +529,8 @@ public:
     // bracket screen can name its species and Exploit without walking the content
     // tables every repaint.
     const TourneyFighter& tourneyOpponent() const;
-    TourneyView tourneyView() const { return tourneyView_; }
-    int tourneyCursor() const { return tourneyCursor_; }
+    TourneyView tourneyView() const { return arena_.view(); }
+    int tourneyCursor() const { return arena_.cursor(); }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
     bool gameBriefOpen() const { return gameBriefOpen_; }
     // True when the hatch opened it (the first time a line's egg is laid on this
@@ -1468,7 +1469,7 @@ public:
         return rigUpgradeCost(kDefragCostStart, pet_.defragCount, RigCostCurve::kLogStep);
     }
     const CreatureDef* pet() const { return pet_.creature; }   // null while the save is empty (Hatch)
-    const Pet& petRecord() const { return pet_; }
+    const Pet& petRecord() const override { return pet_; }
     // Where the habitat is currently standing its occupant, in logical px off the
     // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
     // exposed so the resting motion can be inspected without a framebuffer.
@@ -3897,10 +3898,7 @@ private:
     // The bracket in play, verdict included (core/model/tourney_run.h); empty between
     // runs. Saved at v53.
     std::optional<TourneyRun> tourney_;
-    // The bracket screen's: its read cursor (A steps it, nothing acts on it) and which
-    // of its three reads is up.
-    int tourneyCursor_ = 0;
-    TourneyView tourneyView_ = TourneyView::Bracket;
+    ArenaScreen arena_;   // the bracket screen's reads, cursor and scout (game/arena_screen.h)
 
     // --- THE STORY (game_story.cpp) -----------------------------------------
     // What the reader is showing, and the chapter queued behind it. Two, because a
@@ -3919,13 +3917,6 @@ private:
     StoryThen storyThen_ = StoryThen::Walk;
     int storyThenArea_ = -1;                 // StoryThen::AreaBoss's gauntlet
     int storyArchiveRow_ = 0;                // the CHAPTERS list's cursor
-    // The scroll position of whichever reader is open: one field, because only one
-    // ever is, and a per-view scroll would have to be reset on every switch anyway.
-    int tourneyScroll_ = 0;
-    // The entrant the SCOUT sheet is showing. Held rather than re-derived per repaint:
-    // building one walks the whole move and mod tables, which is not a per-frame cost.
-    TourneyFighter tourneyScouted_;
-    int tourneyScoutedSlot_ = -1;
     uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
     // Outbound frames waiting for the device tier to drain (takePvpOut). A tiny ring
@@ -3962,18 +3953,11 @@ private:
     // Open the bracket screen off the EXPL row: draws a fresh bracket when no run is
     // in play, else resumes the one that is.
     void openTourney();
-    void onTourney(const ButtonEvent& ev);         // A read · B bout · C back · A+C brief
-    // The three views (game_tourney_render.cpp: the arena's own screen unit, laid
-    // out against ui/tourney_screen.h).
-    void drawTourney(Framebuffer& fb) const;
-    void drawTourneyBracket(Framebuffer& fb) const;
-    void drawTourneyFoot(Framebuffer& fb) const;   // the match card under the field
-    void drawTourneyScout(Framebuffer& fb) const;
-    void drawTourneyBrief(Framebuffer& fb) const;
-    void openTourneyScout();
-    bool tourneyHoldB(uint32_t heldMs);            // the bracket's B: a hold scouts...
-    void tourneyReleaseB();                        // ...and a tap fights the own bout
-    void startTourneyMatch();                      // the operator's own match, live
+    // ArenaHost.
+    const TourneyRun* tourneyRun() const override { return tourney_ ? &*tourney_ : nullptr; }
+    void startTourneyMatch() override;             // the operator's own match, live
+    void leaveArena() override;
+    void abandonArena() override;
     void finishTourneyMatch();                     // advance the bracket, or end the run
     void abandonTourney();                         // forget the run (seed back to 0)
     void awardTourneyPurse();                      // the title's one lump

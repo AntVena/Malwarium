@@ -8,12 +8,7 @@
 #include "core/content/content_crews.h"
 #include "core/content/content_tournament.h"
 #include "core/model/tournament.h"
-#include "core/content/effect_text.h"
-#include "core/model/move_loadout.h"
-#include "core/model/loadout.h"
-#include "core/ui/stat_screen.h"
 #include "core/ui/prose_page.h"
-#include "core/ui/tourney_screen.h"
 #include "core/model/pvp_battle.h"
 #include "core/app/game_internal.h"
 
@@ -46,20 +41,9 @@
 // through core/ui/prose_page.h, and the scout sheet is STAT's LOADOUT page pointed
 // at another pet, so an opponent's kit reads exactly like the operator's own.
 //
-// This unit is the RUN. What the three reads look like is game_tourney_render.cpp,
-// laid out against core/ui/tourney_screen.h; the only thing the two share is this
-// file's state and that header's geometry.
+// This unit is the RUN. The screen over it is ArenaScreen (game/arena_screen.h).
 
 namespace mal {
-
-namespace {
-// The two READER views (SCOUT, BRIEF) page against ui/tourney_screen.h's tops: the
-// scout sheet's is lower, because it seats a portrait. Everything else about how this
-// screen is laid out lives there too; this unit is the run.
-inline int tourneyReaderTop(Game::TourneyView v) {
-    return v == Game::TourneyView::Scout ? kDockScoutTop : kDockBriefTop;
-}
-}  // namespace
 
 int Game::tourneySlot() const { return tourneyPlayerSlot(tourneySeed()); }
 
@@ -85,10 +69,7 @@ void Game::openTourney() {
         log_.push(LogEventType::CombatWon, entered);
         markSaveDirty();
     }
-    tourneyCursor_ = tourneySlot();
-    tourneyView_ = TourneyView::Bracket;
-    tourneyScroll_ = 0;
-    tourneyScoutedSlot_ = -1;
+    arena_.open(tourneySlot());
     // The opponent is reseated on every entry rather than persisted: it is derivable,
     // and a resumed run must not be able to disagree with the bracket it came back to.
     tourney_->seatOpponent(registry_);
@@ -98,8 +79,6 @@ void Game::openTourney() {
 
 void Game::abandonTourney() {
     tourney_.reset();
-    tourneyView_ = TourneyView::Bracket;
-    tourneyScoutedSlot_ = -1;
     markSaveDirty();
 }
 
@@ -163,9 +142,7 @@ void Game::finishTourneyMatch() {
         }
     }
     run.seatOpponent(registry_);
-    tourneyCursor_ = me;
-    tourneyView_ = TourneyView::Bracket;
-    tourneyScoutedSlot_ = -1;
+    arena_.open(me);
     nav_ = Nav::Tourney;
     dirty_ = true;
     persistSave();
@@ -207,149 +184,20 @@ void Game::awardTourneyPurse() {
     markSaveDirty();
 }
 
-// --- The two readers' row models ---------------------------------------------
 
-std::vector<ProseRow> Game::tourneyScoutRows() const {
-    // An entrant's kit, built through the SAME buildLoadoutRows STAT's LOADOUT page
-    // uses: the opponent's moves and mods are described by their own content rows,
-    // wrapped whole, as the operator's are. Nothing here re-words a move.
-    std::vector<ProseRow> out;
-    const CreatureDef* pet = registry_.creature(tourneyScouted_.spec.creatureId);
-    if (!pet) return out;
-    MoveLoadout moves;
-    ModSlots mods;
-    buildPvpLoadouts(registry_, tourneyScouted_.spec, moves, mods);
-    out = buildLoadoutRows(registry_, moves, mods, pet->stage, /*isEgg=*/false);
+std::vector<ProseRow> Game::tourneyScoutRows() const { return arena_.scoutRows(*this); }
+std::vector<ProseRow> Game::tourneyBriefRows() const { return ArenaScreen::briefRows(); }
 
-    // ...then the two things a loadout page has no column for, as a section of their
-    // own: how the levels were SPENT (the stat spread is half of what an opponent is,
-    // and it is invisible in a move list), and the Exploit it is carrying. The trigger
-    // is deliberately NOT stated, which moment a rival commits to is the read the
-    // arena exists to teach, and printing it would answer the question for them.
-    ProseRow stats;
-    stats.header = true;
-    stats.label = "STATS";
-    out.push_back(stats);
-    for (int i = 0; i < kLevelStatCount; ++i) {
-        ProseRow r;
-        r.label = levelStatName(i);
-        setProseTag(r, "+%d", tourneyScouted_.spec.statPoints[i]);
-        out.push_back(r);
-    }
-    if (tourneyScouted_.exploit.kind != CrewExploitKind::None) {
-        ProseRow head;
-        head.header = true;
-        head.label = "EXPLOIT";
-        out.push_back(head);
-        ProseRow r;
-        r.label = tourneyScouted_.exploit.label;
-        setProseTag(r, "%s", crewExploitTag(tourneyScouted_.exploit.kind));
-        // The crew's own description of the ability, templated off its magnitude: the
-        // same sentence the CREW screen shows.
-        for (int c = 0; c < kCrewCount; ++c)
-            if (crew(c)->exploit.kind == tourneyScouted_.exploit.kind)
-                r.body = effectText(crew(c)->exploit);
-        out.push_back(r);
-    }
-    return out;
+void Game::leaveArena() {
+    // Leaving does NOT forfeit: the run is persisted, and the EXPL row says IN PLAY
+    // until it is finished. A bracket is a commitment of attention, not of one sitting.
+    nav_ = Nav::Submenu;
+    openExplList();
 }
 
-std::vector<ProseRow> Game::tourneyBriefRows() const {
-    std::vector<ProseRow> out;
-    out.reserve(static_cast<size_t>(kTourneyBriefCount));
-    for (int i = 0; i < kTourneyBriefCount; ++i) {
-        ProseRow r;
-        r.label = kTourneyBrief[i].heading;
-        std::snprintf(r.body.buf, sizeof(r.body.buf), "%s", kTourneyBrief[i].text);
-        out.push_back(r);
-    }
-    return out;
-}
-
-void Game::openTourneyScout() {
-    if (tourneyView_ != TourneyView::Bracket || !tourneyRunning()) return;
-    // Building an entrant walks the whole move and mod tables, so it happens HERE, on
-    // the press, and the sheet reads the held copy for as long as it is open.
-    tourneyScouted_ = tourneyEntrant(registry_, tourney_->seed, tourneyCursor_);
-    tourneyScoutedSlot_ = tourneyCursor_;
-    tourneyView_ = TourneyView::Scout;
-    tourneyScroll_ = 0;
-    dirty_ = true;
-}
-
-// --- Input -------------------------------------------------------------------
-
-// Held on the bracket past kTourneyScoutHoldMs, B opens the focused entrant's SCOUT
-// sheet: its full kit, read on the very page the operator reads their own kit on. The
-// tap underneath (tourneyReleaseB) fights the operator's own bout, so both engage with
-// the fighter under the cursor, which is what keeps the hold related to the tap.
-bool Game::tourneyHoldB(uint32_t heldMs) {
-    if (tourneyView_ != TourneyView::Bracket || heldMs < kTourneyScoutHoldMs) return false;
-    openTourneyScout();
-    return true;
-}
-
-void Game::tourneyReleaseB() {
-    if (tourneyView_ != TourneyView::Bracket) return;
-    startTourneyMatch();
-}
-
-void Game::onTourney(const ButtonEvent& ev) {
-    // The two READERS first: both are plain scroll-and-back pages, and neither can
-    // start a bout, so nothing below them has to know they exist.
-    if (tourneyView_ != TourneyView::Bracket) {
-        const std::vector<ProseRow> rows = tourneyView_ == TourneyView::Scout
-                                               ? tourneyScoutRows()
-                                               : tourneyBriefRows();
-        const int total = static_cast<int>(rows.size());
-        // B scrolls by the window that was on screen and wraps at the end, as the
-        // STAT reader does.
-        if (ev.button == Button::B && total > 0) {
-            const int shown = proseRowsFitting(rows, tourneyScroll_, tourneyReaderTop(tourneyView_));
-            tourneyScroll_ = nextWindowTop(tourneyScroll_, shown, total);
-        } else if (ev.button == Button::C || ev.chordAC) {
-            tourneyView_ = TourneyView::Bracket;
-            tourneyScroll_ = 0;
-        }
-        dirty_ = true;
-        return;
-    }
-    // The BRIEFING is the chord's job here: see game_core.cpp's chord routing for why
-    // it is the chord and not a fourth key.
-    if (ev.chordAC) {
-        tourneyView_ = TourneyView::Brief;
-        tourneyScroll_ = 0;
-        dirty_ = true;
-        return;
-    }
-    // A terminal banner is a read, not a menu: any of the three keys clears the run and
-    // returns to EXPL. All three answer, because nothing here is destructive and a
-    // verdict already read should not need a specific button.
-    if (tourneyPhase() != TourneyPhase::Ready) {
-        abandonTourney();
-        nav_ = Nav::Submenu;
-        openExplList();
-        dirty_ = true;
-        return;
-    }
-    if (ev.button == Button::A) {
-        // A READS the field: it steps the cursor over the eight slots so the operator
-        // can see who is left and at what level, and it chooses whose SCOUT sheet a
-        // held B opens. It never picks who you fight: the bracket does that.
-        tourneyCursor_ = (tourneyCursor_ + 1) % kTourneySlots;
-        dirty_ = true;
-    } else if (ev.button == Button::B) {
-        // Tap/hold, resolved on the RELEASE edge: a tap starts the bout
-        // (tourneyReleaseB), a hold opens the focused entrant's sheet (tourneyHoldB).
-        armHoldB();
-    } else if (ev.button == Button::C) {
-        // Leaving does NOT forfeit: the run is persisted, and the EXPL row says IN PLAY
-        // until it is finished. A bracket is a commitment of attention, not of one
-        // sitting.
-        nav_ = Nav::Submenu;
-        openExplList();
-        dirty_ = true;
-    }
+void Game::abandonArena() {
+    abandonTourney();
+    leaveArena();
 }
 
 }  // namespace mal
