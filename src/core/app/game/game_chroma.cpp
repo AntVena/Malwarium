@@ -186,7 +186,7 @@ void Game::finishChroma() {
     // An arcade run has no clock to spend the passes on: the till takes the score and
     // that is the whole settlement. The cabinet run is endless, so it has no clean()
     // result. A win is reaching kArcadeChromaWinPasses, and the score can go past it.
-    if (arcadeRun_) {
+    if (inArcadeRun()) {
         finishArcadeRun(chroma_.passes() >= kArcadeChromaWinPasses, chroma_.passes(),
                         kArcadeChromaWinPasses);
         return;
@@ -297,7 +297,7 @@ void Game::drawChroma(Framebuffer& fb) const {
         // The effect line is priced in incubation, which an arcade run lacks, so there it
         // reports passes and the payout screen shows the money.
         char effect[32];
-        if (arcadeRun_)
+        if (inArcadeRun())
             std::snprintf(effect, sizeof(effect), "%d / %d PASSES", chroma_.passes(),
                           chroma_.goal());
         else if (pet_.bootHatchRemainMs <=

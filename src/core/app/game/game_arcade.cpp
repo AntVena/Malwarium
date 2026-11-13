@@ -197,7 +197,7 @@ int Game::arcadeBestById(const char* id) const {
 }
 
 int Game::playStepMs(int baseMs) const {
-    if (!arcadeRun_ && !maintPlayLive_) return baseMs;
+    if (!arcade_ && !maintPlayLive_) return baseMs;
     int pct = kArcadeSpeedPctMedium;
     if (runDifficulty() == ArcadeDifficulty::Easy) pct = kArcadeSpeedPctEasy;
     else if (runDifficulty() == ArcadeDifficulty::Hard) pct = kArcadeSpeedPctHard;
@@ -207,20 +207,21 @@ int Game::playStepMs(int baseMs) const {
 
 void Game::startArcadeRun() {
     if (!arcadeCabinetOffered(arcadeRow_)) return;   // range + the unlock, in one ask
-    arcadeGame_ = arcadeRow_;
-    arcadeRun_ = true;
-    switch (arcadeGames()[arcadeGame_].kind) {
+    arcade_ = ArcadeRun::started(arcadeRow_, arcadeDifficulty_);
+    const ArcadeDifficulty dial = arcade_->difficulty;
+    const ArcadeGameKind kind = arcadeGames()[arcade_->cabinet].kind;
+    switch (kind) {
         case ArcadeGameKind::Stacker:
         case ArcadeGameKind::Fragger:
             // The two engines a MAINT process can also play, so they start the way MAINT
             // starts them. FRAGGER is ENDLESS, like the buffer below: kFraggerWinHits is
             // the line the till pays and scores against.
-            beginPlayedGame(arcadeGames()[arcadeGame_].kind);
+            beginPlayedGame(kind);
             break;
         case ArcadeGameKind::Clutch: {
             int rounds = kArcadeClutchRoundsMedium;
-            if (arcadeDifficulty_ == ArcadeDifficulty::Easy) rounds = kArcadeClutchRoundsEasy;
-            else if (arcadeDifficulty_ == ArcadeDifficulty::Hard) rounds = kArcadeClutchRoundsHard;
+            if (dial == ArcadeDifficulty::Easy) rounds = kArcadeClutchRoundsEasy;
+            else if (dial == ArcadeDifficulty::Hard) rounds = kArcadeClutchRoundsHard;
             startEggPick(rounds);
             break;
         }
@@ -234,15 +235,15 @@ void Game::startArcadeRun() {
             // One of the two cabinets whose dial moves the RULES: easy outlines the
             // cells a row got exactly right, hard lets the key repeat a colour.
             startDecryption(
-                /*allowDuplicates=*/arcadeDifficulty_ == ArcadeDifficulty::Hard,
-                /*easyHints=*/arcadeDifficulty_ == ArcadeDifficulty::Easy);
+                /*allowDuplicates=*/dial == ArcadeDifficulty::Hard,
+                /*easyHints=*/dial == ArcadeDifficulty::Easy);
             break;
         case ArcadeGameKind::Chroma:
             // ENDLESS, like the buffer above: the board runs until the sweep finds it.
             // The dial is the WINDOW, which is the paced games' knob (playStepMs), and
             // HARD also turns switching on, the only rule a cabinet adds.
             startChroma(/*rounds=*/0, playStepMs(kChromaWindowMs),
-                        /*switching=*/arcadeDifficulty_ == ArcadeDifficulty::Hard);
+                        /*switching=*/dial == ArcadeDifficulty::Hard);
             break;
         case ArcadeGameKind::Cryptogram: {
             // The dial is the quote's difficulty ladder, so the cabinet opens the board
@@ -250,12 +251,12 @@ void Game::startArcadeRun() {
             // offered: the cabinet is a re-run, never a free route through the pool.
             const int quote = pickQuote(QuotePick::SolvedOnly);
             if (quote < 0) {
-                arcadeRun_ = false;   // nothing to re-run: leave the cabinet page up
+                arcade_.reset();      // nothing to re-run: leave the cabinet page up
                 return;
             }
             CryptogramTier t = CryptogramTier::Hard;
-            if (arcadeDifficulty_ == ArcadeDifficulty::Medium) t = CryptogramTier::Medium;
-            else if (arcadeDifficulty_ == ArcadeDifficulty::Easy) t = CryptogramTier::Easy;
+            if (dial == ArcadeDifficulty::Medium) t = CryptogramTier::Medium;
+            else if (dial == ArcadeDifficulty::Easy) t = CryptogramTier::Easy;
             startCryptogram(quote, cryptogramExtraReveals(t));
             break;
         }
@@ -267,36 +268,17 @@ void Game::startArcadeRun() {
 // --- The till --------------------------------------------------------------
 
 void Game::finishArcadeRun(bool won, int score, int scoreMax) {
-    arcadeRun_ = false;
-    arcadeWon_ = won;
-    arcadeScore_ = score;
-    arcadeScoreMax_ = scoreMax;
-
-    // The flat half is for finishing at all; the skill half is a PROPORTION of the
-    // ceiling where there is one, and all-or-nothing where there isn't. Clamped
-    // because a game is free to report a score above its own advertised max (a
-    // cleared Stacker board can), and a run must never pay more than the cabinet said.
-    int bonus = 0;
-    if (scoreMax > 0) {
-        bonus = kArcadeScoreBits * score / scoreMax;
-        if (bonus > kArcadeScoreBits) bonus = kArcadeScoreBits;
-        if (bonus < 0) bonus = 0;
-    } else if (won) {
-        bonus = kArcadeScoreBits;
-    }
-    arcadeBits_ = kArcadePlayBits + bonus;
-    op_.bits += arcadeBits_;
+    // A finish only ever comes from a board a cabinet started.
+    const ArcadeRun run = *arcade_;
+    arcade_.reset();
+    arcadeResult_ = run.settled(won, score, scoreMax, arcadeBest(run.cabinet));
+    op_.bits += arcadeResult_.bits;
     pet_.model.setHappiness(pet_.model.happiness() + kArcadePlayHappy);   // clamps at the cap
 
-    if (arcadeGame_ >= 0 && arcadeGame_ < kArcadeMaxCabinets) {
-        ++op_.tallies.arcadePlays[arcadeGame_];
-        if (won) ++op_.tallies.arcadeWins[arcadeGame_];
-        // The HIGH SCORE, which is the only one of the three tallies a run can leave
-        // worse than it found: it is kept unclamped, deliberately. The bits a run pays
-        // stop at the win line, but the number remembered here does not, because on an
-        // endless cabinet that number IS the game.
-        arcadeNewBest_ = score > op_.tallies.arcadeBest[arcadeGame_] && scoreMax > 0;
-        if (arcadeNewBest_) op_.tallies.arcadeBest[arcadeGame_] = score;
+    if (run.cabinet >= 0 && run.cabinet < kArcadeMaxCabinets) {
+        ++op_.tallies.arcadePlays[run.cabinet];
+        if (won) ++op_.tallies.arcadeWins[run.cabinet];
+        if (arcadeResult_.newBest) op_.tallies.arcadeBest[run.cabinet] = score;
     }
     addBond(pet_.upgrades, BondSource::Games, kBondGameBp);
     markSaveDirty();
@@ -304,7 +286,7 @@ void Game::finishArcadeRun(bool won, int score, int scoreMax) {
     cursor_ = carouselSlotOf(SubmenuId::Games);
     nav_ = Nav::ArcadeResult;
     dirty_ = true;
-    playSound(arcadeNewBest_ ? Sound::NewBest : won ? Sound::GameWin : Sound::GameLose);
+    playSound(arcadeResult_.newBest ? Sound::NewBest : won ? Sound::GameWin : Sound::GameLose);
 }
 
 void Game::onArcadeResult(const ButtonEvent& ev) {
@@ -341,16 +323,17 @@ void Game::drawArcadeDetail(Framebuffer& fb) const {
 }
 
 void Game::drawArcadeOutcome(Framebuffer& fb) const {
-    if (arcadeGame_ < 0 || arcadeGame_ >= arcadeGameCount()) return;
+    const ArcadeResult& r = arcadeResult_;
+    if (r.cabinet < 0 || r.cabinet >= arcadeGameCount()) return;
     ArcadeResultView v;
-    v.won = arcadeWon_;
-    v.score = arcadeScore_;
-    v.scoreMax = arcadeScoreMax_;
-    v.best = arcadeBest(arcadeGame_);
-    v.newBest = arcadeNewBest_;
-    v.bits = arcadeBits_;
+    v.won = r.won;
+    v.score = r.score;
+    v.scoreMax = r.scoreMax;
+    v.best = arcadeBest(r.cabinet);
+    v.newBest = r.newBest;
+    v.bits = r.bits;
     v.happy = kArcadePlayHappy;
-    drawArcadeResult(fb, arcadeGames()[arcadeGame_], v);
+    drawArcadeResult(fb, arcadeGames()[r.cabinet], v);
 }
 
 }  // namespace mal

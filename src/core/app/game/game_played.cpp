@@ -30,7 +30,7 @@ bool Game::beginPlayedGame(ArcadeGameKind g) {
 }
 
 void Game::settlePlayedRun(const PlayOutcome& o) {
-    if (arcadeRun_) {
+    if (inArcadeRun()) {
         finishArcadeRun(o.won, o.score, o.scoreMax);
         return;
     }
@@ -51,10 +51,11 @@ int Game::playedBitsWorth(int bitsUnits) const {
 
 PlayHud Game::playHud(const PlayOutcome& sofar) const {
     PlayHud h;
-    h.arcade = arcadeRun_;
-    if (arcadeRun_) {
-        h.title = arcadeGame_ >= 0 && arcadeGame_ < arcadeGameCount()
-                      ? arcadeGames()[arcadeGame_].displayName : "";
+    h.arcade = inArcadeRun();
+    if (inArcadeRun()) {
+        const int cabinet = arcade_->cabinet;
+        h.title = cabinet >= 0 && cabinet < arcadeGameCount()
+                      ? arcadeGames()[cabinet].displayName : "";
         h.score = sofar.score;
         h.scoreMax = sofar.scoreMax;
         return h;

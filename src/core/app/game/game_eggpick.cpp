@@ -136,7 +136,7 @@ void Game::eggPickCommit() {
         // An arcade raft has no egg and no clock to halve, so the till takes the
         // verdict. Win-or-lose: a halving either kept the live egg or it didn't, and
         // there is no partial credit to award.
-        if (arcadeRun_) {
+        if (inArcadeRun()) {
             finishArcadeRun(eggPickWon_, 0, 0);
             return;
         }
@@ -288,7 +288,7 @@ void Game::drawEggPick(Framebuffer& fb) const {
         // The effect line is the one thing an arcade raft can't inherit: there is no
         // egg behind it, so it names the payout screen that comes next instead of a
         // clock it didn't touch.
-        const char* effect = arcadeRun_ ? (eggPickWon_ ? "CABINET CLEARED" : "NO PRIZE")
+        const char* effect = inArcadeRun() ? (eggPickWon_ ? "CABINET CLEARED" : "NO PRIZE")
                              : eggPickWon_ ? "HATCHES TWICE AS FAST"
                                            : "HATCHES ON ITS OWN CLOCK";
         drawText(fb, (kActiveW - textWidth(verdict)) / 2, 30, verdict,

@@ -37,7 +37,7 @@ void Game::markTipSeen(Tip t) {
 // --- The hatch briefing --------------------------------------------------------
 
 bool Game::hatchGameLive() const {
-    if (arcadeRun_ || !inEggPhase()) return false;
+    if (inArcadeRun() || !inEggPhase()) return false;
     switch (nav_) {
         case Nav::Decryption:
         case Nav::ModalEggPick:

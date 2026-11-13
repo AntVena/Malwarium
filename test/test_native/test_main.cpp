@@ -898,6 +898,7 @@ int g_failures = 0;
     RUN(test_arcade_ladders_split_plays_wins_losses) \
     RUN(test_stack_overflow_fires_on_the_second_row) \
     RUN(test_arcade_tallies_persist)              \
+    RUN(test_arcade_run_settles_at_the_till_and_is_dropped) \
     /* THE DECRYPTOGRAM: the quote board, its pool's fit, and both doors in */ \
     RUN(test_cryptogram_quotes_fit_the_panel)     \
     RUN(test_cryptogram_opens_at_least_three_letters) \

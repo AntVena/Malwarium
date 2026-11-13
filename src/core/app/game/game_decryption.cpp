@@ -51,7 +51,7 @@ void Game::onDecryption(const ButtonEvent& ev) {
 }
 
 void Game::finishDecryption() {
-    if (arcadeRun_) {
+    if (inArcadeRun()) {
         finishArcadeRun(decryption_.cracked(), decryption_.score(),
                         DiskDecryption::maxScore());
         return;
@@ -74,7 +74,7 @@ void Game::drawDecryption(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
     drawDiskDecryption(fb, decryption_,
                        decryptionEasy_ ? DecryptHints::Exact : DecryptHints::Anonymous,
-                       arcadeRun_ ? DecryptStakes::Arcade : DecryptStakes::Hatch, beat_);
+                       inArcadeRun() ? DecryptStakes::Arcade : DecryptStakes::Hatch, beat_);
 }
 
 }  // namespace mal

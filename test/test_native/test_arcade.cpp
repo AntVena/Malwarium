@@ -244,6 +244,32 @@ void test_arcade_tallies_persist() {
     }
 }
 
+// A cabinet run is live only from START to the till, which drops it and hands the payout
+// screen what it settled into. settled() is the till's arithmetic: a scored cabinet pays
+// its share of the ceiling (clamped), a win-or-lose one all or nothing, and only a scored
+// run can set a best.
+void test_arcade_run_settles_at_the_till_and_is_dropped() {
+    const ArcadeRun run = ArcadeRun::started(2, ArcadeDifficulty::Hard);
+    CHECK(run.cabinet == 2 && run.difficulty == ArcadeDifficulty::Hard);
+    const ArcadeResult half = run.settled(false, 5, 10, 7);
+    CHECK(half.cabinet == 2 && half.bits == kArcadePlayBits + kArcadeScoreBits / 2);
+    CHECK(!half.newBest);                          // 5 does not beat 7
+    CHECK(run.settled(true, 30, 10, 0).bits == kArcadePlayBits + kArcadeScoreBits);
+    CHECK(run.settled(true, 0, 0, 0).bits == kArcadePlayBits + kArcadeScoreBits);
+    CHECK(run.settled(false, 0, 0, 0).bits == kArcadePlayBits);
+    CHECK(run.settled(true, 9, 10, 8).newBest && !run.settled(true, 9, 0, 0).newBest);
+
+    Game g{StartMode::Hatched, "malbear"};
+    const int row = arcadeGameIndexById("stacker");
+    CHECK(!g.inArcadeRun());
+    enterArcadeCabinet(g, row, ArcadeDifficulty::Medium);
+    g.onButton(press(Button::B));
+    CHECK(g.inArcadeRun());
+    CHECK(playStackerBoard(g, [&](int k) { return stackerHoldLine(g.stacker(), k); }));
+    g.onButton(press(Button::B));                 // finish -> the till
+    CHECK(g.nav() == Game::Nav::ArcadeResult && !g.inArcadeRun());
+}
+
 // --- The two ENDLESS cabinets ----------------------------------------------
 
 // The button that wears skin `s` on the CHROMATOPHORE, in the order the chips draw.

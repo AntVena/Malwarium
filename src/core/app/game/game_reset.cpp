@@ -62,7 +62,7 @@ void Game::resetToHatch() {
     loadoutTab_ = LoadoutTab::Hub;
     loadoutHubRow_ = 0;
     arcadeRow_ = 0;
-    arcadeRun_ = false;                  // nothing can be mid-cabinet after a wipe
+    arcade_.reset();                     // nothing can be mid-cabinet after a wipe
     cryptogramQuote_ = -1;               // ...nor mid-board
     cryptogramPrizeBits_ = 0;
     cryptogramPrize_ = {};

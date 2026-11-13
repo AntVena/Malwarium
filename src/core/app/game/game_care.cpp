@@ -136,7 +136,7 @@ void Game::finishStacker() {
     // held in MAINT: whichever process it was played for. The hand it was held with is
     // the whole record of how the run went: the full starting width means no block ever
     // fell past a wall, and one block means the line was finished a column at a time.
-    if (!arcadeRun_ && stacker_.won()) {
+    if (!inArcadeRun() && stacker_.won()) {
         ++op_.tallies.stackerWins;
         const int kept = stacker_.width();
         if (kept >= kStackerStartWidth) unlockAchievement(ach::kPerfectDefrag);

@@ -122,8 +122,8 @@ void Game::startCryptogram(int quote, int extraReveals) {
     // is riding on the next placement while the player is still deciding to make it.
     // A cabinet run has no stake of its own (the arcade's till prices it on the way out),
     // and a quote already solved has no first-solve prize left to win twice.
-    const bool firstSolve = !arcadeRun_ && quoteTier(quote) != CryptogramTier::Solved;
-    cryptogramPrizeBits_ = arcadeRun_ ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
+    const bool firstSolve = !inArcadeRun() && quoteTier(quote) != CryptogramTier::Solved;
+    cryptogramPrizeBits_ = inArcadeRun() ? 0 : (firstSolve ? kQuoteWinBits : kQuoteReplayBits);
     cryptogramPrize_ = firstSolve ? quoteFirstSolvePrize() : QuoteReward{};
     // A quote the content gate has passed always fits, so the return is ignored here
     // and asserted by the gate. A board that failed to load at runtime would waste a
@@ -183,7 +183,7 @@ void Game::onCryptogram(const ButtonEvent& ev) {
 void Game::settleCryptogram() {
     // An arcade run is played off a solved quote for Bits; it has no standing to move
     // and no first-solve prize to pay. Its till is finishArcadeRun, on the way out.
-    if (arcadeRun_ || cryptogramQuote_ < 0) return;
+    if (inArcadeRun() || cryptogramQuote_ < 0) return;
 
     const CryptogramTier before = quoteTier(cryptogramQuote_);
     if (cryptogram_.solved()) {
@@ -228,7 +228,7 @@ void Game::applyQuoteReward() {
 }
 
 void Game::finishCryptogram() {
-    if (arcadeRun_) {
+    if (inArcadeRun()) {
         finishArcadeRun(cryptogram_.solved(), cryptogram_.score(), cryptogram_.maxScore());
         return;
     }
@@ -275,7 +275,7 @@ void Game::drawCryptogram(Framebuffer& fb) const {
     v.tier = quoteTier(cryptogramQuote_);
     v.prizeBits = cryptogramPrizeBits_;
     v.prizeLabel = cryptogramPrizeLabel();
-    v.arcade = arcadeRun_;
+    v.arcade = inArcadeRun();
     v.beat = beat_;
     drawCryptogramBoard(fb, cryptogram_, v);
 }

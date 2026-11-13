@@ -86,7 +86,7 @@ void Game::finishIsolation() {
     // clean one: the till takes the score and that is the whole settlement. The cabinet
     // run is endless, so `clean` means a run that filled the whole buffer. A win is
     // reaching kArcadeIsolationWinBytes, and the score can go past it.
-    if (arcadeRun_) {
+    if (inArcadeRun()) {
         finishArcadeRun(isolation_.dots() >= kArcadeIsolationWinBytes, isolation_.dots(),
                         kArcadeIsolationWinBytes);
         return;
@@ -157,7 +157,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
         // The effect line is priced in incubation, which an arcade run lacks, so
         // there it reports the buffer and the payout screen shows the money.
         char effect[28];
-        if (arcadeRun_)
+        if (inArcadeRun())
             std::snprintf(effect, sizeof(effect), "%d / %d BYTES", isolation_.dots(),
                           isolation_.goal());
         else if (clean) std::snprintf(effect, sizeof(effect), "HATCHING NOW");
@@ -177,7 +177,7 @@ void Game::drawIsolation(Framebuffer& fb) const {
     // unit the prize is paid in, so the player is reading the incubation clock rather
     // than a score they'd have to convert.
     char status[32];
-    if (arcadeRun_)
+    if (inArcadeRun())
         std::snprintf(status, sizeof(status), "%d BYTES   %d TO CLEAN",
                       isolation_.dots(), isolation_.goal() - isolation_.dots());
     else

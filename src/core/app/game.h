@@ -36,6 +36,7 @@
 #include "core/model/cant.h"                // SigilSet / CantCipher: the guardian's tongue
 #include "core/model/combat.h"
 #include "core/model/cryptogram.h"
+#include "core/model/arcade_run.h"
 #include "core/model/explore_walk.h"
 #include "core/model/fight.h"
 #include "core/model/gauntlet_run.h"
@@ -1579,9 +1580,9 @@ public:
     // same minigames the hatches and the Defrag run, off their stakes: a cabinet
     // starts one with nothing riding on it and pays a flat participation reward plus
     // a skill bonus (content_arcade.h; game_arcade.cpp is the whole mechanism). The
-    // arcade runs the same minigame code. arcadeRun_ marks a run as played for fun
-    // and changes only its payout and pacing.
-    bool inArcadeRun() const { return arcadeRun_; }
+    // arcade runs the same minigame code. A live ArcadeRun (core/model/arcade_run.h)
+    // marks a board as played for fun and changes only its payout and pacing.
+    bool inArcadeRun() const { return arcade_.has_value(); }
     // Lifetime tallies per roster row (content_arcade.h's index order). Out-of-range
     // reads 0, so a caller iterating a roster that shrank can't fall off the array.
     int arcadePlays(int i) const {
@@ -2594,8 +2595,8 @@ private:
     void onArcadeList(const ButtonEvent& ev);
     void onArcadeCabinet(const ButtonEvent& ev);
     void onArcadeResult(const ButtonEvent& ev);
-    // Launch the focused cabinet's minigame with arcadeRun_ armed. The one place a
-    // cabinet's ArcadeGameKind turns into behaviour.
+    // Launch the focused cabinet's minigame as an ArcadeRun. The one place a cabinet's
+    // ArcadeGameKind turns into behaviour.
     void startArcadeRun();
     // Bank a finished run and open the payout screen. `scoreMax` 0 means the cabinet
     // scores win-or-lose, which is what decides how the bonus half is worked out.
@@ -2605,7 +2606,7 @@ private:
     int playStepMs(int baseMs) const;
     // The dial the run on screen was started under: the cabinet's, or MAINT's.
     ArcadeDifficulty runDifficulty() const {
-        return arcadeRun_ ? arcadeDifficulty_ : maintDifficulty_;
+        return arcade_ ? arcade_->difficulty : maintDifficulty_;
     }
     void drawArcade(Framebuffer& fb) const;         // L2 cabinet list
     void drawArcadeDetail(Framebuffer& fb) const;   // L3 the focused cabinet
@@ -3184,7 +3185,7 @@ private:
         int score = 0;
         int scoreMax = 0;
     };
-    // Open `g`'s board for whichever context is armed (arcadeRun_ or maintKind_). False
+    // Open `g`'s board for whichever context is armed (an ArcadeRun or maintKind_). False
     // for an engine that cannot be played outside its own context (a hatch game).
     bool beginPlayedGame(ArcadeGameKind g);
     // Route a finished run to its context: the arcade till, or the MAINT process.
@@ -4167,26 +4168,17 @@ private:
     int cryptogramPrizeBits_ = 0;     // what the solve actually paid
     QuoteReward cryptogramPrize_ = {};  // ...and the unlock beside it (None = replay)
 
-    // GAMES / the arcade (game_arcade.cpp). arcadeRow_ is the cabinet list's cursor,
-    // arcadeGame_ the roster index of what is RUNNING: they part company as soon as a
-    // run starts, the list staying where the player left it. arcadeRun_ is what a
-    // minigame reads to know it is being played for fun: it redirects the payout and
-    // scales the pacing, and is cleared by finishArcadeRun and by every reset that could
-    // strand a run. The result block freezes the finished run for the payout screen,
-    // since the minigame's own state resets the instant the next one starts. Only the
-    // two tallies persist (save v47), keyed on the wire by row id so the roster can be
-    // reordered.
+    // GAMES / the arcade (game_arcade.cpp). arcade_ is the cabinet run in play
+    // (core/model/arcade_run.h), empty between runs: a minigame reads it to know it is
+    // being played for fun, which redirects the payout and scales the pacing. The rest is
+    // the GAMES screens': the cabinet list's cursor, the cabinet page's dial (a run takes
+    // a copy when it starts), and the payout screen's frozen result. The list cursor and
+    // the running cabinet part company as soon as a run starts, the list staying where
+    // the player left it. Only the tallies persist (save v47, on the Operator).
+    std::optional<ArcadeRun> arcade_;
     int arcadeRow_ = 0;
-    int arcadeGame_ = 0;
-    bool arcadeRun_ = false;
     ArcadeDifficulty arcadeDifficulty_ = ArcadeDifficulty::Medium;
-    bool arcadeWon_ = false;
-    int arcadeScore_ = 0;
-    int arcadeScoreMax_ = 0;          // 0 = a win-or-lose cabinet, with no score to show
-    int arcadeBits_ = 0;              // what the run actually paid
-    // Did the run just finished SET that best? Runtime-only and about one screen: the
-    // payout says NEW BEST instead of quoting a number the player already had.
-    bool arcadeNewBest_ = false;
+    ArcadeResult arcadeResult_;
 
     // Clutch Pick modal (the Phishing hatch minigame, game_eggpick.cpp). Runtime-only
     // and deliberately un-persisted: the whole game is played in the seconds after the
