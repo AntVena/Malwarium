@@ -561,11 +561,11 @@ bool Game::tickLifecycle(uint32_t nowMs) {
     // readout above). It is what lets a chapter fire on a HANDS-OFF walk: auto-progress
     // runs the ladder with nobody watching, so a reader that waited for a thumb would
     // stop an unattended device dead at the first area it reached. Every press re-arms
-    // the clock (Game::armStoryPanel), so it only ever overtakes a page nobody is
+    // the clock (StoryRun::armPanel), so it only ever overtakes a page nobody is
     // reading, and the countdown rule above the hint band is what says so before it
     // happens.
-    if (nav_ == Nav::Story && nowMs_ >= storyPanelDeadlineMs_) {
-        advanceStoryPanel();
+    if (nav_ == Nav::Story && story_ && nowMs_ >= story_->deadlineMs) {
+        turnStoryPage();
         changed = true;
     }
 

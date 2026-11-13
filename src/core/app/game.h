@@ -35,6 +35,7 @@
 #include "core/app/game/shop_screen.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
+#include "core/app/game/story_reader.h"
 #include "core/app/game/tip_card_screen.h"
 #include "core/app/game/vault_screen.h"
 #include "core/device/net_status.h"
@@ -126,7 +127,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
              private MergeHost, private PeersHost, private ChaptersHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
-             private CfgHost, private LoadoutHost, private LinkHost {
+             private CfgHost, private LoadoutHost, private LinkHost,
+             private StoryReaderHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -508,18 +510,8 @@ public:
     //   Brief    the arena explaining itself (content_tournament.h's kTourneyBrief)
     using TourneyView = mal::TourneyView;   // game/arena_screen.h
 
-    // What the STORY reader hands back to when the chapter it is showing runs out
-    // (game_story.cpp). A chapter fires IN FRONT OF something (the encounter that
-    // triggered it, the gauntlet it introduces), so the reader stores what it
-    // interrupted; the nav state it leaves cannot say.
-    //
-    //   Walk:      back to the idle habitat, explore-mode still running. What every
-    //               OUTRO hands back to, since the thing it followed is already over.
-    //   Encounter: the wild encounter whose first-in-this-zone roll opened the chapter.
-    //   AreaBoss:  the area gauntlet the chapter was the threshold of (storyThenArea_).
-    //   Archive: opened from the CHAPTERS list with nothing happening on the walk. C
-    //               goes back to the list.
-    enum class StoryThen : uint8_t { Walk, Encounter, AreaBoss, Archive };
+    // What the STORY reader hands back to when a sitting ends (core/model/story_run.h).
+    using StoryThen = mal::StoryThen;
     // A bracket is in play (core/model/tourney_run.h), verdict included. With none, the
     // seed reads 0, the bitmask and round 0, and the phase Ready.
     bool tourneyRunning() const { return tourney_.has_value(); }
@@ -624,7 +616,9 @@ public:
     // layer's own storyChapter(sector, beat) lookup (core/content/story.h). The two
     // answer different questions, and the compiler would not catch one called for
     // the other.
-    const StoryChapterDef* currentStoryChapter() const { return storyChapter_; }
+    const StoryChapterDef* currentStoryChapter() const {
+        return story_ ? story_->chapter : nullptr;
+    }
     int storyWindow() const;
     int storyWindows() const;
     // Has this device read `chapter`? The read-set is player-level and persisted, so a
@@ -2227,9 +2221,7 @@ public:
     // handed it over, and driving a gauntlet to its end to look at a page is a long way
     // round to a screen.
     void debugOpenStory(const StoryChapterDef* chapter) {
-        storyNext_ = nullptr;
-        storyThenArea_ = -1;
-        openStoryChapter(chapter, StoryThen::Walk);
+        openStoryChapter(chapter, nullptr, StoryThen::Walk, -1);
     }
     void debugMarkStoryRead() {
         for (int i = 0, n = storyEntryCount(); i < n; ++i)
@@ -2797,13 +2789,14 @@ private:
     // thing it interrupts.
     bool fireStory(int sector, StoryBeat beat, StoryThen then, int thenArea = -1);
     bool fireStoryPair(int sector, StoryBeat first, StoryBeat second, StoryThen then);
-    void openStoryChapter(const StoryChapterDef* chapter, StoryThen then);
+    void openStoryChapter(const StoryChapterDef* chapter, const StoryChapterDef* next,
+                          StoryThen then, int thenArea);
     void markStoryRead(const StoryChapterDef* chapter);
-    void onStory(const ButtonEvent& ev);
-    void advanceStoryPanel();      // B on a page, and what the panel deadline calls
+    // StoryReaderHost. turnStoryPage is B on a page and what the page clock calls.
+    const StoryRun* storyRun() const override { return story_ ? &*story_ : nullptr; }
+    void turnStoryPage() override;
+    void skipStory() override;
     void finishStoryChapter();     // the queued second chapter, or hand back to `then`
-    void armStoryPanel();          // restart the auto-advance clock for this window
-    void drawStoryScreen(Framebuffer& fb) const;
     // The CHAPTERS list. `storyArchiveRows` resolves the unlocked chapters into the row
     // models the screen draws and is the ONE place the archive's order and membership
     // are decided: the list, its cursor and the B that opens a row all read it.
@@ -3715,21 +3708,12 @@ private:
     ArenaScreen arena_;   // the bracket screen's reads, cursor and scout (game/arena_screen.h)
 
     // --- THE STORY (game_story.cpp) -----------------------------------------
-    // What the reader is showing, and the chapter queued behind it. Two, because a
-    // cleared area fires its two outros back to back (fireStoryPair) and nothing else
-    // ever queues more than that: a deeper queue would be a story the walk is telling
-    // instead of one it is punctuating.
-    const StoryChapterDef* storyChapter_ = nullptr;
-    const StoryChapterDef* storyNext_ = nullptr;
-    // Which window of the chapter is on screen, as the prose row it opens on: the
-    // reader steps by "however many rows were shown", exactly as STAT's pages do, so
-    // this is a row index and not a panel number (core/ui/prose_page.h).
-    int storyScroll_ = 0;
-    // When this window turns itself over (against nowMs_). Re-armed by every press, so
-    // a reader who is reading is never overtaken by the clock.
-    uint32_t storyPanelDeadlineMs_ = 0;
-    StoryThen storyThen_ = StoryThen::Walk;
-    int storyThenArea_ = -1;                 // StoryThen::AreaBoss's gauntlet
+    // The reader's sitting, while one is open. Two chapters at most, because a cleared
+    // area fires its two outros back to back (fireStoryPair) and nothing else queues
+    // more: a deeper queue would be a story the walk is telling instead of one it is
+    // punctuating.
+    std::optional<StoryRun> story_;
+    StoryReader storyReader_;
     ChaptersScreen chapters_;                // the CHAPTERS archive (game/chapters_screen.h)
     uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
