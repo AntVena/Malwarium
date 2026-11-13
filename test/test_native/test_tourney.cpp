@@ -246,7 +246,7 @@ void test_tourney_run_from_the_expl_row() {
     // areas the ladder grows to.
     enterSubmenuId(g, SubmenuId::Expl);
     explPickCategory(g, ExplCat::Arena);
-    CHECK(g.listRow() == explCatRow(ExplCat::Arena));
+    CHECK(g.explRow() == explCatRow(ExplCat::Arena));
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
     CHECK(g.tourneyRunning());

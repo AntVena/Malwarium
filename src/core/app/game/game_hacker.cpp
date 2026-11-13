@@ -50,7 +50,6 @@ void Game::toggleFace() {
             if (slots[i].accessible) { cursor_ = i; break; }
     }
     rigShop_.enter();
-    listRow_ = 0;
     dirty_ = true;
 }
 

@@ -71,7 +71,6 @@ void Game::resolveLockout() {
     lockoutItemsContext_ = false;
     if (pet_.model.hunger() == 0) pet_.model.setHunger(kLockoutRecoveryHunger);
     nav_ = Nav::Idle;
-    listRow_ = 0;
     stat_.reset();
     markSaveDirty();
 }

@@ -13,14 +13,6 @@ namespace mal {
 
 // --- MAINT -----------------------------------------------------------------
 
-void Game::onMaintList(const ButtonEvent& ev) {
-    if (ev.button == Button::A) listRow_ ^= 1;          // toggle the 2 rows
-    else if (ev.button == Button::B) {
-        maintScreen_.open(listRow_ == 0 ? MaintKind::Defrag : MaintKind::Av);
-        nav_ = Nav::Detail;
-    } else if (ev.button == Button::C) nav_ = Nav::Cursor;
-}
-
 void Game::startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) {
     const bool defrag = kind == MaintKind::Defrag;
     const bool played = variant == (defrag ? kDefragVariants : kAvVariants) - 1;

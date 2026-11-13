@@ -2056,10 +2056,10 @@ public:
     ItemsView itemsView() const { return items_.view(); }
     int itemPickRow() const { return items_.pickRow(); }
     int itemsRow() const { return items_.row(); }
-    // The shared list cursor and the MOD picker's own, for the list-navigation gates:
+    // The EXPL list's cursor and the MOD picker's, for the list-navigation gates:
     // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
     // which is the one thing a rendered frame states least directly.
-    int listRow() const { return listRow_; }
+    int explRow() const { return explRow_; }
     int modPick() const { return loadout_.modPick(); }
     const char* modDetailId() const { return loadout_.modDetailId(); }
     // Grant mods in tests without walking a boss drop or a cache roll.
@@ -2518,7 +2518,6 @@ private:
     void releaseHoldB();
 
     // Per-state input handlers.
-    void onMaintList(const ButtonEvent& ev);
     void onStacker(const ButtonEvent& ev);
     void onFragger(const ButtonEvent& ev);
     // CfgHost: the CFG pages' way back into the game (game_config.cpp).
@@ -2674,7 +2673,7 @@ private:
     void onExplList(const ButtonEvent& ev);
     // ...and the ACTIVITY PICKER it opens on (ui_state.h's ExplCat), which walks its own
     // four rows rather than the ladder's row space. Split out rather than folded into a
-    // branch of onExplList because the two levels share no state but `listRow_`.
+    // branch of onExplList because the two levels share no state but `explRow_`.
     void onExplCategories(const ButtonEvent& ev);
     // Flatten the durable per-sub flag blocks to the row-major layout the shared
     // expl_screen row helpers read ([area*kSubAreasPerArea+sub]).
@@ -3316,11 +3315,11 @@ private:
     Nav nav_ = Nav::Idle;
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
 
-    // L2/L3 state.
-    int listRow_ = 0;                      // selected row (ITEMS row idx / MAINT 0..1)
+    // The EXPL list's cursor.
+    int explRow_ = 0;
     // EXPL's THREE-level nav. `explCat_` is the activity (ExplCat::None = the picker
     // itself, EXPL's own top level); `explNavArea_` is the level INSIDE one: -1 = the
-    // category's own rows, >= 0 = inside that area (its sub-areas). `listRow_` indexes
+    // category's own rows, >= 0 = inside that area (its sub-areas). `explRow_` indexes
     // the picker's four rows while explCat_ is None and the ladder's row space
     // otherwise: the same field either way, because only one of the two levels is ever
     // on screen. Runtime-only; openExplList re-derives both every time EXPL is opened.

@@ -722,9 +722,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         // STAT's own two screens and the six pages behind them are game_stat.cpp's.
         case SubmenuId::Stat: stat_.draw(fb, statSources(), beat_); break;
         case SubmenuId::Items: items_.draw(fb, *this, beat_); break;
-        case SubmenuId::Maint:
-            drawMaintList(fb, pet_.model, listRow_, beat_);
-            break;
+        case SubmenuId::Maint: maintScreen_.draw(fb, *this); break;
         case SubmenuId::Cfg: cfg_.draw(fb, *this); break;
         case SubmenuId::Arch: arch_.draw(fb, *this); break;
         case SubmenuId::Mods: loadout_.draw(fb, *this); break;
@@ -738,7 +736,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
             // The shared half: everything the NAV also reads, so the cursor and the
             // drawing always agree about what is open (Game::explView).
             ExplListView v = explView();
-            v.cursor = listRow_;
+            v.cursor = explRow_;
             v.subCleared = cleared;
             v.subBossUnlocked = boss;
             v.cat = explCat_;
@@ -785,7 +783,7 @@ void Game::drawDetail(Framebuffer& fb) const {
             items_.drawDetail(fb, *this, beat_);
             break;
         case SubmenuId::Maint:
-            maintScreen_.draw(fb, *this);
+            maintScreen_.drawDetail(fb, *this);
             break;
         case SubmenuId::Cfg: cfg_.drawDetail(fb, *this); break;
         case SubmenuId::Arch: arch_.drawDetail(fb, *this); break;

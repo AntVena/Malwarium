@@ -210,7 +210,7 @@ void Game::leaveChapters() {
     nav_ = Nav::Submenu;
     explCat_ = ExplCat::None;
     explNavArea_ = -1;
-    listRow_ = explCatRow(ExplCat::Chapters);
+    explRow_ = explCatRow(ExplCat::Chapters);
 }
 
 }  // namespace mal

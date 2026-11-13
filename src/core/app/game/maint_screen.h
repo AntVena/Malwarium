@@ -1,10 +1,10 @@
-// maint_screen.h: the MAINT action page (Nav::Detail under MAINT), as a feature that owns
-// its own state.
+// maint_screen.h: the MAINT slot's two screens, as a feature that owns its own state.
 //
-// One process's page: which process is open, the focused payment variant (DEFRAG:
-// Quick / Tool / Played; AV: Quick / Played), and the PLAYED row's difficulty dial. A
-// run started from it takes a copy of all three (MaintRun); the price, the wallet and
-// the roll are the game's, reached through MaintHost.
+// The process list (L2: DEFRAG, AV) and one process's action page (L3): which process is
+// open, the focused payment variant (DEFRAG: Quick / Tool / Played; AV: Quick / Played),
+// and the PLAYED row's difficulty dial. A run started from the page takes a copy of all
+// three (MaintRun); the price, the wallet and the roll are the game's, reached through
+// MaintHost.
 //
 // This header names no core/ui type, so game.h can hold a MaintScreen by value.
 #pragma once
@@ -28,10 +28,13 @@ public:
     virtual const Inventory& inventory() const = 0;       // Defrag Tools held
     virtual int defragCost() const = 0;
     virtual int maintFailPct() const = 0;                 // a QUICK run's chance to fail
+    virtual int screenBeat() const = 0;
     virtual ArcadeGameKind maintPlayedGame(MaintKind k) const = 0;
 
     virtual void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) = 0;
+    virtual void openDetail() = 0;
     virtual void closeDetail() = 0;
+    virtual void leaveToCarousel() = 0;
 
 protected:
     ~MaintHost() = default;
@@ -39,14 +42,16 @@ protected:
 
 class MaintScreen {
 public:
-    // Every opening starts on QUICK with the dial at EASY.
-    void open(MaintKind kind) {
-        kind_ = kind;
-        variant_ = 0;
-        difficulty_ = ArcadeDifficulty::Easy;
-    }
+    // Every entry opens the list on DEFRAG.
+    void enter() { row_ = 0; }
+
+    // L2: the process list.
     void onButton(MaintHost& host, const ButtonEvent& ev);
+    void stepList(const MaintHost&, int dir);
     void draw(Framebuffer& fb, const MaintHost& host) const;
+    // L3: the open process's page.
+    void onDetail(MaintHost& host, const ButtonEvent& ev);
+    void drawDetail(Framebuffer& fb, const MaintHost& host) const;
 
     MaintKind kind() const { return kind_; }
     ArcadeDifficulty difficulty() const { return difficulty_; }
@@ -55,6 +60,15 @@ public:
     void setDifficulty(ArcadeDifficulty d) { difficulty_ = d; }
 
 private:
+    // Every opening starts on QUICK with the dial at EASY.
+    void open(MaintKind kind) {
+        kind_ = kind;
+        variant_ = 0;
+        difficulty_ = ArcadeDifficulty::Easy;
+    }
+
+    static constexpr int kRows = 2;   // DEFRAG, AV
+    int row_ = 0;
     MaintKind kind_ = MaintKind::Defrag;
     // The played variant is the last one, and the only one that can come up short
     // without failing.

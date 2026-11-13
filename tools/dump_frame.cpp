@@ -458,7 +458,7 @@ int main(int argc, char** argv) {
     auto enterExplCat = [&](ExplCat cat) {
         enterSlot(SubmenuId::Expl);
         const int want = explCatRow(cat);
-        for (int i = 0; i < kExplCatRows && game.listRow() != want; ++i)
+        for (int i = 0; i < kExplCatRows && game.explRow() != want; ++i)
             game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
     };

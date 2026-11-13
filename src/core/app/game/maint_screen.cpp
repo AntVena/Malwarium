@@ -10,7 +10,24 @@
 
 namespace mal {
 
+void MaintScreen::stepList(const MaintHost&, int dir) { row_ = stepRow(row_, kRows, dir); }
+
 void MaintScreen::onButton(MaintHost& host, const ButtonEvent& ev) {
+    if (ev.button == Button::A) {
+        row_ = stepRow(row_, kRows, +1);
+    } else if (ev.button == Button::B) {
+        open(row_ == 0 ? MaintKind::Defrag : MaintKind::Av);
+        host.openDetail();
+    } else if (ev.button == Button::C) {
+        host.leaveToCarousel();
+    }
+}
+
+void MaintScreen::draw(Framebuffer& fb, const MaintHost& host) const {
+    drawMaintList(fb, host.petRecord().model, row_, host.screenBeat());
+}
+
+void MaintScreen::onDetail(MaintHost& host, const ButtonEvent& ev) {
     // A cycles the payment VARIANT, and on the PLAYED row it walks the difficulty dial
     // first, EASY up to HARD, before wrapping back to Quick (and the dial back to EASY).
     // One button for both, the way the arcade cabinet page cycles its dial, so the
@@ -31,7 +48,7 @@ void MaintScreen::onButton(MaintHost& host, const ButtonEvent& ev) {
     }
 }
 
-void MaintScreen::draw(Framebuffer& fb, const MaintHost& host) const {
+void MaintScreen::drawDetail(Framebuffer& fb, const MaintHost& host) const {
     MaintActionView v;
     if (const ArcadeGameDef* g = arcadeGameByKind(host.maintPlayedGame(kind_))) {
         v.played.name = g->displayName;

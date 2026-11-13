@@ -593,7 +593,7 @@ inline void enterWalk(Game& g) {
 // a category sits on is the enum's business, not each gate's.
 inline void explPickCategory(Game& g, ExplCat cat) {
     const int want = explCatRow(cat);
-    for (int i = 0; i < kExplCatRows && g.listRow() != want; ++i)
+    for (int i = 0; i < kExplCatRows && g.explRow() != want; ++i)
         g.onButton(press(Button::A));
 }
 

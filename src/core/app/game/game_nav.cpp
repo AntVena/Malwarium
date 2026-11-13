@@ -164,7 +164,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 // reader, and the INDEX that jumps between its pages and sections.
                 case SubmenuId::Stat: stat_.onButton(*this, ev); break;
                 case SubmenuId::Items: items_.onButton(*this, ev); break;
-                case SubmenuId::Maint: onMaintList(ev); break;
+                case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
                 case SubmenuId::Cfg: cfg_.onButton(*this, ev); break;
                 case SubmenuId::Arch: arch_.onButton(*this, ev); break;
                 // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
@@ -181,7 +181,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Detail:
             switch (enteredId()) {
                 case SubmenuId::Items: items_.onDetail(*this, ev); break;
-                case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
+                case SubmenuId::Maint: maintScreen_.onDetail(*this, ev); break;
                 case SubmenuId::Cfg: cfg_.onDetail(*this, ev); break;
                 case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
                 case SubmenuId::Mods:
@@ -322,7 +322,7 @@ void Game::enterSubmenu() {
             items_.enter(*this);
             break;
         }
-        case SubmenuId::Maint: listRow_ = 0; break;
+        case SubmenuId::Maint: maintScreen_.enter(); break;
         case SubmenuId::Cfg: cfg_.enter(); bHeld_ = false; break;
         case SubmenuId::Arch: arch_.enter(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
@@ -341,7 +341,6 @@ void Game::enterSubmenu() {
 
 void Game::dropCursor() {
     nav_ = Nav::Idle;
-    listRow_ = 0;
     stat_.reset();
 }
 

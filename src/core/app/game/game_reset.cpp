@@ -38,7 +38,6 @@ void Game::resetToHatch() {
     inventory_ = Inventory::starting();
     log_ = EventLog{};
     cursor_ = 0;
-    listRow_ = 0;
     stat_.reset();
     maintScreen_ = MaintScreen{};
     maint_.reset();

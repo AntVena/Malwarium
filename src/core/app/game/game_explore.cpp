@@ -66,7 +66,7 @@ bool Game::areaBossReady(int area) const {
 }
 
 // THREE-level EXPL navigation. explCat_ == None is the ACTIVITY PICKER (ui_state.h's
-// ExplCat) and `listRow_` indexes its four rows; inside a category `listRow_` indexes
+// ExplCat) and `explRow_` indexes its four rows; inside a category `explRow_` indexes
 // the ladder's row space and explNavArea_ picks the level: -1 for the category's own
 // rows, N for inside area N. `explRowLandable` centralises which LADDER rows a level
 // stops on, and explCatLandable does the same job for the picker.
@@ -126,21 +126,21 @@ void Game::openExplList() {
         if (walk_.sector >= 0 && walk_.sector < kExplSectors) {
             explCat_ = ExplCat::Story;
             explNavArea_ = walk_.sector;
-            listRow_ = areaHeaderRow(walk_.sector) + 1 + walk_.sub;
-            if (explRowLandable(listRow_)) return;
+            explRow_ = areaHeaderRow(walk_.sector) + 1 + walk_.sub;
+            if (explRowLandable(explRow_)) return;
         } else if (inEndlessZone()) {
             explCat_ = ExplCat::Endless;
             explNavArea_ = -1;
-            listRow_ = walk_.sector == kDeepWebSector ? 0 : 1;
-            if (explRowLandable(listRow_)) return;
+            explRow_ = walk_.sector == kDeepWebSector ? 0 : 1;
+            if (explRowLandable(explRow_)) return;
         }
     }
     // Otherwise the picker opens on STORY, which is never locked.
     explCat_ = ExplCat::None;
     explNavArea_ = -1;
     for (int r = 0; r < kExplCatRows; ++r)
-        if (explCatLandable(r)) { listRow_ = r; return; }
-    listRow_ = 0;                                    // nothing landable → park at 0
+        if (explCatLandable(r)) { explRow_ = r; return; }
+    explRow_ = 0;                                    // nothing landable → park at 0
 }
 
 void Game::onExplCategories(const ButtonEvent& ev) {
@@ -151,12 +151,12 @@ void Game::onExplCategories(const ButtonEvent& ev) {
     // one.
     if (ev.button == Button::A) {
         for (int i = 1; i <= kExplCatRows; ++i) {
-            const int r = (listRow_ + i) % kExplCatRows;
-            if (explCatLandable(r)) { listRow_ = r; break; }
+            const int r = (explRow_ + i) % kExplCatRows;
+            if (explCatLandable(r)) { explRow_ = r; break; }
         }
     } else if (ev.button == Button::B) {
-        if (!explCatLandable(listRow_)) return;
-        const ExplCat c = explCatAt(listRow_);
+        if (!explCatLandable(explRow_)) return;
+        const ExplCat c = explCatAt(explRow_);
         if (!explCatHasRows(c)) {
             if (c == ExplCat::Arena) openTourney();
             else if (c == ExplCat::Chapters) openStoryArchive();
@@ -165,8 +165,8 @@ void Game::onExplCategories(const ButtonEvent& ev) {
         explCat_ = c;
         explNavArea_ = -1;
         for (int r = 0, n = explRowCount(); r < n; ++r)
-            if (explRowLandable(r)) { listRow_ = r; return; }
-        listRow_ = 0;
+            if (explRowLandable(r)) { explRow_ = r; return; }
+        explRow_ = 0;
     } else if (ev.button == Button::C) {
         nav_ = Nav::Cursor;
     }
@@ -188,23 +188,23 @@ void Game::onExplList(const ButtonEvent& ev) {
     if (ev.button == Button::A) {
         // Advance to the next row LANDABLE at the current level, wrapping.
         for (int i = 1; i <= n; ++i) {
-            const int r = (listRow_ + i) % n;
-            if (explRowLandable(r)) { listRow_ = r; break; }
+            const int r = (explRow_ + i) % n;
+            if (explRowLandable(r)) { explRow_ = r; break; }
         }
     } else if (ev.button == Button::B) {
-        if (listRow_ < 0 || listRow_ >= n || !explRowLandable(listRow_)) return;
+        if (explRow_ < 0 || explRow_ >= n || !explRowLandable(explRow_)) return;
         // STORY's own level, on an area header → DRILL IN: drop to that area's first
         // landable row (its boss-ready header, else its first open/farmable sub).
         // ENDLESS's two rows have nothing to drill into and act directly.
         if (explCat_ == ExplCat::Story && explNavArea_ < 0) {
-            explNavArea_ = explRowArea(listRow_);
+            explNavArea_ = explRowArea(explRow_);
             for (int r = 0; r < n; ++r)
-                if (explRowLandable(r)) { listRow_ = r; break; }
+                if (explRowLandable(r)) { explRow_ = r; break; }
             return;
         }
-        const ExplRowState st = stateOf(listRow_);
-        const int area = explRowArea(listRow_);
-        const int sub = explRowSub(listRow_);
+        const ExplRowState st = stateOf(explRow_);
+        const int area = explRowArea(explRow_);
+        const int sub = explRowSub(explRow_);
         switch (st) {
             case ExplRowState::AreaBossReady:
             case ExplRowState::AreaCleared:   startAreaBoss(area); break;
@@ -227,11 +227,11 @@ void Game::onExplList(const ButtonEvent& ev) {
         if (explNavArea_ >= 0) {
             const int a = explNavArea_;
             explNavArea_ = -1;
-            listRow_ = areaHeaderRow(a);
+            explRow_ = areaHeaderRow(a);
         } else {
             const ExplCat c = explCat_;
             explCat_ = ExplCat::None;
-            listRow_ = explCatRow(c);
+            explRow_ = explCatRow(c);
         }
     }
 }

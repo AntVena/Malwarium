@@ -83,8 +83,7 @@ Game::ListTarget Game::submenuListTarget() const {
         case SubmenuId::Arch: return screenList<&Game::arch_>();
         case SubmenuId::Cfg: return screenList<&Game::cfg_>();
         case SubmenuId::Maint:
-            return {[](Game& g, int dir) { g.listRow_ = stepRow(g.listRow_, 2, dir); },
-                    [](Game& g) { g.onMaintList(kTapC); }};
+            return screenList<&Game::maintScreen_>();
         case SubmenuId::Expl:
             // TWO cursor spaces behind one list (see game.h's explCat_): the ACTIVITY
             // PICKER's rows at EXPL's own top level, and the ladder's rows inside an open
@@ -92,10 +91,10 @@ Game::ListTarget Game::submenuListTarget() const {
             // which rows the cursor stops on.
             return {[](Game& g, int dir) {
                         if (g.explCat_ == ExplCat::None)
-                            g.listRow_ = stepRow(g.listRow_, kExplCatRows, dir,
+                            g.explRow_ = stepRow(g.explRow_, kExplCatRows, dir,
                                                  [&g](int r) { return g.explCatLandable(r); });
                         else
-                            g.listRow_ = stepRow(g.listRow_, explRowCount(), dir,
+                            g.explRow_ = stepRow(g.explRow_, explRowCount(), dir,
                                                  [&g](int r) { return g.explRowLandable(r); });
                     },
                     [](Game& g) { g.onExplList(kTapC); }};
