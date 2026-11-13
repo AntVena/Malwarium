@@ -70,17 +70,6 @@ question with the description beneath them, and open the confirm over the descri
 `arch_screen.cpp`'s sale sheet. | S | Check `arch_sale`, `arch_sale_twin` and
 `arch_sale_confirm` on the contact sheet. |
 
-**The encounter bypass is generic in code and single in content.** `heldEncounterBypass`
-takes any held item with a `preEncounterXp`, but only `sinkhole_trap` has one, and the rest
-of the path assumes it: the intro's third row is always "SINKHOLE" (`drawEncounterIntro`'s
-`kOptions`), the walk flavor reads "SINKHOLE +N XP", and with two kinds held the first in
-registry order is spent with no choice. Decide: label the row and the flavor from the item
-(its name into `EncounterIntroView`), or look `sinkhole_trap` up by id and drop the scan. |
-`game_combat.cpp`'s `heldEncounterBypass` and `resolveSinkhole`; `expl_screen.cpp`'s
-`drawEncounterIntro`. | S | Generic only pays if more bypass items are planned. Nothing reaches
-the intro today (the walk auto-resolves every wild), so the `encounter` scene on the contact
-sheet renders idle and cannot show a label change. |
-
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date

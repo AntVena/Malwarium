@@ -760,7 +760,7 @@ void Game::resolveSinkhole(const ItemDef& d) {
     char used[36];
     std::snprintf(used, sizeof(used), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, used);
-    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "SINKHOLE +%d XP", xp);
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s +%d XP", d.displayName, xp);
     // Persist now: the debounced autosave can lose a level-up to a reboot. Every other XP
     // grant (finishCombat, finishBossRound) does the same, and this source skips combat,
     // so it needs its own call.

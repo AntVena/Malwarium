@@ -907,13 +907,13 @@ void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v) {
              palColor(Pal::INK_DIM));
     drawDifficulty(fb, kMargin, 114, v.diffPips);
 
-    static const char* kOptions[3] = {"FIGHT", "FLEE", "SINKHOLE"};
-    const int n = v.sinkholeAvailable ? 3 : 2;
+    const char* options[3] = {"FIGHT", "FLEE", v.bypassName};
+    const int n = v.bypassName ? 3 : 2;
     const int top = 140, rowH = 18;
     for (int i = 0; i < n; ++i) {
         const int y = top + i * rowH;
         if (i == choice) drawRowCursor(fb, 8, y, palColor(Pal::ACCENT));
-        drawText(fb, 20, y, kOptions[i],
+        drawText(fb, 20, y, options[i],
                  i == choice ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
 

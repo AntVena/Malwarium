@@ -24,7 +24,7 @@ void EncounterScreen::draw(Framebuffer& fb, const EncounterHost& host) const {
     v.enemySprite = host.content().sprite(wild_.spriteName);
     v.level = wild_.level;
     v.diffPips = wild_.diffPips;
-    v.sinkholeAvailable = host.heldEncounterBypass() != nullptr;
+    if (const ItemDef* bypass = host.heldEncounterBypass()) v.bypassName = bypass->displayName;
     v.choice = choice_;
     v.beat = host.screenBeat();
     drawEncounterIntro(fb, v);

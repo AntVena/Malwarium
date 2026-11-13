@@ -1856,6 +1856,7 @@ void test_encounter_sinkhole_bypass() {
     CHECK(g.combatXp() ==                                 // converted to an XP lump
           xp0 + ContentRegistry::embedded().item("sinkhole_trap")->preEncounterXp);
     CHECK(g.inventory().count("sinkhole_trap") == 0);     // trap consumed
+    CHECK(std::strstr(g.exploreFlavor(), "Sinkhole Trap +"));  // named by the item spent
 }
 
 // Regression: resolveSinkhole() persists immediately, like every other XP grant
@@ -1934,9 +1935,9 @@ void test_explore_flavor_lines_fit() {
         return std::strlen(line) < kBuf - 1 && textWrapLines(line, kCol) <= kMaxLines;
     };
 
-    // The two resolvers that name an item: a Sealed Cache find and a warp-key find.
-    // Swept over every row that can actually drop, so a new cache or key is measured
-    // by adding the row rather than by remembering to come back here.
+    // The resolvers that name an item: a Sealed Cache find, a warp-key find and an
+    // encounter bypass. Swept over every row that can actually drop or be spent, so a
+    // new one is measured by adding the row rather than by remembering to come back here.
     for (const ItemDef* d : reg.allItems()) {
         if (d->use == ItemDef::Use::OpenContainer && d->cache.findWeight > 0) {
             std::snprintf(line, sizeof(line), "%s - OPEN IN VAULT (A+C)", d->displayName);
@@ -1944,6 +1945,10 @@ void test_explore_flavor_lines_fit() {
         }
         if (d->walkWarp != ItemDef::WalkWarp::None) {
             std::snprintf(line, sizeof(line), "%s - WARP KEY (A+C)", d->displayName);
+            CHECK(fits());
+        }
+        if (d->preEncounterXp > 0) {
+            std::snprintf(line, sizeof(line), "%s +%d XP", d->displayName, 99999);
             CHECK(fits());
         }
     }
@@ -1960,8 +1965,6 @@ void test_explore_flavor_lines_fit() {
     std::snprintf(line, sizeof(line), "RANK UP R%d +%dB", 999, 99999);
     CHECK(fits());
     std::snprintf(line, sizeof(line), "ALLY BUFF X%d", 99);
-    CHECK(fits());
-    std::snprintf(line, sizeof(line), "SINKHOLE +%d XP", 99999);
     CHECK(fits());
     for (const char* s : {"GOT AWAY", "LEFT THE SHOP", "TOO FRAGMENTED - DEFRAG"}) {
         std::snprintf(line, sizeof(line), "%s", s);

@@ -305,7 +305,8 @@ struct EncounterIntroView {
     // dummies/bosses), so it's shown as a plain number.
     int level = 0;
     int diffPips = 0;
-    bool sinkholeAvailable = false;  // a Sinkhole Trap is held: the third row shows
+    // The held bypass item's name, which labels the third row; null hides the row.
+    const char* bypassName = nullptr;
     int choice = 0;
     int beat = 0;
 };
