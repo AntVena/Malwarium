@@ -27,6 +27,7 @@
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
+#include "core/app/game/link_screen.h"
 #include "core/app/game/loadout_screen.h"
 #include "core/app/game/maint_screen.h"
 #include "core/app/game/merge_screen.h"
@@ -125,7 +126,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ArcadeHost, private CrewHost, private ArenaHost,
              private MergeHost, private PeersHost, private ChaptersHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
-             private CfgHost, private LoadoutHost {
+             private CfgHost, private LoadoutHost, private LinkHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1235,7 +1236,9 @@ public:
     bool pvpLocalWon() const { return pvp_ && pvp_->won; }
     // Why the last session ended without a fight (empty = it didn't). Rendered by the
     // LINK screen so a refusal never reads as a hang.
-    const char* pvpStatusText() const { return pvpStatus_; }
+    const char* pvpStatusText() const override { return pvpStatus_; }
+    const PvpSession* pvpSession() const override { return pvp_ ? &*pvp_ : nullptr; }
+    void clearPvpVerdict() override;
 
     // What this device offers as its fighter: species, equipped moves/mods, level and
     // stat points. Also what it feeds its OWN side of the fight through, so the two
@@ -1251,13 +1254,13 @@ public:
 
     // Challenge the live peer at `key` (the LINK screen's B). Inert unless the local
     // device is idle, has a pet, and that peer is currently in range.
-    bool pvpChallenge(uint64_t key);
+    bool pvpChallenge(uint64_t key) override;
     // The local human's answer to an incoming challenge (the LINK screen's B/C).
-    void pvpAcceptChallenge();
-    void pvpDeclineChallenge();
+    void pvpAcceptChallenge() override;
+    void pvpDeclineChallenge() override;
     // Abandon whatever session is in flight, telling the other device so its screen
     // doesn't sit waiting. Safe to call from any phase.
-    void pvpCancel();
+    void pvpCancel() override;
 
     // --- Device-tier seams (platform/esp32/net_link.h) ---------------------
 
@@ -3730,19 +3733,10 @@ private:
     ChaptersScreen chapters_;                // the CHAPTERS archive (game/chapters_screen.h)
     uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
-    // Outbound frames waiting for the device tier to drain (takePvpOut). A tiny ring
-    // rather than a callback so the engine stays free of the radio, exactly like the
-    // rest of core/.
-    struct PvpOut {
-        uint8_t mac[6] = {0};
-        uint8_t buf[kPvpFrameCap] = {0};
-        size_t len = 0;
-    };
-    PvpOut pvpOutbox_[kPvpOutboxCap];
-    int pvpOutCount_ = 0;
-
-    // LINK screen cursor.
-    int pvpRow_ = 0;
+    // Outbound frames waiting for the device tier to drain (takePvpOut). The radio
+    // link's, so it lives here beside onPvpFrame and outlasts any session.
+    PvpOutbox pvpOutbox_;
+    LinkScreen link_;   // the LINK slot's cursor (game/link_screen.h)
 
     // Queue one encoded frame for `mac`. Drops the frame (rather than blocking or
     // growing) if the outbox is full: every frame here is repeated on a timer, so a
@@ -3777,8 +3771,6 @@ private:
     // Bits, no Fragmentation, no care signal.
     void finishPvpBattle();
 
-    void onHackerLink(const ButtonEvent& ev);      // LINK list: A cycle · B act · C back
-    void drawHackerLink(Framebuffer& fb) const;    // LINK screen + header (game_pvp.cpp)
 
     // Shop event. shopFront_ points at the CURRENT area's AreaStorefrontDef (its
     // .shop or .modShop, picked by startShopEvent/startModShopEvent): a stable

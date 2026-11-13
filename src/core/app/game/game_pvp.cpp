@@ -45,13 +45,6 @@
 
 namespace mal {
 
-namespace {
-// A challengeable row is tag / pet: two lines, so the list clears the header rule with
-// room for the status band and the hint band underneath.
-constexpr int kPvpBlockH = kLineH * 3 + 6;   // tag · pet+stage · crew
-constexpr int kPvpVisibleRows = 3;
-constexpr int kMaxRows = 32;
-}  // namespace
 
 // --- Identity ----------------------------------------------------------------
 
@@ -89,31 +82,11 @@ bool Game::buildPvpFighter(PvpFighter* out) const {
 // --- Outbound ----------------------------------------------------------------
 
 void Game::queuePvpFrame(const uint8_t* mac, const uint8_t* buf, size_t len) {
-    if (!mac || !buf || len == 0 || len > kPvpFrameCap) return;
-    // Full outbox: drop it. Every frame this state machine sends is repeated on
-    // kPvpRetryMs and is idempotent at the receiver, so a drop costs one retry
-    // interval, and a three-frame protocol needs no queue.
-    if (pvpOutCount_ >= kPvpOutboxCap) return;
-    PvpOut& o = pvpOutbox_[pvpOutCount_++];
-    std::memcpy(o.mac, mac, 6);
-    std::memcpy(o.buf, buf, len);
-    o.len = len;
+    pvpOutbox_.push(mac, buf, len);
 }
 
 bool Game::takePvpOut(uint8_t* mac, uint8_t* buf, size_t cap, size_t* len) {
-    if (!mac || !buf || !len || pvpOutCount_ <= 0) return false;
-    const PvpOut& o = pvpOutbox_[0];
-    if (o.len > cap) {          // unreachable while cap >= kPvpFrameCap; drop rather than overrun
-        --pvpOutCount_;
-        for (int i = 0; i < pvpOutCount_; ++i) pvpOutbox_[i] = pvpOutbox_[i + 1];
-        return false;
-    }
-    std::memcpy(mac, o.mac, 6);
-    std::memcpy(buf, o.buf, o.len);
-    *len = o.len;
-    --pvpOutCount_;
-    for (int i = 0; i < pvpOutCount_; ++i) pvpOutbox_[i] = pvpOutbox_[i + 1];
-    return true;
+    return pvpOutbox_.take(mac, buf, cap, len);
 }
 
 void Game::sendPvpPending() {
@@ -446,38 +419,10 @@ void Game::finishPvpBattle() {
 
 // --- Input -------------------------------------------------------------------
 
-void Game::onHackerLink(const ButtonEvent& ev) {
-    switch (pvpPhase()) {
-        case PvpPhase::Invited:
-            // The consent gate. B accepts, C refuses; A is inert so a stray cycle press
-            // can never answer for the human.
-            if (ev.button == Button::B) pvpAcceptChallenge();
-            else if (ev.button == Button::C) pvpDeclineChallenge();
-            return;
-        case PvpPhase::Inviting:
-        case PvpPhase::Arming:
-            if (ev.button == Button::C) pvpCancel();      // give up waiting
-            return;
-        case PvpPhase::Result:
-            // Any button clears the verdict back to the challengeable list.
-            pvp_.reset();
-            pvpStatus_[0] = '\0';
-            dirty_ = true;
-            return;
-        case PvpPhase::Fighting:
-            return;                                       // the combat screen owns input
-        case PvpPhase::Idle:
-            break;
-    }
-
-    if (ev.button == Button::C) { nav_ = Nav::Cursor; return; }
-
-    uint64_t keys[kMaxRows];
-    const int n = pvpChallengeableKeys(keys, kMaxRows);
-    if (n == 0) return;                                   // empty state: A/B inert
-    if (pvpRow_ >= n) pvpRow_ = 0;
-    if (ev.button == Button::A) pvpRow_ = (pvpRow_ + 1) % n;
-    else if (ev.button == Button::B) pvpChallenge(keys[pvpRow_]);
+void Game::clearPvpVerdict() {
+    pvp_.reset();
+    pvpStatus_[0] = '\0';
+    dirty_ = true;
 }
 
 int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
@@ -487,134 +432,6 @@ int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
     for (int i = 0; i < livePeerCount_ && n < max; ++i)
         if (peerLive(livePeers_[i])) out[n++] = livePeers_[i].key;
     return n;
-}
-
-// --- Rendering ---------------------------------------------------------------
-
-void Game::drawHackerLink(Framebuffer& fb) const {
-    drawHeaderBand(fb, "LINK");
-    drawText(fb, kMargin, kContextY, "LINK", palColor(Pal::INK));
-
-    // Name whoever actually holds the radio rather than implying LINK has it. An empty
-    // list means something entirely different when the 'Pedia AP owns the radio than
-    // when nobody is around.
-    const bool starved = apEnabled_ || auditCapture_.capturing();
-    const char* radioState = apEnabled_                  ? "AP HAS RADIO"
-                             : auditCapture_.capturing() ? "CAPTURE HAS RADIO"
-                                                         : "LINKING";
-    drawText(fb, kActiveW - kMargin - textWidth(radioState), kContextY, radioState,
-             starved ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
-    fb.fillRect(0, kContextRule, kActiveW, 1, palColor(Pal::TRACK));
-
-    // Every non-Idle phase takes over the body: what the operator needs to know is the
-    // state of the one session, not a list they can't act on.
-    if (pvp_) {
-        const char* head = "";
-        const char* sub = "";
-        const char* secondary = "";
-        const char* hint = "";
-        switch (pvp_->phase) {
-            case PvpPhase::Inviting:
-                head = "CHALLENGE SENT"; sub = "WAITING FOR ANSWER"; hint = "C CANCEL";
-                break;
-            case PvpPhase::Invited:
-                head = "CHALLENGES YOU"; sub = "NO STAKES  NO EXPLOITS";
-                secondary = "C REFUSE"; hint = "B FIGHT";
-                break;
-            case PvpPhase::Arming:
-                head = "SYNCING FIGHT"; sub = "AGREEING ON THE SEED"; hint = "C CANCEL";
-                break;
-            case PvpPhase::Fighting:
-                head = "DUEL IN PROGRESS"; sub = ""; hint = "";
-                break;
-            case PvpPhase::Result:
-                // The verdict is a WORD, never a colour: it has to survive grayscale.
-                head = pvp_->won ? "YOU WON" : "YOU LOST"; sub = ""; hint = "ANY KEY";
-                break;
-            case PvpPhase::Idle:
-                break;
-        }
-        drawText(fb, kMargin, 56, head, palColor(Pal::INK));
-        drawText(fb, kMargin, 56 + kLineH, pvp_->peerTag, palColor(Pal::ACCENT));
-        if (sub[0]) drawText(fb, kMargin, 56 + kLineH * 2, sub, palColor(Pal::INK_DIM));
-        drawHackerHint(fb, secondary, hint);
-        return;
-    }
-
-    // Idle: whatever went wrong last time, then the challengeable list.
-    if (pvpStatus_[0]) drawText(fb, kMargin, 50, pvpStatus_, palColor(Pal::WARN));
-    const int listTop = pvpStatus_[0] ? 50 + kLineH : 52;
-
-    uint64_t keys[kMaxRows];
-    const int n = pvpChallengeableKeys(keys, kMaxRows);
-    if (n == 0) {
-        // Three very different reasons to be empty: say which. Words, never colour.
-        drawText(fb, kMargin, listTop, starved ? "LINK CANT RUN" : "NOBODY IN RANGE",
-                 palColor(Pal::INK_DIM));
-        drawText(fb, kMargin, listTop + kLineH,
-                 apEnabled_                  ? "TURN OFF AP IN CFG"
-                 : auditCapture_.capturing() ? "CAPTURE IN PROGRESS"
-                 : !pet_.creature                     ? "AND NO PET TO FIGHT"
-                                             : "LISTENING...",
-                 palColor(Pal::INK_DIM));
-    } else {
-        int sel = pvpRow_;
-        if (sel >= n) sel = 0;
-        int scrollTop = 0;
-        if (n > kPvpVisibleRows) {
-            if (sel >= kPvpVisibleRows) scrollTop = sel - kPvpVisibleRows + 1;
-            scrollTop = std::min(scrollTop, n - kPvpVisibleRows);
-        }
-        for (int v = 0; v < kPvpVisibleRows && scrollTop + v < n; ++v) {
-            const uint64_t key = keys[scrollTop + v];
-            const PeerHello* h = nullptr;
-            for (int i = 0; i < livePeerCount_; ++i)
-                if (livePeers_[i].key == key) h = &livePeers_[i].hello;
-            if (!h) continue;
-            const int rowY = listTop + v * kPvpBlockH;
-            const bool s = scrollTop + v == sel;
-            if (s) drawRowCursor(fb, 2, rowY + 1, palColor(Pal::ACCENT));
-
-            drawText(fb, kMargin, rowY, h->tag[0] ? h->tag : "UNKNOWN OP",
-                     s ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-
-            char pet[40];
-            if (h->petName[0])
-                std::snprintf(pet, sizeof(pet), "%s  %s", h->petName,
-                              stageName(static_cast<Stage>(h->stage)));
-            else
-                std::snprintf(pet, sizeof(pet), "NO PET");
-            drawText(fb, kMargin + 6, rowY + kLineH, pet, palColor(Pal::INK_DIM));
-
-            // Who you would be fighting FOR. crewName/crewRed ride in every hello
-            // (core/net/peer_link.h) and had no reader, so the one thing that makes
-            // a duel a rivalry rather than a stat check was arriving and being
-            // dropped. Same three channels the CREW screen uses (the name, the
-            // side's glyph, and its colour), so an unenlisted peer reads as NO
-            // CREW.
-            const int crewY = rowY + kLineH * 2;
-            if (h->crewName[0]) {
-                const Rgb565 side = teamColor(h->crewRed);
-                drawSpriteTinted(fb, h->crewRed ? ASSET_ICON_TEAM_RED
-                                                : ASSET_ICON_TEAM_BLUE,
-                                 0, kMargin + 6, crewY - 5, side);
-                drawText(fb, kMargin + 28, crewY, h->crewName, side);
-            } else {
-                drawText(fb, kMargin + 6, crewY, "NO CREW", palColor(Pal::INK_DIM));
-            }
-        }
-    }
-
-    // Ambient discovery borrows the audit scan's radio window, so this screen finding
-    // nobody with the scan off is the toggle working, not a fault. Saying so is what
-    // keeps a LINK-on/AUDIT-off device from looking broken.
-    if (linkAmbientStarved())
-        drawText(fb, kMargin, kActiveH - 34, "AMBIENT NEEDS AUDIT SCAN",
-                 palColor(Pal::WARN));
-
-    // FIGHT is what this screen is for, so it takes the accent verb (VISUAL_LANGUAGE
-    // §4.2) whenever there is someone to fight; with nobody listed, BACK is all there is.
-    drawHackerHint(fb, n > 0 ? "A NEXT  C BACK" : "A NEXT", n > 0 ? "B FIGHT" : "C BACK");
 }
 
 }  // namespace mal

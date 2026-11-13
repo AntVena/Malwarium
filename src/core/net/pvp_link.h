@@ -125,6 +125,29 @@ static_assert(kPvpInviteSize <= kPvpMaxFrameSize, "an INVITE must fit one ESP-NO
 // The largest frame this build can produce: what a send buffer should be sized to.
 constexpr size_t kPvpFrameCap = kPvpInviteSize;
 
+// Outbound frames waiting for the device tier to drain, oldest first. A tiny queue
+// rather than a callback so the engine stays free of the radio. A frame that finds it
+// full is dropped: every frame the duel sends is repeated on a timer and idempotent at
+// the receiver, so a drop costs one retry interval.
+class PvpOutbox {
+public:
+    void push(const uint8_t* mac, const uint8_t* buf, size_t len);
+    // Copy the oldest frame out and drop it. False with none waiting, or when it is
+    // longer than `cap` (dropped rather than overrun).
+    bool take(uint8_t* mac, uint8_t* buf, size_t cap, size_t* len);
+
+private:
+    struct Frame {
+        uint8_t mac[6] = {0};
+        uint8_t buf[kPvpFrameCap] = {0};
+        size_t len = 0;
+    };
+    void dropOldest();
+
+    Frame frames_[kPvpOutboxCap];
+    int count_ = 0;
+};
+
 // --- Encode ------------------------------------------------------------------
 // Each returns the number of bytes written, or 0 when `out` is null or `cap` is too
 // small. Strings are truncated to their field capacity.

@@ -229,4 +229,28 @@ uint32_t pvpCommitHash(uint32_t seed, const PvpFighter& host, const PvpFighter& 
     return h;
 }
 
+void PvpOutbox::push(const uint8_t* mac, const uint8_t* buf, size_t len) {
+    if (!mac || !buf || len == 0 || len > kPvpFrameCap || count_ >= kPvpOutboxCap) return;
+    Frame& f = frames_[count_++];
+    std::memcpy(f.mac, mac, 6);
+    std::memcpy(f.buf, buf, len);
+    f.len = len;
+}
+
+bool PvpOutbox::take(uint8_t* mac, uint8_t* buf, size_t cap, size_t* len) {
+    if (!mac || !buf || !len || count_ <= 0) return false;
+    const Frame& f = frames_[0];
+    if (f.len > cap) { dropOldest(); return false; }   // unreachable while cap >= kPvpFrameCap
+    std::memcpy(mac, f.mac, 6);
+    std::memcpy(buf, f.buf, f.len);
+    *len = f.len;
+    dropOldest();
+    return true;
+}
+
+void PvpOutbox::dropOldest() {
+    --count_;
+    for (int i = 0; i < count_; ++i) frames_[i] = frames_[i + 1];
+}
+
 }  // namespace mal

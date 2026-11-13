@@ -83,7 +83,7 @@ void Game::enterHackerSubmenu() {
     merge_.enter();
     crew_.enter();
     peers_.enter();
-    pvpRow_ = 0;
+    link_.enter();
 }
 
 void Game::onHackerSubmenu(const ButtonEvent& ev) {
@@ -104,7 +104,7 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
             peers_.onButton(*this, ev);
             break;
         case HackerSlotId::Link:
-            onHackerLink(ev);
+            link_.onButton(*this, ev);
             break;
         case HackerSlotId::Profile:
         default:
@@ -243,7 +243,7 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         case HackerSlotId::Vault: vault_.draw(fb, *this); break;
         case HackerSlotId::Crew: crew_.draw(fb, *this); break;
         case HackerSlotId::Peers: peers_.draw(fb, *this); break;
-        case HackerSlotId::Link: drawHackerLink(fb); break;       // game_pvp.cpp
+        case HackerSlotId::Link: link_.draw(fb, *this); break;
         case HackerSlotId::Merge: merge_.draw(fb, *this); break;
         // PROFILE: the read-only operator viewer (the STAT analog). SCAN is never
         // entered (hackerSlotAccessible), so it shares the fallback onHackerSubmenu uses.
