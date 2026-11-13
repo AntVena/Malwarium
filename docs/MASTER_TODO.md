@@ -122,16 +122,15 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **The rest**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), CREW (`crew*`),
-  the MODS and MOVES pickers (`mod*`, `move*` cursors and confirms), the MAINT action
-  page (`maintKind_`, `maintVariant_`, `maintDifficulty_`), the area SHOP, VAULT and its
-  two cache reveals (`cacheReveal_`, `bulkReveal_`), the arcade list, cabinet page and payout (`arcadeRow_`, `arcadeDifficulty_`,
-  `arcadeResult_`), the story reader, tip cards, and the ITEMS detail page and its Use path
+- **The rest**: CFG (`cfg*`, 15 fields), ARCH (`arch*`), the MODS and MOVES pickers
+  (`mod*`, `move*` cursors and confirms), the MAINT action page (`maintKind_`,
+  `maintVariant_`, `maintDifficulty_`), the area SHOP, the two cache reveals
+  (`cacheReveal_`, `bulkReveal_`), MERGE (`hackerMergeRow_`), PEERS (`peerRow_`), the story
+  reader and CHAPTERS archive, tip cards, and the ITEMS detail page and its Use path
   (`onItemsDetail`, `useItem`, `detailItem_`), which are still `Game`'s. Each one that
-  arms B moves its `holdTarget` entry onto the new type, as `screenHold`.
-- **The arena screen**: `tourneyCursor_`, `tourneyView_`, `tourneyScroll_`,
-  `tourneyScouted_`, `tourneyScoutedSlot_`. It reads `TourneyRun` through the `tourney*()`
-  accessors. S.
+  arms B moves its `holdTarget` entry onto the new type, as `screenHold`. `VaultScreen`,
+  `ArcadeScreen`, `CrewScreen` and `ArenaScreen` are the newest to copy; the host's
+  `openDetail` / `closeDetail` / `leaveToCarousel` are the shared L2/L3 moves.
 - **The LINK screen**: `pvpRow_` and `pvpStatus_` (why the last duel ended). The outbound
   frame queue (`pvpOutbox_`, `pvpOutCount_`) outlives a session but is no screen's: it is
   the radio link's, so this row also decides its home. S.
