@@ -19,11 +19,14 @@
 #include "core/app/settings.h"
 #include "core/app/game/arcade_screen.h"
 #include "core/app/game/arena_screen.h"
+#include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
+#include "core/app/game/merge_screen.h"
+#include "core/app/game/peers_screen.h"
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
 #include "core/app/game/vault_screen.h"
@@ -114,7 +117,8 @@ enum class StartMode { FreshHatch, Hatched };
 
 class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private FightScreenHost, private EncounterHost, private VaultHost,
-             private ArcadeHost, private CrewHost, private ArenaHost {
+             private ArcadeHost, private CrewHost, private ArenaHost,
+             private MergeHost, private PeersHost, private ChaptersHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -315,7 +319,7 @@ public:
     // f (Rig Shop, save v31): the Merge Hub one-time unlock. Makes the MRG
     // carousel slot accessible (game_merge.cpp). Doesn't grant any recipe by
     // itself; each recipe is won off a Decryptogram (recipeOwned).
-    bool mergeHubUnlocked() const { return op_.rig.level[kRigRowMergeHub] > 0; }
+    bool mergeHubUnlocked() const override { return op_.rig.level[kRigRowMergeHub] > 0; }
     // g/h (Rig Shop): one-time unlocks gating the auto-arm hooks in
     // Game::autoArmBackupShield. Auto Backup fires at explore-start
     // (startExplore/startDeepWebDive), Continuous Auto-Backup at every resolved
@@ -1158,7 +1162,7 @@ public:
     // while the PEERS screen is open. The dependency is REPORTED, never silently
     // fixed: arming the scan from here would grant a listening consent the operator
     // didn't give. The LINK and PEERS screens say so instead.
-    bool linkAmbientStarved() const { return linkEnabled_ && !netScanEnabled_; }
+    bool linkAmbientStarved() const override { return linkEnabled_ && !netScanEnabled_; }
 
     // What this device broadcasts about itself: filled from the live pet/crew/tag.
     // The device tier encodes it (encodePeerHello) and beacons it; nothing here
@@ -1173,21 +1177,11 @@ public:
     // operator was met, which is what the caller turns into the log line.
     bool registerPeer(const uint8_t* mac, const uint8_t* payload, size_t len);
 
-    // One row of the PEERS screen: an operator, live or remembered.
-    struct PeerRow {
-        uint64_t key = 0;
-        const char* tag = "";
-        const char* petName = "";
-        const char* crewName = "";
-        uint8_t stage = 0;
-        uint8_t rank = 0;
-        bool crewRed = false;
-        bool live = false;      // in range right now (vs. remembered from before)
-        uint32_t timesMet = 0;
-    };
-    // Fill `rows` with every known operator: the live snapshot merged over the
-    // roster, live ones first. Returns how many were written (capped at `max`).
-    int peerRows(PeerRow* rows, int max) const;
+    // Every known operator for the PEERS screen (game/peers_screen.h): the live
+    // snapshot merged over the roster, live ones first. Returns how many were written
+    // (capped at `max`).
+    using PeerRow = mal::PeerRow;
+    int peerRows(PeerRow* rows, int max) const override;
     // How many operators are in range right now. 0 on host and whenever LINK is idle.
     int livePeerCount() const;
     // Load the SD-backed met-list. Mirrors loadNetworkLedger: a missing file (first
@@ -2888,9 +2882,10 @@ private:
     // models the screen draws and is the ONE place the archive's order and membership
     // are decided: the list, its cursor and the B that opens a row all read it.
     void openStoryArchive();
-    void onStoryArchive(const ButtonEvent& ev);
-    void drawStoryArchiveScreen(Framebuffer& fb) const;
-    std::vector<StoryEntry> storyArchiveEntries() const;
+    // ChaptersHost.
+    std::vector<StoryEntry> storyArchiveEntries() const override;
+    void rereadChapter(const StoryChapterDef* chapter) override;
+    void leaveChapters() override;
 
     // THE SHIBOLEET (game_shiboleet.cpp). startShiboleet() is reached from the Wi-Fi
     // event when the sighting queue came up empty and the dry-streak cadence is due
@@ -3030,29 +3025,25 @@ private:
     // RECIPE is won separately off a Decryptogram (recipeOwned, below) and gates
     // whether it can be cooked: knowing the recipe is necessary but not sufficient,
     // the raw ingredients still have to be in the bag.
-    void onHackerMerge(const ButtonEvent& ev);     // MERGE HUB list: A cycle · B craft · C back
-    void drawHackerMerge(Framebuffer& fb) const;   // MERGE HUB screen, header band included
 
     // CREW (game_crew.cpp): enlist in a crew (content_crews.h) and designate the
     // HOME NETWORK membership hangs off. Four views (CrewView, above); this pair is
     // the whole screen, and unlike its sibling Hacker sub-screens it draws its OWN
     // header band, because the title changes with the view (CREW / RED / the crew's
     // own name) and only the screen knows which one is up.
-    void onHackerPeers(const ButtonEvent& ev);     // PEERS list: A cycle · C back (B unbound)
-    void drawHackerPeers(Framebuffer& fb) const;   // PEERS screen, header band included
     bool captureHoldsRadio() const override { return auditCapture_.capturing(); }
     // The crew Exploit row the A+C picker should offer, or a default-constructed
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
     // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
     // recipe wire in op_.rig.recipesOwned, and this trio is the only code that knows that.
-    bool recipeOwned(int recipeIndex) const;       // won off a Decryptogram, never bought
+    bool recipeOwned(int recipeIndex) const override;   // won off a Decryptogram, never bought
     void grantRecipe(int recipeIndex);             // the win: light the bit, persist
     // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
     // and any dish the recipe wants MET has been held at least once.
     bool recipeGrantable(int recipeIndex) const;
-    bool recipeCraftable(int recipeIndex) const;   // owned + every ingredient in the bag
-    void craftRecipe(int recipeIndex);             // consume the ingredients → grant the output
+    bool recipeCraftable(int recipeIndex) const override;   // owned + every ingredient in the bag
+    void craftRecipe(int recipeIndex) override;    // consume the ingredients, grant the output
     // Shared by applyCombatBitsBonus/applyCacheBitsBonus/applyCombatXpBonus: floors
     // the % bonus at +1 whenever it's active, so a truncated-to-0 grant (a small
     // value * a low pct) never makes a purchased upgrade look inert.
@@ -3886,7 +3877,7 @@ private:
     }
 
     // PEERS screen cursor (game_peers.cpp).
-    int peerRow_ = 0;
+    PeersScreen peers_;
 
     // 1v1 duels (game_pvp.cpp): the open session (core/model/pvp_session.h), empty
     // between sessions. pvpStatus_ is the LINK screen's line saying why the last one
@@ -3916,7 +3907,7 @@ private:
     uint32_t storyPanelDeadlineMs_ = 0;
     StoryThen storyThen_ = StoryThen::Walk;
     int storyThenArea_ = -1;                 // StoryThen::AreaBoss's gauntlet
-    int storyArchiveRow_ = 0;                // the CHAPTERS list's cursor
+    ChaptersScreen chapters_;                // the CHAPTERS archive (game/chapters_screen.h)
     uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
     // Outbound frames waiting for the device tier to drain (takePvpOut). A tiny ring
@@ -3992,7 +3983,7 @@ private:
     RigShopScreen rigShop_;   // the SHOP slot's views and cursors (game/rig_shop_screen.h)
     ItemsMenu items_;         // the ITEMS slot's views, cursors, filter and rows (game/items_menu.h)
     StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
-    int hackerMergeRow_ = 0;  // MERGE HUB list cursor: recipe row
+    MergeScreen merge_;       // the MERGE HUB's cursor (game/merge_screen.h)
     CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
     // Warp-key picker. warpRow_ is the focused row into the live
     // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the

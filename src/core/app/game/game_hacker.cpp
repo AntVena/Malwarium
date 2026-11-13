@@ -82,9 +82,9 @@ void Game::enterHackerSubmenu() {
     nav_ = Nav::Submenu;
     rigShop_.enter();
     vault_.enter();
-    hackerMergeRow_ = 0;
+    merge_.enter();
     crew_.enter();
-    peerRow_ = 0;
+    peers_.enter();
     pvpRow_ = 0;
 }
 
@@ -100,10 +100,10 @@ void Game::onHackerSubmenu(const ButtonEvent& ev) {
             vault_.onButton(*this, ev);
             break;
         case HackerSlotId::Merge:
-            onHackerMerge(ev);
+            merge_.onButton(*this, ev);
             break;
         case HackerSlotId::Peers:
-            onHackerPeers(ev);
+            peers_.onButton(*this, ev);
             break;
         case HackerSlotId::Link:
             onHackerLink(ev);
@@ -244,9 +244,9 @@ void Game::drawHackerSubmenu(Framebuffer& fb) const {
         case HackerSlotId::Shop: rigShop_.draw(fb, *this, beat_); break;   // rig_shop_screen.cpp
         case HackerSlotId::Vault: vault_.draw(fb, *this); break;
         case HackerSlotId::Crew: crew_.draw(fb, *this); break;
-        case HackerSlotId::Peers: drawHackerPeers(fb); break;     // game_peers.cpp
+        case HackerSlotId::Peers: peers_.draw(fb, *this); break;
         case HackerSlotId::Link: drawHackerLink(fb); break;       // game_pvp.cpp
-        case HackerSlotId::Merge: drawHackerMerge(fb); break;     // game_merge.cpp
+        case HackerSlotId::Merge: merge_.draw(fb, *this); break;
         // PROFILE: the read-only operator viewer (the STAT analog). SCAN is never
         // entered (hackerSlotAccessible), so it shares the fallback onHackerSubmenu uses.
         case HackerSlotId::Profile:

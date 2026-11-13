@@ -1185,7 +1185,7 @@ void test_cache_not_openable_from_items() {
 // the focused row is always one of the rows drawn. A cursor the player can't see is
 // worse than a list that runs off the bottom, because it moves invisibly.
 void test_merge_hub_windows_its_roster() {
-    // Mirrors drawHackerMerge's own layout: rows start at 28, each folded row costs a
+    // Mirrors MergeScreen::draw's own layout: rows start at 28, each folded row costs a
     // line plus the gap, and the focused one also unfolds up to kMaxRecipeInputs
     // ingredient lines. The footer rule is the budget.
     constexpr int kRowTop = 28, kRowGap = 6;

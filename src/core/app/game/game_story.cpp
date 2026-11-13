@@ -194,46 +194,23 @@ std::vector<StoryEntry> Game::storyArchiveEntries() const {
 }
 
 void Game::openStoryArchive() {
-    const int n = static_cast<int>(storyArchiveEntries().size());
-    if (storyArchiveRow_ >= n) storyArchiveRow_ = 0;
+    chapters_.open(*this);
     nav_ = Nav::StoryArchive;
     dirty_ = true;
 }
 
-void Game::onStoryArchive(const ButtonEvent& ev) {
-    const std::vector<StoryEntry> rows = storyArchiveEntries();
-    const int n = static_cast<int>(rows.size());
-    if (ev.button == Button::A) {
-        if (n > 0) storyArchiveRow_ = (storyArchiveRow_ + 1) % n;
-    } else if (ev.button == Button::B) {
-        if (storyArchiveRow_ >= 0 && storyArchiveRow_ < n) {
-            storyNext_ = nullptr;
-            storyThenArea_ = -1;
-            openStoryChapter(rows[storyArchiveRow_].chapter, StoryThen::Archive);
-        }
-    } else if (ev.button == Button::C) {
-        // Back to EXPL, parked on the CHAPTERS row the archive was opened from.
-        nav_ = Nav::Submenu;
-        explCat_ = ExplCat::None;
-        explNavArea_ = -1;
-        listRow_ = explCatRow(ExplCat::Chapters);
-    }
-    dirty_ = true;
+void Game::rereadChapter(const StoryChapterDef* chapter) {
+    storyNext_ = nullptr;
+    storyThenArea_ = -1;
+    openStoryChapter(chapter, StoryThen::Archive);
 }
 
-void Game::drawStoryArchiveScreen(Framebuffer& fb) const {
-    const std::vector<StoryEntry> entries = storyArchiveEntries();
-    std::vector<StoryArchiveRow> rows;
-    rows.reserve(entries.size());
-    for (const StoryEntry& e : entries) {
-        StoryArchiveRow r;
-        r.title = e.chapter->title;
-        r.zone = storyZoneBadge(e.sector);
-        r.beat = storyBeatWord(e.beat);
-        rows.push_back(r);
-    }
-    drawStoryArchive(fb, rows.data(), static_cast<int>(rows.size()), storyArchiveRow_,
-                     beat_);
+void Game::leaveChapters() {
+    // Back to EXPL, parked on the CHAPTERS row the archive was opened from.
+    nav_ = Nav::Submenu;
+    explCat_ = ExplCat::None;
+    explNavArea_ = -1;
+    listRow_ = explCatRow(ExplCat::Chapters);
 }
 
 }  // namespace mal

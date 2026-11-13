@@ -48,12 +48,7 @@ Game::ListTarget Game::listTarget() const {
                 if (rigShop_.view() == ShopView::ServiceInfo) return {};
                 return screenList<&Game::rigShop_>();
             case HackerSlotId::Vault: return screenList<&Game::vault_>();
-            case HackerSlotId::Peers:
-                return {[](Game& g, int dir) {
-                            PeerRow rows[kPeerMaxRows];
-                            g.peerRow_ = stepRow(g.peerRow_, g.peerRows(rows, kPeerMaxRows), dir);
-                        },
-                        [](Game& g) { g.onHackerPeers(kTapC); }};
+            case HackerSlotId::Peers: return screenList<&Game::peers_>();
             // CREW's Detail is a prose reader: its A pages the description, which is
             // not a row step.
             case HackerSlotId::Crew:
@@ -70,11 +65,7 @@ Game::ListTarget Game::listTarget() const {
     // it does not: nothing on that page is selected, its B is "next window" rather
     // than a row step, and its C is the tap-to-leave every other reader's is.
     if (nav_ == Nav::StoryArchive)
-        return {[](Game& g, int dir) {
-                    g.storyArchiveRow_ = stepRow(
-                        g.storyArchiveRow_, static_cast<int>(g.storyArchiveEntries().size()), dir);
-                },
-                [](Game& g) { g.onStoryArchive(kTapC); }};
+        return screenList<&Game::chapters_>();
     return {};
 }
 

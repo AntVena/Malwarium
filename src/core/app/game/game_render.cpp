@@ -62,7 +62,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Story: drawStoryScreen(fb); break;
         case Nav::TipCard: drawTipCard(fb); break;
         case Nav::AwayDigest: drawAwayDigest(fb); break;
-        case Nav::StoryArchive: drawStoryArchiveScreen(fb); break;
+        case Nav::StoryArchive: chapters_.draw(fb, *this); break;
         case Nav::ExploreControl: {
             // The A+C control overlay floats over the idle habitat.
             drawHabitat(fb, -1);
