@@ -24,6 +24,8 @@
 
 #include <cstdint>
 
+#include "core/model/run_clock.h"
+
 namespace mal {
 
 // The grid. Columns must stay <= 8: a locked row is one byte, which keeps a whole board
@@ -233,6 +235,10 @@ class Stacker {
         return (locked_[r] & colBit(c)) != 0;
     }
 
+    // The run's step cadence (core/model/run_clock.h).
+    RunClock& clock() { return clock_; }
+    const RunClock& clock() const { return clock_; }
+
   private:
     // Queue an intruder over column c, `delay` drops above the open row and behind any
     // already waiting there.
@@ -314,6 +320,7 @@ class Stacker {
     int8_t dropsLeft_ = kStackerDrops;
     int16_t destroyed_ = 0;
     uint32_t rng_ = 1;
+    RunClock clock_;
     State state_ = State::Running;
 };
 

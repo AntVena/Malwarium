@@ -27,8 +27,7 @@ namespace mal {
 void Game::startIsolation(int goalDots) {
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the byte sequence
     isolation_.reset(rng_, goalDots);
-    isolationBanked_ = 0;
-    lastIsolationStepMs_ = nowMs_;
+    isolation_.clock().restart(nowMs_);
     closeGameBrief();   // a stale flag from a previous run must not open paused
     nav_ = Nav::Isolation;
     dirty_ = true;
@@ -44,11 +43,9 @@ void Game::finishIsolation() {
                         kArcadeIsolationWinBytes);
         return;
     }
-    // Spend the run. Banked against isolationBanked_ rather than paid straight out, so a
-    // second press on the result screen can't buy the same bytes twice.
-    const int owed = isolation_.dots() - isolationBanked_;
+    // Spend the run, banked so a second press can't pay twice (Isolation::bankDots).
+    const int owed = isolation_.bankDots();
     if (owed > 0) {
-        isolationBanked_ = isolation_.dots();
         accelerateEggHatch(static_cast<uint32_t>(owed) * kIsolationDotMs);
     }
     // WORM_WHISPERER asks for a CLEAN protocol, and this is the one place that exists:

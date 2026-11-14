@@ -32,6 +32,8 @@
 
 #include <cstdint>
 
+#include "core/model/run_clock.h"
+
 namespace mal {
 
 // Three skins, three buttons: the board's size is the device's. A fourth would have
@@ -85,6 +87,7 @@ class Chromatophore {
         windowStep_ = windowStepMs;
         switching_ = switching;
         passes_ = 0;
+        banked_ = 0;
         round_ = 0;
         state_ = State::Running;
         // The pet opens already wearing skin 0, settled. A run starts from a known
@@ -147,6 +150,13 @@ class Chromatophore {
     bool hidden() const { return worn_ == plate_ && wearMs_ >= kChromaSettleMs; }
 
     int passes() const { return passes_; }
+    // The passes not yet spent on the hatch clock, marked spent, so a second press on
+    // the result screen can't buy the same passes twice.
+    int bankPasses() {
+        const int owed = passes_ - banked_;
+        banked_ = passes_;
+        return owed;
+    }
     // Passes that would finish the run, or 0 for an endless one, so a caller printing a
     // "3 / 10" has to ask whether there is a denominator at all.
     int goal() const { return goal_; }
@@ -155,6 +165,10 @@ class Chromatophore {
     State state() const { return state_; }
     bool running() const { return state_ == State::Running; }
     bool clean() const { return state_ == State::Clean; }
+
+    // The run's step cadence (core/model/run_clock.h).
+    RunClock& clock() { return clock_; }
+    const RunClock& clock() const { return clock_; }
 
   private:
     void beginRound() {
@@ -180,8 +194,10 @@ class Chromatophore {
     }
 
     uint32_t rng_ = 1;
+    RunClock clock_;
     int goal_ = 1;
     int passes_ = 0;
+    int banked_ = 0;
     int round_ = 0;
     uint32_t window0_ = 0;      // the first round's window
     uint32_t windowStep_ = 0;   // ...and what each later round sheds off it

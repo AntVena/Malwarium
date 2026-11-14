@@ -25,6 +25,8 @@
 
 #include <cstdint>
 
+#include "core/model/run_clock.h"
+
 namespace mal {
 
 // The quarantine buffer. 176 cells at 12 logical px is a 192x132 panel: wide enough to
@@ -63,6 +65,7 @@ class Isolation {
         rng_ = seed ? seed : 1u;
         goal_ = goal < 1 ? 0 : goal;
         dots_ = 0;
+        banked_ = 0;
         grow_ = 0;
         dir_ = 0;            // heading right
         pendingTurn_ = 0;
@@ -147,6 +150,13 @@ class Isolation {
     bool running() const { return state_ == State::Running; }
     bool clean() const { return state_ == State::Clean; }
     int dots() const { return dots_; }            // bytes swallowed so far
+    // The bytes not yet spent on the hatch clock, marked spent, so a second press on the
+    // result screen can't buy the same bytes twice.
+    int bankDots() {
+        const int owed = dots_ - banked_;
+        banked_ = dots_;
+        return owed;
+    }
     // Bytes that would finish it clean, or 0 for an endless run, so a caller printing
     // "12 / 30" has to ask whether there is a denominator at all.
     int goal() const { return goal_; }
@@ -159,6 +169,10 @@ class Isolation {
     // rather than the occupancy map so the head can be drawn as its own shape.
     int segment(int i) const { return ring_[i]; }
     bool bodyAt(int cell) const { return body_[cell] != 0; }
+
+    // The run's step cadence (core/model/run_clock.h).
+    RunClock& clock() { return clock_; }
+    const RunClock& clock() const { return clock_; }
 
   private:
     // Drop the next byte on a uniformly-drawn FREE cell. Returns false when the worm
@@ -181,12 +195,14 @@ class Isolation {
     uint8_t dot_ = 0;
     int16_t len_ = 0;
     int16_t dots_ = 0;
+    int16_t banked_ = 0;
     int16_t goal_ = 1;
     int16_t grow_ = 0;
     uint8_t dir_ = 0;
     int8_t pendingTurn_ = 0;
     State state_ = State::Running;
     uint32_t rng_ = 1;
+    RunClock clock_;
 };
 
 }  // namespace mal

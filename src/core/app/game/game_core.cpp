@@ -418,12 +418,12 @@ Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
 // timing test.
 Game::Cadence Game::tickStackerSlide(uint32_t nowMs) {
     if (nav_ != Nav::Stacker || gameBrief_.isOpen()) {
-        lastStackerStepMs_ = nowMs;
+        stacker_.clock().restart(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastStackerStepMs_ < static_cast<uint32_t>(playStepMs(kStackerStepMs)))
+    if (stacker_.clock().since(nowMs) < static_cast<uint32_t>(playStepMs(kStackerStepMs)))
         return Cadence::Open;
-    lastStackerStepMs_ = nowMs;
+    stacker_.clock().restart(nowMs);
     stepStacker();
     return Cadence::Fired;
 }
@@ -433,12 +433,12 @@ Game::Cadence Game::tickStackerSlide(uint32_t nowMs) {
 // count (beginFraggerRun). A finished board holds still.
 Game::Cadence Game::tickFraggerFall(uint32_t nowMs) {
     if (nav_ != Nav::Fragger || gameBrief_.isOpen()) {
-        lastFraggerStepMs_ = nowMs;
+        fragger_.clock().restart(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastFraggerStepMs_ < static_cast<uint32_t>(fragger_.stepMs()))
+    if (fragger_.clock().since(nowMs) < static_cast<uint32_t>(fragger_.stepMs()))
         return Cadence::Open;
-    lastFraggerStepMs_ = nowMs;
+    fragger_.clock().restart(nowMs);
     if (!fragger_.running()) return Cadence::Open;
     stepFragger();
     return Cadence::Fired;
@@ -450,12 +450,12 @@ Game::Cadence Game::tickFraggerFall(uint32_t nowMs) {
 // still under the verdict.
 Game::Cadence Game::tickIsolationCrawl(uint32_t nowMs) {
     if (nav_ != Nav::Isolation || gameBrief_.isOpen()) {
-        lastIsolationStepMs_ = nowMs;
+        isolation_.clock().restart(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastIsolationStepMs_ < static_cast<uint32_t>(playStepMs(kIsolationStepMs)))
+    if (isolation_.clock().since(nowMs) < static_cast<uint32_t>(playStepMs(kIsolationStepMs)))
         return Cadence::Open;
-    lastIsolationStepMs_ = nowMs;
+    isolation_.clock().restart(nowMs);
     if (isolation_.running()) {   // a parked board must not replay its verdict
         const int ate = isolation_.dots();
         isolation_.step();
@@ -473,16 +473,16 @@ Game::Cadence Game::tickIsolationCrawl(uint32_t nowMs) {
 // not a fixed step, so the model always sees the time that actually passed.
 Game::Cadence Game::tickChromaSweep(uint32_t nowMs) {
     if (nav_ != Nav::Chroma || gameBrief_.isOpen() || !chroma_.running()) {
-        lastChromaMs_ = nowMs;
+        chroma_.clock().restart(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastChromaMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
+    if (chroma_.clock().since(nowMs) < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
     const int passed = chroma_.passes();
-    chroma_.tick(nowMs - lastChromaMs_);
+    chroma_.tick(chroma_.clock().since(nowMs));
     if (chroma_.clean()) playSound(Sound::Clear);
     else if (!chroma_.running()) playSound(Sound::Crash);
     else if (chroma_.passes() > passed) playSound(Sound::Point);
-    lastChromaMs_ = nowMs;
+    chroma_.clock().restart(nowMs);
     return Cadence::Fired;
 }
 

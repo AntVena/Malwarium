@@ -2875,9 +2875,7 @@ private:
     // screen. Empty otherwise.
     std::optional<MaintRun> maint_;
     Stacker stacker_;
-    uint32_t lastStackerStepMs_ = 0;
     Fragger fragger_;
-    uint32_t lastFraggerStepMs_ = 0;
     StackerScreen stackerScreen_;   // game/stacker_screen.h
     FraggerScreen fraggerScreen_;   // game/fragger_screen.h, and the last shot's beam
     // Every site that ends a dive (or a pet) spends both live halves in one call, so the
@@ -3234,21 +3232,17 @@ private:
     // Isolation Protocol (the Worm hatch minigame, game_isolation.cpp). Un-persisted for
     // the same reason the Clutch Pick is (core/model/egg_pick.h): it is played out in the
     // minute after the egg is laid, so a reboot mid-run forfeits the bonus and leaves a
-    // normal egg incubating. The run's own step clock is real-ms, like the Stacker's.
+    // normal egg incubating.
     Isolation isolation_;
     IsolationScreen isolationScreen_;   // game/isolation_screen.h
-    uint32_t lastIsolationStepMs_ = 0;
-    int isolationBanked_ = 0;        // bytes already spent on the clock, so B can't double-pay
 
     // CHROMATOPHORE (the Metamorphic hatch minigame, game_chroma.cpp). Un-persisted for
     // the reason the two above are: the whole run is over in half a minute after the
     // egg is laid, so a reboot mid-run forfeits the bonus and leaves a normal egg
-    // incubating. Its clock is real-ms and DELTAS rather than a step cadence: the
-    // board is a stopwatch, not a board that steps.
+    // incubating. It ticks on real-ms DELTAS rather than a step cadence: the board is a
+    // stopwatch.
     Chromatophore chroma_;
     ChromaScreen chromaScreen_;   // game/chroma_screen.h
-    uint32_t lastChromaMs_ = 0;
-    int chromaBanked_ = 0;           // passes already spent on the clock, so B can't double-pay
 
     HatchRevealScreen hatchReveal_;   // game/hatch_reveal_screen.h
     // The line-select modal (game/line_select_screen.h). Runtime-only: an empty save

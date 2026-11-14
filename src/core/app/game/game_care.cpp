@@ -65,7 +65,7 @@ void Game::beginStackerBoard() {
     // columns; the dial sets what the ground costs.
     rng_ = rng_ * 1664525u + 1013904223u;
     stacker_.reset(rng_ >> 8, kStackerGroundCalls[static_cast<int>(runDifficulty())]);
-    lastStackerStepMs_ = nowMs_;
+    stacker_.clock().restart(nowMs_);
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Stacker;
 }

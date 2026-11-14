@@ -68,8 +68,7 @@ void Game::startChroma(int rounds, int windowMs, bool switching) {
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the skin sequence
     chroma_.reset(rng_, rounds, static_cast<uint32_t>(windowMs),
                   static_cast<uint32_t>(kChromaWindowStepMs), switching);
-    chromaBanked_ = 0;
-    lastChromaMs_ = nowMs_;
+    chroma_.clock().restart(nowMs_);
     closeGameBrief();   // a stale flag from a previous run must not open paused
     nav_ = Nav::Chroma;
     dirty_ = true;
@@ -84,11 +83,9 @@ void Game::finishChroma() {
                         kArcadeChromaWinPasses);
         return;
     }
-    // Spend the run. Banked against chromaBanked_ rather than paid straight out, so a
-    // second press on the result screen can't buy the same passes twice.
-    const int owed = chroma_.passes() - chromaBanked_;
+    // Spend the run, banked so a second press can't pay twice (Chromatophore::bankPasses).
+    const int owed = chroma_.bankPasses();
     if (owed > 0) {
-        chromaBanked_ = chroma_.passes();
         accelerateEggHatch(static_cast<uint32_t>(owed) * kChromaPassMs);
     }
     // NEVER_SEEN asks for the run that was never spotted, and this is the one place it

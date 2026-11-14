@@ -21,6 +21,8 @@
 
 #include <cstdint>
 
+#include "core/model/run_clock.h"
+
 namespace mal {
 
 // The lane count IS the difficulty dial: every lane added is one more the head has to
@@ -146,6 +148,10 @@ class Fragger {
         return cells_[row][lane];
     }
 
+    // The run's step cadence (core/model/run_clock.h).
+    RunClock& clock() { return clock_; }
+    const RunClock& clock() const { return clock_; }
+
   private:
     uint32_t next() {
         rng_ = rng_ * 1664525u + 1013904223u;
@@ -166,6 +172,7 @@ class Fragger {
 
     Cell cells_[kFraggerRows][kFraggerMaxLanes];
     uint32_t rng_ = 1;
+    RunClock clock_;
     int8_t lanes_ = kFraggerMinLanes;
     int8_t lane_ = 0;
     int16_t hits_ = 0;

@@ -16,7 +16,7 @@ void Game::beginFraggerRun() {
     // from EASY's minimum.
     rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the fall
     fragger_.reset(rng_, kFraggerMinLanes + static_cast<int>(runDifficulty()));
-    lastFraggerStepMs_ = nowMs_;
+    fragger_.clock().restart(nowMs_);
     fraggerScreen_.clearShot();
     closeGameBrief();   // a stale flag from a previous run must not open paused
     nav_ = Nav::Fragger;
