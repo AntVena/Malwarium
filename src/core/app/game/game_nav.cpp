@@ -235,17 +235,7 @@ void Game::onButton(const ButtonEvent& ev) {
             // The crack cinematic runs by itself and hatches at the end. Every button
             // is inert for its ~2 seconds so a stray press cannot skip it.
             break;
-        case Nav::ModalEggPick:
-            // Clutch Pick: A and C AIM at the first/second half of the clutch (left/top
-            // vs right/bottom, whichever way this round cuts) and B commits that half. C
-            // is not back here, and the modal cannot be cancelled. The RULES overlay
-            // (opened on the chord, above) is the one exception: while it's up, B/C read
-            // as its scroll/close instead, same as every other engine.
-            if (onGameBriefInput(ev)) break;
-            if (ev.button == Button::A) eggPickAim(false);
-            else if (ev.button == Button::C) eggPickAim(true);
-            else if (ev.button == Button::B) eggPickCommit();
-            break;
+        case Nav::ModalEggPick: eggPickScreen_.onButton(*this, ev); break;
         case Nav::ModalEvolve:
             // B continues once the reveal is up; A is a no-op and C is
             // disabled, because the evolution already happened. The A+C chord

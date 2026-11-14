@@ -24,6 +24,7 @@
 #include "core/app/game/away_digest_screen.h"
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
+#include "core/app/game/egg_pick_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/expl_screen.h"
 #include "core/app/game/explore_control_screen.h"
@@ -146,7 +147,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
-             private LineSelectHost {
+             private LineSelectHost, private EggPickHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -542,7 +543,7 @@ public:
     TourneyView tourneyView() const { return arena_.view(); }
     int tourneyCursor() const { return arena_.cursor(); }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
-    bool gameBriefOpen() const { return gameBriefOpen_; }
+    bool gameBriefOpen() const override { return gameBriefOpen_; }
     // True when the hatch opened it (the first time a line's egg is laid on this
     // device), false when the chord did. That reading leads with what the egg stakes,
     // B walks it forward and off its last page into play, and C skips straight to the
@@ -1588,7 +1589,7 @@ public:
     // a skill bonus (content_arcade.h; game_arcade.cpp is the whole mechanism). The
     // arcade runs the same minigame code. A live ArcadeRun (core/model/arcade_run.h)
     // marks a board as played for fun and changes only its payout and pacing.
-    bool inArcadeRun() const { return arcade_.has_value(); }
+    bool inArcadeRun() const override { return arcade_.has_value(); }
     // Lifetime tallies per roster row (content_arcade.h's index order). Out-of-range
     // reads 0, so a caller iterating a roster that shrank can't fall off the array.
     int arcadePlays(int i) const override {
@@ -2613,8 +2614,8 @@ private:
     // Handles B (scroll) / C or the chord (close) while the overlay is open and
     // returns true, so the caller returns immediately rather than also feeding the
     // same press to the game underneath. Returns false when the overlay isn't open.
-    bool onGameBriefInput(const ButtonEvent& ev);
-    void drawGameBrief(Framebuffer& fb) const;
+    bool onGameBriefInput(const ButtonEvent& ev) override;
+    void drawGameBrief(Framebuffer& fb) const override;
 
     // The fight's lifecycle. Its screen, the one pet-side screen where A+C is live, is
     // fightScreen_ (game/fight_screen.h).
@@ -3187,9 +3188,9 @@ private:
     // how many halvings this run asks for: the hatch always passes kEggPickRounds, and
     // the arcade passes its difficulty.
     void startEggPick(int rounds);       // hide the live egg in the clutch, open the modal
-    void eggPickAim(bool secondHalf);    // A/C: highlight the first/second half
-    void eggPickCommit();                // B: halve, or dismiss the reveal
-    void drawEggPick(Framebuffer& fb) const;
+    void eggPickAim(bool secondHalf) override;   // A/C: highlight the first/second half
+    void eggPickCommit() override;               // B: halve, or dismiss the reveal
+    const EggPick* eggPick() const override { return eggPick_ ? &*eggPick_ : nullptr; }
 
     // Hatch reveal cinematic (game_eggpick.cpp): the on-demand crack, see
     // hatchRevealReady(). Non-interactive: it runs on the heartbeat and hatches itself.
@@ -3807,6 +3808,7 @@ private:
 
     // The Clutch Pick on screen (core/model/egg_pick.h), empty otherwise.
     std::optional<EggPick> eggPick_;
+    EggPickScreen eggPickScreen_;   // its modal (game/egg_pick_screen.h)
 
     // Isolation Protocol (the Worm hatch minigame, game_isolation.cpp). Un-persisted for
     // the same reason the Clutch Pick is (core/model/egg_pick.h): it is played out in the
