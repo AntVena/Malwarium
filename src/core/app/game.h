@@ -29,6 +29,7 @@
 #include "core/app/game/explore_control_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
+#include "core/app/game/item_offer_screen.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/link_screen.h"
 #include "core/app/game/loadout_screen.h"
@@ -142,7 +143,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
-             private StatPickerHost {
+             private StatPickerHost, private ItemOfferHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -2869,25 +2870,23 @@ private:
     void useWarpKey(const ItemDef& d) override;
     void resolveSafeRestEvent(const ItemDef& d);
 
-    // The ITEM OFFER (game_offer.cpp): items that only matter at one rare moment are put
-    // in front of the player AT that moment, instead of waiting in the bag for someone to
-    // remember them. Starting a DeepWeb Dive offers the held bells and Deep-Learning
-    // devices; an egg that starts incubating offers the Boot Accelerator. Each offer is
-    // a list of the held items that would do something right now (itemUsable), plus a
-    // last row that carries on without them. B on an item uses it and keeps the list
-    // open (a bell and a device both go in before a dive); B on the last row carries on;
-    // C backs out. Nothing is offered when nothing held would help, so the moment
+    // The ITEM OFFER (game_offer.cpp, game/item_offer_screen.h): items that only matter
+    // at one rare moment are put in front of the player AT that moment, instead of
+    // waiting in the bag for someone to remember them. Starting a DeepWeb Dive offers the
+    // held bells and Deep-Learning devices; an egg that starts incubating offers the Boot
+    // Accelerator. Each offer is the held items that would do something right now
+    // (itemUsable). Nothing is offered when nothing held would help, so the moment
     // passes exactly as it did before.
-    enum class OfferFor : uint8_t { Dive, Egg };
-    std::vector<const ItemDef*> offerItems() const;
-    bool offerRelevant(const ItemDef& d) const;
+    using OfferFor = mal::OfferFor;
+    std::vector<const ItemDef*> offerItems(OfferFor f) const override;
+    bool offerRelevant(const ItemDef& d, OfferFor f) const;
     void offerThenDive() override;           // the EXPL list's dive row: offer, else dive now
     void openItemOffer(OfferFor f);
-    void onItemOffer(const ButtonEvent& ev);
-    void finishItemOffer();         // the last row: carry on with what was paused
-    void useOfferedItem(const ItemDef& d);
+    void finishItemOffer(OfferFor f) override;   // carry on with what was paused
+    void leaveItemOffer(OfferFor f) override;
+    void useOfferedItem(const ItemDef& d) override;
+    int heldCount(const char* itemId) const override { return inventory_.count(itemId); }
     void autoUseDiveGear();         // AUTO DIVE GEAR at YES: arm the best of each kind
-    void drawItemOfferScreen(Framebuffer& fb) const;
 
     // Hacker Rank: re-derives rank from op_.networksSeen after
     // every new unique network and arms a pending celebration on a crossing.
@@ -3720,11 +3719,10 @@ private:
     CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
     WarpPickerScreen warpPicker_;   // the held warp keys (game/warp_picker_screen.h)
 
-    // The ITEM OFFER's cursor, what it is offering for, and where C goes back to.
+    // The ITEM OFFER, and where backing out of a dive's offer returns to.
     // pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
-    OfferFor offerFor_ = OfferFor::Dive;
-    int offerRow_ = 0;
+    ItemOfferScreen itemOffer_;
     Nav offerBackNav_ = Nav::Idle;
 
     // A Hacker Rank crossing (Operator::hackerRank), held until the next Walk-screen

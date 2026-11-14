@@ -70,7 +70,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Shop:
         case Nav::ModShop: shop_.draw(fb, *this); break;
         case Nav::WarpPicker: warpPicker_.draw(fb, *this); break;
-        case Nav::ItemOffer: drawItemOfferScreen(fb); break;
+        case Nav::ItemOffer: itemOffer_.draw(fb, *this); break;
         case Nav::RollbackPicker: statPicker_.drawRollback(fb, *this); break;
         case Nav::RepartitionPicker: statPicker_.drawRepartition(fb, *this); break;
         case Nav::CacheYield: vault_.drawReveal(fb, *this); break;

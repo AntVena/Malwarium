@@ -206,7 +206,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Shop:
         case Nav::ModShop: shop_.onButton(*this, ev); break;
         case Nav::WarpPicker: warpPicker_.onButton(*this, ev); break;
-        case Nav::ItemOffer: onItemOffer(ev); break;
+        case Nav::ItemOffer: itemOffer_.onButton(*this, ev); break;
         case Nav::RollbackPicker: statPicker_.onRollback(*this, ev); break;
         case Nav::RepartitionPicker: statPicker_.onRepartition(*this, ev); break;
         case Nav::CacheYield: vault_.onReveal(*this, ev); break;
