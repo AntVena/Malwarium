@@ -570,14 +570,12 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
-    // Lockout crisis fires when Hunger bottoms out. Never during the Hatch (there's
-    // no pet), an Evolution, or a Critical System Failure (priority), nor over a
-    // DECRYPTOGRAM board: the board cannot be left and its ticket is already spent,
-    // so firing across it would destroy a found item. The crisis loses nothing by
-    // waiting: its deadline starts when it fires, and this check runs again the
-    // moment the board is left.
-    if (pet_.creature && !pet_.armed.lockoutActive && nav_ != Nav::Decryption && nav_ != Nav::Cryptogram &&
-        nav_ != Nav::ModalEvolve && nav_ != Nav::ModalCSF && pet_.model.isStarving()) {
+    // Lockout crisis fires when Hunger bottoms out, except over a screen whose row says it
+    // waits (LockoutCrisis::Waits, each saying why). The crisis loses nothing by
+    // waiting: its deadline starts when it fires, and this check runs again the moment
+    // the screen is left.
+    if (pet_.creature && !pet_.armed.lockoutActive &&
+        screenRow(nav_).crisis == LockoutCrisis::Fires && pet_.model.isStarving()) {
         fireLockout();
         changed = true;
     }
@@ -617,77 +615,46 @@ bool Game::tickHeldGestures(uint32_t /*nowMs*/) {
 
 // The global idle timer collapsing the menu tree back to the habitat. Last, because what
 // counts as activity is re-stamped by several of the blocks above.
+MenuIdle Game::screenIdle() const {
+    const MenuIdle idle = screenRow(nav_).idle;
+    return idle == MenuIdle::BySlot ? slotIdle() : idle;
+}
+
+// The menu tree's two levels, answered by the entered slot. A radio screen on the Hacker
+// face (CREW's picker, PEERS, LINK) lingers: each is a hands-off screen you walk around
+// with, and an open one arms the radio (radioScanWanted / linkWanted), so the standard 5s
+// would power it down before a sweep or a peer's beacon lands. CFG's pages answer for
+// themselves (CfgMenu::idle). Every other slot's list and page collapse.
+MenuIdle Game::slotIdle() const {
+    if (nav_ == Nav::Submenu)
+        return crewScreenOpen() || peersScreenOpen() || linkScreenOpen() ? MenuIdle::Lingers
+                                                                         : MenuIdle::Collapses;
+    return enteredId() == SubmenuId::Cfg ? cfg_.idle() : MenuIdle::Collapses;
+}
 bool Game::tickIdleDefocus(uint32_t nowMs) {
     bool changed = false;
-    // The global idle timer collapses the menu tree: suspended inside modals,
-    // a running process / an active Lockout, the CFG screens and the played MAINT
-    // boards, and while an ITEMS-filter / VAULT-bulk hold gesture is
-    // mid-flight (no new presses during the hold). UPDATES is carved back out of
-    // the CFG exemption: it already gets the long hands-off radio budget below
-    // (it holds a live association) but must still eventually collapse an
-    // abandoned check, or a forgotten screen pins the radio open forever.
-    const bool inCfgScreen = nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg &&
-                              !updateScreenOpen();
-    const bool suspended = pet_.armed.lockoutActive || nav_ == Nav::ModalFeeding ||
-                           nav_ == Nav::Process || nav_ == Nav::Decryption ||
-                           nav_ == Nav::ModalLineSelect || nav_ == Nav::ModalEggPick ||
-                           nav_ == Nav::ModalHatchReveal || nav_ == Nav::Isolation ||
-                           nav_ == Nav::Chroma || nav_ == Nav::Cryptogram ||
-                           nav_ == Nav::ModalEvolve || nav_ == Nav::ModalCSF ||
-                           nav_ == Nav::Combat || nav_ == Nav::ExploreControl ||
-                           nav_ == Nav::Encounter || nav_ == Nav::Wifi ||
-                           nav_ == Nav::ShiboleetHail ||
-                           nav_ == Nav::Shiboleet ||
-                           nav_ == Nav::ShiboleetVerdict ||
-                           nav_ == Nav::Shop || nav_ == Nav::ModShop ||
-                           nav_ == Nav::CacheYield ||
-                           nav_ == Nav::BulkYield || nav_ == Nav::PostEncounter ||
-                           nav_ == Nav::Stacker || nav_ == Nav::Fragger ||
-                           nav_ == Nav::ArcadeResult ||
-                           // ROCK THE DOCK's bracket is a READING screen: eight entrants,
-                           // their levels, and the next opponent's species and Exploit
-                           // are what a loadout is chosen against, and five seconds is
-                           // shorter than reading them. Collapsing it would also drop
-                           // the operator onto the habitat mid-decision with a run
-                           // still in play, which reads as the screen crashing.
-                           nav_ == Nav::Tourney ||
-                           // A STORY chapter and the CHAPTERS list are both READING
-                           // screens, for the reason the bracket above is: fifteen
-                           // seconds is shorter than a page of prose, and a reader
-                           // dropped onto the habitat mid-sentence reads as a crash.
-                           // The chapter has a deadline of its own that ends it
-                           // properly (kStoryPanelMs), and the archive is a menu the
-                           // operator opened on purpose.
-                           nav_ == Nav::Story || nav_ == Nav::StoryArchive ||
-                           inCfgScreen ||
-                           // A held B is one of the four hold gestures mid-flight and
-                           // must not be collapsed under. A held A is only the list
-                           // repeat, which is not in the same position: every step it
-                           // fires re-stamps lastInputMs_ (Game::tickListNav), so a
-                           // genuinely held A keeps the tree open by USING it. Listing
-                           // it here too would let one lost release edge (a bounce, a
-                           // screen change under the thumb) hold the menu tree open
-                           // until the next press.
-                           bHeld_ ||
-                           qrScreenActive() ||  // scanning a QR takes longer than 5s
-                           tagEditorActive() || // ...so does composing a tag
-                           // Travel sleep is on its way down: the notice frame has to
-                           // stay put until the device tier powers the panel off, or
-                           // the last thing the operator sees is the idle screen and
-                           // not the gesture that brings the device back.
-                           travelSleepRequested_;
-
-    // A radio screen (CREW's picker, PEERS) keeps the menu tree open far longer
-    // (kRadioScreenDefocusMs): both are hands-off screens you walk around with, and
-    // an open one arms the radio (radioScanWanted / linkWanted), so the standard 5s
-    // would power it down before a sweep or a peer's beacon lands. The screen would
-    // starve itself. UPDATES takes the same budget for the matching reason: it is a
-    // screen you wait in front of, and five seconds is shorter than an association
-    // plus a fetch, let alone reading the verdict one leaves behind and deciding
-    // whether to install it.
-    const uint32_t defocusMs =
-        (radioScreenOpen() || updateScreenOpen()) ? kRadioScreenDefocusMs : kAutoDefocusMs;
-    if (!suspended && nav_ != Nav::Idle && nowMs - lastInputMs_ >= defocusMs) {
+    // The global idle timer collapses the menu tree after a quiet spell whose length the
+    // screen that is up decides (its row's MenuIdle; the menu tree's levels ask the
+    // entered slot, slotIdle). Beyond the screen, it is held while a Lockout is live, while
+    // B is held, and while travel sleep is on its way down.
+    //
+    // A held B is one of the four hold gestures mid-flight and must not be collapsed
+    // under. A held A is only the list repeat, which is not in the same position: every
+    // step it fires re-stamps lastInputMs_ (Game::tickListNav), so a genuinely held A keeps
+    // the tree open by USING it. Holding for it too would let one lost release edge (a
+    // bounce, a screen change under the thumb) hold the menu tree open until the next
+    // press. Travel sleep's notice frame has to stay put until the device tier powers the
+    // panel off, or the last thing the operator sees is the idle screen and not the
+    // gesture that brings the device back.
+    const MenuIdle idle = screenIdle();
+    const bool held = pet_.armed.lockoutActive || idle == MenuIdle::Holds || bHeld_ ||
+                      travelSleepRequested_;
+    // The long budget (kRadioScreenDefocusMs) is for a screen that lingers, and for as
+    // long as a duel or an update job has this device on the air: the panel must stay up
+    // to report what the radio is doing for the operator.
+    const bool lingers = idle == MenuIdle::Lingers || pvpSessionLive() || netConnectWanted();
+    const uint32_t defocusMs = lingers ? kRadioScreenDefocusMs : kAutoDefocusMs;
+    if (!held && nowMs - lastInputMs_ >= defocusMs) {
         dropCursor();
         changed = true;
     }

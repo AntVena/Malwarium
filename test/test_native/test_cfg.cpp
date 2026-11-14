@@ -156,6 +156,30 @@ void test_cfg_radio_shows_the_update_claim_the_arbiter_sees() {
     CHECK(radioPage(g) == quiet);
 }
 
+// The idle timer asks the screen that is up, not the CFG page last shown. CFG keeps its
+// page after the slot is left, so a page that holds the menu open (the tag editor) or
+// lingers (UPDATES) must not go on doing so for another slot's page once CFG is closed.
+void test_idle_timer_reads_the_screen_that_is_up_not_the_last_cfg_page() {
+    const CfgScreen pages[] = {CfgScreen::HackerTag, CfgScreen::Update};
+    for (CfgScreen page : pages) {
+        Game g{StartMode::Hatched};
+        enterCfgTarget(g, page);
+        g.onButton(press(Button::C));                         // straight back to the list
+        for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
+        enterSubmenuId(g, SubmenuId::Items);
+        g.onButton(lift(Button::A));
+        g.onButton(press(Button::B));                         // an ITEMS page
+        g.onButton(lift(Button::B));
+        CHECK(g.nav() == Game::Nav::Detail);
+        CHECK(g.cfgScreen() == page);                         // CFG still remembers it
+        CHECK(!g.updateScreenOpen() && !g.qrScreenActive());
+        uint32_t t = 0;
+        for (uint32_t ms = 0; ms <= kAutoDefocusMs + kHeartbeatMs; ms += kHeartbeatMs)
+            g.tick(t += kHeartbeatMs);
+        CHECK(g.nav() == Game::Nav::Idle);                    // collapsed on the standard budget
+    }
+}
+
 // The travel-sleep contract, and the reason the mode needs no clock-freeze machinery
 // of its own: the device tier lands a save and then DEEP-sleeps, which on this board
 // is a reset, so a wake re-enters through that save. Whatever the gap was, the state

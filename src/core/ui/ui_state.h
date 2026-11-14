@@ -74,6 +74,12 @@ enum class UiMode { IconsLabel, IconsOnly, TextOnly };
 // (their own children follow them here). ResetHatch is the DEV-only quick reset (an
 // immediate action, no L3 screen). FactoryReset is reached only via the hidden
 // hold-B gesture, never a list row.
+// How long the menu tree may sit untouched on a screen before the idle timer collapses it
+// back to the habitat. A screen the operator reads, plays, decides on or waits in front
+// of holds; one that arms a radio or waits on a network lingers for the long budget;
+// BySlot is a level of the menu tree whose entered slot answers for itself.
+enum class MenuIdle : uint8_t { Collapses, Lingers, Holds, BySlot };
+
 enum class CfgScreen { SysInfo, HackerTag, Titles,
                        Device, UiMode, CareAlerts, Brightness, Sound, Volume, Theme, Background, Tips, Travel, FormatSd,
                        Radio, Audit, Link, PediaAp, PediaQr,

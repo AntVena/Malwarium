@@ -1366,8 +1366,7 @@ public:
     // likewise suspends its 5s menu auto-defocus here. Both resume normally the
     // moment the player exits the page (C).
     bool qrScreenActive() const {
-        return nav_ == Nav::Detail && (cfg_.page() == CfgScreen::PediaQr ||
-                                       cfg_.page() == CfgScreen::UpdateQr);
+        return cfgPageUp(CfgScreen::PediaQr) || cfgPageUp(CfgScreen::UpdateQr);
     }
     // True while the current screen runs an animation cadence FASTER than the shared
     // ~4fps heartbeat (combat sprite motion, the dissolve/swarm sweep, the arcade boards,
@@ -1387,15 +1386,11 @@ public:
     //
     // Kept out of radioScreenOpen(), which also arms a radio: only a job the
     // operator started puts this device on a network (netConnectWanted).
-    bool updateScreenOpen() const {
-        return nav_ == Nav::Detail && cfg_.page() == CfgScreen::Update;
-    }
-    // True while the HackerTag arcade editor is open. Composing a tag one A-press
-    // per letter has real pauses in it, and the 5s auto-defocus would throw the
-    // half-typed buffer away mid-thought, so the editor holds the menu open the
-    // same way the QR page does, and releases it on save or back-out.
-    bool tagEditorActive() const {
-        return nav_ == Nav::Detail && cfg_.page() == CfgScreen::HackerTag;
+    bool updateScreenOpen() const { return cfgPageUp(CfgScreen::Update); }
+    // Whether CFG's page `p` is the screen that is up. The CFG slot must be the one
+    // entered: CfgMenu keeps the page it last showed after the slot is left.
+    bool cfgPageUp(CfgScreen p) const {
+        return nav_ == Nav::Detail && enteredId() == SubmenuId::Cfg && cfg_.page() == p;
     }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const override {
@@ -2627,6 +2622,8 @@ private:
     };
     // Whether the egg's incubation clock drains while the screen is up (tickModelClocks).
     enum class Incubation : uint8_t { Runs, Holds };
+    // Whether a Lockout crisis may fire over the screen, or waits until it is left.
+    enum class LockoutCrisis : uint8_t { Fires, Waits };
     struct ScreenRow {
         Nav nav;
         void (*press)(Game& g, const ButtonEvent& ev);
@@ -2635,8 +2632,12 @@ private:
         void (*chord)(Game& g, const ButtonEvent& ev);   // null: the chord means nothing
         FxSweep fx = FxSweep::None;
         Incubation incubation = Incubation::Runs;
+        MenuIdle idle = MenuIdle::Holds;   // tickIdleDefocus; most screens are read or played
+        LockoutCrisis crisis = LockoutCrisis::Fires;
     };
     static const ScreenRow& screenRow(Nav n);
+    MenuIdle screenIdle() const;   // the idle budget of the screen that is up
+    MenuIdle slotIdle() const;     // ...answered by the entered slot (MenuIdle::BySlot)
     // A row for a screen type that owns its whole page: onButton(host, ev), draw(fb, host).
     template <auto Screen>
     static void pressScreen(Game& g, const ButtonEvent& ev);

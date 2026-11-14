@@ -1,6 +1,7 @@
 // game_screens.cpp: the per-screen table. For each Nav, in Nav's order, what a press does
 // on that screen, what render draws, what the heartbeat steps, what the A+C chord means
-// there, and the two clocks the tick runs or holds for it (Game::ScreenRow).
+// there, and what the tick runs, holds or waits for while it is up: the dissolve clock,
+// the egg's incubation, the idle timer and a Lockout crisis (Game::ScreenRow).
 //
 // onButton, render and stepScreenBeat each look their row up here, so a screen joins the
 // game by gaining one row, and they can never disagree about which screen is up.
@@ -49,19 +50,26 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::Idle, [](G& g, const Ev& e) { g.onIdle(e); },
          [](const G& g, Fb& fb) { g.drawHome(fb, -1); },
          [](G& g) { g.stepHomeBeat(); }, homeChord},
+        // Every other screen holds the idle timer (MenuIdle's default): it is read, played,
+        // decided on or waited in front of. The cursor, the pickers and the short notices
+        // collapse back to the habitat after kAutoDefocusMs, and the menu tree's two
+        // levels let the entered slot answer (Game::slotIdle).
         {Nav::Cursor, [](G& g, const Ev& e) { g.onCursor(e); },
-         [](const G& g, Fb& fb) { g.drawHome(fb, g.cursor_); }, nullptr, homeChord},
+         [](const G& g, Fb& fb) { g.drawHome(fb, g.cursor_); }, nullptr, homeChord,
+         FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::Submenu, [](G& g, const Ev& e) { g.onSubmenu(e); },
-         [](const G& g, Fb& fb) { g.drawSubmenu(fb); }, nullptr, nullptr},
+         [](const G& g, Fb& fb) { g.drawSubmenu(fb); }, nullptr, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::BySlot},
         {Nav::Detail, [](G& g, const Ev& e) { g.onDetail(e); },
-         [](const G& g, Fb& fb) { g.drawDetail(fb); }, nullptr, nullptr},
+         [](const G& g, Fb& fb) { g.drawDetail(fb); }, nullptr, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::BySlot},
         {Nav::Process, [](G& g, const Ev& e) { g.maintScreen_.onProcess(g, e); },
          [](const G& g, Fb& fb) { g.maintScreen_.drawProcess(fb, g); },
          [](G& g) { g.stepProcessBeat(); }, nullptr},
         {Nav::ModalFeeding, pressScreen<&G::feedingScreen_>, drawScreen<&G::feedingScreen_>,
          [](G& g) { g.stepFeedingBeat(); }, nullptr, FxSweep::Dissolve},
         {Nav::ModalLockout, pressScreen<&G::lockoutScreen_>, drawScreen<&G::lockoutScreen_>,
-         nullptr, nullptr},
+         nullptr, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::ModalLineSelect, pressScreen<&G::lineSelect_>, drawScreen<&G::lineSelect_>,
          nullptr, nullptr},
         {Nav::ModalEggPick, pressScreen<&G::eggPickScreen_>, drawScreen<&G::eggPickScreen_>,
@@ -72,13 +80,16 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::ModalHatchReveal, pressScreen<&G::hatchReveal_>, drawScreen<&G::hatchReveal_>,
          [](G& g) { g.hatchReveal_.tick(g); }, nullptr, FxSweep::None, Incubation::Holds},
         // Hold, flash, reveal on the heartbeat, then it parks at the reveal and waits for B
-        // (completeEvolution). C does nothing: the evolution already happened.
+        // (completeEvolution). C does nothing: the evolution already happened. A Lockout
+        // waits for it, as for the crash FX below, which outranks it.
         {Nav::ModalEvolve, pressScreen<&G::evolve_>, drawScreen<&G::evolve_>,
-         [](G& g) { g.evolve_.tick(); }, nullptr},
+         [](G& g) { g.evolve_.tick(); }, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Holds,
+         LockoutCrisis::Waits},
         // The crash FX holds a few beats, then parks and waits for B. Death is not
         // cancellable, so C does nothing.
         {Nav::ModalCSF, pressScreen<&G::csf_>, drawScreen<&G::csf_>,
-         [](G& g) { g.csf_.tick(); }, nullptr},
+         [](G& g) { g.csf_.tick(); }, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Holds,
+         LockoutCrisis::Waits},
         // The chord opens the fight's Exploit override picker.
         {Nav::Combat, pressScreen<&G::fightScreen_>, drawScreen<&G::fightScreen_>,
          [](G& g) { g.stepCombatBeat(); }, pressScreen<&G::fightScreen_>, FxSweep::FightOutro},
@@ -99,11 +110,13 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::ModShop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
          [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, nullptr},
         {Nav::WarpPicker, pressScreen<&G::warpPicker_>, drawScreen<&G::warpPicker_>, nullptr,
-         nullptr},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::RollbackPicker, [](G& g, const Ev& e) { g.statPicker_.onRollback(g, e); },
-         [](const G& g, Fb& fb) { g.statPicker_.drawRollback(fb, g); }, nullptr, nullptr},
+         [](const G& g, Fb& fb) { g.statPicker_.drawRollback(fb, g); }, nullptr, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::RepartitionPicker, [](G& g, const Ev& e) { g.statPicker_.onRepartition(g, e); },
-         [](const G& g, Fb& fb) { g.statPicker_.drawRepartition(fb, g); }, nullptr, nullptr},
+         [](const G& g, Fb& fb) { g.statPicker_.drawRepartition(fb, g); }, nullptr, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::CacheYield, [](G& g, const Ev& e) { g.vault_.onReveal(g, e); },
          [](const G& g, Fb& fb) { g.vault_.drawReveal(fb, g); }, nullptr, nullptr},
         {Nav::BulkYield, [](G& g, const Ev& e) { g.vault_.onBulkReveal(g, e); },
@@ -122,19 +135,28 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // The CHROMATOPHORE spends its passes against the egg's clock, so it holds too.
         {Nav::Chroma, pressScreen<&G::chromaScreen_>, drawScreen<&G::chromaScreen_>, nullptr,
          rulesChord, FxSweep::None, Incubation::Holds},
-        // The decrypt runs its own countdown in place of the egg's.
+        // The decrypt runs its own countdown in place of the egg's. A Lockout waits for it,
+        // as for the cinematics and the DECRYPTOGRAM below: the hatch has no pet to starve.
         {Nav::Decryption, pressScreen<&G::decryptionScreen_>,
-         drawScreen<&G::decryptionScreen_>, nullptr, rulesChord, FxSweep::None, Incubation::Holds},
+         drawScreen<&G::decryptionScreen_>, nullptr, rulesChord,
+         FxSweep::None, Incubation::Holds, MenuIdle::Holds, LockoutCrisis::Waits},
+        // A Lockout waits for the DECRYPTOGRAM to be left: the board cannot be left and its
+        // ticket is already spent, so firing across it would destroy a found item.
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord hands a
         // taken letter back to the pool. The screen sorts its two meanings out itself (a
         // letter held drops it; nothing held opens the RULES page), since only it knows
         // which stage the board is in.
         {Nav::Cryptogram, pressScreen<&G::cryptogramScreen_>,
-         drawScreen<&G::cryptogramScreen_>, nullptr, pressScreen<&G::cryptogramScreen_>},
+         drawScreen<&G::cryptogramScreen_>, nullptr, pressScreen<&G::cryptogramScreen_>,
+         FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Waits},
         // The arcade payout is informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).
         {Nav::ArcadeResult, [](G& g, const Ev& e) { g.arcadeScreen_.onResult(g, e); },
          [](const G& g, Fb& fb) { g.arcadeScreen_.drawResult(fb, g); }, nullptr, nullptr},
+        // The bracket holds the idle timer: eight entrants, their levels and the next
+        // opponent's species and Exploit are what a loadout is chosen against, and five
+        // seconds is shorter than reading them. Collapsing it would also drop the operator
+        // onto the habitat mid-decision with a run still in play.
         // ROCK THE DOCK: the chord is the device's one spare gesture and the bracket has
         // already spent A, B and C, so the BRIEFING (the only thing that tells an operator
         // what an arena bout even is) rides the "chord opens a reader, then plain A/B/C
@@ -159,16 +181,20 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          [](const G& g, Fb& fb) { g.shiboleet_.drawVerdict(fb, g); },
          [](G& g) { g.stepEventHold(kShiboleetVerdictHoldBeats, &G::finishShiboleet); }, nullptr,
          FxSweep::Swarm},
+        // A STORY chapter and the CHAPTERS list hold the idle timer: fifteen seconds is
+        // shorter than a page of prose, and a reader dropped onto the habitat mid-sentence
+        // reads as a crash. The chapter has a deadline of its own (kStoryPanelMs), and the
+        // archive is a menu the operator opened on purpose.
         {Nav::Story, pressScreen<&G::storyReader_>, drawScreen<&G::storyReader_>, nullptr,
          nullptr},
         {Nav::StoryArchive, pressScreen<&G::chapters_>, drawScreen<&G::chapters_>, nullptr,
          nullptr},
         {Nav::TipCard, pressScreen<&G::tipCardScreen_>, drawScreen<&G::tipCardScreen_>,
-         nullptr, nullptr},
+         nullptr, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::AwayDigest, pressScreen<&G::awayDigest_>, drawScreen<&G::awayDigest_>, nullptr,
-         nullptr},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::ItemOffer, pressScreen<&G::itemOffer_>, drawScreen<&G::itemOffer_>, nullptr,
-         nullptr},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
     };
     static_assert(std::size(kScreens) == static_cast<size_t>(Nav::ItemOffer) + 1,
                   "one row per Nav");

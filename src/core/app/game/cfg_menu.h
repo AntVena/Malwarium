@@ -77,6 +77,14 @@ public:
     void releaseB(CfgHost&) {}
 
     CfgScreen page() const { return page_; }
+    // The idle budget of the open page. Every CFG page holds the menu tree (a setting is
+    // being chosen, a QR scanned, a tag composed) except UPDATES, which lingers: it is a
+    // screen you wait in front of, and five seconds is shorter than an association plus a
+    // fetch, but an abandoned check must still collapse, or a forgotten screen pins the
+    // radio open forever.
+    MenuIdle idle() const {
+        return page_ == CfgScreen::Update ? MenuIdle::Lingers : MenuIdle::Holds;
+    }
     const RadioPages& radioPages() const { return radio_; }
 
 private:
