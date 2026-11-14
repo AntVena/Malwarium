@@ -278,7 +278,7 @@ void test_theme_chips_drop_then_leave_the_pool() {
         int found = 0;
         for (int i = 0; i < 200 && found == 0; ++i) {
             g.inventory().add("commend_cache", 1);
-            g.debugOpenCache("commend_cache");
+            openCache(g, "commend_cache");
             tapC(g);                                   // dismiss the yield
             for (int r = 0; r < kThemeCount; ++r)
                 if (kThemes[r].source == ThemeSource::Chip &&
@@ -298,7 +298,7 @@ void test_theme_chips_drop_then_leave_the_pool() {
 
         for (int i = 0; i < 200; ++i) {
             g.inventory().add("commend_cache", 1);
-            g.debugOpenCache("commend_cache");
+            openCache(g, "commend_cache");
             tapC(g);
         }
         for (int r = 0; r < kThemeCount; ++r)

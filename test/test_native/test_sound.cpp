@@ -313,10 +313,10 @@ void test_sound_fragger_catch_is_a_coin() {
     g.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::File);
     g.onButton(press(Button::B));
     CHECK(out.count(Sound::Miss) == 1);
-    g.debugStepFragger();                         // the file lands on the head
+    g.stepFragger();                         // the file lands on the head
     CHECK(out.count(Sound::Coin) == 1);
     g.fragger().place(kFraggerRows - 1, lane == 0 ? 1 : 0, Fragger::Cell::File);
-    g.debugStepFragger();                         // ...and one lands elsewhere
+    g.stepFragger();                         // ...and one lands elsewhere
     CHECK(out.count(Sound::Coin) == 1);
 }
 

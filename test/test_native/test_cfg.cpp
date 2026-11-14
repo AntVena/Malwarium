@@ -305,7 +305,7 @@ void test_cfg_factory_reset_scopes_differ() {
     // a bitmask (Titles), a vector of registry pointers ('Pedia reveals), and the
     // persisted consent bools.
     auto seedProgress = [](Game& g) {
-        g.debugUnlockTitle(0);                     // a Title (auto-equips)
+        g.unlockTitle(0);                     // a Title (auto-equips)
         g.markCreatureSeen("berserkernel");     // a 'Pedia reveal
         g.setNetScanEnabled(true);
         g.setApEnabled(true);                      // two radio consents

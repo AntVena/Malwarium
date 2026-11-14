@@ -33,7 +33,7 @@ void test_sim_battle_end_to_end() {
 // A Sim Battle is the one fight an armed Backup Drive save sits out.
 void test_backup_drive_save_not_spent_in_sim_battle() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.backupShieldArmed());
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
     // "item left the list" case): back out to the carousel before enterSimBattle's
@@ -55,9 +55,9 @@ void test_creature_level_curve_and_invariant() {
     for (int i = 0; i < kLevelStatCount; ++i) CHECK(g.levelStatPoint(i) == 0);
 
     // First level costs kLevelXpBase; one under it doesn't level, exactly it does.
-    g.debugAddCombatXp(kLevelXpBase - 1);
+    g.addCombatXp(kLevelXpBase - 1);
     CHECK(g.combatLevel() == 0 && g.combatXp() == kLevelXpBase - 1);
-    g.debugAddCombatXp(1);
+    g.addCombatXp(1);
     CHECK(g.combatLevel() == 1);
     CHECK(g.combatXp() == 0);                 // bucket spent exactly
     CHECK(g.levelStatPoint(0) + g.levelStatPoint(1) + g.levelStatPoint(2) +
@@ -65,10 +65,10 @@ void test_creature_level_curve_and_invariant() {
     CHECK(g.lastLevelUpStat() >= 0 && g.lastLevelUpStat() < kLevelStatCount);
 
     // Second level costs more than the first (geometric, ~1.1x): base+1 XP is short.
-    g.debugAddCombatXp(kLevelXpBase);
+    g.addCombatXp(kLevelXpBase);
     CHECK(g.combatLevel() == 1);              // kLevelXpBase < cost of level 2
     // A big lump crosses multiple boundaries; the invariant + a bounded leftover hold.
-    g.debugAddCombatXp(5000);
+    g.addCombatXp(5000);
     int sum = 0;
     for (int i = 0; i < kLevelStatCount; ++i) sum += g.levelStatPoint(i);
     CHECK(sum == g.combatLevel());            // level == total earned points
@@ -87,7 +87,7 @@ void test_creature_level_feeds_combat() {
 
     // Leveled: a modest level, so every stat stays under its specialisation bend.
     Game g1{StartMode::Hatched, "paypup"};
-    g1.debugAddCombatXp(1200);
+    g1.addCombatXp(1200);
     const int pP = g1.levelStatPoint(0), pD = g1.levelStatPoint(1),
               pS = g1.levelStatPoint(2), pH = g1.levelStatPoint(3);
     CHECK(pP + pD + pS + pH == g1.combatLevel());
@@ -205,18 +205,18 @@ void test_rollback_item() {
     // Level-0 gate: Rollback is inert with no earned points. No picker, item kept.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("rollback", 1);
-      g.debugUseItem("rollback");
+      useItem(g, "rollback");
       CHECK(g.nav() != Game::Nav::RollbackPicker);
       CHECK(g.inventory().count("rollback") == 1); }   // not consumed
 
     // Exactly one level → exactly one eligible stat; the picker parks on it, B sheds.
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugAddCombatXp(kLevelXpBase);                 // → level 1, one point somewhere
+      g.addCombatXp(kLevelXpBase);                 // → level 1, one point somewhere
       CHECK(g.combatLevel() == 1);
       const int shed = g.lastLevelUpStat();
       CHECK(g.levelStatPoint(shed) == 1);
       g.inventory().add("rollback", 1);
-      g.debugUseItem("rollback");
+      useItem(g, "rollback");
       CHECK(g.nav() == Game::Nav::RollbackPicker);
       g.onButton(press(Button::B));                     // shed the (only) eligible stat
       CHECK(g.combatLevel() == 0);                      // −1 level
@@ -227,9 +227,9 @@ void test_rollback_item() {
 
     // C cancels without consuming the item or touching the level.
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugAddCombatXp(kLevelXpBase);
+      g.addCombatXp(kLevelXpBase);
       g.inventory().add("rollback", 1);
-      g.debugUseItem("rollback");
+      useItem(g, "rollback");
       CHECK(g.nav() == Game::Nav::RollbackPicker);
       tapC(g);
       CHECK(g.combatLevel() == 1);
@@ -243,20 +243,20 @@ void test_rollback_item() {
 // the pet over that rung's need and hand the level straight back.
 void test_rollback_carries_level_progress_down() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugAddCombatXp(g.xpToNextLevel());              // -> level 1, bucket empty
-    g.debugAddCombatXp(g.xpToNextLevel());              // -> level 2, bucket empty
+    g.addCombatXp(g.xpToNextLevel());              // -> level 1, bucket empty
+    g.addCombatXp(g.xpToNextLevel());              // -> level 2, bucket empty
     CHECK(g.combatLevel() == 2);
     CHECK(g.combatXp() == 0);
 
     // Most of the way up the third rung, but not over it.
     const int need = g.xpToNextLevel();
     const int banked = need * 4 / 5;
-    g.debugAddCombatXp(banked);
+    g.addCombatXp(banked);
     CHECK(g.combatLevel() == 2);
     CHECK(g.combatXp() == banked);
 
     g.inventory().add("rollback", 1);
-    g.debugUseItem("rollback");
+    useItem(g, "rollback");
     CHECK(g.nav() == Game::Nav::RollbackPicker);
     g.onButton(press(Button::B));                       // shed whichever stat it parked on
 
@@ -279,22 +279,22 @@ void test_repartition_item() {
     // Level-0 gate: nothing earned, so no picker and the item is kept.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("repartition", 1);
-      g.debugUseItem("repartition");
+      useItem(g, "repartition");
       CHECK(g.nav() != Game::Nav::RepartitionPicker);
       CHECK(g.inventory().count("repartition") == 1); }
 
     // One level -> exactly one stat can pay, so the FROM step parks on it. B locks it in
     // and the cursor lands on a stat that is NOT it; A walks one further on; B commits.
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugAddCombatXp(kLevelXpBase);
+      g.addCombatXp(kLevelXpBase);
       CHECK(g.combatLevel() == 1);
-      g.debugAddCombatXp(g.xpToNextLevel() / 2);        // ...and part-way up the next rung
+      g.addCombatXp(g.xpToNextLevel() / 2);        // ...and part-way up the next rung
       const int from = g.lastLevelUpStat();
       const int to = (from + 2) % kLevelStatCount;
       const int xp0 = g.combatXp();
       CHECK(xp0 > 0);                                   // so "untouched" means something
       g.inventory().add("repartition", 1);
-      g.debugUseItem("repartition");
+      useItem(g, "repartition");
       CHECK(g.nav() == Game::Nav::RepartitionPicker);
       g.onButton(press(Button::B));                     // FROM = the only eligible stat
       CHECK(g.nav() == Game::Nav::RepartitionPicker);   // still here: the TO step
@@ -310,10 +310,10 @@ void test_repartition_item() {
     // C walks back ONE step rather than straight out, so a mis-picked source costs one
     // press: first C returns to the FROM step, the second leaves. Nothing is spent.
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugAddCombatXp(kLevelXpBase);
+      g.addCombatXp(kLevelXpBase);
       const int from = g.lastLevelUpStat();
       g.inventory().add("repartition", 1);
-      g.debugUseItem("repartition");
+      useItem(g, "repartition");
       g.onButton(press(Button::B));                     // -> the TO step
       tapC(g);
       CHECK(g.nav() == Game::Nav::RepartitionPicker);   // back at the FROM step
@@ -328,7 +328,7 @@ void test_repartition_item() {
 // a new egg resets them to 0. Also exercises the save v11 round-trip of the points.
 void test_creature_level_persist_evolution_reset_egg() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugAddCombatXp(1200);
+    g.addCombatXp(1200);
     const int lvl = g.combatLevel();
     CHECK(lvl >= 1);
     int pts[kLevelStatCount];
@@ -366,7 +366,7 @@ void test_creature_level_persist_evolution_reset_egg() {
 // survived the round-trip through the rack.
 void test_arch_store_deploy_preserves_creature_level() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugAddCombatXp(1200);                              // level the active pet up
+    g.addCombatXp(1200);                              // level the active pet up
     const int lvl = g.combatLevel();
     const int xp = g.combatXp();
     CHECK(lvl >= 1);

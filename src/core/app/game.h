@@ -1870,11 +1870,6 @@ public:
     // event is random, so a frame that needs the longest line the walk can produce sets
     // it directly. Explore mode still has to be armed for anything to draw.
     void debugSetExploreFlavor(const char* s);
-    // Put a guardian in front of the pet NOW (tests / dump_frame), skipping the walk
-    // that would eventually route to one. This is the encounter's real entry point and
-    // the welcome is still rolled, so a caller that needs a riddle seeds the RNG.
-    // Explore mode has to be armed, exactly as it does for the walk path.
-    void debugStartShiboleet() { startShiboleet(); }
     // Credit captured handshakes without a radio (tests / headless runs). SHAKES buy
     // sigils of the Cant, and earning one takes a real WPA capture on hardware, which no
     // native run can do.
@@ -1909,70 +1904,18 @@ public:
     // outro a rival with no new move gets.
     void debugGrantMove(const char* id) { pet_.moves.grant(id); }
     void debugUnequipMove(int slot) { pet_.moves.unequip(slot); }
-    // Unlock a zone-completion Title without clearing its sector (tests /
-    // dump_frame): the real path is a sector clear (unlockTitle). Auto-equips the
-    // first Title, exactly like the real grant. No-op for an out-of-range sector.
-    void debugUnlockTitle(int sector) { unlockTitle(sector); }
-    // Use the inventory item with `id` as if selected in ITEMS (tests): runs the
-    // real useItem() path so its full effect + consume + log fire. No-op if the
-    // id is unknown. Add the item to inventory() first.
-    void debugUseItem(const char* id);
     // Pin the active pet's (unfound) favourite dish, so a gate can feed it on purpose
     // rather than hunting through the roll.
     void debugSetFavouriteFood(const char* id) {
         pet_.upgrades.favouriteFood = registry_.item(id);
         pet_.upgrades.favouriteFound = false;
     }
-    // Decrypt a sealed cache directly via the real openSealedCache reward path (tests):
-    // caches now decrypt from the Hacker VAULT, not pet-side ITEMS. No-op on unknown id.
-    void debugOpenCache(const char* id);
-    // Buy the next b Reduce-Explore-Frag tier via the real buy path (tests).
-    void debugBuyFragReducer() { buyRigUpgrade(kRigRowFragReduce); }
-    // Buy the next c Reduce-Explore-Frag-TRIGGER tier via the real buy path (tests).
-    void debugBuyFragTrigger() { buyRigUpgrade(kRigRowFragTrigger); }
-    // Buy the d ITEMS type-tabs / e VAULT bulk-open upgrades via the
-    // real buy path (tests).
-    void debugBuyItemTabs() { buyRigUpgrade(kRigRowItemTabs); }
-    void debugBuyBulkOpen() { buyRigUpgrade(kRigRowBulkOpen); }
-    // Buy the ITEMS type-picker upgrade via the real buy path (tests).
-    void debugBuyItemPicker() { buyRigUpgrade(kRigRowItemPicker); }
-    // Buy the MERGE HUB slot via the real buy path (tests / dump_frame). Its recipes
-    // are won through debugWinRecipe below.
-    void debugBuyMergeHub() { buyRigUpgrade(kRigRowMergeHub); }
-    // Any rig row by index, through the real buy path, for a test that sweeps the
-    // whole storefront.
-    void debugBuyRigRow(int row) { buyRigUpgrade(row); }
     // Draw the Bandwidth pool down without staging a fight to spend it, so a test can
     // watch it REGENERATE (which is the only way to observe a pet's regen interval).
     void debugSpendBandwidth(int n) {
         bandwidth_ -= n;
         if (bandwidth_ < 0) bandwidth_ = 0;
     }
-    // Buy the g/h Auto Backup / Continuous Auto-Backup unlocks via the real buy path
-    // (tests): the two rows that arm the Backup Drive death-save for free.
-    void debugBuyAutoBackup() { buyRigUpgrade(kRigRowAutoBackup); }
-    void debugBuyContinuousBackup() { buyRigUpgrade(kRigRowContinuousBackup); }
-    // Buy the next MOD STORAGE tier via the real buy path (tests): what raises how many
-    // spare copies of one mod the pool will hold (modStorageCap).
-    void debugBuyModStorage() { buyRigUpgrade(kRigRowModStorage); }
-    // Buy the LINK AGGREGATOR via the real buy path (tests): the row that turns a
-    // regen tick from a flat +1 into a percentage of the spent pool.
-    void debugBuyLinkAggregator() { buyRigUpgrade(kRigRowLinkAggregator); }
-    // Hand back to the idle habitat exactly as a resolved explore event does (tests):
-    // the Continuous Auto-Backup / auto-defrag seam, without driving a whole random
-    // event to reach it.
-    void debugReturnToExplore() { returnToExplore(); }
-    // `i` indexes kMergeRecipes; the row it GRANTS is that recipe's own rigRow, so this
-    // keeps working when either table grows. A grant. Recipes cannot be bought, and the
-    // Decryptogram's prize ladder is the only source. Out-of-line (game_merge.cpp)
-    // because the recipe table is engine-private.
-    void debugWinRecipe(int i);
-    // The MERGE HUB craft, driven without the screen (tests / dump_frame). Same two
-    // calls B on the hub makes: ask, then do.
-    bool debugRecipeCraftable(int i) const { return recipeCraftable(i); }
-    bool debugRecipeOwned(int i) const { return recipeOwned(i); }
-    bool debugRecipeGrantable(int i) const { return recipeGrantable(i); }
-    void debugCraftRecipe(int i) { craftRecipe(i); }
     // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-B
     // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
     // filtering without driving the tap/hold timing.
@@ -2016,13 +1959,6 @@ public:
     // a modal and a tick each; this is the same mark that path makes, so a rendered
     // FOODS grid shows what a fed pet's would.
     void debugTasteFoods(int n);
-    // Run the e bulk-open path directly on the item `id` (tests): the real
-    // trigger is the VAULT hold-B gesture; this exercises openAllCachesOfRarity's
-    // aggregation (consume-all-of-rarity + tally + Bits sum) without the hold timing.
-    // No-op if `id` is unknown.
-    void debugBulkOpenCaches(const char* id) {
-        if (const ItemDef* d = registry_.item(id)) openAllCachesOfRarity(*d);
-    }
     // The bulk-open reveal's tally (tests), while nav() == Nav::BulkYield; empty with none.
     int bulkYieldTallyCount() const {
         return vault_.bulkReveal() ? static_cast<int>(vault_.bulkReveal()->tally.size()) : 0;
@@ -2040,28 +1976,13 @@ public:
     // so a failed defrag's shielded +1 care mistake is assertable. `success=false` =
     // a failure (frag penalty + the shielded mistake).
     void debugResolveDefrag(bool success);
-    // Advance the Stacker's run one beat without waiting out its real cadence: so tests
-    // and dump_frame can place the run exactly.
-    void debugStepStacker() { stepStacker(); }
     // Re-deal the board from `seed` (Stacker::reset) at the dial's ground calls, so a
     // gate can aim its column functions at known intruders.
     void debugSeedStacker(uint32_t seed) { stacker_.reset(seed, stacker_.calls()); }
     const Stacker& stacker() const override { return stacker_; }
-    // The same seam for FRAGGER: one row of fall, on demand. `fragger()` is mutable so a
-    // test can stage a lane (Fragger::place) before driving the real buttons at it.
-    void debugStepFragger() { stepFragger(); }
+    // Mutable so a gate can stage a lane (Fragger::place) before pressing the buttons at it.
     Fragger& fragger() { return fragger_; }
     const Fragger& fragger() const override { return fragger_; }
-    // Set a quote's standing directly (tests / dump_frame): reach the eight-solve
-    // arcade unlock, or a mid-ladder tier, without playing eight boards by hand. The
-    // real paths are Game::settleCryptogram's win and its loss ratchet.
-    void debugSetQuoteTier(int i, CryptogramTier t) { setQuoteTier(i, t); }
-    // Open a SPECIFIC quote's board (tests / dump_frame). Skips only the ticket and the
-    // roll. onButton then drives the real board and settle, which decide the ratchet
-    // and the prize. Real path: the VAULT cash-in.
-    void debugStartCryptogram(int quote, int extraReveals) {
-        startCryptogram(quote, extraReveals);
-    }
     // Enter `k`'s played run without paying for it or the run being due (tests /
     // dump_frame). From here onButton drives the REAL board, and a finished run lands in
     // the real settlePlayedRun, which is where the process takes its payout.
@@ -2098,31 +2019,16 @@ public:
     void debugSetSectorCleared(int area, bool v) {
         if (area >= 0 && area < kAreaCount) { op_.world.sectorCleared[area] = v; markSaveDirty(); }
     }
-    // Arm the DeepWeb Dive directly (tests): keeps its own all-areas-cleared guard.
-    // Real path: EXPL → B on the "> DIVE" row.
-    void debugStartDeepWebDive() { startDeepWebDive(); }
-    void debugOfferThenDive() { offerThenDive(); }
     void debugDeclineEggOffer() { pet_.eggOfferMade = true; }
-    int debugDiveRewardBonusPct() const { return diveRewardBonusPct(); }
     // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
     // reader outside the engine (the habitat draws it via game_render.cpp), so tests
     // read it here to assert the buff survives the dive it was armed for.
     int debugDepthMultiplier() const { return pet_.armed.deepWebDepthMultiplier; }
-    // The depth the next dive would START at (-1 = no bell armed), with the Checkpoint
-    // sentinel already resolved: armedDeepWebStartDepth(), which is what the bells'
-    // own inert check compares against, so a gate asserts the number the engine acts on
-    // rather than the raw field's sentinel.
-    int debugArmedStartDepth() const { return armedDeepWebStartDepth(); }
     // Set this pet's best-ever dive depth, the frontier a Checkpoint Bell targets. Real
     // path: winning at that depth (game_combat.cpp). A gate that needs a pet with a
     // record behind it says so directly instead of playing a dive out.
     void debugSetBestDeepWebDepth(int depth) { pet_.bestDeepWebDepth = depth < 0 ? 0 : depth; }
     void debugSetBestDarkWebDepth(int depth) { pet_.bestDarkWebDepth = depth < 0 ? 0 : depth; }
-    void debugStartDarkWebCrawl() { startDarkWebCrawl(); }
-    // Arm explore-mode on a SPECIFIC sub-area directly (tests): once cleared sub-areas
-    // are re-farmable the EXPL "first-selectable" row is ambiguous, so a test
-    // that needs a particular frontier arms it here instead of A-cycling. Real path:
-    // EXPL → B on the row. No-op for out-of-range indices.
     // Force the arena run to a terminal banner without playing a whole bracket out.
     // The two verdict screens are otherwise reachable only by winning or losing three
     // matches, which is not what a screen gate is asking about.
@@ -2138,10 +2044,6 @@ public:
         tourney_->opponent = TourneyFighter{};
         dirty_ = true;
     }
-    void debugArmExplore(int area, int sub) {
-        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea)
-            startExplore(area, sub);
-    }
     // Arm AUTO-PROGRESS, and set the armed sub-area's win streak (tests). Real path:
     // the A+C chord on the explore-control overlay, and ten wild wins. Lets a test
     // of the step rule skip the streak that triggers it; the streak is covered by
@@ -2152,36 +2054,11 @@ public:
     // hook above has: a chapter firing mid-walk is real behaviour with gates of its own,
     // and a gate about loot tables or Wi-Fi rolls should not have to page through the
     // premise to get to what it is measuring.
-    // TEST/DEV: open a chapter in the reader directly, without walking to the beat that
-    // fires it. What the reader DOES with a chapter is independent of which milestone
-    // handed it over, and driving a gauntlet to its end to look at a page is a long way
-    // round to a screen.
-    void debugOpenStory(const StoryChapterDef* chapter) {
-        openStoryChapter(chapter, nullptr, StoryThen::Walk, -1);
-    }
     void debugMarkStoryRead() {
         for (int i = 0, n = storyEntryCount(); i < n; ++i)
             markStoryRead(storyEntryAt(i).chapter);
     }
     void debugSetExploreStreak(int v) { walk_.streak = v < 0 ? 0 : v; }
-    // The composed walk-badge label (tests): the only string on that line whose width is
-    // content-driven, so the gate that measures the badge's two fields against each other
-    // has to read the real one rather than re-derive it and measure its own guess.
-    void debugExploreBadgeLabel(char* out, size_t n) const { exploreBadgeLabel(out, n); }
-    // Launch a specific sub-area boss directly (tests): same rationale as
-    // debugArmExplore. The EXPL "first-selectable" row is ambiguous once cleared subs
-    // are re-farmable, so a test reaching the boss of an as-yet-uncleared sub triggers
-    // it here. Real path: EXPL → B on a "> FIGHT BOSS" row.
-    void debugFightSubBoss(int area, int sub) {
-        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea)
-            startSubAreaBoss(area, sub);
-    }
-    // Grant combat XP directly through the real addCombatXp path (tests): banks the
-    // XP and fires any level-ups (+1 random stat each), so the level/stat/curve logic
-    // can be exercised without grinding real fights. Not a real reward source.
-    void debugAddCombatXp(int xp) { addCombatXp(xp); }
-    // The same award as a fight pays it, which also builds adventure Bond.
-    void debugAddFightXp(int xp) { addFightXp(xp); }
     // The two grants a BACKGROUND can come from that a gate should not have to play out
     // in full: clearing an area's gauntlet, and taking a bracket at the arena. Both move
     // exactly the state ownership is derived from and nothing else, so what they exercise
@@ -2193,30 +2070,12 @@ public:
         markSaveDirty();
     }
     void debugAddTourneyWin() { ++op_.tallies.tourneyWins; markSaveDirty(); }
-    // MODS earn path (tests): roll an id from an area's mod loot table, and
-    // grant a mod through the real earn path (rolls its per-instance equip-level gate).
-    // Real path: boss clears / DeepWeb wins / Epic caches. Same helpers, gated there.
-    const char* debugRollAreaModId(int area) { return rollAreaModId(area); }
-    void debugGrantMod(const char* id) { grantMod(id); }
     // Set the Bandwidth farming pool directly (tests): reach the depleted state
     // that switches farming from full-loot to the diminishing-returns curve without
     // grinding kBandwidthMax wins. Clamped to [0, bandwidthMax()].
     void debugSetBandwidth(int n) {
         bandwidth_ = n < 0 ? 0 : (n > bandwidthMax() ? bandwidthMax() : n);
     }
-    // Buy a Rig Shop upgrade directly through the real path (tests / dump_frame).
-    void debugBuyBandwidthUpgrade() { buyRigUpgrade(kRigRowBandwidth); }
-    void debugBuyRackSlotUpgrade() { buyRigUpgrade(kRigRowRackSlot); }
-    void debugBuyScrapingCluster() { buyRigUpgrade(kRigRowScraping); }
-    void debugBuyDataMining() { buyRigUpgrade(kRigRowDataMining); }
-    void debugBuyHungerXpRate() { buyRigUpgrade(kRigRowHungerXpRate); }
-    void debugBuyHungerXpWindow() { buyRigUpgrade(kRigRowHungerXpWindow); }
-    void debugBuyCombatXpPct() { buyRigUpgrade(kRigRowCombatXpPct); }
-    void debugBuyCombatXpWindow() { buyRigUpgrade(kRigRowCombatXpWindow); }
-    // Advance the pet clock directly through the real model (tests): the same
-    // path Game::tick() uses for Hunger decay + Passive XP Farming, without
-    // needing a full tick() (nav/lockout/autosave etc).
-    void debugTickHunger(uint32_t elapsedMs) { tickHungerAndAwardXp(elapsedMs); }
     // The live post-clear re-farm win count for a sub-area (tests).
     int debugSubRefarmCount(int area, int sub) const {
         if (area < 0 || area >= kAreaCount || sub < 0 || sub >= kSubAreasPerArea)
@@ -2307,6 +2166,87 @@ public:
     // picker's own rung check and the announcement both read this, so "which win pays
     // what" is stated once.
     int backgroundBracketsTaken() const { return op_.tallies.tourneyWins; }
+
+    // --- Steps play takes through a screen or a walk, public so a gate can take ---
+    // --- the same step directly -------------------------------------------------
+    // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
+    // offered/afford, deducts Bits, bumps op_.rig.level[row], applies the row's
+    // RigEffectKind (only Bandwidth has one. The live-pool grant), logs, persists. One
+    // function for every row: adding a row is a table entry, not a new buyX().
+    void buyRigUpgrade(int row) override;
+    // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
+    // recipe wire in op_.rig.recipesOwned, and this trio is the only code that knows that.
+    bool recipeOwned(int recipeIndex) const override;   // won off a Decryptogram, never bought
+    void grantRecipe(int recipeIndex);             // the win: light the bit, persist
+    // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
+    // and any dish the recipe wants MET has been held at least once.
+    bool recipeGrantable(int recipeIndex) const;
+    bool recipeCraftable(int recipeIndex) const override;   // owned + every ingredient in the bag
+    void craftRecipe(int recipeIndex) override;    // consume the ingredients, grant the output
+    void addCombatXp(int xp);                       // bank XP → level-up (+1 random stat)
+    // A FIGHT's XP: the same award, and it also builds the pet's adventure Bond. Passive
+    // farming, Sinkholes and Wi-Fi finds go straight to addCombatXp and build none.
+    void addFightXp(int xp);
+    void startExplore(int sector, int sub) override;         // arm a sub-area → idle background mode
+    void startDeepWebDive();                         // arm the mid-game endless zone
+    void startDarkWebCrawl() override;                        // ...and the terminal one
+    void returnToExplore() override;                // event/fight → back to idle, mode continues
+    void offerThenDive() override;           // the EXPL list's dive row: offer, else dive now
+    void startSubAreaBoss(int area, int sub) override;
+    // Compose the idle badge label: the armed area's short (first-word) name + the
+    // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
+    void exploreBadgeLabel(char* out, size_t n) const;
+    // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
+    // a dive, so a sector walk never collects a bonus armed for the dive after it.
+    int diveRewardBonusPct() const {
+        return inDeepWebDive() ? pet_.armed.diveStartBonusPct + pet_.armed.diveStepBonusPct : 0;
+    }
+    // The depth a dive would actually START at right now (-1 = nothing armed), with the
+    // Checkpoint sentinel resolved through pet_.bestDeepWebDepth exactly as startDeepWebDive()
+    // resolves it. Anything COMPARING bells reads this rather than the raw field: the
+    // sentinel is a negative number, so a raw compare sorts a live Checkpoint arming below
+    // "nothing armed" and lets a shallower bell overwrite it. The downgrade paid for
+    // with an item that the inert check (itemUseIsInert) exists to refuse.
+    int armedDeepWebStartDepth() const {
+        if (pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest) return pet_.bestDeepWebDepth;
+        return pet_.armed.deepWebStartDepth;
+    }
+    void startShiboleet();
+    // Grant an area's Title (OperatorWorld::titlesUnlocked). Called from the sector-clear
+    // path.
+    void unlockTitle(int sector);
+    // MODS earn path. rollAreaModId draws a rarity-weighted id from an area's
+    // loot table (area 0..kAreaCount-1 or kDeepWebSector); rollAnyModId draws globally
+    // (Epic cache jackpot); grantMod adds the spare if there is room for it under
+    // modStorageCap() and logs either way. Drop sites: boss clears, DeepWeb wins,
+    // Epic sealed caches.
+    const char* rollAreaModId(int area);
+    const char* rollAnyModId();
+    void grantMod(const char* id);
+    // `quote` is a content_quotes.h roster row and `extraReveals` the opening gift; the
+    // VAULT reads both off the quote's own tier, and the arcade's dial supplies the
+    // second. Nothing here rolls the quote: pickQuote does that, once, at the cash-in.
+    void startCryptogram(int quote, int extraReveals);
+    void setQuoteTier(int i, CryptogramTier t);
+    // One beat of a board's fall, which play takes on the board's own cadence.
+    void stepStacker();
+    void stepFragger();         // one row of fall, with its sound
+    // Advances the model's Hunger by `elapsedMs` and pays Passive XP Farming
+    // (j/k, Rig Shop) on the portion of the resulting decay that fell above
+    // hungerXpThreshold(). The one place pet_.model.tick() is called for Hunger
+    // decay, so Game::tick() and the gates can't drift apart.
+    void tickHungerAndAwardXp(uint32_t elapsedMs);
+    // Open a Sealed Cache: consume the container + draw from its
+    // rarity tier's pool, then surface the yield (Nav::CacheYield).
+    void openSealedCache(const ItemDef& d);
+    // e: bulk-open every OWNED cache sharing `focused`'s rarity tier in one
+    // action (grantCacheReward per cache, tallied), then surface the aggregate
+    // reveal (Nav::BulkYield). `focused` is the VAULT row the hold-B fired on.
+    void openAllCachesOfRarity(const ItemDef& focused) override;
+    void useItem(const ItemDef& d, ItemUseFrom from) override;
+    void openStoryChapter(const StoryChapterDef* chapter, const StoryChapterDef* next,
+                          StoryThen then, int thenArea);
+    void markStoryRead(const StoryChapterDef* chapter);
 
 private:
     // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp). The
@@ -2576,10 +2516,6 @@ private:
     const FightResult& lastFightResult() const override { return fight_.result; }
     void dismissPostEncounter() override;
     PostEncounterScreen postEncounter_;
-    void addCombatXp(int xp);                       // bank XP → level-up (+1 random stat)
-    // A FIGHT's XP: the same award, and it also builds the pet's adventure Bond. Passive
-    // farming, Sinkholes and Wi-Fi finds go straight to addCombatXp and build none.
-    void addFightXp(int xp);
     // The A+C Exploit allowance for a fight. The tunable today; the seam a
     // rare reward item hangs off later (item ships later).
     int exploitUsesPerBattle() const { return kExploitUsesPerBattle; }
@@ -2597,9 +2533,6 @@ private:
     // ExplHost.
     const ExploreWalk& exploreWalk() const override { return walk_; }
     void explainFirstWalk() override;
-    // Compose the idle badge label: the armed area's short (first-word) name + the
-    // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
-    void exploreBadgeLabel(char* out, size_t n) const;
     // AUTO-PROGRESS. `autoProgressStep` is the hook every hand-back to the walk runs
     // (returnToExplore): it fires only once the armed sub-area has met its win target,
     // and then either fights the boss standing there or steps on. `autoProgressAdvance`
@@ -2608,11 +2541,7 @@ private:
     void autoProgressStep();
     void autoProgressAdvance(int area, int sub);
     int nextOpenArea(int area) const;
-    void startExplore(int sector, int sub) override;         // arm a sub-area → idle background mode
-    void startDeepWebDive();                         // arm the mid-game endless zone
-    void startDarkWebCrawl() override;                        // ...and the terminal one
     void doExploreStep();                           // one guaranteed-event step
-    void returnToExplore() override;                // event/fight → back to idle, mode continues
     // Auto Backup / Continuous Auto-Backup (Rig Shop g/h): re-arm the Backup
     // Drive death-save for free if `gateRow`'s upgrade is owned and it isn't already
     // armed. Called from startExplore/startDeepWebDive (Auto Backup) and
@@ -2634,14 +2563,6 @@ private:
     void resolveLootEvent();                        // reward-pool draw, in place
     void resolveCacheEvent();                       // drop a Sealed Cache (non-interrupting)
     void grantLootReward(char* outFlavor, size_t outFlavorSize);  // shared reward-pool draw
-    // MODS earn path. rollAreaModId draws a rarity-weighted id from an area's
-    // loot table (area 0..kAreaCount-1 or kDeepWebSector); rollAnyModId draws globally
-    // (Epic cache jackpot); grantMod adds the spare if there is room for it under
-    // modStorageCap() and logs either way. Drop sites: boss clears, DeepWeb wins,
-    // Epic sealed caches.
-    const char* rollAreaModId(int area);
-    const char* rollAnyModId();
-    void grantMod(const char* id);
     // MOVES earn path: you learn a move by BEATING something that knows it. Rolls
     // `dropPct` and, on a hit, teaches one move off `from`'s KIT (everything it could
     // have used, not what it happened to cast) that this pet lacks and could actually
@@ -2686,7 +2607,6 @@ private:
     // cleared (OperatorWorld::sectorCleared → next area) + grants the Title.
     // Each opens a GauntletRun (core/model/gauntlet_run.h). startBossRound(carryHealth)
     // begins one round; finishBossRound() advances, clears or fails it.
-    void startSubAreaBoss(int area, int sub) override;
     void startAreaBoss(int area) override;
     void startBossRound(int carryHealth);
     void finishBossRound();
@@ -2702,9 +2622,6 @@ private:
     // thing it interrupts.
     bool fireStory(int sector, StoryBeat beat, StoryThen then, int thenArea = -1);
     bool fireStoryPair(int sector, StoryBeat first, StoryBeat second, StoryThen then);
-    void openStoryChapter(const StoryChapterDef* chapter, const StoryChapterDef* next,
-                          StoryThen then, int thenArea);
-    void markStoryRead(const StoryChapterDef* chapter);
     // StoryReaderHost. turnStoryPage is B on a page and what the page clock calls.
     const StoryRun* storyRun() const override { return story_ ? &*story_ : nullptr; }
     void turnStoryPage() override;
@@ -2729,7 +2646,6 @@ private:
     // is an answer here. Both settle the riddle through settleShiboleet().
     // startGuardianCombat() is the shared way into the fight, from an affront and from
     // a failed riddle alike.
-    void startShiboleet();
     void openShiboleetWelcome() override;
     void answerShiboleet(int row) override;
     void leaveShiboleetUnanswered() override { settleShiboleet(ShiboleetReply::Unanswered); }
@@ -2805,7 +2721,6 @@ private:
     using OfferFor = mal::OfferFor;
     std::vector<const ItemDef*> offerItems(OfferFor f) const override;
     bool offerRelevant(const ItemDef& d, OfferFor f) const;
-    void offerThenDive() override;           // the EXPL list's dive row: offer, else dive now
     void openItemOffer(OfferFor f);
     void finishItemOffer(OfferFor f) override;   // carry on with what was paused
     void leaveItemOffer(OfferFor f) override;
@@ -2836,11 +2751,6 @@ private:
     bool hackerSlotAccessible(int slot) const override;   // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
-    // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
-    // offered/afford, deducts Bits, bumps op_.rig.level[row], applies the row's
-    // RigEffectKind (only Bandwidth has one. The live-pool grant), logs, persists. One
-    // function for every row: adding a row is a table entry, not a new buyX().
-    void buyRigUpgrade(int row) override;
     // The OWNING half of that, with no till in it: bump the row `levels` times, apply
     // its RigEffectKind each time, log and persist. Split out because a rig level can
     // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp): a granted
@@ -2863,15 +2773,6 @@ private:
     // The crew Exploit row the A+C picker should offer, or a default-constructed
     // (label == nullptr) one when the player belongs to no crew.
     CrewExploit crewExploitOption() const;
-    // Cooking, indexed by kMergeRecipes row (game_internal.h). Ownership is a bit per
-    // recipe wire in op_.rig.recipesOwned, and this trio is the only code that knows that.
-    bool recipeOwned(int recipeIndex) const override;   // won off a Decryptogram, never bought
-    void grantRecipe(int recipeIndex);             // the win: light the bit, persist
-    // May the prize ladder hand this one over right now? Not owned, MERGE HUB built,
-    // and any dish the recipe wants MET has been held at least once.
-    bool recipeGrantable(int recipeIndex) const;
-    bool recipeCraftable(int recipeIndex) const override;   // owned + every ingredient in the bag
-    void craftRecipe(int recipeIndex) override;    // consume the ingredients, grant the output
     // Shared by applyCombatBitsBonus/applyCacheBitsBonus/applyCombatXpBonus: floors
     // the % bonus at +1 whenever it's active, so a truncated-to-0 grant (a small
     // value * a low pct) never makes a purchased upgrade look inert.
@@ -2917,7 +2818,6 @@ private:
     // vocabulary (ItemEffect::Kind), never a per-id branch, so a new arming
     // mechanic joins by adding its case beside its applier in applyItemEffects.
     bool itemUseIsInert(const ItemDef& d, const char*& why) const;
-    void useItem(const ItemDef& d, ItemUseFrom from) override;
     void startFeeding(const ItemDef& d, bool fromLockout);
     // Roll every held perishable (ItemDef::spoil) once. Called on the beats that already
     // disturb the bag rather than from a clock of its own; advances rng_.
@@ -2935,9 +2835,6 @@ private:
     // line says a plate was eaten and nothing more, and a once-per-pet upgrade is the one
     // thing a bite can do that the operator will want to be able to find again.
     void noteLifetimeGrant(const char* what, const char* valueFmt, int magnitude);
-    // Open a Sealed Cache: consume the container + draw from its
-    // rarity tier's pool, then surface the yield (Nav::CacheYield).
-    void openSealedCache(const ItemDef& d);
     // The shared per-cache reward roll (Bits + up to `maxItems` drawn items, plus the
     // Epic-cache bonus-mod roll): factored out of openSealedCache so e's bulk
     // path can call it once per cache opened without duplicating the reward logic.
@@ -2952,10 +2849,6 @@ private:
     // Draw one item from a cache pool (adds to inventory + logs); returns the def.
     const ItemDef* drawCacheItem(const LootEntry* pool, int poolSize);
     // The cache-yield reveal: B/C dismisses back to the ITEMS list.
-    // e: bulk-open every OWNED cache sharing `focused`'s rarity tier in one
-    // action (grantCacheReward per cache, tallied), then surface the aggregate
-    // reveal (Nav::BulkYield). `focused` is the VAULT row the hold-B fired on.
-    void openAllCachesOfRarity(const ItemDef& focused) override;
     // The bulk-yield reveal: A scrolls the tally if it overflows the window, B/C
     // dismisses back to the VAULT list (Nav::Submenu. Mirrors onCacheYield).
     // Boot Accelerator: consume it + apply its CutIncubationMin to the incubation.
@@ -2991,9 +2884,7 @@ private:
     void finishStacker() override;
     Stacker& liveStacker() override { return stacker_; }
     Fragger& liveFragger() override { return fragger_; }
-    void stepStacker();
     void beginFraggerRun();     // the same, for FRAGGER
-    void stepFragger();         // one row of fall, with its sound
     void finishFragger() override;
     void resolveMaint();
     bool rollMaintSuccess();
@@ -3004,11 +2895,6 @@ private:
     // Game-level positive-mistake path (went-hungry, Lockout expiry) funnels through.
     void addCareMistakeShielded(int n);
 
-    // Advances the model's Hunger by `elapsedMs` and pays Passive XP Farming
-    // (j/k, Rig Shop) on the portion of the resulting decay that fell above
-    // hungerXpThreshold(). The one place pet_.model.tick() is called for Hunger
-    // decay, so Game::tick() and debugTickHunger() (tests) can't drift apart.
-    void tickHungerAndAwardXp(uint32_t elapsedMs);
 
     // --- The six halves of Game::tick, in the order it runs them ------------------
     // Each returns whether it changed anything the screen would show, and tick() runs
@@ -3070,10 +2956,6 @@ private:
     DiskDecryption& liveDecryption() override { return decryption_; }
 
     // DECRYPTOGRAM lifecycle (game_cryptogram.cpp): see inCryptogram() above.
-    // `quote` is a content_quotes.h roster row and `extraReveals` the opening gift; the
-    // VAULT reads both off the quote's own tier, and the arcade's dial supplies the
-    // second. Nothing here rolls the quote: pickQuote does that, once, at the cash-in.
-    void startCryptogram(int quote, int extraReveals);
     // Runs the instant the board stops, not when the player leaves it: the tier ratchet
     // and the prize both have to have LANDED before the verdict screen can name them.
     // A no-op on an arcade run, which never touches a quote's standing.
@@ -3084,7 +2966,6 @@ private:
     // A roster row to play, drawn off the shared LCG from whatever is eligible, or -1
     // when nothing is. Advances rng_.
     int pickQuote(QuotePick pick);
-    void setQuoteTier(int i, CryptogramTier t);
     // What a FIRST solve is playing for: the first recipe on content_quotes.h's prize
     // ladder whose gates are met and which isn't owned yet, or the Bandwidth fallback
     // once the kitchen is complete. Read at board START, so the stake can be printed
@@ -3225,27 +3106,12 @@ private:
     uint32_t lastFraggerStepMs_ = 0;
     StackerScreen stackerScreen_;   // game/stacker_screen.h
     FraggerScreen fraggerScreen_;   // game/fragger_screen.h, and the last shot's beam
-    // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
-    // a dive, so a sector walk never collects a bonus armed for the dive after it.
-    int diveRewardBonusPct() const {
-        return inDeepWebDive() ? pet_.armed.diveStartBonusPct + pet_.armed.diveStepBonusPct : 0;
-    }
     // Every site that ends a dive (or a pet) spends both live halves in one call, so the
     // bonus can't outlive the run it was paid for at one exit and not another.
     void clearDiveDepthBuffs() {
         pet_.armed.deepWebDepthMultiplier = 1;
         pet_.armed.diveStepBonusPct = 0;
         pet_.armed.diveStartBonusPct = 0;
-    }
-    // The depth a dive would actually START at right now (-1 = nothing armed), with the
-    // Checkpoint sentinel resolved through pet_.bestDeepWebDepth exactly as startDeepWebDive()
-    // resolves it. Anything COMPARING bells reads this rather than the raw field: the
-    // sentinel is a negative number, so a raw compare sorts a live Checkpoint arming below
-    // "nothing armed" and lets a shallower bell overwrite it. The downgrade paid for
-    // with an item that the inert check (itemUseIsInert) exists to refuse.
-    int armedDeepWebStartDepth() const {
-        if (pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest) return pet_.bestDeepWebDepth;
-        return pet_.armed.deepWebStartDepth;
     }
 
     // Every screen-level hold on the device is a held B: the CFG Factory Reset, the
@@ -3326,9 +3192,6 @@ private:
     // Which bosses have been beaten is the Operator's (OperatorWorld).
     std::optional<GauntletRun> gauntlet_;
 
-    // Grant an area's Title (OperatorWorld::titlesUnlocked). Called from the sector-clear
-    // path.
-    void unlockTitle(int sector);
     // The next selectable Title after `cur` (wraps): NONE (-1) plus each UNLOCKED
     // sector, in order. Locked sectors are skipped. Drives the CFG picker's A-cycle.
     int nextSelectableTitle(int cur) const override;

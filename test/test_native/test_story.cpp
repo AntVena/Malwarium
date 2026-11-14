@@ -83,7 +83,7 @@ void test_story_chapters_fit_their_page() {
     Game g{StartMode::Hatched, "bruinforce"};
     const StoryChapterDef* first = storyChapter(0, StoryBeat::AreaIntro);
     CHECK(first != nullptr);
-    g.debugOpenStory(first);
+    g.openStoryChapter(first, nullptr, StoryThen::Walk, -1);
     const auto rows = g.storyRows();
     CHECK(static_cast<int>(rows.size()) == first->panelCount);
     for (int i = 0; i < first->panelCount; ++i) {
@@ -104,7 +104,7 @@ void test_story_arrival_fires_once_and_hands_back() {
     g.inventory().add("sinkhole_trap", 60);          // a cheap way out of the fight
     const StoryChapterDef* ch = storyChapter(0, StoryBeat::AreaIntro);
     CHECK(ch && !g.storyRead(ch));
-    g.debugArmExplore(0, 0);
+    g.startExplore(0, 0);
     g.debugSetAutoProgress(false);
     CHECK(walkToStory(g));
     CHECK(g.currentStoryChapter() == ch);
@@ -137,7 +137,7 @@ void test_story_panel_turns_on_its_own_clock() {
     Game g{StartMode::Hatched, "bruinforce"};
     const StoryChapterDef* ch = storyChapter(0, StoryBeat::AreaIntro);
     CHECK(ch != nullptr);
-    g.debugOpenStory(ch);
+    g.openStoryChapter(ch, nullptr, StoryThen::Walk, -1);
     CHECK(g.nav() == Game::Nav::Story);
     const int windows = g.storyWindows();
     CHECK(windows >= 2);                             // or there is no turn to observe
@@ -159,7 +159,7 @@ void test_story_panel_turns_on_its_own_clock() {
     // And the reading screens are held open against the menu idle collapse: fifteen
     // seconds is shorter than a page of prose.
     Game h{StartMode::Hatched, "bruinforce"};
-    h.debugOpenStory(ch);
+    h.openStoryChapter(ch, nullptr, StoryThen::Walk, -1);
     uint32_t ht = 0;
     for (int i = 0; i < 3; ++i) h.tick(ht += kAutoDefocusMs / 4);
     CHECK(h.nav() == Game::Nav::Story);
@@ -171,7 +171,7 @@ void test_story_panel_turns_on_its_own_clock() {
 void test_story_skip_still_runs_what_it_interrupted() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.inventory().add("sinkhole_trap", 60);
-    g.debugArmExplore(0, 0);
+    g.startExplore(0, 0);
     g.debugSetAutoProgress(false);
     CHECK(walkToStory(g));
     CHECK(g.storyWindows() >= 2);                    // there is something left to skip
@@ -200,7 +200,7 @@ void test_story_archive_collects_what_the_walk_fired() {
         tapC(g);
 
         g.inventory().add("sinkhole_trap", 60);
-        g.debugArmExplore(0, 0);
+        g.startExplore(0, 0);
         g.debugSetAutoProgress(false);
         CHECK(walkToStory(g));
         tapC(g);                                     // skipped, and still archived
@@ -256,7 +256,7 @@ void test_story_archive_collects_what_the_walk_fired() {
 // before the walk gets its habitat back.
 void test_story_brackets_the_area_gauntlet() {
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugAddCombatXp(600000);                      // a pet that can take the gauntlet
+    g.addCombatXp(600000);                      // a pet that can take the gauntlet
     for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
     CHECK(g.areaBossReady(0));
 
@@ -340,7 +340,7 @@ void test_expl_categories_are_the_top_level() {
     // Reaching The Pirate Bayou opens the ARENA, which has no rows of its own: B on it
     // draws a bracket outright rather than opening a list of one.
     g.debugSetSectorCleared(0, true);
-    g.debugAddCombatXp(600000);                        // a pet that can stand in a bout
+    g.addCombatXp(600000);                        // a pet that can stand in a bout
     explPickCategory(g, ExplCat::Arena);
     CHECK(g.explScreen().row() == explCatRow(ExplCat::Arena));
     tapB(g);

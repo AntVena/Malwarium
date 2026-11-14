@@ -18,16 +18,16 @@ void test_dive_gear_pays_a_bonus() {
     Game g = divingReadyGame();
     g.inventory().add("kernel_bell", 1);           // +100
     g.inventory().add("deep_learning_module", 1);  // +50
-    g.debugUseItem("kernel_bell");
-    g.debugUseItem("deep_learning_module");
-    CHECK(g.debugDiveRewardBonusPct() == 0);       // armed, but nothing to pay yet
-    g.debugStartDeepWebDive();
+    useItem(g, "kernel_bell");
+    useItem(g, "deep_learning_module");
+    CHECK(g.diveRewardBonusPct() == 0);       // armed, but nothing to pay yet
+    g.startDeepWebDive();
     CHECK(g.inDeepWebDive());
-    CHECK(g.debugDiveRewardBonusPct() == 150);
+    CHECK(g.diveRewardBonusPct() == 150);
     stopExplore(g);
-    CHECK(g.debugDiveRewardBonusPct() == 0);
-    g.debugStartDeepWebDive();                     // a fresh dive, nothing re-armed
-    CHECK(g.debugDiveRewardBonusPct() == 0);
+    CHECK(g.diveRewardBonusPct() == 0);
+    g.startDeepWebDive();                     // a fresh dive, nothing re-armed
+    CHECK(g.diveRewardBonusPct() == 0);
 }
 
 // Without AUTO DIVE GEAR, starting a dive with dive items held opens DIVE PREP. B uses
@@ -38,7 +38,7 @@ void test_dive_prep_offer() {
         Game g = divingReadyGame();
         g.inventory().add("backdoor_bell", 1);
         g.inventory().add("deep_learning_module", 1);
-        g.debugOfferThenDive();
+        g.offerThenDive();
         CHECK(g.nav() == Game::Nav::ItemOffer);
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);
@@ -50,12 +50,12 @@ void test_dive_prep_offer() {
         tapB(g);                                   // the module; nothing left -> dive
         CHECK(g.inventory().count("deep_learning_module") == 0);
         CHECK(g.inDeepWebDive());
-        CHECK(g.debugDiveRewardBonusPct() == 25 + 50);
+        CHECK(g.diveRewardBonusPct() == 25 + 50);
     }
     {
         Game g = divingReadyGame();
         g.inventory().add("backdoor_bell", 1);
-        g.debugOfferThenDive();
+        g.offerThenDive();
         CHECK(g.nav() == Game::Nav::ItemOffer);
         tapC(g);
         CHECK(g.nav() != Game::Nav::ItemOffer);
@@ -65,7 +65,7 @@ void test_dive_prep_offer() {
     {
         // Nothing held that a dive can use: no screen, straight in.
         Game g = divingReadyGame();
-        g.debugOfferThenDive();
+        g.offerThenDive();
         CHECK(g.inDeepWebDive());
     }
 }
@@ -78,33 +78,33 @@ void test_auto_dive_gear_modes() {
     {
         Game g = divingReadyGame(&store);
         g.debugSetBits(kRigAutoDiveGearCost);
-        g.debugBuyRigRow(kRigRowAutoDiveGear);
+        g.buyRigUpgrade(kRigRowAutoDiveGear);
         CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
         CHECK(std::strcmp(g.operatorRecord().rig.serviceWord(kRigRowAutoDiveGear), "YES") == 0);
         g.inventory().add("backdoor_bell", 1);
         g.inventory().add("kernel_bell", 1);
         g.inventory().add("deep_learning_module", 1);
 
-        g.debugOfferThenDive();                    // YES
+        g.offerThenDive();                    // YES
         CHECK(g.inDeepWebDive());
         CHECK(g.inventory().count("kernel_bell") == 0);
         CHECK(g.inventory().count("backdoor_bell") == 1);
         CHECK(g.inventory().count("deep_learning_module") == 0);
-        CHECK(g.debugDiveRewardBonusPct() == 100 + 50);
+        CHECK(g.diveRewardBonusPct() == 100 + 50);
         stopExplore(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // -> ASK
         CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Ask);
-        g.debugOfferThenDive();
+        g.offerThenDive();
         CHECK(g.nav() == Game::Nav::ItemOffer);
         tapC(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // -> NO
         CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::Off);
-        g.debugOfferThenDive();
+        g.offerThenDive();
         CHECK(g.inDeepWebDive());
         CHECK(g.inventory().count("backdoor_bell") == 1);
-        CHECK(g.debugDiveRewardBonusPct() == 0);
+        CHECK(g.diveRewardBonusPct() == 0);
         stopExplore(g);
 
         g.toggleRigService(kRigRowAutoDiveGear);   // NO -> YES

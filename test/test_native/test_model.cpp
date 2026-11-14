@@ -392,7 +392,7 @@ void test_error_warnings_before_failing() {
     for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
         armed.markTipSeen(k);
     armed.model().setFragmentation(10);
-    armed.debugUseItem("restore_point");
+    useItem(armed, "restore_point");
     // The use lands on the ITEMS list: back out to the carousel and let it tuck away.
     for (int i = 0; i < 4 && armed.nav() != Game::Nav::Cursor &&
                     armed.nav() != Game::Nav::Idle; ++i)

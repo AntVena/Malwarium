@@ -194,6 +194,15 @@
 
 using namespace mal;
 
+// The steps an ITEMS or VAULT row takes, by item id: a scene names the item it stocked.
+// An unknown id does nothing, as picking a row that is not there would.
+static void useItem(Game& g, const char* id) {
+    if (const ItemDef* d = g.content().item(id)) g.useItem(*d, ItemUseFrom::Bag);
+}
+static void openCache(Game& g, const char* id) {
+    if (const ItemDef* d = g.content().item(id)) g.openSealedCache(*d);
+}
+
 // The CHROMATOPHORE's three buttons are three skins, in chip order, so a dump that
 // wants a particular skin worn presses the button that wears it rather than a cursor.
 static ButtonEvent chromaPress(int skin) {
@@ -324,12 +333,12 @@ int main(int argc, char** argv) {
     // (and the Rollback picker) render populated.
     if (hasFlag(argc, argv, "level") || hasFlag(argc, argv, "rollback") ||
         hasFlag(argc, argv, "repartition"))
-        game.debugAddCombatXp(1200);
+        game.addCombatXp(1200);
     // ...and a much deeper grind for the TIERS page, which is about the far end of that
     // curve: at ~level 8 every rung on it reads "TO GO" and the page cannot show what a
     // held one looks like. The grant picks its stat at random, so a level in the forties
     // is what reliably puts SOME stat past the first rung and usually a second.
-    if (hasFlag(argc, argv, "tiers")) game.debugAddCombatXp(400000);
+    if (hasFlag(argc, argv, "tiers")) game.addCombatXp(400000);
     if (hasFlag(argc, argv, "maint")) {
         game.model().setFragmentation(31);   // something to defragment
         game.model().setGhost(true);         // AV has work to do
@@ -368,7 +377,7 @@ int main(int argc, char** argv) {
     // the state the list has to WINDOW rather than draw straight down the screen.
     if (hasFlag(argc, argv, "rackfull")) {
         game.debugSetBits(1 << 16);
-        for (int i = 0; i < 4; ++i) game.debugBuyRackSlotUpgrade();
+        for (int i = 0; i < 4; ++i) game.buyRigUpgrade(kRigRowRackSlot);
         static const char* const kSeed[] = {"cryptoshell", "phishlet", "tadpoll",
                                             "croaken",     "paypup",   "malbear",
                                             "clickbait",   "spamwhale"};
@@ -403,7 +412,7 @@ int main(int argc, char** argv) {
         game.tick(static_cast<uint32_t>(i) * kHeartbeatMs);
 
     // "bonded" earns Bond from fights, so the BOND page has a bar part filled.
-    if (hasFlag(argc, argv, "bonded")) game.debugAddFightXp(4321);
+    if (hasFlag(argc, argv, "bonded")) game.addFightXp(4321);
 
     // "armbuffs" arms all three item buffs (Restore Point/Ambig-USB/Backup
     // Drive) regardless of which screen flag follows, so it shows on the
@@ -413,17 +422,17 @@ int main(int argc, char** argv) {
     // enterSlot() navigation below. Leaving 1 in stock sidesteps that.
     if (hasFlag(argc, argv, "armbuffs")) {
         game.inventory().add("restore_point", 2);
-        game.debugUseItem("restore_point");
+        useItem(game, "restore_point");
         game.inventory().add("ambig_usb", 2);
-        game.debugUseItem("ambig_usb");
+        useItem(game, "ambig_usb");
         game.inventory().add("backup_drive", 2);
-        game.debugUseItem("backup_drive");
+        useItem(game, "backup_drive");
         // The two DeepWeb depth buffs as well, which takes BUFFS to all five rows it
         // can hold at once: the state the page has to scroll rather than draw.
         game.inventory().add("deep_learning_core", 2);
-        game.debugUseItem("deep_learning_core");
+        useItem(game, "deep_learning_core");
         game.inventory().add("zeroday_bell", 2);
-        game.debugUseItem("zeroday_bell");
+        useItem(game, "zeroday_bell");
     }
     // "fullkit" equips every unlocked move slot and every mod slot: pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
@@ -471,7 +480,7 @@ int main(int argc, char** argv) {
         if (std::strncmp(argv[i], "feed:", 5) == 0) feedId = argv[i] + 5;
     if (feedId) {
         game.inventory().add(feedId, 2);
-        game.debugUseItem(feedId);
+        useItem(game, feedId);
         // The modal opens at its own beat 0, after the heartbeat above has already run,
         // so `beats` is re-spent inside it to land on a frame of the bite. Stepped on
         // the DISSOLVE's clock (kFxAnimMs), which is what `beats` indexes for any scene
@@ -486,13 +495,13 @@ int main(int argc, char** argv) {
         // Rollback stat picker: the leveled pet (above) has points to shed;
         // open the picker directly through the real Use path.
         game.inventory().add("rollback", 1);
-        game.debugUseItem("rollback");
+        useItem(game, "rollback");
     } else if (hasFlag(argc, argv, "repartition")) {
         // Repartition's two-step stat picker, on the same leveled pet. "to" advances it
         // past the FROM step, which is the only way to see the trade readout: the two
         // steps share a Nav state and differ only in what has been picked.
         game.inventory().add("repartition", 1);
-        game.debugUseItem("repartition");
+        useItem(game, "repartition");
         if (hasFlag(argc, argv, "to")) game.onButton({Button::B, true, false});
     } else if (hasFlag(argc, argv, "stat")) {
         // STAT's pages, by title. "stat" alone shows vitals; the page names turn to
@@ -546,13 +555,13 @@ int main(int argc, char** argv) {
                        : hasFlag(argc, argv, "common") ? "sealed_cache_common"
                                                        : "sealed_cache_uncommon";
         game.inventory().add(id, 1);
-        game.debugOpenCache(id);
+        openCache(game, id);
     } else if (hasFlag(argc, argv, "items")) {
         // "picker" buys the ITEMS Type-Picker first, so ITEMS opens on the category
         // tiles; without it ITEMS opens straight on the list, as an unowned rig does.
         if (hasFlag(argc, argv, "picker")) {
             game.debugSetBits(kShopItemPickerCost);
-            game.debugBuyItemPicker();
+            game.buyRigUpgrade(kRigRowItemPicker);
         }
         enterSlot(SubmenuId::Items);
         // With the picker up, "ingredients"/"keys"/"tools" walk to that tile and
@@ -623,7 +632,7 @@ int main(int argc, char** argv) {
                 else if (std::strcmp(argv[i], "drop") == 0)
                     game.onButton({Button::B, true, false});
                 else if (std::strcmp(argv[i], "slide") == 0)
-                    game.debugStepStacker();
+                    game.stepStacker();
                 else if (std::strcmp(argv[i], "stop") == 0)
                     game.onButton({Button::C, true, false});
             }
@@ -636,7 +645,7 @@ int main(int argc, char** argv) {
             runPlayed(ArcadeGameKind::Fragger);
             for (int i = 1; i < argc; ++i) {
                 if (std::strncmp(argv[i], "fall:", 5) == 0) {
-                    for (int k = std::atoi(argv[i] + 5); k > 0; --k) game.debugStepFragger();
+                    for (int k = std::atoi(argv[i] + 5); k > 0; --k) game.stepFragger();
                 } else if (std::strcmp(argv[i], "left") == 0) {
                     game.onButton({Button::A, true, false});
                 } else if (std::strcmp(argv[i], "right") == 0) {
@@ -646,7 +655,7 @@ int main(int argc, char** argv) {
                 } else if (std::strcmp(argv[i], "crash") == 0) {
                     const int lane = game.fragger().lane() == 0 ? 1 : 0;
                     game.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::Fragment);
-                    game.debugStepFragger();
+                    game.stepFragger();
                 }
             }
         }
@@ -670,7 +679,7 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "sysinfo")) openTarget(CfgScreen::SysInfo);
         else if (hasFlag(argc, argv, "tag")) openTarget(CfgScreen::HackerTag);
         else if (hasFlag(argc, argv, "titles")) {   // unlock a Title so a row isn't LOCKED
-            game.debugUnlockTitle(0);                // Citrus Circuit -> auto-equipped
+            game.unlockTitle(0);                // Citrus Circuit -> auto-equipped
             openTarget(CfgScreen::Titles);
         }
         else if (hasFlag(argc, argv, "device")) {
@@ -882,7 +891,7 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "mods")) {
         // grant a tier-3 spare (equip gate ~L15-25) so the picker shows a
         // LOCKED row for a level-0 pet (the rolled equip-level gate, grayscale-safe).
-        if (hasFlag(argc, argv, "modlocked")) game.debugGrantMod("overclock_chip");
+        if (hasFlag(argc, argv, "modlocked")) game.grantMod("overclock_chip");
         enterSlot(SubmenuId::Mods);
         game.onButton({Button::B, true, false});     // LOADOUT hub row 0 -> the mod slots
         if (hasFlag(argc, argv, "picker")) game.onButton({Button::B, true, false});
@@ -904,7 +913,7 @@ int main(int argc, char** argv) {
         // the list can be looked at both with the row absent and with it present.
         if (hasFlag(argc, argv, "solved"))
             for (int i = 0; i < kQuoteArcadeUnlockWins; ++i)
-                game.debugSetQuoteTier(i, CryptogramTier::Solved);
+                game.setQuoteTier(i, CryptogramTier::Solved);
         enterSlot(SubmenuId::Games);
         // cabinet → open the focused cabinet's page (L3); + hard → cycle the dial off
         // MEDIUM so the setting is visible; clutch/worm/... → focus that cabinet first.
@@ -1032,7 +1041,7 @@ int main(int argc, char** argv) {
             // directly on it (no cycling needed).
             enterExplCat(ExplCat::Endless);
         } else {
-            game.debugStartDeepWebDive();
+            game.startDeepWebDive();
         }
     } else if (hasFlag(argc, argv, "farm")) {
         // re-farm: a CLEARED sub-area stays re-armable. Clear area 0 fully,
@@ -1042,7 +1051,7 @@ int main(int argc, char** argv) {
         if (hasFlag(argc, argv, "list"))
             enterExplCat(ExplCat::Story);                // the all-CLEARED farmable list
         else
-            game.debugArmExplore(0, 2);                  // idle badge: EXPL ... FARMING
+            game.startExplore(0, 2);                  // idle badge: EXPL ... FARMING
     } else if (hasFlag(argc, argv, "expl")) {
         // Seed a mid-ladder nested state so the EXPL list shows every tag at
         // once: area 0 has subs 1-2 CLEARED, sub 3 BOSS-READY (> FIGHT BOSS), subs 4-5
@@ -1101,8 +1110,8 @@ int main(int argc, char** argv) {
                 if (std::strncmp(argv[i], "area:", 5) == 0) areaIdx = std::atoi(argv[i] + 5);
                 if (std::strncmp(argv[i], "beat:", 5) == 0) beatIdx = std::atoi(argv[i] + 5);
             }
-            game.debugOpenStory(
-                storyChapter(areaIdx, static_cast<StoryBeat>(beatIdx)));
+            game.openStoryChapter(
+                storyChapter(areaIdx, static_cast<StoryBeat>(beatIdx)), nullptr, StoryThen::Walk, -1);
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "scroll:", 7) == 0)
                     for (int n = std::atoi(argv[i] + 7); n > 0; --n)
@@ -1116,7 +1125,7 @@ int main(int argc, char** argv) {
         // bracket with one round already settled; "out"/"champion" force a terminal
         // banner without playing a whole tournament for it.
         game.debugSetSectorCleared(0, true);
-        game.debugAddCombatXp(600000);               // a pet that can win a match
+        game.addCombatXp(600000);               // a pet that can win a match
         enterExplCat(ExplCat::Arena);                // the picker's ARENA row draws it
         // B on the bracket is a TAP/HOLD pair (tap = start the bout, hold = the scout
         // sheet), so every press from here has to send both edges.
@@ -1180,7 +1189,7 @@ int main(int argc, char** argv) {
             // that would let joinCrew through.
             game.setHomeNetwork(0x001122334455ull, "THE_PROMISED_LAN");
             game.joinCrew(widest);
-            game.debugUnlockTitle(0);
+            game.unlockTitle(0);
             int longest = 0;
             for (int i = 1; i < hackerRankTierCount(); ++i)
                 if (textWidth(hackerRankTitle(hackerRankTierUnlock(i))) >
@@ -1226,7 +1235,7 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "shop")) {
             // "hub" buys the MERGE HUB first: the way to see the list with and
             // without it. "row:<n>" then A-cycles down to reach a given row.
-            if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.debugBuyMergeHub(); }
+            if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.buyRigUpgrade(kRigRowMergeHub); }
             // "services" buys the two rows that RUN on their own, which is what puts
             // the SERVICES head slot on the list; A-cycling onto it and holding B opens
             // one service's info page ("info"), the third of the SHOP's screens. "ask"
@@ -1234,11 +1243,11 @@ int main(int argc, char** argv) {
             const bool services = hasFlag(argc, argv, "services");
             if (services) {
                 game.debugSetBits(999999);
-                game.debugBuyAutoBackup();
-                game.debugBuyRigRow(kRigRowDiskMaintenance);
+                game.buyRigUpgrade(kRigRowAutoBackup);
+                game.buyRigUpgrade(kRigRowDiskMaintenance);
                 // "ask" adds the three-way service, whose SET verbs are the widest
                 // primary the hint line carries.
-                if (hasFlag(argc, argv, "ask")) game.debugBuyRigRow(kRigRowAutoDiveGear);
+                if (hasFlag(argc, argv, "ask")) game.buyRigUpgrade(kRigRowAutoDiveGear);
             }
             enterHackerSlot(HackerSlotId::Shop);
             if (services) {
@@ -1276,9 +1285,9 @@ int main(int argc, char** argv) {
             // unlocked rather than a column of LOCKED; "stock" fills the bag so the
             // focused row reads craftable rather than short.
             game.debugSetBits(99999);
-            game.debugBuyMergeHub();
+            game.buyRigUpgrade(kRigRowMergeHub);
             if (hasFlag(argc, argv, "recipes"))
-                for (int i = 0; i < kMergeRecipeCount; ++i) game.debugWinRecipe(i);
+                for (int i = 0; i < kMergeRecipeCount; ++i) game.grantRecipe(i);
             if (hasFlag(argc, argv, "stock")) {
                 game.inventory().add("null_noodles", 4);
                 game.inventory().add("pwnzu_sauce", 4);
@@ -1298,7 +1307,7 @@ int main(int argc, char** argv) {
             const bool bulk = hasFlag(argc, argv, "bulk");
             if (bulk) {
                 game.debugSetBits(999999);
-                game.debugBuyRigRow(kRigRowBulkOpen);
+                game.buyRigUpgrade(kRigRowBulkOpen);
             }
             enterHackerSlot(HackerSlotId::Vault);
             if (bulk) {
@@ -1388,7 +1397,7 @@ int main(int argc, char** argv) {
             for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
         }
         if (dive) {
-            game.debugStartDeepWebDive();
+            game.startDeepWebDive();
         } else {
             enterExplCat(ExplCat::Story);
             // The ladder is nested: the first B expands the focused sector, the second
@@ -1552,7 +1561,7 @@ int main(int argc, char** argv) {
             // The welcome is ROLLED (game_shiboleet.cpp), so a band is reached by asking
             // until it comes up rather than by forcing it.
             for (int i = 0; i < 200 && game.nav() != Game::Nav::Shiboleet; ++i) {
-                game.debugStartShiboleet();
+                game.startShiboleet();
                 if (wantHail) break;                      // the hail IS the scene
                 if (wantRefused || wantBoon) {
                     // One of the two bands that never asks anything: the refusal's
@@ -1577,7 +1586,7 @@ int main(int argc, char** argv) {
                 }
                 if (game.nav() == Game::Nav::PostEncounter)
                     game.onButton({Button::B, true, false});
-                if (!game.exploreActive()) game.debugArmExplore(0, 0);
+                if (!game.exploreActive()) game.startExplore(0, 0);
             }
             // The VERDICT is what the focused reply earns. "wrong" steps the cursor OFF
             // the true row first, which is the half of the pair worth looking at hardest:
@@ -1659,7 +1668,7 @@ int main(int argc, char** argv) {
             if (wantMods && hasFlag(argc, argv, "full"))
                 for (int i = 0; i < game.shopListingCount(); ++i)
                     for (int k = 0; k < game.modStorageCap(); ++k)
-                        game.debugGrantMod(game.shopListingId(i));
+                        game.grantMod(game.shopListingId(i));
         } else if (hasFlag(argc, argv, "outro")) {
             // Ride a wild fight to a WIN and hold ON the combat screen for `beats`, so
             // the frame lands inside the beaten rival's dissolve rather than past it.

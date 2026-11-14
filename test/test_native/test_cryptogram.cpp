@@ -344,17 +344,17 @@ void test_quote_prize_ladder_covers_every_recipe() {
 void test_quote_prize_pays_the_next_recipe() {
     Game g{StartMode::Hatched};
     g.debugSetBits(99999);
-    g.debugBuyMergeHub();
+    g.buyRigUpgrade(kRigRowMergeHub);
 
     const int first = recipeIndexByOutput(quotePrizeLadder()[0]);
     const int second = recipeIndexByOutput(quotePrizeLadder()[1]);
     CHECK(first >= 0 && second >= 0);
-    CHECK(!g.debugRecipeOwned(first));
+    CHECK(!g.recipeOwned(first));
 
     cashADecryptogram(g, 2);
     solveBoard(g);
-    CHECK(g.debugRecipeOwned(first));
-    CHECK(!g.debugRecipeOwned(second));   // one board, one recipe
+    CHECK(g.recipeOwned(first));
+    CHECK(!g.recipeOwned(second));   // one board, one recipe
 
     // B parks back in the VAULT with the second ticket under the cursor, so the next
     // board is the same two presses a player makes, and it pays the next rung down,
@@ -364,7 +364,7 @@ void test_quote_prize_pays_the_next_recipe() {
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Cryptogram);
     solveBoard(g);
-    CHECK(g.debugRecipeOwned(second));
+    CHECK(g.recipeOwned(second));
 }
 
 // With no MERGE HUB there is nothing a recipe could be cooked in, so the ladder is
@@ -378,7 +378,7 @@ void test_quote_prize_falls_back_without_a_kitchen() {
     cashADecryptogram(g);
     solveBoard(g);
     CHECK(g.bwUpgradeCount() == bought + 1);
-    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeOwned(i));
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.recipeOwned(i));
 }
 
 // The VAULT is the door: the ticket is spent there, a quote comes up unsolved, and
@@ -432,13 +432,13 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
     g.onButton(press(Button::B));
 
     // Play that exact quote again, at the rung the loss bought.
-    g.debugStartCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
+    g.startCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
     CHECK(g.cryptogram().poolSize() == hardPool - 1);
     missOnce(g);
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);
     g.onButton(press(Button::B));
 
-    g.debugStartCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
+    g.startCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
     CHECK(g.cryptogram().poolSize() == hardPool - 3);
     missOnce(g);
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);   // Easy is the floor
@@ -490,8 +490,8 @@ void test_cryptogram_states_persist() {
     const int lostWire = quotes()[1].wire;
     {
         Game g(StartMode::Hatched, "malbear", &store);
-        g.debugSetQuoteTier(0, CryptogramTier::Solved);
-        g.debugSetQuoteTier(1, CryptogramTier::Easy);
+        g.setQuoteTier(0, CryptogramTier::Solved);
+        g.setQuoteTier(1, CryptogramTier::Easy);
         CHECK(g.saveNow());
     }
     CHECK(!store.bytes().empty());
@@ -538,7 +538,7 @@ void test_cryptogram_arcade_cabinet_waits_for_eight_wins() {
     CHECK(g.arcadeScreen().row() != row);
 
     for (int i = 0; i < kQuoteArcadeUnlockWins; ++i)
-        g.debugSetQuoteTier(i, CryptogramTier::Solved);
+        g.setQuoteTier(i, CryptogramTier::Solved);
     CHECK(g.quotesSolved() == kQuoteArcadeUnlockWins);
     CHECK(g.arcadeCabinetOffered(row));
     n = g.arcadeOfferedRows(rows, kArcadeMaxCabinets);
@@ -551,7 +551,7 @@ void test_cryptogram_arcade_replays_a_solved_quote_for_bits() {
     Game g{StartMode::Hatched};
     const int row = arcadeGameIndexById("cryptogram");
     for (int i = 0; i < kQuoteArcadeUnlockWins; ++i)
-        g.debugSetQuoteTier(i, CryptogramTier::Solved);
+        g.setQuoteTier(i, CryptogramTier::Solved);
     const int bits = g.bits();
     const int bought = g.bwUpgradeCount();
 

@@ -34,7 +34,7 @@ void test_stat_paging_loadout_xp() {
     // the XP bar fills with banked XP: a half-level of XP paints
     // the fill region that an empty (0 XP) fresh pet leaves blank on the landing page.
     Game g3{StartMode::Hatched};
-    g3.debugAddCombatXp(g3.xpToNextLevel() / 2);
+    g3.addCombatXp(g3.xpToNextLevel() / 2);
     enterSubmenuId(g3, SubmenuId::Stat);
     Framebuffer p0xp(kActiveW, kActiveH);
     g3.render(p0xp);
@@ -444,7 +444,7 @@ void test_tier_rows_report_where_the_pet_stands() {
 // precisely the ones that carry a committed pet to the top of the ladder.
 void test_tier_page_counts_off_level_points() {
     Game g{StartMode::Hatched};
-    g.debugAddCombatXp(1200);                        // some earned points, spread at random
+    g.addCombatXp(1200);                        // some earned points, spread at random
     const int earned = g.levelStatPoint(0);
     const auto before = buildTierRows(nullptr);      // (the null case, again cheaply)
     CHECK(before.empty());
@@ -720,7 +720,7 @@ void test_creature_name_headers_pack() {
 // long jump costs instead.
 void test_stat_index_jumps_to_a_page_and_a_section() {
     Game g{StartMode::Hatched};
-    g.debugAddCombatXp(400000);              // far enough up the ladder for held rungs
+    g.addCombatXp(400000);              // far enough up the ladder for held rungs
     enterSubmenuId(g, SubmenuId::Stat);
 
     const StatReader& reader = g.statReader();
@@ -854,10 +854,10 @@ void test_palate_is_per_pet_and_counts_meals() {
     CHECK(g.petFoodsEaten() == 0);
 
     // Feeding it is what counts it, and counts it once however many helpings follow.
-    g.debugUseItem(dish->id);
+    useItem(g, dish->id);
     CHECK(g.petAteFood(dish->id));
     CHECK(g.petFoodsEaten() == 1);
-    g.debugUseItem(dish->id);
+    useItem(g, dish->id);
     CHECK(g.petFoodsEaten() == 1);
 
     // The grid reads the same set: exactly one cell is lit, and the sections' totals add
@@ -900,7 +900,7 @@ void test_favourite_food_is_found_by_feeding_it() {
         Game h{StartMode::Hatched};
         h.debugSeedRng(i * 7919u + 1u);
         h.inventory().add(snack->id, 1);
-        h.debugUseItem(snack->id);
+        useItem(h, snack->id);
         const ItemDef* fav = h.petUpgrades().favouriteFood;
         CHECK(fav != nullptr && favouriteFoodEligible(*fav));
         CHECK(h.petRecord().foundFavouriteFood() == nullptr);   // eating a snack finds nothing
@@ -914,7 +914,7 @@ void test_favourite_food_is_found_by_feeding_it() {
         if (!d || !favouriteFoodEligible(*d)) continue;
         g.debugSetFavouriteFood(d->id);
         g.inventory().add(d->id, 1);
-        g.debugUseItem(d->id);
+        useItem(g, d->id);
         if (g.petAteFood(d->id)) { fav = d; break; }
     }
     CHECK(fav != nullptr);
@@ -970,7 +970,7 @@ void test_rack_keeps_the_palate_and_the_favourite() {
         if (!dish || !fav) return;
         g.debugSetFavouriteFood(fav->id);
         g.inventory().add(dish->id, 1);
-        g.debugUseItem(dish->id);
+        useItem(g, dish->id);
         CHECK(g.petAteFood(dish->id));
         settle(g);
 

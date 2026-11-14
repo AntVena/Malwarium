@@ -411,7 +411,7 @@ void test_stacker_stopping_early_banks_the_board() {
     for (int r = 0; r < 4; ++r) {
         for (int guard = 0; guard < 4 * kStackerCols; ++guard) {
             if (g.stacker().left() == 0) break;
-            g.debugStepStacker();
+            g.stepStacker();
         }
         g.onButton(press(Button::B));
     }
@@ -505,7 +505,7 @@ void test_played_maint_engines_are_interchangeable() {
     }
     a.fragger().place(kFraggerRows - 1, a.fragger().lane() == 0 ? 1 : 0,
                       Fragger::Cell::Fragment);
-    a.debugStepFragger();                               // the run ends; it was won first
+    a.stepFragger();                               // the run ends; it was won first
     a.onButton(press(Button::B));
     CHECK(a.nav() == Game::Nav::Process);
     CHECK(!a.model().hasGhost());
@@ -620,7 +620,7 @@ void test_unlinkguine_cures_the_ghost_and_unlocks() {
 
     // Eaten with no ghost: it feeds, and that is all. No unlock.
     g.model().setHunger(20);
-    g.debugUseItem("unlinkguine");
+    useItem(g, "unlinkguine");
     CHECK(g.model().hunger() > 20);                 // still an ordinary dish
     CHECK(!g.hasAchievement(ach::kAirGapped));
 
@@ -629,12 +629,12 @@ void test_unlinkguine_cures_the_ghost_and_unlocks() {
     g.debugResolveDefrag(false);
     CHECK(g.model().hasGhost());
     g.inventory().add("dyno_nuggets", 1);
-    g.debugUseItem("dyno_nuggets");
+    useItem(g, "dyno_nuggets");
     CHECK(g.model().hasGhost());                    // still there: nuggets only feed
     CHECK(!g.hasAchievement(ach::kAirGapped));
 
     // ...and the dish that names the cure is the one that lands it.
-    g.debugUseItem("unlinkguine");
+    useItem(g, "unlinkguine");
     CHECK(!g.model().hasGhost());
     CHECK(g.hasAchievement(ach::kAirGapped));
 }
@@ -663,7 +663,7 @@ void test_perishable_food_spoils_on_a_feeding() {
     int spoilages = 0, prevFresh = 40;
     for (int i = 0; i < 200; ++i) {
         g.inventory().add("dyno_nuggets", 1);
-        g.debugUseItem("dyno_nuggets");   // eat something ELSE: the beat, not the item
+        useItem(g, "dyno_nuggets");   // eat something ELSE: the beat, not the item
 
         const int fresh = g.inventory().count("fresh_macrol");
         CHECK(fresh + g.inventory().count("spoiled_macrol") == 40);  // conserved either way
@@ -680,7 +680,7 @@ void test_perishable_food_spoils_on_a_feeding() {
     h.inventory().add("spoiled_macrol", 3);
     for (int i = 0; i < 200; ++i) {
         h.inventory().add("dyno_nuggets", 1);
-        h.debugUseItem("dyno_nuggets");
+        useItem(h, "dyno_nuggets");
     }
     CHECK(h.inventory().count("spoiled_macrol") == 3);
 }

@@ -32,7 +32,7 @@ void catchFiles(Game& g, int n) {
         for (int l = 0; l < g.fragger().lanes(); ++l)
             g.fragger().place(kFraggerRows - 1, l, Fragger::Cell::Empty);
         g.fragger().place(kFraggerRows - 1, g.fragger().lane(), Fragger::Cell::File);
-        g.debugStepFragger();
+        g.stepFragger();
     }
 }
 
@@ -41,7 +41,7 @@ void catchFiles(Game& g, int n) {
 void crashRun(Game& g) {
     const int lane = g.fragger().lane() == 0 ? 1 : 0;
     g.fragger().place(kFraggerRows - 1, lane, Fragger::Cell::Fragment);
-    g.debugStepFragger();
+    g.stepFragger();
 }
 
 }  // namespace
@@ -169,7 +169,7 @@ void test_fragger_defrag_pays_per_fragment() {
     CHECK(g.fragger().caught() == 3);
     // A file landing in another lane is written, not caught.
     g.fragger().place(kFraggerRows - 1, g.fragger().lane() == 0 ? 1 : 0, Fragger::Cell::File);
-    g.debugStepFragger();
+    g.stepFragger();
     CHECK(g.fragger().caught() == 3 && g.fragger().written() == 4);
     crashRun(g);
     CHECK(!g.fragger().running());

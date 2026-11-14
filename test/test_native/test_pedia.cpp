@@ -58,7 +58,7 @@ static bool learnedOnlyFrom(Game& g, std::vector<const char*> allowed) {
 static bool farmForAMove(Game& g, int area, int sub, int tries) {
     g.debugSetAutoProgress(false);
     for (int i = 0; i < tries; ++i) {
-        g.debugArmExplore(area, sub);
+        g.startExplore(area, sub);
         walkToAnyCombat(g);
         if (g.nav() != Game::Nav::Combat) continue;
         uint32_t t = 0;
@@ -186,11 +186,11 @@ void test_bond_from_fights_scales_xp() {
     Game g{StartMode::Hatched};
     const int adventure = static_cast<int>(BondSource::Adventure);
     CHECK(g.scaleXp(100) == 100);
-    g.debugAddCombatXp(500);                         // farming, a Sinkhole, a Wi-Fi find
+    g.addCombatXp(500);                         // farming, a Sinkhole, a Wi-Fi find
     CHECK(g.petUpgrades().bondBp[adventure] == 0);
-    g.debugAddFightXp(50);
+    g.addFightXp(50);
     CHECK(g.petUpgrades().bondBp[adventure] == 50 * kBondAdventureBpPerXp);
-    g.debugAddFightXp(kBondSourceCapBp * 2);
+    g.addFightXp(kBondSourceCapBp * 2);
     CHECK(g.petUpgrades().bondBp[adventure] == kBondSourceCapBp);
     CHECK(g.scaleXp(100) == 200);
 }
@@ -421,7 +421,7 @@ void test_pedia_state_kitchen_axes() {
     }
 
     // Win the method (index 0 IS that dish's row) and only the recipes{} half flips.
-    g.debugWinRecipe(0);
+    g.grantRecipe(0);
     CHECK(recipesBlock(buildPediaStateJson(g))
               .find("\"pwnzu_patched_noodles\":\"known\"") != std::string::npos);
 }
@@ -493,9 +493,9 @@ void test_save_v27_roundtrip() {
     {
         Game g{StartMode::Hatched, "malbear", &store};
         g.debugSetBits(100000000);
-        g.debugBuyRackSlotUpgrade();
-        g.debugBuyScrapingCluster();
-        g.debugBuyDataMining();
+        g.buyRigUpgrade(kRigRowRackSlot);
+        g.buyRigUpgrade(kRigRowScraping);
+        g.buyRigUpgrade(kRigRowDataMining);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // autosave
     }
     Game g2(StartMode::Hatched, "paypup", &store);
@@ -570,7 +570,7 @@ void test_pedia_state_publishes_the_pets_one_shot_items() {
     // Spend one, the way a player does, and only that one changes.
     g.model().addCareMistake(1);                 // something for it to shave
     g.inventory().add("yubi_cookie", 1);
-    g.debugUseItem("yubi_cookie");
+    useItem(g, "yubi_cookie");
     {
         const std::string pet = activePetBlock(buildPediaStateJson(g));
         CHECK(pet.find("\"yubi_cookie\":\"spent\"") != std::string::npos);

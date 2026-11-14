@@ -51,15 +51,15 @@ void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
     Game g{StartMode::Hatched};
     const int cap = g.modStorageCap();
     CHECK(cap == kModCopyCapBase);                  // nothing bought yet
-    for (int i = 0; i < cap + 5; ++i) g.debugGrantMod("heat_sink");
+    for (int i = 0; i < cap + 5; ++i) g.grantMod("heat_sink");
     CHECK(g.modPool().countOf("heat_sink") == cap);
 
     // Buying MOD STORAGE raises what the same call will accept.
     g.debugSetBits(kModStorageStart);
-    g.debugBuyModStorage();                         // through the real till
+    g.buyRigUpgrade(kRigRowModStorage);                         // through the real till
     CHECK(g.modStorageCap() == modCopyCap(1));
     CHECK(g.modStorageCap() > cap);
-    g.debugGrantMod("heat_sink");
+    g.grantMod("heat_sink");
     CHECK(g.modPool().countOf("heat_sink") == cap + 1);
 }
 

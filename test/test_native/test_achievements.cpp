@@ -226,12 +226,12 @@ void test_recipes_known_counts_methods_not_dishes() {
     g.tick(t += kAchSweepIntervalMs);
     CHECK(!g.hasAchievement("RECIPES_1"));
 
-    g.debugWinRecipe(0);
+    g.grantRecipe(0);
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("RECIPES_1"));
     CHECK(!g.hasAchievement("RECIPES_10"));
 
-    for (int i = 1; i < 10; ++i) g.debugWinRecipe(i);
+    for (int i = 1; i < 10; ++i) g.grantRecipe(i);
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("RECIPES_10"));
 }
@@ -262,7 +262,7 @@ void test_achievement_rack_zoology_counts_species_not_heads() {
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
     g.debugSetBits(100000000);
-    for (int i = 0; i < 12; ++i) g.debugBuyRackSlotUpgrade();   // room for a collection
+    for (int i = 0; i < 12; ++i) g.buyRigUpgrade(kRigRowRackSlot);   // room for a collection
     CHECK(g.rackSlots() >= 16);
 
     for (int i = 0; i < 4; ++i) g.debugSeedRack("cryptoshell");
@@ -295,7 +295,7 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
     g.debugSetBits(100000000);
-    for (int i = 0; i < 8; ++i) g.debugBuyRackSlotUpgrade();
+    for (int i = 0; i < 8; ++i) g.buyRigUpgrade(kRigRowRackSlot);
 
     const AchievementDef* wing = achievementById("WING_TROJAN");
     const CreatureLine* line = creatureLine("trojan");

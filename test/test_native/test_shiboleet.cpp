@@ -166,7 +166,7 @@ inline void clearGuardianAftermath(Game& g) {
 // got, which is exactly what the player does.
 inline bool reachRiddle(Game& g) {
     for (int i = 0; i < 200; ++i) {
-        g.debugStartShiboleet();
+        g.startShiboleet();
         if (g.nav() != Game::Nav::ShiboleetHail) break;    // nothing was summoned
         g.onButton(press(Button::B));                       // hail -> the band's screen
         if (g.nav() == Game::Nav::Shiboleet) return true;
@@ -321,7 +321,7 @@ void test_a_complete_cant_earns_boons() {
     for (int i = 0; i < 200 && !sawBoon; ++i) {
         const int happy0 = g.model().happiness();
         const int ally0 = g.allyBuffBattlesLeft();
-        g.debugStartShiboleet();
+        g.startShiboleet();
         if (g.nav() != Game::Nav::ShiboleetHail) break;
         g.onButton(press(Button::B));             // the hail -> whichever band it was
         if (g.nav() == Game::Nav::ShiboleetVerdict &&
@@ -486,7 +486,7 @@ void test_every_welcome_band_is_met_on_the_hail() {
     enterWalk(g);
     bool sawAffront = false, sawRiddle = false;
     for (int i = 0; i < 400 && !(sawAffront && sawRiddle); ++i) {
-        g.debugStartShiboleet();
+        g.startShiboleet();
         CHECK(g.nav() == Game::Nav::ShiboleetHail);
         // The hail draws before the band is known, and it draws SOMETHING: the header,
         // the guardian's gesture and the Cant strip are on it whatever comes next.
@@ -527,7 +527,7 @@ void test_every_welcome_band_is_met_on_the_hail() {
 void test_the_bracketing_screens_auto_play_out() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.debugStartShiboleet();
+    g.startShiboleet();
     CHECK(g.nav() == Game::Nav::ShiboleetHail);
     uint32_t t = 0;
     for (int i = 0; i <= kShiboleetHailHoldBeats && g.nav() == Game::Nav::ShiboleetHail; ++i)

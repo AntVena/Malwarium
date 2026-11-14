@@ -169,9 +169,9 @@ void test_zone_titles_equip_via_cfg_and_persist() {
         CHECK(g.equippedTitle() == -1);
         CHECK(std::strcmp(g.equippedTitleName(), "NONE") == 0);
         // Grant both (the real path is a sector clear; debug mirrors the grant).
-        g.debugUnlockTitle(0);
+        g.unlockTitle(0);
         CHECK(g.equippedTitle() == 0);            // first Title auto-equips
-        g.debugUnlockTitle(1);
+        g.unlockTitle(1);
         CHECK(g.equippedTitle() == 0);            // a later grant doesn't re-equip
 
         // Equip sector 1's Title through the CFG Titles picker.
@@ -201,7 +201,7 @@ void test_zone_titles_equip_via_cfg_and_persist() {
 // picker ring: A cycles NONE + unlocked Titles only, skipping locked ones.
 void test_zone_titles_picker_skips_locked() {
     Game g{StartMode::Hatched};
-    g.debugUnlockTitle(1);                        // unlock ONLY sector 1 (0 stays locked)
+    g.unlockTitle(1);                        // unlock ONLY sector 1 (0 stays locked)
     CHECK(g.equippedTitle() == 1);                // auto-equipped the first earned
     enterCfgTarget(g, CfgScreen::Titles);         // the picker focus starts on 1
     g.onButton(press(Button::A));                 // 1 -> wraps past locked 0 to NONE(-1)
@@ -373,7 +373,7 @@ void test_save_active_pet_round_trips_through_a_reboot() {
         for (const char* id : {"restore_point", "yubi_cookie", "backup_drive", "ambig_usb",
                                "bad_usb", "tiramisudo", "deep_learning_module"}) {
             g.inventory().add(id, 1);
-            g.debugUseItem(id);
+            useItem(g, id);
         }
         g.debugTasteFoods(3);
         g.debugSetFavouriteFood("spam");
@@ -413,7 +413,7 @@ void test_new_egg_is_a_fresh_pet_record() {
     for (const char* id : {"restore_point", "yubi_cookie", "backup_drive", "ambig_usb",
                            "bad_usb", "tiramisudo", "deep_learning_module"}) {
         g.inventory().add(id, 1);
-        g.debugUseItem(id);
+        useItem(g, id);
     }
     g.debugTasteFoods(3);
     g.debugSetFavouriteFood("spam");
@@ -874,7 +874,7 @@ void test_reboot_preserves_active_creature_level() {
     int lvl = 0, xp = 0;
     {
         Game g{StartMode::Hatched, "paypup", &store};
-        g.debugAddCombatXp(1200);
+        g.addCombatXp(1200);
         lvl = g.combatLevel();
         xp = g.combatXp();
         CHECK(lvl >= 1);
@@ -1104,7 +1104,7 @@ void test_arch_sell_hotfix_clears_the_active_pets_errors() {
 // log and everything else it earned, so the Script->Daemon branch can be raised again.
 void test_arch_sell_reimages_an_active_twin_back_to_its_script() {
     Game g{StartMode::Hatched, "extorgi"};
-    g.debugAddCombatXp(1200);
+    g.addCombatXp(1200);
     const int lvl = g.combatLevel();
     CHECK(lvl >= 1);
     g.model().setCareMistakes(3);

@@ -111,6 +111,18 @@ inline void tapB(mal::Game& g) {
 
 using namespace mal;
 
+// The steps an ITEMS or VAULT row takes, by item id: a gate names the item it stocked.
+// An unknown id does nothing, as picking a row that is not there would.
+inline void useItem(Game& g, const char* id) {
+    if (const ItemDef* d = g.content().item(id)) g.useItem(*d, ItemUseFrom::Bag);
+}
+inline void openCache(Game& g, const char* id) {
+    if (const ItemDef* d = g.content().item(id)) g.openSealedCache(*d);
+}
+inline void bulkOpenCaches(Game& g, const char* id) {
+    if (const ItemDef* d = g.content().item(id)) g.openAllCachesOfRarity(*d);
+}
+
 // In-memory ISaveStore for the persistence gates (the test tier of the seam).
 class MemSaveStore : public ISaveStore {
 public:
@@ -513,14 +525,14 @@ bool playStackerBoard(Game& g, ColFn col, uint32_t seed = kStackerGateSeed) {
         bool aligned = false;
         for (int guard = 0; guard < 4 * kStackerCols && g.stacker().running(); ++guard) {
             if (g.stacker().left() == want) { aligned = true; break; }
-            g.debugStepStacker();
+            g.stepStacker();
         }
         if (!g.stacker().running()) return true;   // the intruders' drop got there first
         if (!aligned) return false;
         g.onButton(press(Button::B));
     }
     for (int i = 0; i < 4 * kStackerThreatBeats * kStackerRows && g.stacker().running(); ++i)
-        g.debugStepStacker();
+        g.stepStacker();
     return !g.stacker().running();
 }
 

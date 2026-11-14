@@ -131,13 +131,13 @@ int main(int argc, char** argv) {
 
     // Each level costs round(kLevelXpBase * 1.1^level), so banking the ladder's own
     // cost per level is what advances exactly one level at a time.
-    for (int lvl = 0; lvl < kSeedLevels; ++lvl) game.debugAddCombatXp(game.xpToNextLevel());
+    for (int lvl = 0; lvl < kSeedLevels; ++lvl) game.addCombatXp(game.xpToNextLevel());
 
     game.debugSetBits(kSeedBits);
 
     const int quotes = quoteCount();
     for (int i = 0; i < kSeedSolvedQuotes && i < quotes; ++i)
-        game.debugSetQuoteTier(i, CryptogramTier::Solved);
+        game.setQuoteTier(i, CryptogramTier::Solved);
 
     if (!game.saveNow()) {
         std::fprintf(stderr, "gen_demo_save: saveNow() refused the seed\n");

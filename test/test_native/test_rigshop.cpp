@@ -12,7 +12,7 @@
 // since the Sim Battle it's stripped from is the only fight that doesn't carry it.
 void test_backup_drive_save_armed_into_wild_combat() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.backupShieldArmed());
     // Consuming the last Backup Drive drops useItem() into Nav::Submenu (the ITEMS
     // "item left the list" case): back out to the carousel before the EXPL walk,
@@ -31,7 +31,7 @@ void test_rig_auto_backup_arms_save_on_explore() {
     enterWalk(g);
     CHECK(!g.backupShieldArmed());            // nothing free without the upgrade
     g.debugSetBits(kRigAutoBackupCost);
-    g.debugBuyAutoBackup();
+    g.buyRigUpgrade(kRigRowAutoBackup);
     CHECK(!g.backupShieldArmed());            // buying alone arms nothing...
     enterWalk(g);                             // ...arming a sub-area does
     CHECK(g.backupShieldArmed());
@@ -44,11 +44,11 @@ void test_rig_continuous_backup_rearms_mid_run() {
     Game g{StartMode::Hatched, "paypup"};
     const int drives = g.inventory().count("backup_drive");
     enterWalk(g);
-    g.debugReturnToExplore();                 // a resolved event hands back to the habitat
+    g.returnToExplore();                 // a resolved event hands back to the habitat
     CHECK(!g.backupShieldArmed());            // ...which arms nothing on its own
     g.debugSetBits(kRigContinuousBackupCost);
-    g.debugBuyContinuousBackup();
-    g.debugReturnToExplore();
+    g.buyRigUpgrade(kRigRowContinuousBackup);
+    g.returnToExplore();
     CHECK(g.backupShieldArmed());             // now the next event re-arms it, free
     CHECK(g.inventory().count("backup_drive") == drives);
 }
@@ -212,7 +212,7 @@ void test_bandwidth_farming_resource() {
     {
         Game g{StartMode::Hatched, "bruinforce"};
         for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
-        g.debugStartDeepWebDive();
+        g.startDeepWebDive();
         CHECK(g.inDeepWebDive());
         const int bw0 = g.bandwidth();
         uint32_t t = 0; int guard = 0;
@@ -295,7 +295,7 @@ void test_hacker_shop_bandwidth_upgrade() {
     CHECK(cost0 == kBandwidthUpgradeBaseCost);          // first purchase = base price
     g.debugSetBits(cost0 + 10);
 
-    g.debugBuyBandwidthUpgrade();
+    g.buyRigUpgrade(kRigRowBandwidth);
     CHECK(g.bwUpgradeCount() == 1);
     CHECK(g.bandwidthMax() == cap0 + kBandwidthUpgradeStep);
     CHECK(g.bits() == 10);                              // Bits deducted
@@ -303,7 +303,7 @@ void test_hacker_shop_bandwidth_upgrade() {
 
     // Now broke → a second buy is inert (no cap change, no Bits change).
     const int cap1 = g.bandwidthMax();
-    g.debugBuyBandwidthUpgrade();
+    g.buyRigUpgrade(kRigRowBandwidth);
     CHECK(g.bwUpgradeCount() == 1 && g.bandwidthMax() == cap1 && g.bits() == 10);
 }
 
@@ -316,7 +316,7 @@ void test_rig_link_aggregator_regen() {
     // The row's whole audience: a pool bought up 240 times, which is what makes 1% of
     // the hole worth more than the flat point.
     g.debugSetBits(4000000);
-    for (int i = 0; i < 240; ++i) g.debugBuyBandwidthUpgrade();
+    for (int i = 0; i < 240; ++i) g.buyRigUpgrade(kRigRowBandwidth);
     const int cap = g.bandwidthMax();
     CHECK(cap == kBandwidthMax + 240 * kBandwidthUpgradeStep);
 
@@ -331,7 +331,7 @@ void test_rig_link_aggregator_regen() {
 
     // Bought: 200 spent pays 2 a tick, and the row is a one-time unlock.
     g.debugSetBits(kLinkAggregatorCost + 7);
-    g.debugBuyLinkAggregator();
+    g.buyRigUpgrade(kRigRowLinkAggregator);
     CHECK(g.linkAggregatorUnlocked());
     CHECK(g.bits() == 7);                                    // Bits deducted
     CHECK(!g.operatorRecord().rig.offered(kRigRowLinkAggregator));         // ...and nothing left to buy
@@ -403,8 +403,8 @@ void test_rig_services_switchboard() {
         // Buy the two services this gate drives. Both leave the storefront list the
         // moment they are bought and show up on the switchboard instead.
         g.debugSetBits(kRigAutoBackupCost + kDiskMaintenanceBuyStart);
-        g.debugBuyAutoBackup();
-        g.debugBuyRigRow(kRigRowDiskMaintenance);
+        g.buyRigUpgrade(kRigRowAutoBackup);
+        g.buyRigUpgrade(kRigRowDiskMaintenance);
         CHECK(g.operatorRecord().rig.servicesOffered() && g.operatorRecord().rig.servicesRunning() == 2);
 
         // The head slot now draws at the top of the storefront, and the board behind it
@@ -450,7 +450,7 @@ void test_rig_services_switchboard() {
         g.debugSetBits(9999);
         g.model().setFragmentation(100);
         const int bits0 = g.bits();
-        g.debugReturnToExplore();
+        g.returnToExplore();
         CHECK(g.model().fragmentation() == 100 && g.bits() == bits0);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);     // autosave the mask
     }
@@ -467,8 +467,8 @@ void test_rig_services_switchboard() {
 void test_rig_service_info_on_hold_b() {
     Game g{StartMode::Hatched};
     g.debugSetBits(kRigAutoBackupCost + kDiskMaintenanceBuyStart);
-    g.debugBuyAutoBackup();
-    g.debugBuyRigRow(kRigRowDiskMaintenance);
+    g.buyRigUpgrade(kRigRowAutoBackup);
+    g.buyRigUpgrade(kRigRowDiskMaintenance);
     openServices(g);
     uint32_t t = 0;
     g.tick(t);
@@ -525,14 +525,14 @@ void test_rig_disk_maintenance_thresholds() {
 
     Game g{StartMode::Hatched};
     g.debugSetBits(kDiskMaintenanceBuyStart);
-    g.debugBuyRigRow(kRigRowDiskMaintenance);
+    g.buyRigUpgrade(kRigRowDiskMaintenance);
     CHECK(g.diskMaintenanceLevel() == 1);
 
     // One under the tier's threshold: nothing runs, nothing is charged.
     g.debugSetBits(9999);
     g.model().setFragmentation(kDiskMaintenanceThreshold[0] - 1);
     int bits0 = g.bits();
-    g.debugReturnToExplore();
+    g.returnToExplore();
     CHECK(g.model().fragmentation() == kDiskMaintenanceThreshold[0] - 1);
     CHECK(g.bits() == bits0);
 
@@ -542,7 +542,7 @@ void test_rig_disk_maintenance_thresholds() {
     const int runCost = g.defragCost() * kDiskMaintenanceCostMult[0];
     bits0 = g.bits();
     const int defrags0 = g.defragCount();
-    g.debugReturnToExplore();
+    g.returnToExplore();
     CHECK(g.model().fragmentation() == kDiskMaintenanceThreshold[0] - kDefragReduction);
     CHECK(g.bits() == bits0 - runCost);
     CHECK(g.defragCount() == defrags0 + 1);
@@ -600,11 +600,11 @@ void test_hacker_shop_rack_slot_upgrade() {
     const int first = rigUpgradeCost(kRackSlotUpgradeStart, 0, RigCostCurve::kLogStepHalf);
     CHECK(g.rackSlotUpgradeCost() == first);
     g.debugSetBits(0);
-    g.debugBuyRackSlotUpgrade();
+    g.buyRigUpgrade(kRigRowRackSlot);
     CHECK(g.rackSlots() == base && g.bits() == 0);          // broke → inert
 
     g.debugSetBits(first + 5);
-    g.debugBuyRackSlotUpgrade();
+    g.buyRigUpgrade(kRigRowRackSlot);
     CHECK(g.rackSlots() == base + 1 && g.bits() == 5);      // +1 slot, Bits deducted
     CHECK(g.rackSlotUpgradeCost() ==
           rigUpgradeCost(kRackSlotUpgradeStart, 1, RigCostCurve::kLogStepHalf));
@@ -619,7 +619,7 @@ void test_hacker_shop_rack_slot_upgrade() {
     CHECK(cumulative < 400000);      // a long project, not an unreachable one
 
     g.debugSetBits(100000000);
-    for (int i = 0; i < kRackSlotUpgradeMax + 2; ++i) g.debugBuyRackSlotUpgrade();
+    for (int i = 0; i < kRackSlotUpgradeMax + 2; ++i) g.buyRigUpgrade(kRigRowRackSlot);
     CHECK(g.rackSlotUpgradeCount() == kRackSlotUpgradeMax);       // capped (MAXED)
     CHECK(g.rackSlots() == base + kRackSlotUpgradeMax);
 }
@@ -633,7 +633,7 @@ void test_hacker_shop_scraping_and_datamining_bonus() {
     CHECK(g.applyCombatBitsBonus(100) == 100 && g.applyCacheBitsBonus(100) == 100);
 
     g.debugSetBits(1000000);
-    for (int i = 0; i < 3; ++i) g.debugBuyScrapingCluster();
+    for (int i = 0; i < 3; ++i) g.buyRigUpgrade(kRigRowScraping);
     CHECK(g.scrapingClusterLevel() == 3);
     CHECK(g.combatBitsBonusPct() == 3 * kScrapingClusterPctPerLevel);
     CHECK(g.applyCombatBitsBonus(100) == 100 + 100 * g.combatBitsBonusPct() / 100);
@@ -643,7 +643,7 @@ void test_hacker_shop_scraping_and_datamining_bonus() {
     // percent threshold. Any ACTIVE bonus must add at least 1 Bit, even on a tiny grant.
     CHECK(g.applyCombatBitsBonus(10) == 10 + 1);            // 10 * 6% = 0.6 -> would floor to 0
 
-    for (int i = 0; i < 2; ++i) g.debugBuyDataMining();
+    for (int i = 0; i < 2; ++i) g.buyRigUpgrade(kRigRowDataMining);
     CHECK(g.dataMiningLevel() == 2);
     CHECK(g.cacheBitsBonusPct() == 2 * kDataMiningPctPerLevel);
     CHECK(g.applyCacheBitsBonus(100) == 100 + 100 * g.cacheBitsBonusPct() / 100);
@@ -654,7 +654,7 @@ void test_hacker_shop_scraping_and_datamining_bonus() {
     // A single level is the shallowest on-device case: still must not truncate to 0.
     Game g2{StartMode::Hatched};
     g2.debugSetBits(1000000);
-    g2.debugBuyDataMining();
+    g2.buyRigUpgrade(kRigRowDataMining);
     CHECK(g2.dataMiningLevel() == 1 && g2.cacheBitsBonusPct() == kDataMiningPctPerLevel);
     CHECK(g2.applyCacheBitsBonus(commonBits) == commonBits + 1);
 }
@@ -666,16 +666,16 @@ void test_hacker_shop_frag_reducer() {
     Game g{StartMode::Hatched};
     CHECK(g.fragAmountTier() == 0);
     g.debugSetBits(0);
-    g.debugBuyFragReducer();
+    g.buyRigUpgrade(kRigRowFragReduce);
     CHECK(g.fragAmountTier() == 0 && g.bits() == 0);        // broke → inert
     g.debugSetBits(kFragReducerStart + 5);
-    g.debugBuyFragReducer();
+    g.buyRigUpgrade(kRigRowFragReduce);
     CHECK(g.fragAmountTier() == 1 && g.bits() == 5);        // tier up, Bits deducted
     g.debugSetBits(100000);
-    for (int i = 0; i < 10; ++i) g.debugBuyFragReducer();
+    for (int i = 0; i < 10; ++i) g.buyRigUpgrade(kRigRowFragReduce);
     CHECK(g.fragAmountTier() == kFragReducerMaxTier);       // capped (MAXED)
     const int spent = 100000 - g.bits();
-    g.debugBuyFragReducer();                                // MAXED → inert, no spend
+    g.buyRigUpgrade(kRigRowFragReduce);                                // MAXED → inert, no spend
     CHECK(100000 - g.bits() == spent);
     // The wired combat effect: the effective frag cap is reduced by the tier.
     CHECK(kBattleFatigueFragMax - static_cast<int>(g.fragAmountTier()) < kBattleFatigueFragMax);
@@ -693,36 +693,36 @@ void test_hacker_shop_hunger_xp_farming() {
 
     // No rate bought yet: hunger decay pays nothing, even a lot of it.
     g.model().setHunger(100);
-    g.debugTickHunger(60u * 60u * 1000u * 20u);           // plenty of decay steps
+    g.tickHungerAndAwardXp(60u * 60u * 1000u * 20u);           // plenty of decay steps
     CHECK(g.combatXp() == 0 && g.combatLevel() == 0);     // rate 0 → no XP
 
     // Buy 2 levels of the rate row: hunger 100 -> 95 (5 points) all sit above the
     // default 90%% threshold, so all 5 count at 2 XP/point = 10 XP.
     Game g2{StartMode::Hatched};
     g2.debugSetBits(1000000);
-    for (int i = 0; i < 2; ++i) g2.debugBuyHungerXpRate();
+    for (int i = 0; i < 2; ++i) g2.buyRigUpgrade(kRigRowHungerXpRate);
     CHECK(g2.hungerXpRateLevel() == 2);
     g2.model().setHunger(100);
-    g2.debugTickHunger(kHungerMinutesPerPoint * 60u * 1000u * 5u);  // 5 hunger points lost
+    g2.tickHungerAndAwardXp(kHungerMinutesPerPoint * 60u * 1000u * 5u);  // 5 hunger points lost
     CHECK(g2.combatXp() == 5 * 2 && g2.combatLevel() == 0);
 
     // Drop hunger to sit right at the threshold band: only points ABOVE 90 count.
     Game g3{StartMode::Hatched};
     g3.debugSetBits(1000000);
-    g3.debugBuyHungerXpRate();                              // rate level 1
+    g3.buyRigUpgrade(kRigRowHungerXpRate);                              // rate level 1
     g3.model().setHunger(93);
-    g3.debugTickHunger(kHungerMinutesPerPoint * 60u * 1000u * 10u);  // 93 -> 83
+    g3.tickHungerAndAwardXp(kHungerMinutesPerPoint * 60u * 1000u * 10u);  // 93 -> 83
     // Only 93..91 (3 points) sit above the 90 threshold.
     CHECK(g3.combatXp() == 3 * 1 && g3.model().hunger() == 83);
 
     // Buying the window row lowers the threshold: more of the same decay counts.
     Game g4{StartMode::Hatched};
     g4.debugSetBits(1000000);
-    g4.debugBuyHungerXpRate();                               // rate level 1
-    g4.debugBuyHungerXpWindow();                              // threshold 90 -> 85
+    g4.buyRigUpgrade(kRigRowHungerXpRate);                               // rate level 1
+    g4.buyRigUpgrade(kRigRowHungerXpWindow);                              // threshold 90 -> 85
     CHECK(g4.hungerXpThreshold() == kHungerXpBaseThreshold - kHungerXpWindowStepPct);
     g4.model().setHunger(93);
-    g4.debugTickHunger(kHungerMinutesPerPoint * 60u * 1000u * 10u);  // 93 -> 83
+    g4.tickHungerAndAwardXp(kHungerMinutesPerPoint * 60u * 1000u * 10u);  // 93 -> 83
     // max(hungerAfter=83, threshold=85) = 85, so 93-85 = 8 points count: more
     // than g3's 3 (whose threshold, 90, sat above hungerAfter).
     CHECK(g4.combatXp() == 8 * 1);
@@ -736,7 +736,7 @@ void test_hacker_shop_combat_xp_boost() {
     CHECK(g.combatXpBonusPct() == 0 && g.applyCombatXpBonus(100) == 100);
 
     g.debugSetBits(1000000);
-    for (int i = 0; i < 5; ++i) g.debugBuyCombatXpPct();
+    for (int i = 0; i < 5; ++i) g.buyRigUpgrade(kRigRowCombatXpPct);
     CHECK(g.combatXpWindowThreshold() == kCombatXpBaseThreshold);  // window not bought yet
 
     // Hunger below the 90%% base threshold: the bonus is inert even though the
@@ -753,7 +753,7 @@ void test_hacker_shop_combat_xp_boost() {
 
     // Buying the window row widens the qualifying range without touching the
     // hunger-XP-farming window (k): the two thresholds are independent.
-    g.debugBuyCombatXpWindow();
+    g.buyRigUpgrade(kRigRowCombatXpWindow);
     CHECK(g.combatXpWindowThreshold() == kCombatXpBaseThreshold - kCombatXpWindowStepPct);
     CHECK(g.hungerXpThreshold() == kHungerXpBaseThreshold);   // untouched by sibling upgrade
     g.model().setHunger(kCombatXpBaseThreshold - kCombatXpWindowStepPct);
@@ -764,7 +764,7 @@ void test_hacker_shop_combat_xp_boost() {
     // time, so Hunger doesn't decay out of the window mid-fight.
     Game g2{StartMode::Hatched, "paypup"};
     g2.debugSetBits(1000000);
-    for (int i = 0; i < 3; ++i) g2.debugBuyCombatXpPct();
+    for (int i = 0; i < 3; ++i) g2.buyRigUpgrade(kRigRowCombatXpPct);
     g2.model().setHunger(100);
     enterSimBattle(g2);
     uint32_t t = 0;
@@ -783,18 +783,18 @@ void test_hacker_shop_frag_trigger() {
     Game g{StartMode::Hatched};
     CHECK(g.fragTriggerTier() == 0);
     g.debugSetBits(0);
-    g.debugBuyFragTrigger();
+    g.buyRigUpgrade(kRigRowFragTrigger);
     CHECK(g.fragTriggerTier() == 0 && g.bits() == 0);      // broke → inert
     g.debugSetBits(kFragTriggerStart + 5);
-    g.debugBuyFragTrigger();
+    g.buyRigUpgrade(kRigRowFragTrigger);
     CHECK(g.fragTriggerTier() == 1 && g.bits() == 5);      // tier up, Bits deducted
     // The wired combat effect: the effective trigger chance now drops below baseline.
     CHECK(kFragTriggerReducedPct[g.fragTriggerTier() - 1] < kBattleFatigueChancePct);
     g.debugSetBits(1000000);
-    for (int i = 0; i < 20; ++i) g.debugBuyFragTrigger();
+    for (int i = 0; i < 20; ++i) g.buyRigUpgrade(kRigRowFragTrigger);
     CHECK(g.fragTriggerTier() == kFragTriggerMaxTier);     // capped (MAXED)
     const int spent = 1000000 - g.bits();
-    g.debugBuyFragTrigger();                               // MAXED → inert, no spend
+    g.buyRigUpgrade(kRigRowFragTrigger);                               // MAXED → inert, no spend
     CHECK(1000000 - g.bits() == spent);
 }
 
@@ -805,13 +805,13 @@ void test_hacker_shop_item_tabs_buy() {
     Game g{StartMode::Hatched};
     CHECK(!g.itemTabsUnlocked());
     g.debugSetBits(kShopItemTabsCost - 1);
-    g.debugBuyItemTabs();
+    g.buyRigUpgrade(kRigRowItemTabs);
     CHECK(!g.itemTabsUnlocked() && g.bits() == kShopItemTabsCost - 1);   // broke -> inert
     g.debugSetBits(kShopItemTabsCost + 7);
-    g.debugBuyItemTabs();
+    g.buyRigUpgrade(kRigRowItemTabs);
     CHECK(g.itemTabsUnlocked() && g.bits() == 7);            // bought, Bits deducted
     g.debugSetBits(9999);
-    g.debugBuyItemTabs();                                    // already OWNED -> inert
+    g.buyRigUpgrade(kRigRowItemTabs);                                    // already OWNED -> inert
     CHECK(g.bits() == 9999);
 }
 
@@ -821,13 +821,13 @@ void test_hacker_shop_bulk_open_buy() {
     Game g{StartMode::Hatched};
     CHECK(!g.bulkOpenUnlocked());
     g.debugSetBits(kShopBulkOpenCost - 1);
-    g.debugBuyBulkOpen();
+    g.buyRigUpgrade(kRigRowBulkOpen);
     CHECK(!g.bulkOpenUnlocked() && g.bits() == kShopBulkOpenCost - 1);
     g.debugSetBits(kShopBulkOpenCost + 3);
-    g.debugBuyBulkOpen();
+    g.buyRigUpgrade(kRigRowBulkOpen);
     CHECK(g.bulkOpenUnlocked() && g.bits() == 3);
     g.debugSetBits(9999);
-    g.debugBuyBulkOpen();                                    // already OWNED -> inert
+    g.buyRigUpgrade(kRigRowBulkOpen);                                    // already OWNED -> inert
     CHECK(g.bits() == 9999);
 }
 
@@ -883,7 +883,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
     {
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
-        g.debugBuyItemTabs();
+        g.buyRigUpgrade(kRigRowItemTabs);
         CHECK(g.itemTabsUnlocked());
         enterSubmenuId(g, SubmenuId::Items);
         CHECK(g.itemsMenu().filter() == ItemFilter::All);
@@ -903,7 +903,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
     {
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
-        g.debugBuyItemTabs();
+        g.buyRigUpgrade(kRigRowItemTabs);
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
@@ -929,13 +929,13 @@ void test_hacker_shop_item_picker_buy() {
     Game g{StartMode::Hatched};
     CHECK(!g.itemPickerUnlocked());
     g.debugSetBits(kShopItemPickerCost - 1);
-    g.debugBuyItemPicker();
+    g.buyRigUpgrade(kRigRowItemPicker);
     CHECK(!g.itemPickerUnlocked() && g.bits() == kShopItemPickerCost - 1);
     g.debugSetBits(kShopItemPickerCost + 5);
-    g.debugBuyItemPicker();
+    g.buyRigUpgrade(kRigRowItemPicker);
     CHECK(g.itemPickerUnlocked() && g.bits() == 5);
     g.debugSetBits(9999);
-    g.debugBuyItemPicker();                                  // already OWNED -> inert
+    g.buyRigUpgrade(kRigRowItemPicker);                                  // already OWNED -> inert
     CHECK(g.bits() == 9999);
 }
 
@@ -993,7 +993,7 @@ void test_item_picker_nav_drills_in_and_back() {
     // (b) Owned: the picker fronts the list.
     Game g{StartMode::Hatched};
     g.debugSetBits(kShopItemPickerCost);
-    g.debugBuyItemPicker();
+    g.buyRigUpgrade(kRigRowItemPicker);
     enterSubmenuId(g, SubmenuId::Items);
     CHECK(g.itemsMenu().view() == ItemsView::Picker && g.itemsMenu().pickRow() == 0);
 
@@ -1038,7 +1038,7 @@ void test_item_picker_nav_drills_in_and_back() {
 void test_item_picker_skipped_in_lockout() {
     Game g{StartMode::Hatched};
     g.debugSetBits(kShopItemPickerCost);
-    g.debugBuyItemPicker();
+    g.buyRigUpgrade(kRigRowItemPicker);
     g.model().setHunger(0);
     g.tick(kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::ModalLockout);
@@ -1064,7 +1064,7 @@ void test_item_hold_b_follows_picker_axis() {
         // that skipped it would leave 14 rows reachable only by owning the picker.
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost);
-        g.debugBuyItemTabs();
+        g.buyRigUpgrade(kRigRowItemTabs);
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
@@ -1078,8 +1078,8 @@ void test_item_hold_b_follows_picker_axis() {
     {   // (b) Both owned: ALL -> FOOD -> INGREDIENTS -> BUFFS -> KEYS -> TOOLS -> ALL.
         Game g{StartMode::Hatched};
         g.debugSetBits(kShopItemTabsCost + kShopItemPickerCost);
-        g.debugBuyItemTabs();
-        g.debugBuyItemPicker();
+        g.buyRigUpgrade(kRigRowItemTabs);
+        g.buyRigUpgrade(kRigRowItemPicker);
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
@@ -1098,7 +1098,7 @@ void test_item_hold_b_follows_picker_axis() {
 }
 
 // e; openAllCachesOfRarity's aggregation: grant N caches of one rarity plus
-// caches of a DIFFERENT rarity, invoke the bulk path directly (debugBulkOpenCaches),
+// caches of a DIFFERENT rarity, invoke the bulk path directly (bulkOpenCaches),
 // and assert ALL of the target rarity are consumed in one action, the aggregate
 // tally + Bits sum across every open, and the other rarity is left untouched.
 void test_vault_bulk_open_consumes_all_of_rarity() {
@@ -1107,7 +1107,7 @@ void test_vault_bulk_open_consumes_all_of_rarity() {
     g.inventory().add("sealed_cache_uncommon", 2);    // different rarity: must survive
     const int bits0 = g.bits();
 
-    g.debugBulkOpenCaches("sealed_cache_common");
+    bulkOpenCaches(g, "sealed_cache_common");
 
     CHECK(g.inventory().count("sealed_cache_common") == 0);     // ALL of that rarity gone
     CHECK(g.inventory().count("sealed_cache_uncommon") == 2);   // other rarity untouched
@@ -1132,7 +1132,7 @@ void test_vault_hold_b_bulk_opens_tap_opens_one() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_common", 3);
     g.debugSetBits(kShopBulkOpenCost);
-    g.debugBuyBulkOpen();
+    g.buyRigUpgrade(kRigRowBulkOpen);
     CHECK(g.bulkOpenUnlocked());
 
     g.onButton({Button::A, true, true});              // PET -> HACKER
@@ -1165,16 +1165,16 @@ void test_vault_hold_b_bulk_opens_tap_opens_one() {
 
 // re-home: sealed caches decrypt from the Hacker VAULT, not pet-side ITEMS. Using
 // an openable from ITEMS is inert (gated "OPEN IN VAULT (A+C)") and does NOT consume it or
-// pay out; the VAULT path (debugOpenCache) is the one that decrypts.
+// pay out; the VAULT path (openCache) is the one that decrypts.
 void test_cache_not_openable_from_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_epic", 1);
     const int bits0 = g.bits();
-    g.debugUseItem("sealed_cache_epic");                   // pet-side ITEMS: now inert
+    useItem(g, "sealed_cache_epic");                   // pet-side ITEMS: now inert
     CHECK(g.inventory().count("sealed_cache_epic") == 1);  // not consumed
     CHECK(g.bits() == bits0);                              // no reward paid
     CHECK(g.nav() != Game::Nav::CacheYield);               // no reveal
-    g.debugOpenCache("sealed_cache_epic");                 // VAULT path decrypts it
+    openCache(g, "sealed_cache_epic");                 // VAULT path decrypts it
     CHECK(g.inventory().count("sealed_cache_epic") == 0);  // consumed
     CHECK(g.nav() == Game::Nav::CacheYield);
 }
@@ -1195,7 +1195,7 @@ void test_merge_hub_windows_its_roster() {
 
     Game g{StartMode::Hatched};
     g.debugSetBits(99999);
-    g.debugBuyMergeHub();
+    g.buyRigUpgrade(kRigRowMergeHub);
     enterHackerSlot(g, HackerSlotId::Merge);
 
     // Every row in turn, including the last: the clamp's own edge.

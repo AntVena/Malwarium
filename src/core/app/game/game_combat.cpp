@@ -628,20 +628,6 @@ void Game::debugSetNetworksSeen(int n) {
     op_.hackerRank = hackerRankForNetworksSeen(op_.networksSeen);   // silent: no celebration
 }
 
-void Game::debugUseItem(const char* id) {
-    const ItemDef* d = registry_.item(id);
-    if (!d) return;
-    lockoutItemsContext_ = false;
-    useItem(*d, ItemUseFrom::Bag);   // real path: gate -> effect -> consume -> log
-}
-
-void Game::debugOpenCache(const char* id) {
-    // Sealed caches decrypt from the Hacker VAULT: this seam drives the same real
-    // reward path (openSealedCache) the VAULT uses.
-    const ItemDef* d = registry_.item(id);
-    if (d) openSealedCache(*d);
-}
-
 void Game::debugSetBits(int n) { op_.bits = n < 0 ? 0 : n; }
 
 void Game::debugFillLoadout() {

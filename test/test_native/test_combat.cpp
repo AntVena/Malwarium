@@ -1910,12 +1910,12 @@ void test_mod_earn_tables_and_reqlevel() {
     auto sampled = std::set<std::string>{};
     for (int i = 0; i < 120; ++i) {
         for (int a = 0; a < kExplSectors; ++a) {
-            const char* id = g.debugRollAreaModId(a);
+            const char* id = g.rollAreaModId(a);
             CHECK(id);
             CHECK(r.mod(id)->powerTier <= areaTier(a));
             sampled.insert(id);
         }
-        const char* dw = g.debugRollAreaModId(kDeepWebSector);
+        const char* dw = g.rollAreaModId(kDeepWebSector);
         CHECK(dw);
         CHECK(r.mod(dw)->powerTier == kDeepWebModTier);   // the dive's own authored rung
         sampled.insert(dw);
@@ -1941,7 +1941,7 @@ void test_mod_earn_tables_and_reqlevel() {
     CHECK(modEquipLevel(*deep) > modEquipLevel(*shallow));
     for (int i = 0; i < 8; ++i) {                   // every grant agrees with the row
         Game gd{StartMode::Hatched};
-        gd.debugGrantMod("ghost_process");
+        gd.grantMod("ghost_process");
         CHECK(gd.modPool().countOf("ghost_process") == 1);
         CHECK(modEquipLevel(*r.mod("ghost_process")) == modEquipLevel(*deep));
     }
@@ -2667,8 +2667,8 @@ static int modGateCeiling(const char* id) {
 void test_mod_hard_line_gate() {
     Game g{StartMode::Hatched};                             // Paypup, ransomware line
     const int deepGate = modGateCeiling("extortion_ledger");  // both spares share a rank
-    while (g.combatLevel() < deepGate) g.debugAddCombatXp(g.xpToNextLevel());
-    g.debugGrantMod("phishing_rod");                  // requiresLine = phishing (mismatch)
+    while (g.combatLevel() < deepGate) g.addCombatXp(g.xpToNextLevel());
+    g.grantMod("phishing_rod");                  // requiresLine = phishing (mismatch)
     enterLoadoutTab(g, 0);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));  // listRow 0->2 (empty slot)
     g.onButton(press(Button::B));                           // open slot-2 picker
@@ -2679,8 +2679,8 @@ void test_mod_hard_line_gate() {
     CHECK(g.modPool().owns("phishing_rod"));                // spare not consumed
 
     Game g2{StartMode::Hatched};
-    while (g2.combatLevel() < deepGate) g2.debugAddCombatXp(g2.xpToNextLevel());
-    g2.debugGrantMod("extortion_ledger");             // requiresLine = ransomware (match)
+    while (g2.combatLevel() < deepGate) g2.addCombatXp(g2.xpToNextLevel());
+    g2.grantMod("extortion_ledger");             // requiresLine = ransomware (match)
     enterLoadoutTab(g2, 0);
     g2.onButton(press(Button::A)); g2.onButton(press(Button::A));
     g2.onButton(press(Button::B));
@@ -2695,7 +2695,7 @@ void test_mod_hard_line_gate() {
 // equipped; leveling past it unlocks the equip. Driven through the real MODS UI.
 void test_mod_equip_level_gate() {
     Game g{StartMode::Hatched};                            // pet at level 0
-    g.debugGrantMod("overclock_chip");               // a mid-ladder rank: req > 0
+    g.grantMod("overclock_chip");               // a mid-ladder rank: req > 0
     const int ocGate = modGateCeiling("overclock_chip");
     CHECK(ocGate > 0);                                     // a mid-ladder rank does gate
     // Navigate: MODS → slot 3 (empty) picker → select the overclock spare → EQUIP.
@@ -2709,7 +2709,7 @@ void test_mod_equip_level_gate() {
     CHECK(g.modSlots().equipped(2) == nullptr);             // not installed
     CHECK(g.modPool().owns("overclock_chip"));             // spare not consumed
     // Level the pet above the gate, then the same equip succeeds.
-    while (g.combatLevel() < ocGate) g.debugAddCombatXp(g.xpToNextLevel());
+    while (g.combatLevel() < ocGate) g.addCombatXp(g.xpToNextLevel());
     enterLoadoutTab(g, 0);
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::B));

@@ -218,7 +218,7 @@ namespace {
 // to the screen these gates are about; the welcome is a roll, so this searches for it.
 inline bool reachGuardianFight(Game& g) {
     for (int i = 0; i < 300; ++i) {
-        g.debugStartShiboleet();
+        g.startShiboleet();
         if (g.nav() != Game::Nav::ShiboleetHail) return false;
         const bool affront =
             g.shiboleetMeeting().welcome == Game::ShiboleetWelcome::Affront;

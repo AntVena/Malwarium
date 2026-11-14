@@ -21,8 +21,6 @@
 
 namespace mal {
 
-void Game::debugWinRecipe(int i) { grantRecipe(i); }
-
 // --- Which recipes the operator has ----------------------------------------
 //
 // One bit per MergeRecipe::wire in RigAccount::recipesOwned. Every read and write of that

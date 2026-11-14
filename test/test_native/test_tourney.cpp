@@ -224,7 +224,7 @@ void test_tourney_rounds_halve_the_field() {
 // arena's water is reached, entering draws a bracket, and a won match advances it.
 void test_tourney_run_from_the_expl_row() {
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugAddCombatXp(600000);                  // a pet that can actually win a match
+    g.addCombatXp(600000);                  // a pet that can actually win a match
     const int arenaRow = explRowCount() - 1;
     bool cleared[kExplSectors * kExplSubAreas] = {};
     bool boss[kExplSectors * kExplSubAreas] = {};
@@ -318,7 +318,7 @@ static void openBracket(Game& g) {
 
 void test_dock_ladder_counts_brackets_and_pays() {
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugAddCombatXp(600000);
+    g.addCombatXp(600000);
     CHECK(g.tourneyWins() == 0);
     CHECK(!g.hasAchievement("DOCK_FIRST"));
 
@@ -372,7 +372,7 @@ void test_dock_shape_rows_read_the_final() {
     // ...and the other side of PUNCHING UP: a pet that IS a Daemon takes the same
     // bracket and does not earn the row for arriving underqualified.
     Game high{StartMode::Hatched, "bruinforce"};
-    high.debugAddCombatXp(600000);
+    high.addCombatXp(600000);
     if (high.pet() && high.pet()->stage == Stage::Daemon) {
         openBracket(high);
         high.debugEndTourneyRun(/*champion=*/true);
@@ -384,7 +384,7 @@ void test_dock_shape_rows_read_the_final() {
 void test_tourney_screen_grayscale() {
     auto renderRun = [](bool eliminate, Framebuffer& fb) {
         Game g{StartMode::Hatched, "bruinforce"};
-        g.debugAddCombatXp(600000);
+        g.addCombatXp(600000);
         g.debugSetSectorCleared(0, true);          // reach the Bayou → the arena opens
         enterSubmenuId(g, SubmenuId::Expl);
         explPickCategory(g, ExplCat::Arena);

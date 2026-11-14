@@ -332,7 +332,7 @@ void test_defrag_variants() {
 void test_defrag_tool_gated_in_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("disk_scrubber", 1);
-    g.debugUseItem("disk_scrubber");                  // real Use path (gate → no-op)
+    useItem(g, "disk_scrubber");                  // real Use path (gate → no-op)
     CHECK(g.inventory().count("disk_scrubber") == 1); // not consumed (inert)
 }
 
@@ -401,7 +401,7 @@ void test_lockout_expire_mistakes() {
 void test_restore_point_shield_blocks_next_mistake() {
     Game g{StartMode::Hatched};
     CHECK(g.inventory().count("restore_point") == 1);
-    g.debugUseItem("restore_point");                 // arm the shield (once-per-lifetime)
+    useItem(g, "restore_point");                 // arm the shield (once-per-lifetime)
     CHECK(g.inventory().count("restore_point") == 0);
     CHECK(g.model().careMistakes() == 0);
 
@@ -425,7 +425,7 @@ void test_restore_point_shield_blocks_next_mistake() {
 // re-arms (the gate flag is consumed for the pet's whole life).
 void test_restore_point_once_per_lifetime() {
     Game g{StartMode::Hatched};
-    g.debugUseItem("restore_point");                 // arm + spend the once-per-life gate
+    useItem(g, "restore_point");                 // arm + spend the once-per-life gate
     // Spend the shield on a went-hungry mistake (blocked; net 0 from this half).
     g.model().setHunger(0);
     g.tick(kHeartbeatMs);
@@ -435,7 +435,7 @@ void test_restore_point_once_per_lifetime() {
 
     // Grant + Use another copy: the gate is spent, so no shield re-arms.
     g.inventory().add("restore_point", 1);
-    g.debugUseItem("restore_point");                 // consumed as a buff, but NO re-arm
+    useItem(g, "restore_point");                 // consumed as a buff, but NO re-arm
     g.model().setHunger(0);
     g.tick(kHeartbeatMs);
     CHECK(g.model().careMistakes() == after + kWentHungryMistakes);  // not re-shielded
@@ -447,7 +447,7 @@ void test_restore_point_once_per_lifetime() {
 // lands normally.
 void test_restore_shield_covers_maint_fail() {
     Game g{StartMode::Hatched};
-    g.debugUseItem("restore_point");                 // arm the shield
+    useItem(g, "restore_point");                 // arm the shield
     CHECK(g.model().careMistakes() == 0);
 
     const int frag0 = g.model().fragmentation();
@@ -465,10 +465,10 @@ void test_yubi_cookie_once_per_lifetime() {
     g.model().addCareMistake(2);                     // two mistakes to shave
     g.inventory().add("yubi_cookie", 1);
     CHECK(g.inventory().count("yubi_cookie") == 1);
-    g.debugUseItem("yubi_cookie");                   // -1 mistake (first use)
+    useItem(g, "yubi_cookie");                   // -1 mistake (first use)
     CHECK(g.model().careMistakes() == 1);
     g.inventory().add("yubi_cookie", 1);             // grant another copy
-    g.debugUseItem("yubi_cookie");                   // already consumed -> no -1
+    useItem(g, "yubi_cookie");                   // already consumed -> no -1
     CHECK(g.model().careMistakes() == 1);            // unchanged
 }
 
@@ -477,7 +477,7 @@ void test_yubi_cookie_once_per_lifetime() {
 void test_backup_drive_arms_and_lapses() {
     Game g{StartMode::Hatched};
     CHECK(!g.backupShieldArmed());
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.inventory().count("backup_drive") == 0);       // consumed on Use
     CHECK(g.backupShieldArmed());
     // Ticking less than the 1h window leaves it armed; crossing it lapses it unused
@@ -498,25 +498,25 @@ void test_backup_drive_arms_and_lapses() {
 void test_inert_use_keeps_the_item() {
     Game g{StartMode::Hatched};
     g.inventory().add("backup_drive", 2);
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.backupShieldArmed());
     const int armed = g.inventory().count("backup_drive");
     // A second over a live shield would only replace a deadline it already has.
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.inventory().count("backup_drive") == armed);
     // Once the window lapses there is something to arm again, so it spends.
     g.tick(60u * 60u * 1000u + kHeartbeatMs);
     CHECK(!g.backupShieldArmed());
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.backupShieldArmed());
     CHECK(g.inventory().count("backup_drive") == armed - 1);
 
     // Same rule off a different state: the Restore Point's shield is once per lifetime,
     // so the second one is refused instead of vanishing for nothing.
     g.inventory().add("restore_point", 2);
-    g.debugUseItem("restore_point");
+    useItem(g, "restore_point");
     const int spent = g.inventory().count("restore_point");
-    g.debugUseItem("restore_point");
+    useItem(g, "restore_point");
     CHECK(g.inventory().count("restore_point") == spent);
 
     // ...and the line the other way. The Yubi-Cookie carries the same once-per-lifetime
@@ -525,9 +525,9 @@ void test_inert_use_keeps_the_item() {
     // vital can ever be inert (Game::itemUseIsInert).
     g.model().setCareMistakes(2);
     g.inventory().add("yubi_cookie", 2);
-    g.debugUseItem("yubi_cookie");
+    useItem(g, "yubi_cookie");
     CHECK(g.model().careMistakes() == 1);            // the once-per-life half fired
-    g.debugUseItem("yubi_cookie");
+    useItem(g, "yubi_cookie");
     CHECK(g.model().careMistakes() == 1);            // ...once, and only once
     CHECK(g.inventory().count("yubi_cookie") == 0);  // but both were eaten
 }
@@ -540,42 +540,42 @@ void test_inert_use_keeps_the_item() {
 // (Game::armedDeepWebStartDepth) instead of the raw field.
 void test_diving_bells_refuse_a_shallower_start() {
     Game g{StartMode::Hatched};
-    CHECK(g.debugArmedStartDepth() == -1);            // nothing armed
+    CHECK(g.armedDeepWebStartDepth() == -1);            // nothing armed
 
     // A record deeper than any fixed bell reaches, so "best" is unambiguously the
     // deepest start available.
     g.debugSetBestDeepWebDepth(80);
     g.inventory().add("zeroday_bell", 2);
-    g.debugUseItem("zeroday_bell");
-    CHECK(g.debugArmedStartDepth() == 80);            // the sentinel resolves to the record
+    useItem(g, "zeroday_bell");
+    CHECK(g.armedDeepWebStartDepth() == 80);            // the sentinel resolves to the record
     CHECK(g.inventory().count("zeroday_bell") == 1);
 
     // A second one can only re-arm what is already armed -> refused and kept.
-    g.debugUseItem("zeroday_bell");
+    useItem(g, "zeroday_bell");
     CHECK(g.inventory().count("zeroday_bell") == 1);
-    CHECK(g.debugArmedStartDepth() == 80);
+    CHECK(g.armedDeepWebStartDepth() == 80);
 
     // ...and neither does a fixed bell that starts SHALLOWER than the live arming.
     g.inventory().add("backdoor_bell", 1);            // depth 16
-    g.debugUseItem("backdoor_bell");
+    useItem(g, "backdoor_bell");
     CHECK(g.inventory().count("backdoor_bell") == 1); // kept: 16 is not deeper than 80
-    CHECK(g.debugArmedStartDepth() == 80);
+    CHECK(g.armedDeepWebStartDepth() == 80);
 
     // A genuinely deeper arming still lands: the rule is "deeper wins", not "first wins".
     Game h{StartMode::Hatched};
     h.debugSetBestDeepWebDepth(8);
     h.inventory().add("zeroday_bell", 1);
-    h.debugUseItem("zeroday_bell");
-    CHECK(h.debugArmedStartDepth() == 8);
+    useItem(h, "zeroday_bell");
+    CHECK(h.armedDeepWebStartDepth() == 8);
     h.inventory().add("kernel_bell", 1);              // depth 64
-    h.debugUseItem("kernel_bell");
+    useItem(h, "kernel_bell");
     CHECK(h.inventory().count("kernel_bell") == 0);   // spent: 64 beats a record of 8
-    CHECK(h.debugArmedStartDepth() == 64);
+    CHECK(h.armedDeepWebStartDepth() == 64);
     // ...and now the Checkpoint is the shallower of the two, so it is the one refused.
     h.inventory().add("zeroday_bell", 1);
-    h.debugUseItem("zeroday_bell");
+    useItem(h, "zeroday_bell");
     CHECK(h.inventory().count("zeroday_bell") == 1);
-    CHECK(h.debugArmedStartDepth() == 64);
+    CHECK(h.armedDeepWebStartDepth() == 64);
 }
 
 // --- The USB port: the branch overrides and the soak pair ---------------------
@@ -591,9 +591,9 @@ void test_branch_override_usbs_overrule_the_care_record() {
     { Game g{StartMode::Hatched, "malbear"};
       CHECK(g.model().careBranch() == CareBranch::Good);
       // Two, so that spending one leaves the ITEMS list standing and the pet at idle:
-      // debugUseItem drives the real Use path, which walks back out of an emptied row.
+      // useItem drives the real Use path, which walks back out of an emptied row.
       g.inventory().add("bad_usb", 2);
-      g.debugUseItem("bad_usb");
+      useItem(g, "bad_usb");
       CHECK(g.inventory().count("bad_usb") == 1);              // consumed on Use
       CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
       CHECK(g.effectiveCareBranch() == CareBranch::Bad);       // ...whatever the record says
@@ -610,7 +610,7 @@ void test_branch_override_usbs_overrule_the_care_record() {
       g.model().setCareMistakes(kCareGoodMax + 1);
       CHECK(g.model().careBranch() == CareBranch::Bad);
       g.inventory().add("signed_usb", 2);
-      g.debugUseItem("signed_usb");
+      useItem(g, "signed_usb");
       CHECK(g.effectiveCareBranch() == CareBranch::Good);
       g.debugTriggerEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
@@ -622,7 +622,7 @@ void test_branch_override_usbs_overrule_the_care_record() {
     // its way to the failure the neglect earned.
     { Game g{StartMode::Hatched, "malbear"};
       g.inventory().add("signed_usb", 1);
-      g.debugUseItem("signed_usb");
+      useItem(g, "signed_usb");
       CHECK(g.evolveBranchOverride() == BranchOverride::Good);
       g.model().setCareMistakes(kCareDying);
       CHECK(g.effectiveCareBranch() == CareBranch::Dying); }
@@ -636,17 +636,17 @@ void test_branch_override_holds_one_device_at_a_time() {
     g.inventory().add("bad_usb", 2);
     g.inventory().add("signed_usb", 1);
 
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
     // A second Bad-USB over a slot already pointing Bad: nothing to achieve, kept.
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.inventory().count("bad_usb") == 1);
     // The opposite device always does something: it takes the slot.
-    g.debugUseItem("signed_usb");
+    useItem(g, "signed_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Good);
     CHECK(g.inventory().count("signed_usb") == 0);
     // ...and now the Bad-USB has work to do again, so it spends.
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
     CHECK(g.inventory().count("bad_usb") == 0);
 }
@@ -660,12 +660,12 @@ void test_soak_usb_stretches_the_clock_and_pays_the_xp() {
     CHECK(plain == kEvolveProcessToScriptMs);
 
     g.inventory().add("sandbox_usb", 1);
-    g.debugUseItem("sandbox_usb");
+    useItem(g, "sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
     CHECK(g.evolveRemainMs() == plain * 2);           // the wait...
 
     const int lvl0 = g.combatLevel(), xp0 = g.combatXp();
-    g.debugAddCombatXp(10);
+    g.addCombatXp(10);
     const int soaked = g.combatXp() - xp0;
     CHECK(lvl0 == g.combatLevel());                   // no level crossed, so the bank is the award
     CHECK(soaked == 20);                              // ...and the pay, by the same factor
@@ -694,13 +694,13 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
     g.inventory().add("sandbox_usb", 2);   // two, so the ITEMS list survives the spend
     for (const char* id : {"hypervisor_usb", "ambig_usb", "bad_usb", "signed_usb"})
         g.inventory().add(id, 1);
-    g.debugUseItem("sandbox_usb");
+    useItem(g, "sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
 
     // Every other USB is refused and KEPT, including the deeper soak, which is what
     // makes the choice of factor a decision about the stage rather than a shopping list.
     for (const char* id : {"hypervisor_usb", "ambig_usb", "bad_usb", "signed_usb"}) {
-        g.debugUseItem(id);
+        useItem(g, id);
         CHECK(g.inventory().count(id) == 1);
     }
     CHECK(g.evolveSoakFactor() == 2);
@@ -712,7 +712,7 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.evolveSoakFactor() == 1);
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
 }
 
@@ -736,29 +736,29 @@ void test_late_soak_reaches_script_at_double_the_clock() {
     { Game g{StartMode::Hatched, "malbear"};              // a Script pet
       CHECK(g.pet()->stage == Stage::Script);
       g.inventory().add("sandbox_usb", 1);
-      g.debugUseItem("sandbox_usb");
+      useItem(g, "sandbox_usb");
       CHECK(g.inventory().count("sandbox_usb") == 1);     // refused, kept
       CHECK(g.evolveSoakFactor() == 1); }
 
     // On a PROCESS pet the Epic one is an ordinary soak: clock and XP move together.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("hypervisor_usb", 2);
-      g.debugUseItem("hypervisor_usb");
+      useItem(g, "hypervisor_usb");
       CHECK(g.evolveSoakFactor() == soak);
       CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs * static_cast<uint32_t>(soak));
       const int xp0 = g.combatXp();
-      g.debugAddCombatXp(10);
+      g.addCombatXp(10);
       CHECK(g.combatXp() - xp0 == 10 * soak); }
 
     // On a SCRIPT pet it goes in, pays the same XP, and charges DOUBLE on the clock.
     { Game g{StartMode::Hatched, "malbear"};
       CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs);
       g.inventory().add("hypervisor_usb", 2);
-      g.debugUseItem("hypervisor_usb");
+      useItem(g, "hypervisor_usb");
       CHECK(g.evolveSoakFactor() == soak);
       CHECK(g.evolveRemainMs() == kEvolveScriptToDaemonMs * static_cast<uint32_t>(2 * soak));
       const int xp0 = g.combatXp();
-      g.debugAddCombatXp(10);
+      g.addCombatXp(10);
       CHECK(g.combatXp() - xp0 == 10 * soak); }  // the BENEFIT is the row's, only the wait grew
 
     // The deepest arm still fits the fields that carry it: the soak is persisted in a u8
@@ -775,7 +775,7 @@ void test_late_soak_reaches_script_at_double_the_clock() {
 void test_halt_usb_stops_evolution_outright() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("halt_usb", 2);
-    g.debugUseItem("halt_usb");
+    useItem(g, "halt_usb");
     CHECK(g.evolveHoldArmed());
     // STAT's own EVOLVE readout says MAX, the same thing it says at a terminus and true
     // in the same sense: the BUFFS page and the habitat badge carry the WHY.
@@ -799,7 +799,7 @@ void test_halt_usb_stops_evolution_outright() {
 
     // Pull it, and the boundary that was waiting all along fires on the next beat.
     g.inventory().add("eject_usb", 2);
-    g.debugUseItem("eject_usb");
+    useItem(g, "eject_usb");
     CHECK(!g.evolveHoldArmed());
     CHECK(g.hasNextEvolution());
     g.tick(t += kHeartbeatMs);
@@ -815,30 +815,30 @@ void test_eject_usb_pulls_whatever_is_armed() {
 
     // Empty port: refused, kept.
     CHECK(!g.usbPortOccupied());
-    g.debugUseItem("eject_usb");
+    useItem(g, "eject_usb");
     CHECK(g.inventory().count("eject_usb") == 4);
 
     // Over a swappable device (a branch override).
     g.inventory().add("bad_usb", 2);
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.usbPortOccupied() && !g.usbPortLocked());
-    g.debugUseItem("eject_usb");
+    useItem(g, "eject_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::None);
     CHECK(g.inventory().count("eject_usb") == 3);
 
     // Over a LOCKING device: the case that makes it more than a convenience, since a
     // soak refuses every other USB in the family while it runs.
     g.inventory().add("sandbox_usb", 2);
-    g.debugUseItem("sandbox_usb");
+    useItem(g, "sandbox_usb");
     CHECK(g.usbPortLocked());
-    g.debugUseItem("bad_usb");                       // still refused...
+    useItem(g, "bad_usb");                       // still refused...
     CHECK(g.evolveBranchOverride() == BranchOverride::None);
-    g.debugUseItem("eject_usb");                     // ...but the eject is not
+    useItem(g, "eject_usb");                     // ...but the eject is not
     CHECK(g.evolveSoakFactor() == 1);
     CHECK(!g.usbPortOccupied());
     CHECK(g.evolveRemainMs() == kEvolveProcessToScriptMs);
     // ...and now the port takes anything again.
-    g.debugUseItem("bad_usb");
+    useItem(g, "bad_usb");
     CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
 }
 
@@ -848,7 +848,7 @@ void test_eject_usb_pulls_whatever_is_armed() {
 void test_usb_patch_travels_with_the_pet() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("sandbox_usb", 2);
-    g.debugUseItem("sandbox_usb");
+    useItem(g, "sandbox_usb");
     CHECK(g.evolveSoakFactor() == 2);
     const uint32_t soakedRemain = g.evolveRemainMs();
 
@@ -872,11 +872,11 @@ void test_usb_patch_travels_with_the_pet() {
 void test_rack_keeps_grants_and_clears_armed_buffs() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("restore_point", 2);
-    g.debugUseItem("restore_point");
+    useItem(g, "restore_point");
     g.inventory().add("backup_drive", 2);
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     g.inventory().add("ambig_usb", 2);
-    g.debugUseItem("ambig_usb");
+    useItem(g, "ambig_usb");
     g.debugSetBestDarkWebDepth(7);
     CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.shieldSpent);
     CHECK(g.backupShieldArmed());
@@ -898,7 +898,7 @@ void test_rack_keeps_grants_and_clears_armed_buffs() {
     CHECK(g.bestDarkWebDepth() == 7);
 
     // Arm the Backup Drive again, then swap the egg back in: it must not inherit it.
-    g.debugUseItem("backup_drive");
+    useItem(g, "backup_drive");
     CHECK(g.backupShieldArmed());
     char egg[kSaveIdCap];
     std::strncpy(egg, g.rack()[0].id, sizeof(egg));
@@ -940,7 +940,7 @@ void test_soak_usb_is_process_stage_only() {
     { Game g{StartMode::Hatched, "malbear"};          // a Script pet
       CHECK(g.pet() && g.pet()->stage == Stage::Script);
       g.inventory().add("sandbox_usb", 1);
-      g.debugUseItem("sandbox_usb");
+      useItem(g, "sandbox_usb");
       CHECK(g.inventory().count("sandbox_usb") == 1);  // refused, kept
       CHECK(g.evolveSoakFactor() == 1); }
 
@@ -948,7 +948,7 @@ void test_soak_usb_is_process_stage_only() {
     // player commits to an ending a stage before the branch is reached.
     { Game g{StartMode::Hatched, "paypup"};
       g.inventory().add("bad_usb", 1);
-      g.debugUseItem("bad_usb");
+      useItem(g, "bad_usb");
       CHECK(g.evolveBranchOverride() == BranchOverride::Bad); }
 }
 
@@ -984,8 +984,8 @@ void test_save_v60_usb_port_roundtrip() {
         Game g{StartMode::Hatched, "paypup", &store};
         g.inventory().add("hypervisor_usb", 1);
         g.inventory().add("bad_usb", 1);
-        g.debugUseItem("hypervisor_usb");
-        g.debugUseItem("bad_usb");                                 // refused: the port is shut
+        useItem(g, "hypervisor_usb");
+        useItem(g, "bad_usb");                                 // refused: the port is shut
         CHECK(g.evolveSoakFactor() == deepSoak);
         CHECK(g.evolveBranchOverride() == BranchOverride::None);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);
@@ -1006,22 +1006,22 @@ void test_recipes_are_not_for_sale_at_any_price() {
     for (int i = 0; i < kRigUpgradeCount; ++i)
         CHECK(std::strncmp(kRigUpgrades[i].id, "recipe_", 7) != 0);
     // Buy out the whole storefront; the kitchen stays empty.
-    for (int i = 0; i < kRigUpgradeCount; ++i) g.debugBuyRigRow(i);
+    for (int i = 0; i < kRigUpgradeCount; ++i) g.buyRigUpgrade(i);
     CHECK(g.mergeHubUnlocked());
-    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeOwned(i));
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.recipeOwned(i));
 }
 
 // A recipe can't be handed over before there is anywhere to cook it: the prize ladder
 // steps over one whose MERGE HUB hasn't been built, and comes back to it later.
 void test_recipes_wait_on_the_merge_hub() {
     Game g{StartMode::Hatched};
-    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.debugRecipeGrantable(i));
+    for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.recipeGrantable(i));
     CHECK(!g.mergeHubUnlocked());
 
     g.debugSetBits(99999);
-    g.debugBuyMergeHub();
+    g.buyRigUpgrade(kRigRowMergeHub);
     CHECK(g.mergeHubUnlocked());
-    CHECK(g.debugRecipeGrantable(0));   // the hub is what it was waiting on
+    CHECK(g.recipeGrantable(0));   // the hub is what it was waiting on
 }
 
 // The second gate (MergeRecipe::requiresItems): the Browns recipes want the operator
@@ -1032,7 +1032,7 @@ void test_recipes_wait_on_the_merge_hub() {
 void test_browns_recipes_wait_on_meeting_both_dishes() {
     Game g{StartMode::Hatched};
     g.debugSetBits(99999);
-    g.debugBuyMergeHub();
+    g.buyRigUpgrade(kRigRowMergeHub);
 
     int brownsRecipe = -1;
     for (int i = 0; i < kMergeRecipeCount; ++i)
@@ -1045,13 +1045,13 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
     uint32_t now = 0;
     auto settle = [&] { now += kAchSweepIntervalMs + 1; g.tick(now); };
 
-    CHECK(!g.debugRecipeGrantable(brownsRecipe));   // never met either dish
+    CHECK(!g.recipeGrantable(brownsRecipe));   // never met either dish
 
     // One of the two isn't enough: the row names both.
     g.inventory().add("hashed_browns", 1);
     settle();
     CHECK(g.itemCollected("hashed_browns"));
-    CHECK(!g.debugRecipeGrantable(brownsRecipe));
+    CHECK(!g.recipeGrantable(brownsRecipe));
 
     g.inventory().add("salted_hashed_browns", 1);
     settle();
@@ -1059,7 +1059,7 @@ void test_browns_recipes_wait_on_meeting_both_dishes() {
     // Eat the evidence: a met dish stays met.
     g.inventory().remove("hashed_browns", 1);
     g.inventory().remove("salted_hashed_browns", 1);
-    CHECK(g.debugRecipeGrantable(brownsRecipe));
+    CHECK(g.recipeGrantable(brownsRecipe));
 }
 
 // The recipes a device knows survive a power cycle: they are player-level, like the
@@ -1068,15 +1068,15 @@ void test_recipes_persist() {
     MemSaveStore store;
     {
         Game g{StartMode::Hatched, "malbear", &store};
-        g.debugWinRecipe(0);
-        g.debugWinRecipe(3);
+        g.grantRecipe(0);
+        g.grantRecipe(3);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // autosave
     }
     Game g2(StartMode::Hatched, "paypup", &store);
-    CHECK(g2.debugRecipeOwned(0));
-    CHECK(g2.debugRecipeOwned(3));
-    CHECK(!g2.debugRecipeOwned(1));
-    CHECK(!g2.debugRecipeOwned(2));
+    CHECK(g2.recipeOwned(0));
+    CHECK(g2.recipeOwned(3));
+    CHECK(!g2.recipeOwned(1));
+    CHECK(!g2.recipeOwned(2));
 }
 
 // v51: the owned-recipe set outgrew the u32 it used to be. A recipe whose wire is at
@@ -1094,13 +1094,13 @@ void test_recipes_past_the_legacy_mask_persist() {
     MemSaveStore store;
     {
         Game g{StartMode::Hatched, "malbear", &store};
-        g.debugWinRecipe(lowIdx);
-        g.debugWinRecipe(highIdx);
+        g.grantRecipe(lowIdx);
+        g.grantRecipe(highIdx);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);
     }
     Game g2(StartMode::Hatched, "paypup", &store);
-    CHECK(g2.debugRecipeOwned(lowIdx));
-    CHECK(g2.debugRecipeOwned(highIdx));         // the bit the u32 had no room for
+    CHECK(g2.recipeOwned(lowIdx));
+    CHECK(g2.recipeOwned(highIdx));         // the bit the u32 had no room for
 
     // What the blob itself says: the full set in the bitset, the low wires mirrored into
     // the legacy field, and nothing above wire 31 pretending to fit there.
@@ -1126,22 +1126,22 @@ void test_four_ingredient_recipe_consumes_all_inputs() {
     CHECK(recipeInputCount(r) == 4);
 
     g.debugSetBits(99999);
-    g.debugBuyMergeHub();
+    g.buyRigUpgrade(kRigRowMergeHub);
     g.inventory().add("hashed_browns", 1);
     g.inventory().add("salted_hashed_browns", 1);
     g.tick(kAchSweepIntervalMs + 1);   // the sweep records both as met
-    g.debugWinRecipe(idx);
+    g.grantRecipe(idx);
 
     // Three of the four in the bag: still refused, nothing consumed.
     for (int i = 0; i < 3; ++i) g.inventory().add(r.inputs[i].id, r.inputs[i].qty);
-    CHECK(!g.debugRecipeCraftable(idx));
-    g.debugCraftRecipe(idx);
+    CHECK(!g.recipeCraftable(idx));
+    g.craftRecipe(idx);
     CHECK(g.inventory().count(r.inputs[0].id) == r.inputs[0].qty);
 
     const int before = g.inventory().count("hashed_browns");
     g.inventory().add(r.inputs[3].id, r.inputs[3].qty);
-    CHECK(g.debugRecipeCraftable(idx));
-    g.debugCraftRecipe(idx);
+    CHECK(g.recipeCraftable(idx));
+    g.craftRecipe(idx);
     CHECK(g.inventory().count("hashed_browns") == before + r.outputQty);
     for (const RecipeInput& in : r.inputs)
         if (in.id) CHECK(g.inventory().count(in.id) == 0);   // all four spent
@@ -1159,7 +1159,7 @@ void test_stacking_food_run_climbs_then_resets_on_decay() {
 
     int last = g.model().hunger();
     for (int expect = 1; expect <= 3; ++expect) {
-        g.debugUseItem("polltatoes");
+        useItem(g, "polltatoes");
         CHECK(g.model().hunger() - last == expect);   // 1, then 2, then 3
         last = g.model().hunger();
     }
@@ -1169,7 +1169,7 @@ void test_stacking_food_run_climbs_then_resets_on_decay() {
     // afterwards so the assertion measures the bite alone.
     g.tick(kHungerMinutesPerPoint * 60u * 1000u);
     g.model().setHunger(40);
-    g.debugUseItem("polltatoes");
+    useItem(g, "polltatoes");
     CHECK(g.model().hunger() - 40 == 1);
 }
 
@@ -1434,7 +1434,7 @@ void test_caches_listed_and_first_cache_card() {
                          ItemFilter::Tools, ItemFilter::Buffs})
         for (const InvRow& r : buildInventoryRows(reg, g.inventory(), ItemOrder::ByGroup, f))
             CHECK(r.def != cache);
-    g.debugUseItem(cache->id);                         // pet-side: still refused
+    useItem(g, cache->id);                         // pet-side: still refused
     CHECK(g.inventory().count(cache->id) == 2);
 
     g.debugClearTips();
@@ -1483,7 +1483,7 @@ void test_tiramisudo_upgrades_once_then_feeds() {
     CHECK(g.bandwidthRegenMinutes() == kBandwidthRegenMinutesPerPoint);
 
     g.inventory().add("tiramisudo", 2);
-    g.debugUseItem("tiramisudo");
+    useItem(g, "tiramisudo");
     CHECK(g.bandwidthRegenUpgraded());
     // The shave is the magnitude on the item's own row, not a number this test knows.
     const ItemDef* d = ContentRegistry::embedded().item("tiramisudo");
@@ -1496,7 +1496,7 @@ void test_tiramisudo_upgrades_once_then_feeds() {
 
     // A second helping doesn't stack the upgrade: the pet already has root.
     const uint32_t after = g.bandwidthRegenMinutes();
-    g.debugUseItem("tiramisudo");
+    useItem(g, "tiramisudo");
     CHECK(g.bandwidthRegenMinutes() == after);
 }
 
@@ -1509,7 +1509,7 @@ void test_tiramisudo_regen_actually_runs_faster() {
     CHECK(low < g.bandwidthMax());
 
     g.inventory().add("tiramisudo", 1);
-    g.debugUseItem("tiramisudo");
+    useItem(g, "tiramisudo");
     // Wind the clock to just past the UPGRADED interval but short of the shared one,
     // so only a pet that was actually upgraded has regenerated by now. (The pudding's
     // own +1 Bandwidth already landed above, hence measuring from here.)
@@ -1525,7 +1525,7 @@ void test_tiramisudo_regen_actually_runs_faster() {
 void test_tiramisudo_upgrade_survives_the_rack() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add("tiramisudo", 1);
-    g.debugUseItem("tiramisudo");
+    useItem(g, "tiramisudo");
     CHECK(g.bandwidthRegenUpgraded());
     // Using a food parks on the feeding modal; the ARCH walk below starts from the
     // carousel, so back out first. Bounded, so a nav change can't hang the gate.
@@ -1611,7 +1611,7 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         Game g{StartMode::Hatched, "paypup"};
         CHECK(g.petRecord().statBonusPoint(stat) == 0);
         g.inventory().add(d->id, 2);
-        g.debugUseItem(d->id);
+        useItem(g, d->id);
         CHECK(g.petRecord().statBonusPoint(stat) == 1);
         // The moment is written down: a once-per-pet upgrade the operator can scroll
         // back to, not just a "FED <dish>" line like every other plate.
@@ -1624,7 +1624,7 @@ void test_epic_dish_grants_an_off_level_stat_point() {
         // but it is still EATEN rather than refused, which is what stops the dish from
         // becoming a dead row the moment it has paid out (Game::itemUseIsInert).
         CHECK(g.inventory().count(d->id) == 1);
-        g.debugUseItem(d->id);
+        useItem(g, d->id);
         CHECK(g.petRecord().statBonusPoint(stat) == 1);
         CHECK(g.inventory().count(d->id) == 0);
         CHECK(countLogLinesContaining(g, "FOR LIFE") == loggedGrants);  // granted once
@@ -1643,7 +1643,7 @@ void test_granted_stat_point_reaches_combat() {
 
     Game g1{StartMode::Hatched, "paypup"};
     g1.inventory().add(d->id, 1);
-    g1.debugUseItem(d->id);
+    useItem(g1, d->id);
     for (int i = 0; i < 4 && g1.nav() != Game::Nav::Idle; ++i) tapC(g1);
     enterSimBattle(g1);
     const Combatant& pl = g1.combat().player();
@@ -1660,15 +1660,15 @@ void test_rollback_cannot_shed_a_granted_point() {
     if (!d) return;
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add(d->id, 1);
-    g.debugUseItem(d->id);
+    useItem(g, d->id);
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
     CHECK(g.petRecord().statBonusPoint(0) == 1);
 
     // Earn exactly one level, then roll it back off.
-    g.debugAddCombatXp(kLevelXpBase);
+    g.addCombatXp(kLevelXpBase);
     CHECK(g.combatLevel() == 1);
     g.inventory().add("rollback", 1);
-    g.debugUseItem("rollback");
+    useItem(g, "rollback");
     CHECK(g.nav() == Game::Nav::RollbackPicker);
     g.onButton(press(Button::B));
     CHECK(g.combatLevel() == 0);                 // every earned point is gone
@@ -1681,7 +1681,7 @@ void test_rollback_cannot_shed_a_granted_point() {
     // With nothing earned left the picker is inert, so there is no second shed that
     // could reach the grant by going negative.
     g.inventory().add("rollback", 1);
-    g.debugUseItem("rollback");
+    useItem(g, "rollback");
     CHECK(g.nav() != Game::Nav::RollbackPicker);
     CHECK(g.inventory().count("rollback") == 1);  // not consumed
 }
@@ -1701,18 +1701,18 @@ void test_epic_dish_grants_a_permanent_xp_rate() {
     Game g{StartMode::Hatched, "paypup"};
     CHECK(g.xpRateBonusPct() == 0);
     g.inventory().add(d->id, 2);
-    g.debugUseItem(d->id);
+    useItem(g, d->id);
     CHECK(g.xpRateBonusPct() == rate);
     // A lump short of the first level, so the whole award stays visible in the bucket.
     const int award = kLevelXpBase / 2;
-    g.debugAddCombatXp(award);
+    g.addCombatXp(award);
     CHECK(g.combatLevel() == 0);
     // The dish was also a meal, so the pet's Bond rides on the same award.
     CHECK(g.combatXp() ==
           award + award * (rate * 100 + bondTotalBp(g.petUpgrades())) / 10000);
     CHECK(g.combatXp() > award);
     // Second helping: the rate is already the pet's, so it does not compound.
-    g.debugUseItem(d->id);
+    useItem(g, d->id);
     CHECK(g.xpRateBonusPct() == rate);
 }
 
@@ -1728,9 +1728,9 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     Game g{StartMode::Hatched, "paypup"};
     g.inventory().add(pw->id, 1);
     g.inventory().add(xp->id, 1);
-    g.debugUseItem(pw->id);
+    useItem(g, pw->id);
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
-    g.debugUseItem(xp->id);
+    useItem(g, xp->id);
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
     CHECK(g.petRecord().statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
 
@@ -1880,7 +1880,7 @@ void test_lifetime_mark_says_whether_this_pet_has_had_it() {
         p.model().addCareMistake(2);          // something for the Yubi-Cookie to shave
         CHECK(lifetimeMark(*d, p.petLifetimeGates()) == LifetimeMark::Unspent);
         p.inventory().add(d->id, 1);
-        p.debugUseItem(d->id);
+        useItem(p, d->id);
         CHECK(lifetimeMark(*d, p.petLifetimeGates()) == LifetimeMark::Spent);
         // ...and only that row: a pet that ate one Epic dish has not spent the others.
         for (const ItemDef* other : r.allItems()) {
@@ -1897,7 +1897,7 @@ void test_lifetime_mark_says_whether_this_pet_has_had_it() {
     CHECK(dish);
     if (!dish) return;
     g.inventory().add(dish->id, 1);
-    g.debugUseItem(dish->id);
+    useItem(g, dish->id);
     CHECK(lifetimeMark(*dish, g.petLifetimeGates()) == LifetimeMark::Spent);
     g.resetToHatch();
     pickFirstEggLine(g);
@@ -2031,12 +2031,12 @@ void test_reveals_hold_their_result_only_while_up() {
     g.inventory().add("sealed_cache_epic", 1);
     g.inventory().add("sealed_cache_common", 3);
     CHECK(!g.vaultScreen().reveal() && !g.vaultScreen().bulkReveal());
-    g.debugOpenCache("sealed_cache_epic");
+    openCache(g, "sealed_cache_epic");
     CHECK(g.nav() == Game::Nav::CacheYield && g.vaultScreen().reveal()->itemCount > 0);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu && !g.vaultScreen().reveal());
 
-    g.debugBulkOpenCaches("sealed_cache_common");
+    bulkOpenCaches(g, "sealed_cache_common");
     CHECK(g.nav() == Game::Nav::BulkYield && g.vaultScreen().bulkReveal()->cachesOpened == 3);
     g.onButton(press(Button::A));                 // scrolling keeps it up
     CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 3);

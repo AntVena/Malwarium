@@ -131,7 +131,7 @@ void test_wifi_awakened_guardian_enters_combat() {
 void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
     Game g{StartMode::Hatched};
     for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
-    g.debugStartDarkWebCrawl();
+    g.startDarkWebCrawl();
     CHECK(g.inDarkWebCrawl());
     g.debugSetAutoProgress(false);
     g.inventory().add("sinkhole_trap", 200);
@@ -422,7 +422,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
 
     // Fill the pool for THIS listing's mod, then stand at the till with everything else
     // the row asks for: only storage is short.
-    for (int i = 0; i < cap; ++i) g.debugGrantMod(id);
+    for (int i = 0; i < cap; ++i) g.grantMod(id);
     CHECK(g.shopListingHeld(row) == cap);
     for (int k = 0; k < g.shopListingCostCount(row); ++k)
         g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
@@ -441,7 +441,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
 
     // Room is what was missing: buying a MOD STORAGE tier makes the same row buyable.
     g.debugSetBits(bits0 + kModStorageStart);
-    g.debugBuyModStorage();
+    g.buyRigUpgrade(kRigRowModStorage);
     CHECK(g.modStorageCap() > cap);
     CHECK(g.shopListingHeldCap(row) == g.modStorageCap());
     CHECK(g.shopRowBuyable(row));
@@ -576,7 +576,7 @@ void test_sealed_cache_open_grants_reward() {
         Game g{StartMode::Hatched};
         g.inventory().add("sealed_cache", 2);
         const int bits0 = g.bits();
-        g.debugUseItem("sealed_cache");                  // pet-side Use path
+        useItem(g, "sealed_cache");                  // pet-side Use path
         CHECK(g.inventory().count("sealed_cache") == 2); // NOTHING consumed
         CHECK(g.bits() == bits0);                        // no reward drawn
         CHECK(g.nav() != Game::Nav::CacheYield);         // no yield reveal
@@ -642,7 +642,7 @@ void test_cache_epic_pool_and_multidrop() {
         return n;
     };
     const int items0 = epicPool();
-    g.debugOpenCache("sealed_cache_epic");           // decrypt (VAULT path)
+    openCache(g, "sealed_cache_epic");           // decrypt (VAULT path)
     CHECK(g.bits() == bits0 + ContentRegistry::embedded().item("sealed_cache_epic")->cache.bits);  // epic Bits, not the flat loot
     CHECK(epicPool() - items0 == 2);                 // epic drops TWO items
     // Nothing from a lower pool leaked in (epic pool has no common consumables).
@@ -665,7 +665,7 @@ void test_cache_common_pool_single_drop() {
         return n;
     };
     const int pool0 = commonPool();
-    g.debugOpenCache("sealed_cache_common");         // decrypt (VAULT path)
+    openCache(g, "sealed_cache_common");         // decrypt (VAULT path)
     CHECK(g.bits() == bits0 + ContentRegistry::embedded().item("sealed_cache_common")->cache.bits);
     CHECK(commonPool() - pool0 == 1);                // exactly one common item
 }
@@ -770,7 +770,7 @@ void test_item_earn_coverage() {
 void test_cache_yield_reveal_and_dismiss() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_epic", 1);
-    g.debugOpenCache("sealed_cache_epic");            // decrypt (VAULT path)
+    openCache(g, "sealed_cache_epic");            // decrypt (VAULT path)
     CHECK(g.nav() == Game::Nav::CacheYield);          // reveal is up
     CHECK(g.vaultScreen().reveal()->itemCount == 2);              // epic yielded two items
     CHECK(g.vaultScreen().reveal()->bits == ContentRegistry::embedded().item("sealed_cache_epic")->cache.bits);  // and the Bits it paid
@@ -802,7 +802,7 @@ void test_warp_item_shape() {
 void test_warp_key_inert_from_items() {
     Game g{StartMode::Hatched};
     g.inventory().add("access_token", 1);
-    g.debugUseItem("access_token");                  // real path: gate -> inert
+    useItem(g, "access_token");                  // real path: gate -> inert
     CHECK(g.inventory().count("access_token") == 1); // NOT consumed
 }
 
@@ -921,7 +921,7 @@ void test_null_noodles_effects() {
     g.model().setHunger(60);
     g.model().setFragmentation(40);
     g.model().setHappiness(90);                      // above the midpoint
-    g.debugUseItem("null_noodles");
+    useItem(g, "null_noodles");
     CHECK(g.model().hunger() == 60 - 15);            // negative eating -> hungrier
     CHECK(g.model().fragmentation() == 40 - 15);     // de-frags
     CHECK(g.model().happiness() == 90 - 20);         // pulled toward 50 (item's pull=20)
@@ -935,12 +935,12 @@ void test_null_noodles_happy_pull_from_below() {
     Game g{StartMode::Hatched};
     g.inventory().add("null_noodles", 2);
     g.model().setHappiness(20);                      // below the midpoint
-    g.debugUseItem("null_noodles");
+    useItem(g, "null_noodles");
     CHECK(g.model().happiness() == 20 + 20);         // pulled up toward 50 (item's pull=20)
     CHECK(g.model().happiness() <= 50);
     // From just under 50 it clamps AT 50, not past it.
     g.model().setHappiness(45);
-    g.debugUseItem("null_noodles");
+    useItem(g, "null_noodles");
     CHECK(g.model().happiness() == 50);              // clamped to the midpoint
 }
 
@@ -952,7 +952,7 @@ void test_r007_b33r_effects() {
     g.model().setHunger(50);
     g.model().setHappiness(40);
     g.model().setFragmentation(20);
-    g.debugUseItem("r007_b33r");
+    useItem(g, "r007_b33r");
     CHECK(g.model().hunger() == 50 + 15);            // fills
     CHECK(g.model().happiness() == 40 + 25);         // cheers
     CHECK(g.model().fragmentation() == 20 + 5);      // but fragments
