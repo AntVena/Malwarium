@@ -4,8 +4,8 @@
 // value pickers, the travel and SD-format confirms, System Info with its hidden Factory
 // Reset, the HackerTag editor, TIPS, UPDATES and the two QR pages. The screen holds which
 // page is open, the cursors, the open page's focused choice, the tag being typed and
-// the UPDATES row and confirm. The settings, the radios and the jobs are the game's,
-// reached through CfgHost.
+// UPDATES' own state is its page's (UpdatesPage). The settings, the radios and the jobs
+// are the game's, reached through CfgHost.
 //
 // This header names no core/ui type beyond ui_state.h, so game.h can hold a CfgMenu by
 // value.
@@ -16,6 +16,7 @@
 
 #include "tunables.h"                   // kHackerTagMax
 #include "core/app/operator.h"          // Tip
+#include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
 #include "core/device/power_status.h"
 #include "core/device/radio_status.h"
@@ -35,8 +36,9 @@ struct Settings;
 // What a Factory Reset clears, the choice A cycles on its page.
 enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
 
-// What CFG needs from the game. Game implements it; a test can too.
-class CfgHost {
+// What CFG needs from the game. Game implements it; a test can too. Each page that is a
+// type of its own is handed only its own host, which this extends.
+class CfgHost : public UpdatesHost {
 public:
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
@@ -62,16 +64,6 @@ public:
     virtual bool apEnabled() const = 0;
     virtual bool linkEnabled() const = 0;
     virtual bool linkAmbientStarved() const = 0;
-    virtual bool netProvisioned() const = 0;
-    virtual bool updateSourceKnown() const = 0;
-    virtual bool updateCheckReady() const = 0;
-    virtual bool updateJobLive() const = 0;
-    virtual UpdateTarget updateJobTarget() const = 0;
-    virtual const UpdateStatus& updateStatus() const = 0;
-    virtual const InstallStatus& installStatus() const = 0;
-    virtual const NetStatus& netStatus() const = 0;
-    virtual const char* updateManifestUrl() const = 0;
-    virtual const char* webBundleVersion() const = 0;
     // The tips seen so far, in the order TIPS lists them.
     virtual std::vector<Tip> replayableTips() const = 0;
 
@@ -93,9 +85,6 @@ public:
     virtual void requestSdFormat() = 0;
     virtual void clearSdFormatResult() = 0;
     virtual void requestSdRecheck() = 0;
-    virtual void requestUpdateCheck() = 0;
-    virtual void requestUpdateInstall(UpdateTarget t) = 0;
-    virtual void clearInstallReport() = 0;
     virtual void resetToHatch() = 0;
     virtual void executeFactoryReset(FactoryScope scope) = 0;
     virtual void openTip(Tip t) = 0;                  // read, then back to TIPS
@@ -142,16 +131,13 @@ private:
     void onFormatSd(CfgHost& host, const ButtonEvent& ev);
     void onHackerTag(CfgHost& host, const ButtonEvent& ev);
     void onTips(CfgHost& host, const ButtonEvent& ev);
-    void onUpdate(CfgHost& host, const ButtonEvent& ev);
-    void onUpdateRows(CfgHost& host, const ButtonEvent& ev);
-    void onUpdateConfirm(CfgHost& host, const ButtonEvent& ev);
+    void follow(CfgHost& host, UpdatesPage::Move move);
     void onPediaQr(CfgHost& host, const ButtonEvent& ev);
     void drawSysInfoPage(Framebuffer& fb, const CfgHost& host) const;
     void drawDevicePage(Framebuffer& fb, const CfgHost& host) const;
     void drawRadioPage(Framebuffer& fb, const CfgHost& host) const;
     void drawBackgroundPage(Framebuffer& fb, const CfgHost& host) const;
     void drawTipsPage(Framebuffer& fb, const CfgHost& host) const;
-    void drawUpdatePage(Framebuffer& fb, const CfgHost& host) const;
 
     int row_ = 0;                          // the CFG list
     CfgScreen page_ = CfgScreen::SysInfo;  // the open L3
@@ -167,11 +153,7 @@ private:
     // confirm cell).
     char tag_[kHackerTagMax + 1] = {0};
     int caret_ = 0;
-    // UPDATES: the focused row, and the target sitting at its yes/no confirm. Screen
-    // state: the confirm clears on the way out, the job does not.
-    int updateRow_ = 0;
-    UpdateTarget updateConfirm_ = UpdateTarget::None;
-    int updateConfirmPick_ = 0;   // 0 = NO, and NO is always where it starts
+    UpdatesPage updates_;
 };
 
 }  // namespace mal

@@ -236,13 +236,8 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
             onPicker(host, ev, [&] { pick_ ^= 1; },
                      [&] { host.setLinkEnabled(pick_ != 0); return true; });
             break;
-        case CfgScreen::Update:     onUpdate(host, ev); break;
-        case CfgScreen::UpdateQr:
-            // One page, so A does nothing. C returns to UPDATES with its cursor still on
-            // the row that opened this. The defocus and the sleep are held off while it
-            // shows (qrScreenActive): a phone takes longer than the idle window to read it.
-            if (ev.button == Button::C) leavePage(host);
-            break;
+        case CfgScreen::Update:     follow(host, updates_.onButton(host, ev)); break;
+        case CfgScreen::UpdateQr:   follow(host, updates_.onFlashQr(ev)); break;
         case CfgScreen::PediaQr:    onPediaQr(host, ev); break;
         case CfgScreen::FactoryReset:
             if (ev.button == Button::A) pick_ ^= 1;                  // cycle scope
@@ -339,64 +334,13 @@ void CfgMenu::onTips(CfgHost& host, const ButtonEvent& ev) {
     }
 }
 
-// Three faces on one page: a job's progress, the yes/no confirm an install row opens,
-// and the row list. Leaving does not cancel a job. The job holds the radio, so a download
-// finishes and its outcome waits here.
-void CfgMenu::onUpdate(CfgHost& host, const ButtonEvent& ev) {
-    if (host.updateJobLive() || host.installStatus().state != InstallState::Idle) {
-        if (ev.button != Button::C) return;
-        // Only a finished job's report is cleared on the way out; a live one keeps its
-        // progress to come back to.
-        if (!host.updateJobLive()) host.clearInstallReport();
-        leavePage(host);
-    } else if (updateConfirm_ != UpdateTarget::None) {
-        onUpdateConfirm(host, ev);
-    } else {
-        onUpdateRows(host, ev);
-    }
-}
-
-void CfgMenu::onUpdateConfirm(CfgHost& host, const ButtonEvent& ev) {
-    if (ev.button == Button::A) updateConfirmPick_ ^= 1;      // NO <-> YES
-    else if (ev.button == Button::B) {
-        // The second yes, and the only path to a write.
-        if (updateConfirmPick_ == 1) host.requestUpdateInstall(updateConfirm_);
-        updateConfirm_ = UpdateTarget::None;
-        updateConfirmPick_ = 0;
-    } else if (ev.button == Button::C) {
-        updateConfirm_ = UpdateTarget::None;
-        updateConfirmPick_ = 0;
-    }
-    host.markDirty();
-}
-
-void CfgMenu::onUpdateRows(CfgHost& host, const ButtonEvent& ev) {
-    const UpdateStatus& status = host.updateStatus();
-    if (ev.button == Button::A) {
-        updateRow_ = stepRow(updateRow_, updateCheckRows(status), +1);
-        host.markDirty();
-    } else if (ev.button == Button::B) {
-        switch (updateCheckRowKind(status, updateRow_)) {
-            case UpdateRowKind::Check:
-                host.requestUpdateCheck();      // no-ops unless ready
-                updateRow_ = 0;                 // a fresh check invalidates the rows
-                break;
-            case UpdateRowKind::Install:
-                updateConfirm_ = updateCheckRowTarget(status, updateRow_);
-                updateConfirmPick_ = 0;         // ask before anything is written, on NO
-                host.markDirty();
-                break;
-            case UpdateRowKind::FlashQr:
-                // Needs no radio and no network: the code is drawn from an address this
-                // device already holds, so it opens even when a check cannot run.
-                if (host.updateSourceKnown()) {
-                    page_ = CfgScreen::UpdateQr;
-                    host.markDirty();
-                }
-                break;
-        }
-    } else if (ev.button == Button::C) {
-        leavePage(host);
+// What the UPDATES page asked of the menu. Its flash QR is a page of the menu's like any
+// other, whose parent is UPDATES, so leaving it lands back on the rows.
+void CfgMenu::follow(CfgHost& host, UpdatesPage::Move move) {
+    switch (move) {
+        case UpdatesPage::Move::Stay: break;
+        case UpdatesPage::Move::Leave: leavePage(host); break;
+        case UpdatesPage::Move::OpenFlashQr: page_ = CfgScreen::UpdateQr; break;
     }
 }
 
@@ -454,8 +398,8 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
             drawLinkToggle(fb, pick_, host.linkEnabled() ? OnOff::On : OnOff::Off,
                            host.linkAmbientStarved() ? LinkReach::PeersOnly : LinkReach::Ambient);
             break;
-        case CfgScreen::Update: drawUpdatePage(fb, host); break;
-        case CfgScreen::UpdateQr: drawUpdateQr(fb, host.updateManifestUrl()); break;
+        case CfgScreen::Update: updates_.draw(fb, host); break;
+        case CfgScreen::UpdateQr: updates_.drawFlashQr(fb, host); break;
         case CfgScreen::PediaQr: drawPediaQr(fb, qrPage_, homeNetwork(host)); break;
         case CfgScreen::FactoryReset: {
             const int32_t held = host.heldBMs();
@@ -553,32 +497,6 @@ void CfgMenu::drawTipsPage(Framebuffer& fb, const CfgHost& host) const {
                  i == cursor ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
     drawHintBand(fb, "A NEXT  B READ  C BACK");
-}
-
-void CfgMenu::drawUpdatePage(Framebuffer& fb, const CfgHost& host) const {
-    const UpdateStatus& status = host.updateStatus();
-    const InstallStatus& install = host.installStatus();
-    UpdateCheckView checkView;
-    checkView.ready = host.updateCheckReady();
-    checkView.provisioned = host.netProvisioned();
-    checkView.sourceKnown = host.updateSourceKnown();
-    checkView.firmwareVersion = kFirmwareVersion;
-    checkView.manifestUrl = host.updateManifestUrl();
-    checkView.row = updateRow_;
-    // The input handler's three faces, in its order: a live or just-finished job outranks
-    // the confirm, which outranks the list.
-    if (host.updateJobLive() || install.state != InstallState::Idle) {
-        if (host.updateJobTarget() == UpdateTarget::None && install.state == InstallState::Idle)
-            drawUpdateCheck(fb, status, host.netStatus(), checkView);
-        else
-            drawUpdateProgress(fb, install, host.netStatus());
-    } else if (updateConfirm_ != UpdateTarget::None) {
-        const bool fw = updateConfirm_ == UpdateTarget::Firmware;
-        drawUpdateConfirm(fb, updateConfirm_, fw ? kFirmwareVersion : host.webBundleVersion(),
-                          fw ? status.firmwareVersion : status.webVersion, updateConfirmPick_);
-    } else {
-        drawUpdateCheck(fb, status, host.netStatus(), checkView);
-    }
 }
 
 }  // namespace mal
