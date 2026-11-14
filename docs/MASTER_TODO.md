@@ -100,11 +100,12 @@ CONTRIBUTING section *Where state lives* says where each field goes: a record (`
 `Operator`, `Settings`), a run, or a screen. These rows move it there, one type at a time.
 
 Every row builds on its own, and a `tools/screens.sh` render stays byte-identical to one
-taken before it unless the row says otherwise. A screen extraction keeps the gates compiling
-with read-only forwarders on `Game` (`crewView()`, `tourneyCursor()`, `shopStatusLine()`) rather
-than rewriting gates as it goes. The `debug*` hooks (about 100) and those forwarders are swept
-in one pass once the first cut of every screen and run is done, gates moved onto the new types
-or dropped by one rule, since they all break the same way.
+taken before it unless the row says otherwise. Gates read a screen or a run off the type
+itself: `Game` exposes each one once, read-only and under the type's name (`archScreen()`,
+`itemsMenu()`, `shiboleetMeeting()`; a run in play by pointer, null when there is none:
+`wifiEvent()`, `cryptogramRun()`), and keeps no method that only forwards one of its reads. A
+read the screen answers through its host (`archPickRowCount()`, `shopStatusLine()`) is a
+question to the game and stays, as does one `Game`'s own code or the platform calls.
 
 How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 - The screen holds only what dies with it (cursor, view, scroll, a frozen result, the subject
@@ -150,38 +151,29 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **Still dispatched to `Game` inline.** The Lockout modal (`Nav::ModalLockout`: its pay /
-  feed / open-ITEMS choice and `lockoutPayOption_`), the MAINT process screen
-  (`Nav::Process`), and the Hacker face's home and L2 (`onHackerSubmenu`,
-  `drawHackerHome`) still route to `Game` code in `onButton` and `render`. Same cut as
-  the modals. | game_nav.cpp, game_render.cpp, game_hacker.cpp | M |
-- **The SHIBOLEET meeting is a run held as `Game` fields.** `shibWelcome_`, `shibReply_`,
-  `shibCipher_`, `shibRiddle_`, `shibOrder_`, `shibLine_`, `shibFlavor_`,
-  `shibVerdictLine_` and `guardianFlock_` describe one meeting and are rebuilt per
-  guardian; `ShiboleetScreen` reads them through a dozen host methods. They are a
-  `ShiboleetMeeting` run, and `ShiboleetWelcome` / `ShiboleetReply` (nested in `Game`)
-  move out with it under aliases. | game_shiboleet.cpp | M |
 - **`CfgHost` is wide** (about sixty methods), because CFG fronts every subsystem that has a
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
   `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
-- **The sweep**, once every state above has its first cut: the ~100 `debug*` hooks, the
-  read-only forwarders (`arch*()`, `modPick()`, `pediaQrPage()`, `storyWindow()`, the
-  `shopListing*()` reads, `wifiOutcome()`, `netDiscovery*()`, `shiboleetRow()`,
-  `lineSelectRow()`, `hatchRevealFrame()`), and the gates that read them, under one rule
-  applied across the board. Then the per-screen table (onButton / draw / tick) that
-  replaces `Game`'s Nav switches; its tick column takes the board cadences
+- **The sweep's second half: the `debug*` hooks.** About 95 of them, each a test seam
+  named for a private step (`debugStartShiboleet()` calls `startShiboleet()`, nine
+  `debugBuy*()` call `buyRigUpgrade(row)`) or a write into a record (`debugSetBits`,
+  `debugLearnSigils`, `debugDeclineEggOffer`). They want one rule the way the forwarders
+  got one: which steps a gate may take that a player can't (a world event, a roll, a clock
+  it can't wait out), named for what they do, and the rest replaced by driving the game or
+  the record's own methods. Three reads the forwarder rule left because they do more than
+  one read are part of it: `storyWindow()` / `storyWindows()`, the `bulkYieldTally*()`
+  trio, and `cryptogram()`'s empty stand-in board. | `game.h`, the native tests | XL |
+- **The per-screen table** (onButton / draw / tick) that replaces `Game`'s Nav switches in
+  `onButton`, `render` and `stepScreenBeat`; its tick column takes the board cadences
   (`stepStacker`, `stepFragger`, the Isolation step) and the cinematic ticks
-  `stepScreenBeat` forwards to `EvolveScreen`, `CsfScreen` and `HatchRevealScreen`. | XL |
-
-**List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
-row can claim to be a notice without being a header, and every reader has to know which
-pair is legal. The STAT, prose and collect rows repeat the `header` flag. One row-kind enum
-(item, header, notice), shared by the list screens and read by `stepSelectableRow`, makes
-the illegal pairs unwritable. The gates read `.header` as a field in about thirty places,
-so the enum lands with the sweep, which moves them in the same change. | `core/ui/items_screen.h`, `stat_screen`, `prose_page`,
-`collect_screen`, the native tests that read `.header` | M | Native suite plus a
-`tools/screens.sh` render diffed against one taken before it. |
+  `stepScreenBeat` forwards to `EvolveScreen`, `CsfScreen` and `HatchRevealScreen`, and
+  the MAINT process's bar. | game_nav.cpp, game_render.cpp, game_core.cpp | L |
+- **`swarmViewOf` is private to `game_render.cpp`,** so `ShiboleetHost` and
+  `FightScreenHost` both keep a `guardianSwarm()` read that projects the meeting's flock
+  for the draw. A home both screens can include (it maps a `core/model` flock onto a
+  `core/render` value, so `core/ui` or `game/`) would let each screen project
+  `shiboleetMeeting().flock` itself and drop the read from both hosts. | S |
 
 ---
 
