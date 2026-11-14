@@ -10,6 +10,7 @@
 // This header names no core/ui type, so game.h can hold a HackerScreen by value.
 #pragma once
 
+#include "core/app/game/device_status.h"
 #include "core/device/platform.h"
 
 namespace mal {
@@ -25,8 +26,7 @@ class HackerHost {
 public:
     virtual const Operator& operatorRecord() const = 0;
     virtual const Settings& settingsRecord() const = 0;     // the carousel's label mode
-    virtual const PowerStatus& powerStatus() const = 0;
-    virtual int batteryLevel() const = 0;                   // glyph frame, or -1 with no reading
+    virtual const DeviceStatus& deviceStatus() const = 0;   // the battery readout
     virtual const CrewDef* activeCrew() const = 0;          // null with no crew
     virtual const char* equippedTitleName() const = 0;
     virtual bool hasHomeNetwork() const = 0;

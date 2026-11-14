@@ -672,7 +672,7 @@ void loop() {
         applyBrightness();
     }
 
-    if (game->sdRecheckRequested()) {
+    if (game->deviceStatus().sdRecheckRequested()) {
         game->auditCapture().sealActive(millis());  // no-op unless armed/hot
         radio.poll(millis());                       // release capture -> close sink
         const bool ok = sdCard.recheck();
@@ -706,7 +706,7 @@ void loop() {
             Serial.println("MALSD REFUSED update - an update is writing to the card");
             serialAsk = false;
         }
-        if ((serialAsk || game->sdFormatRequested()) && !game->updateJob().live()) {
+        if ((serialAsk || game->deviceStatus().sdFormatRequested()) && !game->updateJob().live()) {
             if (serialAsk) serialFormatSpent = true;
             Serial.println("MALSD BUSY");
             Serial.flush();
@@ -716,7 +716,7 @@ void loop() {
             const bool rt = ok && sdCard.selfTest();
             game->setSdStatus({rt, sdCard.sizeMB()});
             game->setWebBundleVersion(nullptr);
-            if (game->sdFormatRequested()) game->finishSdFormat(rt);
+            if (game->deviceStatus().sdFormatRequested()) game->finishSdFormat(rt);
             if (rt) Serial.printf("MALSD OK %luMB\n", (unsigned long)sdCard.sizeMB());
             else Serial.printf("MALSD FAIL %s\n", ok ? "round-trip" : sdCard.lastError());
             Serial.flush();
@@ -829,7 +829,7 @@ void loop() {
     // The panel is left showing the notice frame for a moment before it goes off: a
     // device that darkens with no explanation is one the operator will press every
     // button on, and the wake gesture is the last thing on screen.
-    if (game->travelSleepRequested()) {
+    if (game->deviceStatus().travelSleepRequested()) {
         static uint32_t travelDarkenAtMs = 0;
         // An OTA image still on trial has not been committed, and a reset while it is
         // pending is exactly what the bootloader rolls back. Waiting out the trial

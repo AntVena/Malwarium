@@ -60,7 +60,7 @@ CfgMove RadioPages::onPediaQr(RadioHost& host, const ButtonEvent& ev) {
 void RadioPages::drawGroup(Framebuffer& fb, const RadioHost& host, int cursor) const {
     CfgRadioView v;
     v.cursor = cursor;
-    v.owner = host.radioOwner();
+    v.owner = host.deviceStatus().radioOwner();
     v.auditLevel = static_cast<int>(host.auditMode());
     v.linkOn = host.linkEnabled();
     v.apOn = host.apEnabled();

@@ -222,7 +222,7 @@ void test_sd_icon_reveal_window() {
     CHECK(g.sdIconVisible());                         // still within the window
     g.tick(kSdIconRevealMs + kHeartbeatMs);
     CHECK(!g.sdIconVisible());                        // window elapsed -> hidden
-    CHECK(g.sdStatus().present);                      // ...card still present (SD line stays)
+    CHECK(g.deviceStatus().sdStatus().present);                      // ...card still present (SD line stays)
 
     g.setSdStatus({true, 8000});                     // same card, fresh reading
     CHECK(!g.sdIconVisible());                        // no re-flash on a non-transition
@@ -306,11 +306,11 @@ void test_idle_status_icons_grayscale() {
 // the device tier reads + clears it after re-mounting.
 void test_sd_recheck_request_seam() {
     Game g{StartMode::Hatched};
-    CHECK(!g.sdRecheckRequested());
+    CHECK(!g.deviceStatus().sdRecheckRequested());
     g.requestSdRecheck();
-    CHECK(g.sdRecheckRequested());
+    CHECK(g.deviceStatus().sdRecheckRequested());
     g.clearSdRecheck();
-    CHECK(!g.sdRecheckRequested());
+    CHECK(!g.deviceStatus().sdRecheckRequested());
 }
 
 // --- Gate: the Hacker face's battery readout -------------------------------
@@ -346,9 +346,9 @@ static void renderHackerFaceAt(Framebuffer& fb, bool present, int pct) {
         p.present = true;
         p.percent = pct;
         g.setPowerStatus(p);
-        CHECK(g.batteryLevel() == batteryLevel(pct));   // first reading lands as-is
+        CHECK(g.deviceStatus().batteryLevel() == batteryLevel(pct));   // first reading lands as-is
     } else {
-        CHECK(g.batteryLevel() == -1);                  // host default: nothing to draw
+        CHECK(g.deviceStatus().batteryLevel() == -1);                  // host default: nothing to draw
     }
     g.render(fb);
 }

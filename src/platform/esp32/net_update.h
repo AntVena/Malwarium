@@ -411,7 +411,7 @@ private:
             otaOpen_ = true;
             return true;
         }
-        if (!game_->sdStatus().present) {
+        if (!game_->deviceStatus().sdStatus().present) {
             Serial.println("[upd] no card for the web bundle");
             failInstall(InstallFail::WriteFailed);
             return false;

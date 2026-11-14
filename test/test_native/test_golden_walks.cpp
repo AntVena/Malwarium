@@ -406,7 +406,7 @@ void test_golden_cfg_walk() {
         w.snap(g, "format-sd");
         w.press(g, Button::A);
         w.press(g, Button::B);
-        if (g.sdFormatState() == SdFormatState::Working) {
+        if (g.deviceStatus().sdFormatState() == SdFormatState::Working) {
             g.finishSdFormat(true);
             w.snap(g, "formatted");
         }

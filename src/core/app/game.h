@@ -28,6 +28,7 @@
 #include "core/app/game/decryption_screen.h"
 #include "core/app/game/cryptogram_screen.h"
 #include "core/app/game/csf_screen.h"
+#include "core/app/game/device_status.h"
 #include "core/app/game/egg_pick_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/evolve_screen.h"
@@ -719,40 +720,16 @@ public:
         return op_.world.areaCleared(idx);
     }
 
-    // Power/battery status pushed from the platform tier (device reads the ADC +
-    // CHG_STAT; host leaves it absent). Surfaced on the CFG "BATT" line and as the
-    // Hacker face's battery glyph.
-    //
-    // The percentage is smoothed and the glyph's fill level resolved HERE rather than
-    // by each screen, so the two readouts can never disagree about the same battery,
-    // and a platform that samples more often than a screen repaints pays for it once.
-    // A repaint is requested only when something a screen would actually DRAW moved.
-    // A sample that lands on the same number requests nothing, so a free-running
-    // sampler cannot drive the ~4fps event-driven redraw.
-    void setPowerStatus(const PowerStatus& p) {
-        PowerStatus next = p;
-        const bool readable = p.present && p.percent >= 0;
-        if (readable) {
-            next.percent = smoothBatteryPercent(
-                power_.present && power_.percent >= 0 ? power_.percent : -1, p.percent);
-        }
-        const int level =
-            readable ? batteryLevelStable(next.percent, batteryLevel_) : -1;
-        if (next.present != power_.present || next.charging != power_.charging ||
-            next.percent != power_.percent || level != batteryLevel_) {
-            dirty_ = true;
-        }
-        power_ = next;
-        batteryLevel_ = level;
-    }
-    const PowerStatus& powerStatus() const override { return power_; }
-    // Which ICON_SYS_BATTERY frame the current reading draws as, or -1 when there is
-    // no reading to draw (host builds, or a board with the monitor disabled).
-    int batteryLevel() const override { return batteryLevel_; }
+    // What the device tier last reported about the hardware, and the requests the CFG
+    // pages leave for it (game/device_status.h).
+    const DeviceStatus& deviceStatus() const override { return device_; }
 
-    // microSD presence pushed from the platform tier at boot (device mounts the
-    // card + round-trips it; host leaves it absent). Surfaced on the CFG "SD" line
-    // so it reflects the real card instead of a hardcoded "ABSENT".
+    // Power/battery status pushed from the platform tier (device reads the ADC +
+    // CHG_STAT; host leaves it absent). Repaints only when something drawn moved.
+    void setPowerStatus(const PowerStatus& p) {
+        if (device_.setPower(p)) dirty_ = true;
+    }
+
     // The largest single allocation the platform could satisfy right now. 0 means
     // "nobody told us": a host build never sets one, so it never blocks a save there.
     //
@@ -788,27 +765,15 @@ public:
     // The save's pacing and its refusal counts, which the boot log reports.
     const SaveSchedule& saveSchedule() const { return save_; }
 
+    // microSD presence pushed from the platform tier at boot and after a re-check or a
+    // format.
     void setSdStatus(const SdStatus& s) {
-        // A card just becoming present (boot mount OR a runtime re-check) arms the
-        // idle-screen SD-present reveal (sdIconVisible()); a fresh reading of an
-        // already-present card doesn't re-flash it.
-        if (s.present && !sdStatus_.present) {
-            sdIconRevealAtMs_ = nowMs_;
-            sdIconRevealArmed_ = true;
-        }
-        sdStatus_ = s;
+        device_.setSd(s, nowMs_);
         dirty_ = true;
     }
-    const SdStatus& sdStatus() const override { return sdStatus_; }
-
-    // Idle-screen status icons (host-testable). sdIconVisible() is true for
-    // kSdIconRevealMs after the card became present (a transient "card mounted"
-    // flash), dual-coded by icon shape + position so the idle screen stays
-    // readable in grayscale.
-    bool sdIconVisible() const {
-        return sdStatus_.present && sdIconRevealArmed_ &&
-               (nowMs_ - sdIconRevealAtMs_) < kSdIconRevealMs;
-    }
+    // The idle screen's transient "card mounted" flash, dual-coded by icon shape and
+    // position so it reads in grayscale.
+    bool sdIconVisible() const { return device_.sdIconVisible(nowMs_); }
 
     // Idle-screen Audit capture-phase badge (top-right). Writes a short tag into
     // `out` and returns true when a badge should show; returns false + empties
@@ -830,38 +795,28 @@ public:
     // it measures against and the call that draws the line to the same width.
     int exploreStatusLines() const;
 
-    // Runtime microSD re-check seam (mirrors the netScan opt-in pattern). The
-    // device mounts the card once in setup(); a card inserted later is invisible
-    // until this one-shot flag asks the device loop to unmount + remount and push
-    // a fresh setSdStatus(). CFG sets it (requestSdRecheck); the device tier reads
-    // sdRecheckRequested(), acts, then clears it. No-op on host / card-less boards.
-    void requestSdRecheck() override { sdRecheckRequested_ = true; }
-    bool sdRecheckRequested() const { return sdRecheckRequested_; }
-    void clearSdRecheck() { sdRecheckRequested_ = false; }
+    // The device tier reads deviceStatus().sdRecheckRequested(), re-mounts, then clears it.
+    void requestSdRecheck() override { device_.requestSdRecheck(); }
+    void clearSdRecheck() { device_.clearSdRecheck(); }
 
-    // FORMAT SD seam (CFG → DEVICE → FORMAT SD). The operator's yes latches Working;
-    // the device tier sees sdFormatRequested(), stands down everything with a file
-    // open on the card, formats it FAT32, remounts, pushes a fresh setSdStatus() and
-    // reports through finishSdFormat(), which lands Done or Failed for the screen.
-    // Latched rather than pulsed for the reason travel sleep is: the device tier may
-    // decline a pass (an update job is writing to the card) and be asked again.
-    // Host and browser tiers have no card, so they answer finishSdFormat(false). A card
-    // something is writing to (sdCardUse) is refused here, whoever asks.
+    // FORMAT SD (CFG → DEVICE → FORMAT SD). The device tier sees sdFormatRequested(),
+    // stands down everything with a file open on the card, formats it FAT32, remounts,
+    // pushes a fresh setSdStatus() and reports through finishSdFormat(). Host and
+    // browser tiers have no card, so they answer finishSdFormat(false). A card something
+    // is writing to (sdCardUse) is refused here, whoever asks.
     void requestSdFormat() override {
         if (sdCardUse() == SdCardUse::Busy) return;
-        sdFormatState_ = SdFormatState::Working;
+        device_.requestSdFormat();
         dirty_ = true;
     }
     // An update job writes its download to the card.
     SdCardUse sdCardUse() const override {
         return update_.live() ? SdCardUse::Busy : SdCardUse::Free;
     }
-    bool sdFormatRequested() const { return sdFormatState_ == SdFormatState::Working; }
     void finishSdFormat(bool ok) {
-        sdFormatState_ = ok ? SdFormatState::Done : SdFormatState::Failed;
+        device_.finishSdFormat(ok);
         dirty_ = true;
     }
-    SdFormatState sdFormatState() const override { return sdFormatState_; }
 
     // Travel-mode seam (CFG → DEVICE → TRAVEL MODE): a deliberate indefinite pause.
     // Set here, acted on by the device tier, which powers the radio down, lands a save
@@ -878,9 +833,14 @@ public:
     // Latched rather than pulsed: the device tier may have to hold it for a moment (an
     // OTA image on trial must commit before a reset is safe). The host tier clears it
     // without sleeping.
-    void requestTravelSleep() override { travelSleepRequested_ = true; dirty_ = true; }
-    bool travelSleepRequested() const override { return travelSleepRequested_; }
-    void clearTravelSleep() { travelSleepRequested_ = false; dirty_ = true; }
+    void requestTravelSleep() override {
+        device_.requestTravelSleep();
+        dirty_ = true;
+    }
+    void clearTravelSleep() {
+        device_.clearTravelSleep();
+        dirty_ = true;
+    }
 
     // Write the current state now, reporting whether it landed. Unconditional: it
     // does not ask whether anything is dirty, because passive decay moves the model
@@ -891,17 +851,12 @@ public:
     // the caller must stay awake and ask again rather than treat the state as written.
     bool saveNow();
 
-    // Which consent actually holds the radio, pushed from the arbiter whenever it
-    // hands ownership over (platform/esp32/radio_arbiter.h). Runtime-only: it is a
-    // reading of what the hardware is doing right now, not a preference to persist.
-    // The CFG RADIO group and System Info report it, because four toggles resolving
-    // to one owner is otherwise invisible from the screens that set them.
+    // Which consent holds the radio, pushed from the arbiter. The CFG RADIO group and
+    // System Info report it, because four toggles resolving to one owner is otherwise
+    // invisible from the screens that set them.
     void setRadioOwner(RadioOwner o) {
-        if (radioOwner_ == o) return;
-        radioOwner_ = o;
-        dirty_ = true;
+        if (device_.setRadioOwner(o)) dirty_ = true;
     }
-    RadioOwner radioOwner() const override { return radioOwner_; }
     int hackerRank() const { return op_.hackerRank; }              // (unbounded)
 
     // Audit-mode passive Wi-Fi discovery scan. Runtime opt-in, persisted (save
@@ -2172,7 +2127,7 @@ private:
         return bHeld_ ? static_cast<int32_t>(nowMs_ - bDownMs_) : -1;
     }
     void equipTitle(int sector) override;
-    void clearSdFormatResult() override { sdFormatState_ = SdFormatState::Idle; }
+    void clearSdFormatResult() override { device_.clearSdFormatResult(); }
     void clearInstallReport() override { update_.clearInstallReport(); }
     void openTip(Tip t) override { openTipCard(t, Nav::Detail); }
     void disarmHoldB() override { bHeld_ = false; }
@@ -3090,11 +3045,6 @@ private:
     // buff consumed one per battle in buildPlayerCombatant.
     std::optional<WifiEvent> wifi_;
     WifiScreen wifiScreen_;   // its screen (game/wifi_screen.h)
-    PowerStatus power_;  // last SMOOTHED reading from the platform tier
-    // The battery fill currently on screen, which is the state batteryLevelStable
-    // needs to hold a glyph steady across a reading that sits on a band edge. -1 =
-    // nothing drawn yet, so the next reading lands without hysteresis.
-    int batteryLevel_ = -1;
     int allyBuffBattlesLeft_ = 0;
 
     // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp). What the ladder
@@ -3294,24 +3244,7 @@ private:
     // fallback (captureRadio) for a card-less reboot. See core/net/handshake_ledger.h.
     HandshakeLedger handshakeLedger_;
 
-    SdStatus sdStatus_;  // last microSD reading from the platform tier (CFG "SD")
-    // Idle SD-present reveal: game-ms the card last became present + a guard so the
-    // 0-ms sentinel (a boot mount at nowMs_==0) still reveals. sdRecheckRequested_
-    // is the one-shot CFG->device re-mount request.
-    uint32_t sdIconRevealAtMs_ = 0;
-    bool sdIconRevealArmed_ = false;
-    bool sdRecheckRequested_ = false;
-    // CFG->device FORMAT SD job (requestSdFormat / finishSdFormat). Runtime-only:
-    // a reboot mid-format leaves the card for the boot mount to report on.
-    SdFormatState sdFormatState_ = SdFormatState::Idle;
-
-    // Latched CFG->device request to enter travel sleep. Runtime-only: what it asks
-    // for is a reset, and a device that woke from one is not still asking.
-    bool travelSleepRequested_ = false;
-
-    // The arbiter's resolved radio owner (runtime-only; None on host).
-    RadioOwner radioOwner_ = RadioOwner::None;
-
+    DeviceStatus device_;   // game/device_status.h
 
     // The feeding in progress (core/model/feeding.h), held while its modal is up.
     std::optional<Feeding> feeding_;

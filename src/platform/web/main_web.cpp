@@ -147,12 +147,12 @@ void frame() {
     // Travel sleep has no browser equivalent: there is no SoC to park, so the
     // request is landed as a save and cleared, which is the half of it that matters
     // to the visitor's progress.
-    if (g.game->travelSleepRequested() && g.game->saveNow())
+    if (g.game->deviceStatus().travelSleepRequested() && g.game->saveNow())
         g.game->clearTravelSleep();
 
     // No card slot in a browser, so a FORMAT SD yes is answered as the device
     // answers an empty slot: failed, with the screen saying why.
-    if (g.game->sdFormatRequested()) g.game->finishSdFormat(false);
+    if (g.game->deviceStatus().sdFormatRequested()) g.game->finishSdFormat(false);
 
     if (t - g.lastSaveMs >= kWebAutosaveMs) {
         g.lastSaveMs = t;

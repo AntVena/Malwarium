@@ -13,9 +13,7 @@
 #include <cstdint>
 
 #include "core/app/game/cfg_page.h"
-#include "core/device/power_status.h"
-#include "core/device/radio_status.h"
-#include "core/device/sd_status.h"
+#include "core/app/game/device_status.h"
 
 namespace mal {
 
@@ -25,16 +23,13 @@ struct Settings;
 
 class HardwareHost {
 public:
-    virtual const SdStatus& sdStatus() const = 0;
-    virtual SdFormatState sdFormatState() const = 0;
+    virtual const DeviceStatus& deviceStatus() const = 0;
     virtual SdCardUse sdCardUse() const = 0;
     virtual void requestSdFormat() = 0;
     virtual void clearSdFormatResult() = 0;
     virtual void requestSdRecheck() = 0;
-    virtual const PowerStatus& powerStatus() const = 0;
     virtual uint32_t uptimeMs() const = 0;
     virtual bool captureEnabled() const = 0;
-    virtual bool travelSleepRequested() const = 0;
     virtual void requestTravelSleep() = 0;
     // SYSTEM INFO's B arms the hold that reveals the Factory Reset; the page shows how
     // far along it is.
@@ -44,7 +39,6 @@ public:
     // What SYSTEM INFO summarises from the rest of the device.
     virtual const Operator& operatorRecord() const = 0;
     virtual const Settings& settingsRecord() const = 0;
-    virtual RadioOwner radioOwner() const = 0;
     virtual const char* equippedTitleName() const = 0;
 
 protected:

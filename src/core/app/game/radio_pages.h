@@ -10,7 +10,7 @@
 #pragma once
 
 #include "core/app/game/cfg_page.h"
-#include "core/device/radio_status.h"
+#include "core/app/game/device_status.h"
 #include "core/net/audit_capture.h"     // AuditMode
 
 namespace mal {
@@ -28,7 +28,7 @@ public:
     virtual bool linkEnabled() const = 0;
     virtual void setLinkEnabled(bool on) = 0;
     virtual bool linkAmbientStarved() const = 0;
-    virtual RadioOwner radioOwner() const = 0;
+    virtual const DeviceStatus& deviceStatus() const = 0;
     virtual bool netConnectWanted() const = 0;   // the Update claim the arbiter resolves
     virtual bool netProvisioned() const = 0;
     virtual void markDirty() = 0;

@@ -35,7 +35,7 @@ void CfgMenu::onButton(CfgHost& host, const ButtonEvent& ev) {
 
 void CfgMenu::draw(Framebuffer& fb, const CfgHost& host) const {
     drawCfgList(fb, row_, host.operatorRecord().hackerTag, host.equippedTitleName(),
-                host.radioOwner());
+                host.deviceStatus().radioOwner());
 }
 
 // --- Moving between pages -----------------------------------------------------

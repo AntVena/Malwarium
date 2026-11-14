@@ -228,7 +228,7 @@ private:
             uri = "/index.html";
 
         FILE* f = nullptr;
-        if (game_->sdStatus().present) {
+        if (game_->deviceStatus().sdStatus().present) {
             const String path = String("/sdcard/web") + uri;
             f = std::fopen(path.c_str(), "rb");
         }

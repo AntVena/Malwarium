@@ -99,15 +99,16 @@ void HackerScreen::drawHome(Framebuffer& fb, const HackerHost& host, int cursor)
     // shot loses, which is what the tinting rule asks. Absent on the host and on a
     // board with the monitor off: an empty shell there would report a flat battery
     // rather than no battery, and silence is the honest reading.
-    if (host.batteryLevel() >= 0) {
+    const DeviceStatus& device = host.deviceStatus();
+    if (device.batteryLevel() >= 0) {
+        const PowerStatus& power = device.powerStatus();
         char pct[12];
-        std::snprintf(pct, sizeof(pct), host.powerStatus().charging ? "CHG %d%%" : "%d%%",
-                      host.powerStatus().percent);
-        const Rgb565 battColor = !host.powerStatus().charging && host.powerStatus().percent <= kBatteryLowPct
+        std::snprintf(pct, sizeof(pct), power.charging ? "CHG %d%%" : "%d%%", power.percent);
+        const Rgb565 battColor = !power.charging && power.percent <= kBatteryLowPct
                                      ? palColor(Pal::HOT)
                                      : palColor(Pal::INK);
         const SpriteData& glyph = ASSET_ICON_SYS_BATTERY;
-        drawSpriteTinted(fb, glyph, host.batteryLevel(), kMargin, y, battColor);
+        drawSpriteTinted(fb, glyph, device.batteryLevel(), kMargin, y, battColor);
         // Centred against the glyph rather than sitting on its top edge, so the two
         // read as one readout: an 8px face inside a 16px cell.
         drawText(fb, kMargin + glyph.frameW + 4, y + (glyph.h - kFontH) / 2, pct,

@@ -211,7 +211,7 @@ private:
     // Capture is only power-gated on battery; unknown/absent readings and external
     // power never block it (host/no-monitor builds, or plugged in to charge).
     bool batteryOkForCapture() const {
-        const PowerStatus& p = game_->powerStatus();
+        const PowerStatus& p = game_->deviceStatus().powerStatus();
         if (!p.present || p.charging || p.percent < 0) return true;
         return p.percent >= kAuditMinBatteryPct;
     }

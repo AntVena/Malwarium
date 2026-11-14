@@ -42,7 +42,7 @@ public:
     // What the CFG list and the DEVICE group page summarise.
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
-    virtual RadioOwner radioOwner() const = 0;
+    virtual const DeviceStatus& deviceStatus() const = 0;
     virtual const char* equippedTitleName() const = 0;
     virtual const char* themeName() const = 0;
 

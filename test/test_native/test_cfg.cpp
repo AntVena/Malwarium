@@ -33,16 +33,16 @@ void test_cfg_travel_confirm_asks_twice() {
         Game g{StartMode::Hatched};
         enterCfgTarget(g, CfgScreen::Travel);
         CHECK(g.cfgScreen() == CfgScreen::Travel);
-        CHECK(!g.travelSleepRequested());
+        CHECK(!g.deviceStatus().travelSleepRequested());
         g.onButton(press(Button::B));
-        CHECK(!g.travelSleepRequested());
+        CHECK(!g.deviceStatus().travelSleepRequested());
         CHECK(g.cfgScreen() == CfgScreen::Device);
     }
     {   // C is the other way out, and equally silent.
         Game g{StartMode::Hatched};
         enterCfgTarget(g, CfgScreen::Travel);
         tapC(g);
-        CHECK(!g.travelSleepRequested());
+        CHECK(!g.deviceStatus().travelSleepRequested());
         CHECK(g.cfgScreen() == CfgScreen::Device);
     }
     {   // A moves onto YES; only then does B latch the request.
@@ -50,12 +50,12 @@ void test_cfg_travel_confirm_asks_twice() {
         enterCfgTarget(g, CfgScreen::Travel);
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));
-        CHECK(g.travelSleepRequested());
+        CHECK(g.deviceStatus().travelSleepRequested());
         // Latched, not a pulse: the device tier is already landing a save and
         // powering the panel down, so nothing here half-cancels it.
         tapC(g);
         g.onButton(press(Button::A));
-        CHECK(g.travelSleepRequested());
+        CHECK(g.deviceStatus().travelSleepRequested());
         CHECK(g.cfgScreen() == CfgScreen::Travel);
     }
 }
@@ -68,14 +68,14 @@ void test_cfg_format_sd_confirm() {
         enterCfgTarget(g, CfgScreen::FormatSd);
         CHECK(g.cfgScreen() == CfgScreen::FormatSd);
         g.onButton(press(Button::B));
-        CHECK(!g.sdFormatRequested());
+        CHECK(!g.deviceStatus().sdFormatRequested());
         CHECK(g.cfgScreen() == CfgScreen::Device);
     }
     {   // C is the other way out, and equally silent.
         Game g{StartMode::Hatched};
         enterCfgTarget(g, CfgScreen::FormatSd);
         tapC(g);
-        CHECK(!g.sdFormatRequested());
+        CHECK(!g.deviceStatus().sdFormatRequested());
         CHECK(g.cfgScreen() == CfgScreen::Device);
     }
     {   // A moves onto YES; only then does B latch the job, which nothing cancels.
@@ -83,22 +83,22 @@ void test_cfg_format_sd_confirm() {
         enterCfgTarget(g, CfgScreen::FormatSd);
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));
-        CHECK(g.sdFormatRequested());
-        CHECK(g.sdFormatState() == SdFormatState::Working);
+        CHECK(g.deviceStatus().sdFormatRequested());
+        CHECK(g.deviceStatus().sdFormatState() == SdFormatState::Working);
         tapC(g);
         g.onButton(press(Button::A));
-        CHECK(g.sdFormatRequested());
+        CHECK(g.deviceStatus().sdFormatRequested());
         CHECK(g.cfgScreen() == CfgScreen::FormatSd);
 
         // The device tier's half: a fresh reading, then the outcome.
         g.setSdStatus({true, 30000});
         g.finishSdFormat(true);
-        CHECK(!g.sdFormatRequested());
-        CHECK(g.sdFormatState() == SdFormatState::Done);
+        CHECK(!g.deviceStatus().sdFormatRequested());
+        CHECK(g.deviceStatus().sdFormatState() == SdFormatState::Done);
         CHECK(g.cfgScreen() == CfgScreen::FormatSd);  // the result stays to be read
         g.onButton(press(Button::A));                 // any button leaves it
         CHECK(g.cfgScreen() == CfgScreen::Device);
-        CHECK(g.sdFormatState() == SdFormatState::Idle);
+        CHECK(g.deviceStatus().sdFormatState() == SdFormatState::Idle);
     }
     {   // A failure is reported the same way, and re-opening asks the question again.
         Game g{StartMode::Hatched};
@@ -106,11 +106,11 @@ void test_cfg_format_sd_confirm() {
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));
         g.finishSdFormat(false);
-        CHECK(g.sdFormatState() == SdFormatState::Failed);
+        CHECK(g.deviceStatus().sdFormatState() == SdFormatState::Failed);
         tapC(g);
         CHECK(g.cfgScreen() == CfgScreen::Device);
         enterCfgTarget(g, CfgScreen::FormatSd);
-        CHECK(g.sdFormatState() == SdFormatState::Idle);
+        CHECK(g.deviceStatus().sdFormatState() == SdFormatState::Idle);
     }
 }
 
@@ -125,12 +125,12 @@ void test_cfg_format_sd_refused_during_update() {
     enterCfgTarget(g, CfgScreen::FormatSd);
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
-    CHECK(!g.sdFormatRequested());
+    CHECK(!g.deviceStatus().sdFormatRequested());
     CHECK(g.cfgScreen() == CfgScreen::FormatSd);  // stays, saying why
     // The card's owner refuses, not the screen: any other caller is refused alike.
     CHECK(g.sdCardUse() == SdCardUse::Busy);
     g.requestSdFormat();
-    CHECK(!g.sdFormatRequested());
+    CHECK(!g.deviceStatus().sdFormatRequested());
 }
 
 // RADIO draws the update job's row above the toggles exactly while the job claims the
@@ -247,11 +247,11 @@ void test_cfg_group_back_resumes_row() {
 // two consents can read ON while exactly one holds the radio.
 void test_cfg_radio_reports_owner() {
     Game g{StartMode::Hatched};
-    CHECK(g.radioOwner() == RadioOwner::None);    // host: nothing owns the radio
+    CHECK(g.deviceStatus().radioOwner() == RadioOwner::None);    // host: nothing owns the radio
     g.setNetScanEnabled(true);
     g.setApEnabled(true);                          // both consents on...
     g.setRadioOwner(RadioOwner::Ap);               // ...the arbiter granted ONE
-    CHECK(std::string(radioOwnerName(g.radioOwner())) == "PEDIA AP");
+    CHECK(std::string(radioOwnerName(g.deviceStatus().radioOwner())) == "PEDIA AP");
     enterCfgTarget(g, CfgScreen::Radio);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
@@ -564,9 +564,9 @@ void test_cfg_sysinfo_sd_recheck() {
     Game g{StartMode::Hatched};
     enterCfgTarget(g, CfgScreen::SysInfo);
     CHECK(g.cfgScreen() == CfgScreen::SysInfo);
-    CHECK(!g.sdRecheckRequested());
+    CHECK(!g.deviceStatus().sdRecheckRequested());
     g.onButton(press(Button::A));                 // ask the device tier to re-mount
-    CHECK(g.sdRecheckRequested());
+    CHECK(g.deviceStatus().sdRecheckRequested());
     CHECK(g.nav() == Game::Nav::Detail);          // ...and stay to watch the SD line
     g.clearSdRecheck();                            // (the device tier's half)
     tapC(g);

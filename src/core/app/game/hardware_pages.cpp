@@ -16,7 +16,7 @@ void HardwarePages::open(HardwareHost& host, CfgScreen page) {
         case CfgScreen::Travel: pick_ = 0; break;              // always opens on NO
         case CfgScreen::FormatSd:                              // ...likewise, and a result
             pick_ = 0;                                         // left on screen is spent
-            if (host.sdFormatState() != SdFormatState::Working) host.clearSdFormatResult();
+            if (host.deviceStatus().sdFormatState() != SdFormatState::Working) host.clearSdFormatResult();
             break;
         default: break;
     }
@@ -35,7 +35,7 @@ CfgMove HardwarePages::onSysInfo(HardwareHost& host, const ButtonEvent& ev) {
 // a save and powering the panel down, and a press that half-cancelled that would leave
 // the operator guessing which state they are in.
 CfgMove HardwarePages::onTravel(HardwareHost& host, const ButtonEvent& ev) {
-    if (host.travelSleepRequested()) return CfgMove::stay();
+    if (host.deviceStatus().travelSleepRequested()) return CfgMove::stay();
     CfgMove move = CfgMove::stay();
     if (ev.button == Button::A) pick_ ^= 1;
     else if (ev.button == Button::B) {
@@ -50,7 +50,7 @@ CfgMove HardwarePages::onTravel(HardwareHost& host, const ButtonEvent& ev) {
 // here could stop a format. A result is read, then any button leaves. YES on a busy
 // card is refused by the request itself.
 CfgMove HardwarePages::onFormatSd(HardwareHost& host, const ButtonEvent& ev) {
-    const SdFormatState st = host.sdFormatState();
+    const SdFormatState st = host.deviceStatus().sdFormatState();
     if (st == SdFormatState::Working) return CfgMove::stay();
     CfgMove move = CfgMove::stay();
     if (st != SdFormatState::Idle) {
@@ -76,9 +76,9 @@ void HardwarePages::drawSysInfo(Framebuffer& fb, const HardwareHost& host) const
     std::snprintf(rankLine, sizeof(rankLine), "R%d %s", op.hackerRank,
                   hackerRankTitle(op.hackerRank));
     SysInfoView v;
-    v.owner = host.radioOwner();
-    v.sd = host.sdStatus();
-    v.power = host.powerStatus();
+    v.owner = host.deviceStatus().radioOwner();
+    v.sd = host.deviceStatus().sdStatus();
+    v.power = host.deviceStatus().powerStatus();
     v.uptimeMs = host.uptimeMs();
     v.fwVersion = kFirmwareVersion;
     v.uiMode = host.settingsRecord().uiMode;
@@ -95,15 +95,16 @@ void HardwarePages::drawSysInfo(Framebuffer& fb, const HardwareHost& host) const
 // Two faces, like UPDATES: the question, then the notice that replaces it for as long as
 // the device is still on its way down.
 void HardwarePages::drawTravel(Framebuffer& fb, const HardwareHost& host) const {
-    if (host.travelSleepRequested()) drawTravelSleeping(fb);
+    if (host.deviceStatus().travelSleepRequested()) drawTravelSleeping(fb);
     else drawTravelConfirm(fb, pick_);
 }
 
 void HardwarePages::drawFormatSd(Framebuffer& fb, const HardwareHost& host) const {
-    if (host.sdFormatState() == SdFormatState::Idle)
-        drawSdFormatConfirm(fb, pick_, host.sdStatus(), host.sdCardUse());
+    const DeviceStatus& device = host.deviceStatus();
+    if (device.sdFormatState() == SdFormatState::Idle)
+        drawSdFormatConfirm(fb, pick_, device.sdStatus(), host.sdCardUse());
     else
-        drawSdFormatStatus(fb, host.sdFormatState(), host.sdStatus());
+        drawSdFormatStatus(fb, device.sdFormatState(), device.sdStatus());
 }
 
 }  // namespace mal

@@ -646,7 +646,7 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
     // gesture that brings the device back.
     const MenuIdle idle = screenIdle();
     const bool held = pet_.armed.lockoutActive || idle == MenuIdle::Holds || bHeld_ ||
-                      travelSleepRequested_;
+                      device_.travelSleepRequested();
     // The long budget (kRadioScreenDefocusMs) is for a screen that lingers, and for as
     // long as a duel or an update job has this device on the air: the panel must stay up
     // to report what the radio is doing for the operator.
