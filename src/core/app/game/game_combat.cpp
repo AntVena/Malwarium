@@ -135,7 +135,7 @@ void Game::openExploitPicker() {
     fight_.combat.openOverride(combatItemOptions(), crewExploitOption(), op_.cant.sigils);
 }
 
-void Game::stepGuardianFlock() { guardianFlock_.step(guardianFlockMood()); }
+void Game::stepGuardianFlock() { shib_.flock.step(guardianFlockMood()); }
 
 int Game::combatBeatsForTurn() const {
     // Combat already tracks the same-actor streak for its own combo-damage bonus

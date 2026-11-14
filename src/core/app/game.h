@@ -105,6 +105,7 @@
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
 #include "core/model/pet.h"
+#include "core/model/shiboleet_meeting.h"
 #include "core/model/pet_model.h"
 #include "core/model/pet_upgrades.h"
 #include "core/model/save.h"
@@ -185,19 +186,10 @@ public:
     using WifiOutcome = mal::WifiOutcome;
     using NetDiscovery = mal::NetDiscovery;
 
-    // How a guardian receives the pet, graded on how much of the CANT it can read
-    // (cantFluencyPct, core/model/cant.h). Public so a test can steer/inspect the band a
-    // fluency landed in without playing a walk out.
-    //
-    //   Affront: it will not hear an illiterate pet out, and attacks.
-    //   Riddle: the full SHIBOLEET, a riddle drawn in the Cant with three replies.
-    //   Boon:    fluent enough that the two simply talk; no riddle at all.
-    enum class ShiboleetWelcome : uint8_t { Affront, Riddle, Boon };
-
-    // How a riddle ENDED. Answered is the only one that can buy a sigil; the other two
-    // both hand the pet to the guardian's fight, and are distinguished only so the
-    // flavor line can tell the truth about which happened.
-    enum class ShiboleetReply : uint8_t { Pending, Answered, Wrong, Unanswered };
+    // How a guardian received the pet and how its riddle ended
+    // (core/model/shiboleet_meeting.h), named here so the gates can say which.
+    using ShiboleetWelcome = mal::ShiboleetWelcome;
+    using ShiboleetReply = mal::ShiboleetReply;
 
     // Which slice of the DECRYPTOGRAM pool a roll is allowed to land in. The VAULT
     // wants an unsolved quote (a prize to win) or, once there are none, a solved one to
@@ -1361,21 +1353,19 @@ public:
     // durable half of the whole guardian system.
     SigilSet cantSigils() const override { return op_.cant.sigils; }
     int sigilsKnown() const override { return sigilCount(op_.cant.sigils); }
-    // The guardian encounter's live state, for the screen and for tests: which band the
-    // fluency roll landed in, how the riddle ended, and the riddle itself already drawn
-    // in the Cant. `shiboleetReplyText` fills `out` with the reply on shown row `row`.
-    ShiboleetWelcome shiboleetWelcome() const { return shibWelcome_; }
-    ShiboleetReply shiboleetReply() const { return shibReply_; }
+    // The guardian encounter's live state (ShiboleetMeeting): the meeting itself for its
+    // screen, and the reads below for the gates: which band the fluency roll landed in,
+    // how the riddle ended, and its words already drawn in the Cant.
+    ShiboleetWelcome shiboleetWelcome() const { return shib_.welcome; }
+    ShiboleetReply shiboleetReply() const { return shib_.reply; }
     int shiboleetRow() const { return shiboleet_.row(); }
-    const char* guardianName() const override;
-    void shiboleetRiddleText(char* out, int cap) const override;
+    const ShiboleetMeeting& shiboleetMeeting() const override { return shib_; }
     // The two halves of what the guardian is doing. `shiboleetGreeting` is what it SAYS,
     // already drawn in the Cant like the riddle; `guardianDemeanour` is what the pet can
     // SEE, always plain, so a pet with no sigils still learns something (GuardianLine,
     // area_defs.h).
-    void shiboleetGreeting(char* out, int cap) const override;
-    const char* guardianDemeanour() const override;
-    void shiboleetReplyText(int row, char* out, int cap) const override;
+    void shiboleetGreeting(char* out, int cap) const { shib_.greeting(out, cap); }
+    const char* guardianDemeanour() const { return shib_.demeanour(); }
     // The two beats that BRACKET the riddle (Nav::ShiboleetHail, Nav::ShiboleetVerdict).
     // A guardian encounter has three parts: a hail, the riddle, and a verdict on what the
     // pet said.
@@ -1387,15 +1377,15 @@ public:
     // can see it doing, always plain. `shiboleetVerdictLine` is the engine's own plain
     // ledger of what the meeting paid or cost ("+6 HAPPY  -4 FRAG"), and
     // `shiboleetFlavor` is the consequence in words ("LEARNED A SIGIL - 3/26").
-    GuardianOutcome shiboleetOutcome() const override;
-    void shiboleetOutcomeSpeech(char* out, int cap) const override;
-    const char* shiboleetOutcomeSeen() const override;
-    const char* shiboleetVerdictLine() const override { return shibVerdictLine_; }
-    const char* shiboleetFlavor() const override { return shibFlavor_; }
+    GuardianOutcome shiboleetOutcome() const { return shib_.outcome(); }
+    void shiboleetOutcomeSpeech(char* out, int cap) const { shib_.outcomeSpeech(out, cap); }
+    const char* shiboleetOutcomeSeen() const { return shib_.outcomeSeen(); }
+    const char* shiboleetVerdictLine() const { return shib_.verdictLine; }
+    const char* shiboleetFlavor() const { return shib_.flavor; }
     // Whether the verdict hands the pet to the guardian's fight rather than back to the
     // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
     // meant a boss.
-    bool shiboleetVerdictFights() const override;
+    bool shiboleetVerdictFights() const { return shib_.verdictFights(); }
     // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite. It is a
     // flock, and this is the live one: reset when a guardian speaks and stepped on the
     // fast FX clock for as long as the pet is looking at it (game_core.cpp).
@@ -1403,11 +1393,11 @@ public:
     // `guardianFlockMood` is what it is DOING, folded from where the meeting has got to
     // and how it came out. It is a standing disposition, as RENDER_PIPELINE.md requires
     // of an effect that describes a state.
-    const Flock& guardianFlock() const { return guardianFlock_; }
+    const Flock& guardianFlock() const { return shib_.flock; }
     FlockMood guardianFlockMood() const;
     // Which shown row carries the true reply. Exposed for the gates only; no screen
     // or press handler calls it.
-    int shiboleetTrueRow() const;
+    int shiboleetTrueRow() const { return shib_.trueRow(); }
     // Register a handshake the device-tier promiscuous capture just observed +
     // wrote to the .pcap. Always drives the AuditCapture SM hot (a capture DID
     // happen), but only counts + persists once per distinct BSSID. Returns true if
@@ -3491,36 +3481,11 @@ private:
     int batteryLevel_ = -1;
     int allyBuffBattlesLeft_ = 0;
 
-    // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp, core/model/cant.h).
-    //
-    // What the ladder remembers is the Operator's (OperatorCant). Everything here
-    // describes ONE encounter and is rebuilt every time a guardian speaks, which is why
-    // the cipher in particular is not persisted: a mapping that survived a reboot would
-    // be a mapping worth memorising instead of learning.
-
-    ShiboleetWelcome shibWelcome_ = ShiboleetWelcome::Riddle;
-    ShiboleetReply shibReply_ = ShiboleetReply::Pending;
-    CantCipher shibCipher_;
-    int shibRiddle_ = 0;        // index into riddles() (content_riddles.h)
-    // Which authored reply sits on each shown row. The pool authors the TRUE reply first
-    // (content_riddles.h), so the order shown has to be shuffled somewhere; doing it here
-    // rather than in the pool is what keeps "add a riddle" a one-line edit.
-    uint8_t shibOrder_[kRiddleReplies] = {0, 1, 2};
+    // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp). What the ladder
+    // remembers is the Operator's (OperatorCant); the meeting in progress, or the last
+    // one, is a run, rolled again each time a guardian speaks.
+    ShiboleetMeeting shib_;
     ShiboleetScreen shiboleet_;   // the meeting's three pages, and the riddle's cursor
-    // Which of the guardian's greeting/demeanour pairs this meeting used
-    // (GuardianLine, area_defs.h). Rolled per encounter, so a guardian met twice is not
-    // word-for-word the same meeting.
-    int shibLine_ = 0;
-    // What the meeting came to, in words, for the VERDICT screen and for the walk's line
-    // after it. `shibFlavor_` is the consequence ("LEARNED A SIGIL - 3/26", "IS NOT
-    // ANSWERED"); `shibVerdictLine_` is the stat ledger beside it ("+6 HAPPY  -4 FRAG").
-    // Both are written where the payout happens, so the screen only ever reads them.
-    char shibFlavor_[40] = "";
-    char shibVerdictLine_[40] = "";
-    // The swarm the guardian IS. Volatile like everything else about one meeting: a flock
-    // is reset per encounter, so nothing about the body a player watched is persisted.
-    // It is the same creature next time and never the same shape.
-    Flock guardianFlock_;
 
     // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
     // structures answering three questions:

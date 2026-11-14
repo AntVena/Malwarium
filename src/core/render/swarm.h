@@ -24,7 +24,7 @@
 // guardian's DISPOSITION (FlockMood, set from where the meeting has got to and how it
 // came out), and never a beat: a swarm does not run out, it is doing something until the
 // guardian is doing something else. The motion is the model integrating under that mood,
-// which is why the one thing remembered lives on the caller (Game::guardianFlock_), the
+// which is why the one thing remembered lives on the caller (ShiboleetMeeting::flock), the
 // same way FX_CAMO's level does.
 //
 // This draw itself allocates nothing and stores nothing: it is a pure function of the

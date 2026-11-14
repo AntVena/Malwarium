@@ -3,41 +3,30 @@
 //
 // A guardian meeting is a hail, then a riddle when the fluency roll called for one, then
 // a verdict. The pages are never open together and are one meeting, so they are one
-// screen. It holds the riddle's cursor, owns the three pages' input and draw, and
-// reaches the meeting through ShiboleetHost. The meeting itself (the welcome band, the
-// cipher, the reply and what it paid) stays the game's (game_shiboleet.cpp), because
-// its consequences land on the pet and the walk.
+// screen. It holds the riddle's cursor, owns the three pages' input and draw, and reads
+// the meeting (core/model/shiboleet_meeting.h: the welcome band, the cipher, the reply
+// and what it paid) through ShiboleetHost. Moving the meeting on is the game's
+// (game_shiboleet.cpp), because its consequences land on the pet and the walk.
 #pragma once
 
 #include <cstdint>
 
-#include "core/content/areas/area_defs.h"   // GuardianOutcome
 #include "core/device/platform.h"
 #include "core/render/swarm.h"   // SwarmView
 
 namespace mal {
 
 class Framebuffer;
+struct ShiboleetMeeting;
 
 // What the pages need from the game. Game implements it; a test can too.
 class ShiboleetHost {
 public:
-    virtual const char* guardianName() const = 0;
-    virtual const char* guardianDemeanour() const = 0;   // what the pet can see it doing
+    virtual const ShiboleetMeeting& shiboleetMeeting() const = 0;
+    virtual SwarmView guardianSwarm() const = 0;   // the meeting's flock, as the draw sees it
+    // The pet's standing in the Cant, which the hail shows beside the guardian.
     virtual uint32_t cantSigils() const = 0;
     virtual int shakesUnspent() const = 0;
-    virtual SwarmView guardianSwarm() const = 0;
-    // The meeting's words, already drawn in the Cant.
-    virtual void shiboleetGreeting(char* out, int cap) const = 0;
-    virtual void shiboleetRiddleText(char* out, int cap) const = 0;
-    virtual void shiboleetReplyText(int row, char* out, int cap) const = 0;
-    virtual void shiboleetOutcomeSpeech(char* out, int cap) const = 0;
-    // How it came out, and what that paid or cost.
-    virtual GuardianOutcome shiboleetOutcome() const = 0;
-    virtual const char* shiboleetOutcomeSeen() const = 0;
-    virtual const char* shiboleetVerdictLine() const = 0;
-    virtual const char* shiboleetFlavor() const = 0;
-    virtual bool shiboleetVerdictFights() const = 0;
     virtual int eventHoldBeat() const = 0;   // how far the page's hands-off hold has run
 
     // Each page moves on by itself after a hold; a press starts that hold again so a

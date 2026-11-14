@@ -439,7 +439,7 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
     if (nowMs - lastFxMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
     lastFxMs_ = nowMs;
     fxBeat_++;
-    if (swarmLive) guardianFlock_.step(guardianFlockMood());
+    if (swarmLive) shib_.flock.step(guardianFlockMood());
     return Cadence::Fired;
 }
 

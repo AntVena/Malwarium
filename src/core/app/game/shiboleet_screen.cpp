@@ -1,5 +1,6 @@
 #include "core/app/game/shiboleet_screen.h"
 
+#include "core/model/shiboleet_meeting.h"
 #include "core/ui/shiboleet_screen.h"
 #include "tunables.h"
 
@@ -33,28 +34,30 @@ void ShiboleetScreen::onVerdict(ShiboleetHost& host, const ButtonEvent& ev) {
 }
 
 void ShiboleetScreen::drawHail(Framebuffer& fb, const ShiboleetHost& host) const {
+    const ShiboleetMeeting& m = host.shiboleetMeeting();
     char greeting[kRiddleBodyCols * 2 + 8];
-    host.shiboleetGreeting(greeting, sizeof(greeting));
+    m.greeting(greeting, sizeof(greeting));
     const SwarmView swarm = host.guardianSwarm();
     GuardianView g;
-    g.name = host.guardianName();
-    g.demeanour = host.guardianDemeanour();
+    g.name = m.guardianName();
+    g.demeanour = m.demeanour();
     g.sigils = host.cantSigils();
     g.swarm = &swarm;
     drawShiboleetHail(fb, g, greeting, host.shakesUnspent());
 }
 
 void ShiboleetScreen::drawRiddle(Framebuffer& fb, const ShiboleetHost& host) const {
+    const ShiboleetMeeting& m = host.shiboleetMeeting();
     char riddle[kRiddleBodyLines * kRiddleBodyCols + 16];
-    host.shiboleetRiddleText(riddle, sizeof(riddle));
+    m.riddleText(riddle, sizeof(riddle));
     char reply[kRiddleReplies][40];
     const char* rows[kRiddleReplies];
     for (int i = 0; i < kRiddleReplies; ++i) {
-        host.shiboleetReplyText(i, reply[i], sizeof(reply[i]));
+        m.replyText(i, reply[i], sizeof(reply[i]));
         rows[i] = reply[i];
     }
     char greeting[kRiddleBodyCols * 2 + 8];
-    host.shiboleetGreeting(greeting, sizeof(greeting));
+    m.greeting(greeting, sizeof(greeting));
     RiddleView r;
     r.greeting = greeting;
     r.riddle = riddle;
@@ -62,36 +65,37 @@ void ShiboleetScreen::drawRiddle(Framebuffer& fb, const ShiboleetHost& host) con
     r.cursor = row_;
     r.holdFrac = static_cast<float>(host.eventHoldBeat()) / kShiboleetReplyHoldBeats;
     GuardianView g;
-    g.name = host.guardianName();
-    g.demeanour = host.guardianDemeanour();
+    g.name = m.guardianName();
+    g.demeanour = m.demeanour();
     g.sigils = host.cantSigils();
     drawShiboleet(fb, g, r);
 }
 
 void ShiboleetScreen::drawVerdict(Framebuffer& fb, const ShiboleetHost& host) const {
+    const ShiboleetMeeting& m = host.shiboleetMeeting();
     // The content layer's outcome mapped onto the screen's own four. The two enums
     // stay separate: an area row is authored against GuardianOutcome, and the renderer
     // needs only the banner word and whether it is bad news.
     ShiboleetVerdictKind kind = ShiboleetVerdictKind::Pleased;
-    switch (host.shiboleetOutcome()) {
+    switch (m.outcome()) {
         case GuardianOutcome::Pleased:    kind = ShiboleetVerdictKind::Pleased; break;
         case GuardianOutcome::Displeased: kind = ShiboleetVerdictKind::Displeased; break;
         case GuardianOutcome::Affront:    kind = ShiboleetVerdictKind::Refused; break;
         case GuardianOutcome::Boon:       kind = ShiboleetVerdictKind::Boon; break;
     }
     char speech[kRiddleBodyCols * 2 + 8];
-    host.shiboleetOutcomeSpeech(speech, sizeof(speech));
+    m.outcomeSpeech(speech, sizeof(speech));
     VerdictView v;
     v.kind = kind;
     v.speech = speech;
-    v.ledger = host.shiboleetVerdictLine();
-    v.flavor = host.shiboleetFlavor();
-    v.next = host.shiboleetVerdictFights() ? VerdictNext::Fight : VerdictNext::Continue;
+    v.ledger = m.verdictLine;
+    v.flavor = m.flavor;
+    v.next = m.verdictFights() ? VerdictNext::Fight : VerdictNext::Continue;
     // The verdict shows what the guardian made of the answer, not its standing demeanour.
     const SwarmView swarm = host.guardianSwarm();
     GuardianView g;
-    g.name = host.guardianName();
-    g.demeanour = host.shiboleetOutcomeSeen();
+    g.name = m.guardianName();
+    g.demeanour = m.outcomeSeen();
     g.sigils = host.cantSigils();
     g.swarm = &swarm;
     drawShiboleetVerdict(fb, g, v);

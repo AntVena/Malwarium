@@ -749,6 +749,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }
 }  // namespace
 
-SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
+SwarmView Game::guardianSwarm() const { return swarmViewOf(shib_.flock); }
 
 }  // namespace mal
