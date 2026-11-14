@@ -150,18 +150,43 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 
 #### Screens
 
-- **CFG is a menu of subsystems behind one host.** `CfgHost` has about sixty-three methods
-  because every subsystem with a setting is reached through it, and each page can see all
-  of them. Grouped by what they serve: the menu moves every page shares (8: `openDetail`,
-  `closeDetail`, `leaveToCarousel`, the hold), display, sound and theme over `Settings`
-  (~13), UPDATES (~11), the radio consents and network status (~11), storage, power and
-  system info (~9), the operator's identity (5: titles, the tag), and the resets and tips
-  (4). Each group changes for its own reason, so `CfgMenu` becomes the menu only (the page
-  table, the moves, the shared focus) and each page a type with its own host named for its
-  subsystem (`UpdatesHost`, `RadioHost`, ...), extending one `CfgPageHost` for the shared
-  moves, the way each played board's host extends `BoardHost`. Start by listing each
-  method against the page that calls it, then one page per commit. | `cfg_menu.h`,
-  `cfg_menu.cpp`, `game_config.cpp` | M |
+- **CFG is a menu of subsystems behind one host.** `CfgHost` has sixty-one methods because
+  every subsystem with a setting is reached through it, and every page can see all of them.
+  `CfgMenu` becomes the menu only (the page table, the moves, the shared focus) and each
+  page a type whose host carries its subsystem's verbs, over one `CfgPageHost` for the
+  shared moves, the way each played board's host extends `BoardHost`. One page per commit.
+  The audit (every method against the page in `cfg_menu.cpp` that calls it):
+  - Shared by every page (`CfgPageHost`, 10): `openDetail`, `closeDetail`,
+    `leaveToCarousel`, `markDirty`, `armHoldB`, `disarmHoldB`, `heldBMs`, `screenBeat`,
+    and the two record reads `settingsRecord`, `operatorRecord`.
+  - UPDATES and its QR (13): `updateSourceKnown`, `updateCheckReady`, `updateJobLive`,
+    `updateJobTarget`, `updateStatus`, `installStatus`, `netStatus`, `netProvisioned`,
+    `updateManifestUrl`, `webBundleVersion`, `requestUpdateCheck`, `requestUpdateInstall`,
+    `clearInstallReport`. `netProvisioned` is also the PEDIA QR's home-network step.
+  - RADIO (AUDIT, PEDIA AP, PASSIVE LINK, PEDIA QR; 8): `auditMode`, `setAuditMode`,
+    `apEnabled`, `setApEnabled`, `linkEnabled`, `setLinkEnabled`, `linkAmbientStarved`,
+    `radioOwner`.
+  - DEVICE's display and sound settings over `Settings` (6): `setUiMode`, `setCareAlerts`,
+    `setBrightness`, `setSoundMode`, `previewVolume`, `setVolume`.
+  - The looks the operator has unlocked (THEME, BACKGROUND, TITLE, HACKERTAG; 9):
+    `themeName`, `themeRow`, `themesUnlockedMask`, `setThemePick`, `backgroundOwned`,
+    `setBackgroundPick`, `equippedTitleName`, `nextSelectableTitle`, `equipTitle`, plus
+    `setHackerTag`.
+  - The hardware (SYSTEM INFO, TRAVEL MODE, FORMAT SD; 10): `sdStatus`, `sdFormatState`,
+    `requestSdFormat`, `clearSdFormatResult`, `requestSdRecheck`, `powerStatus`,
+    `uptimeMs`, `captureEnabled`, `travelSleepRequested`, `requestTravelSleep`.
+  - TIPS (2): `replayableTips`, `openTip`. The resets (2): `resetToHatch` (the RESET TO
+    HATCH row), `executeFactoryReset` (the hold behind SYSTEM INFO).
+  DEVICE is a menu group, not a subsystem: its pages split across settings, looks, tips
+  and hardware above. Two reads cross groups and are rules in the wrong place, to fix as
+  the pages move: FORMAT SD asks `updateJobLive()` whether the card is busy and refuses
+  the format itself (the card's owner should answer "in use", and `requestSdFormat`
+  refuse), and the RADIO page reads `updateJobLive()` to draw the update job as a claimant
+  above its three toggles, live or not yet on the air (the radio's host should say which
+  claimants are waiting, so the page needs nothing from UPDATES). SYSTEM INFO reads
+  `radioOwner`, `sdStatus` and `equippedTitleName` for its summary, which is its job:
+  it takes those reads from the hosts that own them. | `cfg_menu.h`, `cfg_menu.cpp`,
+  `game_config.cpp` | M |
 - **RESET PET's confirm undersells it.** The Factory Reset page says RESET PET "KEEPS PEDIA
   PROGRESS", and it now keeps everything on the `Operator` (the tag, the wallet, the spare
   mods, the ARCH rack, the tallies, the rank). Say so in the panel's width, or say what it
