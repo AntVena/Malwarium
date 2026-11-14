@@ -19,20 +19,6 @@
 
 namespace mal {
 
-namespace {
-constexpr const char* kTagAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-
-// The kBackgrounds row a scene is, as the picker counts them: 0 for AUTO, else 1 + row.
-int backgroundRow(SceneId s) {
-    const BackgroundDef* b = backgroundFor(s);
-    int row = 0;
-    if (b)
-        for (int i = 0; i < kBackgroundCount; ++i)
-            if (kBackgrounds[i].wire == b->wire) row = i + 1;
-    return row;
-}
-}  // namespace
-
 // --- L2: the CFG list ---------------------------------------------------------
 
 void CfgMenu::stepList(const CfgHost&, int dir) {
@@ -79,20 +65,13 @@ void CfgMenu::openPage(CfgHost& host, CfgScreen target) {
         case CfgScreen::Brightness: pick_ = s.brightness; break;
         case CfgScreen::Sound: pick_ = static_cast<int>(s.soundMode); break;
         case CfgScreen::Volume: pick_ = s.volume; break;
-        case CfgScreen::Theme: pick_ = host.themeRow(); break;
-        case CfgScreen::Titles: pick_ = host.operatorRecord().world.equippedTitle; break;
-        case CfgScreen::Background: pick_ = backgroundRow(host.operatorRecord().backgroundPick); break;
+        case CfgScreen::Theme:
+        case CfgScreen::Titles:
+        case CfgScreen::Background:
+        case CfgScreen::HackerTag: looks_.open(host, target); break;
         case CfgScreen::Audit:
         case CfgScreen::PediaAp:
         case CfgScreen::Link: radio_.open(host, target); break;
-        case CfgScreen::HackerTag: {
-            // The tag padded to the fixed cell count with '_', a valid alphabet char.
-            const char* live = host.operatorRecord().hackerTag;
-            for (int i = 0; i < kHackerTagMax; ++i) tag_[i] = live[i] == '\0' ? '_' : live[i];
-            tag_[kHackerTagMax] = '\0';
-            caret_ = 0;
-            break;
-        }
         default: break;
     }
     host.disarmHoldB();
@@ -155,7 +134,7 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
         case CfgScreen::SysInfo:    follow(host, hardware_.onSysInfo(host, ev)); break;
         case CfgScreen::Travel:     follow(host, hardware_.onTravel(host, ev)); break;
         case CfgScreen::FormatSd:   follow(host, hardware_.onFormatSd(host, ev)); break;
-        case CfgScreen::HackerTag:  onHackerTag(host, ev); break;
+        case CfgScreen::HackerTag:  follow(host, looks_.onHackerTag(host, ev)); break;
         case CfgScreen::Tips:       onTips(host, ev); break;
         case CfgScreen::UiMode:
             onPicker(host, ev, [&] { pick_ = stepRow(pick_, 3, +1); },
@@ -177,29 +156,9 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
                      },
                      [&] { host.setVolume(pick_); return true; });
             break;
-        case CfgScreen::Theme:
-            // A walks every row, locked ones included, as BACKGROUND does: the line under
-            // the header says where the focused set comes from, which is how an operator
-            // learns there is more to find. A locked row refuses and the page stays, its
-            // LOCKED tag being the answer. Applying is instant and total, so the page the
-            // operator lands back on is the confirmation.
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, kThemeCount, +1); },
-                     [&] { return host.setThemePick(palThemeByName(kThemes[pick_].palette)); });
-            break;
-        case CfgScreen::Titles:
-            // The focus walks NONE (-1) and each unlocked sector Title, skipping locked ones.
-            onPicker(host, ev, [&] { pick_ = host.nextSelectableTitle(pick_); },
-                     [&] { host.equipTitle(pick_); return true; });
-            break;
-        case CfgScreen::Background:
-            // A walks every row, locked ones included: the line under the header names how
-            // the focused row is earned, which is how the page teaches the economy.
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, kBackgroundCount + 1, +1); },
-                     [&] {
-                         return host.setBackgroundPick(
-                             pick_ == 0 ? SceneId::None : kBackgrounds[pick_ - 1].scene);
-                     });
-            break;
+        case CfgScreen::Theme:      follow(host, looks_.onTheme(host, ev)); break;
+        case CfgScreen::Titles:     follow(host, looks_.onTitles(host, ev)); break;
+        case CfgScreen::Background: follow(host, looks_.onBackground(host, ev)); break;
         case CfgScreen::Audit:      follow(host, radio_.onAudit(host, ev)); break;
         case CfgScreen::PediaAp:    follow(host, radio_.onAp(host, ev)); break;
         case CfgScreen::Link:       follow(host, radio_.onLink(host, ev)); break;
@@ -230,28 +189,6 @@ bool CfgMenu::holdB(CfgHost& host, uint32_t heldMs) {
         return true;
     }
     return false;
-}
-
-// An arcade editor: A cycles the focused cell's char, B advances the caret (and at the
-// confirm cell, saves), C deletes the previous char (or backs out from the first cell).
-void CfgMenu::onHackerTag(CfgHost& host, const ButtonEvent& ev) {
-    if (ev.button == Button::A) {
-        if (caret_ < kHackerTagMax) {
-            const char* pos = std::strchr(kTagAlphabet, tag_[caret_]);
-            const int idx = pos ? static_cast<int>(pos - kTagAlphabet) : -1;
-            tag_[caret_] = kTagAlphabet[(idx + 1) % static_cast<int>(std::strlen(kTagAlphabet))];
-        }
-    } else if (ev.button == Button::B) {
-        if (caret_ >= kHackerTagMax) {             // the confirm cell
-            host.setHackerTag(tag_);
-            host.closeDetail();
-        } else {
-            ++caret_;
-        }
-    } else if (ev.button == Button::C) {
-        if (caret_ == 0) leavePage(host);
-        else { --caret_; tag_[caret_] = '_'; }
-    }
 }
 
 void CfgMenu::onTips(CfgHost& host, const ButtonEvent& ev) {
@@ -289,21 +226,15 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::Radio: radio_.drawGroup(fb, host, groupRow_); break;
         case CfgScreen::Travel: hardware_.drawTravel(fb, host); break;
         case CfgScreen::FormatSd: hardware_.drawFormatSd(fb, host); break;
-        case CfgScreen::HackerTag: drawHackerTag(fb, tag_, caret_); break;
-        case CfgScreen::Titles: {
-            const OperatorWorld& w = host.operatorRecord().world;
-            drawTitles(fb, pick_, w.titlesUnlocked, w.equippedTitle, host.screenBeat());
-            break;
-        }
-        case CfgScreen::Background: drawBackgroundPage(fb, host); break;
+        case CfgScreen::HackerTag: looks_.drawHackerTag(fb); break;
+        case CfgScreen::Titles: looks_.drawTitles(fb, host); break;
+        case CfgScreen::Background: looks_.drawBackground(fb, host); break;
         case CfgScreen::UiMode: drawUiModeToggle(fb, pick_, s.uiMode); break;
         case CfgScreen::Tips: drawTipsPage(fb, host); break;
         case CfgScreen::Brightness: drawBrightness(fb, pick_, s.brightness); break;
         case CfgScreen::Sound: drawSoundMode(fb, pick_, s.soundMode); break;
         case CfgScreen::Volume: drawVolume(fb, pick_, s.volume); break;
-        case CfgScreen::Theme:
-            drawThemePicker(fb, pick_, host.themeRow(), host.themesUnlockedMask());
-            break;
+        case CfgScreen::Theme: looks_.drawTheme(fb, host); break;
         case CfgScreen::Audit: radio_.drawAudit(fb, host); break;
         case CfgScreen::PediaAp: radio_.drawAp(fb, host); break;
         case CfgScreen::Link: radio_.drawLink(fb, host); break;
@@ -337,16 +268,6 @@ void CfgMenu::drawDevicePage(Framebuffer& fb, const CfgHost& host) const {
     v.background = bg == SceneId::None ? "AUTO" : backgroundFor(bg)->name;
     v.careAlerts = s.careAlerts;
     drawCfgDevice(fb, v);
-}
-
-void CfgMenu::drawBackgroundPage(Framebuffer& fb, const CfgHost& host) const {
-    // Ownership is derived, so the mask is built for the draw rather than held: one bit
-    // per row, in the table's own order.
-    uint32_t owned = 0;
-    for (int i = 0; i < kBackgroundCount; ++i)
-        if (host.backgroundOwned(kBackgrounds[i].scene)) owned |= 1u << i;
-    drawBackgrounds(fb, pick_, owned, backgroundRow(host.operatorRecord().backgroundPick),
-                           host.screenBeat());
 }
 
 void CfgMenu::drawTipsPage(Framebuffer& fb, const CfgHost& host) const {
