@@ -218,8 +218,7 @@ void Game::applySave(const SaveData& d) {
     restoreActivePet(d);
     restoreSettings(d);
     settleBackgroundPick();
-    lastSaveMs_ = nowMs_;
-    saveDirty_ = false;
+    save_.settle(nowMs_);
 }
 
 void Game::persistSave() {
@@ -230,64 +229,49 @@ void Game::persistSave() {
     // documents). The ten "persist immediately" call sites (a laid egg, a hatch, a
     // retire) rely on this. The autosave path reaches here only when it already wanted
     // a write; a landed one clears the flag on the way out regardless.
-    saveDirty_ = true;
+    save_.markDirty();
     // Defer rather than risk the write. A save fires off a timer, so it can land while
     // something else holds the heap: on device, the audit capture arming is the
-    // measured case. Leaving saveDirty_ set means the next tick tries again, so the
-    // only cost is that the write lands a few seconds later; attempting it without
-    // room costs a device reset (setHeapProbe).
+    // measured case. The write stays owed, so the next tick tries again and the only
+    // cost is that it lands a few seconds later; attempting it without room costs a
+    // device reset (setHeapProbe).
     //
     // TWO CHECKS, because the write allocates in two stages. captureSave() builds the
     // SaveData's own vectors, and those can spend the headroom the first check
     // approved, so the second check runs after the SaveData exists. It is the one
     // standing between the allocator and everything below it.
-    if (!saveHasHeadroom()) { noteSaveDeferred(); return; }
+    if (!saveHasHeadroom()) { save_.noteDeferred(heapHeadroom()); return; }
     const SaveData captured = captureSave();
-    // The second check is the one whose firing is otherwise unobservable: the SaveData
-    // whose allocation triggered it is freed on the way out, so any sampler looking at
-    // the heap afterwards sees a healthy number and concludes nothing happened.
-    // Counting it is the only evidence that the guard works rather than that the
-    // device merely got lucky.
-    if (!saveHasHeadroom()) { noteSaveDeferred(); return; }
-    // Size the buffer when this save needs more of it than the last one left behind:
-    // the first write after boot, and any later one whose blob has outgrown it. Dropped
-    // before it is re-reserved so the peak is the new buffer alone and never both at
-    // once, and reached only from behind kSaveGrowHeapFloorBytes, which saveHeapFloor()
-    // demands precisely because this line is here. Every other save skips it and writes
-    // into memory this object already holds.
-    if (saveBlob_.capacity() < saveBlobTargetBytes()) {
-        std::vector<uint8_t>().swap(saveBlob_);
-        saveBlob_.reserve(saveBlobTargetBytes());
-    }
-    serializeSaveInto(captured, saveBlob_);
-    lastBlobSize_ = saveBlob_.size();   // the buffer got sized and filled either way
+    // The second check's firing is otherwise unobservable: the SaveData whose
+    // allocation triggered it is freed on the way out, so a sampler looking at the heap
+    // afterwards sees a healthy number. The count is the evidence the guard works.
+    if (!saveHasHeadroom()) { save_.noteDeferred(heapHeadroom()); return; }
+    // buffer() grows the blob only when this save needs more than the last one left,
+    // and is reached only from behind kSaveGrowHeapFloorBytes, which saveHeapFloor()
+    // demands for that case.
+    std::vector<uint8_t>& blob = save_.buffer();
+    serializeSaveInto(captured, blob);
     // A store that refused the write leaves the blob on flash older than RAM. After a
     // reboot the progress is gone, and a pet just hatched is replaced by the one
-    // before it. Treating it as a write that landed is what makes it silent: the flag
-    // would clear, nothing would retry, and saveNow() would tell the travel-sleep
-    // path it was safe to power down on a save that never happened. So the flag stays
-    // set. lastSaveMs_ still advances, which paces the retries at kSaveDebounceMs
-    // instead of every beat. A short write is usually transient.
-    if (!store_->save(saveBlob_)) {
-        ++saveWritesFailed_;
-        lastSaveMs_ = nowMs_;
+    // before it. Treating it as a write that landed is what makes it silent: nothing
+    // would retry, and saveNow() would tell the travel-sleep path it was safe to power
+    // down on a save that never happened. A short write is usually transient.
+    if (!store_->save(blob)) {
+        save_.noteWriteFailed(nowMs_);
         return;
     }
-    savesDeferred_ = 0;
-    saveWritesFailed_ = 0;
-    lastSaveMs_ = nowMs_;
-    saveDirty_ = false;
+    save_.noteLanded(nowMs_);
 }
 
 bool Game::saveNow() {
     if (!store_) return true;   // nothing to lose: no store, no state to strand
     // Unconditional, because the state is about to leave RAM. Passive decay moves the
     // model without marking itself, and persistSave's own opening line covers that.
-    // The return value is the flag persistSave clears ONLY on a write that landed, so
+    // The return value is the dirty flag, which clears ONLY on a write that landed, so
     // false means the state is still only in RAM, whether the heap guard turned the
     // write away or the store refused it. Either way the caller must not power down.
     persistSave();
-    return !saveDirty_;
+    return !save_.dirty();
 }
 
 }  // namespace mal

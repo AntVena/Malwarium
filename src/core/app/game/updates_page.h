@@ -12,6 +12,7 @@
 #include <cstdint>
 
 #include "core/app/game/cfg_page.h"
+#include "core/app/game/update_job.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
 
@@ -23,15 +24,10 @@ class Framebuffer;
 // check could run at all.
 class UpdatesHost {
 public:
-    virtual bool updateSourceKnown() const = 0;
+    virtual const UpdateJob& updateJob() const = 0;
     virtual bool updateCheckReady() const = 0;
-    virtual bool updateJobLive() const = 0;
-    virtual UpdateTarget updateJobTarget() const = 0;
-    virtual const UpdateStatus& updateStatus() const = 0;
-    virtual const InstallStatus& installStatus() const = 0;
     virtual const NetStatus& netStatus() const = 0;
     virtual bool netProvisioned() const = 0;
-    virtual const char* updateManifestUrl() const = 0;
     virtual const char* webBundleVersion() const = 0;
     virtual void requestUpdateCheck() = 0;
     virtual void requestUpdateInstall(UpdateTarget t) = 0;

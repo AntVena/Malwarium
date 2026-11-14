@@ -9,11 +9,12 @@ namespace mal {
 // Leaving does not cancel a job. The job holds the radio, so a download finishes and
 // its outcome waits here.
 CfgMove UpdatesPage::onButton(UpdatesHost& host, const ButtonEvent& ev) {
-    if (host.updateJobLive() || host.installStatus().state != InstallState::Idle) {
+    const UpdateJob& job = host.updateJob();
+    if (job.live() || job.install().state != InstallState::Idle) {
         if (ev.button != Button::C) return CfgMove::stay();
         // Only a finished job's report is cleared on the way out; a live one keeps its
         // progress to come back to.
-        if (!host.updateJobLive()) host.clearInstallReport();
+        if (!job.live()) host.clearInstallReport();
         return CfgMove::leave();
     }
     if (confirm_ != UpdateTarget::None) return onConfirm(host, ev);
@@ -36,7 +37,7 @@ CfgMove UpdatesPage::onConfirm(UpdatesHost& host, const ButtonEvent& ev) {
 }
 
 CfgMove UpdatesPage::onRows(UpdatesHost& host, const ButtonEvent& ev) {
-    const UpdateStatus& status = host.updateStatus();
+    const UpdateStatus& status = host.updateJob().status();
     if (ev.button == Button::A) {
         row_ = stepRow(row_, updateCheckRows(status), +1);
         host.markDirty();
@@ -54,7 +55,7 @@ CfgMove UpdatesPage::onRows(UpdatesHost& host, const ButtonEvent& ev) {
             case UpdateRowKind::FlashQr:
                 // Needs no radio and no network: the code is drawn from an address this
                 // device already holds, so it opens even when a check cannot run.
-                if (host.updateSourceKnown()) {
+                if (host.updateJob().sourceKnown()) {
                     host.markDirty();
                     return CfgMove::show(CfgScreen::UpdateQr);
                 }
@@ -74,19 +75,20 @@ CfgMove UpdatesPage::onFlashQr(const ButtonEvent& ev) const {
 }
 
 void UpdatesPage::draw(Framebuffer& fb, const UpdatesHost& host) const {
-    const UpdateStatus& status = host.updateStatus();
-    const InstallStatus& install = host.installStatus();
+    const UpdateJob& job = host.updateJob();
+    const UpdateStatus& status = job.status();
+    const InstallStatus& install = job.install();
     UpdateCheckView checkView;
     checkView.ready = host.updateCheckReady();
     checkView.provisioned = host.netProvisioned();
-    checkView.sourceKnown = host.updateSourceKnown();
+    checkView.sourceKnown = job.sourceKnown();
     checkView.firmwareVersion = kFirmwareVersion;
-    checkView.manifestUrl = host.updateManifestUrl();
+    checkView.manifestUrl = job.manifestUrl();
     checkView.row = row_;
     // The input handler's three faces, in its order: a live or just-finished job outranks
     // the confirm, which outranks the list.
-    if (host.updateJobLive() || install.state != InstallState::Idle) {
-        if (host.updateJobTarget() == UpdateTarget::None && install.state == InstallState::Idle)
+    if (job.live() || install.state != InstallState::Idle) {
+        if (job.target() == UpdateTarget::None && install.state == InstallState::Idle)
             drawUpdateCheck(fb, status, host.netStatus(), checkView);
         else
             drawUpdateProgress(fb, install, host.netStatus());
@@ -100,7 +102,7 @@ void UpdatesPage::draw(Framebuffer& fb, const UpdatesHost& host) const {
 }
 
 void UpdatesPage::drawFlashQr(Framebuffer& fb, const UpdatesHost& host) const {
-    drawUpdateQr(fb, host.updateManifestUrl());
+    drawUpdateQr(fb, host.updateJob().manifestUrl());
 }
 
 }  // namespace mal

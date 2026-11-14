@@ -81,7 +81,7 @@ public:
     void service(uint32_t nowMs) {
 #if UPDATE_ENABLED
         if (!game_) return;
-        if (!game_->updateJobLive()) {   // no job, or the last one already finished
+        if (!game_->updateJob().live()) {   // no job, or the last one already finished
             ran_ = false;
             waitStartMs_ = 0;
             phase_ = Phase::Start;
@@ -94,7 +94,7 @@ public:
             if (sink_) { std::fclose(sink_); sink_ = nullptr; std::remove(kWebTmpPath); }
             return;
         }
-        const bool installing = game_->updateJobTarget() != UpdateTarget::None;
+        const bool installing = game_->updateJob().target() != UpdateTarget::None;
         if (ran_ && !installing) return;   // a check gets exactly one fetch
 
         if (!online()) {
@@ -161,7 +161,7 @@ private:
     // End whatever job is live with a failure, whichever kind it is. One place, so
     // a check and an install can't disagree about what "give up" means.
     void abandon(UpdateFail why) {
-        if (game_->updateJobTarget() == UpdateTarget::None) { finishFail(why); return; }
+        if (game_->updateJob().target() == UpdateTarget::None) { finishFail(why); return; }
         closeDownload();
         InstallFail f = InstallFail::NoNetwork;
         if (why == UpdateFail::NoSource) f = InstallFail::WriteFailed;
@@ -328,7 +328,7 @@ private:
     // installs what is published RIGHT NOW, and the url/size/digest it uses are the
     // ones it just read together, so they cannot be a mismatched pair.
     void beginInstall() {
-        const UpdateTarget target = game_->updateJobTarget();
+        const UpdateTarget target = game_->updateJob().target();
         char url[UpdateSource::kUrlCap];
         if (!source_.url(url, sizeof(url))) { failInstall(InstallFail::WriteFailed); return; }
 
@@ -387,7 +387,7 @@ private:
 
         InstallStatus st;
         st.state = InstallState::Done;
-        st.target = game_->updateJobTarget();
+        st.target = game_->updateJob().target();
         st.received = received_;
         st.total = art_.size;
         st.restartNeeded = st.target == UpdateTarget::Firmware;
@@ -552,7 +552,7 @@ private:
         InstallStatus st;
         st.state = s;
         st.fail = f;
-        st.target = game_->updateJobTarget();
+        st.target = game_->updateJob().target();
         st.received = received_;
         st.total = art_.size;
         game_->setInstallStatus(st);
@@ -565,7 +565,7 @@ private:
         InstallStatus st;
         st.state = InstallState::Failed;
         st.fail = why;
-        st.target = game_->updateJobTarget();
+        st.target = game_->updateJob().target();
         st.received = received_;
         st.total = art_.size;
         game_->setInstallStatus(st);   // terminal: this is what releases the radio

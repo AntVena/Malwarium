@@ -187,17 +187,17 @@ void test_save_defers_when_the_heap_is_too_low() {
     MemSaveStore store;
     Game low(StartMode::Hatched, "paypup", &store);
     low.setHeapProbe([]() -> uint32_t { return 1024; });
-    CHECK(low.savesDeferred() == 0);
+    CHECK(low.saveSchedule().deferred() == 0);
     low.setApEnabled(true);                            // a change worth persisting
     for (int i = 1; i <= 40; ++i) low.tick(i * 1000);  // past debounce and autosave
-    CHECK(low.savesDeferred() > 0);                    // turned away, not attempted
-    CHECK(low.savesDeferredLowMark() == 1024);         // and it recorded how bad it got
+    CHECK(low.saveSchedule().deferred() > 0);                    // turned away, not attempted
+    CHECK(low.saveSchedule().deferredLowMark() == 1024);         // and it recorded how bad it got
 
     // ...and it is a DEFERRAL, not a drop: the moment there is room, the write that
     // was held back lands, carrying the change that was waiting on it.
     low.setHeapProbe([]() -> uint32_t { return kSaveGrowHeapFloorBytes; });
     low.tick(50000);
-    CHECK(low.savesDeferred() == 0);
+    CHECK(low.saveSchedule().deferred() == 0);
     SaveData back;
     CHECK(deserializeSave(store.bytes(), back));
     CHECK(back.apEnabled);
@@ -212,7 +212,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     CHECK(low.saveHasHeadroom());
     low.setLinkEnabled(true);
     for (int i = 51; i <= 90; ++i) low.tick(i * 1000);
-    CHECK(low.savesDeferred() == 0);
+    CHECK(low.saveSchedule().deferred() == 0);
     SaveData after;
     CHECK(deserializeSave(store.bytes(), after));
     CHECK(after.linkEnabled);
@@ -232,13 +232,13 @@ void test_a_refused_write_is_not_a_save() {
     SaveData landed;
     CHECK(deserializeSave(store.bytes(), landed));       // a baseline reached "flash"
     CHECK(landed.apEnabled);
-    CHECK(g.saveWritesFailed() == 0);
+    CHECK(g.saveSchedule().writesFailed() == 0);
 
     // Now the medium starts refusing, and the state moves on without it.
     store.refuse = true;
     g.setLinkEnabled(true);
     CHECK(!g.saveNow());                                 // reported, not swallowed
-    CHECK(g.saveWritesFailed() > 0);
+    CHECK(g.saveSchedule().writesFailed() > 0);
     SaveData stale;
     CHECK(deserializeSave(store.bytes(), stale));
     CHECK(!stale.linkEnabled);                           // flash is behind RAM: the revert
@@ -256,7 +256,7 @@ void test_a_refused_write_is_not_a_save() {
     // point of having kept the obligation.
     store.refuse = false;
     for (int i = 1; i <= 3; ++i) g.tick(t += kSaveDebounceMs);
-    CHECK(g.saveWritesFailed() == 0);
+    CHECK(g.saveSchedule().writesFailed() == 0);
     CHECK(g.saveNow());
     SaveData caught;
     CHECK(deserializeSave(store.bytes(), caught));
@@ -288,7 +288,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     CHECK(g.pet() != nullptr && g.pet()->stage == Stage::Process);
     const std::string hatched = g.pet()->id;
     CHECK(hatched != previous);                          // RAM has moved on
-    CHECK(g.saveWritesFailed() > 0);                     // the hatch's own write bounced
+    CHECK(g.saveSchedule().writesFailed() > 0);                     // the hatch's own write bounced
     SaveData still;
     CHECK(deserializeSave(store.bytes(), still));
     CHECK(previous == still.active.id);                   // a reboot here = the old pet
@@ -300,7 +300,7 @@ void test_a_hatch_the_store_refused_still_reaches_flash() {
     SaveData back;
     CHECK(deserializeSave(store.bytes(), back));
     CHECK(hatched == back.active.id);
-    CHECK(g.saveWritesFailed() == 0);
+    CHECK(g.saveSchedule().writesFailed() == 0);
 }
 
 // The three radio consents are independent: none of them may imply another, so
@@ -359,19 +359,19 @@ void test_update_check_requires_network_and_source() {
 
     CHECK(!g.updateCheckReady());
     g.onButton(press(Button::B));            // CHECK NOW, with nothing set up
-    CHECK(!g.updateJobLive());
-    CHECK(g.updateStatus().state == UpdateState::Idle);
+    CHECK(!g.updateJob().live());
+    CHECK(g.updateJob().status().state == UpdateState::Idle);
 
     g.setNetProvisioned(true);               // somewhere to go, nowhere to look
     CHECK(!g.updateCheckReady());
     g.requestUpdateCheck();
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     g.setUpdateSourceKnown(true);
     CHECK(g.updateCheckReady());
     g.requestUpdateCheck();
-    CHECK(g.updateJobLive());
-    CHECK(g.updateStatus().state == UpdateState::Checking);
+    CHECK(g.updateJob().live());
+    CHECK(g.updateJob().status().state == UpdateState::Checking);
 }
 
 // THE seam. A check is held by the JOB, not by a screen (a transfer that died the
@@ -384,14 +384,14 @@ void test_update_job_holds_the_radio_past_the_screen() {
 
     openUpdatesScreen(g);
     g.onButton(press(Button::B));            // CHECK NOW
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
     CHECK(g.netConnectWanted());             // the job is what raises the radio
 
     // Leave the screen. Nothing nav-derived is holding the radio, so if the job
     // weren't what raises it, the fetch would be cut off mid-transfer.
     tapC(g);
     CHECK(g.cfgScreen() != CfgScreen::Update || g.nav() != Game::Nav::Detail);
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
     CHECK(g.netConnectWanted());
     CHECK(g.radioScreenOpen());              // ...so nothing may sleep the panel either
 
@@ -402,19 +402,19 @@ void test_update_job_holds_the_radio_past_the_screen() {
     done.firmwareNewer = true;
     std::strcpy(done.firmwareVersion, "0.4.2");
     g.setUpdateStatus(done);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     CHECK(!g.netConnectWanted());
 
     // The verdict survives being walked away from: it is waiting on the way back.
-    CHECK(g.updateStatus().state == UpdateState::Available);
-    CHECK(g.updateStatus().firmwareNewer && !g.updateStatus().webNewer);
+    CHECK(g.updateJob().status().state == UpdateState::Available);
+    CHECK(g.updateJob().status().firmwareNewer && !g.updateJob().status().webNewer);
 
     // "Still working" is not terminal: that one keeps the radio.
     UpdateStatus busy;
     busy.state = UpdateState::Checking;
     g.requestUpdateCheck();
     g.setUpdateStatus(busy);
-    CHECK(g.updateJobLive() && g.netConnectWanted());
+    CHECK(g.updateJob().live() && g.netConnectWanted());
 }
 
 // UPDATES is a screen you WAIT in front of, so the global 5s menu collapse must not
@@ -430,7 +430,7 @@ void test_updates_screen_outlives_the_menu_idle_timer() {
 
     openUpdatesScreen(g);
     g.onButton(press(Button::B));                 // CHECK NOW
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
 
     // The device tier is still associating/fetching, and nobody is touching buttons.
     for (int i = 0; i < 4; ++i) g.tick(t += kAutoDefocusMs);
@@ -441,13 +441,13 @@ void test_updates_screen_outlives_the_menu_idle_timer() {
     done.firmwareNewer = true;
     std::strcpy(done.firmwareVersion, "0.4.2");
     g.setUpdateStatus(done);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     // ...and the verdict survives being read: nothing is holding the radio now, so
     // this is the window the standard budget used to close in five seconds.
     for (int i = 0; i < 4; ++i) g.tick(t += kAutoDefocusMs);
     CHECK(g.updateScreenOpen());
-    CHECK(g.updateStatus().state == UpdateState::Available);
+    CHECK(g.updateJob().status().state == UpdateState::Available);
 
     // Not forever, though: an abandoned screen still collapses on the long budget.
     g.tick(t += kRadioScreenDefocusMs);
@@ -464,15 +464,15 @@ void test_update_job_dies_when_the_join_fails() {
     g.setNetProvisioned(true);
     g.setUpdateSourceKnown(true);
     g.requestUpdateCheck();
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
     CHECK(g.netStatus().state == NetState::Connecting);  // joining is step one
 
     NetStatus failed; failed.state = NetState::Failed;
     g.setNetStatus(failed);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     CHECK(!g.netConnectWanted());
-    CHECK(g.updateStatus().state == UpdateState::Failed);
-    CHECK(g.updateStatus().fail == UpdateFail::NoNetwork);  // named, not blank
+    CHECK(g.updateJob().status().state == UpdateState::Failed);
+    CHECK(g.updateJob().status().fail == UpdateFail::NoNetwork);  // named, not blank
 
     // A second ask while one is already in flight doesn't restart it or wipe the
     // Checking state out from under the device tier.
@@ -481,8 +481,8 @@ void test_update_job_dies_when_the_join_fails() {
     busy.state = UpdateState::Checking;
     g.setUpdateStatus(busy);
     g.requestUpdateCheck();
-    CHECK(g.updateJobLive());
-    CHECK(g.updateStatus().state == UpdateState::Checking);
+    CHECK(g.updateJob().live());
+    CHECK(g.updateJob().status().state == UpdateState::Checking);
 }
 
 // Set the game up as if a check had just reported both artifacts newer.
@@ -510,11 +510,11 @@ void test_update_install_needs_a_confirmed_finding() {
 
     // Nothing has been checked: every target is refused.
     g.requestUpdateInstall(UpdateTarget::Firmware);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     g.requestUpdateInstall(UpdateTarget::Web);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     g.requestUpdateInstall(UpdateTarget::None);   // "install the check" is not a thing
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     // A check that found only the firmware doesn't authorise the web bundle.
     UpdateStatus fwOnly;
@@ -530,19 +530,19 @@ void test_update_install_needs_a_confirmed_finding() {
     CHECK(updateCheckRowKind(fwOnly, 2) == UpdateRowKind::FlashQr);
 
     g.requestUpdateInstall(UpdateTarget::Web);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     g.requestUpdateInstall(UpdateTarget::Firmware);
-    CHECK(g.updateJobLive());
-    CHECK(g.updateJobTarget() == UpdateTarget::Firmware);
-    CHECK(g.installStatus().state == InstallState::Downloading);
+    CHECK(g.updateJob().live());
+    CHECK(g.updateJob().target() == UpdateTarget::Firmware);
+    CHECK(g.updateJob().install().state == InstallState::Downloading);
 
     // One job at a time: a second ask can't start a competing download over the
     // one already writing to the flash slot.
     g.requestUpdateInstall(UpdateTarget::Firmware);
-    CHECK(g.updateJobTarget() == UpdateTarget::Firmware);
+    CHECK(g.updateJob().target() == UpdateTarget::Firmware);
     g.requestUpdateCheck();
-    CHECK(g.updateJobTarget() == UpdateTarget::Firmware);
+    CHECK(g.updateJob().target() == UpdateTarget::Firmware);
 }
 
 // Walking the actual buttons: an install is always two deliberate yeses, and the
@@ -552,41 +552,41 @@ void test_update_install_takes_two_yeses() {
     seedAvailableUpdate(g);
     openUpdatesScreen(g);
 
-    UpdateStatus found = g.updateStatus();
+    UpdateStatus found = g.updateJob().status();
     CHECK(updateCheckRows(found) == 4);           // check + firmware + web + flasher
 
     g.onButton(press(Button::A));                 // row 0 -> the firmware row
     g.onButton(press(Button::B));                 // opens the confirm, installs nothing
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     g.onButton(press(Button::B));                 // B again lands on NO: still nothing
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
 
     // And C out of the confirm is equally inert.
     g.onButton(press(Button::B));
     tapC(g);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     CHECK(g.nav() == Game::Nav::Detail);          // C left the confirm, not the screen
 
     // A to YES, then B: only now does anything start.
     g.onButton(press(Button::B));
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
-    CHECK(g.updateJobLive());
-    CHECK(g.updateJobTarget() == UpdateTarget::Firmware);
+    CHECK(g.updateJob().live());
+    CHECK(g.updateJob().target() == UpdateTarget::Firmware);
 
     // ...and like a check, it holds the radio past the screen it was started from.
     tapC(g);
-    CHECK(g.updateJobLive() && g.netConnectWanted());
+    CHECK(g.updateJob().live() && g.netConnectWanted());
 
     InstallStatus done;
     done.state = InstallState::Done;
     done.target = UpdateTarget::Firmware;
     done.restartNeeded = true;
     g.setInstallStatus(done);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     CHECK(!g.netConnectWanted());
-    CHECK(g.installStatus().state == InstallState::Done);
+    CHECK(g.updateJob().install().state == InstallState::Done);
 }
 
 // The USB flasher's address is DERIVED from the manifest one, so a device pointed
@@ -640,7 +640,7 @@ void test_flasher_row_is_last_and_needs_no_network() {
     g.onButton(press(Button::B));
     CHECK(g.cfgScreen() == CfgScreen::UpdateQr);
     CHECK(g.qrScreenActive());                                // holds the panel awake
-    CHECK(!g.updateJobLive());                                // and asks for no radio
+    CHECK(!g.updateJob().live());                                // and asks for no radio
 
     tapC(g);                             // back to UPDATES, not out
     CHECK(g.cfgScreen() == CfgScreen::Update);
@@ -661,7 +661,7 @@ void test_update_install_progress_is_not_terminal() {
     Game g{StartMode::Hatched};
     seedAvailableUpdate(g);
     g.requestUpdateInstall(UpdateTarget::Web);
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
 
     for (InstallState s : {InstallState::Downloading, InstallState::Verifying,
                            InstallState::Installing}) {
@@ -671,7 +671,7 @@ void test_update_install_progress_is_not_terminal() {
         st.received = 1024;
         st.total = 4096;
         g.setInstallStatus(st);
-        CHECK(g.updateJobLive());
+        CHECK(g.updateJob().live());
         CHECK(g.netConnectWanted());
     }
 
@@ -679,20 +679,20 @@ void test_update_install_progress_is_not_terminal() {
     bad.state = InstallState::Failed;
     bad.fail = InstallFail::Corrupt;
     g.setInstallStatus(bad);
-    CHECK(!g.updateJobLive());
+    CHECK(!g.updateJob().live());
     CHECK(!g.netConnectWanted());
-    CHECK(g.installStatus().fail == InstallFail::Corrupt);
+    CHECK(g.updateJob().install().fail == InstallFail::Corrupt);
 
     // An install raises its own association, so it dies the same way a check does
     // when that join never comes up: nothing else would take the radio off it.
     g.requestUpdateInstall(UpdateTarget::Web);
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
     CHECK(g.netStatus().state == NetState::Connecting);
     NetStatus noJoin; noJoin.state = NetState::Failed;
     g.setNetStatus(noJoin);
-    CHECK(!g.updateJobLive());
-    CHECK(g.installStatus().state == InstallState::Failed);
-    CHECK(g.installStatus().fail == InstallFail::NoNetwork);
+    CHECK(!g.updateJob().live());
+    CHECK(g.updateJob().install().state == InstallState::Failed);
+    CHECK(g.updateJob().install().fail == InstallFail::NoNetwork);
 }
 
 // ---- Tar reader -----------------------------------------------------------

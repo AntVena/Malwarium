@@ -702,11 +702,11 @@ void loop() {
             Serial.println("MALSD REFUSED window - replug the device and try again");
             serialAsk = false;
         }
-        if (serialAsk && game->updateJobLive()) {
+        if (serialAsk && game->updateJob().live()) {
             Serial.println("MALSD REFUSED update - an update is writing to the card");
             serialAsk = false;
         }
-        if ((serialAsk || game->sdFormatRequested()) && !game->updateJobLive()) {
+        if ((serialAsk || game->sdFormatRequested()) && !game->updateJob().live()) {
             if (serialAsk) serialFormatSpent = true;
             Serial.println("MALSD BUSY");
             Serial.flush();
@@ -809,8 +809,9 @@ void loop() {
                           (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap(),
                           game->saveHasHeadroom() ? "ok" : "DEFERRED",
                           (unsigned)game->saveHeapFloor(),
-                          game->savesDeferred(), (unsigned)game->savesDeferredLowMark(),
-                          game->saveWritesFailed());
+                          game->saveSchedule().deferred(),
+                          (unsigned)game->saveSchedule().deferredLowMark(),
+                          game->saveSchedule().writesFailed());
         }
     }
 #endif

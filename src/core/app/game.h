@@ -53,6 +53,7 @@
 #include "core/app/game/peers_screen.h"
 #include "core/app/game/shop_screen.h"
 #include "core/app/game/rig_shop_screen.h"
+#include "core/app/game/save_schedule.h"
 #include "core/app/game/stat_picker_screen.h"
 #include "core/app/game/stat_reader.h"
 #include "core/app/game/stacker_screen.h"
@@ -60,6 +61,7 @@
 #include "core/app/game/warp_picker_screen.h"
 #include "core/app/game/wifi_screen.h"
 #include "core/app/game/tip_card_screen.h"
+#include "core/app/game/update_job.h"
 #include "core/app/game/vault_screen.h"
 #include "core/device/net_status.h"
 #include "core/device/update_status.h"
@@ -780,23 +782,11 @@ public:
     // working room for the SaveData; one that still has to size that buffer needs the
     // whole reservation in a single piece, and is held to the far higher bar for it.
     uint32_t saveHeapFloor() const {
-        return saveBlob_.capacity() >= saveBlobTargetBytes() ? kSaveHeapFloorBytes
-                                                            : kSaveGrowHeapFloorBytes;
+        return save_.bufferReady() ? kSaveHeapFloorBytes : kSaveGrowHeapFloorBytes;
     }
 
-    // How many save attempts in a row the guard has turned away, and the smallest
-    // headroom it saw doing it. Both reset when a write finally lands, so this reads
-    // as "what is happening right now", not a lifetime tally. Exists because the
-    // guard is otherwise invisible: it fires on a heap state that is gone by the time
-    // anything samples it, so without a count there is no way to tell a working guard
-    // apart from a device that happened to have room.
-    int savesDeferred() const { return savesDeferred_; }
-    uint32_t savesDeferredLowMark() const { return savesDeferredLow_; }
-    // How many writes in a row the STORE has refused: a save that was built, handed
-    // over, and refused by the storage medium (a heap failure does not count).
-    // Non-zero means the blob on flash is older than what is in RAM right now, which
-    // is the one state that survives a reboot as lost progress.
-    int saveWritesFailed() const { return saveWritesFailed_; }
+    // The save's pacing and its refusal counts, which the boot log reports.
+    const SaveSchedule& saveSchedule() const { return save_; }
 
     void setSdStatus(const SdStatus& s) {
         // A card just becoming present (boot mount OR a runtime re-check) arms the
@@ -864,7 +854,7 @@ public:
     }
     // An update job writes its download to the card.
     SdCardUse sdCardUse() const override {
-        return updateJob_ ? SdCardUse::Busy : SdCardUse::Free;
+        return update_.live() ? SdCardUse::Busy : SdCardUse::Free;
     }
     bool sdFormatRequested() const { return sdFormatState_ == SdFormatState::Working; }
     void finishSdFormat(bool ok) {
@@ -897,8 +887,8 @@ public:
     // without marking itself and this is called when the state is about to stop
     // existing in RAM. Travel sleep is the caller that needs that guarantee: a deep
     // sleep is a reset, so anything still inside the kSaveDebounceMs window is simply
-    // lost. False means the heap guard turned the write away (savesDeferred), and the
-    // caller must stay awake and ask again rather than treat the state as written.
+    // lost. False means the heap guard turned the write away (SaveSchedule::deferred), and
+    // the caller must stay awake and ask again rather than treat the state as written.
     bool saveNow();
 
     // Which consent actually holds the radio, pushed from the arbiter whenever it
@@ -1008,7 +998,7 @@ public:
     // reboot. Latched rather than nav-derived, because a fetch that died the moment the
     // menu collapsed could never finish. When it lets go the arbiter re-resolves and the
     // radio falls back to whichever toggle was already on.
-    bool netConnectWanted() const override { return netProvisioned_ && updateJobLive(); }
+    bool netConnectWanted() const override { return netProvisioned_ && update_.live(); }
     // The association outcome, pushed back by the device tier and reported by the
     // UPDATES screen as the first step of a job (CONNECTING → CHECKING → the verdict).
     // A terminal FAILURE ends the job and fails it as NoNetwork: there is nothing to
@@ -1017,16 +1007,7 @@ public:
     // has to say which step gave up rather than sitting on CHECKING forever.
     void setNetStatus(const NetStatus& s) {
         netStatus_ = s;
-        if (s.state == NetState::Failed && updateJob_) {
-            if (jobTarget_ == UpdateTarget::None) {
-                updateStatus_.state = UpdateState::Failed;
-                updateStatus_.fail = UpdateFail::NoNetwork;
-            } else {
-                installStatus_.state = InstallState::Failed;
-                installStatus_.fail = InstallFail::NoNetwork;
-            }
-            endJob();
-        }
+        if (s.state == NetState::Failed) update_.failNoNetwork();
         dirty_ = true;
     }
     const NetStatus& netStatus() const override { return netStatus_; }
@@ -1036,11 +1017,8 @@ public:
     // netProvisioned(): the URL itself never enters the engine. A device with no
     // source doesn't get offered a check it cannot perform.
     void setUpdateSourceKnown(bool on) {
-        if (updateSourceKnown_ == on) return;
-        updateSourceKnown_ = on;
-        dirty_ = true;
+        if (update_.setSourceKnown(on)) dirty_ = true;
     }
-    bool updateSourceKnown() const override { return updateSourceKnown_; }
 
     // The manifest address itself, pushed from the platform tier
     // (platform/esp32/update_source.h) at boot and again whenever the 'Pedia's
@@ -1048,14 +1026,8 @@ public:
     // has to be readable so that field can show what it is about to replace.
     // Empty means this device has no source at all.
     void setUpdateManifestUrl(const char* url) {
-        const char* src = url ? url : "";
-        if (std::strcmp(updateManifestUrl_, src) == 0) return;
-        std::strncpy(updateManifestUrl_, src, sizeof(updateManifestUrl_) - 1);
-        updateManifestUrl_[sizeof(updateManifestUrl_) - 1] = '\0';
-        updateSourceKnown_ = updateManifestUrl_[0] != '\0';
-        dirty_ = true;
+        if (update_.setManifestUrl(url)) dirty_ = true;
     }
-    const char* updateManifestUrl() const override { return updateManifestUrl_; }
 
     // What web 'Pedia bundle is on the card, read off its marker by the platform
     // tier (platform/esp32/web_bundle.h) and refreshed after an install. Display
@@ -1075,37 +1047,23 @@ public:
     // there is no consent bit to arm first. The UPDATES screen reads this to say
     // which piece is missing instead of offering a button that would silently do
     // nothing.
-    bool updateCheckReady() const override { return netProvisioned_ && updateSourceKnown_; }
+    bool updateCheckReady() const override { return netProvisioned_ && update_.sourceKnown(); }
 
     // Ask what is published. Raises the connection itself and seeds the CONNECTING
     // step the screen reports, because the radio comes up only for the job, with
     // nothing to switch on before it or left on after.
     void requestUpdateCheck() override {
-        if (!updateCheckReady()) return;
-        if (updateJob_) return;                    // already running; don't restart it
-        updateJob_ = true;
-        jobTarget_ = UpdateTarget::None;           // None == this job is a check
-        updateStatus_ = UpdateStatus{};
-        updateStatus_.state = UpdateState::Checking;
+        if (!updateCheckReady() || !update_.startCheck()) return;
         netStatus_ = NetStatus{};
         netStatus_.state = NetState::Connecting;
         dirty_ = true;
     }
 
     // THE SECOND YES. A check only ever fills in what is available; this is the
-    // separate, explicit act that writes something. It refuses any target the last
-    // check didn't actually report as newer, so an install can never run against a
-    // stale screen or a version the device never confirmed exists.
+    // separate, explicit act that writes something (UpdateJob::startInstall says what
+    // it refuses).
     void requestUpdateInstall(UpdateTarget t) override {
-        if (!updateCheckReady() || updateJob_) return;
-        if (t == UpdateTarget::Firmware && !updateStatus_.firmwareNewer) return;
-        else if (t == UpdateTarget::Web && !updateStatus_.webNewer) return;
-        else if (t == UpdateTarget::None) return;
-        updateJob_ = true;
-        jobTarget_ = t;
-        installStatus_ = InstallStatus{};
-        installStatus_.state = InstallState::Downloading;
-        installStatus_.target = t;
+        if (!updateCheckReady() || !update_.startInstall(t)) return;
         // Its own connection, raised and dropped with this job. An install after a
         // check reconnects rather than riding the check's association: the window is
         // shorter, the lifetime is the same rule every job follows, and re-joining a
@@ -1116,45 +1074,24 @@ public:
     }
 
     // End a running job without an answer (consent withdrawn, or the operator
-    // cancelled). Leaves a completed job's result alone, because the screen is
-    // showing that verdict to the operator.
+    // cancelled).
     void cancelUpdateJob() {
-        if (!updateJob_) return;
-        updateJob_ = false;
-        if (jobTarget_ == UpdateTarget::None) updateStatus_ = UpdateStatus{};
-        else installStatus_ = InstallStatus{};
-        jobTarget_ = UpdateTarget::None;
-        dirty_ = true;
+        if (update_.cancel()) dirty_ = true;
     }
 
-    // True while a check OR an install is actually in flight. This is what holds
-    // the radio (see netConnectWanted) and what platform/esp32/net_update.h
-    // services, so it is latched (leaving the screen does not end it) and must
-    // always reach a terminal outcome, since nothing else releases the radio.
-    bool updateJobLive() const override { return updateJob_; }
-    // What the live job is doing. None means a check; anything else is an install,
-    // which is also how the screen knows which of the two to render.
-    UpdateTarget updateJobTarget() const override { return jobTarget_; }
+    // The update job and what it last reported (game/update_job.h).
+    const UpdateJob& updateJob() const override { return update_; }
 
-    // The check's outcome, pushed back by the device tier. Any terminal state ends
-    // the job and hands the radio back; Checking is the device saying "still
-    // working" and keeps it.
+    // The device tier's reports on the live job. A terminal state ends it and hands the
+    // radio back.
     void setUpdateStatus(const UpdateStatus& s) {
-        updateStatus_ = s;
-        if (s.state != UpdateState::Checking) endJob();
+        update_.report(s);
         dirty_ = true;
     }
-    const UpdateStatus& updateStatus() const override { return updateStatus_; }
-
-    // The install's progress, same contract: Done and Failed are terminal and hand
-    // the radio back, everything else keeps it. A finished install's status is left
-    // standing so the screen can report what happened.
     void setInstallStatus(const InstallStatus& s) {
-        installStatus_ = s;
-        if (s.state == InstallState::Done || s.state == InstallState::Failed) endJob();
+        update_.report(s);
         dirty_ = true;
     }
-    const InstallStatus& installStatus() const override { return installStatus_; }
 
     // True when LINK is on but has no ambient airtime to use. Ambient discovery
     // borrows the audit scan's radio-up window rather than powering the radio on its
@@ -2236,7 +2173,7 @@ private:
     }
     void equipTitle(int sector) override;
     void clearSdFormatResult() override { sdFormatState_ = SdFormatState::Idle; }
-    void clearInstallReport() override { installStatus_ = InstallStatus{}; }
+    void clearInstallReport() override { update_.clearInstallReport(); }
     void openTip(Tip t) override { openTipCard(t, Nav::Detail); }
     void disarmHoldB() override { bHeld_ = false; }
     // ArchHost: the ARCH screen's way back into the game (game_arch.cpp).
@@ -2700,7 +2637,7 @@ private:
     void restoreSettings(const SaveData& d);
     void settleBackgroundPick();
     void persistSave();                            // serialize + write via store_
-    void markSaveDirty() { saveDirty_ = true; }    // schedule a debounced write
+    void markSaveDirty() { save_.markDirty(); }    // schedule a debounced write
 
     // Raising-loop actions.
     bool itemUsable(const ItemDef& d, const char*& gateMsg) const override;
@@ -3242,54 +3179,8 @@ private:
     // back" and is the host build's normal state.
     HeapProbe heapProbe_ = nullptr;
     ISoundOut* soundOut_ = nullptr;
-    // The one buffer every save is serialized into. Owning it is what keeps a write off
-    // the allocator: it is sized once, behind the higher floor, and reused for good, so
-    // a save landing while the radio holds the heap has nothing large left to ask for,
-    // which is why a capture session does not block persistence.
-    std::vector<uint8_t> saveBlob_;
-    size_t lastBlobSize_ = 0;            // what the last write measured; sizes the buffer
-    // How big that buffer has to be for the next save to fit without resizing: the last
-    // blob plus the growth state can put on between saves, never below the reservation.
-    // The margin is what keeps the answer stable: a buffer sized to the blob exactly
-    // would put every save back on the allocating path the moment the pet gained a row.
-    size_t saveBlobTargetBytes() const {
-        const size_t want = lastBlobSize_ + kSaveBlobHeadroomBytes;
-        return want < kSaveReserveBytes ? kSaveReserveBytes : want;
-    }
-    int savesDeferred_ = 0;              // consecutive refusals; 0 once one lands
-    uint32_t savesDeferredLow_ = 0;      // worst headroom seen while refusing
-    // Consecutive writes the STORE refused, which is a different failure from the heap
-    // guard above: the save was built and handed over, and the medium turned it down.
-    // Counted for the same reason: a retry that works is indistinguishable from one
-    // that never had to happen unless something keeps score.
-    int saveWritesFailed_ = 0;
-    void noteSaveDeferred() {
-        const uint32_t h = heapHeadroom();
-        if (savesDeferred_ == 0 || h < savesDeferredLow_) savesDeferredLow_ = h;
-        ++savesDeferred_;
-    }
-
-    // Update checking, same runtime-only reasoning: where to look is device-tier
-    // (platform/esp32/update_source.h) and a check's answer is stale the moment
-    // the device is off. `updateJob_` is latched rather than derived, because a
-    // job outlives the screen that started it: see netConnectWanted().
-    bool updateSourceKnown_ = false;
-    // Sized to match UpdateSource::kUrlCap and UpdateArtifact::url: the manifest's
-    // address and the addresses inside it come off the same host, so a URL one can
-    // hold and another can't would be a trap.
-    char updateManifestUrl_[160] = {0};
+    UpdateJob update_;   // game/update_job.h
     char webBundleVersion_[16] = "UNKNOWN";
-    bool updateJob_ = false;
-    UpdateTarget jobTarget_ = UpdateTarget::None;
-    UpdateStatus updateStatus_;
-    InstallStatus installStatus_;
-
-    // One job ends the same way whatever it was. Keeps the two setters from
-    // drifting on which fields a finished job leaves behind.
-    void endJob() {
-        updateJob_ = false;
-        jobTarget_ = UpdateTarget::None;
-    }
 
     // PEERS screen cursor (game_peers.cpp).
     PeersScreen peers_;
@@ -3500,10 +3391,8 @@ private:
     CsfScreen csf_;   // game/csf_screen.h
 
     // Persistence plumbing. store_ is the platform save sink (nullptr = none).
-    // saveDirty_ schedules a debounced write; lastSaveMs_ paces autosaves.
     ISaveStore* store_ = nullptr;
-    bool saveDirty_ = false;
-    uint32_t lastSaveMs_ = 0;
+    SaveSchedule save_;   // game/save_schedule.h
 
     // Timing.
     uint32_t nowMs_ = 0;

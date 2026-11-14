@@ -343,7 +343,7 @@ void test_golden_cfg_walk() {
     auto install = [&w](Game& g, InstallState s, uint32_t received) {
         InstallStatus st;
         st.state = s;
-        st.target = g.updateJobTarget();
+        st.target = g.updateJob().target();
         st.received = received;
         st.total = 4096;
         if (s == InstallState::Failed) st.fail = InstallFail::NoNetwork;

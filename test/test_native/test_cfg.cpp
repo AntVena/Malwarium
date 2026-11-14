@@ -121,7 +121,7 @@ void test_cfg_format_sd_refused_during_update() {
     g.setNetProvisioned(true);
     g.setUpdateSourceKnown(true);
     g.requestUpdateCheck();                       // the job outlives any screen
-    CHECK(g.updateJobLive());
+    CHECK(g.updateJob().live());
     enterCfgTarget(g, CfgScreen::FormatSd);
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
@@ -152,7 +152,7 @@ void test_cfg_radio_shows_the_update_claim_the_arbiter_sees() {
     CHECK(g.netConnectWanted());
     CHECK(radioPage(g) != quiet);                 // the job's row, above the toggles
     g.setNetProvisioned(false);                   // the job lives on, the claim does not
-    CHECK(g.updateJobLive() && !g.netConnectWanted());
+    CHECK(g.updateJob().live() && !g.netConnectWanted());
     CHECK(radioPage(g) == quiet);
 }
 

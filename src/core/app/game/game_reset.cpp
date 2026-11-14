@@ -54,8 +54,7 @@ void Game::resetToHatch() {
     fxBeat_ = 0;
     lastLevelUpStat_ = -1;
     arch_.reset();
-    saveDirty_ = false;
-    lastSaveMs_ = nowMs_;
+    save_.settle(nowMs_);
     if (store_) store_->clear();
     startHatch();          // lays a fresh egg at idle (persists it: durable, save v9)
     dirty_ = true;

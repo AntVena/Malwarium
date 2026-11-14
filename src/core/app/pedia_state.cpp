@@ -107,7 +107,7 @@ std::string buildPediaStateJson(const Game& g) {
     // Where this device checks for updates, so the site's user section can show
     // the current value in the field that edits it. Not a secret: it is a
     // download address, and the operator is the one who set it.
-    appendKeyString(out, "update_url", g.updateManifestUrl());
+    appendKeyString(out, "update_url", g.updateJob().manifestUrl());
 
     // --- active_pet (the landing page's live pet card) ----------------------
     appendJsonString(out, "active_pet");
