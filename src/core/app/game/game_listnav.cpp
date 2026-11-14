@@ -10,8 +10,9 @@
 // The gate is Game::listTarget(): the list under the cursor right now, as how it steps and
 // what C's tap does there, or an empty target. An inline confirm, a detail page, a modal
 // or a minigame answer empty, so C stays an instant cancel on them. A screen joins the
-// contract by gaining one entry there, and steps with stepRow (core/ui/layout.h) rather
-// than its own arithmetic.
+// contract through its ScreenRow's list column (game_screens.cpp), or the menu tree's
+// per-slot answer below, and steps with stepRow (core/ui/layout.h) rather than its own
+// arithmetic.
 
 #include "core/app/game.h"
 #include "core/app/game_internal.h"
@@ -26,21 +27,16 @@
 
 namespace mal {
 
-namespace {
-constexpr ButtonEvent kTapC{Button::C, true, false};
-}  // namespace
-
-template <auto Screen>
-Game::ListTarget Game::screenList() {
-    return {[](Game& g, int dir) { (g.*Screen).stepList(g, dir); },
-            [](Game& g) { (g.*Screen).onButton(g, kTapC); }};
+Game::ListTarget Game::listTarget() const {
+    const auto list = screenRow(nav_).list;
+    return list ? list(*this) : ListTarget{};
 }
 
-Game::ListTarget Game::listTarget() const {
-    // The Hacker face first: it reuses Nav::Submenu with its own slot roster, so
-    // asking enteredId() there would read a pet submenu that isn't on screen.
+// The menu tree's L2, answered by the entered slot. The Hacker face first: it reuses
+// Nav::Submenu with its own slot roster, so asking enteredId() there would read a pet
+// submenu that isn't on screen.
+Game::ListTarget Game::submenuListTarget() const {
     if (face_ == Face::Hacker) {
-        if (nav_ != Nav::Submenu) return {};
         switch (enteredHackerId()) {
             case HackerSlotId::Shop:
                 // The service info page is a reader with nothing selected, so it takes
@@ -57,19 +53,6 @@ Game::ListTarget Game::listTarget() const {
             default: return {};
         }
     }
-    if (nav_ == Nav::Submenu) return submenuListTarget();
-    if (nav_ == Nav::Detail) return detailListTarget();
-
-    // The CHAPTERS archive is a row list with its own Nav. It grows with the ladder,
-    // so it takes the shared cursor and its hold-repeat. The chapter READER beside
-    // it does not: nothing on that page is selected, its B is "next window" rather
-    // than a row step, and its C is the tap-to-leave every other reader's is.
-    if (nav_ == Nav::StoryArchive)
-        return screenList<&Game::chapters_>();
-    return {};
-}
-
-Game::ListTarget Game::submenuListTarget() const {
     switch (enteredId()) {
         // Only the INDEX is a list. The six pages behind it are readers: nothing is
         // selected, A turns the page, and C leaves as on every reader.

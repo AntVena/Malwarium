@@ -1,13 +1,15 @@
 // game_screens.cpp: the per-screen table. For each Nav, in Nav's order, what a press does
 // on that screen, what render draws, what the heartbeat steps, what the A+C chord means
-// there, and what the tick runs, holds or waits for while it is up: the dissolve clock,
-// the egg's incubation, the idle timer and a Lockout crisis (Game::ScreenRow).
+// there, what the tick runs, holds or waits for while it is up (the dissolve clock, the
+// egg's incubation, the idle timer and a Lockout crisis), and where the list gestures
+// and the B hold go (Game::ScreenRow).
 //
 // onButton, render and stepScreenBeat each look their row up here, so a screen joins the
 // game by gaining one row, and they can never disagree about which screen is up.
 // The menu tree's two levels keep their per-slot dispatch (onSubmenu / onDetail,
 // drawSubmenu / drawDetail), since several slots share one Nav.
 #include "core/app/game.h"
+#include "core/app/game_internal.h"
 
 #include <iterator>
 
@@ -59,10 +61,14 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::Submenu, [](G& g, const Ev& e) { g.onSubmenu(e); },
          [](const G& g, Fb& fb) { g.drawSubmenu(fb); }, nullptr, nullptr,
-         FxSweep::None, Incubation::Runs, MenuIdle::BySlot},
+         FxSweep::None, Incubation::Runs, MenuIdle::BySlot, LockoutCrisis::Fires,
+         [](const G& g) { return g.submenuListTarget(); },
+         [](const G& g) { return g.submenuHoldTarget(); }},
         {Nav::Detail, [](G& g, const Ev& e) { g.onDetail(e); },
          [](const G& g, Fb& fb) { g.drawDetail(fb); }, nullptr, nullptr,
-         FxSweep::None, Incubation::Runs, MenuIdle::BySlot},
+         FxSweep::None, Incubation::Runs, MenuIdle::BySlot, LockoutCrisis::Fires,
+         [](const G& g) { return g.detailListTarget(); },
+         [](const G& g) { return g.detailHoldTarget(); }},
         {Nav::Process, [](G& g, const Ev& e) { g.maintScreen_.onProcess(g, e); },
          [](const G& g, Fb& fb) { g.maintScreen_.drawProcess(fb, g); },
          [](G& g) { g.stepProcessBeat(); }, nullptr},
@@ -162,7 +168,8 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // what an arena bout even is) rides the "chord opens a reader, then plain A/B/C
         // drive it" shape the explore control overlay uses.
         {Nav::Tourney, pressScreen<&G::arena_>, drawScreen<&G::arena_>, nullptr,
-         pressScreen<&G::arena_>},
+         pressScreen<&G::arena_>, FxSweep::None, Incubation::Runs, MenuIdle::Holds,
+         LockoutCrisis::Fires, nullptr, [](const G&) { return screenHold<&G::arena_>(); }},
         // Hands-off REVEAL: the guardian arriving and speaking is to watch, so it holds
         // ~5s, then the meeting goes on to whatever the fluency roll decided.
         {Nav::ShiboleetHail, [](G& g, const Ev& e) { g.shiboleet_.onHail(g, e); },
@@ -187,8 +194,12 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // archive is a menu the operator opened on purpose.
         {Nav::Story, pressScreen<&G::storyReader_>, drawScreen<&G::storyReader_>, nullptr,
          nullptr},
+        // The CHAPTERS archive grows with the ladder, so it takes the shared cursor and its
+        // hold-repeat. The chapter READER beside it does not: nothing on that page is
+        // selected, and its B is "next window" rather than a row step.
         {Nav::StoryArchive, pressScreen<&G::chapters_>, drawScreen<&G::chapters_>, nullptr,
-         nullptr},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::chapters_>(); }},
         {Nav::TipCard, pressScreen<&G::tipCardScreen_>, drawScreen<&G::tipCardScreen_>,
          nullptr, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::AwayDigest, pressScreen<&G::awayDigest_>, drawScreen<&G::awayDigest_>, nullptr,

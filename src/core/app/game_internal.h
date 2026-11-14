@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "core/app/game.h"
 #include "core/app/game_rig_shop.h"   // kRigVisibleRows/kRigRowPitch: the SHOP list's geometry
 #include "core/content/content_recipes.h"  // kMergeRecipes: the MRG list's rows
 #include "core/model/combat.h"        // Combatant::BackupUse / Combat::Outcome
@@ -26,6 +27,24 @@ namespace mal {
 // numbers could ever disagree.
 constexpr int kPeerMaxRows = 64;
 constexpr int kNetMaxRows = kNetVisibleCap;
+
+// A C tap, as handed to a screen's own onButton when a list's C settles as a cancel.
+constexpr ButtonEvent kTapC{Button::C, true, false};
+
+// The list and hold targets for a screen type that owns its list or its hold. Here, beside
+// each other, because the per-screen table (game_screens.cpp) names them for its rows
+// and the menu tree's per-slot answers (game_listnav.cpp, game_holds.cpp) name them too.
+template <auto Screen>
+Game::ListTarget Game::screenList() {
+    return {[](Game& g, int dir) { (g.*Screen).stepList(g, dir); },
+            [](Game& g) { (g.*Screen).onButton(g, kTapC); }};
+}
+
+template <auto Screen>
+Game::HoldTarget Game::screenHold() {
+    return {[](Game& g, uint32_t held) { return (g.*Screen).holdB(g, held); },
+            [](Game& g) { (g.*Screen).releaseB(g); }};
+}
 
 // Which of the three Backup Drive achievements a finished fight earned, or nullptr for
 // none: the drive unused, or a Fled fight that settled nothing. Pure over the only two

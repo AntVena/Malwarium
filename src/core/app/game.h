@@ -2051,7 +2051,7 @@ private:
     // own onButton for C.
     template <auto Screen>
     static ListTarget screenList();
-    // listTarget's branches by where the list sits.
+    // The menu tree's two levels, answered by the entered slot.
     ListTarget submenuListTarget() const;
     ListTarget detailListTarget() const;
     // The A-repeat and the C-hold back-out, both driven off the held-button clocks.
@@ -2078,6 +2078,9 @@ private:
     // The target for a screen type that owns its hold: its holdB(host, ms) and releaseB(host).
     template <auto Screen>
     static HoldTarget screenHold();
+    // The menu tree's two levels, answered by the entered slot.
+    HoldTarget submenuHoldTarget() const;
+    HoldTarget detailHoldTarget() const;
     // The hold half: the focused screen's second action, once its own dwell has passed.
     // True if it landed, which disarms B.
     bool tickHoldB();
@@ -2481,6 +2484,10 @@ private:
         Incubation incubation = Incubation::Runs;
         MenuIdle idle = MenuIdle::Holds;   // tickIdleDefocus; most screens are read or played
         LockoutCrisis crisis = LockoutCrisis::Fires;
+        // The list gestures and the B tap/hold on this screen (listTarget, holdTarget);
+        // null where it has none. The menu tree's two levels answer by the entered slot.
+        ListTarget (*list)(const Game& g) = nullptr;
+        HoldTarget (*hold)(const Game& g) = nullptr;
     };
     static const ScreenRow& screenRow(Nav n);
     MenuIdle screenIdle() const;   // the idle budget of the screen that is up
