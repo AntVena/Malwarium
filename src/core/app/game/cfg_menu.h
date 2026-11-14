@@ -16,6 +16,7 @@
 
 #include "tunables.h"                   // kHackerTagMax
 #include "core/app/operator.h"          // Tip
+#include "core/app/game/hardware_pages.h"
 #include "core/app/game/radio_pages.h"
 #include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
@@ -37,23 +38,19 @@ struct Settings;
 enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
 
 // What CFG needs from the game. Game implements it; a test can too. Each page that is a
-// type of its own is handed only its own host, which this extends.
-class CfgHost : public UpdatesHost, public RadioHost {
+// type of its own is handed only its own host, which this extends. What the menu calls
+// itself is declared here, even where a page's host declares it too, so a call through
+// CfgHost names one function.
+class CfgHost : public UpdatesHost, public RadioHost, public HardwareHost {
 public:
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
     virtual int screenBeat() const = 0;
-    virtual uint32_t uptimeMs() const = 0;
     // How long B has been held on this page, or -1 with it up.
     virtual int32_t heldBMs() const = 0;
 
     // What the pages show.
-    virtual const SdStatus& sdStatus() const = 0;
-    virtual const PowerStatus& powerStatus() const = 0;
-    virtual SdFormatState sdFormatState() const = 0;
-    virtual SdCardUse sdCardUse() const = 0;
-    virtual bool travelSleepRequested() const = 0;
-    virtual bool captureEnabled() const = 0;
+    virtual RadioOwner radioOwner() const = 0;        // the CFG list's radio line
     virtual const char* equippedTitleName() const = 0;
     virtual const char* themeName() const = 0;
     virtual int themeRow() const = 0;
@@ -74,10 +71,6 @@ public:
     virtual bool setBackgroundPick(SceneId s) = 0;
     virtual void setCareAlerts(bool on) = 0;
     virtual bool setHackerTag(const char* tag) = 0;   // false on a tag it refuses
-    virtual void requestTravelSleep() = 0;
-    virtual void requestSdFormat() = 0;
-    virtual void clearSdFormatResult() = 0;
-    virtual void requestSdRecheck() = 0;
     virtual void resetToHatch() = 0;
     virtual void executeFactoryReset(FactoryScope scope) = 0;
     virtual void openTip(Tip t) = 0;                  // read, then back to TIPS
@@ -119,12 +112,9 @@ private:
     void onGroup(CfgHost& host, const ButtonEvent& ev);
     template <class Step, class Apply>
     void onPicker(CfgHost& host, const ButtonEvent& ev, Step step, Apply apply);
-    void onTravel(CfgHost& host, const ButtonEvent& ev);
-    void onFormatSd(CfgHost& host, const ButtonEvent& ev);
     void onHackerTag(CfgHost& host, const ButtonEvent& ev);
     void onTips(CfgHost& host, const ButtonEvent& ev);
     void follow(CfgHost& host, CfgMove move);
-    void drawSysInfoPage(Framebuffer& fb, const CfgHost& host) const;
     void drawDevicePage(Framebuffer& fb, const CfgHost& host) const;
     void drawBackgroundPage(Framebuffer& fb, const CfgHost& host) const;
     void drawTipsPage(Framebuffer& fb, const CfgHost& host) const;
@@ -142,6 +132,7 @@ private:
     // confirm cell).
     char tag_[kHackerTagMax + 1] = {0};
     int caret_ = 0;
+    HardwarePages hardware_;
     UpdatesPage updates_;
     RadioPages radio_;
 };

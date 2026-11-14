@@ -72,11 +72,8 @@ void CfgMenu::openPage(CfgHost& host, CfgScreen target) {
     switch (target) {
         case CfgScreen::Device:
         case CfgScreen::Radio: groupRow_ = 0; break;
-        case CfgScreen::Travel: pick_ = 0; break;              // always opens on NO
-        case CfgScreen::FormatSd:                              // ...likewise, and a result
-            pick_ = 0;                                         // left on screen is spent
-            if (host.sdFormatState() != SdFormatState::Working) host.clearSdFormatResult();
-            break;
+        case CfgScreen::Travel:
+        case CfgScreen::FormatSd: hardware_.open(host, target); break;
         case CfgScreen::UiMode: pick_ = static_cast<int>(s.uiMode); break;
         case CfgScreen::Tips: tipsRow_ = 0; break;
         case CfgScreen::Brightness: pick_ = s.brightness; break;
@@ -155,15 +152,9 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
     switch (page_) {
         case CfgScreen::Device:
         case CfgScreen::Radio:      onGroup(host, ev); break;
-        case CfgScreen::Travel:     onTravel(host, ev); break;
-        case CfgScreen::FormatSd:   onFormatSd(host, ev); break;
-        case CfgScreen::SysInfo:
-            // A re-checks the card (a card inserted after boot is picked up, and the
-            // result lands on this page's SD line). B arms the hidden hold (holdB).
-            if (ev.button == Button::A) host.requestSdRecheck();
-            else if (ev.button == Button::B) host.armHoldB();
-            else if (ev.button == Button::C) leavePage(host);
-            break;
+        case CfgScreen::SysInfo:    follow(host, hardware_.onSysInfo(host, ev)); break;
+        case CfgScreen::Travel:     follow(host, hardware_.onTravel(host, ev)); break;
+        case CfgScreen::FormatSd:   follow(host, hardware_.onFormatSd(host, ev)); break;
         case CfgScreen::HackerTag:  onHackerTag(host, ev); break;
         case CfgScreen::Tips:       onTips(host, ev); break;
         case CfgScreen::UiMode:
@@ -241,39 +232,6 @@ bool CfgMenu::holdB(CfgHost& host, uint32_t heldMs) {
     return false;
 }
 
-// Once the request is latched every button is inert: the device tier is already landing
-// a save and powering the panel down, and a press that half-cancelled that would leave
-// the operator guessing which state they are in.
-void CfgMenu::onTravel(CfgHost& host, const ButtonEvent& ev) {
-    if (host.travelSleepRequested()) return;
-    if (ev.button == Button::A) pick_ ^= 1;
-    else if (ev.button == Button::B) {
-        if (pick_ == 1) host.requestTravelSleep();
-        else leavePage(host);
-    } else if (ev.button == Button::C) leavePage(host);
-    host.markDirty();
-}
-
-// Working: every button is inert, as travel's are once latched, since nothing pressed
-// here could stop a format. A result is read, then any button leaves. YES on a busy
-// card is refused by the request itself.
-void CfgMenu::onFormatSd(CfgHost& host, const ButtonEvent& ev) {
-    const SdFormatState st = host.sdFormatState();
-    if (st == SdFormatState::Working) return;
-    if (st != SdFormatState::Idle) {
-        host.clearSdFormatResult();
-        leavePage(host);
-    } else if (ev.button == Button::A) {
-        pick_ ^= 1;
-    } else if (ev.button == Button::B) {
-        if (pick_ == 0) leavePage(host);
-        else host.requestSdFormat();
-    } else if (ev.button == Button::C) {
-        leavePage(host);
-    }
-    host.markDirty();
-}
-
 // An arcade editor: A cycles the focused cell's char, B advances the caret (and at the
 // confirm cell, saves), C deletes the previous char (or backs out from the first cell).
 void CfgMenu::onHackerTag(CfgHost& host, const ButtonEvent& ev) {
@@ -326,21 +284,11 @@ void CfgMenu::follow(CfgHost& host, CfgMove move) {
 void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
     const Settings& s = host.settingsRecord();
     switch (page_) {
-        case CfgScreen::SysInfo: drawSysInfoPage(fb, host); break;
+        case CfgScreen::SysInfo: hardware_.drawSysInfo(fb, host); break;
         case CfgScreen::Device: drawDevicePage(fb, host); break;
         case CfgScreen::Radio: radio_.drawGroup(fb, host, groupRow_); break;
-        case CfgScreen::Travel:
-            // Two faces, like UPDATES: the question, then the notice that replaces it for
-            // as long as the device is still on its way down.
-            if (host.travelSleepRequested()) drawTravelSleeping(fb);
-            else drawTravelConfirm(fb, pick_);
-            break;
-        case CfgScreen::FormatSd:
-            if (host.sdFormatState() == SdFormatState::Idle)
-                drawSdFormatConfirm(fb, pick_, host.sdStatus(), host.sdCardUse());
-            else
-                drawSdFormatStatus(fb, host.sdFormatState(), host.sdStatus());
-            break;
+        case CfgScreen::Travel: hardware_.drawTravel(fb, host); break;
+        case CfgScreen::FormatSd: hardware_.drawFormatSd(fb, host); break;
         case CfgScreen::HackerTag: drawHackerTag(fb, tag_, caret_); break;
         case CfgScreen::Titles: {
             const OperatorWorld& w = host.operatorRecord().world;
@@ -372,30 +320,6 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::CareAlerts:
             break;
     }
-}
-
-void CfgMenu::drawSysInfoPage(Framebuffer& fb, const CfgHost& host) const {
-    const Operator& op = host.operatorRecord();
-    // RANK reads "R{n} {title}" so the endless numeric rank shows beside its title, the
-    // same "R%d %s" form as STAT.
-    char rankLine[28];
-    std::snprintf(rankLine, sizeof(rankLine), "R%d %s", op.hackerRank,
-                  hackerRankTitle(op.hackerRank));
-    SysInfoView v;
-    v.owner = host.radioOwner();
-    v.sd = host.sdStatus();
-    v.power = host.powerStatus();
-    v.uptimeMs = host.uptimeMs();
-    v.fwVersion = kFirmwareVersion;
-    v.uiMode = host.settingsRecord().uiMode;
-    v.rankTitle = rankLine;
-    v.networksSeen = op.networksSeen;
-    v.equippedTitle = host.equippedTitleName();
-    v.captureEnabled = host.captureEnabled();
-    v.handshakesSeen = op.cant.handshakesSeen;
-    if (const int32_t held = host.heldBMs(); held >= 0)
-        v.holdFrac = static_cast<float>(held) / kFactoryRevealMs;
-    drawSysInfo(fb, v);
 }
 
 void CfgMenu::drawDevicePage(Framebuffer& fb, const CfgHost& host) const {
