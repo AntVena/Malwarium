@@ -904,7 +904,7 @@ void test_persistence_reset_clears_store() {
     { Game g(StartMode::FreshHatch, "paypup", &store);
       CHECK(g.nav() == Game::Nav::Idle);                   // boots the persisted egg
       CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0 && g.inEggPhase());
-      CHECK(g.generation() == 1); }                        // the reset pet is generation 1
+      CHECK(g.generation() == 2); }    // the same player's second pet (RESET PET keeps them)
 }
 
 // HackerTag on-device editor: A cycles a cell, B advances, the OK cell

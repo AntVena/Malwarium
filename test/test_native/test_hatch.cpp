@@ -136,11 +136,18 @@ void test_first_hatch_grants_a_defrag_tool() {
     CHECK(!g.inEggPhase());
     CHECK(g.inventory().count(kDefragToolId) == held0 + 1);
 
-    g.resetToHatch();                                  // a wipe is a first hatch again
+    g.resetToHatch();                                  // RESET PET: same player, met MAINT
     pickFirstEggLine(g);
     const int held1 = g.inventory().count(kDefragToolId);
     g.tick(t += kBootHatchMs + kHeartbeatMs);
-    CHECK(g.inventory().count(kDefragToolId) == held1 + 1);
+    CHECK(!g.inEggPhase());
+    CHECK(g.inventory().count(kDefragToolId) == held1);
+
+    g.executeFactoryReset(FactoryScope::WipeEverything);   // a wiped device starts over
+    pickFirstEggLine(g);
+    const int held2 = g.inventory().count(kDefragToolId);
+    g.tick(t += kBootHatchMs + kHeartbeatMs);
+    CHECK(g.inventory().count(kDefragToolId) == held2 + 1);
 
     Game h{StartMode::Hatched};                        // a raised pet: no grant to make
     h.model().setFragmentation(0);

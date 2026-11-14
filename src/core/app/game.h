@@ -1825,10 +1825,12 @@ public:
     // The deepest dive on the device, by anyone: the max over every species record.
     int deepestDiveEver() const { return op_.shelves.deepestDiveEver(); }
 
-    // --- Dev shortcuts (host key / device dev gesture / tests) --------------
-    // Wipe back to a fresh empty save and re-enter the Decryption Hatch, so the
-    // hatch + raising loop can be retested without reflashing / relaunching.
+    // --- Resets (CFG's Factory Reset; the host key and device dev gesture) ---
+    // RESET PET: a fresh egg in place of the Pet record, over the same Operator. Also
+    // the dev shortcut, so the hatch + raising loop can be retested without reflashing.
     void resetToHatch() override;
+    // The Factory Reset's hold-B commit, in the scope the screen shows.
+    void executeFactoryReset(FactoryScope scope) override;
     // Clear the player-level state a pet reset deliberately leaves standing: a fresh
     // Operator record, the Titles, world progress, the shelves, the Cant and the radio
     // consents. Paired with resetToHatch() by the
@@ -2225,7 +2227,6 @@ private:
 
     // Per-state input handlers.
     // CfgHost: the CFG pages' way back into the game (game_config.cpp).
-    void executeFactoryReset(FactoryScope scope) override;   // the hold-B commit
     uint32_t uptimeMs() const override { return nowMs_; }
     int32_t heldBMs() const override {
         return bHeld_ ? static_cast<int32_t>(nowMs_ - bDownMs_) : -1;

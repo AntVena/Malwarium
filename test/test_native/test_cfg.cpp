@@ -309,6 +309,13 @@ void test_cfg_factory_reset_scopes_differ() {
         g.markCreatureSeen("berserkernel");     // a 'Pedia reveal
         g.setNetScanEnabled(true);
         g.setApEnabled(true);                      // two radio consents
+        // ...and the player-level state a pet reset once restarted: the tag, the wallet
+        // and a pet on the ARCH rack.
+        CHECK(g.setHackerTag("NEO"));
+        g.liveOperator().bits = 4321;
+        enterArchNewEgg(g);
+        pickFirstEggLine(g);
+        CHECK(g.rackCount() == 1);
     };
     // Commit the reveal + the hold that follows it, exactly as the screen does.
     auto commitWipe = [](Game& g, int scope) {
@@ -323,15 +330,24 @@ void test_cfg_factory_reset_scopes_differ() {
         pickFirstEggLine(g);
     };
 
-    // RESET PET keeps every one of them.
-    { Game g{StartMode::Hatched};
+    // RESET PET replaces the Pet and leaves the Operator alone: a new pet, same player.
+    // Reloaded from the store too, so what it keeps is shown to reach the save.
+    { MemSaveStore store;
+      Game g{StartMode::Hatched, "paypup", &store};
       seedProgress(g);
       CHECK(g.equippedTitle() == 0 && g.creatureSeen("berserkernel"));
       commitWipe(g, /*scope=*/0);
       CHECK(g.pet() != nullptr && g.inEggPhase()); // ...a fresh egg all the same
-      CHECK(g.equippedTitle() == 0);
-      CHECK(g.creatureSeen("berserkernel"));
-      CHECK(g.netScanEnabled() && g.apEnabled()); }
+      CHECK(g.netScanEnabled() && g.apEnabled());
+      g.saveNow();
+      Game r{StartMode::FreshHatch, "paypup", &store};
+      for (const Game* x : {&g, &r}) {
+          CHECK(x->equippedTitle() == 0);
+          CHECK(x->creatureSeen("berserkernel"));
+          CHECK(std::strcmp(x->hackerTag(), "NEO") == 0);
+          CHECK(x->bits() >= 4321);   // the wallet stands (a sweep on the way may add)
+          CHECK(x->rackCount() == 1);
+      } }
 
     // WIPE EVERYTHING clears them.
     { Game g{StartMode::Hatched};
@@ -342,6 +358,10 @@ void test_cfg_factory_reset_scopes_differ() {
       CHECK(!g.creatureSeen("berserkernel"));
       CHECK(!g.netScanEnabled());                  // consents back to out-of-box OFF
       CHECK(!g.apEnabled() && !g.linkEnabled());
+      const Operator fresh;
+      CHECK(std::strcmp(g.hackerTag(), fresh.hackerTag) == 0);
+      CHECK(g.bits() == fresh.bits);
+      CHECK(g.rackCount() == 0);
       // ...but the pet it just laid is still tallied as this device's own.
       CHECK(g.speciesRaised() >= 1); }
 }
