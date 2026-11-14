@@ -234,7 +234,7 @@ void test_tourney_run_from_the_expl_row() {
     CHECK(!explRowSelectable(ExplRowState::TourneyLocked));
 
     // Reaching The Pirate Bayou (clearing the area before it) is the invitation.
-    g.debugSetSectorCleared(0, true);
+    g.liveOperator().world.sectorCleared[0] = true;
     areas[0] = true;
     CHECK(explRowState(arenaRow, areas, cleared, boss, -1, -1, false) ==
           ExplRowState::TourneyOpen);
@@ -311,7 +311,7 @@ static void armBracket(Game& g) {
 // Drive a game from the carousel to a bracket, ready to be ended. Shared by the two
 // gates below, which differ only in the pet they bring to it.
 static void openBracket(Game& g) {
-    g.debugSetSectorCleared(0, true);          // reach the Bayou -> the arena opens
+    g.liveOperator().world.sectorCleared[0] = true;          // reach the Bayou -> the arena opens
     enterSubmenuId(g, SubmenuId::Expl);
     armBracket(g);
 }
@@ -385,7 +385,7 @@ void test_tourney_screen_grayscale() {
     auto renderRun = [](bool eliminate, Framebuffer& fb) {
         Game g{StartMode::Hatched, "bruinforce"};
         g.addCombatXp(600000);
-        g.debugSetSectorCleared(0, true);          // reach the Bayou → the arena opens
+        g.liveOperator().world.sectorCleared[0] = true;          // reach the Bayou → the arena opens
         enterSubmenuId(g, SubmenuId::Expl);
         explPickCategory(g, ExplCat::Arena);
         tapB(g);              // draw a bracket
@@ -490,7 +490,7 @@ void test_dock_ties_land_inside_the_field() {
 // it is held open the way the other wait-in-front-of-it screens are.
 void test_tourney_screen_outlives_the_menu_idle_timer() {
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugSetSectorCleared(0, true);
+    g.liveOperator().world.sectorCleared[0] = true;
     enterSubmenuId(g, SubmenuId::Expl);
     explPickCategory(g, ExplCat::Arena);
     g.onButton(press(Button::B));
@@ -532,7 +532,7 @@ void test_tourney_brief_fits_its_page() {
 // is the same builder STAT's LOADOUT page uses.
 void test_tourney_scout_shows_the_rivals_whole_kit() {
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugSetSectorCleared(0, true);
+    g.liveOperator().world.sectorCleared[0] = true;
     enterSubmenuId(g, SubmenuId::Expl);
     explPickCategory(g, ExplCat::Arena);
     g.onButton(press(Button::B));

@@ -284,7 +284,7 @@ void test_care_cards_show_once_each() {
     };
     uint32_t t = 0;
     Game g{StartMode::Hatched};
-    g.debugClearTips();
+    for (uint8_t& b : g.liveOperator().reveals.tipsSeen) b = 0;
     g.model().setHunger(80);
     g.model().setFragmentation(kFragCautionMin);       // MAINT's "!" only
     g.model().setHappiness(70);
@@ -336,7 +336,7 @@ void test_error_warnings_before_failing() {
     };
     uint32_t t = 0;
     Game g{StartMode::Hatched};
-    g.debugClearTips();
+    for (uint8_t& b : g.liveOperator().reveals.tipsSeen) b = 0;
     for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
         g.markTipSeen(k);
     g.model().setFragmentation(10);
@@ -376,7 +376,7 @@ void test_error_warnings_before_failing() {
 
     // A pet seeded straight to 4 errors gets the one card that covers both.
     Game h{StartMode::Hatched};
-    h.debugClearTips();
+    for (uint8_t& b : h.liveOperator().reveals.tipsSeen) b = 0;
     for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
         h.markTipSeen(k);
     h.model().setFragmentation(10);
@@ -388,7 +388,7 @@ void test_error_warnings_before_failing() {
 
     // The card's advice follows the shield: armed, it says so rather than asking for it.
     Game armed{StartMode::Hatched};
-    armed.debugClearTips();
+    for (uint8_t& b : armed.liveOperator().reveals.tipsSeen) b = 0;
     for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy})
         armed.markTipSeen(k);
     armed.model().setFragmentation(10);
@@ -411,7 +411,7 @@ void test_error_warnings_before_failing() {
 // walk does not step while the card is up, so a player reading it misses nothing.
 void test_first_walk_card() {
     Game g{StartMode::Hatched};
-    g.debugClearTips();
+    for (uint8_t& b : g.liveOperator().reveals.tipsSeen) b = 0;
     g.markTipSeen(Game::Tip::CareFrag);                // keep the menu summon card-free
     g.markTipSeen(Game::Tip::CareFed);
     g.markTipSeen(Game::Tip::CareHappy);

@@ -521,7 +521,7 @@ void Game::finishCombat() {
                     if (kDarkWebSigilEveryN > 0 && walk_.streak > 0 &&
                         walk_.streak % kDarkWebSigilEveryN == 0 &&
                         sigilsKnown() < kCantSigils) {
-                        op_.cant.sigils = learnSigil(op_.cant.sigils);
+                        op_.cant.learnNextSigil();
                         log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
                     }
                 }
@@ -621,14 +621,6 @@ void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool li
     nav_ = Nav::Combat;
     dirty_ = true;
 }
-
-void Game::debugSetNetworksSeen(int n) {
-    if (n < 0) n = 0;
-    op_.networksSeen = n;   // unbounded (XP model): no ledger/pool to keep in sync now
-    op_.hackerRank = hackerRankForNetworksSeen(op_.networksSeen);   // silent: no celebration
-}
-
-void Game::debugSetBits(int n) { op_.bits = n < 0 ? 0 : n; }
 
 void Game::debugFillLoadout() {
     if (!pet_.creature) return;

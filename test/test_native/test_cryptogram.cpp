@@ -343,7 +343,7 @@ void test_quote_prize_ladder_covers_every_recipe() {
 // the game hands one over, so this is the whole supply of cooking.
 void test_quote_prize_pays_the_next_recipe() {
     Game g{StartMode::Hatched};
-    g.debugSetBits(99999);
+    g.liveOperator().bits = 99999;
     g.buyRigUpgrade(kRigRowMergeHub);
 
     const int first = recipeIndexByOutput(quotePrizeLadder()[0]);

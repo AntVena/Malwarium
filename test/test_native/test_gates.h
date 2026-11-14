@@ -306,7 +306,7 @@ inline void crackDecryption(Game& g) {
 inline void pickFirstEggLine(Game& g) {
     if (g.inLineSelect()) g.onButton(press(Button::B));
     settleDecryption(g);
-    g.debugDeclineEggOffer();
+    g.livePet().eggOfferMade = true;
 }
 
 // Helper: advance the cinematic past hold + flash into the reveal.

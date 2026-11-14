@@ -912,7 +912,7 @@ void test_favourite_food_is_found_by_feeding_it() {
     const ItemDef* fav = nullptr;
     for (const ItemDef* d : g.content().allItems()) {
         if (!d || !favouriteFoodEligible(*d)) continue;
-        g.debugSetFavouriteFood(d->id);
+        g.livePet().upgrades.favouriteFood = g.content().item(d->id);
         g.inventory().add(d->id, 1);
         useItem(g, d->id);
         if (g.petAteFood(d->id)) { fav = d; break; }
@@ -968,7 +968,7 @@ void test_rack_keeps_the_palate_and_the_favourite() {
             if (d && favouriteFoodEligible(*d)) { fav = d; break; }
         CHECK(dish && fav);
         if (!dish || !fav) return;
-        g.debugSetFavouriteFood(fav->id);
+        g.livePet().upgrades.favouriteFood = g.content().item(fav->id);
         g.inventory().add(dish->id, 1);
         useItem(g, dish->id);
         CHECK(g.petAteFood(dish->id));

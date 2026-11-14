@@ -199,6 +199,13 @@ using namespace mal;
 static void useItem(Game& g, const char* id) {
     if (const ItemDef* d = g.content().item(id)) g.useItem(*d, ItemUseFrom::Bag);
 }
+// A Hacker Rank partway up the ladder without a radio. The rank is stored beside the
+// count, and a real sighting raises both (Game::registerNetwork), with the celebration
+// a dump does not want.
+static void setNetworksSeen(Game& g, int n) {
+    g.liveOperator().networksSeen = n;
+    g.liveOperator().hackerRank = hackerRankForNetworksSeen(n);
+}
 static void openCache(Game& g, const char* id) {
     if (const ItemDef* d = g.content().item(id)) g.openSealedCache(*d);
 }
@@ -323,7 +330,7 @@ int main(int argc, char** argv) {
     // "tipcard" forgets every first-run tip and reaches for the menu, which opens the CARE
     // card for the first need the vitals above put out of their OK zone (pair with crit).
     if (hasFlag(argc, argv, "tipcard")) {
-        game.debugClearTips();
+        for (uint8_t& b : game.liveOperator().reveals.tipsSeen) b = 0;
         game.onButton({Button::A, true, false});
     }
     // "dying" puts the pet at 5/5 errors, so the habitat shows its FAILING countdown.
@@ -376,7 +383,7 @@ int main(int argc, char** argv) {
     // ...and the overflowing rack: buy past kRackSlots and fill every slot, which is
     // the state the list has to WINDOW rather than draw straight down the screen.
     if (hasFlag(argc, argv, "rackfull")) {
-        game.debugSetBits(1 << 16);
+        game.liveOperator().bits = 1 << 16;
         for (int i = 0; i < 4; ++i) game.buyRigUpgrade(kRigRowRackSlot);
         static const char* const kSeed[] = {"cryptoshell", "phishlet", "tadpoll",
                                             "croaken",     "paypup",   "malbear",
@@ -507,8 +514,8 @@ int main(int argc, char** argv) {
         // STAT's pages, by title. "stat" alone shows vitals; the page names turn to
         // theirs; "index" then holds B to open the jump list over them. "ate:<n>" feeds
         // the pet n dishes first, which is what puts lit cells in the FOODS grid.
-        game.debugSetBits(1450);
-        game.debugSetNetworksSeen(27);       // R2, partway to R3
+        game.liveOperator().bits = 1450;
+        setNetworksSeen(game, 27);       // R2, partway to R3
         enterSlot(SubmenuId::Stat);
         const char* title = hasFlag(argc, argv, "bond")      ? "BOND"
                           : hasFlag(argc, argv, "tiers")   ? "TIERS"
@@ -560,7 +567,7 @@ int main(int argc, char** argv) {
         // "picker" buys the ITEMS Type-Picker first, so ITEMS opens on the category
         // tiles; without it ITEMS opens straight on the list, as an unowned rig does.
         if (hasFlag(argc, argv, "picker")) {
-            game.debugSetBits(kShopItemPickerCost);
+            game.liveOperator().bits = kShopItemPickerCost;
             game.buyRigUpgrade(kRigRowItemPicker);
         }
         enterSlot(SubmenuId::Items);
@@ -592,7 +599,7 @@ int main(int argc, char** argv) {
                     game.onButton({Button::A, true, false});
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "run")) {
-            game.debugSetBits(99999);
+            game.liveOperator().bits = 99999;
             game.onButton({Button::B, true, false});
             int steps = 0;
             for (int i = 1; i < argc; ++i)
@@ -604,7 +611,7 @@ int main(int argc, char** argv) {
         // up the dial ("medium"/"hard"; EASY otherwise), and run it. Asked by engine
         // rather than by process, because which process plays which is content.
         auto runPlayed = [&](ArcadeGameKind g) {
-            game.debugSetBits(99999);
+            game.liveOperator().bits = 99999;
             const bool av = game.maintPlayedGame(MaintKind::Av) == g;
             if (av) game.onButton({Button::A, true, false});  // the ANTIVIRUS row
             game.onButton({Button::B, true, false});          // open it
@@ -752,8 +759,8 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "earned")) {
                 game.markCreatureRaised("cuttlefork");   // a swimmer's place
                 game.markCreatureRaised("tadpoll");      // the Phishing line's
-                game.debugClearSector(0);                // an area pays out itself
-                game.debugAddTourneyWin();               // ...and the arena its first
+                game.liveOperator().world.sectorCleared[0] = true;                // an area pays out itself
+                ++game.liveOperator().tallies.tourneyWins;               // ...and the arena its first
                 game.unlockAchievement("RECIPES_10");    // ...and one from each of the
                 game.unlockAchievement("RIG_ALL");       //    four achievement families
                 game.unlockAchievement("NETS_100");      //    that pay out a place
@@ -762,7 +769,7 @@ int main(int argc, char** argv) {
                 // a row names earned, so any place can be picked. The one way to see
                 // an area's or a prize's place in the habitat without earning it.
                 if (hasFlag(argc, argv, "all")) {
-                    for (int a = 0; a < kAreaCount; ++a) game.debugClearSector(a);
+                    for (int a = 0; a < kAreaCount; ++a) game.liveOperator().world.sectorCleared[a] = true;
                     for (const BackgroundDef& b : kBackgrounds)
                         if (b.earnedById) game.unlockAchievement(b.earnedById);
                 }
@@ -1033,8 +1040,8 @@ int main(int argc, char** argv) {
         // row unlocks. `list` = the EXPL ladder with "DEEPWEB DIVE  > DIVE" now at the
         // TOP (row 0); otherwise arm the dive → the idle "EXPL DEEPWEB … DEPTH 0" badge.
         for (int a = 0; a < kExplSectors; ++a) {
-            game.debugSetSectorCleared(a, true);
-            for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+            game.liveOperator().world.sectorCleared[a] = true;
+            for (int s = 0; s < kExplSubAreas; ++s) game.liveOperator().world.subCleared[a][s] = true;
         }
         if (hasFlag(argc, argv, "list")) {
             // The dive is ENDLESS's first row, so opening that category parks the cursor
@@ -1047,7 +1054,7 @@ int main(int argc, char** argv) {
         // re-farm: a CLEARED sub-area stays re-armable. Clear area 0 fully,
         // then arm a cleared sub: stays at the idle habitat so the FARMING badge shows
         // (no misleading WINS/BOSS progress toward an already-beaten boss).
-        for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(0, s, true);
+        for (int s = 0; s < kExplSubAreas; ++s) game.liveOperator().world.subCleared[0][s] = true;
         if (hasFlag(argc, argv, "list"))
             enterExplCat(ExplCat::Story);                // the all-CLEARED farmable list
         else
@@ -1069,18 +1076,18 @@ int main(int argc, char** argv) {
         const bool bossReady = rerun || hasFlag(argc, argv, "bossready");
         if (hasFlag(argc, argv, "endgame")) {
             for (int a = 0; a < kExplSectors; ++a) {
-                game.debugSetSectorCleared(a, true);
-                for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+                game.liveOperator().world.sectorCleared[a] = true;
+                for (int s = 0; s < kExplSubAreas; ++s) game.liveOperator().world.subCleared[a][s] = true;
             }
         } else if (bossReady) {
-            for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(0, s, true);
+            for (int s = 0; s < kExplSubAreas; ++s) game.liveOperator().world.subCleared[0][s] = true;
             // "rerun" beats the gauntlet too, so its row shows the CLEARED area's
             // re-runnable form ("> RERUN") rather than the first-clear "> AREA BOSS".
-            if (rerun) game.debugSetSectorCleared(0, true);
+            if (rerun) game.liveOperator().world.sectorCleared[0] = true;
         } else {
-            game.debugSetSubCleared(0, 0, true);
-            game.debugSetSubCleared(0, 1, true);
-            game.debugSetSubBossUnlocked(0, 2, true);
+            game.liveOperator().world.subCleared[0][0] = true;
+            game.liveOperator().world.subCleared[0][1] = true;
+            game.liveOperator().world.subBossUnlocked[0][2] = true;
         }
         // "read" marks every chapter read, which is what opens the CHAPTERS row.
         if (hasFlag(argc, argv, "read")) game.debugMarkStoryRead();
@@ -1124,7 +1131,7 @@ int main(int argc, char** argv) {
         // runs the operator's first match to a verdict, so the frame lands on the
         // bracket with one round already settled; "out"/"champion" force a terminal
         // banner without playing a whole tournament for it.
-        game.debugSetSectorCleared(0, true);
+        game.liveOperator().world.sectorCleared[0] = true;
         game.addCombatXp(600000);               // a pet that can win a match
         enterExplCat(ExplCat::Arena);                // the picker's ARENA row draws it
         // B on the bracket is a TAP/HOLD pair (tap = start the bout, hold = the scout
@@ -1167,8 +1174,8 @@ int main(int argc, char** argv) {
         // the PROFILE viewer + SHOP list read populated. `profile`/`shop` open a slot;
         // `shop buy` also purchases the bandwidth upgrade so the price/pool step shows.
         // (Checked BEFORE the explore block, which also claims a "shop" flag.)
-        game.debugSetBits(600);
-        game.debugSetNetworksSeen(27);              // R2 + populated NETS
+        game.liveOperator().bits = 600;
+        setNetworksSeen(game, 27);              // R2 + populated NETS
         game.setAuditCaptureEnabled(true);
         for (int i = 0; i < 3; ++i) {               // a few SHAKES
             uint8_t bssid[6] = {0x02, 0, 0, 0, 0, static_cast<uint8_t>(i)};
@@ -1194,7 +1201,7 @@ int main(int argc, char** argv) {
             for (int i = 1; i < hackerRankTierCount(); ++i)
                 if (textWidth(hackerRankTitle(hackerRankTierUnlock(i))) >
                     textWidth(hackerRankTitle(hackerRankTierUnlock(longest)))) longest = i;
-            game.debugSetNetworksSeen(hackerRankTierUnlock(longest) *
+            setNetworksSeen(game, hackerRankTierUnlock(longest) *
                                       (kHackerRankXpPerRank / kHackerRankXpPerNetwork));
         }
         // A battery reading, so the face's glyph can be LOOKED at: the native tier
@@ -1235,14 +1242,14 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "shop")) {
             // "hub" buys the MERGE HUB first: the way to see the list with and
             // without it. "row:<n>" then A-cycles down to reach a given row.
-            if (hasFlag(argc, argv, "hub")) { game.debugSetBits(99999); game.buyRigUpgrade(kRigRowMergeHub); }
+            if (hasFlag(argc, argv, "hub")) { game.liveOperator().bits = 99999; game.buyRigUpgrade(kRigRowMergeHub); }
             // "services" buys the two rows that RUN on their own, which is what puts
             // the SERVICES head slot on the list; A-cycling onto it and holding B opens
             // one service's info page ("info"), the third of the SHOP's screens. "ask"
             // also buys AUTO DIVE GEAR, the askable row.
             const bool services = hasFlag(argc, argv, "services");
             if (services) {
-                game.debugSetBits(999999);
+                game.liveOperator().bits = 999999;
                 game.buyRigUpgrade(kRigRowAutoBackup);
                 game.buyRigUpgrade(kRigRowDiskMaintenance);
                 // "ask" adds the three-way service, whose SET verbs are the widest
@@ -1284,7 +1291,7 @@ int main(int argc, char** argv) {
             // a solved Decryptogram does (no Bits path reaches one), so the list draws
             // unlocked rather than a column of LOCKED; "stock" fills the bag so the
             // focused row reads craftable rather than short.
-            game.debugSetBits(99999);
+            game.liveOperator().bits = 99999;
             game.buyRigUpgrade(kRigRowMergeHub);
             if (hasFlag(argc, argv, "recipes"))
                 for (int i = 0; i < kMergeRecipeCount; ++i) game.grantRecipe(i);
@@ -1306,7 +1313,7 @@ int main(int argc, char** argv) {
             // has no bulk gesture), landing on the BULK reveal.
             const bool bulk = hasFlag(argc, argv, "bulk");
             if (bulk) {
-                game.debugSetBits(999999);
+                game.liveOperator().bits = 999999;
                 game.buyRigUpgrade(kRigRowBulkOpen);
             }
             enterHackerSlot(HackerSlotId::Vault);
@@ -1377,7 +1384,7 @@ int main(int argc, char** argv) {
         // "refarm" arms a sub-area that is already CLEARED, which is the badge's other
         // hands-off read: with auto-progress on there is no boss left to unlock, so the
         // right field counts down to the rung the walk steps to next.
-        if (hasFlag(argc, argv, "refarm")) game.debugSetSubCleared(0, 0, true);
+        if (hasFlag(argc, argv, "refarm")) game.liveOperator().world.subCleared[0][0] = true;
         // "deep" opens the later sectors and arms one of them: sector 0's wild roster
         // fields nothing but the innate Quick Jab, so anything that depends on the
         // rival's KIT (the combat outro's two dissolves) has nothing to show there.
@@ -1393,8 +1400,8 @@ int main(int argc, char** argv) {
         }
         if (dive || deepSector >= kAreaCount) deepSector = kAreaCount - 1;
         for (int a = 0; a < (dive ? kAreaCount : deepSector); ++a) {
-            game.debugSetSectorCleared(a, true);
-            for (int s = 0; s < kExplSubAreas; ++s) game.debugSetSubCleared(a, s, true);
+            game.liveOperator().world.sectorCleared[a] = true;
+            for (int s = 0; s < kExplSubAreas; ++s) game.liveOperator().world.subCleared[a][s] = true;
         }
         if (dive) {
             game.startDeepWebDive();
@@ -1551,7 +1558,8 @@ int main(int argc, char** argv) {
             game.inventory().add("sinkhole_trap", 20);
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "sigils:", 7) == 0)
-                    game.debugLearnSigils(std::atoi(argv[i] + 7));
+                    for (int s = std::atoi(argv[i] + 7); s > 0; --s)
+                        game.liveOperator().cant.learnNextSigil();
             // The HAIL is where every band opens, so a scene that only wants that one
             // stops as soon as a guardian is summoned.
             const bool wantHail = hasFlag(argc, argv, "hail");
@@ -1687,7 +1695,7 @@ int main(int argc, char** argv) {
                 else if (game.nav() == Game::Nav::Combat) {
                     if (known)
                         for (const MoveDef* m : game.combat().enemy().moves)
-                            if (m && m->id) game.debugGrantMove(m->id);
+                            if (m && m->id) game.livePet().moves.grant(m->id);
                     for (int j = 0; j < 800 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
                         game.tick(t += kHeartbeatMs);

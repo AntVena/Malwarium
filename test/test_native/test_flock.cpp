@@ -297,7 +297,7 @@ void test_a_guardians_body_reads_its_own_health() {
     Game g{StartMode::Hatched};
     // The innate jab in every slot: small, even steps, so no single blow can carry the
     // guardian clean past a band. This gate is about the mapping, not the starter kit.
-    for (int i = 0; i < kMaxMoveSlots; ++i) g.debugUnequipMove(i);
+    for (int i = 0; i < kMaxMoveSlots; ++i) g.livePet().moves.unequip(i);
     enterWalk(g);
     CHECK(reachGuardianFight(g));
     const int max = g.combat().enemy().maxHealth;

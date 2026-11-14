@@ -263,7 +263,7 @@ void test_defrag_costs_scale_with_the_tally() {
     CHECK(cost == kDefragCostStart);                   // first run = the start price
     CHECK(cost > 0);                                   // defrag costs Bits
     g.model().setFragmentation(50);
-    g.debugSetBits(cost + 3);
+    g.liveOperator().bits = cost + 3;
     enterSlot(g, SubmenuId::Maint);
     g.onButton(press(Button::B));                      // enter Defrag action
     g.onButton(press(Button::B));                      // RUN
@@ -285,7 +285,7 @@ void test_defrag_costs_scale_with_the_tally() {
 void test_defrag_gated_when_broke() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(50);
-    g.debugSetBits(g.defragCost() - 1);               // one short
+    g.liveOperator().bits = g.defragCost() - 1;               // one short
     enterSlot(g, SubmenuId::Maint);
     g.onButton(press(Button::B));                      // enter Defrag action
     const int bits0 = g.bits();
@@ -302,7 +302,7 @@ void test_defrag_gated_when_broke() {
 void test_defrag_variants() {
     Game g{StartMode::Hatched};                       // Paypup = Process stage
     g.model().setFragmentation(60);
-    g.debugSetBits(999);
+    g.liveOperator().bits = 999;
     enterSlot(g, SubmenuId::Maint);
     g.onButton(press(Button::B));                     // enter Defrag action
     CHECK(g.nav() == Game::Nav::Detail);
@@ -341,7 +341,7 @@ void test_defrag_tool_gated_in_items() {
 void test_defrag_count_freeze_thaw() {
     Game g{StartMode::Hatched};                       // active Paypup
     g.model().setFragmentation(60);
-    g.debugSetBits(999);
+    g.liveOperator().bits = 999;
     g.inventory().add("disk_scrubber", 1);
     enterSlot(g, SubmenuId::Maint);
     g.onButton(press(Button::B));                     // Defrag action
@@ -544,7 +544,7 @@ void test_diving_bells_refuse_a_shallower_start() {
 
     // A record deeper than any fixed bell reaches, so "best" is unambiguously the
     // deepest start available.
-    g.debugSetBestDeepWebDepth(80);
+    g.livePet().bestDeepWebDepth = 80;
     g.inventory().add("zeroday_bell", 2);
     useItem(g, "zeroday_bell");
     CHECK(g.armedDeepWebStartDepth() == 80);            // the sentinel resolves to the record
@@ -563,7 +563,7 @@ void test_diving_bells_refuse_a_shallower_start() {
 
     // A genuinely deeper arming still lands: the rule is "deeper wins", not "first wins".
     Game h{StartMode::Hatched};
-    h.debugSetBestDeepWebDepth(8);
+    h.livePet().bestDeepWebDepth = 8;
     h.inventory().add("zeroday_bell", 1);
     useItem(h, "zeroday_bell");
     CHECK(h.armedDeepWebStartDepth() == 8);
@@ -877,7 +877,7 @@ void test_rack_keeps_grants_and_clears_armed_buffs() {
     useItem(g, "backup_drive");
     g.inventory().add("ambig_usb", 2);
     useItem(g, "ambig_usb");
-    g.debugSetBestDarkWebDepth(7);
+    g.livePet().bestDarkWebDepth = 7;
     CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.shieldSpent);
     CHECK(g.backupShieldArmed());
     CHECK(g.petRecord().armed.trojanDivert);
@@ -1002,7 +1002,7 @@ void test_save_v60_usb_port_roundtrip() {
 // wallet can do about cooking is buy the kitchen.
 void test_recipes_are_not_for_sale_at_any_price() {
     Game g{StartMode::Hatched};
-    g.debugSetBits(99999);
+    g.liveOperator().bits = 99999;
     for (int i = 0; i < kRigUpgradeCount; ++i)
         CHECK(std::strncmp(kRigUpgrades[i].id, "recipe_", 7) != 0);
     // Buy out the whole storefront; the kitchen stays empty.
@@ -1018,7 +1018,7 @@ void test_recipes_wait_on_the_merge_hub() {
     for (int i = 0; i < kMergeRecipeCount; ++i) CHECK(!g.recipeGrantable(i));
     CHECK(!g.mergeHubUnlocked());
 
-    g.debugSetBits(99999);
+    g.liveOperator().bits = 99999;
     g.buyRigUpgrade(kRigRowMergeHub);
     CHECK(g.mergeHubUnlocked());
     CHECK(g.recipeGrantable(0));   // the hub is what it was waiting on
@@ -1031,7 +1031,7 @@ void test_recipes_wait_on_the_merge_hub() {
 // the whole reason the gate reads that and not the current bag.
 void test_browns_recipes_wait_on_meeting_both_dishes() {
     Game g{StartMode::Hatched};
-    g.debugSetBits(99999);
+    g.liveOperator().bits = 99999;
     g.buyRigUpgrade(kRigRowMergeHub);
 
     int brownsRecipe = -1;
@@ -1125,7 +1125,7 @@ void test_four_ingredient_recipe_consumes_all_inputs() {
     const MergeRecipe& r = kMergeRecipes[idx];
     CHECK(recipeInputCount(r) == 4);
 
-    g.debugSetBits(99999);
+    g.liveOperator().bits = 99999;
     g.buyRigUpgrade(kRigRowMergeHub);
     g.inventory().add("hashed_browns", 1);
     g.inventory().add("salted_hashed_browns", 1);
@@ -1437,7 +1437,7 @@ void test_caches_listed_and_first_cache_card() {
     useItem(g, cache->id);                         // pet-side: still refused
     CHECK(g.inventory().count(cache->id) == 2);
 
-    g.debugClearTips();
+    for (uint8_t& b : g.liveOperator().reveals.tipsSeen) b = 0;
     for (Game::Tip k : {Game::Tip::CareFed, Game::Tip::CareFrag, Game::Tip::CareHappy,
                         Game::Tip::FirstError, Game::Tip::NearTheLine})
         g.markTipSeen(k);

@@ -130,7 +130,7 @@ void test_wifi_awakened_guardian_enters_combat() {
 // so a guardian keyed on it would be the ladder's first pair.
 void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
     Game g{StartMode::Hatched};
-    for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+    for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
     g.startDarkWebCrawl();
     CHECK(g.inDarkWebCrawl());
     g.debugSetAutoProgress(false);
@@ -315,7 +315,7 @@ void test_shop_buy_gated_when_broke() {
     const char* id = g.shopListingId(row);
     const int price = g.shopListingBitsPrice(row);
     CHECK(id != nullptr && price > 0);
-    g.debugSetBits(price - 1);                       // one Bit short
+    g.liveOperator().bits = price - 1;                       // one Bit short
     const int inv0 = g.inventory().count(id);
     const int stock0 = g.shopListingStock(row);
     g.onButton(press(Button::B));                    // try to buy -> inert
@@ -335,7 +335,7 @@ void test_shop_sold_out_after_stock() {
     const char* id = g.shopListingId(row);
     CHECK(id != nullptr);
     const int stock0 = g.shopListingStock(row);
-    g.debugSetBits(g.shopListingBitsPrice(row) * (stock0 + 5));  // plenty to clear the shelf
+    g.liveOperator().bits = g.shopListingBitsPrice(row) * (stock0 + 5);  // plenty to clear the shelf
     for (int i = 0; i < stock0; ++i) g.onButton(press(Button::B));
     CHECK(g.shopListingStock(row) == 0);
     const int bits0 = g.bits();
@@ -379,7 +379,7 @@ void test_mod_shop_buy_grants_mod() {
     CHECK(costCount >= 1);   // the mod shop's whole point: an item cost beyond Bits
     for (int k = 0; k < costCount; ++k)
         g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
-    g.debugSetBits(price);
+    g.liveOperator().bits = price;
     g.onButton(press(Button::B));
     CHECK(g.modPool().owns(id));
     CHECK(g.bits() == 0);
@@ -397,7 +397,7 @@ void test_mod_shop_buy_gated_by_item_cost() {
     const int row = g.shopCursor();
     const char* id = g.shopListingId(row);
     CHECK(g.shopListingCostCount(row) >= 1);
-    g.debugSetBits(g.shopListingBitsPrice(row) * 10);   // plenty of Bits
+    g.liveOperator().bits = g.shopListingBitsPrice(row) * 10;   // plenty of Bits
     const int bits0 = g.bits();
     const bool ownedBefore = g.modPool().owns(id);
     g.onButton(press(Button::B));                       // no cost items held -> inert
@@ -426,7 +426,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     CHECK(g.shopListingHeld(row) == cap);
     for (int k = 0; k < g.shopListingCostCount(row); ++k)
         g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
-    g.debugSetBits(g.shopListingBitsPrice(row) * 4);
+    g.liveOperator().bits = g.shopListingBitsPrice(row) * 4;
 
     const int bits0 = g.bits();
     const int stock0 = g.shopListingStock(row);
@@ -440,7 +440,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
         CHECK(g.shopListingCostHave(row, k) == g.shopListingCostQty(row, k));
 
     // Room is what was missing: buying a MOD STORAGE tier makes the same row buyable.
-    g.debugSetBits(bits0 + kModStorageStart);
+    g.liveOperator().bits = bits0 + kModStorageStart;
     g.buyRigUpgrade(kRigRowModStorage);
     CHECK(g.modStorageCap() > cap);
     CHECK(g.shopListingHeldCap(row) == g.modStorageCap());
@@ -467,7 +467,7 @@ void test_shop_rows_report_what_is_already_held() {
     g.inventory().add(id, 3);
     CHECK(g.shopListingHeld(row) == held0 + 3);
     // ...and a buy moves the same number, so the row and the bag never disagree.
-    g.debugSetBits(g.shopListingBitsPrice(row));
+    g.liveOperator().bits = g.shopListingBitsPrice(row);
     for (int k = 0; k < g.shopListingCostCount(row); ++k)
         g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
     g.onButton(press(Button::B));

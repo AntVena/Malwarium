@@ -7,7 +7,7 @@ using namespace mal;
 namespace {
 Game divingReadyGame(MemSaveStore* store = nullptr) {
     Game g{StartMode::Hatched, "bruinforce", store};
-    for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+    for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
     return g;
 }
 }  // namespace
@@ -77,7 +77,7 @@ void test_auto_dive_gear_modes() {
     MemSaveStore store;
     {
         Game g = divingReadyGame(&store);
-        g.debugSetBits(kRigAutoDiveGearCost);
+        g.liveOperator().bits = kRigAutoDiveGearCost;
         g.buyRigUpgrade(kRigRowAutoDiveGear);
         CHECK(g.operatorRecord().rig.serviceMode(kRigRowAutoDiveGear) == Game::ServiceMode::On);
         CHECK(std::strcmp(g.operatorRecord().rig.serviceWord(kRigRowAutoDiveGear), "YES") == 0);

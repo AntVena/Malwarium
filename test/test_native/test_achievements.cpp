@@ -191,7 +191,7 @@ void test_achievement_ladder_unlocks_and_pays() {
     g.tick(t += kHeartbeatMs);
     CHECK(!g.hasAchievement("BOSS_FIRST"));
     const int bits0 = g.bits();
-    g.debugAddBossWins(1);
+    g.liveOperator().tallies.bossWins += 1;
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("BOSS_FIRST"));
     CHECK(g.bits() == bits0 + achBitsReward("BOSS_FIRST"));
@@ -205,7 +205,7 @@ void test_achievement_ladder_unlocks_and_pays() {
 
     // A row carrying an item reward puts it in the bag. BOSS_10's rung pays a cache.
     const int caches0 = g.inventory().count("sealed_cache_common");
-    g.debugAddBossWins(9);
+    g.liveOperator().tallies.bossWins += 9;
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("BOSS_10"));
     CHECK(g.inventory().count("sealed_cache_common") == caches0 + 1);
@@ -261,7 +261,7 @@ void test_achievement_rack_zoology_counts_species_not_heads() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    g.debugSetBits(100000000);
+    g.liveOperator().bits = 100000000;
     for (int i = 0; i < 12; ++i) g.buyRigUpgrade(kRigRowRackSlot);   // room for a collection
     CHECK(g.rackSlots() >= 16);
 
@@ -294,7 +294,7 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
-    g.debugSetBits(100000000);
+    g.liveOperator().bits = 100000000;
     for (int i = 0; i < 8; ++i) g.buyRigUpgrade(kRigRowRackSlot);
 
     const AchievementDef* wing = achievementById("WING_TROJAN");
@@ -455,11 +455,11 @@ void test_save_v56_lifetime_tallies_roundtrip() {
 void test_species_dive_records_feed_the_depth_rows() {
     Game g{StartMode::Hatched, "malbear"};
     CHECK(g.deepestDiveEver() == 0);
-    g.debugRecordSpeciesDive("malbear", 300);
-    g.debugRecordSpeciesDive("pingcub", 70);
+    g.liveOperator().shelves.recordDive(g.content().creature("malbear"), 300);
+    g.liveOperator().shelves.recordDive(g.content().creature("pingcub"), 70);
     CHECK(g.speciesDeepestDive("malbear") == 300);
     CHECK(g.deepestDiveEver() == 300);
-    g.debugRecordSpeciesDive("malbear", 120);          // a shallower run never demotes it
+    g.liveOperator().shelves.recordDive(g.content().creature("malbear"), 120);          // a shallower run never demotes it
     CHECK(g.speciesDeepestDive("malbear") == 300);
 
     uint32_t t = 0;

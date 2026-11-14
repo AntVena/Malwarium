@@ -240,7 +240,7 @@ void test_shiboleet_win_pays_without_a_shake_but_buys_no_sigil() {
 void test_shiboleet_win_spends_one_shake_for_one_sigil() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.debugAddHandshakes(3);
+    g.liveOperator().cant.handshakesSeen += 3;
     CHECK(g.shakesUnspent() == 3);
     CHECK(reachRiddle(g));
     focusTrueReply(g);
@@ -313,7 +313,7 @@ void test_shiboleet_stepping_the_cursor_restarts_the_clock() {
 void test_a_complete_cant_earns_boons() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.debugLearnSigils(kCantSigils);
+    for (int i = 0; i < kCantSigils; ++i) g.liveOperator().cant.learnNextSigil();
     CHECK(g.sigilsKnown() == kCantSigils);
     g.model().setHappiness(20);
     g.model().setFragmentation(80);
@@ -464,7 +464,7 @@ void test_guardian_greeting_rides_the_riddles_cipher() {
 void test_a_fluent_pet_hears_the_guardian_plainly() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.debugLearnSigils(kCantSigils);
+    for (int i = 0; i < kCantSigils; ++i) g.liveOperator().cant.learnNextSigil();
     CHECK(reachRiddle(g));
     char greet[80];
     g.shiboleetMeeting().greeting(greet, sizeof(greet));
@@ -549,7 +549,7 @@ void test_the_bracketing_screens_auto_play_out() {
 void test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned() {
     Game g{StartMode::Hatched};
     enterWalk(g);
-    g.debugAddHandshakes(1);
+    g.liveOperator().cant.handshakesSeen += 1;
     CHECK(reachRiddle(g));
     focusTrueReply(g);
     g.onButton(press(Button::B));
@@ -590,8 +590,8 @@ void test_cant_persists_across_a_reboot() {
     MemSaveStore store;
     {
         Game g(StartMode::Hatched, "paypup", &store);
-        g.debugAddHandshakes(5);
-        g.debugLearnSigils(4);
+        g.liveOperator().cant.handshakesSeen += 5;
+        for (int i = 0; i < 4; ++i) g.liveOperator().cant.learnNextSigil();
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // flush the debounced write
     }
     Game g2(StartMode::Hatched, "paypup", &store);

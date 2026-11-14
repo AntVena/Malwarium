@@ -429,7 +429,7 @@ void test_stacker_stopping_early_banks_the_board() {
 // process, and a Defrag charges its Bits to do it.
 void test_maint_played_variant_walks_the_dial() {
     Game d{StartMode::Hatched};
-    d.debugSetBits(1000);
+    d.liveOperator().bits = 1000;
     d.model().setFragmentation(40);
     enterSubmenuId(d, SubmenuId::Maint);
     d.onButton(press(Button::B));                       // open DEFRAG
@@ -468,7 +468,7 @@ void test_maint_run_lives_from_the_run_to_the_dismissed_outcome() {
     CHECK(!board.boardLive());
 
     Game d{StartMode::Hatched};
-    d.debugSetBits(1000);
+    d.liveOperator().bits = 1000;
     d.model().setFragmentation(40);
     d.debugSetMaintPlayedGame(MaintKind::Av, ArcadeGameKind::Stacker);   // C can bank it
     enterSubmenuId(d, SubmenuId::Maint);
@@ -532,7 +532,7 @@ void test_played_maint_engines_are_interchangeable() {
 void test_stacker_wins_ladder_sweeps_and_persists() {
     Game g{StartMode::Hatched};
     uint32_t t = 0;
-    g.debugAddStackerWins(10);
+    g.liveOperator().tallies.stackerWins += 10;
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("DEFRAG_BY_HAND"));
     CHECK(g.hasAchievement("STACK_10"));

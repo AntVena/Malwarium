@@ -209,7 +209,7 @@ bool Game::buySigil() {
     if (sigilsKnown() >= kCantSigils) return false;   // nothing left to learn
     if (shakesUnspent() <= 0) return false;           // nothing to trade
     ++op_.cant.shakesSpent;
-    op_.cant.sigils = learnSigil(op_.cant.sigils);
+    op_.cant.learnNextSigil();
     log_.push(LogEventType::ItemGained, "LEARNED A SIGIL");
     markSaveDirty();
     return true;

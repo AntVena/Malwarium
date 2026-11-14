@@ -173,7 +173,7 @@ void test_mod_picker_orders_fittable_first() {
 void test_mod_picker_cursor_matches_drawn_order() {
     Game g{StartMode::Hatched};
     ContentRegistry r = ContentRegistry::embedded();
-    for (const ModDef* m : r.allMods()) g.debugModPool().grant(m->id, 1);
+    for (const ModDef* m : r.allMods()) g.liveOperator().modPool.grant(m->id, 1);
 
     const auto rows = ownedModList(r, g.modHoldings(), g.combatLevel(),
                                    g.pet() ? g.pet()->line : nullptr, /*slot=*/0);

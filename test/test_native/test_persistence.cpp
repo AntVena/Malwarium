@@ -376,12 +376,12 @@ void test_save_active_pet_round_trips_through_a_reboot() {
             useItem(g, id);
         }
         g.debugTasteFoods(3);
-        g.debugSetFavouriteFood("spam");
-        g.debugSetBestDarkWebDepth(5);
-        g.debugGrantMove("buffer_overflow");
+        g.livePet().upgrades.favouriteFood = g.content().item("spam");
+        g.livePet().bestDarkWebDepth = 5;
+        g.livePet().moves.grant("buffer_overflow");
         CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.yubiSpent);
         CHECK(g.backupShieldArmed() && g.petRecord().armed.trojanDivert);
-        CHECK(g.debugDepthMultiplier() == 2);
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
         before = g.petRecord();
         CHECK(g.saveNow());
     }
@@ -395,7 +395,7 @@ void test_save_active_pet_round_trips_through_a_reboot() {
     CHECK(after.armed.trojanDivert);
     CHECK(after.armed.backupShieldUntilMs == before.armed.backupShieldUntilMs);
     CHECK(g.backupShieldArmed());
-    CHECK(g.debugDepthMultiplier() == 1);
+    CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);
 }
 
 // A new egg is a whole new Pet: nothing of the pet before it carries over, and it owns
@@ -416,10 +416,10 @@ void test_new_egg_is_a_fresh_pet_record() {
         useItem(g, id);
     }
     g.debugTasteFoods(3);
-    g.debugSetFavouriteFood("spam");
-    g.debugSetBestDarkWebDepth(5);
-    g.debugGrantMove("buffer_overflow");
-    CHECK(g.debugDepthMultiplier() == 2);
+    g.livePet().upgrades.favouriteFood = g.content().item("spam");
+    g.livePet().bestDarkWebDepth = 5;
+    g.livePet().moves.grant("buffer_overflow");
+    CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
 
     enterArchNewEgg(g);
     pickFirstEggLine(g);

@@ -257,7 +257,7 @@ void test_story_archive_collects_what_the_walk_fired() {
 void test_story_brackets_the_area_gauntlet() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.addCombatXp(600000);                      // a pet that can take the gauntlet
-    for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+    for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
     CHECK(g.areaBossReady(0));
 
     // Opening the gauntlet opens its chapter instead, and reading that out starts the
@@ -339,7 +339,7 @@ void test_expl_categories_are_the_top_level() {
 
     // Reaching The Pirate Bayou opens the ARENA, which has no rows of its own: B on it
     // draws a bracket outright rather than opening a list of one.
-    g.debugSetSectorCleared(0, true);
+    g.liveOperator().world.sectorCleared[0] = true;
     g.addCombatXp(600000);                        // a pet that can stand in a bout
     explPickCategory(g, ExplCat::Arena);
     CHECK(g.explScreen().row() == explCatRow(ExplCat::Arena));
@@ -350,7 +350,7 @@ void test_expl_categories_are_the_top_level() {
     // And the two ENDLESS zones live behind one row of their own.
     Game h{StartMode::Hatched, "bruinforce"};
     h.debugMarkStoryRead();
-    for (int a = 0; a < kExplSectors; ++a) h.debugSetSectorCleared(a, true);
+    for (int a = 0; a < kExplSectors; ++a) h.liveOperator().world.sectorCleared[a] = true;
     enterSubmenuId(h, SubmenuId::Expl);
     explPickCategory(h, ExplCat::Endless);
     h.onButton(press(Button::B));

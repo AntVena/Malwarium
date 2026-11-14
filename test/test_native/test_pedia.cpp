@@ -492,7 +492,7 @@ void test_save_v27_roundtrip() {
     MemSaveStore store;
     {
         Game g{StartMode::Hatched, "malbear", &store};
-        g.debugSetBits(100000000);
+        g.liveOperator().bits = 100000000;
         g.buyRigUpgrade(kRigRowRackSlot);
         g.buyRigUpgrade(kRigRowScraping);
         g.buyRigUpgrade(kRigRowDataMining);

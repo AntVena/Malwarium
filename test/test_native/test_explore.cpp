@@ -199,7 +199,7 @@ void test_post_encounter_reports_bandwidth_shield() {
     Game g{StartMode::Hatched};
     walkToEncounter(g);
     const int S = g.exploreSector(), U = g.exploreSub();
-    g.debugSetSubCleared(S, U, true);            // a re-farm ground now
+    g.liveOperator().world.subCleared[S][U] = true;            // a re-farm ground now
     CHECK(g.bandwidth() == kBandwidthMax);       // fresh pool
     const int frag0 = g.model().fragmentation();
     uint32_t t = 0;
@@ -232,7 +232,7 @@ void test_post_encounter_reports_frag_rise_when_unshielded() {
     Game g{StartMode::Hatched};
     walkToEncounter(g);
     const int S = g.exploreSector(), U = g.exploreSub();
-    g.debugSetSubCleared(S, U, true);
+    g.liveOperator().world.subCleared[S][U] = true;
     g.debugSetBandwidth(0);                      // nothing left to spend -> no shield
     bool sawRise = false;
     uint32_t t = 0;
@@ -584,8 +584,8 @@ void test_auto_progress_steps_positionally() {
     // only the positional step can move the walk): the rung after 1 is 2.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.addCombatXp(600000);
-      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
-      g.debugSetSectorCleared(0, true);
+      for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
+      g.liveOperator().world.sectorCleared[0] = true;
       g.debugSetAutoProgress(true);
       g.startExplore(0, 1);
       g.debugSetExploreStreak(kExploreStreakToBoss);   // the step condition, met
@@ -600,7 +600,7 @@ void test_auto_progress_steps_positionally() {
     { Game g{StartMode::Hatched, "bruinforce"};
       g.addCombatXp(600000);
       const int last = kExplSubAreas - 1;
-      g.debugSetSubCleared(0, last, true);         // ...but sub-area 0 is not
+      g.liveOperator().world.subCleared[0][last] = true;         // ...but sub-area 0 is not
       g.debugSetAutoProgress(true);
       g.startExplore(0, last);
       g.debugSetExploreStreak(kExploreStreakToBoss);
@@ -615,8 +615,8 @@ void test_auto_progress_steps_positionally() {
 void test_auto_progress_gauntlet_rolls_to_next_area() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.addCombatXp(600000);                    // level hard: the gauntlet is winnable
-    for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
-    g.debugSetSectorCleared(0, true);              // area 0 DONE, and so re-runnable
+    for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
+    g.liveOperator().world.sectorCleared[0] = true;              // area 0 DONE, and so re-runnable
     g.debugSetAutoProgress(true);
     g.startExplore(0, kExplSubAreas - 1);       // the last rung before the gauntlet
     g.debugSetExploreStreak(kExploreStreakToBoss);
@@ -640,7 +640,7 @@ void test_auto_progress_badge_counts_down() {
 
     // ARMED: the badge moves with the streak (the countdown), and not with the pool.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugSetSubCleared(0, 0, true);
+      g.liveOperator().world.subCleared[0][0] = true;
       g.debugSetAutoProgress(true);
       g.startExplore(0, 0);
       g.debugSetBandwidth(g.bandwidthMax());
@@ -653,7 +653,7 @@ void test_auto_progress_badge_counts_down() {
 
     // OFF: exactly the reverse. The pool is the readout, the streak is not.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugSetSubCleared(0, 0, true);
+      g.liveOperator().world.subCleared[0][0] = true;
       g.debugSetAutoProgress(false);
       g.startExplore(0, 0);
       g.debugSetBandwidth(g.bandwidthMax());
@@ -719,7 +719,7 @@ void test_explore_badge_fields_never_collide() {
     // ...and the dive, whose label is composed rather than authored, measured against the
     // one field it can draw at a depth no dive reaches.
     { Game g{StartMode::Hatched};
-      for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
+      for (int a2 = 0; a2 < kExplSectors; ++a2) g.liveOperator().world.sectorCleared[a2] = true;
       g.startDeepWebDive();
       char label[20] = {}, line[28], depth[16];
       g.exploreBadgeLabel(label, sizeof(label));
@@ -765,7 +765,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
     // that scale: inside it every dive is the same parity fight, so a readout that
     // ramped there would be advertising a rate the walk is not paying.
     { Game g{StartMode::Hatched};
-      for (int a2 = 0; a2 < kExplSectors; ++a2) g.debugSetSectorCleared(a2, true);
+      for (int a2 = 0; a2 < kExplSectors; ++a2) g.liveOperator().world.sectorCleared[a2] = true;
       g.startDeepWebDive();                  // the dive unlocks on a cleared ladder
       CHECK(g.inDeepWebDive());
       g.debugSetExploreStreak(0);
@@ -782,8 +782,8 @@ void test_explore_xp_efficiency_reads_the_rung() {
     // margin at every depth the two share, not by the sliver a shared base would leave.
     { Game crawl{StartMode::Hatched}, dive{StartMode::Hatched};
       for (int a2 = 0; a2 < kExplSectors; ++a2) {
-          crawl.debugSetSectorCleared(a2, true);
-          dive.debugSetSectorCleared(a2, true);
+          crawl.liveOperator().world.sectorCleared[a2] = true;
+          dive.liveOperator().world.sectorCleared[a2] = true;
       }
       crawl.startDarkWebCrawl();
       dive.startDeepWebDive();
@@ -1236,7 +1236,7 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
 
     // Learn a rung out and its lead goes: that is the state this exists to show, since a
     // CLEARED tag says nothing about whether the rung still owes the pet a move.
-    for (const char* id : subAreaMovePool(0, 0)) g.debugGrantMove(id);
+    for (const char* id : subAreaMovePool(0, 0)) g.livePet().moves.grant(id);
     CHECK(g.subAreaMovesToLearn(0, 0) == 0);
     // ...and only that rung's. The deep end of the same area keeps its own kits, which is
     // what stops the lead collapsing into one number per area.
@@ -1249,7 +1249,7 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
     if (area(0).areaBossMoveId) {
         Game h{StartMode::Hatched};
         for (int sub = 0; sub < kExplSubAreas; ++sub)
-            for (const char* id : subAreaMovePool(0, sub)) h.debugGrantMove(id);
+            for (const char* id : subAreaMovePool(0, sub)) h.livePet().moves.grant(id);
         CHECK(h.subAreaMovesToLearn(0, kExplSubAreas - 1) == 0);
         CHECK(h.areaGauntletMovesToLearn(0) > 0);
         CHECK(h.areaMovesToLearn(0) > 0);              // the area still owes it too
@@ -1258,8 +1258,8 @@ void test_expl_move_leads_count_what_a_zone_can_teach() {
     // Learn the lot and every lead in the game goes out: nothing keeps counting a move
     // the pet already has.
     for (int a = 0; a < kExplSectors; ++a)
-        for (const char* id : areaMovePool(a)) g.debugGrantMove(id);
-    for (const char* id : deepWebMovePool()) g.debugGrantMove(id);
+        for (const char* id : areaMovePool(a)) g.livePet().moves.grant(id);
+    for (const char* id : deepWebMovePool()) g.livePet().moves.grant(id);
     for (int a = 0; a < kExplSectors; ++a) {
         CHECK(g.areaMovesToLearn(a) == 0);
         CHECK(g.areaGauntletMovesToLearn(a) == 0);
@@ -1296,7 +1296,7 @@ void test_expl_beaten_is_not_done_until_learned_out() {
     const int learn = g.subAreaMovesToLearn(0, 0);
     CHECK(learn > 0);
     CHECK(std::strcmp(word(ExplRowState::SubCleared, learn), "BEAT") == 0);
-    for (const char* id : subAreaMovePool(0, 0)) g.debugGrantMove(id);
+    for (const char* id : subAreaMovePool(0, 0)) g.livePet().moves.grant(id);
     CHECK(std::strcmp(word(ExplRowState::SubCleared, g.subAreaMovesToLearn(0, 0)),
                       "DONE") == 0);
 }
@@ -1309,8 +1309,8 @@ void test_expl_nested_list_nav() {
     // Drill into area 0, then A-cycle its subs: sub 0 cleared (FARMABLE), sub 1 boss-ready,
     // subs 2-4 open. Inside, firstLandable = sub 0; two A's reach sub 2; B arms it.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugSetSubCleared(0, 0, true);
-      g.debugSetSubBossUnlocked(0, 1, true);
+      g.liveOperator().world.subCleared[0][0] = true;
+      g.liveOperator().world.subBossUnlocked[0][1] = true;
       enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0 (cursor -> sub 0)
       g.onButton(press(Button::A));                 // farm sub 0 → boss-ready sub 1
@@ -1322,7 +1322,7 @@ void test_expl_nested_list_nav() {
     // A cleared sub-area is re-armable to FARM. All 5 cleared → drilling in
     // lands on the boss-ready header; A steps to cleared sub 0, B arms it to FARM.
     { Game g{StartMode::Hatched, "bruinforce"};
-      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+      for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
       enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill in (cursor -> boss-ready header)
       g.onButton(press(Button::A));                 // AREA BOSS header → cleared sub 0
@@ -1332,7 +1332,7 @@ void test_expl_nested_list_nav() {
 
     // B on a boss-ready frontier launches the SUB-AREA boss (Combat, not arm-explore).
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugSetSubBossUnlocked(0, 0, true);
+      g.liveOperator().world.subBossUnlocked[0][0] = true;
       enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0 (cursor -> sub 0)
       g.onButton(press(Button::B));                 // FIGHT BOSS (sub 0)
@@ -1341,7 +1341,7 @@ void test_expl_nested_list_nav() {
     // All 5 sub-areas cleared → drilling in lands on the boss-ready header; B launches it.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugMarkStoryRead();                       // the gauntlet's own chapter, skipped
-      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
+      for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
       CHECK(g.areaBossReady(0));
       enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into area 0
@@ -1352,7 +1352,7 @@ void test_expl_nested_list_nav() {
     // the area-0 header to the area-1 header (a whole area), and drilling+arming lands in
     // area 1. Proving A skipped area 0's five sub-rows.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugSetSectorCleared(0, true);             // area 0 cleared → area 1 now open
+      g.liveOperator().world.sectorCleared[0] = true;             // area 0 cleared → area 1 now open
       enterStoryLadder(g);
       g.onButton(press(Button::A));                 // STORY: area-0 header → area-1 header
       g.onButton(press(Button::B));                 // drill into area 1
@@ -1388,8 +1388,8 @@ void test_expl_nested_list_nav() {
     // re-farmable: inside the area, B on its boss row starts the 5-round gauntlet again.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.debugMarkStoryRead();
-      for (int s = 0; s < kExplSubAreas; ++s) g.debugSetSubCleared(0, s, true);
-      g.debugSetSectorCleared(0, true);
+      for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
+      g.liveOperator().world.sectorCleared[0] = true;
       enterStoryLadder(g);
       g.onButton(press(Button::B));                 // drill into the cleared area 0
       g.onButton(press(Button::B));                 // B on its boss row → RERUN
@@ -1425,7 +1425,7 @@ void test_expl_nested_list_nav() {
     // not in any area), so a running dive opens straight onto its own row and one B
     // re-arms it.
     { Game g{StartMode::Hatched, "bruinforce"};
-      for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+      for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
       g.startDeepWebDive();
       enterSubmenuId(g, SubmenuId::Expl);
       g.onButton(press(Button::B));
@@ -1467,10 +1467,10 @@ void test_darkweb_crawl() {
         g.startDarkWebCrawl();
         CHECK(!g.inDarkWebCrawl());                 // inert on a fresh save
         // REACHING it is not enough: the portal is behind that area's own boss.
-        g.debugSetSectorCleared(gate - 1, true);
+        g.liveOperator().world.sectorCleared[gate - 1] = true;
         g.startDarkWebCrawl();
         CHECK(!g.inDarkWebCrawl());
-        g.debugSetSectorCleared(gate, true);
+        g.liveOperator().world.sectorCleared[gate] = true;
         CHECK(g.darkWebUnlocked());
         g.startDarkWebCrawl();
         CHECK(g.inDarkWebCrawl());
@@ -1502,7 +1502,7 @@ void test_darkweb_crawl() {
     {
         Game g{StartMode::Hatched, "bruinforce"};
         CHECK(g.bestDarkWebDepth() == 0);
-        g.debugSetBestDeepWebDepth(40);
+        g.livePet().bestDeepWebDepth = 40;
         CHECK(g.bestDarkWebDepth() == 0);          // the dive's record is not the crawl's
     }
     // (5) What it PAYS, which is the other half of being the end of the map. The crawl
@@ -1713,11 +1713,11 @@ void test_deepweb_dive() {
         CHECK(!g.inDeepWebDive());  // inert on a fresh save
         // One rung SHORT of the gate: still locked. This is what fails if the gate ever
         // silently slides, including by an area being spliced in above it.
-        for (int a = 0; a + 2 < gate; ++a) g.debugSetSectorCleared(a, true);
+        for (int a = 0; a + 2 < gate; ++a) g.liveOperator().world.sectorCleared[a] = true;
         g.startDeepWebDive();
         CHECK(!g.inDeepWebDive());
         // Clearing the rung BEFORE the gate opens the gate's area, and with it the dive.
-        g.debugSetSectorCleared(gate - 1, true);
+        g.liveOperator().world.sectorCleared[gate - 1] = true;
         CHECK(g.deepWebUnlocked());
         // ...and emphatically without beating the game: the rung past the gate is still
         // unbeaten, which under the old gate was the whole of what kept the zone shut.
@@ -1733,10 +1733,10 @@ void test_deepweb_dive() {
     {
         Game g{StartMode::Hatched, "bruinforce"};
         const int gate = areaIndexById(kDeepWebUnlockAreaId);
-        g.debugSetSectorCleared(gate - 1, true);
+        g.liveOperator().world.sectorCleared[gate - 1] = true;
         CHECK(g.deepWebUnlocked());
         for (int a = gate; a < kExplSectors; ++a) {
-            g.debugSetSectorCleared(a, false);
+            g.liveOperator().world.sectorCleared[a] = false;
             CHECK(g.deepWebUnlocked());
         }
     }
@@ -1744,7 +1744,7 @@ void test_deepweb_dive() {
     //     so a high-level pet still meets a level-matched foe (full-XP endless grind).
     {
         Game g{StartMode::Hatched, "bruinforce"};
-        for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
+        for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
         g.addCombatXp(600000);                  // level the pet up high
         const int L = g.combatLevel();
         CHECK(L > 3);
@@ -1770,21 +1770,21 @@ void test_deepweb_dive() {
     //     and it would never once apply. Only a dive ENDING spends it.
     {
         Game g{StartMode::Hatched, "bruinforce"};
-        for (int a = 0; a < kExplSectors; ++a) g.debugSetSectorCleared(a, true);
-        CHECK(g.debugDepthMultiplier() == 1);              // nothing armed
+        for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);              // nothing armed
 
         g.inventory().add("deep_learning_core", 1);
         useItem(g, "deep_learning_core");
-        CHECK(g.debugDepthMultiplier() == 4);              // armed, before the dive
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 4);              // armed, before the dive
 
         g.startDeepWebDive();
         CHECK(g.inDeepWebDive());
-        CHECK(g.debugDepthMultiplier() == 4);              // ...and it is STILL armed
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 4);              // ...and it is STILL armed
 
         // Stopping the dive spends it.
         stopExplore(g);
         CHECK(!g.inDeepWebDive());
-        CHECK(g.debugDepthMultiplier() == 1);
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);
     }
     // (5) A SECTOR walk is not a dive: arming the buff and then taking an ordinary
     //     walk must not eat it, because the multiplier only ever applies on
@@ -1793,13 +1793,13 @@ void test_deepweb_dive() {
         Game g{StartMode::Hatched, "bruinforce"};
         g.inventory().add("deep_learning_module", 1);
         useItem(g, "deep_learning_module");
-        CHECK(g.debugDepthMultiplier() == 2);
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
 
         g.startExplore(0, 0);
         CHECK(g.exploreActive() && !g.inDeepWebDive());
-        CHECK(g.debugDepthMultiplier() == 2);              // survives entering a walk
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);              // survives entering a walk
         stopExplore(g);
-        CHECK(g.debugDepthMultiplier() == 2);              // ...and leaving one
+        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);              // ...and leaving one
     }
 }
 
@@ -2113,8 +2113,8 @@ void test_gauntlet_carries_its_rounds_and_is_dropped_when_it_ends() {
     Game g{StartMode::Hatched, "phishlet"};
     g.debugSeedRng(12);
     g.debugMarkStoryRead();
-    for (int a = 0; a < area; ++a) g.debugSetSectorCleared(a, true);
-    for (int sub = 0; sub < kExplSubAreas; ++sub) g.debugSetSubCleared(area, sub, true);
+    for (int a = 0; a < area; ++a) g.liveOperator().world.sectorCleared[a] = true;
+    for (int sub = 0; sub < kExplSubAreas; ++sub) g.liveOperator().world.subCleared[area][sub] = true;
     g.startExplore(area, kExplSubAreas - 1);
     g.debugSetAutoProgress(false);
     CHECK(g.gauntlet() == nullptr);

@@ -235,6 +235,9 @@ struct OperatorCant {
         const int n = handshakesSeen - shakesSpent;
         return n > 0 ? n : 0;
     }
+    // The next letter in the fixed reveal order (learnSigil), so "four sigils" names the
+    // same four letters wherever they were learned.
+    void learnNextSigil() { sigils = learnSigil(sigils); }
 };
 
 // The ARCH shelf. A rack pet is kept as Pet::stored wrote it: it does not age while

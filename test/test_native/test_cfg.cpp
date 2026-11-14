@@ -469,7 +469,7 @@ void test_cfg_tips_replay() {
     CHECK(g.cfgScreen() == CfgScreen::Device);         // back to its group
 
     Game fresh{StartMode::Hatched};
-    fresh.debugClearTips();
+    for (uint8_t& b : fresh.liveOperator().reveals.tipsSeen) b = 0;
     CHECK(fresh.replayableTips().empty());
     fresh.markTipSeen(Game::Tip::FirstWalk);
     CHECK(fresh.replayableTips().size() == 1);

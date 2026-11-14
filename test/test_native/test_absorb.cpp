@@ -166,7 +166,7 @@ void test_combat_outro_kind() {
     // Granting every move the rival fields must flip the answer: that is the whole
     // mechanism, and it is what makes a farmed-out opponent stop advertising itself.
     for (const MoveDef* m : w.combat().enemy().moves)
-        if (m && m->id) w.debugGrantMove(m->id);
+        if (m && m->id) w.livePet().moves.grant(m->id);
     CHECK(!w.rivalFieldsUnknownMove());
 }
 
@@ -210,7 +210,7 @@ void test_rival_prize_mask_matches_the_drop_filter() {
     // Learning the kit empties the mask: the mark is a standing fact about THIS pet,
     // not about the rival, so a farmed-out opponent stops advertising itself.
     for (const MoveDef* m : kit)
-        if (m && m->id) g.debugGrantMove(m->id);
+        if (m && m->id) g.livePet().moves.grant(m->id);
     CHECK(g.rivalTeachableMoveMask() == 0);
 
     // A fight the world does not let a pet learn from marks nothing, however tempting the

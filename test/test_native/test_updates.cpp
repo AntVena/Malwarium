@@ -55,7 +55,7 @@ void test_mod_storage_cap_bounds_the_pool_and_the_shop_raises_it() {
     CHECK(g.modPool().countOf("heat_sink") == cap);
 
     // Buying MOD STORAGE raises what the same call will accept.
-    g.debugSetBits(kModStorageStart);
+    g.liveOperator().bits = kModStorageStart;
     g.buyRigUpgrade(kRigRowModStorage);                         // through the real till
     CHECK(g.modStorageCap() == modCopyCap(1));
     CHECK(g.modStorageCap() > cap);

@@ -237,16 +237,16 @@ void test_backgrounds_are_earned_by_playing() {
 
     // CLEAR: the area itself, and only the one cleared.
     CHECK(!g.backgroundOwned(area(0).scene));
-    g.debugClearSector(0);
+    g.liveOperator().world.sectorCleared[0] = true;
     CHECK(g.backgroundOwned(area(0).scene));
     CHECK(!g.backgroundOwned(SceneId::CastleRapidscare));
 
     // BRACKET: one per rung, so a second win is worth something the first was not.
     CHECK(!g.backgroundOwned(SceneId::GridHorizon));
-    g.debugAddTourneyWin();
+    ++g.liveOperator().tallies.tourneyWins;
     CHECK(g.backgroundOwned(SceneId::GridHorizon));
     CHECK(!g.backgroundOwned(SceneId::MainframeRow));
-    g.debugAddTourneyWin();
+    ++g.liveOperator().tallies.tourneyWins;
     CHECK(g.backgroundOwned(SceneId::MainframeRow));
 
     // ACHIEVE: the source that scales, since every ladder on the device is a candidate

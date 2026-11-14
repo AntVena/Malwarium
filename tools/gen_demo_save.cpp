@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
     // cost per level is what advances exactly one level at a time.
     for (int lvl = 0; lvl < kSeedLevels; ++lvl) game.addCombatXp(game.xpToNextLevel());
 
-    game.debugSetBits(kSeedBits);
+    game.liveOperator().bits = kSeedBits;
 
     const int quotes = quoteCount();
     for (int i = 0; i < kSeedSolvedQuotes && i < quotes; ++i)

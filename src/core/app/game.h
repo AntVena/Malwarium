@@ -375,6 +375,11 @@ public:
     int modStorageCap() const override { return modCopyCap(op_.rig.level[kRigRowModStorage]); }
     // The Operator record, read by const reference: the player across every pet.
     const Operator& operatorRecord() const override { return op_; }
+    // The two records, mutable, for a gate or a dump staging what play reaches only
+    // over many sessions (a wallet, a cleared ladder, a learned Cant). Game's own code
+    // writes op_ and pet_ directly.
+    Operator& liveOperator() { return op_; }
+    Pet& livePet() { return pet_; }
     // The Settings record, read by const reference: the device's preferences.
     const Settings& settingsRecord() const override { return settings_; }
     // Price of the NEXT "Increase Bandwidth" upgrade (climbs per purchase, a).
@@ -598,8 +603,6 @@ public:
     // Dev/test seam: the summary is off on the Hatched seam (a gate that ticks hours and
     // then presses a button means the press), and a gate about it turns it back on.
     void debugSetAwayDigest(bool on) { awayDigestOn_ = on; }
-    // Dev/test seam: forget every tip, so a gate can meet one on a seam pet.
-    void debugClearTips() { for (uint8_t& b : op_.reveals.tipsSeen) b = 0; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
     // Fragmentation: what rollMaintSuccess rolls against and MAINT prints.
     int maintFailPct() const override;
@@ -1861,55 +1864,14 @@ public:
     // The same, against a chosen enemy spec (e.g. wildMalbeastAt(i)): what a
     // headless preview of one particular wild needs, since a walk rolls whichever one.
     void debugStartCombatVs(const CombatEnemy& spec, bool live = false);
-    // Preset the lifetime networks-seen counter + its v1 dedup pool (tests /
-    // dump_frame): marks the first `n` pool slots seen and recomputes Hacker
-    // Rank silently. Scaffolding to reach a rank/sector-unlock state without
-    // grinding real Wi-Fi events, NOT a real rank-up (no celebration/reward).
-    void debugSetNetworksSeen(int n);
     // Compose the explore-mode flavor line directly (tests / dump_frame). A walk step's
     // event is random, so a frame that needs the longest line the walk can produce sets
     // it directly. Explore mode still has to be armed for anything to draw.
     void debugSetExploreFlavor(const char* s);
-    // Credit captured handshakes without a radio (tests / headless runs). SHAKES buy
-    // sigils of the Cant, and earning one takes a real WPA capture on hardware, which no
-    // native run can do.
-    void debugAddHandshakes(int n) {
-        op_.cant.handshakesSeen += n;
-        markSaveDirty();
-    }
-    // Learn `n` sigils outright, so a test can stand at a fluency rather than winning its
-    // way there. Follows the same fixed reveal order the real path does (learnSigil), so
-    // "four sigils" means the same four letters here as in play.
-    void debugLearnSigils(int n) {
-        for (int i = 0; i < n; ++i) op_.cant.sigils = learnSigil(op_.cant.sigils);
-        markSaveDirty();
-    }
-    // Credit boss rounds without fighting them (tests / headless runs): reaching the
-    // deeper rungs otherwise means walking a gauntlet ladder per rung.
-    void debugAddBossWins(int n) { op_.tallies.bossWins += n; markSaveDirty(); }
-    // Credit cleared DEFRAG boards without playing them (tests / headless runs). The
-    // deeper rungs are dozens of hand-played runs, each of which also spends Bits.
-    void debugAddStackerWins(int n) { op_.tallies.stackerWins += n; markSaveDirty(); }
-    // Record a species' DeepWeb depth without diving (tests / headless runs), so the
-    // depth ladders can be exercised without a several-hundred-fight run.
-    void debugRecordSpeciesDive(const char* creatureId, int depth) {
-        recordSpeciesDive(registry_.creature(creatureId), depth);
-    }
     // Seed the network ledger directly, bypassing the scan → EXPL-Wi-Fi-event resolve
     // path: the only way a tool or test can populate the CREW home-network picker
     // without walking. `count` is the sighting tally the picker sorts on.
     void debugSeedNetworkLedger(uint64_t key, const char* name, int count);
-    // Put a move in the pet's OWNED set (tests / dump_frame). Nothing in play grants
-    // one yet. This is how a scene puts a kit in a known state, e.g. to show the
-    // outro a rival with no new move gets.
-    void debugGrantMove(const char* id) { pet_.moves.grant(id); }
-    void debugUnequipMove(int slot) { pet_.moves.unequip(slot); }
-    // Pin the active pet's (unfound) favourite dish, so a gate can feed it on purpose
-    // rather than hunting through the roll.
-    void debugSetFavouriteFood(const char* id) {
-        pet_.upgrades.favouriteFood = registry_.item(id);
-        pet_.upgrades.favouriteFound = false;
-    }
     // Draw the Bandwidth pool down without staging a fight to spend it, so a test can
     // watch it REGENERATE (which is the only way to observe a pet's regen interval).
     void debugSpendBandwidth(int n) {
@@ -1941,8 +1903,6 @@ public:
     const LoadoutScreen& loadoutScreen() const { return loadout_; }
     const VaultScreen& vaultScreen() const { return vault_; }
     StatSources statSources() const override;
-    // Grant mods in tests without walking a boss drop or a cache roll.
-    ModPool& debugModPool() { return op_.modPool; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
@@ -1997,38 +1957,6 @@ public:
         (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
     }
     void debugSetMaintDifficulty(ArcadeDifficulty d) { maintScreen_.setDifficulty(d); }
-    // Set the Bits wallet directly (tests / economy-gated flows like the shop's
-    // "not enough Bits" gate). Clamped at 0.
-    void debugSetBits(int n);
-    // Set a sub-area's durable clear / boss-unlock flag directly (tests / dump_frame):
-    // scaffolding to reach a mid-ladder EXPL state without grinding the real
-    // streak. No-op for out-of-range indices; the real paths are clearSubArea's streak
-    // + FIGHT BOSS. Marks the save dirty so a follow-on persist captures it.
-    void debugSetSubCleared(int area, int sub, bool v) {
-        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
-            op_.world.subCleared[area][sub] = v; markSaveDirty();
-        }
-    }
-    void debugSetSubBossUnlocked(int area, int sub, bool v) {
-        if (area >= 0 && area < kAreaCount && sub >= 0 && sub < kSubAreasPerArea) {
-            op_.world.subBossUnlocked[area][sub] = v; markSaveDirty();
-        }
-    }
-    // Set an AREA's cleared flag directly (tests): reach the "all areas cleared" state
-    // (the DeepWeb Dive unlock) without grinding every gauntlet. Real path: area boss.
-    void debugSetSectorCleared(int area, bool v) {
-        if (area >= 0 && area < kAreaCount) { op_.world.sectorCleared[area] = v; markSaveDirty(); }
-    }
-    void debugDeclineEggOffer() { pet_.eggOfferMade = true; }
-    // The armed Deep-Learning Module/Core depth step (1 = none armed). No production
-    // reader outside the engine (the habitat draws it via game_render.cpp), so tests
-    // read it here to assert the buff survives the dive it was armed for.
-    int debugDepthMultiplier() const { return pet_.armed.deepWebDepthMultiplier; }
-    // Set this pet's best-ever dive depth, the frontier a Checkpoint Bell targets. Real
-    // path: winning at that depth (game_combat.cpp). A gate that needs a pet with a
-    // record behind it says so directly instead of playing a dive out.
-    void debugSetBestDeepWebDepth(int depth) { pet_.bestDeepWebDepth = depth < 0 ? 0 : depth; }
-    void debugSetBestDarkWebDepth(int depth) { pet_.bestDarkWebDepth = depth < 0 ? 0 : depth; }
     // Force the arena run to a terminal banner without playing a whole bracket out.
     // The two verdict screens are otherwise reachable only by winning or losing three
     // matches, which is not what a screen gate is asking about.
@@ -2059,28 +1987,11 @@ public:
             markStoryRead(storyEntryAt(i).chapter);
     }
     void debugSetExploreStreak(int v) { walk_.streak = v < 0 ? 0 : v; }
-    // The two grants a BACKGROUND can come from that a gate should not have to play out
-    // in full: clearing an area's gauntlet, and taking a bracket at the arena. Both move
-    // exactly the state ownership is derived from and nothing else, so what they exercise
-    // is the derivation rather than a flag written past it. The real paths are the area
-    // boss's final win and awardTourneyPurse.
-    void debugClearSector(int area) {
-        if (area < 0 || area >= kAreaCount) return;
-        op_.world.sectorCleared[area] = true;
-        markSaveDirty();
-    }
-    void debugAddTourneyWin() { ++op_.tallies.tourneyWins; markSaveDirty(); }
     // Set the Bandwidth farming pool directly (tests): reach the depleted state
     // that switches farming from full-loot to the diminishing-returns curve without
     // grinding kBandwidthMax wins. Clamped to [0, bandwidthMax()].
     void debugSetBandwidth(int n) {
         bandwidth_ = n < 0 ? 0 : (n > bandwidthMax() ? bandwidthMax() : n);
-    }
-    // The live post-clear re-farm win count for a sub-area (tests).
-    int debugSubRefarmCount(int area, int sub) const {
-        if (area < 0 || area >= kAreaCount || sub < 0 || sub >= kSubAreasPerArea)
-            return 0;
-        return pet_.armed.subRefarmCount[area][sub];
     }
 
     // Is the Backup Drive death-save currently armed (used and not yet spent in a
