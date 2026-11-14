@@ -107,6 +107,12 @@ itself: `Game` exposes each one once, read-only and under the type's name (`arch
 read the screen answers through its host (`archPickRowCount()`, `shopStatusLine()`) is a
 question to the game and stays, as does one `Game`'s own code or the platform calls.
 
+Gates take the step play takes. A `Game` step that a screen or the walk calls is public under
+its own name and a gate calls it (`buyRigUpgrade(row)`, `startShiboleet()`). A gate stages a
+record through the record (`liveOperator()`, `livePet()`, and the record's own methods). `Game`
+keeps a test seam only for what play cannot reach in test time (a world event, a roll, a clock
+a gate cannot wait out), named for what it does, in the one block of `game.h` that says so.
+
 How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 - The screen holds only what dies with it (cursor, view, scroll, a frozen result, the subject
   of a page), owns its input and its draw, and reaches the game through a narrow `*Host`.
@@ -155,15 +161,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
   `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
-- **The sweep's second half: the `debug*` hooks.** About 95 of them, each a test seam
-  named for a private step (`debugStartShiboleet()` calls `startShiboleet()`, nine
-  `debugBuy*()` call `buyRigUpgrade(row)`) or a write into a record (`debugSetBits`,
-  `debugLearnSigils`, `debugDeclineEggOffer`). They want one rule the way the forwarders
-  got one: which steps a gate may take that a player can't (a world event, a roll, a clock
-  it can't wait out), named for what they do, and the rest replaced by driving the game or
-  the record's own methods. Three reads the forwarder rule left because they do more than
-  one read are part of it: `storyWindow()` / `storyWindows()`, the `bulkYieldTally*()`
-  trio, and `cryptogram()`'s empty stand-in board. | `game.h`, the native tests | XL |
 - **The per-screen table** (onButton / draw / tick) that replaces `Game`'s Nav switches in
   `onButton`, `render` and `stepScreenBeat`; its tick column takes the board cadences
   (`stepStacker`, `stepFragger`, the Isolation step) and the cinematic ticks
