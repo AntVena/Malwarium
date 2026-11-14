@@ -2624,7 +2624,7 @@ private:
         void (*press)(Game& g, const ButtonEvent& ev);
         void (*draw)(const Game& g, Framebuffer& fb);
         void (*beat)(Game& g);
-        void (*chord)(Game& g, const ButtonEvent& ev);
+        void (*chord)(Game& g, const ButtonEvent& ev);   // null: the chord means nothing
         FxSweep fx = FxSweep::None;
         Incubation incubation = Incubation::Runs;
     };

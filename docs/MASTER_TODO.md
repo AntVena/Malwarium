@@ -143,9 +143,9 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 - A screen header that would clash with an existing name takes `*Menu` (`CfgMenu`, since
   `CfgScreen` names the page) or renames the enum to `*View` (`ArchView`).
 - What differs per screen reaches it through its `ScreenRow` (`game_screens.cpp`): a press,
-  the draw, the heartbeat step, the A+C chord, and a fact the tick reads off the screen that
-  is up, as an enum field defaulted to what most screens are (`FxSweep`, `Incubation`). A
-  guard that lists screens by hand is a missing column.
+  the draw, the heartbeat step, the A+C chord (null where it means nothing), and a fact the
+  tick reads off the screen that is up, as an enum field defaulted to what most screens are
+  (`FxSweep`, `Incubation`). A guard that lists screens by hand is a missing column.
 - Small screens go in batches, one commit each, checked together.
 
 #### Records
@@ -165,20 +165,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
   `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
-- **A chord on the hatch reveal restarts it.** `ModalHatchReveal`'s row gives the chord
-  `crackEgg`, and `openHatchReveal` still passes its gate while the reveal plays, so it
-  calls `HatchRevealScreen::open()` again and rewinds the frame. A player mashing A+C holds
-  the hatch off for as long as they mash, though the screen says every button is inert
-  while it plays. The fix is a row whose chord does nothing (a null column the dispatcher
-  skips, or a named no-op). It changes behaviour, so it lands on its own. |
-  game_screens.cpp | S |
-- **Decide where the chord cracks a ready egg.** Every screen that gives the chord no
-  meaning of its own (twenty-nine rows: the menu tree, the modals, the explore and Shiboleet
-  pages) has it crack the egg (`crackEgg`), because the old if-chain's hatch case was not
-  limited to the home screen. The comment it came with says the chord's first A or C may
-  already have moved the player off the home screen. If only the home screen and the hatch
-  boards should crack the egg, the other rows' chord becomes "does nothing", and the null
-  column from the row above serves both. | game_screens.cpp | S |
 
 ---
 

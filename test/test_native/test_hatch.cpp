@@ -305,6 +305,46 @@ void test_egg_exploit_chord_hatches() {
     CHECK(g.nav() == Game::Nav::ModalHatchReveal);
 }
 
+// The chord cracks the egg only on the home screen, where the idle prompt's Exploit pip
+// invites it. Elsewhere it means nothing: a player in a menu keeps their place, and
+// backs out to crack it.
+void test_egg_chord_cracks_only_from_home() {
+    Game g;
+    pickFirstEggLine(g);
+    uint32_t t = 0;
+    g.tick(t += 1000);
+    g.tick(t += g.bootHatchRemainMs() - kHatchRevealMs / 2);
+    CHECK(g.eggCrackable());
+    enterSlot(g, SubmenuId::Stat);
+    g.onButton(lift(Button::A));
+    CHECK(g.nav() == Game::Nav::Submenu);
+    g.onButton(chordAC());
+    CHECK(g.nav() == Game::Nav::Submenu);
+    CHECK(g.eggCrackable());
+    for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle && g.nav() != Game::Nav::Cursor; ++i)
+        tapC(g);
+    CHECK(g.nav() == Game::Nav::Idle || g.nav() == Game::Nav::Cursor);
+    g.onButton(chordAC());
+    CHECK(g.nav() == Game::Nav::ModalHatchReveal);
+}
+
+// The hatch cinematic ignores the chord as it ignores every button: a chord mashed at
+// it must not open it again from its first frame, or mashing would hold the hatch off.
+void test_hatch_reveal_ignores_the_chord() {
+    Game g;
+    pickFirstEggLine(g);
+    uint32_t t = 0;
+    g.tick(t += 1000);
+    g.tick(t += g.bootHatchRemainMs() - kHatchRevealMs / 2);
+    g.onButton(chordAC());
+    CHECK(g.nav() == Game::Nav::ModalHatchReveal);
+    g.tick(t += kHeartbeatMs);
+    CHECK(g.hatchRevealFrame() == 1);
+    g.onButton(chordAC());
+    CHECK(g.nav() == Game::Nav::ModalHatchReveal);
+    CHECK(g.hatchRevealFrame() == 1);
+}
+
 // An egg can't arm explore-mode: EXPL is greyed/locked, so B on the EXPL
 // slot is inert and never starts a run.
 void test_egg_cannot_explore() {

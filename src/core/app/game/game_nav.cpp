@@ -62,9 +62,10 @@ void Game::onButton(const ButtonEvent& ev) {
         return;
     }
     // A+C goes to what the chord means on the screen that is up (its row's chord
-    // column), and never on to the list contract or the plain press below.
+    // column; null where it means nothing), and never on to the list contract or the
+    // plain press below.
     if (ev.chordAC) {
-        screenRow(nav_).chord(*this, ev);
+        if (const auto chord = screenRow(nav_).chord) chord(*this, ev);
         return;
     }
 

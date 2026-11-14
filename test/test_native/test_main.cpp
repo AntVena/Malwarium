@@ -161,6 +161,8 @@ int g_failures = 0;
     RUN(test_egg_menu_locks)                \
     RUN(test_egg_items_quest_only)          \
     RUN(test_egg_exploit_chord_hatches)     \
+    RUN(test_egg_chord_cracks_only_from_home) \
+    RUN(test_hatch_reveal_ignores_the_chord) \
     RUN(test_egg_cannot_explore)            \
     RUN(test_evolve_remaining_readout)      \
     /* Task 1: dev reset shortcut */       \
