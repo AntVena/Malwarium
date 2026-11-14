@@ -2599,11 +2599,12 @@ private:
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
     void onIdle(const ButtonEvent& ev);
     void onCursor(const ButtonEvent& ev);
+    void onHomeChord();                             // A+C on Idle or Cursor
     void onSubmenu(const ButtonEvent& ev);          // L2 dispatch, one case per slot
     void onDetail(const ButtonEvent& ev);           // L3 dispatch, likewise
     // THE PER-SCREEN TABLE (game_screens.cpp): one row per Nav, in Nav's order. What a
-    // press does on the screen that is up, what render draws for it, and what it steps
-    // on the heartbeat (null for nothing). The cadences faster than the heartbeat keep
+    // press does on the screen that is up, what render draws for it, what it steps on the
+    // heartbeat (null for nothing), and what the A+C chord means there. The cadences faster than the heartbeat keep
     // their own entry point (tickAnimClocks): each must also run on every tick its
     // screen is NOT up, to prime its clock, and two of them share the Combat screen.
     struct ScreenRow {
@@ -2611,6 +2612,7 @@ private:
         void (*press)(Game& g, const ButtonEvent& ev);
         void (*draw)(const Game& g, Framebuffer& fb);
         void (*beat)(Game& g);
+        void (*chord)(Game& g, const ButtonEvent& ev);
     };
     static const ScreenRow& screenRow(Nav n);
     // A row for a screen type that owns its whole page: onButton(host, ev), draw(fb, host).

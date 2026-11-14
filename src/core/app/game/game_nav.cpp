@@ -61,59 +61,10 @@ void Game::onButton(const ButtonEvent& ev) {
         dismissAchievementBanner();
         return;
     }
-    // A+C does nothing pet-side except in combat, where it opens the Exploit
-    // override. The early-out is bypassed only in the combat Nav state, which
-    // routes the chord to the override picker.
+    // A+C goes to what the chord means on the screen that is up (its row's chord
+    // column), and never on to the list contract or the plain press below.
     if (ev.chordAC) {
-        if (nav_ == Nav::Combat) fightScreen_.onButton(*this, ev);
-        // ROCK THE DOCK: the arena's BRIEFING. The chord is the device's one spare
-        // gesture and the bracket screen has already spent A, B and C, so the explainer
-        // (the only thing that tells an operator what an arena bout even is) rides
-        // the same "chord opens a reader, then plain A/B/C drive it" shape the explore
-        // control overlay uses.
-        else if (nav_ == Nav::Tourney) arena_.onButton(*this, ev);
-        // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
-        // already spent on handing a taken letter back to the pool. Its screen sorts
-        // the two meanings out itself (a letter held drops it; nothing held opens the
-        // RULES page instead), since only it knows which stage the board is in.
-        else if (nav_ == Nav::Cryptogram) cryptogramScreen_.onButton(*this, ev);
-        // Nothing else in these engines uses the chord, so it toggles the RULES page.
-        // The egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav
-        // straight out of layEgg with no menu stop) have no other route to this at all,
-        // and the CHROMATOPHORE needs it most: it is the one board whose three buttons
-        // are all spoken for, so the chord is the only press left that can explain them.
-        else if (nav_ == Nav::Stacker || nav_ == Nav::Fragger || nav_ == Nav::Isolation ||
-                 nav_ == Nav::Decryption || nav_ == Nav::ModalEggPick ||
-                 nav_ == Nav::Chroma)
-            toggleGameBrief();
-        // Hacker face: A+C at the top level flips PET ↔ HACKER. On the Hacker face
-        // this takes priority so the player can always return to the pet; nothing else
-        // uses the chord there.
-        else if (face_ == Face::Hacker && (nav_ == Nav::Idle || nav_ == Nav::Cursor))
-            toggleFace();
-        // Explore-control chord: while explore-mode is running, A+C on the
-        // habitat opens the control overlay (A ping / B warp / C stop) instead of the
-        // Hacker face. A deliberate tradeoff (the Hacker face is unreachable until you
-        // Cancel explore). An egg can't explore, so the hatch chord below is unaffected.
-        else if (walk_.active && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
-            nav_ = Nav::ExploreControl;
-            exploreControl_.open();
-        }
-        // Egg home stretch (redesign): the Exploit chord IS how you hatch.
-        // The ⚡ exploit symbol on the idle screen invites A+C to crack the egg. Which
-        // screen that opens is the line's business: a Decrypt line gets its brute-force
-        // minigame from the incubation half-way point, any other line gets the hatch
-        // animation in the last kHatchRevealMs. (The first A/C of the chord may have
-        // summoned the cursor; both openers re-check their own gate + park the modal
-        // from any state.)
-        else if (hatchRevealReady()) openHatchReveal();
-        // Otherwise (pet face, idle/cursor, not exploring, past the egg phase): flip to
-        // the Hacker face. The lowest-priority top-level action, so the existing chord
-        // meanings above are all preserved. An egg's A+C is only the hatch exploit,
-        // because the operator face belongs to a raised pet (and the chord does nothing
-        // in the first half).
-        else if ((nav_ == Nav::Idle || nav_ == Nav::Cursor) && !inEggPhase())
-            toggleFace();
+        screenRow(nav_).chord(*this, ev);
         return;
     }
 
@@ -161,6 +112,32 @@ void Game::onCursor(const ButtonEvent& ev) {
         if (face_ == Face::Hacker) enterHackerSubmenu();
         else if (!slotLocked(enteredId())) enterSubmenu();
     }
+}
+
+// The home screen's chord, highest precedence first.
+void Game::onHomeChord() {
+    // Hacker face: A+C flips PET <-> HACKER. On the Hacker face this takes priority so
+    // the player can always return to the pet; nothing else uses the chord there.
+    if (face_ == Face::Hacker) toggleFace();
+    // Explore-control chord: while explore-mode is running, A+C opens the control
+    // overlay (A ping / B warp / C stop) instead of the Hacker face. A deliberate
+    // tradeoff (the Hacker face is unreachable until you Cancel explore). An egg can't
+    // explore, so the hatch chord below is unaffected.
+    else if (walk_.active) {
+        nav_ = Nav::ExploreControl;
+        exploreControl_.open();
+    }
+    // Egg home stretch: the Exploit chord IS how you hatch. The exploit symbol on the
+    // idle screen invites A+C to crack the egg. Which screen that opens is the line's
+    // business: a Decrypt line gets its brute-force minigame from the incubation
+    // half-way point, any other line gets the hatch animation in the last
+    // kHatchRevealMs.
+    else if (hatchRevealReady()) openHatchReveal();
+    // Otherwise (pet face, not exploring, past the egg phase): flip to the Hacker face.
+    // The lowest-priority action, so the chord meanings above are all preserved. An
+    // egg's A+C is only the hatch exploit, because the operator face belongs to a raised
+    // pet (and the chord does nothing in the first half).
+    else if (!inEggPhase()) toggleFace();
 }
 
 void Game::onSubmenu(const ButtonEvent& ev) {

@@ -1,8 +1,9 @@
 // game_screens.cpp: the per-screen table. For each Nav, in Nav's order, what a press does
-// on that screen, what render draws, and what the heartbeat steps (Game::ScreenRow).
+// on that screen, what render draws, what the heartbeat steps, and what the A+C chord
+// means there (Game::ScreenRow).
 //
 // onButton, render and stepScreenBeat each look their row up here, so a screen joins the
-// game by gaining one row, and the three can never disagree about which screen is up.
+// game by gaining one row, and they can never disagree about which screen is up.
 // The menu tree's two levels keep their per-slot dispatch (onSubmenu / onDetail,
 // drawSubmenu / drawDetail), since several slots share one Nav.
 #include "core/app/game.h"
@@ -37,104 +38,134 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
     using G = Game;
     using Ev = ButtonEvent;
     using Fb = Framebuffer;
+    // The played boards use the chord for nothing else, so it toggles their RULES page.
+    // The egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav straight
+    // out of layEgg with no menu stop) have no other route to it at all, and the
+    // CHROMATOPHORE needs it most: its three buttons are all spoken for, so the chord is
+    // the only press left that can explain them.
+    static constexpr auto rulesChord = [](G& g, const Ev&) { g.toggleGameBrief(); };
+    // A screen that gives the chord no meaning of its own lets it crack a ready egg, as
+    // the home screen's chord does: the chord's first A or C may already have moved the
+    // player off the home screen, and openHatchReveal checks its own gate.
+    static constexpr auto crackEgg = [](G& g, const Ev&) { g.openHatchReveal(); };
+    static constexpr auto homeChord = [](G& g, const Ev&) { g.onHomeChord(); };
     static constexpr ScreenRow kScreens[] = {
         {Nav::Idle, [](G& g, const Ev& e) { g.onIdle(e); },
          [](const G& g, Fb& fb) { g.drawHome(fb, -1); },
-         [](G& g) { g.stepHomeBeat(); }},
+         [](G& g) { g.stepHomeBeat(); }, homeChord},
         {Nav::Cursor, [](G& g, const Ev& e) { g.onCursor(e); },
-         [](const G& g, Fb& fb) { g.drawHome(fb, g.cursor_); }, nullptr},
+         [](const G& g, Fb& fb) { g.drawHome(fb, g.cursor_); }, nullptr, homeChord},
         {Nav::Submenu, [](G& g, const Ev& e) { g.onSubmenu(e); },
-         [](const G& g, Fb& fb) { g.drawSubmenu(fb); }, nullptr},
+         [](const G& g, Fb& fb) { g.drawSubmenu(fb); }, nullptr, crackEgg},
         {Nav::Detail, [](G& g, const Ev& e) { g.onDetail(e); },
-         [](const G& g, Fb& fb) { g.drawDetail(fb); }, nullptr},
+         [](const G& g, Fb& fb) { g.drawDetail(fb); }, nullptr, crackEgg},
         {Nav::Process, [](G& g, const Ev& e) { g.maintScreen_.onProcess(g, e); },
          [](const G& g, Fb& fb) { g.maintScreen_.drawProcess(fb, g); },
-         [](G& g) { g.stepProcessBeat(); }},
+         [](G& g) { g.stepProcessBeat(); }, crackEgg},
         {Nav::ModalFeeding, pressScreen<&G::feedingScreen_>, drawScreen<&G::feedingScreen_>,
-         [](G& g) { g.stepFeedingBeat(); }},
+         [](G& g) { g.stepFeedingBeat(); }, crackEgg},
         {Nav::ModalLockout, pressScreen<&G::lockoutScreen_>, drawScreen<&G::lockoutScreen_>,
-         nullptr},
+         nullptr, crackEgg},
         {Nav::ModalLineSelect, pressScreen<&G::lineSelect_>, drawScreen<&G::lineSelect_>,
-         nullptr},
+         nullptr, crackEgg},
         {Nav::ModalEggPick, pressScreen<&G::eggPickScreen_>, drawScreen<&G::eggPickScreen_>,
-         nullptr},
+         nullptr, rulesChord},
         // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
         // last one, then hatches itself.
         {Nav::ModalHatchReveal, pressScreen<&G::hatchReveal_>, drawScreen<&G::hatchReveal_>,
-         [](G& g) { g.hatchReveal_.tick(g); }},
+         [](G& g) { g.hatchReveal_.tick(g); }, crackEgg},
         // Hold, flash, reveal on the heartbeat, then it parks at the reveal and waits for B
         // (completeEvolution). C does nothing: the evolution already happened.
         {Nav::ModalEvolve, pressScreen<&G::evolve_>, drawScreen<&G::evolve_>,
-         [](G& g) { g.evolve_.tick(); }},
+         [](G& g) { g.evolve_.tick(); }, crackEgg},
         // The crash FX holds a few beats, then parks and waits for B. Death is not
         // cancellable, so C does nothing.
         {Nav::ModalCSF, pressScreen<&G::csf_>, drawScreen<&G::csf_>,
-         [](G& g) { g.csf_.tick(); }},
+         [](G& g) { g.csf_.tick(); }, crackEgg},
+        // The chord opens the fight's Exploit override picker.
         {Nav::Combat, pressScreen<&G::fightScreen_>, drawScreen<&G::fightScreen_>,
-         [](G& g) { g.stepCombatBeat(); }},
+         [](G& g) { g.stepCombatBeat(); }, pressScreen<&G::fightScreen_>},
         {Nav::ExploreControl, pressScreen<&G::exploreControl_>,
-         drawScreen<&G::exploreControl_>, nullptr},
-        {Nav::Encounter, pressScreen<&G::encounter_>, drawScreen<&G::encounter_>, nullptr},
+         drawScreen<&G::exploreControl_>, nullptr, crackEgg},
+        {Nav::Encounter, pressScreen<&G::encounter_>, drawScreen<&G::encounter_>, nullptr,
+         crackEgg},
         // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a choice. Held ~3s
         // so it reads, then played out (a guardian awakened enters a fight; the rest
         // resolve to the habitat).
         {Nav::Wifi, pressScreen<&G::wifiScreen_>, drawScreen<&G::wifiScreen_>,
-         [](G& g) { g.stepEventHold(kExploreRevealHoldBeats, &G::resolveWifiOutcome); }},
+         [](G& g) { g.stepEventHold(kExploreRevealHoldBeats, &G::resolveWifiOutcome); }, crackEgg},
         // Hands-off DECISION: a shop (item or mod) is a real buy/leave choice, so it holds
         // ~10s for a watching player to act, then leaves and keeps exploring.
         {Nav::Shop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
-         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }},
+         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, crackEgg},
         {Nav::ModShop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
-         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }},
-        {Nav::WarpPicker, pressScreen<&G::warpPicker_>, drawScreen<&G::warpPicker_>, nullptr},
+         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, crackEgg},
+        {Nav::WarpPicker, pressScreen<&G::warpPicker_>, drawScreen<&G::warpPicker_>, nullptr,
+         crackEgg},
         {Nav::RollbackPicker, [](G& g, const Ev& e) { g.statPicker_.onRollback(g, e); },
-         [](const G& g, Fb& fb) { g.statPicker_.drawRollback(fb, g); }, nullptr},
+         [](const G& g, Fb& fb) { g.statPicker_.drawRollback(fb, g); }, nullptr, crackEgg},
         {Nav::RepartitionPicker, [](G& g, const Ev& e) { g.statPicker_.onRepartition(g, e); },
-         [](const G& g, Fb& fb) { g.statPicker_.drawRepartition(fb, g); }, nullptr},
+         [](const G& g, Fb& fb) { g.statPicker_.drawRepartition(fb, g); }, nullptr, crackEgg},
         {Nav::CacheYield, [](G& g, const Ev& e) { g.vault_.onReveal(g, e); },
-         [](const G& g, Fb& fb) { g.vault_.drawReveal(fb, g); }, nullptr},
+         [](const G& g, Fb& fb) { g.vault_.drawReveal(fb, g); }, nullptr, crackEgg},
         {Nav::BulkYield, [](G& g, const Ev& e) { g.vault_.onBulkReveal(g, e); },
-         [](const G& g, Fb& fb) { g.vault_.drawBulkReveal(fb, g); }, nullptr},
+         [](const G& g, Fb& fb) { g.vault_.drawBulkReveal(fb, g); }, nullptr, crackEgg},
         {Nav::PostEncounter, pressScreen<&G::postEncounter_>, drawScreen<&G::postEncounter_>,
-         nullptr},
+         nullptr, crackEgg},
         // The played boards step on their own faster cadences (tickAnimClocks).
         {Nav::Stacker, pressScreen<&G::stackerScreen_>, drawScreen<&G::stackerScreen_>,
-         nullptr},
+         nullptr, rulesChord},
         {Nav::Fragger, pressScreen<&G::fraggerScreen_>, drawScreen<&G::fraggerScreen_>,
-         nullptr},
+         nullptr, rulesChord},
         {Nav::Isolation, pressScreen<&G::isolationScreen_>, drawScreen<&G::isolationScreen_>,
-         nullptr},
-        {Nav::Chroma, pressScreen<&G::chromaScreen_>, drawScreen<&G::chromaScreen_>, nullptr},
+         nullptr, rulesChord},
+        {Nav::Chroma, pressScreen<&G::chromaScreen_>, drawScreen<&G::chromaScreen_>, nullptr,
+         rulesChord},
         {Nav::Decryption, pressScreen<&G::decryptionScreen_>,
-         drawScreen<&G::decryptionScreen_>, nullptr},
+         drawScreen<&G::decryptionScreen_>, nullptr, rulesChord},
+        // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord hands a
+        // taken letter back to the pool. The screen sorts its two meanings out itself (a
+        // letter held drops it; nothing held opens the RULES page), since only it knows
+        // which stage the board is in.
         {Nav::Cryptogram, pressScreen<&G::cryptogramScreen_>,
-         drawScreen<&G::cryptogramScreen_>, nullptr},
+         drawScreen<&G::cryptogramScreen_>, nullptr, pressScreen<&G::cryptogramScreen_>},
         // The arcade payout is informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).
         {Nav::ArcadeResult, [](G& g, const Ev& e) { g.arcadeScreen_.onResult(g, e); },
-         [](const G& g, Fb& fb) { g.arcadeScreen_.drawResult(fb, g); }, nullptr},
-        {Nav::Tourney, pressScreen<&G::arena_>, drawScreen<&G::arena_>, nullptr},
+         [](const G& g, Fb& fb) { g.arcadeScreen_.drawResult(fb, g); }, nullptr, crackEgg},
+        // ROCK THE DOCK: the chord is the device's one spare gesture and the bracket has
+        // already spent A, B and C, so the BRIEFING (the only thing that tells an operator
+        // what an arena bout even is) rides the "chord opens a reader, then plain A/B/C
+        // drive it" shape the explore control overlay uses.
+        {Nav::Tourney, pressScreen<&G::arena_>, drawScreen<&G::arena_>, nullptr,
+         pressScreen<&G::arena_>},
         // Hands-off REVEAL: the guardian arriving and speaking is to watch, so it holds
         // ~5s, then the meeting goes on to whatever the fluency roll decided.
         {Nav::ShiboleetHail, [](G& g, const Ev& e) { g.shiboleet_.onHail(g, e); },
          [](const G& g, Fb& fb) { g.shiboleet_.drawHail(fb, g); },
-         [](G& g) { g.stepEventHold(kShiboleetHailHoldBeats, &G::openShiboleetWelcome); }},
+         [](G& g) { g.stepEventHold(kShiboleetHailHoldBeats, &G::openShiboleetWelcome); },
+         crackEgg},
         // Hands-off DECISION: silence past the hold is an answer, the wrong one. A restarts
         // the hold (ShiboleetScreen::onRiddle), so a player still reading is not timed out.
         {Nav::Shiboleet, [](G& g, const Ev& e) { g.shiboleet_.onRiddle(g, e); },
          [](const G& g, Fb& fb) { g.shiboleet_.drawRiddle(fb, g); },
-         [](G& g) { g.stepEventHold(kShiboleetReplyHoldBeats, &G::leaveShiboleetUnanswered); }},
+         [](G& g) { g.stepEventHold(kShiboleetReplyHoldBeats, &G::leaveShiboleetUnanswered); },
+         crackEgg},
         // Hands-off REVEAL: what the guardian made of the answer, held ~6s, then played
         // out. The consequence is already paid; the hold only sets how long it is read.
         {Nav::ShiboleetVerdict, [](G& g, const Ev& e) { g.shiboleet_.onVerdict(g, e); },
          [](const G& g, Fb& fb) { g.shiboleet_.drawVerdict(fb, g); },
-         [](G& g) { g.stepEventHold(kShiboleetVerdictHoldBeats, &G::finishShiboleet); }},
-        {Nav::Story, pressScreen<&G::storyReader_>, drawScreen<&G::storyReader_>, nullptr},
-        {Nav::StoryArchive, pressScreen<&G::chapters_>, drawScreen<&G::chapters_>, nullptr},
+         [](G& g) { g.stepEventHold(kShiboleetVerdictHoldBeats, &G::finishShiboleet); }, crackEgg},
+        {Nav::Story, pressScreen<&G::storyReader_>, drawScreen<&G::storyReader_>, nullptr,
+         crackEgg},
+        {Nav::StoryArchive, pressScreen<&G::chapters_>, drawScreen<&G::chapters_>, nullptr,
+         crackEgg},
         {Nav::TipCard, pressScreen<&G::tipCardScreen_>, drawScreen<&G::tipCardScreen_>,
-         nullptr},
-        {Nav::AwayDigest, pressScreen<&G::awayDigest_>, drawScreen<&G::awayDigest_>, nullptr},
-        {Nav::ItemOffer, pressScreen<&G::itemOffer_>, drawScreen<&G::itemOffer_>, nullptr},
+         nullptr, crackEgg},
+        {Nav::AwayDigest, pressScreen<&G::awayDigest_>, drawScreen<&G::awayDigest_>, nullptr,
+         crackEgg},
+        {Nav::ItemOffer, pressScreen<&G::itemOffer_>, drawScreen<&G::itemOffer_>, nullptr,
+         crackEgg},
     };
     static_assert(std::size(kScreens) == static_cast<size_t>(Nav::ItemOffer) + 1,
                   "one row per Nav");
