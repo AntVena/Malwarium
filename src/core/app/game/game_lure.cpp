@@ -52,9 +52,9 @@ void dottedLine(Framebuffer& fb, int x0, int y0, int x1, int y1, Rgb565 c) {
 }  // namespace
 
 void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
-    const LureStage stage = petLure_.stage();
+    const LureStage stage = home_.lure().stage();
     if (stage == LureStage::Rest) return;
-    const int b = petLure_.beatInStage();
+    const int b = home_.lure().beatInStage();
     const int len = IdleLure::stageBeats(stage);
     const SpriteData& tag = ASSET_SPR_LURE_TAG;
     const int tagW = tag.frameW * kScaleNum / kScaleDen;
@@ -86,7 +86,7 @@ void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
         }
     }
 
-    const int target = petLure_.target();
+    const int target = home_.lure().target();
     if (stage != LureStage::Eat) {
         for (int i = 0; i < kIdleLureTags; ++i)
             dottedLine(fb, originX, originY, tx[i] + eyeX, ty[i] + eyeY,
@@ -117,7 +117,7 @@ void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
     const int aimY = ty[target] + tagH / 2;
     int cx = aimX, cy = aimY;
     if (stage == LureStage::Approach) {
-        const int fromX = petLure_.edge() < 0 ? -curW : kActiveW;
+        const int fromX = home_.lure().edge() < 0 ? -curW : kActiveW;
         cx = lerp(fromX, aimX, b + 1, len);
     } else if (stage == LureStage::Eat) {
         cx = originX;

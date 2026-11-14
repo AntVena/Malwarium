@@ -107,7 +107,7 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
         fb.clear(palColor(Pal::PAPER));
 
     // Drawn before the pet so a fork crawls out from behind its body.
-    drawIdleReplicas(fb, kActiveW / 2 + logicalToActive(petWander_.offsetX()));
+    drawIdleReplicas(fb, kActiveW / 2 + logicalToActive(home_.wander().offsetX()));
 
     const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     if (pet) drawHabitatPet(fb, *pet);
@@ -148,8 +148,8 @@ void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
     // every single-row sheet does.
     const AnimClip* clip = nullptr;
     if (pet_.creature) {
-        if (petFeeding_.biting() || petLure_.biting()) clip = pet_.creature->clip("attack");
-        if (!clip && petWander_.travelling()) clip = pet_.creature->clip("walk");
+        if (home_.feeding().biting() || home_.lure().biting()) clip = pet_.creature->clip("attack");
+        if (!clip && home_.wander().travelling()) clip = pet_.creature->clip("walk");
         if (!clip) clip = pet_.creature->clip("idle");
     }
     const int row = clip ? clip->row : 0;
@@ -163,41 +163,41 @@ void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
     const int bob = (IdleWander::bobs(pet_.creature->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
     const int petW = pet.frameW * kScaleNum / kScaleDen;
     const int petH = pet.h * kScaleNum / kScaleDen;
-    const int petX = (kActiveW - petW) / 2 + logicalToActive(petWander_.offsetX());
+    const int petX = (kActiveW - petW) / 2 + logicalToActive(home_.wander().offsetX());
     const int petY =
-        kLivingBottom - petH - bob - logicalToActive(petWander_.offsetY());
+        kLivingBottom - petH - bob - logicalToActive(home_.wander().offsetY());
     // Turned to the way it is actually going. A sheet with no declared facing is
     // never mirrored, so this only turns the creatures the wander was walking
     // backwards: the ones drawn in profile instead of §2's turned-to-the-viewer
     // pose (assets/CREATURE_VISUAL_RULES.md). The habitat has no seat and no
     // opponent, so unlike the combat stage the direction comes off the trip
     // itself.
-    const bool mirror = spriteMirrorToFace(pet, petWander_.headingRight());
+    const bool mirror = spriteMirrorToFace(pet, home_.wander().headingRight());
     // Resting colour: a line that wears borrowed colours spends a few seconds now
     // and then in another family's palette (core/model/idle_camo.h). The level and
     // the art are the tick's; this ranks that art into the ladder the creature is
     // repainted through, exactly as the combat screen does. Every other pet, and
     // this one between drifts, takes the plain blit and pays nothing.
     const CamoRamp drift =
-        idleCamoWorn_ ? camoRampFrom(*idleCamoWorn_) : CamoRamp{};
-    if (petDisguise_.showsProp())
+        home_.camoWorn() ? camoRampFrom(*home_.camoWorn()) : CamoRamp{};
+    if (home_.disguise().showsProp())
         drawDisguiseProp(fb, petX + petW / 2);
-    else if (petHarvest_.stage() == HarvestStage::Hold)
+    else if (home_.harvest().stage() == HarvestStage::Hold)
         drawSpriteRain(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
                        palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
                        mirror);
-    else if (petVanish_.active())
+    else if (home_.vanish().active())
         drawSpriteCloak(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
-                        petVanish_.amount(), palColor(Pal::INK), beat_, row, mirror);
-    else if (petMimic_.active() && idleMimicWorn_)
+                        home_.vanish().amount(), palColor(Pal::INK), beat_, row, mirror);
+    else if (home_.mimic().active() && home_.mimicWorn())
         drawMimic(fb, pet, frame, row, petX, petY, mirror);
-    else if (petDisguise_.torn())
+    else if (home_.disguise().torn())
         drawSpriteGlitch(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
                          palColor(Pal::INK), palColor(Pal::HOT),
                          static_cast<uint8_t>(beat_ * 32), row, mirror);
-    else if (petCamo_.level() > 0 && !drift.empty())
+    else if (home_.camo().level() > 0 && !drift.empty())
         drawSpriteCamo(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
-                       petCamo_.level(), /*flashColor=*/0, /*flashAmt=*/0, row,
+                       home_.camo().level(), /*flashColor=*/0, /*flashAmt=*/0, row,
                        /*from=*/nullptr, mirror);
     else
         drawSpriteUpscaled(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, row,

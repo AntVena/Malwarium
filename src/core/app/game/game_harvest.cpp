@@ -54,8 +54,8 @@ void drawTornDigit(Framebuffer& fb, int x, int y, char digit, Rgb565 color, int 
 }  // namespace
 
 void Game::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const {
-    if (petHarvest_.stage() != HarvestStage::Stream) return;
-    const int b = petHarvest_.beatInStage();
+    if (home_.harvest().stage() != HarvestStage::Stream) return;
+    const int b = home_.harvest().beatInStage();
     // The last strand must have swallowed its last digit by the end of the stage.
     const int travelBeats = kIdleHarvestStreamBeats - kStrandStaggerBeats * (kStrandCount - 1);
     const int travelPx = kStrandStartPx - kAbsorbPx + kStrandDigits * kDigitSpacing;

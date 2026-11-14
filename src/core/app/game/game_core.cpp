@@ -15,13 +15,6 @@ namespace mal {
 
 Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
     : registry_(ContentRegistry::embedded()), store_(store) {
-    // Set the ambient copies' wanders apart before anything can return early. They are
-    // otherwise identical objects, and identical wanders walk identical paths, so the
-    // seed is what tells three copies apart.
-    for (int i = 0; i < kWormReplicaSlots; ++i) {
-        companionWander_[i].seed(0x2545f491u + 0x9e3779b9u * static_cast<uint32_t>(i + 1));
-    }
-
     inventory_ = Inventory::starting();
     pet_.mods = ModSlots::starting();
     pet_.moves = MoveLoadout::startingForLine(registry_, nullptr);  // overwritten below
@@ -191,71 +184,18 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
     const CreatureLine* petLine = pet_.creature ? registry_.creatureLine(pet_.creature->line) : nullptr;
     const RestingTrick trick =
         petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
-    stepRestingMotion(trick);
-    stepRestingTricks(petLine, trick);
+    HabitatBeat habitat;
+    habitat.creature = pet_.creature;
+    habitat.trick = trick;
+    habitat.companions = idleCompanionCount();
+    habitat.replicates = petReplicates();
+    // An egg is left out of the colour drift, because the Metamorphic hatch board
+    // (game_chroma.cpp) is a minigame about this effect and the player should first see
+    // it there.
+    habitat.wearsBorrowedColours = petLine && petLine->wearsBorrowedColours && !inEggPhase();
+    home_.step(habitat, *this);
     stepScreenBeat();
     return true;
-}
-
-// Resting motion: the pet drifts a little way around the habitat's shelf anchor, the way
-// its species moves (core/model/idle_wander.h). An EGG moves the way its row says too,
-// which for almost every egg is Locomotion::Static, so it does not move: it sits where it
-// was laid, with its incubation readout drawn directly above it. The exception is an egg
-// genuinely adrift in water, which says Swim and drifts, and the rule is the row rather
-// than the stage so a hypothetical egg that flies needs no code here either. An empty
-// save parks, having no pet at all. A worm's ambient copies walk the same shelf on the
-// same beat, each off its own stream; the ones past the live count are parked so a
-// shrinking family (an evolution, a fresh egg) leaves nothing mid-stride to walk back in.
-// A pet passing itself off as a prop holds still: a prop that strolls is no disguise, and
-// nor does an angler with its bait out. One skimming mail goes where the scrap it is
-// after is.
-void Game::stepRestingMotion(RestingTrick trick) {
-    // The skim and the lure take turns: each runs only while the other rests.
-    const bool skims = trick == RestingTrick::Skim;
-    if (!petLure_.active())
-        petFeeding_.step(skims, petWander_.offsetX(), petWander_.offsetY());
-    if (!petFeeding_.active()) petLure_.step(skims);
-    if (!pet_.creature) {
-        petWander_.park();
-    } else if (const Mail* m = petFeeding_.target()) {
-        petWander_.chase(pet_.creature->locomotion, IdleFeeding::standX(*m),
-                         IdleFeeding::standY(*m), IdleFeeding::faceRight(*m));
-    } else if (petDisguise_.stage() == DisguiseStage::Rest && !petLure_.active()) {
-        petWander_.step(pet_.creature->locomotion);
-    }
-    const int companions = idleCompanionCount();
-    for (int i = 0; i < kWormReplicaSlots; ++i) {
-        if (i < companions) companionWander_[i].step(pet_.creature->locomotion);
-        else companionWander_[i].park();
-    }
-    petFork_.step(petReplicates());
-    petRelay_.step(petFork_.stage() == ForkStage::Rest ? companions : 0);
-}
-
-// The line's resting trick, and the resting colour. A line that wears borrowed colours
-// drifts into another family's palette now and then and comes back
-// (core/model/idle_camo.h). An egg is left out, because the Metamorphic hatch board
-// (game_chroma.cpp) is a minigame about this effect and the player should first see it
-// there.
-void Game::stepRestingTricks(const CreatureLine* petLine, RestingTrick trick) {
-    petDisguise_.step(trick == RestingTrick::Disguise);
-    petHarvest_.step(trick == RestingTrick::Harvest);
-    // A shapeshifter's colour drift, vanish and mimic take turns: each runs only while
-    // the others rest. The creature a mimic wears is resolved as it begins, like the
-    // drift's.
-    const bool shifts = trick == RestingTrick::Shapeshift;
-    const bool drifting = petCamo_.level() > 0;
-    if (!drifting && !petMimic_.active()) petVanish_.step(shifts);
-    if (!drifting && !petVanish_.active()) petMimic_.step(shifts);
-    if (!petMimic_.active()) idleMimicWorn_ = nullptr;
-    else if (!idleMimicWorn_) idleMimicWorn_ = idleCamoSprite(petMimic_.slot());
-    if (!petVanish_.active() && !petMimic_.active())
-        petCamo_.step(petLine && petLine->wearsBorrowedColours && !inEggPhase());
-    // The art is resolved once per drift, on the beat the level leaves zero: which
-    // creature answers for a family is a registry walk, and the level moving is not a
-    // change of who is being sampled.
-    if (petCamo_.level() == 0) idleCamoWorn_ = nullptr;
-    else if (!idleCamoWorn_) idleCamoWorn_ = idleCamoSprite(petCamo_.slot());
 }
 
 // The timer the screen that is up runs on the heartbeat: its row's beat column

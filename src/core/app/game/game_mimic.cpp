@@ -21,7 +21,7 @@ int lerp(int a, int b, int num, int den) { return a + (b - a) * num / den; }
 
 void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row, int petX,
                      int petY, bool mirror) const {
-    const SpriteData& worn = *idleMimicWorn_;
+    const SpriteData& worn = *home_.mimicWorn();
     const int petW = pet.frameW * kScaleNum / kScaleDen;
     const int petH = pet.h * kScaleNum / kScaleDen;
     const int wornW = worn.frameW * kScaleNum / kScaleDen;
@@ -29,7 +29,7 @@ void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row,
     const int feet = petY + petH;
     const int wornX = petX + petW / 2 - wornW / 2;
     const int wornY = feet - wornH;
-    const bool wornMirror = spriteMirrorToFace(worn, petWander_.headingRight());
+    const bool wornMirror = spriteMirrorToFace(worn, home_.wander().headingRight());
     const int wornFrame = idleFrame(worn, beat_);
 
     const auto drawPet = [&] {
@@ -40,11 +40,11 @@ void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row,
                            wornMirror);
     };
 
-    const MimicStage stage = petMimic_.stage();
+    const MimicStage stage = home_.mimic().stage();
     if (stage == MimicStage::Hold) { drawWorn(); return; }
 
     const int top = petY < wornY ? petY : wornY;
-    const int lineY = lerp(top, feet, petMimic_.wipe(), kIdleMimicWipeBeats);
+    const int lineY = lerp(top, feet, home_.mimic().wipe(), kIdleMimicWipeBeats);
     const bool takingOver = stage == MimicStage::WipeIn;
     fb.setClip(0, 0, kActiveW, lineY);
     if (takingOver) drawWorn(); else drawPet();

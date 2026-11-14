@@ -322,7 +322,7 @@ void test_chroma_egg_drifts_because_its_row_says_so() {
     bool moved = false;
     for (int i = 0; i < 200 && !moved; ++i) {
         g.tick(t += kHeartbeatMs);
-        moved = g.petWander().offsetX() != 0 || g.petWander().offsetY() != 0;
+        moved = g.home().wander().offsetX() != 0 || g.home().wander().offsetY() != 0;
     }
     CHECK(moved);
 
@@ -332,7 +332,7 @@ void test_chroma_egg_drifts_because_its_row_says_so() {
     t = 0;
     for (int i = 0; i < 200; ++i) {
         r.tick(t += kHeartbeatMs);
-        CHECK(r.petWander().offsetX() == 0 && r.petWander().offsetY() == 0);
+        CHECK(r.home().wander().offsetX() == 0 && r.home().wander().offsetY() == 0);
     }
 }
 

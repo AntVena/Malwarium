@@ -42,6 +42,7 @@
 #include "core/app/game/hacker_screen.h"
 #include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/held_buttons.h"
+#include "core/app/game/home_habitat.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
 #include "core/app/game/isolation_screen.h"
@@ -74,7 +75,7 @@
 #include "core/device/sd_status.h"
 #include "core/content/areas/area_defs.h"
 #include "core/content/content_arcade.h"    // kArcadeMaxCabinets bounds the arcade tallies
-#include "core/content/content_passives.h"  // kWormReplicaSlots sizes companionWander_
+#include "core/content/content_passives.h"
 #include "core/content/content_quotes.h"    // QuoteReward: the Decryptogram prize
 #include "core/content/content_riddles.h"   // kRiddleReplies sizes the shown reply order
 #include "core/content/defs.h"
@@ -167,7 +168,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ShiboleetHost, private WarpPickerHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
-             private EvolveHost, private CsfHost, private StackerHost,
+             private EvolveHost, private CsfHost, private StackerHost, private HomeHost,
              private FraggerHost, private IsolationHost, private ChromaHost,
              private DecryptionHost, private CryptogramHost, private LockoutHost, private HackerHost {
 public:
@@ -1290,10 +1291,9 @@ public:
     }
     const CreatureDef* pet() const override { return pet_.creature; }   // null while the save is empty (Hatch)
     const Pet& petRecord() const override { return pet_; }
-    // Where the habitat is currently standing its occupant, in logical px off the
-    // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
-    // exposed so the resting motion can be inspected without a framebuffer.
-    const IdleWander& petWander() const { return petWander_; }
+    // What the home habitat is animating around the resting pet (game/home_habitat.h).
+    // Exposed so the resting motion can be inspected without a framebuffer.
+    const HomeHabitat& home() const { return home_; }
     // How many ambient copies walk the habitat beside the pet right now. Derived and
     // display-only. Combatant::wormReplicas is wiped at the end of every fight, so a
     // worm at home needs its own idle replica count.
@@ -1302,30 +1302,6 @@ public:
     // Worm's exception lives here on the model side and drawHabitat stays a renderer.
     // Everything that isn't a raised worm answers 0.
     int idleCompanionCount() const;
-    // Where companion `i` (0..idleCompanionCount()-1) is standing, same units as
-    // petWander(). Each keeps its own stream so the group never marches in step.
-    const IdleWander& companionWander(int i) const { return companionWander_[i]; }
-    // The burst of copies past the cap that crawls out and dies now and then
-    // (core/model/idle_fork.h). Rest for every pet that does not replicate.
-    const IdleFork& petFork() const { return petFork_; }
-    // The prop a disguising line turns into now and then (core/model/idle_disguise.h).
-    const IdleDisguise& petDisguise() const { return petDisguise_; }
-    // The data a harvesting line pulls in and holds now and then
-    // (core/model/idle_harvest.h).
-    const IdleHarvest& petHarvest() const { return petHarvest_; }
-    // The mail a skimming line chases down and eats now and then
-    // (core/model/idle_feeding.h).
-    const IdleFeeding& petFeeding() const { return petFeeding_; }
-    // The bait the same line sets between skims (core/model/idle_lure.h).
-    const IdleLure& petLure() const { return petLure_; }
-    // A shapeshifting line's two tricks: fading into the habitat
-    // (core/model/idle_vanish.h) and wiping into another family's creature
-    // (core/model/idle_mimic.h).
-    const IdleVanish& petVanish() const { return petVanish_; }
-    const IdleCamo& petCamo() const { return petCamo_; }
-    const IdleMimic& petMimic() const { return petMimic_; }
-    // The byte the copies pass along between forks (core/model/idle_relay.h).
-    const IdleRelay& petRelay() const { return petRelay_; }
     // DISK DECRYPTION (the Ransomware line's hatch minigame): the code-breaking board,
     // played once, the moment the egg is laid, like the Clutch and the Isolation
     // Protocol. Cracking the key halves what is left of the incubation clock; running out
@@ -2046,7 +2022,7 @@ private:
     // and wrapping, so a pet works through the whole 'net without repeating colours
     // back to back. A family added to the roster joins automatically. Resolved once per
     // drift by the tick, never per repaint.
-    const SpriteData* idleCamoSprite(int slot) const;
+    const SpriteData* idleCamoSprite(int slot) const override;
 
     // Navigation.
     void summonCursor(int slot);
@@ -2683,8 +2659,6 @@ private:
     bool tickHeldGestures(uint32_t nowMs);   // every hold-B second action, and A/C repeat
     bool tickIdleDefocus(uint32_t nowMs);    // the menu tree collapsing back to Idle
     // tickHeartbeat's steps, one per thing that rides the beat.
-    void stepRestingMotion(RestingTrick trick);
-    void stepRestingTricks(const CreatureLine* petLine, RestingTrick trick);
     void stepScreenBeat();
     void stepEventHold(int beats, void (Game::*then)());
     void stepFeedingBeat();
@@ -2818,30 +2792,7 @@ private:
     ContentRegistry registry_;
     // The active pet (core/model/pet.h).
     Pet pet_;
-    // Purely presentational: where the pet is standing on its shelf right now.
-    // Stepped once per heartbeat off pet_.creature->locomotion and parked when there is no
-    // mover, so it never needs a reset hook on hatch, evolution or a loaded save.
-    IdleWander petWander_;
-    // The resting pet's ambient FX_CAMO drift: the clock (core/model/idle_camo.h), and
-    // the art it is currently sampling. Same split as the Combat screen's camo
-    // (game/fight_screen.h): the tick holds a level and a sprite, the draw ranks that
-    // sprite into a ladder.
-    // Null between drifts, which is also what says nothing is worn.
-    IdleCamo petCamo_;
-    const SpriteData* idleCamoWorn_ = nullptr;
-    IdleVanish petVanish_;
-    IdleMimic petMimic_;
-    const SpriteData* idleMimicWorn_ = nullptr;
-    // ...and where the ambient copies beside it are standing. One per replication
-    // slot, of which idleCompanionCount() are live; each is seeded apart in Game's
-    // constructor, since identical wanders move identically.
-    IdleWander companionWander_[kWormReplicaSlots];
-    IdleFork petFork_;
-    IdleRelay petRelay_;
-    IdleDisguise petDisguise_;
-    IdleHarvest petHarvest_;
-    IdleFeeding petFeeding_;
-    IdleLure petLure_;
+    HomeHabitat home_;   // game/home_habitat.h
     Inventory inventory_;
     EventLog log_;
     // The player across every pet (core/app/operator.h). WIPE EVERYTHING replaces it.

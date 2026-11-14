@@ -27,16 +27,16 @@ constexpr int kDisguisePropCount =
 }  // namespace
 
 void Game::drawDisguiseProp(Framebuffer& fb, int petCx) const {
-    const SpriteData& prop = *kDisguiseProps[petDisguise_.slot() % kDisguisePropCount];
+    const SpriteData& prop = *kDisguiseProps[home_.disguise().slot() % kDisguisePropCount];
     const int w = prop.frameW * kScaleNum / kScaleDen;
     const int h = prop.h * kScaleNum / kScaleDen;
     const int x = petCx - w / 2;
     const int y = kLivingBottom - h;
-    if (petDisguise_.torn())
+    if (home_.disguise().torn())
         drawSpriteGlitch(fb, prop, 0, x, y, kScaleNum, kScaleDen, palColor(Pal::INK),
                          palColor(Pal::HOT), static_cast<uint8_t>(beat_ * 32));
     else
-        drawSpriteUpscaled(fb, prop, petDisguise_.propFrame(), x, y, kScaleNum, kScaleDen);
+        drawSpriteUpscaled(fb, prop, home_.disguise().propFrame(), x, y, kScaleNum, kScaleDen);
 }
 
 }  // namespace mal

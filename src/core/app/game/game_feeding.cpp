@@ -74,9 +74,9 @@ void frameRect(Framebuffer& fb, int x, int y, int w, int h, Rgb565 c) {
 }  // namespace
 
 void Game::drawFeedingMail(Framebuffer& fb) const {
-    if (!petFeeding_.feeding()) return;
+    if (!home_.feeding().feeding()) return;
     for (int i = 0; i < kIdleFeedLetters; ++i) {
-        const Mail& m = petFeeding_.letter(i);
+        const Mail& m = home_.feeding().letter(i);
         if (m.state != MailState::Sinking && m.state != MailState::Bitten) continue;
         const SpriteData& s = mailSprite(m.kind);
         const int w = s.frameW * kScaleNum / kScaleDen;
@@ -96,12 +96,12 @@ void Game::drawFeedingMail(Framebuffer& fb) const {
 }
 
 void Game::drawSquatLogin(Framebuffer& fb) const {
-    const FeedStage stage = petFeeding_.stage();
+    const FeedStage stage = home_.feeding().stage();
     if (!pet_.creature || (stage != FeedStage::Squat && stage != FeedStage::Login)) return;
     Squat q = squatOf(pet_.creature->displayName);
-    const bool squatted = petFeeding_.squatted();
+    const bool squatted = home_.feeding().squatted();
     const bool swapBeat =
-        stage == FeedStage::Squat && petFeeding_.beatInStage() == kIdleSquatSwapBeat;
+        stage == FeedStage::Squat && home_.feeding().beatInStage() == kIdleSquatSwapBeat;
     if (squatted && q.swapAt >= 0) {
         for (const auto& swap : kLookalikes)
             if (q.name[q.swapAt] == swap[0]) { q.name[q.swapAt] = swap[1]; break; }
@@ -121,7 +121,7 @@ void Game::drawSquatLogin(Framebuffer& fb) const {
 
     const int x0 = (kActiveW - kLoginW) / 2;
     const int y0 = kLoginTop;
-    const LoginStep step = petFeeding_.loginStep();
+    const LoginStep step = home_.feeding().loginStep();
     if (step == LoginStep::Torn) {
         // Torn away: the box in bands, each knocked sideways, some gone.
         for (int band = 0; band * kTearBandPx < kLoginH; ++band) {
@@ -157,18 +157,18 @@ void Game::drawSquatLogin(Framebuffer& fb) const {
     drawText(fb, x0 + kLoginPad, passY, "*", palColor(Pal::INK_DIM));
     const int len = static_cast<int>(std::strlen(q.name));
     char typed[kNameMax];
-    const int n = petFeeding_.typed(len);
+    const int n = home_.feeding().typed(len);
     std::memcpy(typed, q.name, static_cast<size_t>(n));
     typed[n] = '\0';
     const int end = drawText(fb, fieldX, userY, typed, palColor(Pal::INK));
-    for (int i = 0; i < petFeeding_.dots(); ++i)
+    for (int i = 0; i < home_.feeding().dots(); ++i)
         fb.fillRect(fieldX + i * (kDotPx + 4), passY + (kFontH - kDotPx) / 2, kDotPx, kDotPx,
                     palColor(Pal::INK));
     // The caret blinks wherever typing is happening.
     if (beat_ & 1) {
         const int cx = step == LoginStep::User
                            ? end + 1
-                           : fieldX + petFeeding_.dots() * (kDotPx + 4);
+                           : fieldX + home_.feeding().dots() * (kDotPx + 4);
         fb.fillRect(cx, step == LoginStep::User ? userY : passY, 1, kFontH,
                     palColor(Pal::INK));
     }

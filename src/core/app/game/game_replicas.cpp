@@ -92,17 +92,17 @@ void Game::drawIdleReplicas(Framebuffer& fb, int petCx) const {
     int seatedCx[kWormReplicaSlots] = {};
     for (int i = 0; i < copies; ++i) {
         const SpriteData& glyph = replicaGlyph(i);
-        const int cx = replicaSeatX(i) + logicalToActive(companionWander(i).offsetX());
+        const int cx = replicaSeatX(i) + logicalToActive(home_.companion(i).offsetX());
         seatedCx[i] = clampOnCanvas(glyph, cx);
-        const int pose = petRelay_.chomping() == i ? kReplicaAttackFrame : kReplicaIdleFrame;
+        const int pose = home_.relay().chomping() == i ? kReplicaAttackFrame : kReplicaIdleFrame;
         drawReplica(fb, glyph, pose + (beat_ & 1), seatedCx[i], kLivingBottom);
     }
-    if (const int h = petRelay_.hop(); h >= 0 && h < copies) {
+    if (const int h = home_.relay().hop(); h >= 0 && h < copies) {
         const int topY = kLivingBottom - replicaGlyph(h).h * kScaleNum / kScaleDen;
         drawPacket(fb, h == 0 ? petCx : seatedCx[h - 1], seatedCx[h], topY,
-                   petRelay_.beatInHop());
+                   home_.relay().beatInHop());
     }
-    if (petReplicates()) drawFork(fb, petFork_, copies, petCx, beat_);
+    if (petReplicates()) drawFork(fb, home_.fork(), copies, petCx, beat_);
 }
 
 }  // namespace mal

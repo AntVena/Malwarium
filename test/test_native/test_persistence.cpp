@@ -1393,8 +1393,8 @@ void test_idle_fork_runs_whole_and_only_for_replicators() {
     for (int i = 0; i < kIdleForkRestBeats + 2; ++i) {
         worm.tick(t += kHeartbeatMs);
         other.tick(t);
-        wormForked |= worm.petFork().stage() != ForkStage::Rest;
-        otherForked |= other.petFork().stage() != ForkStage::Rest;
+        wormForked |= worm.home().fork().stage() != ForkStage::Rest;
+        otherForked |= other.home().fork().stage() != ForkStage::Rest;
     }
     CHECK(wormForked);
     CHECK(!otherForked);
@@ -1467,11 +1467,11 @@ void test_idle_disguise_swaps_tells_and_holds_still() {
     for (int i = 0; i < kIdleDisguiseRestBeats + kIdleDisguiseHiddenBeats; ++i) {
         trojan.tick(t += kHeartbeatMs);
         other.tick(t);
-        otherHid |= other.petDisguise().showsProp();
-        if (trojan.petDisguise().stage() == DisguiseStage::Hidden) {
-            if (!trojanHid) heldX = trojan.petWander().offsetX();
+        otherHid |= other.home().disguise().showsProp();
+        if (trojan.home().disguise().stage() == DisguiseStage::Hidden) {
+            if (!trojanHid) heldX = trojan.home().wander().offsetX();
             trojanHid = true;
-            movedWhileHidden |= trojan.petWander().offsetX() != heldX;
+            movedWhileHidden |= trojan.home().wander().offsetX() != heldX;
         }
     }
     CHECK(trojanHid);
@@ -1503,8 +1503,8 @@ void test_idle_harvest_streams_then_holds_for_harvesters_only() {
     for (int i = 0; i < kIdleHarvestRestBeats + kIdleHarvestStreamBeats + 1; ++i) {
         ransom.tick(t += kHeartbeatMs);
         other.tick(t);
-        ransomHeld |= ransom.petHarvest().stage() == HarvestStage::Hold;
-        otherHeld |= other.petHarvest().stage() != HarvestStage::Rest;
+        ransomHeld |= ransom.home().harvest().stage() == HarvestStage::Hold;
+        otherHeld |= other.home().harvest().stage() != HarvestStage::Rest;
     }
     CHECK(ransomHeld);
     CHECK(!otherHeld);
@@ -1547,8 +1547,8 @@ void test_idle_feeding_letters_sink_and_get_eaten() {
     for (int i = 0; i < 2 * kIdleFeedRestBeats; ++i) {
         phish.tick(t += kHeartbeatMs);
         other.tick(t);
-        phishFed |= phish.petFeeding().feeding();
-        otherFed |= other.petFeeding().feeding();
+        phishFed |= phish.home().feeding().feeding();
+        otherFed |= other.home().feeding().feeding();
     }
     CHECK(phishFed);
     CHECK(!otherFed);
@@ -1566,12 +1566,12 @@ void test_idle_lure_takes_turns_with_the_skim() {
     for (int i = 0; i < 2 * kIdleFeedRestBeats; ++i) {
         phish.tick(t += kHeartbeatMs);
         other.tick(t);
-        const bool on = phish.petLure().active();
-        CHECK(!(on && phish.petFeeding().active()));
-        if (on && lured) held &= phish.petWander().offsetX() == lastX;
+        const bool on = phish.home().lure().active();
+        CHECK(!(on && phish.home().feeding().active()));
+        if (on && lured) held &= phish.home().wander().offsetX() == lastX;
         lured |= on;
-        lastX = phish.petWander().offsetX();
-        otherLured |= other.petLure().active();
+        lastX = phish.home().wander().offsetX();
+        otherLured |= other.home().lure().active();
     }
     CHECK(lured);
     CHECK(held);
@@ -1588,12 +1588,12 @@ void test_idle_shapeshift_takes_turns_with_the_drift() {
     for (int i = 0; i < 3 * kIdleVanishRestBeats; ++i) {
         shifter.tick(t += kHeartbeatMs);
         other.tick(t);
-        const bool v = shifter.petVanish().active(), m = shifter.petMimic().active();
+        const bool v = shifter.home().vanish().active(), m = shifter.home().mimic().active();
         CHECK(!(v && m));
-        CHECK(!((v || m) && shifter.petCamo().level() > 0));
+        CHECK(!((v || m) && shifter.home().camo().level() > 0));
         vanished |= v;
         mimicked |= m;
-        otherShifted |= other.petVanish().active() || other.petMimic().active();
+        otherShifted |= other.home().vanish().active() || other.home().mimic().active();
     }
     CHECK(vanished);
     CHECK(mimicked);
@@ -1610,14 +1610,14 @@ void test_habitat_moves_a_pet_and_parks_an_egg() {
     bool moved = false;
     for (int i = 0; i < 200 && !moved; ++i) {
         g.tick(t += kHeartbeatMs);
-        moved = g.petWander().offsetX() != 0;
+        moved = g.home().wander().offsetX() != 0;
     }
     CHECK(moved);
 
     Game egg{StartMode::FreshHatch};
     for (int i = 0; i < 200; ++i) {
         egg.tick(t += kHeartbeatMs);
-        CHECK(egg.petWander().offsetX() == 0 && egg.petWander().offsetY() == 0);
+        CHECK(egg.home().wander().offsetX() == 0 && egg.home().wander().offsetY() == 0);
     }
 }
 
