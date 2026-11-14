@@ -21,6 +21,7 @@
 #include "core/app/game/arch_screen.h"
 #include "core/app/game/cfg_menu.h"
 #include "core/app/game/arena_screen.h"
+#include "core/app/game/away_digest_screen.h"
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
@@ -136,7 +137,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private CfgHost, private LoadoutHost, private LinkHost,
              private StoryReaderHost, private ExplHost,
              private ExploreControlHost, private WifiHost,
-             private PostEncounterHost {
+             private PostEncounterHost, private AwayDigestHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -578,23 +579,17 @@ public:
     // spoils it.
     std::vector<Tip> replayableTips() const override;
     static const char* tipTitle(Tip t);
-    // WHILE YOU WERE AWAY (game_onboard.cpp): what happened since the last button press,
-    // shown on the first press after kAwayDigestMs of powered-on quiet, but only when
-    // something did. The tally is runtime-only: a reboot starts a fresh one.
-    struct AwayTally {
-        int hungry = 0;          // Lockouts fired (FED hit zero)
-        int missed = 0;          // ...of them expired unanswered
-        int errors = 0;          // care errors charged (addCareMistakeShielded)
-        int won = 0, lost = 0;   // wild fights on the walk
-        int caches = 0;          // sealed caches found
-        const CreatureDef* hatched = nullptr;   // the egg hatched into this
-        const CreatureDef* evolved = nullptr;   // the pet evolved into this
-    };
-    const AwayTally& awayTally() const { return away_; }
-    // The tally's rows as label/value pairs, the order they are drawn in. Public so a
-    // gate can assert what the summary SAYS.
-    struct AwayRow { const char* label; char value[20]; };
-    std::vector<AwayRow> awayRows() const;
+    // WHILE YOU WERE AWAY (game/away_digest_screen.h): what happened since the last
+    // button press, shown on the first press after kAwayDigestMs of powered-on quiet,
+    // but only when something did.
+    using AwayTally = mal::AwayTally;
+    using AwayRow = mal::AwayRow;
+    const AwayTally& awayTally() const override { return away_; }
+    // The tally's rows, the order they are drawn in. Public so a gate can assert what
+    // the summary SAYS.
+    std::vector<AwayRow> awayRows() const {
+        return AwayDigestScreen::rows(away_, pet_.model.careMistakes());
+    }
     // Dev/test seam: the summary is off on the Hatched seam (a gate that ticks hours and
     // then presses a button means the press), and a gate about it turns it back on.
     void debugSetAwayDigest(bool on) { awayDigestOn_ = on; }
@@ -2589,14 +2584,15 @@ private:
     bool openCareTipIfDue();
     AwayTally away_;
     bool awayDigestOn_ = true;
-    uint32_t awayQuietMs_ = 0;               // the absence the open summary covers
+    AwayDigestScreen awayDigest_;
     void resetAwayTally();
     // On a press: open the summary if the quiet before it was long enough and the tally
     // holds anything; otherwise start a fresh tally. True when it opened (the press is
     // spent on it).
     bool openAwayDigestIfDue(uint32_t quietMs);
-    void onAwayDigest(const ButtonEvent& ev);
-    void drawAwayDigest(Framebuffer& fb) const;
+    // AwayDigestHost.
+    int careMistakes() const override { return pet_.model.careMistakes(); }
+    void closeAwayDigest() override;
     // Is the engine on screen being played for an egg's hatch bonus (rather than at a
     // cabinet, or for MAINT)? That is what the briefing's lead panel is about.
     bool hatchGameLive() const;

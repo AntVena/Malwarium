@@ -59,7 +59,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Tourney: arena_.draw(fb, *this); break;
         case Nav::Story: storyReader_.draw(fb, *this); break;
         case Nav::TipCard: tipCardScreen_.draw(fb, *this); break;
-        case Nav::AwayDigest: drawAwayDigest(fb); break;
+        case Nav::AwayDigest: awayDigest_.draw(fb, *this); break;
         case Nav::StoryArchive: chapters_.draw(fb, *this); break;
         case Nav::ExploreControl: exploreControl_.draw(fb, *this); break;
         case Nav::Encounter: encounter_.draw(fb, *this); break;

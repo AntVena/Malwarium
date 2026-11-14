@@ -196,7 +196,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::Tourney: arena_.onButton(*this, ev); break;
         case Nav::Story: storyReader_.onButton(*this, ev); break;
         case Nav::TipCard: tipCardScreen_.onButton(*this, ev); break;
-        case Nav::AwayDigest: onAwayDigest(ev); break;
+        case Nav::AwayDigest: awayDigest_.onButton(*this, ev); break;
         case Nav::StoryArchive: chapters_.onButton(*this, ev); break;
         case Nav::Encounter: encounter_.onButton(*this, ev); break;
         case Nav::Wifi: wifiScreen_.onButton(*this, ev); break;
