@@ -201,6 +201,9 @@ int g_failures = 0;
     RUN(test_cfg_radio_shows_the_update_claim_the_arbiter_sees) \
     RUN(test_idle_timer_reads_the_screen_that_is_up_not_the_last_cfg_page) \
     RUN(test_factory_reset_lines_say_what_each_scope_loses) \
+    RUN(test_golden_chord_walk) \
+    RUN(test_golden_cfg_walk) \
+    RUN(test_golden_idle_walk) \
     RUN(test_travel_sleep_credits_nothing_to_the_gap) \
     RUN(test_cfg_group_back_resumes_row)    \
     RUN(test_cfg_radio_reports_owner)       \

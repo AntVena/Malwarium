@@ -99,8 +99,8 @@ question with the description beneath them, and open the confirm over the descri
 CONTRIBUTING section *Where state lives* says where each field goes: a record (`Pet`,
 `Operator`, `Settings`), a run, or a screen. These rows move it there, one type at a time.
 
-Every row builds on its own, and a `tools/screens.sh` render stays byte-identical to one
-taken before it unless the row says otherwise. Gates read a screen or a run off the type
+Every row builds on its own, and the golden walks (`test_golden_walks.cpp`) and a
+`tools/screens.sh` render stay byte-identical to before it unless the row says otherwise. Gates read a screen or a run off the type
 itself: `Game` exposes each one once, read-only and under the type's name (`archScreen()`,
 `itemsMenu()`, `shiboleetMeeting()`; a run in play by pointer, null when there is none:
 `wifiEvent()`, `cryptogramRun()`), and keeps no method that only forwards one of its reads. A

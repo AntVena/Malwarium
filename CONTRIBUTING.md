@@ -231,6 +231,15 @@ text. `./tools/screens.sh` renders every screen to one contact sheet so you can 
 both. It fails nothing. Run it after touching the layout grid, the font, or a shared
 widget.
 
+**Golden walks.** Three gates (`test_golden_walks.cpp`) play scripted walks through the game,
+the A+C chord across its screens, every CFG page, and how long each screen holds the menu tree
+untouched, and hold every step's screen, face and frame hash to a recording
+(`test/test_native/golden_<walk>.h`). They are the check a refactor leans on: one that means
+to change nothing passes them unchanged, and a walk that drifts names the first step that
+moved. A change that MEANS to alter what a walk shows runs `./tools/golden_walks.sh`, which
+records the walks again, and commits the headers with it, so the diff shows which steps
+moved and the message says why. Never record again to get a refactor green.
+
 Commit verified work as logical units. A message should carry the motivation and the *why*, not
 a restatement of the diff.
 
