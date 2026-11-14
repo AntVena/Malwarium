@@ -4,7 +4,9 @@
 #include "core/render/camo.h"
 #include "core/render/canvas.h"   // kCombatAnimMs: the stage clock
 #include "core/render/sprite.h"
+#include "core/model/shiboleet_meeting.h"
 #include "core/ui/combat_screen.h"
+#include "core/ui/swarm_view.h"
 
 namespace mal {
 
@@ -188,7 +190,7 @@ void FightScreen::draw(Framebuffer& fb, const FightScreenHost& host) const {
     // spoke to on the hail, moved into the fighter's cell when the fight opened.
     SwarmView rivalSwarm;
     const bool swarmRival = combat.enemy().isSwarm && !sides.localIsEnemySide;
-    if (swarmRival) rivalSwarm = host.guardianSwarm();
+    if (swarmRival) rivalSwarm = swarmViewOf(host.shiboleetMeeting().flock);
     CombatView v;
     v.playerSprite = ps;
     v.enemySprite = es;

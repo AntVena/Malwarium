@@ -173,11 +173,6 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   own millisecond pace and reset it on every tick their screen is not up
   (`Cadence::Closed`), so the column needs a closed case as well as a step, or the
   cadences keep their own entry point. | game_nav.cpp, game_render.cpp, game_core.cpp | L |
-- **`swarmViewOf` is private to `game_render.cpp`,** so `ShiboleetHost` and
-  `FightScreenHost` both keep a `guardianSwarm()` read that projects the meeting's flock
-  for the draw. A home both screens can include (it maps a `core/model` flock onto a
-  `core/render` value, so `core/ui` or `game/`) would let each screen project
-  `shiboleetMeeting().flock` itself and drop the read from both hosts. | S |
 
 ---
 

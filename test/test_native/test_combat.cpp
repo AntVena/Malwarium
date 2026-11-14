@@ -665,6 +665,7 @@ namespace {
 struct FightScreenProbe : FightScreenHost {
     ContentRegistry reg = ContentRegistry::embedded();
     Fight run;
+    ShiboleetMeeting meeting;
     int turns = 0, finishes = 0, turnSounds = 0;
     const Fight& fight() const override { return run; }
     Fight& liveFight() override { return run; }
@@ -679,7 +680,7 @@ struct FightScreenProbe : FightScreenHost {
     SceneId stageScene() const override { return SceneId{}; }
     const SpriteData* camoSpriteForTarget(const CamoTarget&, const char*,
                                           Stage) const override { return nullptr; }
-    SwarmView guardianSwarm() const override { return SwarmView{}; }
+    const ShiboleetMeeting& shiboleetMeeting() const override { return meeting; }
     void stepGuardianFlock() override {}
     void openExploitPicker() override {}
     void consumeCombatItem(const char*) override {}

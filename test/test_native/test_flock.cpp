@@ -10,6 +10,7 @@
 #include "core/model/flock.h"
 #include "core/render/swarm.h"
 #include "core/ui/shiboleet_screen.h"
+#include "core/ui/swarm_view.h"
 
 namespace {
 
@@ -32,21 +33,6 @@ mal::Flock settled(mal::FlockMood mood, uint32_t seed, int steps = 120) {
     f.reset(mal::kGuardianSwarmMarks, kW, kH);
     for (int i = 0; i < steps; ++i) f.step(mood);
     return f;
-}
-
-mal::SwarmView viewOf(const mal::Flock& f) {
-    mal::SwarmView v;
-    v.n = f.count();
-    for (int i = 0; i < v.n; ++i) {
-        v.marks[i].x = static_cast<int16_t>(f.x(i));
-        v.marks[i].y = static_cast<int16_t>(f.y(i));
-        v.marks[i].vx = static_cast<int16_t>(f.vx(i));
-        v.marks[i].vy = static_cast<int16_t>(f.vy(i));
-    }
-    v.cx = f.centreX();
-    v.cy = f.centreY();
-    v.spread = f.spread();
-    return v;
 }
 
 }  // namespace
@@ -176,7 +162,7 @@ void test_a_degenerate_flock_is_harmless() {
 
     mal::Framebuffer fb(kActiveW, kActiveH);
     fb.clear(palColor(mal::Pal::PAPER));
-    drawSwarm(fb, viewOf(f), 10, 10, kW, kH, palColor(mal::Pal::ACCENT),
+    drawSwarm(fb, mal::swarmViewOf(f), 10, 10, kW, kH, palColor(mal::Pal::ACCENT),
               palColor(mal::Pal::INK_DIM));
     mal::SwarmView empty;
     drawSwarm(fb, empty, 10, 10, kW, kH, palColor(mal::Pal::ACCENT),
@@ -192,7 +178,7 @@ void test_the_swarm_draws_only_inside_its_cell() {
     for (mal::FlockMood mood : kAllMoods) {
         const mal::Flock f = settled(mood, 5);
         fb.clear(palColor(mal::Pal::PAPER));
-        drawSwarm(fb, viewOf(f), cx, cy, kW, kH, palColor(mal::Pal::ACCENT),
+        drawSwarm(fb, mal::swarmViewOf(f), cx, cy, kW, kH, palColor(mal::Pal::ACCENT),
                   palColor(mal::Pal::INK_DIM));
         const mal::Rgb565 paper = palColor(mal::Pal::PAPER);
         for (int y = 0; y < kActiveH; ++y)
@@ -211,7 +197,7 @@ void test_the_swarm_is_visible_in_every_mood() {
     for (mal::FlockMood mood : kAllMoods) {
         const mal::Flock f = settled(mood, 3);
         fb.clear(palColor(mal::Pal::PAPER));
-        drawSwarm(fb, viewOf(f), 20, 20, kW, kH, palColor(mal::Pal::ACCENT),
+        drawSwarm(fb, mal::swarmViewOf(f), 20, 20, kW, kH, palColor(mal::Pal::ACCENT),
                   palColor(mal::Pal::INK_DIM));
         int lit = 0;
         for (int y = 20; y < 20 + kH; ++y)

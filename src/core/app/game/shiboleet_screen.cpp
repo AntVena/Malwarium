@@ -2,6 +2,7 @@
 
 #include "core/model/shiboleet_meeting.h"
 #include "core/ui/shiboleet_screen.h"
+#include "core/ui/swarm_view.h"
 #include "tunables.h"
 
 namespace mal {
@@ -37,7 +38,7 @@ void ShiboleetScreen::drawHail(Framebuffer& fb, const ShiboleetHost& host) const
     const ShiboleetMeeting& m = host.shiboleetMeeting();
     char greeting[kRiddleBodyCols * 2 + 8];
     m.greeting(greeting, sizeof(greeting));
-    const SwarmView swarm = host.guardianSwarm();
+    const SwarmView swarm = swarmViewOf(m.flock);
     GuardianView g;
     g.name = m.guardianName();
     g.demeanour = m.demeanour();
@@ -92,7 +93,7 @@ void ShiboleetScreen::drawVerdict(Framebuffer& fb, const ShiboleetHost& host) co
     v.flavor = m.flavor;
     v.next = m.verdictFights() ? VerdictNext::Fight : VerdictNext::Continue;
     // The verdict shows what the guardian made of the answer, not its standing demeanour.
-    const SwarmView swarm = host.guardianSwarm();
+    const SwarmView swarm = swarmViewOf(m.flock);
     GuardianView g;
     g.name = m.guardianName();
     g.demeanour = m.outcomeSeen();

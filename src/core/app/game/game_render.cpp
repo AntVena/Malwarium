@@ -728,27 +728,4 @@ const SpriteData* Game::idleCamoSprite(int slot) const {
     return nullptr;
 }
 
-namespace {
-// The flock as the DRAW sees it (SwarmView, core/render/swarm.h). The copy is deliberate:
-// core/render never reaches into core/model, so a renderer is handed a value that owns its
-// marks. The same call CamoRamp makes. It is a couple of hundred bytes on a repaint that
-// is already composing a whole panel.
-SwarmView swarmViewOf(const Flock& f) {
-    SwarmView v;
-    v.n = f.count() < kSwarmMarksMax ? f.count() : kSwarmMarksMax;
-    for (int i = 0; i < v.n; ++i) {
-        v.marks[i].x = static_cast<int16_t>(f.x(i));
-        v.marks[i].y = static_cast<int16_t>(f.y(i));
-        v.marks[i].vx = static_cast<int16_t>(f.vx(i));
-        v.marks[i].vy = static_cast<int16_t>(f.vy(i));
-    }
-    v.cx = f.centreX();
-    v.cy = f.centreY();
-    v.spread = f.spread();
-    return v;
-}
-}  // namespace
-
-SwarmView Game::guardianSwarm() const { return swarmViewOf(shib_.flock); }
-
 }  // namespace mal

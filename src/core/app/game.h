@@ -2324,7 +2324,6 @@ private:
     const SpriteData* petSprite() const override;   // also WifiHost's
     int fxBeat() const override { return fxBeat_; }
     int screenBeat() const override { return beat_; }
-    SwarmView guardianSwarm() const override;
     void stepGuardianFlock() override;
     void openExploitPicker() override;
     // Rendering.

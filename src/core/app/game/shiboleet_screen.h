@@ -12,7 +12,6 @@
 #include <cstdint>
 
 #include "core/device/platform.h"
-#include "core/render/swarm.h"   // SwarmView
 
 namespace mal {
 
@@ -23,7 +22,6 @@ struct ShiboleetMeeting;
 class ShiboleetHost {
 public:
     virtual const ShiboleetMeeting& shiboleetMeeting() const = 0;
-    virtual SwarmView guardianSwarm() const = 0;   // the meeting's flock, as the draw sees it
     // The pet's standing in the Cant, which the hail shows beside the guardian.
     virtual uint32_t cantSigils() const = 0;
     virtual int shakesUnspent() const = 0;

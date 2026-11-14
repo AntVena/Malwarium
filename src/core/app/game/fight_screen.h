@@ -17,12 +17,12 @@
 #include "core/model/fight.h"
 #include "core/render/camo.h"   // CamoTarget
 #include "core/render/scene_id.h"
-#include "core/render/swarm.h"
 
 namespace mal {
 
 class ContentRegistry;
 class Framebuffer;
+struct ShiboleetMeeting;
 struct SpriteData;
 
 // What the Combat screen needs from the game. Game implements it; a test can too.
@@ -46,8 +46,9 @@ public:
     // The art a camo target names (FX_CAMO), or null for nothing to wear.
     virtual const SpriteData* camoSpriteForTarget(const CamoTarget& t, const char* rivalSprite,
                                                   Stage wearer) const = 0;
-    // An area guardian's body, drawn in the rival's seat, and its step on the stage clock.
-    virtual SwarmView guardianSwarm() const = 0;
+    // An area guardian's body is the meeting's flock, drawn in the rival's seat and
+    // stepped on the stage clock.
+    virtual const ShiboleetMeeting& shiboleetMeeting() const = 0;
     virtual void stepGuardianFlock() = 0;
 
     virtual void openExploitPicker() = 0;            // A+C: the moves, items and crew row
