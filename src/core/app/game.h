@@ -43,6 +43,7 @@
 #include "core/app/game/items_menu.h"
 #include "core/app/game/line_select_screen.h"
 #include "core/app/game/link_screen.h"
+#include "core/app/game/lockout_screen.h"
 #include "core/app/game/loadout_screen.h"
 #include "core/app/game/maint_screen.h"
 #include "core/app/game/merge_screen.h"
@@ -159,7 +160,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
              private FraggerHost, private IsolationHost, private ChromaHost,
-             private DecryptionHost, private CryptogramHost {
+             private DecryptionHost, private CryptogramHost, private LockoutHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -577,13 +578,13 @@ public:
     void careAttention(unsigned& attention, unsigned& urgent) const;
     // Does the bag hold anything that resolves a Lockout (itemResolvesLockout)? The
     // Lockout opens on its Bits row without, and says where food comes from.
-    bool lockoutFoodHeld() const;
+    bool lockoutFoodHeld() const override;
     // A pet at 5/5 errors: how much of its kCsfDyingGraceMs window is left, or -1 when it
     // is not failing. The habitat banner and the Lockout both count it down.
-    int32_t failingLeftMs() const;
+    int32_t failingLeftMs() const override;
     // Is there a Yubi-Cookie in the bag this pet can still eat (once per pet)? The one
     // item that brings a failing pet back below 5/5.
-    bool yubiReady() const;
+    bool yubiReady() const override;
     // Would eating the Yubi-Cookie SAVE this pet right now? Only while it is failing
     // (5/5: errors cap there, so the cookie's -1 always brings it back under) and only
     // with one this pet can still eat. Anywhere else the once-per-pet cookie would be
@@ -3134,6 +3135,11 @@ private:
     void fireLockout();
     void expireLockout();
     void resolveLockout();
+    // LockoutHost: the modal's way back into the game.
+    uint32_t lockoutMsLeft() const override;
+    bool canPayLockout() const override;
+    void payLockout() override;
+    void feedLockout() override;
     // Carousel index of the slot routing to `id`: for the paths that park the
     // cursor on a submenu they weren't navigated into (a Lockout opening ITEMS, a
     // Sim-Battle returning to the LOADOUT hub). Falls back to 0 if `id` has no slot.
@@ -3778,7 +3784,7 @@ private:
     FeedingScreen feedingScreen_;   // its modal (game/feeding_screen.h)
 
     // Lockout modal.
-    bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits
+    LockoutScreen lockoutScreen_;          // game/lockout_screen.h
     bool lockoutItemsContext_ = false;     // ITEMS opened from the Lockout modal
 
 

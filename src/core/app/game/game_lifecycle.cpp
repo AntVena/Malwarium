@@ -40,9 +40,7 @@ void Game::fireLockout() {
     pet_.armed.lockoutDeadlineMs = nowMs_ + kLockoutDurationMs;
     pet_.armed.lockoutReminded = false;
     playSound(Sound::Lockout);
-    // Open on whichever path can actually resolve it: feeding, unless the bag has
-    // nothing to feed and the wallet can cover the Bits instead.
-    lockoutPayOption_ = !lockoutFoodHeld() && op_.bits >= kLockoutBitsCost;
+    lockoutScreen_.open(*this);
     lockoutItemsContext_ = false;
     nav_ = Nav::ModalLockout;
 }
@@ -73,6 +71,30 @@ void Game::resolveLockout() {
     nav_ = Nav::Idle;
     stat_.reset();
     markSaveDirty();
+}
+
+uint32_t Game::lockoutMsLeft() const {
+    return pet_.armed.lockoutDeadlineMs > nowMs_ ? pet_.armed.lockoutDeadlineMs - nowMs_ : 0;
+}
+
+bool Game::canPayLockout() const { return op_.bits >= kLockoutBitsCost; }
+
+void Game::payLockout() {
+    if (!canPayLockout()) return;
+    op_.bits -= kLockoutBitsCost;
+    resolveLockout();
+}
+
+void Game::feedLockout() {
+    if (yubiWouldSave()) {   // the one meal that saves it
+        feedYubiToSave();
+        return;
+    }
+    // The ITEMS list, in its Lockout context: C there comes back here.
+    lockoutItemsContext_ = true;
+    cursor_ = carouselSlotOf(SubmenuId::Items);
+    items_.enter(*this);
+    nav_ = Nav::Submenu;
 }
 
 // --- Decryption Hatch ------------------------------------------------------

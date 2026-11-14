@@ -86,24 +86,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModalFeeding: feedingScreen_.draw(fb, *this); break;
         case Nav::ModalEvolve: evolve_.draw(fb, *this); break;
         case Nav::ModalCSF: csf_.draw(fb, *this); break;
-        case Nav::ModalLockout: {
-            LockoutView v;
-            v.pet = pet;
-            if (pet_.armed.lockoutDeadlineMs > nowMs_) {
-                v.secondsLeft = static_cast<int>((pet_.armed.lockoutDeadlineMs - nowMs_ + 999) / 1000);
-                v.remainFrac =
-                    static_cast<float>(pet_.armed.lockoutDeadlineMs - nowMs_) / kLockoutDurationMs;
-            }
-            v.focus = lockoutPayOption_ ? LockoutPath::Pay : LockoutPath::Feed;
-            v.bitsCost = kLockoutBitsCost;
-            v.canPay = op_.bits >= kLockoutBitsCost;
-            v.hasFood = lockoutFoodHeld();
-            v.failingLeftMs = failingLeftMs();
-            v.yubiReady = yubiReady();
-            v.beat = beat_;
-            drawLockoutModal(fb, v);
-            break;
-        }
+        case Nav::ModalLockout: lockoutScreen_.draw(fb, *this); break;
     }
 }
 

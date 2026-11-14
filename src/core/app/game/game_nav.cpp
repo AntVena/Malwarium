@@ -238,22 +238,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // cancellable. The A+C chord is the reserved no-op stub, already filtered above.
         case Nav::ModalEvolve: evolve_.onButton(*this, ev); break;
         case Nav::ModalCSF: csf_.onButton(*this, ev); break;
-        case Nav::ModalLockout:
-            if (ev.button == Button::A) lockoutPayOption_ = !lockoutPayOption_;
-            else if (ev.button == Button::B) {
-                if (lockoutPayOption_) {
-                    if (op_.bits >= kLockoutBitsCost) { op_.bits -= kLockoutBitsCost; resolveLockout(); }
-                } else if (yubiWouldSave()) {         // the one meal that saves it
-                    feedYubiToSave();
-                } else {                              // Open Items (Lockout context)
-                    lockoutItemsContext_ = true;
-                    cursor_ = carouselSlotOf(SubmenuId::Items);
-                    items_.enter(*this);
-                    nav_ = Nav::Submenu;
-                }
-            }
-            // C is disabled: a crisis can't be cancelled.
-            break;
+        case Nav::ModalLockout: lockoutScreen_.onButton(*this, ev); break;
     }
 }
 
