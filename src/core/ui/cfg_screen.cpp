@@ -895,15 +895,27 @@ void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
     drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
 }
 
+// What each scope loses, then what else it does, in that order: the loss is the decision
+// being made. RESET PET's first line says ONLY, because the rack's stored pets are a
+// player's too and an operator should not have to guess whether they go with it.
+namespace {
+const char* const kFactoryResetLines[2][kFactoryResetLineCount] = {
+    {"LOSES THIS PET ONLY.", "STORED PETS STAY RACKED.", "KEEPS BITS, RANK, PEDIA."},
+    {"LOSES EVERY PET.", "CLEARS BITS, RANK, PEDIA.", "RADIOS BACK OFF."},
+};
+}  // namespace
+
+const char* factoryResetLine(int scope, int line) { return kFactoryResetLines[scope][line]; }
+
 void drawFactoryReset(Framebuffer& fb, int scope, float holdFrac) {
     drawHeaderBand(fb, "FACTORY RESET");
     const char* scopeName = scope == 0 ? "RESET PET" : "WIPE EVERYTHING";
     char line[28];
     std::snprintf(line, sizeof(line), "SCOPE: %s", scopeName);
     drawText(fb, kMargin, 40, line, palColor(Pal::INK));
-    drawText(fb, kMargin, 56,
-             scope == 0 ? "KEEPS PEDIA PROGRESS." : "WIPES PET + PEDIA.",
-             palColor(Pal::INK_DIM));
+    for (int i = 0; i < kFactoryResetLineCount; ++i)
+        drawText(fb, kMargin, 56 + i * 12, factoryResetLine(scope, i),
+                 palColor(i == 0 ? Pal::INK : Pal::INK_DIM));
 
     // Hold-B to commit; the fill bar IS the affordance (a screen that repurposes
     // B surfaces its own hint). Releasing early aborts.

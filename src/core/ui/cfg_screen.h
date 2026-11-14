@@ -345,5 +345,8 @@ int pediaQrPages(HomeNetwork home);
 // L3 Factory Reset (hidden). `scope` 0 = Reset Pet, 1 = Wipe Everything
 // (A cycles). `holdFrac` (0..1) is the hold-B-to-commit fill (releasing aborts).
 void drawFactoryReset(Framebuffer& fb, int scope, float holdFrac);
+// The lines under the scope: what it loses, then what else it does.
+constexpr int kFactoryResetLineCount = 3;
+const char* factoryResetLine(int scope, int line);
 
 } // namespace mal

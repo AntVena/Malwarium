@@ -166,10 +166,6 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
   `listTarget()` (`game_listnav.cpp`) pick their screen with a chain over `nav_` and the
   entered slot, a second path beside `ScreenRow`. The Nav-level cases could be columns,
   with the menu tree's levels answering per slot as `MenuIdle::BySlot` does. | S |
-- **RESET PET's confirm undersells it.** The Factory Reset page says RESET PET "KEEPS PEDIA
-  PROGRESS", and it now keeps everything on the `Operator` (the tag, the wallet, the spare
-  mods, the ARCH rack, the tallies, the rank). Say so in the panel's width, or say what it
-  loses (the pet). | `cfg_screen.cpp` | S |
 
 #### Still on `Game`
 

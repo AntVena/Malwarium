@@ -180,6 +180,18 @@ void test_idle_timer_reads_the_screen_that_is_up_not_the_last_cfg_page() {
     }
 }
 
+// The Factory Reset page says what each scope loses before anything else, and RESET PET
+// says it takes only the active pet: the rack's stored pets are the player's, and the
+// reset leaves them. Every line fits the panel.
+void test_factory_reset_lines_say_what_each_scope_loses() {
+    CHECK(std::strcmp(factoryResetLine(0, 0), "LOSES THIS PET ONLY.") == 0);
+    CHECK(std::strstr(factoryResetLine(0, 1), "STORED PETS") != nullptr);
+    CHECK(std::strcmp(factoryResetLine(1, 0), "LOSES EVERY PET.") == 0);
+    for (int scope = 0; scope < 2; ++scope)
+        for (int i = 0; i < kFactoryResetLineCount; ++i)
+            CHECK(textWidth(factoryResetLine(scope, i)) <= kActiveW - 2 * kMargin);
+}
+
 // The travel-sleep contract, and the reason the mode needs no clock-freeze machinery
 // of its own: the device tier lands a save and then DEEP-sleeps, which on this board
 // is a reset, so a wake re-enters through that save. Whatever the gap was, the state
