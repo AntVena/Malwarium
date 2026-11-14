@@ -12,8 +12,7 @@ namespace mal {
 void Game::leaveToCarousel() { nav_ = Nav::Cursor; }
 
 void Game::armHoldB() {
-    bHeld_ = true;
-    bDownMs_ = nowMs_;
+    held_.arm(Button::B, nowMs_);
 }
 
 void Game::markDirty() { dirty_ = true; }

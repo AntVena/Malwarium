@@ -54,11 +54,11 @@ Game::HoldTarget Game::holdTarget() const {
 }
 
 bool Game::tickHoldB() {
-    if (!bHeld_) return false;
+    if (!held_.held(Button::B)) return false;
     const HoldTarget t = holdTarget();
-    if (!t || !t.hold(*this, nowMs_ - bDownMs_)) return false;
+    if (!t || !t.hold(*this, held_.heldMs(Button::B, nowMs_))) return false;
     // Disarmed as it lands, so the release resolves as nothing rather than as the tap.
-    bHeld_ = false;
+    held_.disarm(Button::B);
     lastInputMs_ = nowMs_;   // the hold counts as activity (no defocus race)
     return true;
 }
@@ -74,13 +74,7 @@ void Game::releaseHoldB() {
 // A board whose A and C step a cursor repeats the step while either is held (the
 // tick reads these, kCryptogramRepeatMs).
 void Game::armHoldRepeat(Button b) {
-    if (b == Button::A) {
-        aHeld_ = true;
-        aDownMs_ = nowMs_;
-    } else if (b == Button::C) {
-        cHeld_ = true;
-        cDownMs_ = nowMs_;
-    }
+    if (b != Button::B) held_.arm(b, nowMs_);
 }
 
 }  // namespace mal

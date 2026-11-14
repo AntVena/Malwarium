@@ -41,6 +41,7 @@
 #include "core/app/game/game_brief_screen.h"
 #include "core/app/game/hacker_screen.h"
 #include "core/app/game/hatch_reveal_screen.h"
+#include "core/app/game/held_buttons.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
 #include "core/app/game/isolation_screen.h"
@@ -2119,13 +2120,13 @@ private:
     // CfgHost: the CFG pages' way back into the game (game_config.cpp).
     uint32_t uptimeMs() const override { return nowMs_; }
     int32_t heldBMs() const override {
-        return bHeld_ ? static_cast<int32_t>(nowMs_ - bDownMs_) : -1;
+        return held_.held(Button::B) ? static_cast<int32_t>(held_.heldMs(Button::B, nowMs_)) : -1;
     }
     void equipTitle(int sector) override;
     void clearSdFormatResult() override { device_.clearSdFormatResult(); }
     void clearInstallReport() override { update_.clearInstallReport(); }
     void openTip(Tip t) override { openTipCard(t, Nav::Detail); }
-    void disarmHoldB() override { bHeld_ = false; }
+    void disarmHoldB() override { held_.disarm(Button::B); }
     // ArchHost: the ARCH screen's way back into the game (game_arch.cpp).
     void archStoreActive() override;                  // active pet → rack → new egg
     void archDeployStored(int storedIdx) override;    // stored pet → active (slot-neutral)
@@ -2886,38 +2887,7 @@ private:
         pet_.armed.diveStartBonusPct = 0;
     }
 
-    // Every screen-level hold on the device is a held B: the CFG Factory Reset, the
-    // Hacker VAULT's bulk-open, the ITEMS type-filter cycle and the MOVES picker's
-    // show-all. They share this one flag because they are guarded to four different
-    // screens and so can never be armed at the same time; the release edge
-    // (Game::onButton) offers the press to each in turn and at most one claims it.
-    bool bHeld_ = false;
-    uint32_t bDownMs_ = 0;
-    // A's list-step repeat (game_listnav.cpp), plus the DECRYPTOGRAM's own faster one.
-    // Its OWN flag, distinct from bHeld_: A and B are independent physical buttons
-    // that could in principle both be mid-hold at once (a step repeating while the
-    // other thumb starts a screen gesture).
-    bool aHeld_ = false;
-    uint32_t aDownMs_ = 0;
-    // C's two holds: a list's backward walk (game_listnav.cpp) and the DECRYPTOGRAM
-    // board's cursor repeat (kCryptogramRepeatMs). The board's repeat runs on its OWN
-    // cadence in tick(), like combat's sprites, because stepping a thirty-cell cursor
-    // on the 4fps heartbeat would take ten seconds to lap. cryptoRepeatLastMs_ is when
-    // the last repeated step fired, kept primed while nothing is held so entering the
-    // board can't burst-catch-up.
-    bool cHeld_ = false;
-    uint32_t cDownMs_ = 0;
-    uint32_t cryptoRepeatLastMs_ = 0;
-    // The list step's own two repeat clocks (game_listnav.cpp), one per direction, kept
-    // primed while nothing is held for the same reason cryptoRepeatLastMs_ is. They are
-    // separate because A and C are independent physical buttons: sharing one clock would
-    // let a release-and-press of the opposite direction inherit the other's cadence.
-    uint32_t listRepeatLastMs_ = 0;
-    uint32_t listBackRepeatLastMs_ = 0;
-    // Latched the moment a held C walks the cursor backward, and read on C's release to
-    // tell a hold from a tap: a press that moved the cursor has done its job and must
-    // not ALSO cancel out of the list on the way up.
-    bool listBackStepped_ = false;
+    HeldButtons held_;   // game/held_buttons.h
     CfgMenu cfg_;   // the CFG slot's pages, cursors and focus (game/cfg_menu.h)
 
     ArchScreen arch_;   // the ARCH slot's cursors, group and confirm (game/arch_screen.h)

@@ -398,17 +398,14 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
 // of the two held. Both held is the drop chord, which has already fired and must not move
 // the cursor.
 Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
-    if (nav_ != Nav::Cryptogram || !cryptogramRun_ || !cryptogramRun_->board.running() || aHeld_ == cHeld_ ||
-        gameBrief_.isOpen()) {
-        cryptoRepeatLastMs_ = nowMs;
+    const bool aHeld = held_.held(Button::A);
+    if (nav_ != Nav::Cryptogram || !cryptogramRun_ || !cryptogramRun_->board.running() ||
+        aHeld == held_.held(Button::C) || gameBrief_.isOpen()) {
+        held_.primeBoardRepeat(nowMs);
         return Cadence::Closed;
     }
-    const uint32_t downMs = aHeld_ ? aDownMs_ : cDownMs_;
-    if (nowMs - downMs < kCryptogramRepeatDelayMs ||
-        nowMs - cryptoRepeatLastMs_ < kCryptogramRepeatMs)
-        return Cadence::Open;
-    cryptoRepeatLastMs_ = nowMs;
-    if (aHeld_) cryptogramRun_->board.cycle();
+    if (!held_.boardRepeatDue(nowMs)) return Cadence::Open;
+    if (aHeld) cryptogramRun_->board.cycle();
     else cryptogramRun_->board.cycleBack();
     return Cadence::Fired;
 }
@@ -645,7 +642,7 @@ bool Game::tickIdleDefocus(uint32_t nowMs) {
     // panel off, or the last thing the operator sees is the idle screen and not the
     // gesture that brings the device back.
     const MenuIdle idle = screenIdle();
-    const bool held = pet_.armed.lockoutActive || idle == MenuIdle::Holds || bHeld_ ||
+    const bool held = pet_.armed.lockoutActive || idle == MenuIdle::Holds || held_.held(Button::B) ||
                       device_.travelSleepRequested();
     // The long budget (kRadioScreenDefocusMs) is for a screen that lingers, and for as
     // long as a duel or an update job has this device on the air: the panel must stay up

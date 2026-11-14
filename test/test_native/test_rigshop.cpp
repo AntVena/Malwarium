@@ -865,7 +865,7 @@ void test_item_filter_narrows_rows() {
 // PRESS (zero regression. No hold, no release wait). Owned: a short tap (release
 // before kItemFilterHoldMs) still opens it, on the release edge; holding past the
 // threshold cycles the filter instead (ALL -> FOOD), narrowing the list, and the
-// eventual release is a no-op (bHeld_ already consumed by the hold-fire). A is the
+// eventual release is a no-op (B's hold already consumed by the hold-fire). A is the
 // plain step throughout: the gesture never touches it.
 void test_item_hold_b_cycles_filter_tap_opens() {
     // (a) Unowned: B opens the focused row on PRESS alone (no release needed).
@@ -1127,7 +1127,7 @@ void test_vault_bulk_open_consumes_all_of_rarity() {
 // navigation: a short tap still opens just the focused cache (unchanged, single-open
 // reveal); holding past kBulkOpenHoldMs bulk-opens everything sharing its rarity in
 // one action (the aggregate reveal), and the eventual release after the fire is a
-// no-op (bHeld_ already consumed).
+// no-op (B's hold already consumed).
 void test_vault_hold_b_bulk_opens_tap_opens_one() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_common", 3);

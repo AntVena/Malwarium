@@ -119,18 +119,16 @@ bool Game::listBackStep(const ButtonEvent& ev) {
     // kListRepeatDelayMs it was a tap and cancels (listBackRelease below), held past it
     // it walks the cursor backward and cancels nothing. Nothing happens on the press
     // itself, which is what lets one button carry both without either guessing.
-    cHeld_ = true;
-    cDownMs_ = nowMs_;
-    listBackStepped_ = false;
+    held_.armListBack(nowMs_);
     return true;
 }
 
 void Game::listBackRelease() {
-    if (!cHeld_) return;
-    cHeld_ = false;
+    if (!held_.held(Button::C)) return;
+    held_.disarm(Button::C);
     // A press that stepped was a hold, and a hold is not a cancel. Only a press that
     // never reached the repeat resolves as the tap it looked like.
-    if (listBackStepped_) { listBackStepped_ = false; return; }
+    if (held_.takeBackStepped()) return;
     if (const ListTarget t = listTarget()) {
         t.leave(*this);
         dirty_ = true;
@@ -145,28 +143,19 @@ bool Game::tickListNav() {
     // hold that walks the cursor onto a screen change stops with it rather than
     // scrubbing a list the player is no longer looking at.
     const ListTarget list = listTarget();
-    if (aHeld_ && list && nowMs_ - aDownMs_ >= kListRepeatDelayMs &&
-        nowMs_ - listRepeatLastMs_ >= kListRepeatMs) {
-        listRepeatLastMs_ = nowMs_;
+    held_.primeListRepeat(nowMs_);
+    if (list && held_.listRepeatDue(Button::A, nowMs_)) {
         list.step(*this, +1);
         lastInputMs_ = nowMs_;   // a held step is activity (no defocus mid-scroll)
         changed = true;
-    } else if (!aHeld_) {
-        listRepeatLastMs_ = nowMs_;   // primed, so the next hold can't burst-catch-up
     }
 
-    // C's backward walk. Crossing kListRepeatDelayMs is what turns the press from a tap
-    // into a hold, so the first backward step and the decision that this is not a
-    // cancel happen together: listBackStepped_ latches it for the release edge.
-    if (cHeld_ && list && nowMs_ - cDownMs_ >= kListRepeatDelayMs &&
-        nowMs_ - listBackRepeatLastMs_ >= kListRepeatMs) {
-        listBackRepeatLastMs_ = nowMs_;
-        listBackStepped_ = true;
+    // C's backward walk. Its first step is also the decision that this press is not a
+    // cancel, which HeldButtons latches for the release edge.
+    if (list && held_.listRepeatDue(Button::C, nowMs_)) {
         list.step(*this, -1);
         lastInputMs_ = nowMs_;
         changed = true;
-    } else if (!cHeld_) {
-        listBackRepeatLastMs_ = nowMs_;
     }
 
     if (changed) dirty_ = true;

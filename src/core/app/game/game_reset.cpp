@@ -43,7 +43,7 @@ void Game::resetToHatch() {
     evolve_ = EvolveScreen{};
     csf_ = CsfScreen{};
     cfg_.reset();
-    bHeld_ = false;
+    held_.disarm(Button::B);
     loadout_.reset();
     arcadeScreen_.reset();
     arcade_.reset();                     // nothing can be mid-cabinet after a wipe

@@ -26,16 +26,16 @@ void Game::onButton(const ButtonEvent& ev) {
     // than replacing it, so letting go only has to stop the clock tickListNav reads.
     if (!ev.pressed) {
         if (ev.button == Button::B) {
-            if (bHeld_) releaseHoldB();
-            bHeld_ = false;
+            if (held_.held(Button::B)) releaseHoldB();
+            held_.disarm(Button::B);
         } else if (ev.button == Button::A) {
-            aHeld_ = false;
+            held_.disarm(Button::A);
         } else if (ev.button == Button::C) {
             // On a list this is where C decides what it was: listBackRelease cancels
             // for a tap and does nothing for a hold that already walked the cursor.
             // Elsewhere (the DECRYPTOGRAM's own repeat) it only disarms.
             listBackRelease();
-            cHeld_ = false;
+            held_.disarm(Button::C);
         }
         return;
     }
@@ -70,7 +70,7 @@ void Game::onButton(const ButtonEvent& ev) {
     }
 
     // The list contract (game_listnav.cpp). Both arms are scoped to there actually
-    // being a list under the cursor, and deliberately so for A: arming aHeld_ on a
+    // being a list under the cursor, and deliberately so for A: arming A's hold on a
     // screen whose A can never repeat leaves a flag nothing will ever clear if the
     // release edge is lost, which is why tick()'s auto-defocus does not consult it
     // and why this does not set it in the first place. C's press is
@@ -78,8 +78,7 @@ void Game::onButton(const ButtonEvent& ev) {
     // backward walk), and the screen's own C case is reached through listTarget's leave.
     if (listTarget()) {
         if (ev.button == Button::A) {
-            aHeld_ = true;
-            aDownMs_ = nowMs_;
+            held_.arm(Button::A, nowMs_);
         } else if (listBackStep(ev)) {
             return;
         }
@@ -198,7 +197,7 @@ void Game::enterSubmenu() {
             break;
         }
         case SubmenuId::Maint: maintScreen_.enter(); break;
-        case SubmenuId::Cfg: cfg_.enter(); bHeld_ = false; break;
+        case SubmenuId::Cfg: cfg_.enter(); held_.disarm(Button::B); break;
         case SubmenuId::Arch: arch_.enter(); break;
         // MODS always opens on the hub, whichever of its three pages was last used.
         case SubmenuId::Mods:
