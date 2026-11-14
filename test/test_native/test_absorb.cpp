@@ -128,7 +128,7 @@ void test_combat_outro_kind() {
     Game g{StartMode::Hatched};
 
     // The tier-1 roster fields the innate default and nothing else: already known.
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     const MoveLoadout& kit = g.moveLoadout();
     CHECK(kit.defaultMove() != nullptr);
     CHECK(kit.owns(kit.defaultMove()));       // owned: it is a move this pet has
@@ -218,7 +218,7 @@ void test_rival_prize_mask_matches_the_drop_filter() {
     // honour. The lethal dummy is the probe worth using: it swings Packet Storm, which a
     // Ransomware-line pet genuinely does not own, so an ungated mask would light up.
     Game sim{StartMode::Hatched};
-    sim.debugStartCombat(/*live=*/false, /*lethal=*/true);
+    sim.startLethalFight(Combat::Stakes::Safe);
     bool simRivalHasUnowned = false;
     for (const MoveDef* m : sim.combat().enemy().moves)
         if (m && !sim.moveLoadout().owns(m->id)) simRivalHasUnowned = true;
@@ -314,7 +314,7 @@ void test_wifi_discovery_kind() {
     // repeat visit is merely fond: a smaller reward, and a smaller bite.
     const uint64_t key = 0x02'00'00'00'00'01ull;
     for (int i = 0; i < kNetDiscoveryTopFavoritesCount + 2; ++i)
-        g.debugSeedNetworkLedger(key + 0x100ull * (i + 1), "NEIGHBOUR", 20 + i);
+        g.rememberNetwork(key + 0x100ull * (i + 1), "NEIGHBOUR", 20 + i);
     queueAndReachWifiEvent(g, bssid, "THE_PROMISED_LAN");
     CHECK(g.wifiEvent()->discovery == Game::NetDiscovery::Fond);
     resolveWifiEventToIdle(g);

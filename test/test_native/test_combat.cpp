@@ -644,7 +644,7 @@ void test_exploit_uses_per_battle() {
 // committing it consumes the inventory stack + spends the single use.
 void test_combat_item_in_game() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/true);
+    g.startDummyFight(Combat::Stakes::Live);
     CHECK(g.nav() == Game::Nav::Combat);
     const int snacks0 = g.inventory().count("dyno_nuggets");
     CHECK(snacks0 > 0);
@@ -3061,7 +3061,7 @@ void test_combat_panel_reports_every_live_state() {
 // it never pauses the fight, which is what makes reading it a real decision.
 void test_combat_panel_pages_cycle() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     CHECK(g.nav() == Game::Nav::Combat);
     CHECK(g.fightScreen().statsPage() == 0);
     for (int expect = 1; expect <= kCombatStatPages; ++expect) {
@@ -3075,7 +3075,7 @@ void test_combat_panel_pages_cycle() {
     CHECK(g.fightScreen().statsPage() == 1);
     while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
     g.onButton(press(Button::B));
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     CHECK(g.fightScreen().statsPage() == 0);
 }
 

@@ -355,7 +355,7 @@ void test_defrag_count_freeze_thaw() {
     tapC(g);                      // list -> carousel
     tapC(g);                      // carousel -> idle habitat
 
-    g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
+    g.stockRack("cryptoshell");                    // a stored pet at rack row 1
     // Deploy by SPECIES, not by row: which family shelf a pet is on is what the ARCH
     // picker groups by now, so a row number would name a different pet per line.
     enterArchStoredPet(g, "cryptoshell");
@@ -370,7 +370,7 @@ void test_defrag_count_freeze_thaw() {
 // slot. Cycle a stored record's actions Deploy -> Release, then confirm.
 void test_arch_release_stored_frees_slot() {
     Game g{StartMode::Hatched};
-    g.debugSeedRack("cryptoshell");                    // a stored pet at rack row 1
+    g.stockRack("cryptoshell");                    // a stored pet at rack row 1
     CHECK(g.rackCount() == 1);
     enterArchStoredPet(g, "cryptoshell");              // its record, Deploy focused
     g.onButton(press(Button::A));                      // Deploy -> Release
@@ -451,11 +451,11 @@ void test_restore_shield_covers_maint_fail() {
     CHECK(g.model().careMistakes() == 0);
 
     const int frag0 = g.model().fragmentation();
-    g.debugResolveDefrag(false);                     // first failed defrag → mistake SHIELDED
+    g.forceDefragFailure();                     // first failed defrag → mistake SHIELDED
     CHECK(g.model().careMistakes() == 0);            // no mistake (shield consumed)
     CHECK(g.model().fragmentation() == frag0 + kMaintFailPenalty);  // frag penalty still lands
 
-    g.debugResolveDefrag(false);                     // second failure → mistake lands
+    g.forceDefragFailure();                     // second failure → mistake lands
     CHECK(g.model().careMistakes() == 1);
 }
 
@@ -598,7 +598,7 @@ void test_branch_override_usbs_overrule_the_care_record() {
       CHECK(g.evolveBranchOverride() == BranchOverride::Bad);
       CHECK(g.effectiveCareBranch() == CareBranch::Bad);       // ...whatever the record says
       CHECK(g.model().careBranch() == CareBranch::Good);       // which is untouched
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "berserkernel") == 0);
@@ -612,7 +612,7 @@ void test_branch_override_usbs_overrule_the_care_record() {
       g.inventory().add("signed_usb", 2);
       useItem(g, "signed_usb");
       CHECK(g.effectiveCareBranch() == CareBranch::Good);
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "bruinforce") == 0); }
@@ -708,7 +708,7 @@ void test_soak_usb_locks_the_port_until_the_boundary() {
 
     // The boundary empties the port: the next stage counts down at its own pace, and
     // the family is usable again.
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.evolveSoakFactor() == 1);
@@ -1308,7 +1308,7 @@ void test_away_summary_reports_what_was_missed() {
     };
     uint32_t t = 0;
     Game g{StartMode::Hatched};
-    g.debugSetAwayDigest(true);
+    g.enableAwayDigest();
     g.model().setHunger(0);
     g.tick(t += kHeartbeatMs);                          // Lockout fires, nobody there
     CHECK(g.nav() == Game::Nav::ModalLockout);
@@ -1332,7 +1332,7 @@ void test_away_summary_reports_what_was_missed() {
 
     // Something happened, but the player was here a moment ago: no summary.
     Game h{StartMode::Hatched};
-    h.debugSetAwayDigest(true);
+    h.enableAwayDigest();
     h.onButton(press(Button::A));                       // present at t = 0
     h.onButton(press(Button::C));
     h.model().setHunger(0);
@@ -1345,7 +1345,7 @@ void test_away_summary_reports_what_was_missed() {
 
     // A long quiet in which nothing happened: no summary either.
     Game q{StartMode::Hatched};
-    q.debugSetAwayDigest(true);
+    q.enableAwayDigest();
     q.model().setHunger(100);
     q.tick(kAwayDigestMs + kHeartbeatMs);
     q.onButton(press(Button::A));
@@ -1504,7 +1504,7 @@ void test_tiramisudo_upgrades_once_then_feeds() {
 // an upgraded pet than the shared interval would.
 void test_tiramisudo_regen_actually_runs_faster() {
     Game g{StartMode::Hatched};
-    g.debugSpendBandwidth(1);
+    g.setBandwidth(g.bandwidth() - 1);
     const int low = g.bandwidth();
     CHECK(low < g.bandwidthMax());
 
@@ -1532,7 +1532,7 @@ void test_tiramisudo_upgrade_survives_the_rack() {
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i)
         tapC(g);
 
-    g.debugSeedRack("cryptoshell");
+    g.stockRack("cryptoshell");
     enterArchStoredPet(g, "cryptoshell");
     archConfirmAction(g);                        // CryptoShell in, Paypup frozen
     CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);
@@ -1734,7 +1734,7 @@ void test_granted_upgrades_survive_the_rack_and_reset_on_a_new_egg() {
     for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
     CHECK(g.petRecord().statBonusPoint(0) == 1 && g.xpRateBonusPct() > 0);
 
-    g.debugSeedRack("cryptoshell");
+    g.stockRack("cryptoshell");
     enterArchStoredPet(g, "cryptoshell");
     archConfirmAction(g);
     CHECK(g.pet() && std::strcmp(g.pet()->id, "cryptoshell") == 0);

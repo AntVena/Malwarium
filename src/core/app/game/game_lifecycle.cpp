@@ -458,7 +458,7 @@ void Game::completeEvolution(const CreatureDef* to) {
     // Not logged in v1.
 }
 
-void Game::debugTriggerEvolution() {
+void Game::forceEvolution() {
     const char* id = evolutionTargetId();
     if (nav_ == Nav::Idle && id && registry_.creature(id)) fireEvolution();
 }

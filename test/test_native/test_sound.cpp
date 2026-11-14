@@ -245,7 +245,7 @@ void test_sound_combat_cues() {
 
     // A practice fight's C quits outright, and that sounds as a retreat, not a KO.
     out.cues.clear();
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     g.onButton(press(Button::C));
     CHECK(g.combat().outcome() == Combat::Outcome::Fled);
     CHECK(out.count(Sound::Fled) == 1 && out.count(Sound::Knockout) == 0);
@@ -255,7 +255,7 @@ void test_sound_combat_cues() {
     Game h{StartMode::Hatched, "paypup"};
     h.setSoundOut(&quiet);
     h.setSoundMode(SoundMode::AlertsOnly);
-    h.debugStartCombat(/*live=*/false);
+    h.startDummyFight(Combat::Stakes::Safe);
     while (h.combat().outcome() == Combat::Outcome::Ongoing) h.onButton(press(Button::A));
     CHECK(quiet.cues.empty());
 }
@@ -373,7 +373,7 @@ void test_sound_explore_fights_are_quiet() {
 
     // The switch is about the walk alone: a practice fight still sounds every swing.
     muted.cues.clear();
-    m.debugStartCombat(/*live=*/false);
+    m.startDummyFight(Combat::Stakes::Safe);
     while (m.combat().outcome() == Combat::Outcome::Ongoing) m.onButton(press(Button::A));
     CHECK(swingCues(muted) > 0 && muted.count(Sound::Knockout) == 1);
 }

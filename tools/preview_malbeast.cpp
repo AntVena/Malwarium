@@ -66,7 +66,7 @@ static int playBoss(const char* dir, int beats, int areaIdx, int round) {
     skipHatchTips(game);
     const BossGauntlet g = areaBoss(areaIdx);
     if (round < 0 || round >= static_cast<int>(g.rounds.size())) round = 0;
-    game.debugStartCombatVs(g.rounds[round]);
+    game.startFightVs(g.rounds[round]);
     return record(game, dir, beats);
 }
 
@@ -82,7 +82,7 @@ static int play(const char* dir, int beats, int rosterIdx) {
         for (uint32_t v = 0; v < kWildMalbeastVariants; ++v)
             if (wildMalbeastIndex(wildMalbeastIn(a, v).name) == rosterIdx) home = a;
     applyWildSubAreaRamp(wild, home, 0);
-    game.debugStartCombatVs(wild);
+    game.startFightVs(wild);
     return record(game, dir, beats);
 }
 

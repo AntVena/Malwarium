@@ -375,7 +375,7 @@ void test_save_active_pet_round_trips_through_a_reboot() {
             g.inventory().add(id, 1);
             useItem(g, id);
         }
-        g.debugTasteFoods(3);
+        g.tasteFoods(3);
         g.livePet().upgrades.favouriteFood = g.content().item("spam");
         g.livePet().bestDarkWebDepth = 5;
         g.livePet().moves.grant("buffer_overflow");
@@ -415,7 +415,7 @@ void test_new_egg_is_a_fresh_pet_record() {
         g.inventory().add(id, 1);
         useItem(g, id);
     }
-    g.debugTasteFoods(3);
+    g.tasteFoods(3);
     g.livePet().upgrades.favouriteFood = g.content().item("spam");
     g.livePet().bestDarkWebDepth = 5;
     g.livePet().moves.grant("buffer_overflow");
@@ -951,8 +951,8 @@ void test_arch_store_and_deploy() {
 // on is the axis a player who keeps one of everything actually navigates by.
 void test_arch_picker_groups_the_rack_by_line() {
     Game g{StartMode::Hatched, "paypup"};        // ransomware
-    g.debugSeedRack("tadpoll");                  // phishing
-    g.debugSeedRack("cryptoshell");              // ransomware
+    g.stockRack("tadpoll");                  // phishing
+    g.stockRack("cryptoshell");              // ransomware
 
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.archScreen().view() == ArchView::Picker);
@@ -1026,9 +1026,9 @@ void test_daemon_sale_bits_flat_to_par_then_log_steps() {
 // STORED Daemon whatever its family, not the earlier stages, and not the active pet.
 void test_arch_sell_counter_lists_only_stored_daemons() {
     Game g{StartMode::Hatched, "extorgi"};
-    g.debugSeedRack("paypup");
-    g.debugSeedRack("goliauth");
-    g.debugSeedRack("coaxeel");
+    g.stockRack("paypup");
+    g.stockRack("goliauth");
+    g.stockRack("coaxeel");
     const auto tiles = buildArchPickerRows(ContentRegistry::embedded(), g.pet(), g.rack(),
                                            g.records());
     CHECK(tiles.size() == static_cast<size_t>(4 + kCreatureLineCount));
@@ -1046,7 +1046,7 @@ void test_arch_sell_counter_lists_only_stored_daemons() {
 // record behind. With no twin active and nothing to fix, the patches are shown closed.
 void test_arch_sell_for_bits_leaves_a_retired_record() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugSeedRack("goliauth", kDaemonSaleParLevel + 8);
+    g.stockRack("goliauth", kDaemonSaleParLevel + 8);
     const int before = g.bits();
     enterArchSale(g, "goliauth");
     CHECK(g.nav() == Game::Nav::Detail);
@@ -1072,7 +1072,7 @@ void test_arch_sell_for_bits_leaves_a_retired_record() {
 // no confirm and sells nothing.
 void test_arch_sell_closed_offer_cannot_be_taken() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugSeedRack("goliauth");
+    g.stockRack("goliauth");
     enterArchSale(g, "goliauth");
     for (int i = 0; i < 2; ++i) {
         g.onButton(press(Button::A));             // -> Reimage, then Hotfix
@@ -1088,7 +1088,7 @@ void test_arch_sell_closed_offer_cannot_be_taken() {
 void test_arch_sell_hotfix_clears_the_active_pets_errors() {
     Game g{StartMode::Hatched, "paypup"};
     g.model().setCareMistakes(4);
-    g.debugSeedRack("goliauth");
+    g.stockRack("goliauth");
     const int bits = g.bits();
     enterArchSale(g, "goliauth");
     g.onButton(press(Button::A));
@@ -1108,7 +1108,7 @@ void test_arch_sell_reimages_an_active_twin_back_to_its_script() {
     const int lvl = g.combatLevel();
     CHECK(lvl >= 1);
     g.model().setCareMistakes(3);
-    g.debugSeedRack("extorgi");
+    g.stockRack("extorgi");
     enterArchSale(g, "extorgi");
     g.onButton(press(Button::A));
     CHECK(g.archSaleSheet().focus == SaleOffer::Reimage);
@@ -1129,7 +1129,7 @@ void test_arch_sell_reimages_an_active_twin_back_to_its_script() {
 // hands it back its old family as well as its branch.
 void test_arch_reimage_sends_a_diverted_daemon_home() {
     Game g{StartMode::Hatched, "coaxeel"};
-    g.debugSeedRack("coaxeel");
+    g.stockRack("coaxeel");
     enterArchSale(g, "coaxeel");
     g.onButton(press(Button::A));
     archConfirmAction(g);
@@ -1200,7 +1200,7 @@ void test_stat_footer_and_generation() {
 // without colour, and the inline confirm overlay does too.
 void test_arch_rack_grayscale() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugSeedRack("cryptoshell");
+    g.stockRack("cryptoshell");
     enterSubmenuId(g, SubmenuId::Arch);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb); CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // the group picker

@@ -412,7 +412,7 @@ void test_crew_exploit_descriptions_resolve_and_fit() {
 // apart from its neighbours' APs.
 void test_crew_picker_offers_networks_in_range() {
     Game g{StartMode::Hatched};
-    g.debugSeedNetworkLedger(0x00AAAAAAAAAAull, "WALKED_PAST", 7);   // history only
+    g.rememberNetwork(0x00AAAAAAAAAAull, "WALKED_PAST", 7);   // history only
 
     Game::CrewNetRow rows[kNetVisibleCap];
     CHECK(g.crewNetworkRows(rows, kNetVisibleCap) == 0);   // walked past != in range now
@@ -557,7 +557,7 @@ void test_peer_rows_live_first_and_deduped() {
     PeerHello old;
     std::strncpy(old.tag, "ABSENT", sizeof(old.tag) - 1);
     std::strncpy(old.petName, "Pingcub", sizeof(old.petName) - 1);
-    g.debugSeedPeer(0xAAAAAAAAAAAAull, old);
+    g.rememberPeer(0xAAAAAAAAAAAAull, old);
 
     // Someone standing here, whose pet has evolved since we last met them.
     const uint8_t mac[6] = {0x02, 0, 0, 0, 0, 0x01};
@@ -565,7 +565,7 @@ void test_peer_rows_live_first_and_deduped() {
     std::strncpy(then.tag, "PRESENT", sizeof(then.tag) - 1);
     std::strncpy(then.petName, "Paypup", sizeof(then.petName) - 1);
     then.stage = static_cast<uint8_t>(Stage::Process);
-    g.debugSeedPeer(packPeerKey(mac), then);
+    g.rememberPeer(packPeerKey(mac), then);
 
     PeerHello now;
     std::strncpy(now.tag, "PRESENT", sizeof(now.tag) - 1);

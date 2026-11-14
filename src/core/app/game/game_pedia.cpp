@@ -106,7 +106,7 @@ void Game::ensureFavouriteFood() {
     markSaveDirty();
 }
 
-void Game::debugTasteFoods(int n) {
+void Game::tasteFoods(int n) {
     for (const ItemDef* d : registry_.allItems()) {
         if (n <= 0) break;
         if (!d || itemCategory(*d) != ItemDef::Category::Food) continue;

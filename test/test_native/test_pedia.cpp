@@ -56,7 +56,7 @@ static bool learnedOnlyFrom(Game& g, std::vector<const char*> allowed) {
 
 // Grind wild wins in one armed sub-area, stopping early once something is learned.
 static bool farmForAMove(Game& g, int area, int sub, int tries) {
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     for (int i = 0; i < tries; ++i) {
         g.startExplore(area, sub);
         walkToAnyCombat(g);

@@ -336,7 +336,7 @@ void test_creature_level_persist_evolution_reset_egg() {
 
     // Evolve Process → Script: the level + points carry (it's the same creature).
     uint32_t t = 0;
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.pet()->stage == Stage::Script);
@@ -404,7 +404,7 @@ void test_arch_deploy_loadout_is_per_pet() {
     CHECK(paypupMove != nullptr);
     CHECK(std::strcmp(g.modSlots().equipped(0), "firewall_patch") == 0);
 
-    g.debugSeedRack("tadpoll");             // phishing line
+    g.stockRack("tadpoll");             // phishing line
     CHECK(g.rackCount() == 1);
 
     enterArchStoredPet(g, "tadpoll");
@@ -429,7 +429,7 @@ void test_arch_deploy_loadout_is_per_pet() {
 // fast-forward steps immediately regardless of the pace.
 void test_combat_auto_pacing() {
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugStartCombat(/*live=*/false);
+      g.startDummyFight(Combat::Stakes::Safe);
       CHECK(g.nav() == Game::Nav::Combat);
       CHECK(g.combat().lastMoveName()[0] == '\0');   // no turn yet
       uint32_t t = 0;
@@ -440,7 +440,7 @@ void test_combat_auto_pacing() {
 
     // A fast-forwards without waiting for the pace.
     { Game g{StartMode::Hatched, "paypup"};
-      g.debugStartCombat(/*live=*/false);
+      g.startDummyFight(Combat::Stakes::Safe);
       g.onButton(press(Button::A));
       CHECK(g.combat().lastMoveName()[0] != '\0'); }
 }
@@ -1076,7 +1076,10 @@ void test_move_evolution_gating() {
     CHECK(g.moveLoadout().equipped(0) == nullptr);
 
     tapB(g);                                      // re-open slot 0 picker (resets moveShowAll_)
-    g.debugSetMoveShowAll(true);                  // reveal the locked row for this check
+    g.onButton(press(Button::B));                 // hold B: reveal the locked row
+    g.tick(kMoveFilterHoldMs + kHeartbeatMs);
+    g.onButton(lift(Button::B));
+    CHECK(g.loadoutScreen().moveShowAll());
     g.onButton(press(Button::A));                 // pick row 1 = payload_drop (locked at Boot)
     tapB(g);                                      // drill in: the page states the gate
     g.onButton(press(Button::B));                 // attempt equip → blocked (no-op)
@@ -1263,7 +1266,7 @@ void test_move_slot_stamping_locks_at_unlock() {
       CHECK(boot0 == seedKind(r, "cryptoshell", 0));   // cryptoshell's own seed
       CHECK(g.slotKind(1) == Game::SlotKind::Unset);   // not yet unlocked
 
-      g.debugTriggerEvolution();                       // -> paypup (Process, 2 slots)
+      g.forceEvolution();                       // -> paypup (Process, 2 slots)
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "paypup") == 0);
@@ -1271,7 +1274,7 @@ void test_move_slot_stamping_locks_at_unlock() {
       const Game::SlotKind slot1 = g.slotKind(1);
       CHECK(slot1 == seedKind(r, "paypup", 1));         // paypup's seed, freshly stamped
 
-      g.debugTriggerEvolution();                       // -> barkmail (Script, 3 slots)
+      g.forceEvolution();                       // -> barkmail (Script, 3 slots)
       t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "barkmail") == 0);
@@ -1281,7 +1284,7 @@ void test_move_slot_stamping_locks_at_unlock() {
 
       g.model().setCareMistakes(0);                     // 0-2 -> Good branch
       CHECK(g.model().careBranch() == CareBranch::Good);
-      g.debugTriggerEvolution();                        // -> wire_heir (Daemon, 4 slots)
+      g.forceEvolution();                        // -> wire_heir (Daemon, 4 slots)
       t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "wire_heir") == 0);
@@ -1300,7 +1303,7 @@ void test_move_slot_stamping_locks_at_unlock() {
       CHECK(g.model().careBranch() == CareBranch::Bad);
       const Game::SlotKind slot2 = g.slotKind(2);
       CHECK(slot2 == seedKind(r, "malbear", 2));        // stamped on install
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "berserkernel") == 0);
@@ -1343,7 +1346,7 @@ void test_save_v24_slot_kinds_roundtrip() {
 // it commits: neither press spends until the second one lands on a row.
 void test_combat_override_in_game() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     CHECK(g.nav() == Game::Nav::Combat && g.combat().overrideReady());
     g.onButton({Button::A, true, true});           // A+C chord -> open picker
     CHECK(g.combat().overrideOpen() && g.combat().overrideReady());  // open != spend
@@ -1364,7 +1367,7 @@ void test_combat_override_in_game() {
 void test_combat_stakes_live_vs_safe() {
     { Game g{StartMode::Hatched, "paypup"};
       const int f0 = g.model().fragmentation();
-      g.debugStartCombat(/*live=*/true, /*lethal=*/true);
+      g.startLethalFight(Combat::Stakes::Live);
       uint32_t t = 0;
       for (int i = 0; i < 50 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
           g.tick(t += kHeartbeatMs);
@@ -1375,7 +1378,7 @@ void test_combat_stakes_live_vs_safe() {
 
     { Game g{StartMode::Hatched, "paypup"};
       const int f0 = g.model().fragmentation();
-      g.debugStartCombat(/*live=*/false, /*lethal=*/true);
+      g.startLethalFight(Combat::Stakes::Safe);
       uint32_t t = 0;
       for (int i = 0; i < 50 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
           g.tick(t += kHeartbeatMs);
@@ -1388,7 +1391,7 @@ void test_combat_stakes_live_vs_safe() {
 // The combat screen + the override overlay read in grayscale (dual-coding gate).
 void test_combat_screen_grayscale() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
@@ -1437,7 +1440,7 @@ void test_move_loadout_persist() {
 void test_evolution_branch_selection() {
     { Game g{StartMode::Hatched, "malbear"};                 // default care = Good
       CHECK(g.model().careBranch() == CareBranch::Good);
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "bruinforce") == 0); }
@@ -1445,7 +1448,7 @@ void test_evolution_branch_selection() {
     { Game g{StartMode::Hatched, "malbear"};
       g.model().setCareMistakes(kCareGoodMax + 1);           // 3 -> Bad branch
       CHECK(g.model().careBranch() == CareBranch::Bad);
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "berserkernel") == 0); }
@@ -1482,13 +1485,13 @@ void test_evolution_branch_mechanics() {
     // And a live loss on the Bad branch costs MORE Fragmentation.
     int fragGood = 0, fragBad = 0;
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugStartCombat(/*live=*/true, /*lethal=*/true);
+      g.startLethalFight(Combat::Stakes::Live);
       uint32_t t = 0;
       for (int i = 0; i < 50 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
           g.tick(t += kHeartbeatMs);
       g.onButton(press(Button::B)); fragGood = g.model().fragmentation(); }
     { Game g{StartMode::Hatched, "berserkernel"};
-      g.debugStartCombat(/*live=*/true, /*lethal=*/true);
+      g.startLethalFight(Combat::Stakes::Live);
       uint32_t t = 0;
       for (int i = 0; i < 50 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
           g.tick(t += kHeartbeatMs);
@@ -1500,7 +1503,7 @@ void test_evolution_branch_mechanics() {
 // pet alive (Frag rose, but it's still the active pet, not archived).
 void test_combat_loss_never_kills() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/true, /*lethal=*/true);
+    g.startLethalFight(Combat::Stakes::Live);
     uint32_t t = 0;
     for (int i = 0; i < 50 && g.combat().outcome() == Combat::Outcome::Ongoing; ++i)
         g.tick(t += kHeartbeatMs);

@@ -133,7 +133,7 @@ void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
     for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
     g.startDarkWebCrawl();
     CHECK(g.inDarkWebCrawl());
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     g.inventory().add("sinkhole_trap", 200);
     makeHot(g);
     bool met = false;

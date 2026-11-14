@@ -600,9 +600,6 @@ public:
     std::vector<AwayRow> awayRows() const {
         return AwayDigestScreen::rows(away_, pet_.model.careMistakes());
     }
-    // Dev/test seam: the summary is off on the Hatched seam (a gate that ticks hours and
-    // then presses a button means the press), and a gate about it turns it back on.
-    void debugSetAwayDigest(bool on) { awayDigestOn_ = on; }
     // The chance, 0..100, that a QUICK defrag or an AV scan fails at the current
     // Fragmentation: what rollMaintSuccess rolls against and MAINT prints.
     int maintFailPct() const override;
@@ -1184,12 +1181,6 @@ public:
     // boot, no card) just starts the roster empty.
     void loadPeerLedger(const char* path);
     const PeerLedger& peerLedger() const { return peerLedger_; }
-    // Seed a peer without a radio, for tests and the host build. The two halves the
-    // screens read from are separate on purpose, so each has its own seam: the LEDGER
-    // is everyone ever met (an absent peer is a ledger-only row), while the LIVE
-    // snapshot is who is in range this second, and LINK will only duel the latter.
-    void debugSeedPeer(uint64_t key, const PeerHello& hello);
-    void debugSeedLivePeer(uint64_t key, const PeerHello& hello);
 
     // --- 1v1 duels over LINK (game_pvp.cpp, core/net/pvp_link.h) -----------
     //
@@ -1846,42 +1837,6 @@ public:
     // Factory Reset's WIPE EVERYTHING scope; nothing else calls it, because every
     // other reset path is scoped to one pet on purpose.
     void wipeDeviceProgress();
-    // Force the Evolution boundary now, bypassing the time/care gate (the stub
-    // trigger is /TBD). No-op unless the pet has a defined successor.
-    void debugTriggerEvolution();
-    // Seed the shared LCG (rng_) so rng-driven draws (the hatch pool, the Trojan
-    // cross-line divert roll) are deterministic in a test / headless run.
-    void debugSeedRng(uint32_t seed) { rng_ = seed; }
-    // Inject a frozen pet into the ARCH rack (tests / headless screenshots of a
-    // populated rack; players use the Store action). No-op if the rack is full or the
-    // id is unknown. `combatLevel` lands as that many Power points, which keeps the
-    // level == earned-points invariant a thawed pet is held to.
-    void debugSeedRack(const char* creatureId, int combatLevel = 0);
-    // Launch a combat directly (tests / headless screenshots / dev). `live` picks
-    // the stakes; the Sim-Battle path is the in-game one (startSimBattle, safe).
-    // `lethal` builds an unbeatable enemy so a loss is deterministic (stakes test).
-    void debugStartCombat(bool live, bool lethal = false);
-    // The same, against a chosen enemy spec (e.g. wildMalbeastAt(i)): what a
-    // headless preview of one particular wild needs, since a walk rolls whichever one.
-    void debugStartCombatVs(const CombatEnemy& spec, bool live = false);
-    // Compose the explore-mode flavor line directly (tests / dump_frame). A walk step's
-    // event is random, so a frame that needs the longest line the walk can produce sets
-    // it directly. Explore mode still has to be armed for anything to draw.
-    void debugSetExploreFlavor(const char* s);
-    // Seed the network ledger directly, bypassing the scan → EXPL-Wi-Fi-event resolve
-    // path: the only way a tool or test can populate the CREW home-network picker
-    // without walking. `count` is the sighting tally the picker sorts on.
-    void debugSeedNetworkLedger(uint64_t key, const char* name, int count);
-    // Draw the Bandwidth pool down without staging a fight to spend it, so a test can
-    // watch it REGENERATE (which is the only way to observe a pet's regen interval).
-    void debugSpendBandwidth(int n) {
-        bandwidth_ -= n;
-        if (bandwidth_ < 0) bandwidth_ = 0;
-    }
-    // Set the ITEMS type filter directly (tests): the real path is the ITEMS hold-B
-    // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
-    // filtering without driving the tap/hold timing.
-    void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
     // The STAT reader, and what its pages read (game_stat.cpp). Public for the gates,
     // which find a page by its title and assert where a jump landed.
     const StatReader& statReader() const { return stat_; }
@@ -1903,22 +1858,6 @@ public:
     const LoadoutScreen& loadoutScreen() const { return loadout_; }
     const VaultScreen& vaultScreen() const { return vault_; }
     StatSources statSources() const override;
-    // Set the move picker's showAll flag directly (tests): the real path is its
-    // own hold-B gesture; this exercises ownedMoveList's filtering without driving
-    // the tap/hold timing.
-    void debugSetMoveShowAll(bool v) { loadout_.setMoveShowAll(v); dirty_ = true; }
-    // Fill every unlocked move slot and every mod slot (tests / tools/dump_frame.cpp).
-    // A Daemon carrying a full kit is the state STAT's LOADOUT page has to WINDOW
-    // rather than run down the screen, and it is otherwise only reachable by playing
-    // a pet to the end of its line. Moves come from what the pet's own line owns,
-    // matched to each slot's stamped kind; mods are placed without consuming a spare,
-    // since what this stages is the display and not the economy.
-    void debugFillLoadout();
-    // Put `n` dishes on the active pet's palate (tests / tools/dump_frame.cpp), in
-    // roster order. The real path is a meal. Game::startFeeding, which needs a bag,
-    // a modal and a tick each; this is the same mark that path makes, so a rendered
-    // FOODS grid shows what a fed pet's would.
-    void debugTasteFoods(int n);
     // The bulk-open reveal's tally (tests), while nav() == Nav::BulkYield; empty with none.
     int bulkYieldTallyCount() const {
         return vault_.bulkReveal() ? static_cast<int>(vault_.bulkReveal()->tally.size()) : 0;
@@ -1931,68 +1870,10 @@ public:
     int bulkYieldTallyCountAt(int i) const {
         return (i >= 0 && i < bulkYieldTallyCount()) ? vault_.bulkReveal()->tally[i].count : 0;
     }
-    // Resolve a Defrag with a forced success/failure via the real resolveMaint() path
-    // (tests): a deterministic maint outcome (rollMaintSuccess is otherwise RNG-gated),
-    // so a failed defrag's shielded +1 care mistake is assertable. `success=false` =
-    // a failure (frag penalty + the shielded mistake).
-    void debugResolveDefrag(bool success);
-    // Re-deal the board from `seed` (Stacker::reset) at the dial's ground calls, so a
-    // gate can aim its column functions at known intruders.
-    void debugSeedStacker(uint32_t seed) { stacker_.reset(seed, stacker_.calls()); }
     const Stacker& stacker() const override { return stacker_; }
     // Mutable so a gate can stage a lane (Fragger::place) before pressing the buttons at it.
     Fragger& fragger() { return fragger_; }
     const Fragger& fragger() const override { return fragger_; }
-    // Enter `k`'s played run without paying for it or the run being due (tests /
-    // dump_frame). From here onButton drives the REAL board, and a finished run lands in
-    // the real settlePlayedRun, which is where the process takes its payout.
-    void debugStartPlayedMaint(MaintKind k) {
-        maintScreen_.setKind(k);
-        maint_ = MaintRun::started(k, /*played=*/true, maintScreen_.difficulty());
-        if (!beginPlayedGame(maintPlayedGame(k))) maint_.reset();
-    }
-    // Point a process's played variant at a different engine, so a test can swap them
-    // without editing the content table.
-    void debugSetMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
-        (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
-    }
-    void debugSetMaintDifficulty(ArcadeDifficulty d) { maintScreen_.setDifficulty(d); }
-    // Force the arena run to a terminal banner without playing a whole bracket out.
-    // The two verdict screens are otherwise reachable only by winning or losing three
-    // matches, which is not what a screen gate is asking about.
-    void debugEndTourneyRun(bool champion) {
-        if (!tourney_) return;
-        tourney_->phase = champion ? TourneyPhase::Champion : TourneyPhase::Eliminated;
-        if (!champion) tourney_->alive &= static_cast<uint8_t>(~(1u << tourneySlot()));
-        // A champion run pays out like the real third win, including the two shape
-        // achievements, which read the final's opponent BEFORE it is cleared below. A
-        // hook that ended a run in the title but skipped the purse would be a hook the
-        // purse could not be tested through.
-        if (champion) awardTourneyPurse();
-        tourney_->opponent = TourneyFighter{};
-        dirty_ = true;
-    }
-    // Arm AUTO-PROGRESS, and set the armed sub-area's win streak (tests). Real path:
-    // the A+C chord on the explore-control overlay, and ten wild wins. Lets a test
-    // of the step rule skip the streak that triggers it; the streak is covered by
-    // test_explore_streak_unlocks_boss_then_clears.
-    void debugSetAutoProgress(bool v) { autoProgress_ = v; }
-    // TEST/DEV: mark every STORY chapter already read, so a gate driving the walk is
-    // never interrupted by one (game_story.cpp). The same standing the auto-progress
-    // hook above has: a chapter firing mid-walk is real behaviour with gates of its own,
-    // and a gate about loot tables or Wi-Fi rolls should not have to page through the
-    // premise to get to what it is measuring.
-    void debugMarkStoryRead() {
-        for (int i = 0, n = storyEntryCount(); i < n; ++i)
-            markStoryRead(storyEntryAt(i).chapter);
-    }
-    void debugSetExploreStreak(int v) { walk_.streak = v < 0 ? 0 : v; }
-    // Set the Bandwidth farming pool directly (tests): reach the depleted state
-    // that switches farming from full-loot to the diminishing-returns curve without
-    // grinding kBandwidthMax wins. Clamped to [0, bandwidthMax()].
-    void debugSetBandwidth(int n) {
-        bandwidth_ = n < 0 ? 0 : (n > bandwidthMax() ? bandwidthMax() : n);
-    }
 
     // Is the Backup Drive death-save currently armed (used and not yet spent in a
     // fight, nor lapsed)? Lazily checked against the deadline, like
@@ -2078,6 +1959,72 @@ public:
     // what" is stated once.
     int backgroundBracketsTaken() const { return op_.tallies.tourneyWins; }
 
+    // --- Test seams: what play cannot reach in test time -------------------------
+    // A gate takes every other step the way play does (the block above) and stages a
+    // record through liveOperator() / livePet(). These stand in for a world event, a
+    // roll or a clock a gate cannot wait out. The host build's dev keys use them too.
+    //
+    // Rolls: the shared LCG, a Stacker deal, a walk's flavor line and its win streak.
+    void seedRng(uint32_t seed) { rng_ = seed; }
+    // Re-deal at the dial's ground calls, so a gate can aim at known intruders.
+    void dealStacker(uint32_t seed) { stacker_.reset(seed, stacker_.calls()); }
+    // The longest line a walk step can roll, for a frame that must fit it. Explore mode
+    // still has to be armed for anything to draw.
+    void setWalkFlavor(const char* s);
+    void setWalkStreak(int v) { walk_.streak = v < 0 ? 0 : v; }
+    // A Defrag's success roll decided, through the real resolveMaint(): a failure
+    // carries the frag penalty and the shielded care mistake.
+    void forceDefragSuccess() { forceDefragOutcome(true); }
+    void forceDefragFailure() { forceDefragOutcome(false); }
+    // A fight against the Sim-Battle dummy, an unbeatable rival (a loss is certain, for
+    // the stakes gates) or a chosen spec (a walk rolls whichever wild it meets).
+    void startDummyFight(Combat::Stakes stakes);
+    void startLethalFight(Combat::Stakes stakes);
+    void startFightVs(const CombatEnemy& spec, Combat::Stakes stakes = Combat::Stakes::Safe);
+    // The arena run at a terminal banner, without three matches of rolls. A champion is
+    // paid as the real third win pays (awardTourneyPurse), so the purse is testable here.
+    void crownTourneyChampion() { endTourneyRun(TourneyPhase::Champion); }
+    void eliminateFromTourney() { endTourneyRun(TourneyPhase::Eliminated); }
+    //
+    // Clocks: the stage timer, a pet raised to a level, meals, a full kit, the pool.
+    // The Evolution boundary now, past the time/care gate. No-op without a successor.
+    void forceEvolution();
+    // A frozen pet on the ARCH rack. `combatLevel` lands as that many Power points, the
+    // level == earned-points invariant a thawed pet is held to. No-op when full.
+    void stockRack(const char* creatureId, int combatLevel = 0);
+    // `n` dishes on the palate in roster order, the mark a meal makes.
+    void tasteFoods(int n);
+    // Every unlocked move and mod slot filled from the pet's own line: the kit only a
+    // pet at the end of its line carries. Places mods without spending a spare.
+    void fillLoadout();
+    // The Bandwidth pool, clamped to [0, bandwidthMax()]; it otherwise moves by fights
+    // and regeneration.
+    void setBandwidth(int n) {
+        bandwidth_ = n < 0 ? 0 : (n > bandwidthMax() ? bandwidthMax() : n);
+    }
+    // `k`'s played run at difficulty `d`, unpaid and before it is due. onButton drives
+    // the real board from here, and a finished run settles in settlePlayedRun.
+    void startPlayedMaint(MaintKind k, ArcadeDifficulty d) {
+        maintScreen_.setKind(k);
+        maintScreen_.setDifficulty(d);
+        maint_ = MaintRun::started(k, /*played=*/true, d);
+        if (!beginPlayedGame(maintPlayedGame(k))) maint_.reset();
+    }
+    // Which engine a process's played run uses, swapped without editing content.
+    void setMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
+        (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
+    }
+    // The away summary, which the Hatched constructor turns off so a gate that ticks
+    // hours and then presses a button means the press.
+    void enableAwayDigest() { awayDigestOn_ = true; }
+    //
+    // World events without a radio. The LEDGER is everyone ever met (an absent peer is
+    // a ledger-only row) and the LIVE snapshot is who is in range now, which LINK duels.
+    void rememberPeer(uint64_t key, const PeerHello& hello);
+    void meetPeer(uint64_t key, const PeerHello& hello);
+    // A network sighted `count` times, for the CREW home-network picker that sorts on it.
+    void rememberNetwork(uint64_t key, const char* name, int count);
+
     // --- Steps play takes through a screen or a walk, public so a gate can take ---
     // --- the same step directly -------------------------------------------------
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
@@ -2158,6 +2105,7 @@ public:
     void openStoryChapter(const StoryChapterDef* chapter, const StoryChapterDef* next,
                           StoryThen then, int thenArea);
     void markStoryRead(const StoryChapterDef* chapter);
+    void toggleAutoProgress() override { autoProgress_ = !autoProgress_; }   // the overlay's A+C
 
 private:
     // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp). The
@@ -2468,7 +2416,6 @@ private:
     bool hasWarpKey() const override { return !heldWarpKeys().empty(); }
     void pingWalk() override;
     void openWarpPicker() override;
-    void toggleAutoProgress() override { autoProgress_ = !autoProgress_; }
     void stopWalk() override;
     void leaveToIdle() override { nav_ = Nav::Idle; }
     void resolveLootEvent();                        // reward-pool draw, in place
@@ -2506,7 +2453,9 @@ private:
     void startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst);
     // The tail both debug combat hooks share once the player is built: roll the fight
     // open against `spec` and hand the screen to it (debugStartCombat / ...Vs).
-    void beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live);
+    void beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat::Stakes stakes);
+    void endTourneyRun(TourneyPhase end);
+    void forceDefragOutcome(bool success);
     Combatant buildPlayerCombatant();               // + the ally-buff, if active
 
     // Boss ladder. Two confrontations share the carried-Health round plumbing

@@ -123,6 +123,18 @@ inline void bulkOpenCaches(Game& g, const char* id) {
     if (const ItemDef* d = g.content().item(id)) g.openAllCachesOfRarity(*d);
 }
 
+// AUTO-PROGRESS set either way through the overlay's own toggle (its A+C chord).
+inline void setAutoProgress(Game& g, bool on) {
+    if (g.autoProgress() != on) g.toggleAutoProgress();
+}
+
+// Every STORY chapter marked read, so a gate driving the walk is never stopped by one.
+// A chapter firing mid-walk has gates of its own (test_story.cpp); a gate about loot or
+// Wi-Fi rolls should not have to page through the premise to reach what it measures.
+inline void markEveryStoryRead(Game& g) {
+    for (int i = 0, n = storyEntryCount(); i < n; ++i) g.markStoryRead(storyEntryAt(i).chapter);
+}
+
 // In-memory ISaveStore for the persistence gates (the test tier of the seam).
 class MemSaveStore : public ISaveStore {
 public:
@@ -518,7 +530,7 @@ inline int stackerHoldNarrow(const Stacker& s, int k) {
 // intruders. Shared by the AV gates and the arcade's.
 template <typename ColFn>
 bool playStackerBoard(Game& g, ColFn col, uint32_t seed = kStackerGateSeed) {
-    g.debugSeedStacker(seed);
+    g.dealStacker(seed);
     for (int k = 0; k < 8 * kStackerRows && g.stacker().running(); ++k) {
         const int want = col(k);
         if (want < 0) break;
@@ -539,9 +551,13 @@ bool playStackerBoard(Game& g, ColFn col, uint32_t seed = kStackerGateSeed) {
 // Start a played MAINT run of `engine` as process `k`'s, paying nothing. The pairing is
 // set explicitly rather than read off content_arcade.h, so a gate tests the pairing it
 // names however the table happens to be wired.
+inline void startPlayedMaint(Game& g, MaintKind k, ArcadeGameKind engine,
+                             ArcadeDifficulty d) {
+    g.setMaintPlayedGame(k, engine);
+    g.startPlayedMaint(k, d);
+}
 inline void startPlayedMaint(Game& g, MaintKind k, ArcadeGameKind engine) {
-    g.debugSetMaintPlayedGame(k, engine);
-    g.debugStartPlayedMaint(k);
+    startPlayedMaint(g, k, engine, g.maintScreen().difficulty());
 }
 
 // Open the GAMES cabinet on roster `row` and cycle its dial to `difficulty`. Leaves the
@@ -585,18 +601,17 @@ inline void enterWalk(Game& g) {
     g.onButton(press(Button::B));                    // STORY -> the area list
     g.onButton(press(Button::B));                    // drill into the focused area
     g.onButton(press(Button::B));                    // arm its first open sub-area
-    // Auto-progress now defaults ON (production), but this is the shared entry point
-    // for tests that drive the walk fight-by-fight by hand: a streak/clear crossing
-    // its threshold mid-test would otherwise auto-launch a boss (or re-arm the next
-    // sub-area, resetting exploreSteps_) out from under whatever the test is mid-
-    // asserting. Tests exercising auto-progress itself opt back in explicitly
-    // (debugSetAutoProgress(true)), same as before this default flipped.
-    g.debugSetAutoProgress(false);
+    // Auto-progress defaults ON, but this is the shared entry point for tests that drive
+    // the walk fight-by-fight by hand: a streak/clear crossing its threshold mid-test
+    // would otherwise auto-launch a boss (or re-arm the next sub-area, resetting
+    // exploreSteps_) out from under whatever the test is mid-asserting. Tests exercising
+    // auto-progress itself opt back in (setAutoProgress(g, true)).
+    setAutoProgress(g, false);
     // ...and the same for the STORY chapters the walk fires (game_story.cpp): the first
     // encounter in an area opens one, which a gate measuring loot, Wi-Fi or a streak
     // would otherwise have to page through before its walk started. The chapters have
     // gates of their own, which drive them rather than skipping them.
-    g.debugMarkStoryRead();
+    markEveryStoryRead(g);
 }
 
 // Walk EXPL's ACTIVITY PICKER to `cat`'s row, from wherever the cursor is parked. The

@@ -359,7 +359,7 @@ void Game::resolveSafeRestEvent(const ItemDef& d) {
     returnToExplore();
 }
 
-void Game::debugSetExploreFlavor(const char* s) {
+void Game::setWalkFlavor(const char* s) {
     std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s", s ? s : "");
     dirty_ = true;
 }

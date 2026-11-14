@@ -105,7 +105,7 @@ void test_story_arrival_fires_once_and_hands_back() {
     const StoryChapterDef* ch = storyChapter(0, StoryBeat::AreaIntro);
     CHECK(ch && !g.storyRead(ch));
     g.startExplore(0, 0);
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     CHECK(walkToStory(g));
     CHECK(g.currentStoryChapter() == ch);
     CHECK(g.storyRead(ch));                          // spent on OPEN, not on finish
@@ -172,7 +172,7 @@ void test_story_skip_still_runs_what_it_interrupted() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.inventory().add("sinkhole_trap", 60);
     g.startExplore(0, 0);
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     CHECK(walkToStory(g));
     CHECK(g.storyWindows() >= 2);                    // there is something left to skip
     const int traps = g.inventory().count("sinkhole_trap");
@@ -201,7 +201,7 @@ void test_story_archive_collects_what_the_walk_fired() {
 
         g.inventory().add("sinkhole_trap", 60);
         g.startExplore(0, 0);
-        g.debugSetAutoProgress(false);
+        setAutoProgress(g, false);
         CHECK(walkToStory(g));
         tapC(g);                                     // skipped, and still archived
         CHECK(g.storyChapterCount() == 1);
@@ -309,7 +309,7 @@ void test_expl_categories_are_the_top_level() {
     }
 
     Game g{StartMode::Hatched, "bruinforce"};
-    g.debugMarkStoryRead();                          // the archive's own gate covers that
+    markEveryStoryRead(g);                          // the archive's own gate covers that
     enterSubmenuId(g, SubmenuId::Expl);
     // Fresh device: only STORY is open, so A round-trips back to it.
     CHECK(g.explScreen().row() == explCatRow(ExplCat::Story));
@@ -349,7 +349,7 @@ void test_expl_categories_are_the_top_level() {
 
     // And the two ENDLESS zones live behind one row of their own.
     Game h{StartMode::Hatched, "bruinforce"};
-    h.debugMarkStoryRead();
+    markEveryStoryRead(h);
     for (int a = 0; a < kExplSectors; ++a) h.liveOperator().world.sectorCleared[a] = true;
     enterSubmenuId(h, SubmenuId::Expl);
     explPickCategory(h, ExplCat::Endless);

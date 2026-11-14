@@ -115,12 +115,12 @@ bool Game::noteLivePeer(uint64_t key, const PeerHello& hello) {
 
 void Game::loadPeerLedger(const char* path) { peerLedger_.load(path); }
 
-void Game::debugSeedPeer(uint64_t key, const PeerHello& hello) {
+void Game::rememberPeer(uint64_t key, const PeerHello& hello) {
     peerLedger_.record(key, hello);
     dirty_ = true;
 }
 
-void Game::debugSeedLivePeer(uint64_t key, const PeerHello& hello) {
+void Game::meetPeer(uint64_t key, const PeerHello& hello) {
     // Both halves, which is what a real beacon does (registerPeer above): a peer
     // standing in front of you is in range AND has now been met.
     noteLivePeer(key, hello);

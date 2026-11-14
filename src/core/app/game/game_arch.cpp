@@ -118,7 +118,7 @@ void Game::archReleaseStored(int storedIdx) {
     persistSave();
 }
 
-void Game::debugSeedRack(const char* creatureId, int combatLevel) {
+void Game::stockRack(const char* creatureId, int combatLevel) {
     const CreatureDef* c = registry_.creature(creatureId);
     if (!c || static_cast<int>(op_.arch.rack.size()) >= rackSlots()) return;
     SaveStoredPet p;

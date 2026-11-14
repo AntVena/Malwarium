@@ -37,11 +37,11 @@ void test_battle_fatigue() {
         Game g{StartMode::Hatched};
         const int frag0 = g.model().fragmentation();
         walkToEncounter(g);
-        g.debugSetBandwidth(0);
+        g.setBandwidth(0);
         int wilds = 0, guard = 0;
         uint32_t t = 0;
         while (wilds < 4 && guard++ < 400) {
-            g.debugSetBandwidth(0);                          // no shield → fatigue applies
+            g.setBandwidth(0);                          // no shield → fatigue applies
             switch (g.nav()) {
                 case Game::Nav::Combat: {
                     for (int i = 0; i < 400 &&
@@ -233,7 +233,7 @@ void test_post_encounter_reports_frag_rise_when_unshielded() {
     walkToEncounter(g);
     const int S = g.exploreSector(), U = g.exploreSub();
     g.liveOperator().world.subCleared[S][U] = true;
-    g.debugSetBandwidth(0);                      // nothing left to spend -> no shield
+    g.setBandwidth(0);                      // nothing left to spend -> no shield
     bool sawRise = false;
     uint32_t t = 0;
     for (int fights = 0; fights < 20 && !sawRise; ++fights) {
@@ -510,7 +510,7 @@ static void clearSubArea(Game& g, int area, int sub) {
     // caller's own loop) by hand, one fight at a time: auto-progress defaulting ON
     // would otherwise auto-launch each boss itself the instant a streak/clear crosses
     // its threshold, out from under the manual trigger this helper is mid-sequencing.
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     g.startExplore(area, sub);                  // (re)arm THIS sub-area (cleared subs
                                                    // are now selectable → "first row" is
                                                    // ambiguous; arm the target directly)
@@ -586,9 +586,9 @@ void test_auto_progress_steps_positionally() {
       g.addCombatXp(600000);
       for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
       g.liveOperator().world.sectorCleared[0] = true;
-      g.debugSetAutoProgress(true);
+      setAutoProgress(g, true);
       g.startExplore(0, 1);
-      g.debugSetExploreStreak(kExploreStreakToBoss);   // the step condition, met
+      g.setWalkStreak(kExploreStreakToBoss);   // the step condition, met
       runWalkUntil(g, [&] { return g.exploreSub() != 1; });
       CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2);
       CHECK(g.exploreStreak() < kExploreStreakToBoss); }  // re-armed → streak reset
@@ -601,9 +601,9 @@ void test_auto_progress_steps_positionally() {
       g.addCombatXp(600000);
       const int last = kExplSubAreas - 1;
       g.liveOperator().world.subCleared[0][last] = true;         // ...but sub-area 0 is not
-      g.debugSetAutoProgress(true);
+      setAutoProgress(g, true);
       g.startExplore(0, last);
-      g.debugSetExploreStreak(kExploreStreakToBoss);
+      g.setWalkStreak(kExploreStreakToBoss);
       runWalkUntil(g, [&] { return g.exploreSub() != last; });
       CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 0); }
 }
@@ -617,9 +617,9 @@ void test_auto_progress_gauntlet_rolls_to_next_area() {
     g.addCombatXp(600000);                    // level hard: the gauntlet is winnable
     for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
     g.liveOperator().world.sectorCleared[0] = true;              // area 0 DONE, and so re-runnable
-    g.debugSetAutoProgress(true);
+    setAutoProgress(g, true);
     g.startExplore(0, kExplSubAreas - 1);       // the last rung before the gauntlet
-    g.debugSetExploreStreak(kExploreStreakToBoss);
+    g.setWalkStreak(kExploreStreakToBoss);
     const int bits0 = g.bits();
     runWalkUntil(g, [&] { return g.exploreSector() != 0; });
     CHECK(g.exploreActive());
@@ -641,36 +641,36 @@ void test_auto_progress_badge_counts_down() {
     // ARMED: the badge moves with the streak (the countdown), and not with the pool.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.liveOperator().world.subCleared[0][0] = true;
-      g.debugSetAutoProgress(true);
+      setAutoProgress(g, true);
       g.startExplore(0, 0);
-      g.debugSetBandwidth(g.bandwidthMax());
-      g.debugSetExploreStreak(3); g.render(a);
-      g.debugSetExploreStreak(4); g.render(b);
+      g.setBandwidth(g.bandwidthMax());
+      g.setWalkStreak(3); g.render(a);
+      g.setWalkStreak(4); g.render(b);
       CHECK(regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1));
-      g.debugSetExploreStreak(4);
-      g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
+      g.setWalkStreak(4);
+      g.setBandwidth(g.bandwidthMax() - 1); g.render(a);
       CHECK(!regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
 
     // OFF: exactly the reverse. The pool is the readout, the streak is not.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.liveOperator().world.subCleared[0][0] = true;
-      g.debugSetAutoProgress(false);
+      setAutoProgress(g, false);
       g.startExplore(0, 0);
-      g.debugSetBandwidth(g.bandwidthMax());
-      g.debugSetExploreStreak(3); g.render(a);
-      g.debugSetExploreStreak(4); g.render(b);
+      g.setBandwidth(g.bandwidthMax());
+      g.setWalkStreak(3); g.render(a);
+      g.setWalkStreak(4); g.render(b);
       CHECK(!regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1));
-      g.debugSetBandwidth(g.bandwidthMax() - 1); g.render(a);
+      g.setBandwidth(g.bandwidthMax() - 1); g.render(a);
       CHECK(regionDiffers(a, b, 0, kBadgeY0, kActiveW, kBadgeY1)); }
 
     // The countdown is the streak's complement, floored: it never reads past the step.
     { Game g{StartMode::Hatched};
       g.startExplore(0, 0);
-      g.debugSetExploreStreak(0);
+      g.setWalkStreak(0);
       CHECK(g.winsToNextStage() == kExploreStreakToBoss);
-      g.debugSetExploreStreak(kExploreStreakToBoss - 1);
+      g.setWalkStreak(kExploreStreakToBoss - 1);
       CHECK(g.winsToNextStage() == 1);
-      g.debugSetExploreStreak(kExploreStreakToBoss + 5);
+      g.setWalkStreak(kExploreStreakToBoss + 5);
       CHECK(g.winsToNextStage() == 0); }
 
     // The countdown is never what makes the line too long for a label to share it: at
@@ -768,11 +768,11 @@ void test_explore_xp_efficiency_reads_the_rung() {
       for (int a2 = 0; a2 < kExplSectors; ++a2) g.liveOperator().world.sectorCleared[a2] = true;
       g.startDeepWebDive();                  // the dive unlocks on a cleared ladder
       CHECK(g.inDeepWebDive());
-      g.debugSetExploreStreak(0);
+      g.setWalkStreak(0);
       CHECK(g.exploreXpEfficiencyPct() == 100);
-      g.debugSetExploreStreak(kDeepWebRampFreeDepth);
+      g.setWalkStreak(kDeepWebRampFreeDepth);
       CHECK(g.exploreXpEfficiencyPct() == 100);   // still standing on the foothold
-      g.debugSetExploreStreak(64);
+      g.setWalkStreak(64);
       CHECK(g.exploreXpEfficiencyPct() > 100); }
 
     // ...and the CRAWL is read as its own zone rather than decoded as a ladder rung. It
@@ -789,13 +789,13 @@ void test_explore_xp_efficiency_reads_the_rung() {
       dive.startDeepWebDive();
       CHECK(crawl.inDarkWebCrawl());
       for (const int depth : {0, 16, 64}) {
-          crawl.debugSetExploreStreak(depth);
-          dive.debugSetExploreStreak(depth);
+          crawl.setWalkStreak(depth);
+          dive.setWalkStreak(depth);
           CHECK(crawl.exploreXpEfficiencyPct() > 4 * dive.exploreXpEfficiencyPct());
       }
-      crawl.debugSetExploreStreak(0);
+      crawl.setWalkStreak(0);
       const int shallow = crawl.exploreXpEfficiencyPct();
-      crawl.debugSetExploreStreak(64);
+      crawl.setWalkStreak(64);
       CHECK(crawl.exploreXpEfficiencyPct() > shallow); }   // ...and its depth still pays
 
     // The overlay draws it, and draws it as a FOOTER: two walks whose rungs pay
@@ -824,7 +824,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
 void test_explore_streak_unlocks_boss_then_clears() {
     Game g{StartMode::Hatched, "bruinforce"};
     g.addCombatXp(600000);                    // level hard: enough stat points to clear
-    g.debugMarkStoryRead();                        // the gauntlet's chapters have their own gate
+    markEveryStoryRead(g);                        // the gauntlet's chapters have their own gate
     CHECK(!g.sectorCleared(0));
     for (int s = 0; s < kExplSubAreas; ++s) CHECK(!g.subBossUnlocked(0, s));
     { bool fl[kExplSectors] = {g.sectorCleared(0), g.sectorCleared(1)};
@@ -1179,7 +1179,7 @@ void test_boss_teaches_its_own_apex_move() {
 
     Game g{StartMode::Hatched, "bruinforce"};
     g.addCombatXp(600000);                        // level hard: the boss is winnable
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     CHECK(!g.moveLoadout().owns(rider));               // unobtainable at the start
 
     uint32_t t = 0;
@@ -1340,7 +1340,7 @@ void test_expl_nested_list_nav() {
 
     // All 5 sub-areas cleared → drilling in lands on the boss-ready header; B launches it.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugMarkStoryRead();                       // the gauntlet's own chapter, skipped
+      markEveryStoryRead(g);                       // the gauntlet's own chapter, skipped
       for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
       CHECK(g.areaBossReady(0));
       enterStoryLadder(g);
@@ -1387,7 +1387,7 @@ void test_expl_nested_list_nav() {
     // A CLEARED area's gauntlet stays re-runnable, the way a cleared sub-area stays
     // re-farmable: inside the area, B on its boss row starts the 5-round gauntlet again.
     { Game g{StartMode::Hatched, "bruinforce"};
-      g.debugMarkStoryRead();
+      markEveryStoryRead(g);
       for (int s = 0; s < kExplSubAreas; ++s) g.liveOperator().world.subCleared[0][s] = true;
       g.liveOperator().world.sectorCleared[0] = true;
       enterStoryLadder(g);
@@ -2058,7 +2058,7 @@ void test_explore_walk_starts_whole_and_ends_with_its_streak() {
 
     Game g{StartMode::Hatched, "paypup"};
     g.startExplore(0, 1);
-    g.debugSetExploreStreak(4);
+    g.setWalkStreak(4);
     CHECK(g.exploreActive() && g.exploreStreak() == 4);
     g.startExplore(0, 2);
     CHECK(g.exploreActive() && g.exploreSector() == 0 && g.exploreSub() == 2);
@@ -2071,10 +2071,10 @@ void test_explore_walk_starts_whole_and_ends_with_its_streak() {
 // deepest sub-area is the deterministic loss.
 void test_fight_result_outlives_the_walk_and_the_next_start_replaces_it() {
     Game g{StartMode::Hatched, "phishlet"};
-    g.debugSeedRng(1);
-    g.debugMarkStoryRead();
+    g.seedRng(1);
+    markEveryStoryRead(g);
     g.startExplore(kAreaCount - 1, kSubAreasPerArea - 1);
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     for (int i = 0; i < 400 && g.nav() != Game::Nav::Combat; ++i) {
         if (g.nav() == Game::Nav::Idle) pingExplore(g);
         else if (g.nav() == Game::Nav::Shop || g.nav() == Game::Nav::ModShop) tapC(g);
@@ -2090,7 +2090,7 @@ void test_fight_result_outlives_the_walk_and_the_next_start_replaces_it() {
     CHECK(g.fight().result.fragAfter > g.fight().result.fragBefore);
     CHECK(g.fight().result.readoutUntilMs > 0);
 
-    g.debugStartCombat(/*live=*/false);
+    g.startDummyFight(Combat::Stakes::Safe);
     CHECK(g.fight().caller == FightCaller::Sim);
     CHECK(g.combat().outcome() == Combat::Outcome::Ongoing);
     CHECK(g.fight().turnBeat == 0 && g.fight().resultBeat == 0 && g.fight().hitBeat == 0);
@@ -2111,12 +2111,12 @@ void test_gauntlet_carries_its_rounds_and_is_dropped_when_it_ends() {
 
     const int area = 4;
     Game g{StartMode::Hatched, "phishlet"};
-    g.debugSeedRng(12);
-    g.debugMarkStoryRead();
+    g.seedRng(12);
+    markEveryStoryRead(g);
     for (int a = 0; a < area; ++a) g.liveOperator().world.sectorCleared[a] = true;
     for (int sub = 0; sub < kExplSubAreas; ++sub) g.liveOperator().world.subCleared[area][sub] = true;
     g.startExplore(area, kExplSubAreas - 1);
-    g.debugSetAutoProgress(false);
+    setAutoProgress(g, false);
     CHECK(g.gauntlet() == nullptr);
     enterSubmenuId(g, SubmenuId::Expl);           // a running walk resumes INSIDE the area
     g.onButton(press(Button::A));                 // armed sub -> boss-ready header

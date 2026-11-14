@@ -172,7 +172,7 @@ void test_evolution_reveal_says_what_changed() {
     CHECK(textWidth("GOOD PATH - 4 ERRORS") <= kActiveW - 2 * kMargin);
 
     uint32_t t = 0;
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     advanceToReveal(g, t);
     CHECK(g.nav() == Game::Nav::ModalEvolve);
     Framebuffer fb(kActiveW, kActiveH);
@@ -373,7 +373,7 @@ void test_reset_to_hatch() {
 void test_evolution_boot_to_process() {
     Game g{StartMode::Hatched, "cryptoshell"};  // Boot-Sector start
     CHECK(g.pet()->stage == Stage::BootSector);
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     CHECK(g.nav() == Game::Nav::ModalEvolve);
     CHECK(g.pet()->stage == Stage::BootSector);  // old sprite held through cinematic
     uint32_t t = 0;
@@ -388,7 +388,7 @@ void test_evolution_boot_to_process() {
 // C is disabled (not "back"); B before the reveal is inert (the cinematic gate).
 void test_evolution_c_disabled_b_gated() {
     Game g{StartMode::Hatched, "cryptoshell"};
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     tapC(g);                // disabled -> still in the modal
     CHECK(g.nav() == Game::Nav::ModalEvolve);
     g.onButton(press(Button::B));                // pre-reveal -> ignored
@@ -439,7 +439,7 @@ void test_evolution_full_chain() {
     const Stage stages[] = {Stage::Process, Stage::Script, Stage::Daemon};
     uint32_t t = 0;
     for (int hop = 0; hop < 3; ++hop) {
-        g.debugTriggerEvolution();
+        g.forceEvolution();
         CHECK(g.nav() == Game::Nav::ModalEvolve);
         advanceToReveal(g, t);
         g.onButton(press(Button::B));
@@ -448,7 +448,7 @@ void test_evolution_full_chain() {
         CHECK(g.pet()->stage == stages[hop]);
     }
     // Bruinforce is the terminus: no successor, so the trigger never fires.
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     CHECK(g.nav() == Game::Nav::Idle);
     g.tick(t += 1000 + kEvolveProcessToScriptMs);
     CHECK(g.nav() == Game::Nav::Idle);
@@ -458,7 +458,7 @@ void test_evolution_full_chain() {
 // silhouette + the advanced stage-indicator node).
 void test_evolution_grayscale() {
     Game g{StartMode::Hatched, "cryptoshell"};
-    g.debugTriggerEvolution();
+    g.forceEvolution();
     uint32_t t = 0;
     advanceToReveal(g, t);
     Framebuffer fb(kActiveW, kActiveH);

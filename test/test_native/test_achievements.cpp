@@ -265,7 +265,7 @@ void test_achievement_rack_zoology_counts_species_not_heads() {
     for (int i = 0; i < 12; ++i) g.buyRigUpgrade(kRigRowRackSlot);   // room for a collection
     CHECK(g.rackSlots() >= 16);
 
-    for (int i = 0; i < 4; ++i) g.debugSeedRack("cryptoshell");
+    for (int i = 0; i < 4; ++i) g.stockRack("cryptoshell");
     g.tick(t += kAchSweepIntervalMs);
     const AchievementDef* zoo5 = achievementById("ZOO_5");
     CHECK(zoo5 != nullptr);
@@ -277,7 +277,7 @@ void test_achievement_rack_zoology_counts_species_not_heads() {
     // Five more, one of them from each of the four families the shelf is missing: the
     // zoology rung and the one-of-every-family row land together.
     for (const char* id : {"paypup", "tadpoll", "vermicell", "keyloggerhead", "polystaria"})
-        g.debugSeedRack(id);
+        g.stockRack(id);
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.achValue(*zoo5) == 6);                // six species over nine slots
     CHECK(g.hasAchievement("ZOO_5"));
@@ -302,11 +302,11 @@ void test_achievement_rack_wing_holds_a_whole_line_at_once() {
     CHECK(wing && line && achievementGoal(*wing) == line->count);
 
     for (const char* id : {"keyloggerhead", "leatherbackdoor", "coaxeel"})
-        g.debugSeedRack(id);
+        g.stockRack(id);
     g.tick(t += kAchSweepIntervalMs);
     CHECK(!g.hasAchievement("WING_TROJAN"));      // three quarters of a family is none
     CHECK(!g.hasAchievement("WING_WORM"));        // ...and a wing is per-line, not per-shelf
-    g.debugSeedRack("usbasilisk");
+    g.stockRack("usbasilisk");
     g.tick(t += kAchSweepIntervalMs);
     CHECK(g.hasAchievement("WING_TROJAN"));
     CHECK(g.achValue(*wing) == line->count);
@@ -329,7 +329,7 @@ void test_achievement_no_vacancy_fires_on_the_last_free_slot() {
     uint32_t t = 0;
     g.tick(t += kHeartbeatMs);
     CHECK(g.rackSlots() == kRackSlots);           // the default shelf, unupgraded
-    for (int i = 0; i < kRackSlots - 1; ++i) g.debugSeedRack("cryptoshell");
+    for (int i = 0; i < kRackSlots - 1; ++i) g.stockRack("cryptoshell");
     g.tick(t += kAchSweepIntervalMs);
     CHECK(!g.hasAchievement(ach::kNoVacancy));    // one slot still free
 
@@ -541,7 +541,7 @@ void test_pedia_evolution_achievements_leave_the_sibling_locked() {
         Game g{StartMode::Hatched, "malbear"};
         g.model().setCareMistakes(0);
         CHECK(g.model().careBranch() == CareBranch::Good);
-        g.debugTriggerEvolution();
+        g.forceEvolution();
         uint32_t t = 0;
         advanceToReveal(g, t);
         g.onButton(press(Button::B));
@@ -555,7 +555,7 @@ void test_pedia_evolution_achievements_leave_the_sibling_locked() {
         Game g{StartMode::Hatched, "malbear"};
         g.model().setCareMistakes(kCareGoodMax + 1);
         CHECK(g.model().careBranch() == CareBranch::Bad);
-        g.debugTriggerEvolution();
+        g.forceEvolution();
         uint32_t t = 0;
         advanceToReveal(g, t);
         g.onButton(press(Button::B));

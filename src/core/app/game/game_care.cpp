@@ -162,10 +162,7 @@ void Game::maybeAutoDefrag() {
     markSaveDirty();
 }
 
-void Game::debugResolveDefrag(bool success) {
-    // Deterministic maint outcome for tests: drive the real resolveMaint() seam with a
-    // forced success/failure (rollMaintSuccess is otherwise RNG-gated). A failure routes
-    // its +1 care mistake through addCareMistakeShielded, so the shield gate is assertable.
+void Game::forceDefragOutcome(bool success) {
     maint_ = MaintRun::started(MaintKind::Defrag, /*played=*/false, maintScreen_.difficulty());
     maint_->success = success;
     resolveMaint();

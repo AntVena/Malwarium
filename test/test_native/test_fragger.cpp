@@ -16,6 +16,9 @@ Fragger emptyRun() {
 
 // A played DEFRAG run of FRAGGER, whatever the content table pairs with DEFRAG.
 void startDefragRun(Game& g) { startPlayedMaint(g, MaintKind::Defrag, ArcadeGameKind::Fragger); }
+void startDefragRun(Game& g, ArcadeDifficulty d) {
+    startPlayedMaint(g, MaintKind::Defrag, ArcadeGameKind::Fragger, d);
+}
 
 // Shoot `n` fragments through the REAL button path: stage one over the head, fire.
 void shootFragments(Game& g, int n) {
@@ -160,8 +163,7 @@ void test_fragger_defrag_pays_per_fragment() {
     const int bits = g.bits();
     const int mistakes = g.model().careMistakes();
     const int defrags = g.defragCount();
-    g.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
-    startDefragRun(g);
+    startDefragRun(g, ArcadeDifficulty::Easy);
     CHECK(g.nav() == Game::Nav::Fragger);
     shootFragments(g, 8);                               // three past a clean disk
     CHECK(g.fragger().hits() == 8);
@@ -246,8 +248,7 @@ void test_fragger_lanes_follow_the_dial() {
     for (int d = 0; d < kArcadeDifficulties; ++d) {
         Game g{StartMode::Hatched};
         g.model().setFragmentation(50);
-        g.debugSetMaintDifficulty(static_cast<ArcadeDifficulty>(d));
-        startDefragRun(g);
+        startDefragRun(g, static_cast<ArcadeDifficulty>(d));
         CHECK(g.fragger().lanes() == kFraggerMinLanes + d);
         CHECK(g.fragger().lane() == g.fragger().lanes() / 2);
     }
@@ -264,9 +265,8 @@ void test_played_rewards_double_per_step() {
     for (int d = 0; d < kArcadeDifficulties; ++d) {
         Game g{StartMode::Hatched};
         g.model().setFragmentation(100);
-        g.debugSetMaintDifficulty(static_cast<ArcadeDifficulty>(d));
         const int bits = g.bits();
-        startDefragRun(g);
+        startDefragRun(g, static_cast<ArcadeDifficulty>(d));
         shootFragments(g, 5);
         catchFiles(g, 3);
         crashRun(g);

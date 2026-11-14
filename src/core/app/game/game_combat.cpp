@@ -589,32 +589,33 @@ uint32_t Game::rivalTeachableMoveMask() const {
     return mask;
 }
 
-void Game::debugStartCombat(bool live, bool lethal) {
+void Game::startDummyFight(Combat::Stakes stakes) {
     if (!pet_.creature) return;
-    Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
-    CombatEnemy spec = lethal
-        // An unbeatable enemy: huge Health + an overwhelming move so a loss is
-        // deterministic (exercises the live-vs-safe stakes contract).
-        ? CombatEnemy{"Lethal", "SPR_PET_CACHEMUTT", 3, 9999, 99, {"packet_storm"}}
-        : simDummy(loadout_.simTier());
-    if (lethal) {
-        // Give the lethal enemy a one-shot kill regardless of move power.
-        p.maxHealth = 1;
-    }
-    beginDebugCombat(p, spec, live);
+    beginStagedFight(makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods),
+                     simDummy(loadout_.simTier()), stakes);
 }
 
-void Game::debugStartCombatVs(const CombatEnemy& spec, bool live) {
+void Game::startLethalFight(Combat::Stakes stakes) {
     if (!pet_.creature) return;
     Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
-    beginDebugCombat(p, spec, live);
+    // Huge Health and an overwhelming move against a one-Health pet, so the loss is
+    // certain whatever the pet's moves hit for.
+    p.maxHealth = 1;
+    beginStagedFight(p, CombatEnemy{"Lethal", "SPR_PET_CACHEMUTT", 3, 9999, 99, {"packet_storm"}},
+                     stakes);
 }
 
-void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool live) {
+void Game::startFightVs(const CombatEnemy& spec, Combat::Stakes stakes) {
+    if (!pet_.creature) return;
+    Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
+    beginStagedFight(p, spec, stakes);
+}
+
+void Game::beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat::Stakes stakes) {
     Combatant e = makeEnemyCombatant(registry_, spec);
     rng_ = rng_ * 1664525u + 1013904223u;
-    fight_ = Fight::started(FightCaller::Sim);   // the dev hook always returns to the hub
-    fight_.combat.begin(p, e, live ? Combat::Stakes::Live : Combat::Stakes::Safe, rng_,
+    fight_ = Fight::started(FightCaller::Sim);   // a staged fight always returns to the hub
+    fight_.combat.begin(p, e, stakes, rng_,
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
     fxBeat_ = 0;
@@ -622,7 +623,7 @@ void Game::beginDebugCombat(const Combatant& p, const CombatEnemy& spec, bool li
     dirty_ = true;
 }
 
-void Game::debugFillLoadout() {
+void Game::fillLoadout() {
     if (!pet_.creature) return;
     // Moves: the first owned move that matches the slot's stamped kind and isn't
     // already sitting in an earlier slot (equipping a move MOVES it, so reusing one

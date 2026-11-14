@@ -325,7 +325,7 @@ void test_dock_ladder_counts_brackets_and_pays() {
     const int before = g.bits();
     uint32_t t = 0;
     openBracket(g);
-    g.debugEndTourneyRun(/*champion=*/true);
+    g.crownTourneyChampion();
     CHECK(g.tourneyWins() == 1);
     // The purse is immediate; the LADDER row is not. DOCK_FIRST is a counted row, so it
     // is the achievement SWEEP that notices the tally moved: one tick, exactly as the
@@ -345,7 +345,7 @@ void test_dock_ladder_counts_brackets_and_pays() {
     tapB(g);
     CHECK(!g.tourneyRunning());
     armBracket(g);                    // the dismissal already parked us on the list
-    g.debugEndTourneyRun(/*champion=*/false);
+    g.eliminateFromTourney();
     g.tick(t += kHeartbeatMs);
     CHECK(g.tourneyWins() == 1);
 }
@@ -362,7 +362,7 @@ void test_dock_shape_rows_read_the_final() {
     openBracket(low);
     const int oppLevel = low.tourneyOpponent().spec.level;
     const int ownLevel = low.combatLevel();
-    low.debugEndTourneyRun(/*champion=*/true);
+    low.crownTourneyChampion();
     // PUNCHING UP is unconditional here: a just-hatched pet has not reached Daemon.
     CHECK(low.hasAchievement("DOCK_PUNCHING_UP"));
     // UNDERDOG follows the levels the seed actually rolled, asserted both ways so the
@@ -375,7 +375,7 @@ void test_dock_shape_rows_read_the_final() {
     high.addCombatXp(600000);
     if (high.pet() && high.pet()->stage == Stage::Daemon) {
         openBracket(high);
-        high.debugEndTourneyRun(/*champion=*/true);
+        high.crownTourneyChampion();
         CHECK(high.tourneyWins() == 1);                     // it still counts as taken
         CHECK(!high.hasAchievement("DOCK_PUNCHING_UP"));
     }
@@ -389,7 +389,7 @@ void test_tourney_screen_grayscale() {
         enterSubmenuId(g, SubmenuId::Expl);
         explPickCategory(g, ExplCat::Arena);
         tapB(g);              // draw a bracket
-        if (eliminate) g.debugEndTourneyRun(/*champion=*/false);
+        if (eliminate) g.eliminateFromTourney();
         g.render(fb);
     };
     Framebuffer live(kActiveW, kActiveH), out(kActiveW, kActiveH);
@@ -627,7 +627,7 @@ void test_tourney_run_maps_itself_and_is_dropped_on_dismissal() {
     {
         Game g(StartMode::Hatched, "bruinforce", &store);
         openBracket(g);
-        g.debugEndTourneyRun(/*champion=*/false);
+        g.eliminateFromTourney();
         CHECK(g.saveNow());
     }
     Game g(StartMode::Hatched, "bruinforce", &store);

@@ -133,7 +133,7 @@ int main(int, char**) {
                     game.resetToHatch(); dirty = true; continue;
                 }
                 if (e.key.keysym.sym == SDLK_v) {     // dev: force the Evolution boundary
-                    game.debugTriggerEvolution(); dirty = true; continue;
+                    game.forceEvolution(); dirty = true; continue;
                 }
                 Button b;
                 if (mapKey(e.key.keysym.sym, b)) {

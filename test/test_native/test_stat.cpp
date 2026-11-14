@@ -472,7 +472,7 @@ void test_tier_page_counts_off_level_points() {
 // be handed.
 void test_stat_prose_windows_tile_the_list() {
     Game g{StartMode::Hatched, "wire_heir"};
-    g.debugFillLoadout();
+    g.fillLoadout();
     const auto rows = buildLoadoutRows(g.content(), g.moveLoadout(), g.modSlots(),
                                        g.pet()->stage, g.inEggPhase());
     const int total = static_cast<int>(rows.size());
@@ -898,7 +898,7 @@ void test_favourite_food_is_found_by_feeding_it() {
     if (!snack) return;
     for (uint32_t i = 0; i < 20; ++i) {
         Game h{StartMode::Hatched};
-        h.debugSeedRng(i * 7919u + 1u);
+        h.seedRng(i * 7919u + 1u);
         h.inventory().add(snack->id, 1);
         useItem(h, snack->id);
         const ItemDef* fav = h.petUpgrades().favouriteFood;

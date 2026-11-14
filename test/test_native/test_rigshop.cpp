@@ -122,7 +122,7 @@ void test_refarm_diminishing_rewards() {
         walkToEncounter(g);
         const int S = g.exploreSector(), U = g.exploreSub();
         g.liveOperator().world.subCleared[S][U] = true;          // this sub is a re-farm ground now
-        g.debugSetBandwidth(0);                    // ...and Bandwidth is spent (decay path)
+        g.setBandwidth(0);                    // ...and Bandwidth is spent (decay path)
         CHECK(g.petRecord().armed.subRefarmCount[S][U] == 0);
         const int bits0 = g.bits();
         winAutoExploreFight(g);
@@ -144,7 +144,7 @@ void test_refarm_diminishing_rewards() {
         walkToEncounter(g);
         const int S = g.exploreSector(), U = g.exploreSub();
         g.liveOperator().world.subCleared[S][U] = true;
-        g.debugSetBandwidth(0);                        // decay path
+        g.setBandwidth(0);                        // decay path
         winAutoExploreFight(g);
         CHECK(g.petRecord().armed.subRefarmCount[S][U] == 1);       // this pet depleted it a notch
         g.resetToHatch();                              // a new egg = a new pet
@@ -182,7 +182,7 @@ void test_bandwidth_farming_resource() {
         walkToEncounter(g);
         const int S = g.exploreSector(), U = g.exploreSub();
         g.liveOperator().world.subCleared[S][U] = true;
-        g.debugSetBandwidth(0);
+        g.setBandwidth(0);
         winAutoExploreFight(g);
         CHECK(g.bandwidth() == 0);                     // stays empty
         CHECK(g.petRecord().armed.subRefarmCount[S][U] == 1);       // decay path advances the count
@@ -190,7 +190,7 @@ void test_bandwidth_farming_resource() {
     // (3) Regeneration over real time: a depleted pool trickles back on the heartbeat.
     {
         Game g{StartMode::Hatched};
-        g.debugSetBandwidth(0);
+        g.setBandwidth(0);
         // Advance well past kBandwidthRegenMinutesPerPoint so at least one point returns.
         const uint32_t ms = (kBandwidthRegenMinutesPerPoint + 1) * 60u * 1000u;
         g.tick(ms);
@@ -246,7 +246,7 @@ void test_bandwidth_farming_resource() {
     {
         Game g{StartMode::Hatched};
         walkToEncounter(g);
-        g.debugSetBandwidth(0);
+        g.setBandwidth(0);
         winAutoExploreFight(g);
         CHECK(g.bandwidth() == 0);                      // nothing to spend, stays empty
     }
@@ -324,7 +324,7 @@ void test_rig_link_aggregator_regen() {
     uint32_t now = 0;
 
     // Unbought, even that pool trickles back one point a tick.
-    g.debugSetBandwidth(cap - 200);
+    g.setBandwidth(cap - 200);
     CHECK(g.bandwidthRegenAmount() == 1);
     g.tick(now += tick);
     CHECK(g.bandwidth() == cap - 199);
@@ -335,24 +335,24 @@ void test_rig_link_aggregator_regen() {
     CHECK(g.linkAggregatorUnlocked());
     CHECK(g.bits() == 7);                                    // Bits deducted
     CHECK(!g.operatorRecord().rig.offered(kRigRowLinkAggregator));         // ...and nothing left to buy
-    g.debugSetBandwidth(cap - 200);
+    g.setBandwidth(cap - 200);
     CHECK(g.bandwidthRegenAmount() == 2);
     g.tick(now += tick);
     CHECK(g.bandwidth() == cap - 198);
 
     // Whole points, so a part-slice rounds UP rather than away: 150 spent pays 2, and
     // the price of the row is a power of two like every other sticker in the shop.
-    g.debugSetBandwidth(cap - 150);
+    g.setBandwidth(cap - 150);
     CHECK(g.bandwidthRegenAmount() == 2);
     CHECK((kLinkAggregatorCost & (kLinkAggregatorCost - 1)) == 0);
 
     // The slice is measured per tick, so it decays as the hole closes: a 50-point hole
     // is back to the flat +1 floor, and the pool still never overfills.
-    g.debugSetBandwidth(cap - 50);
+    g.setBandwidth(cap - 50);
     CHECK(g.bandwidthRegenAmount() == 1);
     g.tick(now += tick);
     CHECK(g.bandwidth() == cap - 49);
-    g.debugSetBandwidth(cap - 1);
+    g.setBandwidth(cap - 1);
     g.tick(now += tick * 4);
     CHECK(g.bandwidth() == cap);
 }

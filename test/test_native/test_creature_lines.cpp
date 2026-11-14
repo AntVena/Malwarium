@@ -33,11 +33,11 @@ void test_canine_line_evolution_branch() {
     { // Good care (0-2): Paypup -> Barkmail -> Wire Heir.
         Game g{StartMode::Hatched, "paypup"};
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "barkmail") == 0);
         CHECK(g.pet()->stage == Stage::Script);
         CHECK(g.model().careBranch() == CareBranch::Good);
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "wire_heir") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -46,7 +46,7 @@ void test_canine_line_evolution_branch() {
         g.model().setCareMistakes(3);
         CHECK(g.model().careBranch() == CareBranch::Bad);
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "extorgi") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -62,7 +62,7 @@ void test_pingcub_rejoins_the_bear_line() {
     CHECK(r.creatureSprite(*pingcub) == &ASSET_SPR_PET_PINGCUB);   // its own cub art
     Game g{StartMode::Hatched, "pingcub"};
     uint32_t t = 0;
-    g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+    g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
     CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
     CHECK(g.pet()->stage == Stage::Script);
 }
@@ -73,11 +73,11 @@ void test_cat_line_evolution_branch() {
     { // Good care (0-2): Conkittenate -> Kalico -> Pwnther.
         Game g{StartMode::Hatched, "conkittenate"};
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "kalico") == 0);
         CHECK(g.pet()->stage == Stage::Script);
         CHECK(g.model().careBranch() == CareBranch::Good);
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "pwnther") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -86,7 +86,7 @@ void test_cat_line_evolution_branch() {
         g.model().setCareMistakes(3);
         CHECK(g.model().careBranch() == CareBranch::Bad);
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "breecheetah") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -99,10 +99,10 @@ void test_frog_line_linear() {
         Game g{StartMode::Hatched, "tadpoll"};
         g.model().setCareMistakes(mistakes);
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "croaken") == 0);
         CHECK(g.pet()->stage == Stage::Script);
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "goliauth") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -133,13 +133,13 @@ void test_anglerfish_deepdive_hatch_gate() {
 void test_anglerfish_line_evolution_branch() {
     { // Good care (0-2): Phishlet -> ClickBait -> Spamwhale.
         Game g{StartMode::Hatched, "phishlet"};
-        g.debugSeedRng(1);   // no-divert seed: Phishlet keeps the Phishing chain
+        g.seedRng(1);   // no-divert seed: Phishlet keeps the Phishing chain
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "clickbait") == 0);
         CHECK(g.pet()->stage == Stage::Script);
         CHECK(g.model().careBranch() == CareBranch::Good);
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "spamwhale") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -148,7 +148,7 @@ void test_anglerfish_line_evolution_branch() {
         g.model().setCareMistakes(3);
         CHECK(g.model().careBranch() == CareBranch::Bad);
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "baitracuda") == 0);
         CHECK(g.pet()->stage == Stage::Daemon);
     }
@@ -204,9 +204,9 @@ void test_worm_script_divert_branch() {
     {   // Good care + divert seed: Rootgrub -> Coaxeel, NOT Shenloop.
         Game g{StartMode::Hatched, "rootgrub"};
         CHECK(g.model().careBranch() == CareBranch::Good);
-        g.debugSeedRng(13);                                  // rolls < kTrojanDivertPct
+        g.seedRng(13);                                  // rolls < kTrojanDivertPct
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "coaxeel") == 0);
         CHECK(std::strcmp(g.pet()->line, "trojan") == 0);
         CHECK(g.moveLoadout().owns("backdoor_breach"));      // re-seeded to the Trojan kit
@@ -216,16 +216,16 @@ void test_worm_script_divert_branch() {
         Game g{StartMode::Hatched, "rootgrub"};
         g.model().setCareMistakes(3);
         CHECK(g.model().careBranch() == CareBranch::Bad);
-        g.debugSeedRng(13);
+        g.seedRng(13);
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "usbasilisk") == 0);
     }
     {   // No-divert seed: the Worm line's own branch is untouched.
         Game g{StartMode::Hatched, "rootgrub"};
-        g.debugSeedRng(1);                                   // rolls >= kTrojanDivertPct
+        g.seedRng(1);                                   // rolls >= kTrojanDivertPct
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "shenloop") == 0);
         CHECK(!g.hasAchievement(ach::kTrojanUnleashed));
     }
@@ -239,9 +239,9 @@ void test_trojan_cross_line_divert() {
         Game g{StartMode::Hatched, "phishlet"};
         CHECK(g.moveLoadout().owns("smish_hook"));            // starts with Phishing moves
         CHECK(!g.hasAchievement(ach::kTrojanUnleashed));
-        g.debugSeedRng(13);                                  // rolls < kTrojanDivertPct
+        g.seedRng(13);                                  // rolls < kTrojanDivertPct
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "keyloggerhead") == 0);
         CHECK(std::strcmp(g.pet()->line, "trojan") == 0);
         CHECK(g.moveLoadout().owns("backdoor_breach"));      // gained the Trojan kit
@@ -250,9 +250,9 @@ void test_trojan_cross_line_divert() {
     }
     {   // no-divert seed: the normal Phishing chain is unaffected
         Game g{StartMode::Hatched, "phishlet"};
-        g.debugSeedRng(1);                                   // rolls >= kTrojanDivertPct
+        g.seedRng(1);                                   // rolls >= kTrojanDivertPct
         uint32_t t = 0;
-        g.debugTriggerEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
+        g.forceEvolution(); advanceToReveal(g, t); g.onButton(press(Button::B));
         CHECK(g.pet() && std::strcmp(g.pet()->id, "clickbait") == 0);
         CHECK(!g.hasAchievement(ach::kTrojanUnleashed));
     }
@@ -421,7 +421,7 @@ void test_eggpick_target_never_wraps() {
     for (uint32_t seed = 1; seed <= 64; ++seed) {
         Game g;
         g.unlockAchievement(ach::kDeepWebDepth8);
-        g.debugSeedRng(seed);
+        g.seedRng(seed);
         g.resetToHatch();
         g.onButton(press(Button::A));
         g.onButton(press(Button::B));

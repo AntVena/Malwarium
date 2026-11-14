@@ -991,7 +991,7 @@ void test_pvp_link_screen_verdict_grayscale() {
 // to a crew, and committing it arms that crew's charges.
 void test_crew_exploit_in_combat_picker() {
     Game g{StartMode::Hatched, "paypup"};
-    g.debugStartCombat(/*live=*/true);
+    g.startDummyFight(Combat::Stakes::Live);
     CHECK(g.nav() == Game::Nav::Combat);
 
     g.onButton({Button::A, true, true});           // A+C -> picker
@@ -1074,7 +1074,7 @@ void test_pedia_raised_tally_survives_evolution() {
     CHECK(g.creatureRaised("pingcub"));
     CHECK(g.speciesRaised() == 1);
 
-    g.debugTriggerEvolution();                        // pingcub -> malbear
+    g.forceEvolution();                        // pingcub -> malbear
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
@@ -1083,7 +1083,7 @@ void test_pedia_raised_tally_survives_evolution() {
     CHECK(g.speciesRaised() == 2);
 
     g.model().setCareMistakes(0);
-    g.debugTriggerEvolution();                        // malbear -> bruinforce
+    g.forceEvolution();                        // malbear -> bruinforce
     t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.speciesRaised() == 3);

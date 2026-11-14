@@ -206,6 +206,10 @@ static void setNetworksSeen(Game& g, int n) {
     g.liveOperator().networksSeen = n;
     g.liveOperator().hackerRank = hackerRankForNetworksSeen(n);
 }
+// Every STORY chapter marked read, so a walk scene is never stopped by one.
+static void markEveryStoryRead(Game& g) {
+    for (int i = 0, n = storyEntryCount(); i < n; ++i) g.markStoryRead(storyEntryAt(i).chapter);
+}
 static void openCache(Game& g, const char* id) {
     if (const ItemDef* d = g.content().item(id)) g.openSealedCache(*d);
 }
@@ -374,11 +378,11 @@ int main(int argc, char** argv) {
                          game.themeName());
     }
     // ARCH rack: seed a frozen stored pet so the rack list / Deploy record render.
-    if (hasFlag(argc, argv, "stored")) game.debugSeedRack("cryptoshell");
+    if (hasFlag(argc, argv, "stored")) game.stockRack("cryptoshell");
     // ...and two Daemons for the SELL counter, one either side of the sale's par level.
     if (hasFlag(argc, argv, "daemons")) {
-        game.debugSeedRack("goliauth", kDaemonSaleParLevel + 8);
-        game.debugSeedRack("wire_heir", kDaemonSaleParLevel);
+        game.stockRack("goliauth", kDaemonSaleParLevel + 8);
+        game.stockRack("wire_heir", kDaemonSaleParLevel);
     }
     // ...and the overflowing rack: buy past kRackSlots and fill every slot, which is
     // the state the list has to WINDOW rather than draw straight down the screen.
@@ -388,7 +392,7 @@ int main(int argc, char** argv) {
         static const char* const kSeed[] = {"cryptoshell", "phishlet", "tadpoll",
                                             "croaken",     "paypup",   "malbear",
                                             "clickbait",   "spamwhale"};
-        for (const char* id : kSeed) game.debugSeedRack(id);
+        for (const char* id : kSeed) game.stockRack(id);
     }
     // CSF: drive the pet to the 5/5 dying state so the ageing window can expire.
     if (hasFlag(argc, argv, "csf")) game.model().setCareMistakes(kCareDying);
@@ -443,7 +447,7 @@ int main(int argc, char** argv) {
     }
     // "fullkit" equips every unlocked move slot and every mod slot: pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
-    if (hasFlag(argc, argv, "fullkit")) game.debugFillLoadout();
+    if (hasFlag(argc, argv, "fullkit")) game.fillLoadout();
     // "pantry" puts one of EVERY item in the bag: the whole ICON_ITEM_* set in ITEMS
     // list context, and the deepest the combat Exploit picker's ITEMS band can get.
     if (hasFlag(argc, argv, "pantry"))
@@ -530,7 +534,7 @@ int main(int argc, char** argv) {
         // the only way to see the FOODS grid half filled rather than wholly dim.
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "ate:", 4) == 0)
-                game.debugTasteFoods(std::atoi(argv[i] + 4));
+                game.tasteFoods(std::atoi(argv[i] + 4));
         // A turns the pages, as the player does, until the named one is up.
         const StatPage* want = StatReader::findPage(title);
         for (std::size_t n = StatReader::pages().size();
@@ -635,7 +639,7 @@ int main(int argc, char** argv) {
             // so a scene names its target instead of inheriting the shared LCG's.
             for (int i = 1; i < argc; ++i) {
                 if (std::strncmp(argv[i], "seed:", 5) == 0)
-                    game.debugSeedStacker(static_cast<uint32_t>(std::atoi(argv[i] + 5)));
+                    game.dealStacker(static_cast<uint32_t>(std::atoi(argv[i] + 5)));
                 else if (std::strcmp(argv[i], "drop") == 0)
                     game.onButton({Button::B, true, false});
                 else if (std::strcmp(argv[i], "slide") == 0)
@@ -1008,7 +1012,7 @@ int main(int argc, char** argv) {
             game.setHomeNetwork(0x001122334455ull, "HOME_ROUTER");
             game.joinCrew(0);
         }
-        game.debugStartCombat(/*live=*/false);
+        game.startDummyFight(Combat::Stakes::Safe);
         for (int i = 1; i <= 4; ++i)                 // advance a few action beats
             game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
         if (hasFlag(argc, argv, "override")) {       // open the A+C override picker
@@ -1090,7 +1094,7 @@ int main(int argc, char** argv) {
             game.liveOperator().world.subBossUnlocked[0][2] = true;
         }
         // "read" marks every chapter read, which is what opens the CHAPTERS row.
-        if (hasFlag(argc, argv, "read")) game.debugMarkStoryRead();
+        if (hasFlag(argc, argv, "read")) markEveryStoryRead(game);
         if (hasFlag(argc, argv, "cats")) {
             enterSlot(SubmenuId::Expl);                  // the activity picker itself
         } else {
@@ -1109,7 +1113,7 @@ int main(int argc, char** argv) {
         // hint band. "archive" opens the CHAPTERS list instead, with every chapter this
         // build ships already read, which is the fullest that list ever gets.
         if (hasFlag(argc, argv, "archive")) {
-            game.debugMarkStoryRead();
+            markEveryStoryRead(game);
             enterExplCat(ExplCat::Chapters);
         } else {
             int areaIdx = 0, beatIdx = 0;
@@ -1236,7 +1240,7 @@ int main(int argc, char** argv) {
                 {"LURKER_7", "CryptoShell", "", 1, 1, false},
             };
             for (size_t i = 0; i < sizeof(peers) / sizeof(peers[0]); ++i)
-                game.debugSeedLivePeer(0xBEEF0000ull + i, peers[i]);
+                game.meetPeer(0xBEEF0000ull + i, peers[i]);
             enterHackerSlot(HackerSlotId::Link);
         }
         else if (hasFlag(argc, argv, "shop")) {
@@ -1331,8 +1335,8 @@ int main(int argc, char** argv) {
             // enlists first (the allegiance card's filled state); `netpick` opens the
             // picker; `red`/`blue` open that side's roster and `detail` a crew's page:
             // the four views of the screen, one flag each.
-            game.debugSeedNetworkLedger(0x001122334455ull, "HOME_ROUTER", 12);
-            game.debugSeedNetworkLedger(0x0066778899AAull, "CAFE_GUEST", 3);
+            game.rememberNetwork(0x001122334455ull, "HOME_ROUTER", 12);
+            game.rememberNetwork(0x0066778899AAull, "CAFE_GUEST", 3);
             const uint8_t heard[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
             game.registerNetwork(heard, "HOME_ROUTER");    // history + in range now
             const uint8_t fresh[6] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
@@ -1416,7 +1420,7 @@ int main(int argc, char** argv) {
             game.onButton({Button::B, true, false});   // arm sub-area[0] -> idle explore
         }
         if (hasFlag(argc, argv, "refarm"))
-            game.debugSetExploreStreak(kExploreStreakToBoss - 3);  // mid-countdown
+            game.setWalkStreak(kExploreStreakToBoss - 3);  // mid-countdown
         if (hasFlag(argc, argv, "cachefind")) {
             // AFTER arming, which clears the line the way a fresh walk does.
             // The longest line the walk composes: a Sealed Cache find naming the widest
@@ -1434,7 +1438,7 @@ int main(int argc, char** argv) {
                 char flavor[48];
                 std::snprintf(flavor, sizeof(flavor), "%s - OPEN IN VAULT (A+C)",
                               widest->displayName);
-                game.debugSetExploreFlavor(flavor);
+                game.setWalkFlavor(flavor);
             }
         }
         auto ping = [&]{
@@ -1522,11 +1526,11 @@ int main(int argc, char** argv) {
                 const bool home = hasFlag(argc, argv, "hometurf");
                 // inTopN is a RANK, so "fond" needs a crowd above it to be outside the
                 // favourites and "hometurf" needs to sit at the head of one.
-                game.debugSeedNetworkLedger(seen, "THE_PROMISED_LAN", home ? 99 : 1);
+                game.rememberNetwork(seen, "THE_PROMISED_LAN", home ? 99 : 1);
                 for (int i = 0; i < kNetDiscoveryTopFavoritesCount + 2; ++i) {
                     char nm[24];
                     std::snprintf(nm, sizeof(nm), "NEIGHBOUR_%d", i);
-                    game.debugSeedNetworkLedger(seen + 0x100ull * (i + 1), nm, 20 + i);
+                    game.rememberNetwork(seen + 0x100ull * (i + 1), nm, 20 + i);
                 }
             }
             if (hasFlag(argc, argv, "new") || hasFlag(argc, argv, "fond") ||
@@ -1930,7 +1934,7 @@ int main(int argc, char** argv) {
             if (std::strncmp(argv[i], "frame:", 6) == 0) hold = std::atoi(argv[i] + 6);
         for (int i = 0; i < hold; ++i) game.tick(rt += kHeartbeatMs);
     } else if (evolveFlag) {                        // force + advance to the reveal
-        game.debugTriggerEvolution();
+        game.forceEvolution();
         const int n = kEvoHoldBeats + kEvoFlashBeats + 1;
         for (int i = 1; i <= n; ++i)
             game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);

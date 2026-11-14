@@ -200,4 +200,16 @@ void Game::abandonArena() {
     leaveArena();
 }
 
+void Game::endTourneyRun(TourneyPhase end) {
+    if (!tourney_) return;
+    tourney_->phase = end;
+    if (end == TourneyPhase::Eliminated)
+        tourney_->alive &= static_cast<uint8_t>(~(1u << tourneySlot()));
+    // The purse reads the final's opponent for its two shape achievements, so it is paid
+    // before the opponent is cleared below.
+    else awardTourneyPurse();
+    tourney_->opponent = TourneyFighter{};
+    dirty_ = true;
+}
+
 }  // namespace mal

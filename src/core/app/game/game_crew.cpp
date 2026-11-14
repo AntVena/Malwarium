@@ -56,7 +56,7 @@ CrewExploit Game::crewExploitOption() const {
     return {c->exploit.name, c->exploit.kind, c->exploit.magnitude};
 }
 
-void Game::debugSeedNetworkLedger(uint64_t key, const char* name, int count) {
+void Game::rememberNetwork(uint64_t key, const char* name, int count) {
     networkLedger_.recordNew(key, name);
     for (int i = 1; i < count; ++i) networkLedger_.recordSeenAgain(key, name);
     dirty_ = true;

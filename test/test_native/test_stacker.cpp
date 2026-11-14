@@ -360,13 +360,11 @@ void test_stacker_short_board_pays_what_it_stacked_and_costs_nothing() {
     // up to the cap a full scan takes. On EASY, so the cap is not reached first.
     Game low{StartMode::Hatched};
     low.model().setFragmentation(90);
-    low.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
-    startPlayedMaint(low, MaintKind::Av, ArcadeGameKind::Stacker);
+    startPlayedMaint(low, MaintKind::Av, ArcadeGameKind::Stacker, ArcadeDifficulty::Easy);
     CHECK(playStackerBoard(low, [](int k) { return k < 2 ? 0 : -1; }));
     Game high{StartMode::Hatched};
     high.model().setFragmentation(90);
-    high.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
-    startPlayedMaint(high, MaintKind::Av, ArcadeGameKind::Stacker);
+    startPlayedMaint(high, MaintKind::Av, ArcadeGameKind::Stacker, ArcadeDifficulty::Easy);
     CHECK(playStackerBoard(high, [](int k) { return k < 6 ? 0 : -1; }));
     low.onButton(press(Button::B));
     high.onButton(press(Button::B));
@@ -470,7 +468,7 @@ void test_maint_run_lives_from_the_run_to_the_dismissed_outcome() {
     Game d{StartMode::Hatched};
     d.liveOperator().bits = 1000;
     d.model().setFragmentation(40);
-    d.debugSetMaintPlayedGame(MaintKind::Av, ArcadeGameKind::Stacker);   // C can bank it
+    d.setMaintPlayedGame(MaintKind::Av, ArcadeGameKind::Stacker);   // C can bank it
     enterSubmenuId(d, SubmenuId::Maint);
     d.onButton(press(Button::A));                       // the AV row
     d.onButton(press(Button::B));
@@ -485,7 +483,7 @@ void test_maint_run_lives_from_the_run_to_the_dismissed_outcome() {
     d.onButton(press(Button::B));                       // dismiss the outcome
     CHECK(d.nav() == Game::Nav::Detail && d.maintRun() == nullptr);
 
-    d.debugResolveDefrag(true);
+    d.forceDefragSuccess();
     CHECK(d.maintRun() == nullptr);
 }
 
@@ -513,9 +511,8 @@ void test_played_maint_engines_are_interchangeable() {
 
     Game d{StartMode::Hatched};
     d.model().setFragmentation(100);
-    d.debugSetMaintDifficulty(ArcadeDifficulty::Easy);
     const int bits = d.bits();
-    startPlayedMaint(d, MaintKind::Defrag, ArcadeGameKind::Stacker);
+    startPlayedMaint(d, MaintKind::Defrag, ArcadeGameKind::Stacker, ArcadeDifficulty::Easy);
     CHECK(d.nav() == Game::Nav::Stacker);
     // Three rows then a miss: a board short of the top, so no achievement pays Bits of
     // its own into the wallet being measured.
@@ -558,7 +555,7 @@ void test_rolled_defrag_takes_its_fixed_bite() {
     Game g{StartMode::Hatched};
     g.model().setFragmentation(60);
     const int before = g.model().fragmentation();
-    g.debugResolveDefrag(true);
+    g.forceDefragSuccess();
     CHECK(g.model().fragmentation() == before - kDefragReduction);
 
     // ...and a lost board costs what a failed Quick defrag costs: the frag penalty plus
@@ -567,7 +564,7 @@ void test_rolled_defrag_takes_its_fixed_bite() {
     g2.model().setFragmentation(60);
     const int mistakes = g2.model().careMistakes();
     const int frag = g2.model().fragmentation();
-    g2.debugResolveDefrag(false);
+    g2.forceDefragFailure();
     CHECK(g2.model().fragmentation() == frag + kMaintFailPenalty);
     CHECK(g2.model().careMistakes() == mistakes + 1);
 }
@@ -582,7 +579,7 @@ void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
     // A failed defrag on a disk that is NOT yet critical is just a failed defrag.
     Game ok{StartMode::Hatched, "vermicell"};
     ok.model().setFragmentation(kFragCriticalMin - kMaintFailPenalty - 1);
-    ok.debugResolveDefrag(false);
+    ok.forceDefragFailure();
     CHECK(ok.model().fragmentation() < kFragCriticalMin);
     CHECK(!ok.model().hasGhost());
 
@@ -590,13 +587,13 @@ void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
     Game g{StartMode::Hatched, "vermicell"};
     g.model().setFragmentation(kFragCriticalMin);
     CHECK(!g.model().hasGhost());
-    g.debugResolveDefrag(false);
+    g.forceDefragFailure();
     CHECK(g.model().hasGhost());
 
     // A SUCCESSFUL defrag never raises one, however bad the disk was.
     Game s{StartMode::Hatched, "vermicell"};
     s.model().setFragmentation(90);
-    s.debugResolveDefrag(true);
+    s.forceDefragSuccess();
     CHECK(!s.model().hasGhost());
 }
 
@@ -606,7 +603,7 @@ void test_replication_ghost_is_raised_by_a_failed_defrag_on_a_critical_disk() {
 void test_replication_ghost_never_raised_off_the_worm_line() {
     Game g{StartMode::Hatched, "paypup"};             // Ransomware
     g.model().setFragmentation(kFragCriticalMin);
-    g.debugResolveDefrag(false);
+    g.forceDefragFailure();
     CHECK(!g.model().hasGhost());
 }
 
@@ -626,7 +623,7 @@ void test_unlinkguine_cures_the_ghost_and_unlocks() {
 
     // Raise a ghost the only way there is. The everyday snack does not touch it.
     g.model().setFragmentation(kFragCriticalMin);
-    g.debugResolveDefrag(false);
+    g.forceDefragFailure();
     CHECK(g.model().hasGhost());
     g.inventory().add("dyno_nuggets", 1);
     useItem(g, "dyno_nuggets");
@@ -645,7 +642,7 @@ void test_unlinkguine_cures_the_ghost_and_unlocks() {
 void test_ghost_also_clears_through_a_successful_av_scan() {
     Game g{StartMode::Hatched, "vermicell"};
     g.model().setFragmentation(kFragCriticalMin);
-    g.debugResolveDefrag(false);
+    g.forceDefragFailure();
     CHECK(g.model().hasGhost());
     CHECK(!avGated(g.model()));                     // a ghost is work for the AV screen
     CHECK(!g.model().applyAntivirus(true));          // succeeded
@@ -773,7 +770,7 @@ void test_save_v39_raised_tally_roundtrip() {
     // A real evolution, written through the live autosave, read back cold.
     MemSaveStore store;
     { Game g(StartMode::Hatched, "pingcub", &store);
-      g.debugTriggerEvolution();
+      g.forceEvolution();
       uint32_t t = 0; advanceToReveal(g, t);
       g.onButton(press(Button::B));
       CHECK(g.pet() && std::strcmp(g.pet()->id, "malbear") == 0);
@@ -806,7 +803,7 @@ void test_full_pedia_achievement_reads_the_raised_tally() {
     CHECK(!g.hasAchievement("FULL_PEDIA_L1"));
     CHECK(!g.creatureRaised("malbear"));
 
-    g.debugTriggerEvolution();                         // pingcub -> malbear: the last one
+    g.forceEvolution();                         // pingcub -> malbear: the last one
     uint32_t t = 0; advanceToReveal(g, t);
     g.onButton(press(Button::B));
     CHECK(g.creatureRaised("malbear"));
