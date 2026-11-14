@@ -70,6 +70,14 @@ question with the description beneath them, and open the confirm over the descri
 `arch_screen.cpp`'s sale sheet. | S | Check `arch_sale`, `arch_sale_twin` and
 `arch_sale_confirm` on the contact sheet. |
 
+**Wild and boss levels do not follow the pet.** The tier rosters are hand-tuned; only the
+DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level (`kSimDummyHealthPerLevel`,
+`kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Decide the curve every
+wild and boss encounter follows against the pet's power, then apply it in one place
+instead of per encounter. | `tunables.h`, the area boss and roster tables, `combat_factory.cpp`
+| L | A balance pass: decide the curve before any code. The dummy's comment in `tunables.h`
+points at it. |
+
 ### 1g. Test-infrastructure gaps
 
 - **No serial test-hook / no automated on-device gameplay verification.** Every device check to date
@@ -158,9 +166,45 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 
 #### Still on `Game`
 
-- **Sort the rest of `Game`'s fields into owners.** The fields in `game.h`'s private
-  section have not been surveyed as clusters. The pass names the next groups (a record
-  part, a run, or a screen), one row each, cut as above. | `game.h` | M (survey first) |
+Most of what `game.h` still declares is one record, run or screen held by value, which is
+the shape. These loose fields each have an owner:
+
+- **The radio switches belong on `Settings`.** `netScanEnabled_`, `apEnabled_` and
+  `linkEnabled_` are hardware preferences the save keeps, mapped field by field in
+  `game_persist.cpp`'s capture and restore rather than by the record. Move them onto
+  `Settings` and its mapping; the wire stays as it is. | `settings.h`, `game_persist.cpp`,
+  `game_net.cpp`, `game_peers.cpp` | M |
+- **Live peers** (`livePeers_`, `livePeerCount_`): the in-range peer snapshot, the same
+  shape `NetworkSightings` gives networks, beside `PeerLedger` in `core/net`. | S |
+- **Two pet fields sit on `Game`.** `allyBuffBattlesLeft_` (the friendly-visit and escort
+  buff, spent one per battle) is armed on the pet, and `lastLevelUpStat_` (the level-up
+  tell, cleared on hatch) is the pet's progress. Both go on `Pet`. The buff is unsaved
+  today, so a reboot drops it; putting it in the armed part decides whether it is saved,
+  which is a save bump. | `pet.h`, `game_combat.cpp`, `game_net.cpp`,
+  `game_shiboleet.cpp` | S, L if saved |
+- **Where a screen returns to is the screen's.** `tipCardReturn_` belongs on
+  `TipCardScreen`, `offerBackNav_` on `ItemOfferScreen`, and `lockoutItemsContext_` (ITEMS
+  opened over the Lockout modal, read in seven units) on `ItemsMenu`. | S |
+- **The rank-up celebration** (`rankUpPending_`, `rankUpFlavor_`): a pending
+  announcement, an overlay type as `AchievementBanner` is. | S |
+- **The dissolve cadence** (`fxBeat_`, `lastFxMs_`, `fastCadenceActive_`): one clock type
+  beside the heartbeat's `beat_` and `lastBeatMs_`. `fxBeat_` is reset in eight units when
+  a screen opens, so the type wants one restart call they share. | M |
+- **The Bandwidth pool** (`bandwidth_`, `bandwidthAccumMs_`): the farm pool and its refill
+  clock, spent by combat, items and the rig shop and refilled on boot. A type of its own
+  with spend, refill and cap. | S-M |
+- **The rest, in one batch:** `webBundleVersion_` is a device-tier reading and goes on
+  `DeviceStatus`; `awayDigestOn_` is the away digest's; `autoProgress_` is the walk's
+  hands-off switch; `defragPlayedGame_` and `avPlayedGame_` are the MAINT played-variant
+  test seam and go in the test-seam block or on `MaintScreen`. | S |
+- **The habitat draw is still `Game`'s.** `HomeHabitat` owns the idle animations and their
+  step, but `drawHabitat` and its helpers (`drawHabitatPet`, `drawIdleReplicas`,
+  `drawDisguiseProp`, the feeding, lure, harvest and mimic draws) are `Game` methods that
+  read it. Move them onto the habitat with a host for what else they read (the pet, the
+  carousel, the status column). | `game_render.cpp` and the `game_<trick>.cpp` draws | M |
+
+`nav_`, `cursor_` and `face_` are the routing `Game` exists to do, and the clocks, the RNG,
+the store and the platform probes are its plumbing; they stay.
 
 ---
 
