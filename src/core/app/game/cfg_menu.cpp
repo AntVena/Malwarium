@@ -460,7 +460,7 @@ void CfgMenu::drawRadioPage(Framebuffer& fb, const CfgHost& host) const {
     v.auditLevel = static_cast<int>(host.auditMode());
     v.linkOn = host.linkEnabled();
     v.apOn = host.apEnabled();
-    v.updateLive = host.updateJobLive();
+    v.updateLive = host.netConnectWanted();
     drawCfgRadio(fb, v);
 }
 

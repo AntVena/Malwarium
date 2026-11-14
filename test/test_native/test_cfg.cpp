@@ -133,6 +133,29 @@ void test_cfg_format_sd_refused_during_update() {
     CHECK(!g.sdFormatRequested());
 }
 
+// RADIO draws the update job's row above the toggles exactly while the job claims the
+// radio, which is the claim the arbiter resolves (netConnectWanted): a live job with
+// no stored network to join has let the radio go, and the page must not say otherwise.
+void test_cfg_radio_shows_the_update_claim_the_arbiter_sees() {
+    auto radioPage = [](Game& g) {
+        enterCfgTarget(g, CfgScreen::Radio);
+        Framebuffer fb(kActiveW, kActiveH);
+        g.render(fb);
+        for (int i = 0; i < 4 && g.nav() != Game::Nav::Idle; ++i) tapC(g);
+        return std::vector<Rgb565>(fb.data(), fb.data() + kActiveW * kActiveH);
+    };
+    Game g{StartMode::Hatched};
+    const auto quiet = radioPage(g);
+    g.setNetProvisioned(true);
+    g.setUpdateSourceKnown(true);
+    g.requestUpdateCheck();
+    CHECK(g.netConnectWanted());
+    CHECK(radioPage(g) != quiet);                 // the job's row, above the toggles
+    g.setNetProvisioned(false);                   // the job lives on, the claim does not
+    CHECK(g.updateJobLive() && !g.netConnectWanted());
+    CHECK(radioPage(g) == quiet);
+}
+
 // The travel-sleep contract, and the reason the mode needs no clock-freeze machinery
 // of its own: the device tier lands a save and then DEEP-sleeps, which on this board
 // is a reset, so a wake re-enters through that save. Whatever the gap was, the state

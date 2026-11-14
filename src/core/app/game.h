@@ -1010,7 +1010,7 @@ public:
     // reboot. Latched rather than nav-derived, because a fetch that died the moment the
     // menu collapsed could never finish. When it lets go the arbiter re-resolves and the
     // radio falls back to whichever toggle was already on.
-    bool netConnectWanted() const { return netProvisioned_ && updateJobLive(); }
+    bool netConnectWanted() const override { return netProvisioned_ && updateJobLive(); }
     // The association outcome, pushed back by the device tier and reported by the
     // UPDATES screen as the first step of a job (CONNECTING → CHECKING → the verdict).
     // A terminal FAILURE ends the job and fails it as NoNetwork: there is nothing to

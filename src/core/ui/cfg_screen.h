@@ -156,7 +156,7 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
 // L3 RADIO group: the three radio toggles, in the arbiter's priority order with the
 // highest first, headed by the one thing no individual toggle screen can report,
 // which of them the arbiter has actually put on the air (`owner`). `updateLive`
-// draws a fourth, non-selectable row ABOVE them for as long as an update job holds
+// draws a fourth, non-selectable row ABOVE them for as long as an update job claims
 // the radio: it outranks all three, so the screen would otherwise show a set of
 // waiting rows with no winner named.
 //
@@ -177,7 +177,7 @@ struct CfgRadioView {
     int auditLevel = 0;
     bool linkOn = false;
     bool apOn = false;
-    bool updateLive = false;         // an update job holds the radio
+    bool updateLive = false;         // an update job claims the radio
 };
 void drawCfgRadio(Framebuffer& fb, const CfgRadioView& v);
 

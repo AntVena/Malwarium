@@ -49,6 +49,7 @@ public:
 
     // What the pages show.
     virtual RadioOwner radioOwner() const = 0;
+    virtual bool netConnectWanted() const = 0;   // the Update claim the arbiter resolves
     virtual const SdStatus& sdStatus() const = 0;
     virtual const PowerStatus& powerStatus() const = 0;
     virtual SdFormatState sdFormatState() const = 0;
