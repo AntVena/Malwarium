@@ -54,6 +54,11 @@ void Game::startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) {
     nav_ = Nav::Process;
 }
 
+void Game::dismissMaint() {
+    maint_.reset();
+    nav_ = Nav::Detail;
+}
+
 void Game::beginStackerBoard() {
     // The board itself, independent of who pays for it: MAINT takes the units, the
     // arcade charges nothing and takes the score. The shared LCG seeds the intruders'

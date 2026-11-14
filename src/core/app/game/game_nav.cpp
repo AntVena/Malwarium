@@ -219,14 +219,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // The arcade payout: informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).
         case Nav::ArcadeResult: arcadeScreen_.onResult(*this, ev); break;
-        case Nav::Process:
-            // Non-interruptible: ignored while running; the outcome dismisses.
-            if (maint_ && maint_->resolved &&
-                (ev.button == Button::B || ev.button == Button::C)) {
-                maint_.reset();
-                nav_ = Nav::Detail;
-            }
-            break;
+        case Nav::Process: maintScreen_.onProcess(*this, ev); break;
         case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
         case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
         case Nav::Decryption: decryptionScreen_.onButton(*this, ev); break;

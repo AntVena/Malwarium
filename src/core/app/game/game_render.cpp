@@ -51,7 +51,7 @@ void Game::render(Framebuffer& fb) const {
             else drawSubmenu(fb);
             break;
         case Nav::Detail:  drawDetail(fb); break;
-        case Nav::Process: drawProcess(fb); break;
+        case Nav::Process: maintScreen_.drawProcess(fb, *this); break;
         case Nav::Stacker: stackerScreen_.draw(fb, *this); break;
         case Nav::Fragger: fraggerScreen_.draw(fb, *this); break;
         case Nav::ArcadeResult: arcadeScreen_.drawResult(fb, *this); break;
@@ -750,24 +750,5 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawProcess(Framebuffer& fb) const {
-    if (!maint_) return;
-    const MaintRun& run = *maint_;
-    if (!run.resolved) {
-        drawMaintProcess(fb, run.kind, static_cast<float>(run.beat) / kProcessBeats);
-        return;
-    }
-    // A PLAYED run reports what its own board was worth and can come up short without
-    // failing; a rolled or bought one reports the fixed reduction it either got or missed.
-    if (run.played)
-        drawMaintOutcome(fb, run.kind,
-                         run.success ? MaintOutcome::Cleaned : MaintOutcome::Partial,
-                         run.fragRemoved, run.bitsEarned);
-    else
-        drawMaintOutcome(fb, run.kind,
-                         run.success ? MaintOutcome::Cleaned : MaintOutcome::Failed,
-                         run.kind == MaintKind::Defrag ? kDefragReduction : kAvReduction);
-}
 
 }  // namespace mal

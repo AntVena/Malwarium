@@ -66,4 +66,30 @@ void MaintScreen::drawDetail(Framebuffer& fb, const MaintHost& host) const {
     drawMaintAction(fb, host.petRecord().model, v);
 }
 
+void MaintScreen::onProcess(MaintHost& host, const ButtonEvent& ev) {
+    // Non-interruptible: ignored while running; the outcome dismisses.
+    const MaintRun* run = host.maintRun();
+    if (run && run->resolved && (ev.button == Button::B || ev.button == Button::C))
+        host.dismissMaint();
+}
+
+void MaintScreen::drawProcess(Framebuffer& fb, const MaintHost& host) const {
+    const MaintRun* run = host.maintRun();
+    if (!run) return;
+    if (!run->resolved) {
+        drawMaintProcess(fb, run->kind, static_cast<float>(run->beat) / kProcessBeats);
+        return;
+    }
+    // A PLAYED run reports what its own board was worth and can come up short without
+    // failing; a rolled or bought one reports the fixed reduction it either got or missed.
+    if (run->played)
+        drawMaintOutcome(fb, run->kind,
+                         run->success ? MaintOutcome::Cleaned : MaintOutcome::Partial,
+                         run->fragRemoved, run->bitsEarned);
+    else
+        drawMaintOutcome(fb, run->kind,
+                         run->success ? MaintOutcome::Cleaned : MaintOutcome::Failed,
+                         run->kind == MaintKind::Defrag ? kDefragReduction : kAvReduction);
+}
+
 }  // namespace mal

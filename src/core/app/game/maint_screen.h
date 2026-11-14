@@ -1,10 +1,11 @@
-// maint_screen.h: the MAINT slot's two screens, as a feature that owns its own state.
+// maint_screen.h: the MAINT slot's three screens, as a feature that owns its own state.
 //
 // The process list (L2: DEFRAG, AV) and one process's action page (L3): which process is
 // open, the focused payment variant (DEFRAG: Quick / Tool / Played; AV: Quick / Played),
 // and the PLAYED row's difficulty dial. A run started from the page takes a copy of all
 // three (MaintRun); the price, the wallet and the roll are the game's, reached through
-// MaintHost.
+// MaintHost. The process screen (Nav::Process) draws that run's bar and then its outcome,
+// and holds nothing: the run is the game's until the outcome is dismissed.
 //
 // This header names no core/ui type, so game.h can hold a MaintScreen by value.
 #pragma once
@@ -30,11 +31,13 @@ public:
     virtual int maintFailPct() const = 0;                 // a QUICK run's chance to fail
     virtual int screenBeat() const = 0;
     virtual ArcadeGameKind maintPlayedGame(MaintKind k) const = 0;
+    virtual const MaintRun* maintRun() const = 0;   // the process in play, or null
 
     virtual void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) = 0;
     virtual void openDetail() = 0;
     virtual void closeDetail() = 0;
     virtual void leaveToCarousel() = 0;
+    virtual void dismissMaint() = 0;   // end the resolved run, back to its action page
 
 protected:
     ~MaintHost() = default;
@@ -52,6 +55,9 @@ public:
     // L3: the open process's page.
     void onDetail(MaintHost& host, const ButtonEvent& ev);
     void drawDetail(Framebuffer& fb, const MaintHost& host) const;
+    // The process screen: the run's bar, then its outcome.
+    void onProcess(MaintHost& host, const ButtonEvent& ev);
+    void drawProcess(Framebuffer& fb, const MaintHost& host) const;
 
     MaintKind kind() const { return kind_; }
     ArcadeDifficulty difficulty() const { return difficulty_; }

@@ -1626,7 +1626,7 @@ public:
     // screen opens, and separate from the cabinets' so neither moves the other.
     ArcadeDifficulty maintDifficulty() const { return maintScreen_.difficulty(); }
     // The MAINT process in play (its board or its process screen), or nullptr.
-    const MaintRun* maintRun() const { return maint_ ? &*maint_ : nullptr; }
+    const MaintRun* maintRun() const override { return maint_ ? &*maint_ : nullptr; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
     ArcadeGameKind maintPlayedGame(MaintKind k) const override {
         return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
@@ -2439,7 +2439,6 @@ private:
     void drawAchievementBanner(Framebuffer& fb) const;
     void drawSubmenu(Framebuffer& fb) const;
     void drawDetail(Framebuffer& fb) const;
-    void drawProcess(Framebuffer& fb) const;
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
@@ -3061,6 +3060,7 @@ private:
     void moveStatPoint(const ItemDef& item, int from, int to) override;
     StatPickerScreen statPicker_;
     void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) override;
+    void dismissMaint() override;
     using PlayOutcome = mal::PlayOutcome;   // game/board_host.h
     // Open `g`'s board for whichever context is armed (an ArcadeRun or maintKind_). False
     // for an engine that cannot be played outside its own context (a hatch game).
