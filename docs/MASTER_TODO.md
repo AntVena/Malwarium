@@ -178,7 +178,8 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 row can claim to be a notice without being a header, and every reader has to know which
 pair is legal. The STAT, prose and collect rows repeat the `header` flag. One row-kind enum
 (item, header, notice), shared by the list screens and read by `stepSelectableRow`, makes
-the illegal pairs unwritable. | `core/ui/items_screen.h`, `stat_screen`, `prose_page`,
+the illegal pairs unwritable. The gates read `.header` as a field in about thirty places,
+so the enum lands with the sweep, which moves them in the same change. | `core/ui/items_screen.h`, `stat_screen`, `prose_page`,
 `collect_screen`, the native tests that read `.header` | M | Native suite plus a
 `tools/screens.sh` render diffed against one taken before it. |
 
