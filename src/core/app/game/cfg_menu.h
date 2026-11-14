@@ -1,21 +1,20 @@
-// cfg_menu.h: the CFG slot's screens, as a feature that owns its own state.
+// cfg_menu.h: the CFG slot's menu: the CFG list (L2), its two group pages (DEVICE,
+// RADIO), and which page behind them is up.
 //
-// The CFG list (L2), its two group screens (DEVICE, RADIO) and every L3 behind them: the
-// value pickers, the travel and SD-format confirms, System Info with its hidden Factory
-// Reset, the HackerTag editor, TIPS, UPDATES and the two QR pages. The screen holds which
-// page is open, the cursors, the open page's focused choice, the tag being typed and
-// UPDATES' own state is its page's (UpdatesPage). The settings, the radios and the jobs
-// are the game's, reached through CfgHost.
+// Each page behind the list is a type of its own, holding its focus and owning its input
+// and draw (UpdatesPage, RadioPages, HardwarePages, LooksPages, SettingsPages, TipsPage,
+// FactoryResetPage), handed only its own host. The menu holds the list and group
+// cursors and which page is open, dispatches to the page that is up, and makes the move
+// a page asks of it (CfgMove). The settings, the radios and the jobs are the game's.
 //
 // This header names no core/ui type beyond ui_state.h, so game.h can hold a CfgMenu by
 // value.
 #pragma once
 
 #include <cstdint>
-#include <vector>
 
-#include "tunables.h"                   // kHackerTagMax
-#include "core/app/operator.h"          // Tip
+#include "core/app/game/cfg_page.h"
+#include "core/app/game/factory_reset_page.h"
 #include "core/app/game/hardware_pages.h"
 #include "core/app/game/looks_pages.h"
 #include "core/app/game/radio_pages.h"
@@ -23,44 +22,32 @@
 #include "core/app/game/tips_page.h"
 #include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
-#include "core/device/power_status.h"
 #include "core/device/radio_status.h"
-#include "core/device/sd_status.h"
-#include "core/device/update_status.h"
-#include "core/device/net_status.h"
-#include "core/render/scene_id.h"
-#include "core/audio/sound.h"           // SoundMode
-#include "core/ui/ui_state.h"           // CfgScreen, UiMode
+#include "core/ui/ui_state.h"           // CfgScreen
 
 namespace mal {
 
 class Framebuffer;
+struct Operator;
 struct Settings;
 
-// What a Factory Reset clears, the choice A cycles on its page.
-enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
-
-// What CFG needs from the game. Game implements it; a test can too. Each page that is a
-// type of its own is handed only its own host, which this extends. What the menu calls
-// itself is declared here, even where a page's host declares it too, so a call through
-// CfgHost names one function.
+// What CFG needs from the game. Game implements it; a test can too. It extends every
+// page's host, so the menu can hand each page its own. What the menu calls itself is
+// declared here, even where a page's host declares it too, so a call through CfgHost
+// names one function; Game's one override serves every host that declares it.
 class CfgHost : public UpdatesHost, public RadioHost, public HardwareHost,
-                public LooksHost, public SettingsHost, public TipsHost {
+                public LooksHost, public SettingsHost, public TipsHost,
+                public FactoryResetHost {
 public:
+    // What the CFG list and the DEVICE group page summarise.
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
-    // How long B has been held on this page, or -1 with it up.
-    virtual int32_t heldBMs() const = 0;
-
-    // What the pages show.
-    virtual RadioOwner radioOwner() const = 0;        // the CFG list's radio line
+    virtual RadioOwner radioOwner() const = 0;
     virtual const char* equippedTitleName() const = 0;
     virtual const char* themeName() const = 0;
 
-    // What the pages change. A setter returning bool refuses a locked choice.
+    // The list's RESET TO HATCH row, and the moves between the menu's levels.
     virtual void resetToHatch() = 0;
-    virtual void executeFactoryReset(FactoryScope scope) = 0;
-    virtual void armHoldB() = 0;
     virtual void disarmHoldB() = 0;
     virtual void markDirty() = 0;
     virtual void openDetail() = 0;
@@ -104,13 +91,11 @@ private:
     // A group page's cursor, kept apart from row_ so backing out of a group lands on
     // the row that opened it.
     int groupRow_ = 0;
-    // The open page's focused choice: a picker's row, a confirm's NO/YES, the Factory
-    // Reset scope. Only one page is open at a time, and each seeds it on opening.
-    int pick_ = 0;
     HardwarePages hardware_;
     LooksPages looks_;
     SettingsPages settings_;
     TipsPage tips_;
+    FactoryResetPage factoryReset_;
     UpdatesPage updates_;
     RadioPages radio_;
 };

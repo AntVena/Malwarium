@@ -1,21 +1,11 @@
 #include "core/app/game/cfg_menu.h"
 
-#include <cstdio>
-#include <cstring>
-
-#include "version.h"
+#include "tunables.h"                   // kFactoryRevealMs
+#include "core/app/operator.h"
 #include "core/app/settings.h"
-#include "core/app/game/tip_card_screen.h"   // TipCardScreen::title
 #include "core/content/content_backgrounds.h"
-#include "core/content/content_themes.h"
-#include "core/model/hacker_rank.h"
-#include "core/render/canvas.h"
-#include "core/render/framebuffer.h"
-#include "core/render/font.h"
-#include "core/render/palette.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/layout.h"
-#include "core/ui/widgets.h"
 
 namespace mal {
 
@@ -140,11 +130,7 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
         case CfgScreen::PediaQr:    follow(host, radio_.onPediaQr(host, ev)); break;
         case CfgScreen::Update:     follow(host, updates_.onButton(host, ev)); break;
         case CfgScreen::UpdateQr:   follow(host, updates_.onFlashQr(ev)); break;
-        case CfgScreen::FactoryReset:
-            if (ev.button == Button::A) pick_ ^= 1;                  // cycle scope
-            else if (ev.button == Button::B) host.armHoldB();         // arm hold-to-commit
-            else if (ev.button == Button::C) host.closeDetail();      // safe abort
-            break;
+        case CfgScreen::FactoryReset: follow(host, factoryReset_.onButton(host, ev)); break;
         case CfgScreen::ResetHatch:
         case CfgScreen::CareAlerts:
             break;  // never pages: the list and the DEVICE group act on them in place
@@ -152,17 +138,15 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
 }
 
 // The hidden Factory Reset: a held B reveals the reset page from System Info, then
-// commits the wipe there. Each is a deliberate hold of several seconds.
+// commits the wipe there. Each is a deliberate hold of several seconds. The reveal is
+// the menu's (it changes which page is up); the commit is the page's.
 bool CfgMenu::holdB(CfgHost& host, uint32_t heldMs) {
     if (page_ == CfgScreen::SysInfo && heldMs >= kFactoryRevealMs) {
         page_ = CfgScreen::FactoryReset;
-        pick_ = 0;
+        factoryReset_.open();
         return true;
     }
-    if (page_ == CfgScreen::FactoryReset && heldMs >= kFactoryCommitMs) {
-        host.executeFactoryReset(static_cast<FactoryScope>(pick_));
-        return true;
-    }
+    if (page_ == CfgScreen::FactoryReset) return factoryReset_.holdB(host, heldMs);
     return false;
 }
 
@@ -201,12 +185,7 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::Update: updates_.draw(fb, host); break;
         case CfgScreen::UpdateQr: updates_.drawFlashQr(fb, host); break;
         case CfgScreen::PediaQr: radio_.drawPediaQr(fb, host); break;
-        case CfgScreen::FactoryReset: {
-            const int32_t held = host.heldBMs();
-            const float hf = held >= 0 ? static_cast<float>(held) / kFactoryCommitMs : 0.0f;
-            drawFactoryReset(fb, pick_, hf);
-            break;
-        }
+        case CfgScreen::FactoryReset: factoryReset_.draw(fb, host); break;
         case CfgScreen::ResetHatch:
         case CfgScreen::CareAlerts:
             break;
