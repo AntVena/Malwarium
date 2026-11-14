@@ -1,10 +1,10 @@
 // game_nav.cpp: where a button press lands, and where the cursor stands afterwards.
 //
-// Two halves of one concern. onButton is the dispatcher: one switch over Nav for the
-// press edge and one for the release, routing to the per-state handler that owns each
-// screen. What the buttons MEAN is fixed device-wide (CONTRIBUTING: A=Next, B=Accept,
-// C=Cancel, A+C the Exploit chord), so a screen joins by gaining a case here rather
-// than by inventing its own reading of a press.
+// Two halves of one concern. onButton is the dispatcher: the release edge settles the
+// held gestures, and the press edge goes to the screen that is up through the per-screen
+// table (game_screens.cpp). What the buttons MEAN is fixed device-wide (CONTRIBUTING: A=Next, B=Accept,
+// C=Cancel, A+C the Exploit chord), so a screen joins by gaining a row in that table
+// rather than by inventing its own reading of a press.
 //
 // The navigation half below is the carousel and the menu tree the dispatcher moves
 // through, which slot is entered, which are inert, and how the tree collapses back to
@@ -133,105 +133,65 @@ void Game::onButton(const ButtonEvent& ev) {
         }
     }
 
-    switch (nav_) {
-        case Nav::Idle:
-            // B cracks the egg once its clock is nearly out, like the A+C chord. It
-            // is an egg's only idle action. A/C still summon the carousel (an egg can
-            // still be carried around / walked to hatch faster).
-            if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
-            // A failing pet with a cookie that would save it: B feeds it, as the
-            // habitat's FAILING banner says. Nothing else at idle is on B.
-            else if (ev.button == Button::B && yubiWouldSave()) feedYubiToSave();
-            else if (ev.button == Button::A) summonCursor(0);
-            else if (ev.button == Button::C) summonCursor(kCarouselSlots - 1);
-            break;
-        case Nav::Cursor:
-            if (ev.button == Button::A) cursor_ = (cursor_ + 1) % kCarouselSlots;
-            else if (ev.button == Button::C)
-                cursor_ = (cursor_ + kCarouselSlots - 1) % kCarouselSlots;
-            // B enters the focused submenu. The Hacker face routes to its own slots
-            // (inaccessible ones are inert); pet-side, a locked egg slot is inert.
-            else if (ev.button == Button::B) {
-                if (face_ == Face::Hacker) enterHackerSubmenu();
-                else if (!slotLocked(enteredId())) enterSubmenu();
-            }
-            break;
-        case Nav::Submenu:
-            // Hacker face reuses the L2 state but its own slot roster/dispatch.
-            if (face_ == Face::Hacker) { onHackerSubmenu(ev); break; }
-            switch (enteredId()) {
-                // STAT is two screens behind one slot (game_stat.cpp): the paged
-                // reader, and the INDEX that jumps between its pages and sections.
-                case SubmenuId::Stat: stat_.onButton(*this, ev); break;
-                case SubmenuId::Items: items_.onButton(*this, ev); break;
-                case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
-                case SubmenuId::Cfg: cfg_.onButton(*this, ev); break;
-                case SubmenuId::Arch: arch_.onButton(*this, ev); break;
-                // MODS is the LOADOUT hub: the same L2 fronts three pages, and which
-                // one is open is loadoutTab_ (PRACTISE never rests here. It opens
-                // straight into its L3).
-                case SubmenuId::Mods:
-                    loadout_.onButton(*this, ev);
-                    break;
-                case SubmenuId::Games: arcadeScreen_.onList(*this, ev); break;
-                case SubmenuId::Expl: expl_.onButton(*this, ev); break;
-                default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
-            }
-            break;
-        case Nav::Detail:
-            switch (enteredId()) {
-                case SubmenuId::Items: items_.onDetail(*this, ev); break;
-                case SubmenuId::Maint: maintScreen_.onDetail(*this, ev); break;
-                case SubmenuId::Cfg: cfg_.onDetail(*this, ev); break;
-                case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
-                case SubmenuId::Mods:
-                    loadout_.onDetail(*this, ev);
-                    break;
-                case SubmenuId::Games: arcadeScreen_.onCabinet(*this, ev); break;
-                default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
-            }
-            break;
-        case Nav::Combat: fightScreen_.onButton(*this, ev); break;
-        case Nav::ExploreControl: exploreControl_.onButton(*this, ev); break;
-        case Nav::Tourney: arena_.onButton(*this, ev); break;
-        case Nav::Story: storyReader_.onButton(*this, ev); break;
-        case Nav::TipCard: tipCardScreen_.onButton(*this, ev); break;
-        case Nav::AwayDigest: awayDigest_.onButton(*this, ev); break;
-        case Nav::StoryArchive: chapters_.onButton(*this, ev); break;
-        case Nav::Encounter: encounter_.onButton(*this, ev); break;
-        case Nav::Wifi: wifiScreen_.onButton(*this, ev); break;
-        case Nav::ShiboleetHail: shiboleet_.onHail(*this, ev); break;
-        case Nav::Shiboleet: shiboleet_.onRiddle(*this, ev); break;
-        case Nav::ShiboleetVerdict: shiboleet_.onVerdict(*this, ev); break;
-        case Nav::Shop:
-        case Nav::ModShop: shop_.onButton(*this, ev); break;
-        case Nav::WarpPicker: warpPicker_.onButton(*this, ev); break;
-        case Nav::ItemOffer: itemOffer_.onButton(*this, ev); break;
-        case Nav::RollbackPicker: statPicker_.onRollback(*this, ev); break;
-        case Nav::RepartitionPicker: statPicker_.onRepartition(*this, ev); break;
-        case Nav::CacheYield: vault_.onReveal(*this, ev); break;
-        case Nav::BulkYield: vault_.onBulkReveal(*this, ev); break;
-        case Nav::PostEncounter: postEncounter_.onButton(*this, ev); break;
-        case Nav::Stacker: stackerScreen_.onButton(*this, ev); break;
-        case Nav::Fragger: fraggerScreen_.onButton(*this, ev); break;
-        case Nav::Isolation: isolationScreen_.onButton(*this, ev); break;
-        case Nav::Chroma: chromaScreen_.onButton(*this, ev); break;
-        // The arcade payout: informational, so ANY button dismisses it (the
-        // PostEncounter contract, not the standard A/B/C one).
-        case Nav::ArcadeResult: arcadeScreen_.onResult(*this, ev); break;
-        case Nav::Process: maintScreen_.onProcess(*this, ev); break;
-        case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
-        case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
-        case Nav::Decryption: decryptionScreen_.onButton(*this, ev); break;
-        case Nav::Cryptogram: cryptogramScreen_.onButton(*this, ev); break;
-        case Nav::ModalHatchReveal: hatchReveal_.onButton(*this, ev); break;
-        case Nav::ModalEggPick: eggPickScreen_.onButton(*this, ev); break;
-        // B continues once the reveal is up and acknowledges once the crash has held.
-        // C is disabled on both: the evolution already happened, and death is not
-        // cancellable. The A+C chord is the reserved no-op stub, already filtered above.
-        case Nav::ModalEvolve: evolve_.onButton(*this, ev); break;
-        case Nav::ModalCSF: csf_.onButton(*this, ev); break;
-        case Nav::ModalLockout: lockoutScreen_.onButton(*this, ev); break;
+    screenRow(nav_).press(*this, ev);
+}
+
+// --- The carousel's own presses ----------------------------------------------
+// The home screen, the cursor and the menu tree's two levels: the screens Game itself
+// draws, reached through the per-screen table like every other (game_screens.cpp).
+
+void Game::onIdle(const ButtonEvent& ev) {
+    // B cracks the egg once its clock is nearly out, like the A+C chord. It is an egg's
+    // only idle action. A/C still summon the carousel (an egg can still be carried
+    // around / walked to hatch faster).
+    if (ev.button == Button::B && hatchRevealReady()) openHatchReveal();
+    // A failing pet with a cookie that would save it: B feeds it, as the habitat's
+    // FAILING banner says. Nothing else at idle is on B.
+    else if (ev.button == Button::B && yubiWouldSave()) feedYubiToSave();
+    else if (ev.button == Button::A) summonCursor(0);
+    else if (ev.button == Button::C) summonCursor(kCarouselSlots - 1);
+}
+
+void Game::onCursor(const ButtonEvent& ev) {
+    if (ev.button == Button::A) cursor_ = (cursor_ + 1) % kCarouselSlots;
+    else if (ev.button == Button::C) cursor_ = (cursor_ + kCarouselSlots - 1) % kCarouselSlots;
+    // B enters the focused submenu. The Hacker face routes to its own slots
+    // (inaccessible ones are inert); pet-side, a locked egg slot is inert.
+    else if (ev.button == Button::B) {
+        if (face_ == Face::Hacker) enterHackerSubmenu();
+        else if (!slotLocked(enteredId())) enterSubmenu();
+    }
+}
+
+void Game::onSubmenu(const ButtonEvent& ev) {
+    // Hacker face reuses the L2 state but its own slot roster/dispatch.
+    if (face_ == Face::Hacker) { onHackerSubmenu(ev); return; }
+    switch (enteredId()) {
+        // STAT is two screens behind one slot (game_stat.cpp): the paged reader, and the
+        // INDEX that jumps between its pages and sections.
+        case SubmenuId::Stat: stat_.onButton(*this, ev); break;
+        case SubmenuId::Items: items_.onButton(*this, ev); break;
+        case SubmenuId::Maint: maintScreen_.onButton(*this, ev); break;
+        case SubmenuId::Cfg: cfg_.onButton(*this, ev); break;
+        case SubmenuId::Arch: arch_.onButton(*this, ev); break;
+        // MODS is the LOADOUT hub: the same L2 fronts three pages, and which one is open
+        // is loadoutTab_ (PRACTISE never rests here. It opens straight into its L3).
+        case SubmenuId::Mods: loadout_.onButton(*this, ev); break;
+        case SubmenuId::Games: arcadeScreen_.onList(*this, ev); break;
+        case SubmenuId::Expl: expl_.onButton(*this, ev); break;
+        default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
+    }
+}
+
+void Game::onDetail(const ButtonEvent& ev) {
+    switch (enteredId()) {
+        case SubmenuId::Items: items_.onDetail(*this, ev); break;
+        case SubmenuId::Maint: maintScreen_.onDetail(*this, ev); break;
+        case SubmenuId::Cfg: cfg_.onDetail(*this, ev); break;
+        case SubmenuId::Arch: arch_.onDetail(*this, ev); break;
+        case SubmenuId::Mods: loadout_.onDetail(*this, ev); break;
+        case SubmenuId::Games: arcadeScreen_.onCabinet(*this, ev); break;
+        default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
     }
 }
 

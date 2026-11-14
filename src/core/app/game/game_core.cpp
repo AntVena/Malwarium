@@ -265,76 +265,31 @@ void Game::stepRestingTricks(const CreatureLine* petLine, RestingTrick trick) {
     else if (!idleCamoWorn_) idleCamoWorn_ = idleCamoSprite(petCamo_.slot());
 }
 
-// The timer the screen that is up runs on the heartbeat: a modal's or a process's own
-// lifecycle, a fight's turn pace, or one of the walk's hands-off holds. The walk's holds
-// only run while explore mode is armed; any button press on those screens restarts them.
+// The timer the screen that is up runs on the heartbeat: its row's beat column
+// (game_screens.cpp), or nothing.
 void Game::stepScreenBeat() {
-    switch (nav_) {
-    case Nav::ModalFeeding:
-        if (feeding_ && ++feeding_->beat >= kFeedBeats) endFeeding();
-        break;
-    case Nav::Process:
-        if (maint_ && !maint_->resolved && ++maint_->beat >= kProcessBeats) resolveMaint();
-        break;
-    case Nav::ModalEvolve:
-        // Cinematic advances on the heartbeat: hold -> flash -> reveal, then it parks at
-        // the reveal and waits for B (completeEvolution).
-        evolve_.tick();
-        break;
-    case Nav::ModalHatchReveal:
-        // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
-        // last one, then hatches itself. Nothing to press.
-        hatchReveal_.tick(*this);
-        break;
-    case Nav::ModalCSF:
-        // The crash FX holds a few beats, then parks and waits for B.
-        csf_.tick();
-        break;
-    case Nav::Combat:
-        stepCombatBeat();
-        break;
-    case Nav::Wifi:
-        // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a choice. Hold ~3s
-        // so it's readable, then auto-play it (an awakened guardian enters a fight, which
-        // then auto-dismisses; the rest resolve to the habitat).
-        if (walk_.active && ++walk_.eventBeat >= kExploreRevealHoldBeats)
-            resolveWifiOutcome();
-        break;
-    case Nav::ShiboleetHail:
-        // Hands-off REVEAL: the guardian arriving and speaking is something to WATCH, not
-        // a decision, so hold ~5s and then let the meeting go on to whatever the fluency
-        // roll already decided (openShiboleetWelcome).
-        if (walk_.active && ++walk_.eventBeat >= kShiboleetHailHoldBeats)
-            openShiboleetWelcome();
-        break;
-    case Nav::ShiboleetVerdict:
-        // Hands-off REVEAL again: what the guardian made of the answer, held ~6s and then
-        // played out (finishShiboleet. Its fight, or back to the walk). The consequence is
-        // already paid; this hold only decides how long it is read for.
-        if (walk_.active && ++walk_.eventBeat >= kShiboleetVerdictHoldBeats)
-            finishShiboleet();
-        break;
-    case Nav::Shiboleet:
-        // Hands-off decision: a guardian asked a question, and silence past
-        // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
-        // restarts the hold (ShiboleetScreen::onRiddle), so a player who is genuinely
-        // reading is never timed out mid-sentence.
-        if (walk_.active && ++walk_.eventBeat >= kShiboleetReplyHoldBeats)
-            leaveShiboleetUnanswered();
-        break;
-    case Nav::Shop:
-    case Nav::ModShop:
-        // Hands-off DECISION: a shop (item OR mod) is a real buy/leave choice, so hold
-        // ~10s to let a watching player act; if no button is pressed by then, auto-leave
-        // and keep exploring.
-        if (walk_.active && ++walk_.eventBeat >= kExploreDecisionHoldBeats) leaveShop();
-        break;
-    case Nav::Idle:
-        if (walk_.active) stepWalkPacer();
-        break;
-    default:
-        break;
-    }
+    if (const auto beat = screenRow(nav_).beat) beat(*this);
+}
+
+// A hands-off hold on a walk event's screen: `then` once it has stood `beats` heartbeats
+// unanswered. Only while explore mode is armed; any button press on those screens
+// restarts it (walk_.eventBeat).
+void Game::stepEventHold(int beats, void (Game::*then)()) {
+    if (walk_.active && ++walk_.eventBeat >= beats) (this->*then)();
+}
+
+void Game::stepFeedingBeat() {
+    if (feeding_ && ++feeding_->beat >= kFeedBeats) endFeeding();
+}
+
+// The MAINT process bar: it fills over kProcessBeats, then the process resolves once.
+void Game::stepProcessBeat() {
+    if (maint_ && !maint_->resolved && ++maint_->beat >= kProcessBeats) resolveMaint();
+}
+
+// The habitat's own beat: the walk's auto-step while explore mode is armed.
+void Game::stepHomeBeat() {
+    if (walk_.active) stepWalkPacer();
 }
 
 // Autonomous auto-battle: one turn every combatBeatsForTurn() heartbeats so each exchange

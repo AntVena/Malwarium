@@ -2137,6 +2137,7 @@ private:
     void announceBackground(SceneId s);
     // The unlock announcement over the habitat: a no-op unless a banner is up.
     void drawAchievementBanner(Framebuffer& fb) const;
+    void drawHome(Framebuffer& fb, int cursor) const;
     void drawSubmenu(Framebuffer& fb) const;
     void drawDetail(Framebuffer& fb) const;
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
@@ -2596,6 +2597,27 @@ private:
     bool hackerSlotAccessible(int slot) const override;   // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
+    void onIdle(const ButtonEvent& ev);
+    void onCursor(const ButtonEvent& ev);
+    void onSubmenu(const ButtonEvent& ev);          // L2 dispatch, one case per slot
+    void onDetail(const ButtonEvent& ev);           // L3 dispatch, likewise
+    // THE PER-SCREEN TABLE (game_screens.cpp): one row per Nav, in Nav's order. What a
+    // press does on the screen that is up, what render draws for it, and what it steps
+    // on the heartbeat (null for nothing). The cadences faster than the heartbeat keep
+    // their own entry point (tickAnimClocks): each must also run on every tick its
+    // screen is NOT up, to prime its clock, and two of them share the Combat screen.
+    struct ScreenRow {
+        Nav nav;
+        void (*press)(Game& g, const ButtonEvent& ev);
+        void (*draw)(const Game& g, Framebuffer& fb);
+        void (*beat)(Game& g);
+    };
+    static const ScreenRow& screenRow(Nav n);
+    // A row for a screen type that owns its whole page: onButton(host, ev), draw(fb, host).
+    template <auto Screen>
+    static void pressScreen(Game& g, const ButtonEvent& ev);
+    template <auto Screen>
+    static void drawScreen(const Game& g, Framebuffer& fb);
     // The OWNING half of that, with no till in it: bump the row `levels` times, apply
     // its RigEffectKind each time, log and persist. Split out because a rig level can
     // now also be WON (a solved Decryptogram's prize, game_cryptogram.cpp): a granted
@@ -2760,6 +2782,10 @@ private:
     void stepRestingMotion(RestingTrick trick);
     void stepRestingTricks(const CreatureLine* petLine, RestingTrick trick);
     void stepScreenBeat();
+    void stepEventHold(int beats, void (Game::*then)());
+    void stepFeedingBeat();
+    void stepProcessBeat();
+    void stepHomeBeat();
     void stepCombatBeat();
     void stepWalkPacer();
     // tickAnimClocks' cadences. Closed: its screen is not up, and its clock is primed.

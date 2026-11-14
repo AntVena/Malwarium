@@ -35,59 +35,13 @@ namespace mal {
 
 // --- Render ----------------------------------------------------------------
 
-void Game::render(Framebuffer& fb) const {
-    const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
-    switch (nav_) {
-        case Nav::Idle:
-            if (face_ == Face::Hacker) hacker_.drawHome(fb, *this, -1);
-            else drawHabitat(fb, -1);
-            break;
-        case Nav::Cursor:
-            if (face_ == Face::Hacker) hacker_.drawHome(fb, *this, cursor_);
-            else drawHabitat(fb, cursor_);
-            break;
-        case Nav::Submenu:
-            if (face_ == Face::Hacker) drawHackerSubmenu(fb);
-            else drawSubmenu(fb);
-            break;
-        case Nav::Detail:  drawDetail(fb); break;
-        case Nav::Process: maintScreen_.drawProcess(fb, *this); break;
-        case Nav::Stacker: stackerScreen_.draw(fb, *this); break;
-        case Nav::Fragger: fraggerScreen_.draw(fb, *this); break;
-        case Nav::ArcadeResult: arcadeScreen_.drawResult(fb, *this); break;
-        case Nav::Combat: fightScreen_.draw(fb, *this); break;
-        case Nav::Tourney: arena_.draw(fb, *this); break;
-        case Nav::Story: storyReader_.draw(fb, *this); break;
-        case Nav::TipCard: tipCardScreen_.draw(fb, *this); break;
-        case Nav::AwayDigest: awayDigest_.draw(fb, *this); break;
-        case Nav::StoryArchive: chapters_.draw(fb, *this); break;
-        case Nav::ExploreControl: exploreControl_.draw(fb, *this); break;
-        case Nav::Encounter: encounter_.draw(fb, *this); break;
-        case Nav::Wifi: wifiScreen_.draw(fb, *this); break;
-        case Nav::ShiboleetHail: shiboleet_.drawHail(fb, *this); break;
-        case Nav::Shiboleet: shiboleet_.drawRiddle(fb, *this); break;
-        case Nav::ShiboleetVerdict: shiboleet_.drawVerdict(fb, *this); break;
-        case Nav::Shop:
-        case Nav::ModShop: shop_.draw(fb, *this); break;
-        case Nav::WarpPicker: warpPicker_.draw(fb, *this); break;
-        case Nav::ItemOffer: itemOffer_.draw(fb, *this); break;
-        case Nav::RollbackPicker: statPicker_.drawRollback(fb, *this); break;
-        case Nav::RepartitionPicker: statPicker_.drawRepartition(fb, *this); break;
-        case Nav::CacheYield: vault_.drawReveal(fb, *this); break;
-        case Nav::BulkYield: vault_.drawBulkReveal(fb, *this); break;
-        case Nav::PostEncounter: postEncounter_.draw(fb, *this); break;
-        case Nav::ModalLineSelect: lineSelect_.draw(fb, *this); break;
-        case Nav::Decryption: decryptionScreen_.draw(fb, *this); break;
-        case Nav::Cryptogram: cryptogramScreen_.draw(fb, *this); break;
-        case Nav::ModalEggPick: eggPickScreen_.draw(fb, *this); break;
-        case Nav::Isolation: isolationScreen_.draw(fb, *this); break;
-        case Nav::Chroma: chromaScreen_.draw(fb, *this); break;
-        case Nav::ModalHatchReveal: hatchReveal_.draw(fb, *this); break;
-        case Nav::ModalFeeding: feedingScreen_.draw(fb, *this); break;
-        case Nav::ModalEvolve: evolve_.draw(fb, *this); break;
-        case Nav::ModalCSF: csf_.draw(fb, *this); break;
-        case Nav::ModalLockout: lockoutScreen_.draw(fb, *this); break;
-    }
+void Game::render(Framebuffer& fb) const { screenRow(nav_).draw(*this, fb); }
+
+// The home screen on either face: the habitat (or the Hacker face's) under the carousel,
+// with `cursor` the focused slot, or -1 with the carousel stowed.
+void Game::drawHome(Framebuffer& fb, int cursor) const {
+    if (face_ == Face::Hacker) hacker_.drawHome(fb, *this, cursor);
+    else drawHabitat(fb, cursor);
 }
 
 SceneId Game::habitatScene() const {
@@ -644,6 +598,8 @@ bool Game::captureBadge(char* out, unsigned n) const {
 }
 
 void Game::drawSubmenu(Framebuffer& fb) const {
+    // Hacker face reuses the L2 state but its own slot roster (onSubmenu, likewise).
+    if (face_ == Face::Hacker) { drawHackerSubmenu(fb); return; }
     switch (enteredId()) {
         // STAT's own two screens and the six pages behind them are game_stat.cpp's.
         case SubmenuId::Stat: stat_.draw(fb, statSources(), beat_); break;
