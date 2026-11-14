@@ -106,7 +106,7 @@ than rewriting gates as it goes. The `debug*` hooks (about 100) and those forwar
 in one pass once the first cut of every screen and run is done, gates moved onto the new types
 or dropped by one rule, since they all break the same way.
 
-How a screen is cut, as the twenty-odd types in `src/core/app/game/` now show:
+How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 - The screen holds only what dies with it (cursor, view, scroll, a frozen result, the subject
   of a page), owns its input and its draw, and reaches the game through a narrow `*Host`.
   The rules stay `Game`'s (or a record's, or a run's): the host carries verbs, never fields.
@@ -115,6 +115,13 @@ How a screen is cut, as the twenty-odd types in `src/core/app/game/` now show:
 - A slot's L2 list and L3 page are one screen type (`ArcadeScreen`, `ItemsMenu`, `VaultScreen`
   with its reveals). The host's `openDetail` / `closeDetail` / `leaveToCarousel` are the
   shared moves between them.
+- A screen with no state of its own is still a type (`WifiScreen`, `PostEncounterScreen`,
+  `FeedingScreen`): it owns the input and the draw, and its run or the host holds the rest.
+- A cinematic's clock and subject die with it, so they are the screen's (`EvolveScreen`
+  holds the successor and hands it to `completeEvolution(to)`).
+- Played boards reach the game through one `BoardHost` (`game/board_host.h`: the RULES
+  overlay, sounds, heartbeat, the footer) that each board's host extends, and a board's
+  host hands it the live run (`liveStacker()`), as `liveFight()` does for combat.
 - Lists join the gestures with one `listTarget` entry (`screenList`), holds with one
   `holdTarget` entry (`screenHold`), step with `stepRow`, confirm with `InlineConfirm`.
 - A thing on its own clock with a continuation (`StoryRun`) or a lifetime of its own
@@ -143,28 +150,29 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **Still dispatched to `Game` methods.** These states route to `Game` and take the same
-  cut: the post-encounter readout, the away digest (its `AwayRow` is nested in `Game` and
-  moves with it), the Wi-Fi event, the three SHIBOLEET pages, the WARP / ROLLBACK /
-  REPARTITION pickers, the item offer, the modals (feeding, line select, egg pick, hatch
-  reveal, evolve, CSF), and the input and draw of the minigame boards whose runs already
-  exist (Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram). Batch the small
-  ones. A screen the sheet has no scene for is checked with a scratch probe that drives it
-  through `Game` and dumps its frames, built against the old and new `malcore`. |
-  game_nav.cpp's `onButton` and game_render.cpp's dispatch list them | L |
-- **The Wi-Fi event's result is four loose `Game` fields** (`wifiOutcome_`, `wifiFlavor_`,
-  `netDiscovery_`, `netDiscoveryFlavor_`, set across game_net.cpp). They are one event's
-  outcome, so they are a run, which its screen then reads. Their enums are nested in
-  `Game` and move out with an alias, as `AuditMode` and `StoryThen` did. | S |
+- **Still dispatched to `Game` inline.** The Lockout modal (`Nav::ModalLockout`: its pay /
+  feed / open-ITEMS choice and `lockoutPayOption_`), the MAINT process screen
+  (`Nav::Process`), and the Hacker face's home and L2 (`onHackerSubmenu`,
+  `drawHackerHome`) still route to `Game` code in `onButton` and `render`. Same cut as
+  the modals. | game_nav.cpp, game_render.cpp, game_hacker.cpp | M |
+- **The SHIBOLEET meeting is a run held as `Game` fields.** `shibWelcome_`, `shibReply_`,
+  `shibCipher_`, `shibRiddle_`, `shibOrder_`, `shibLine_`, `shibFlavor_`,
+  `shibVerdictLine_` and `guardianFlock_` describe one meeting and are rebuilt per
+  guardian; `ShiboleetScreen` reads them through a dozen host methods. They are a
+  `ShiboleetMeeting` run, and `ShiboleetWelcome` / `ShiboleetReply` (nested in `Game`)
+  move out with it under aliases. | game_shiboleet.cpp | M |
 - **`CfgHost` is wide** (about sixty methods), because CFG fronts every subsystem that has a
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
   `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
 - **The sweep**, once every state above has its first cut: the ~100 `debug*` hooks, the
   read-only forwarders (`arch*()`, `modPick()`, `pediaQrPage()`, `storyWindow()`, the
-  `shopListing*()` reads), and the gates that read them, under one rule applied across the
-  board. Then the per-screen table (onButton / draw / tick) that replaces `Game`'s Nav
-  switches. | XL |
+  `shopListing*()` reads, `wifiOutcome()`, `netDiscovery*()`, `shiboleetRow()`,
+  `lineSelectRow()`, `hatchRevealFrame()`), and the gates that read them, under one rule
+  applied across the board. Then the per-screen table (onButton / draw / tick) that
+  replaces `Game`'s Nav switches; its tick column takes the board cadences
+  (`stepStacker`, `stepFragger`, the Isolation step) and the cinematic ticks
+  `stepScreenBeat` forwards to `EvolveScreen`, `CsfScreen` and `HatchRevealScreen`. | XL |
 
 **List rows say what they are with bool flags.** `InvRow` carries `header` and `notice`, so a
 row can claim to be a notice without being a header, and every reader has to know which

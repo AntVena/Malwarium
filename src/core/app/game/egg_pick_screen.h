@@ -8,25 +8,17 @@
 // egg's clock or pays a cabinet.
 #pragma once
 
-#include "core/device/platform.h"
+#include "core/app/game/board_host.h"
 
 namespace mal {
 
-class Framebuffer;
 struct EggPick;
 
-// What the modal needs from the game. Game implements it; a test can too.
-class EggPickHost {
+// What the modal needs from the game. Game implements it; a test can too. A cabinet's
+// raft (inArcadeRun) has no egg behind it, and the heartbeat is the live tile's tell.
+class EggPickHost : public BoardHost {
 public:
     virtual const EggPick* eggPick() const = 0;   // null with no pick open
-    virtual bool inArcadeRun() const = 0;         // a cabinet's raft, with no egg behind it
-    virtual int screenBeat() const = 0;           // the live tile's tell
-    // The RULES overlay the chord opens over every engine: while it is up, it takes the
-    // presses and the frame.
-    virtual bool gameBriefOpen() const = 0;
-    virtual bool onGameBriefInput(const ButtonEvent& ev) = 0;
-    virtual void drawGameBrief(Framebuffer& fb) const = 0;
-
     virtual void eggPickAim(bool secondHalf) = 0;
     virtual void eggPickCommit() = 0;   // halve, or dismiss the reveal
 
