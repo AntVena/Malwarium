@@ -161,15 +161,17 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
   `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
-- **The per-screen table** (onButton / draw / tick) that replaces `Game`'s Nav switches in
-  `onButton`, `render` and `stepScreenBeat`; its tick column takes the board cadences
-  (`stepStacker`, `stepFragger`, the Isolation step) and the cinematic ticks
-  `stepScreenBeat` forwards to `EvolveScreen`, `CsfScreen` and `HatchRevealScreen`, and
-  the MAINT process's bar. Two clocks meet in that column: `stepScreenBeat` runs on the
-  heartbeat, while the board cadences (`tickStackerSlide` and its siblings) run on their
-  own millisecond pace and reset it on every tick their screen is not up
-  (`Cadence::Closed`), so the column needs a closed case as well as a step, or the
-  cadences keep their own entry point. | game_nav.cpp, game_render.cpp, game_core.cpp | L |
+- **The A+C chord still picks its screen with an if-chain over `nav_`** in `Game::onButton`
+  (the fight's Exploit picker, the arena briefing, the cryptogram's drop, the boards' RULES
+  page, then the face, walk and egg cases on the home screen), beside the per-screen table
+  that routes every other press. A chord column in `ScreenRow` (null for "falls through to
+  the home screen's meaning") would route it by state like the taps. | game_nav.cpp,
+  game_screens.cpp | S |
+- **Two guards still list screens by hand:** `tickFxSweep` names the five screens the
+  dissolve and swarm clock runs on, and `tickModelClocks`' egg incubation clock names the four
+  hatch screens it pauses on. Each is a per-screen fact that belongs on the screen's row
+  (or the screen type), so adding a hatch board or a dissolve host cannot miss one. |
+  game_core.cpp | S |
 
 ---
 
