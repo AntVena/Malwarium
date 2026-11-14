@@ -76,7 +76,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::CacheYield: vault_.drawReveal(fb, *this); break;
         case Nav::BulkYield: vault_.drawBulkReveal(fb, *this); break;
         case Nav::PostEncounter: postEncounter_.draw(fb, *this); break;
-        case Nav::ModalLineSelect: drawLineSelect(fb); break;
+        case Nav::ModalLineSelect: lineSelect_.draw(fb, *this); break;
         case Nav::Decryption: drawDecryption(fb); break;
         case Nav::Cryptogram: drawCryptogram(fb); break;
         case Nav::ModalEggPick: drawEggPick(fb); break;
@@ -105,37 +105,6 @@ void Game::render(Framebuffer& fb) const {
             break;
         }
     }
-}
-
-void Game::drawLineSelect(Framebuffer& fb) const {
-    // Line-select modal: full 224x224, no track/header chrome. Grayscale-
-    // safe: the highlighted line carries BOTH a ">" cursor glyph (shape) and INK vs
-    // INK_DIM (luminance), so a desaturated screenshot still reads the selection.
-    fb.clear(palColor(Pal::PAPER));
-    const char* title = "NEW SPECIMEN";
-    drawText(fb, (kActiveW - textWidth(title)) / 2, 46, title, palColor(Pal::INK));
-    const char* sub = "CHOOSE A LINE TO DECRYPT";
-    drawText(fb, (kActiveW - textWidth(sub)) / 2, 46 + kFontH + 5, sub,
-             palColor(Pal::INK_DIM));
-
-    const auto lines = availableEggLines();   // only UNLOCKED lines (matches the modal)
-    const int n = static_cast<int>(lines.size());
-    const int sel = n > 0 ? lineSelectRow_ % n : 0;
-    const int rowH = 24;
-    const int top = 100;
-    for (int i = 0; i < n; ++i) {
-        const bool on = (i == sel);
-        const int y = top + i * rowH;
-        const char* name = lines[i]->displayName;
-        const int nameW = textWidth(name);
-        const int x = (kActiveW - nameW) / 2;
-        if (on) drawText(fb, x - 16, y, ">", palColor(Pal::ACCENT));
-        drawText(fb, x, y, name, on ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
-    }
-
-    const char* hint = "A NEXT   B SELECT";
-    drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 26, hint,
-             palColor(Pal::INK_DIM));
 }
 
 SceneId Game::habitatScene() const {

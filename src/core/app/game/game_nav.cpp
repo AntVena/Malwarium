@@ -228,24 +228,7 @@ void Game::onButton(const ButtonEvent& ev) {
             }
             break;
         case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
-        case Nav::ModalLineSelect: {
-            // Line-select: A cycles the highlighted line, B lays that line's egg
-            // (-> idle). The A+C chord is the reserved no-op stub, already filtered above.
-            //
-            // C BACKS OUT TO ARCH, but only with something on the rack. The rule is
-            // not "the hatch can't be cancelled", it is "an empty save has no pet to
-            // return to", and reaching this modal from an ARCH Store makes that false:
-            // the pet is right there on the shelf, frozen, one Deploy away. Cancelling
-            // into a habitat with nothing living in it is not offered, so a device with
-            // an empty rack cannot back out at all.
-            const auto lines = availableEggLines();   // only UNLOCKED lines (matches the modal)
-            if (lines.empty()) break;
-            const int n = static_cast<int>(lines.size());
-            if (ev.button == Button::A) lineSelectRow_ = (lineSelectRow_ + 1) % n;
-            else if (ev.button == Button::B) layEgg(lines[lineSelectRow_ % n]);
-            else if (ev.button == Button::C && !op_.arch.rack.empty()) archReturnFromLineSelect();
-            break;
-        }
+        case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
         case Nav::Decryption: onDecryption(ev); break;
         case Nav::Cryptogram: onCryptogram(ev); break;
         case Nav::ModalHatchReveal:

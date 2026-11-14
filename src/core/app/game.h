@@ -32,6 +32,7 @@
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
 #include "core/app/game/items_menu.h"
+#include "core/app/game/line_select_screen.h"
 #include "core/app/game/link_screen.h"
 #include "core/app/game/loadout_screen.h"
 #include "core/app/game/maint_screen.h"
@@ -144,7 +145,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
-             private StatPickerHost, private ItemOfferHost, private FeedingHost {
+             private StatPickerHost, private ItemOfferHost, private FeedingHost,
+             private LineSelectHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1530,12 +1532,12 @@ public:
     // to lay (fires at an empty save when >1 line is unlocked). `lineSelectRow()` is
     // the current cursor into the unlocked egg lines.
     bool inLineSelect() const { return nav_ == Nav::ModalLineSelect; }
-    int lineSelectRow() const { return lineSelectRow_; }
+    int lineSelectRow() const { return lineSelect_.row(); }
     // The egg lines offered at line-select right now: every content line whose unlock
     // gate is satisfied (eggLineUnlocked). Ransomware is always on; Phishing unlocks
     // once DEEPWEB_DEPTH_8 is earned. The line-select modal (input/render/startHatch)
     // reads THIS, not the raw registry list, so a locked line never appears.
-    std::vector<const EggLineDef*> availableEggLines() const;
+    std::vector<const EggLineDef*> availableEggLines() const override;
     bool eggLineUnlocked(const EggLineDef* line) const;
     // Per-Process deep-dive gate on the egg's random hatch pool (rollHatchProcess).
     // Most Process pets are always in their line's pool; a few are DeepWeb-depth
@@ -2546,7 +2548,8 @@ private:
     const CreatureDef* reimageScript(const CreatureDef* daemon) const override;
     // Leave the line-select modal for the ARCH picker, without laying an egg. Only ever
     // reachable with something on the rack to go back TO: see the modal's own comment.
-    void archReturnFromLineSelect();
+    void archReturnFromLineSelect() override;
+    bool archRackEmpty() const override { return op_.arch.rack.empty(); }
     // GAMES: the cabinet list (L2) -> one cabinet (L3) -> a real minigame -> payout.
     // Launch the focused cabinet's minigame as an ArcadeRun. The one place a cabinet's
     // ArcadeGameKind turns into behaviour.
@@ -3140,7 +3143,7 @@ private:
 
     // Decryption Hatch lifecycle
     void startHatch();       // empty save -> line-select (>1 line) or lay the egg
-    void layEgg(const EggLineDef* line);  // commit a chosen line: lay its Boot-Sector egg
+    void layEgg(const EggLineDef* line) override;  // commit a chosen line: lay its Boot-Sector egg
     const CreatureDef* rollHatchProcess(const EggLineDef* line);  // random Process draw (advances rng_)
     // DISK DECRYPTION lifecycle (game_decryption.cpp): see inDecryption() above.
     // `allowDuplicates` lets the key repeat a colour and `easyHints` outlines the cells
@@ -3179,7 +3182,6 @@ private:
     void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
     const SpriteData* hatchEggSprite() const;
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
-    void drawLineSelect(Framebuffer& fb) const;  // the line-select modal
 
     // Clutch Pick lifecycle (game_eggpick.cpp): see kEggPickRounds above. `rounds` is
     // how many halvings this run asks for: the hatch always passes kEggPickRounds, and
@@ -3826,10 +3828,10 @@ private:
     // Hatch reveal cinematic. Counts heartbeats since the chord cracked the egg, which
     // maps straight onto the shell's hatch frames; completeHatch fires off the end.
     int hatchRevealBeat_ = 0;
-    // Line-select modal: the cursor into the unlocked egg lines while
-    // choosing which egg to lay. Runtime-only: an empty save re-prompts on reboot
-    // (the modal precedes laying/persisting an egg, so there's nothing to persist).
-    int lineSelectRow_ = 0;
+    // The line-select modal (game/line_select_screen.h). Runtime-only: an empty save
+    // re-prompts on reboot (the modal precedes laying/persisting an egg, so there's
+    // nothing to persist).
+    LineSelectScreen lineSelect_;
 
     // Evolution modal (stub). evolveTo_ is the successor being revealed; the
     // swap onto pet_.creature is deferred to completeEvolution so the cinematic holds the

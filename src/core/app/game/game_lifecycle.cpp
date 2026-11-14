@@ -86,7 +86,7 @@ void Game::startHatch() {
     if (lines.size() > 1) {
         installPet(nullptr);         // empty save while choosing (no egg laid yet)
         pet_.line = nullptr;
-        lineSelectRow_ = 0;
+        lineSelect_.open();
         nav_ = Nav::ModalLineSelect;
         dirty_ = true;
         return;
