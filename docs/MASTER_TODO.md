@@ -150,19 +150,16 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 
 #### Screens
 
-- **CFG is a menu of subsystems behind one host.** `CfgHost` has fifty methods of its
+- **CFG is a menu of subsystems behind one host.** `CfgHost` has forty-one methods of its
   own because every subsystem with a setting is reached through it, and every page can see
-  all of them. `UpdatesPage` (`updates_page.h`) shows the cut for the rest: the page owns
-  its state, input and draw, is handed only its own host (`UpdatesHost`, which `CfgHost`
-  extends so the menu can hand it on), and answers a press with the move it asks of the
-  menu (`UpdatesPage::Move`, made by `CfgMenu::follow`) instead of moving the menu. A
-  shared `CfgPageHost` waits for a page that needs more of the menu than `markDirty`,
-  which each host declares for itself. One page per commit, by subsystem (the audit, every
-  remaining method against the page in `cfg_menu.cpp` that calls it):
-  - RADIO (AUDIT, PEDIA AP, PASSIVE LINK, PEDIA QR): `auditMode`, `setAuditMode`,
-    `apEnabled`, `setApEnabled`, `linkEnabled`, `setLinkEnabled`, `linkAmbientStarved`,
-    `radioOwner`, `netConnectWanted`, and `netProvisioned` for the PEDIA QR's
-    home-network step (also on `UpdatesHost`).
+  all of them. `UpdatesPage` and `RadioPages` show the cut for the rest: the page owns its
+  state, input and draw, is handed only its own host (`UpdatesHost`, `RadioHost`, which
+  `CfgHost` extends so the menu can hand them on), and answers a press with the move it
+  asks of the menu (`CfgMove` in `cfg_page.h`, made by `CfgMenu::follow`) instead of
+  moving the menu. Pickers take a press through `pickerPress`. A shared `CfgPageHost`
+  waits for a page that needs more of the menu than `markDirty`, which each host declares
+  for itself. One page per commit, by subsystem (the audit, every remaining method against
+  the page in `cfg_menu.cpp` that calls it):
   - DEVICE's display and sound settings over `Settings`: `setUiMode`, `setCareAlerts`,
     `setBrightness`, `setSoundMode`, `previewVolume`, `setVolume`.
   - The looks the operator has unlocked (THEME, BACKGROUND, TITLE, HACKERTAG):
