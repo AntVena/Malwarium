@@ -143,15 +143,19 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
 
 #### Screens
 
-- **Still dispatched to `Game` methods.** The first list here covered ARCH, CFG, LOADOUT,
-  MAINT, LINK, the story reader and the storefront; these states route to `Game` too and
-  take the same cut. The EXPL list (`explRow_`, `explCat_`, `explNavArea_`,
-  game_explore.cpp) is the largest. Then the explore control and post-encounter readout,
-  the away digest, the Wi-Fi event, the three SHIBOLEET pages, the WARP / ROLLBACK /
+- **Still dispatched to `Game` methods.** These states route to `Game` and take the same
+  cut: the post-encounter readout, the away digest (its `AwayRow` is nested in `Game` and
+  moves with it), the Wi-Fi event, the three SHIBOLEET pages, the WARP / ROLLBACK /
   REPARTITION pickers, the item offer, the modals (feeding, line select, egg pick, hatch
   reveal, evolve, CSF), and the input and draw of the minigame boards whose runs already
   exist (Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram). Batch the small
-  ones. | game_nav.cpp's `onButton` and game_render.cpp's dispatch list them | L |
+  ones. A screen the sheet has no scene for is checked with a scratch probe that drives it
+  through `Game` and dumps its frames, built against the old and new `malcore`. |
+  game_nav.cpp's `onButton` and game_render.cpp's dispatch list them | L |
+- **The Wi-Fi event's result is four loose `Game` fields** (`wifiOutcome_`, `wifiFlavor_`,
+  `netDiscovery_`, `netDiscoveryFlavor_`, set across game_net.cpp). They are one event's
+  outcome, so they are a run, which its screen then reads. Their enums are nested in
+  `Game` and move out with an alias, as `AuditMode` and `StoryThen` did. | S |
 - **`CfgHost` is wide** (about sixty methods), because CFG fronts every subsystem that has a
   setting. UPDATES is the part with a reason of its own to change: its row, confirm and
   three faces, and a third of the host's reads. It can be its own page type under
