@@ -168,7 +168,11 @@ restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_confi
   `onButton`, `render` and `stepScreenBeat`; its tick column takes the board cadences
   (`stepStacker`, `stepFragger`, the Isolation step) and the cinematic ticks
   `stepScreenBeat` forwards to `EvolveScreen`, `CsfScreen` and `HatchRevealScreen`, and
-  the MAINT process's bar. | game_nav.cpp, game_render.cpp, game_core.cpp | L |
+  the MAINT process's bar. Two clocks meet in that column: `stepScreenBeat` runs on the
+  heartbeat, while the board cadences (`tickStackerSlide` and its siblings) run on their
+  own millisecond pace and reset it on every tick their screen is not up
+  (`Cadence::Closed`), so the column needs a closed case as well as a step, or the
+  cadences keep their own entry point. | game_nav.cpp, game_render.cpp, game_core.cpp | L |
 - **`swarmViewOf` is private to `game_render.cpp`,** so `ShiboleetHost` and
   `FightScreenHost` both keep a `guardianSwarm()` read that projects the meeting's flock
   for the draw. A home both screens can include (it maps a `core/model` flock onto a
