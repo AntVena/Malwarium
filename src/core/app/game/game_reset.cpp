@@ -18,8 +18,7 @@ void Game::wipeDeviceProgress() {
     // for the record's handshake count.
     op_ = Operator{};
     handshakeLedger_.clear();
-    achBannerWire_ = -1;
-    achBannerCount_ = 0;
+    achBanner_.clear();
     setAuditMode(AuditMode::Off);      // seals capture with the scan, per the ladder
     setApEnabled(false);
     setLinkEnabled(false);

@@ -158,8 +158,7 @@ void Game::restoreOperator(const SaveData& d) {
     // carries no tally at all. The active pet is covered by installPet.
     for (const SaveStoredPet& p : op_.arch.rack) markCreatureRaised(p.id);
     for (const SaveRecord& r : op_.arch.records) markCreatureRaised(r.id);
-    achBannerWire_ = -1;
-    achBannerCount_ = 0;
+    achBanner_.clear();
     // Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool to the
     // restored cap and a loaded save boots with a full farm pool.
     bandwidth_ = bandwidthMax();

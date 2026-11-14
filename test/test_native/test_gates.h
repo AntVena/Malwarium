@@ -283,7 +283,7 @@ inline void enterSlot(Game& g, SubmenuId id) {
 // briefing (game_onboard.cpp). C skips it, which is what every helper that plays a
 // hatch board does first, so a gate about the board is not a gate about the briefing.
 inline void skipHatchBrief(Game& g) {
-    if (g.gameBriefIntro()) g.onButton(press(Button::C));
+    if (g.gameBrief().intro()) g.onButton(press(Button::C));
 }
 
 inline void settleDecryption(Game& g) {

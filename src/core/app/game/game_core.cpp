@@ -399,7 +399,7 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
 // the cursor.
 Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
     if (nav_ != Nav::Cryptogram || !cryptogramRun_ || !cryptogramRun_->board.running() || aHeld_ == cHeld_ ||
-        gameBriefOpen_) {
+        gameBrief_.isOpen()) {
         cryptoRepeatLastMs_ = nowMs;
         return Cadence::Closed;
     }
@@ -417,7 +417,7 @@ Game::Cadence Game::tickCryptogramRepeat(uint32_t nowMs) {
 // do: the shared 4fps heartbeat is legible for a progress bar and far too slow for a
 // timing test.
 Game::Cadence Game::tickStackerSlide(uint32_t nowMs) {
-    if (nav_ != Nav::Stacker || gameBriefOpen_) {
+    if (nav_ != Nav::Stacker || gameBrief_.isOpen()) {
         lastStackerStepMs_ = nowMs;
         return Cadence::Closed;
     }
@@ -432,7 +432,7 @@ Game::Cadence Game::tickStackerSlide(uint32_t nowMs) {
 // speeds up as it is played. The dial is not read here: FRAGGER's difficulty is its lane
 // count (beginFraggerRun). A finished board holds still.
 Game::Cadence Game::tickFraggerFall(uint32_t nowMs) {
-    if (nav_ != Nav::Fragger || gameBriefOpen_) {
+    if (nav_ != Nav::Fragger || gameBrief_.isOpen()) {
         lastFraggerStepMs_ = nowMs;
         return Cadence::Closed;
     }
@@ -449,7 +449,7 @@ Game::Cadence Game::tickFraggerFall(uint32_t nowMs) {
 // to IS the difficulty. Only while the run is live: a crashed or finished board holds
 // still under the verdict.
 Game::Cadence Game::tickIsolationCrawl(uint32_t nowMs) {
-    if (nav_ != Nav::Isolation || gameBriefOpen_) {
+    if (nav_ != Nav::Isolation || gameBrief_.isOpen()) {
         lastIsolationStepMs_ = nowMs;
         return Cadence::Closed;
     }
@@ -472,7 +472,7 @@ Game::Cadence Game::tickIsolationCrawl(uint32_t nowMs) {
 // at the 4fps heartbeat a kChromaSettleMs change would land on four frames total. Deltas,
 // not a fixed step, so the model always sees the time that actually passed.
 Game::Cadence Game::tickChromaSweep(uint32_t nowMs) {
-    if (nav_ != Nav::Chroma || gameBriefOpen_ || !chroma_.running()) {
+    if (nav_ != Nav::Chroma || gameBrief_.isOpen() || !chroma_.running()) {
         lastChromaMs_ = nowMs;
         return Cadence::Closed;
     }

@@ -17,6 +17,7 @@
 #include "core/app/game_rig_shop.h"
 #include "core/app/operator.h"
 #include "core/app/settings.h"
+#include "core/app/game/achievement_banner.h"
 #include "core/app/game/arcade_screen.h"
 #include "core/app/game/arch_screen.h"
 #include "core/app/game/cfg_menu.h"
@@ -37,6 +38,7 @@
 #include "core/app/game/feeding_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/fragger_screen.h"
+#include "core/app/game/game_brief_screen.h"
 #include "core/app/game/hacker_screen.h"
 #include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/inline_confirm.h"
@@ -549,12 +551,8 @@ public:
     // tables every repaint.
     const TourneyFighter& tourneyOpponent() const;
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
-    bool gameBriefOpen() const override { return gameBriefOpen_; }
-    // True when the hatch opened it (the first time a line's egg is laid on this
-    // device), false when the chord did. That reading leads with what the egg stakes,
-    // B walks it forward and off its last page into play, and C skips straight to the
-    // board.
-    bool gameBriefIntro() const { return gameBriefIntro_; }
+    bool gameBriefOpen() const override { return gameBrief_.isOpen(); }
+    const GameBriefScreen& gameBrief() const { return gameBrief_; }
     // The overlay's row model (core/ui/prose_page.h), built on demand. Public so a gate
     // can assert what the page SAYS instead of reading it out of pixels.
     std::vector<ProseRow> gameBriefRows() const;
@@ -1616,10 +1614,8 @@ public:
     // face is idle, so an announcement counts as seen only when the home screen was
     // showing.
     const AchievementDef* achBanner() const;
-    // How many unlocks the CURRENT banner is speaking for. 1 = the named row above; >1 =
-    // a burst too long to parade one at a time (a firmware update that retro-awards a
-    // whole back catalogue), collapsed into one "N ACHIEVEMENTS" banner.
-    int achBannerCount() const { return achBannerCount_; }
+    // The banner itself: how many unlocks it speaks for, and when it opened.
+    const AchievementBanner& achievementBanner() const { return achBanner_; }
     // The egg line `d` UNLOCKS, or nullptr for a row that unlocks none. Content-derived
     // rather than a flag on the achievement: an egg line already names the achievement
     // that earns it (EggLineDef::gatedBy), so asking the roster the question backwards
@@ -2169,19 +2165,10 @@ private:
         return arcade_ ? arcade_->difficulty : maint_ ? maint_->difficulty : maintScreen_.difficulty();
     }
 
-    // --- Mid-play RULES overlay (ROCK THE DOCK's BRIEFING, generalised) ----------
-    // A+C on any of the game engines (Stacker/Fragger/Isolation/Decryption/Cryptogram/
-    // Clutch/Chroma) opens a paged explainer of THAT engine's own rules and pauses it
-    // underneath. The only route to one for the three that launch straight out of an
-    // egg with no menu stop along the way at all (startHatchGame: Decrypt/Clutch/
-    // Isolation land on their Nav directly). One flag rather than five: nav_ can only
-    // be one of the five at a time, so nothing can ever have two open together, and
-    // the content it reads is keyed by ArcadeGameKind rather than by cabinet row so it
-    // reads the same whether the engine was reached from its cabinet, a MAINT played
-    // variant, or a hatch.
-    bool gameBriefOpen_ = false;
-    int gameBriefScroll_ = 0;
-    bool gameBriefIntro_ = false;            // opened by the hatch, not the chord
+    // The mid-play RULES overlay (game/game_brief_screen.h). The only route to one for
+    // the boards that launch straight out of an egg with no menu stop along the way
+    // (startHatchGame: Decrypt/Clutch/Isolation land on their Nav directly).
+    GameBriefScreen gameBrief_;
     // The tip card on screen (game/tip_card_screen.h), and where dismissing it returns.
     TipCardScreen tipCardScreen_;
     Nav tipCardReturn_ = Nav::Idle;
@@ -3004,12 +2991,7 @@ private:
     // Advance the home-screen announcement: retire an expired banner (marking it
     // notified) and raise the next pending one while the pet face sits idle.
     void tickAchievementBanner();
-    int achBannerWire_ = -1;        // the row on screen, by wire number; -1 = none
-    int achBannerCount_ = 0;        // 1 = named row · >1 = a collapsed burst of N
-    uint32_t achBannerUntilMs_ = 0; // when it retires
-    int achBannerOpenBeat_ = 0;     // the beat it arrived on: drives the wipe-open and
-                                    // starts its marquee at the head of the line rather
-                                    // than wherever the free-running beat happens to be
+    AchievementBanner achBanner_;   // game/achievement_banner.h
 
     // Record a dish on the active pet's palate. Idempotent, and a no-op for anything
     // that is not a Food: a Buff drunk from the bag is not a meal. Also where a

@@ -49,7 +49,7 @@ void test_hatch_briefing_opens_once_per_line() {
         Game g{StartMode::FreshHatch, "paypup", &store};
         if (g.inLineSelect()) g.onButton(press(Button::B));   // lay the Ransomware egg
         CHECK(g.nav() == Game::Nav::Decryption);
-        CHECK(g.gameBriefOpen() && g.gameBriefIntro());
+        CHECK(g.gameBriefOpen() && g.gameBrief().intro());
         CHECK(g.tipSeen(Game::Tip::HatchDecrypt));
         CHECK(!g.tipSeen(Game::Tip::HatchClutch));          // per LINE, not per hatch
         const std::vector<ProseRow> rows = g.gameBriefRows();
@@ -61,13 +61,13 @@ void test_hatch_briefing_opens_once_per_line() {
         CHECK(g.decryption().guess(0) == colour0);
 
         for (int i = 0; i < 10 && g.gameBriefOpen(); ++i) g.onButton(press(Button::B));
-        CHECK(!g.gameBriefOpen() && !g.gameBriefIntro());
+        CHECK(!g.gameBriefOpen() && !g.gameBrief().intro());
         CHECK(g.nav() == Game::Nav::Decryption && g.decryption().running());
 
         // The chord reopens it as the ordinary reader: still led by the egg's stakes,
         // because the egg is still riding on the board, but B wraps rather than leaving.
         g.onButton(chordAC());
-        CHECK(g.gameBriefOpen() && !g.gameBriefIntro());
+        CHECK(g.gameBriefOpen() && !g.gameBrief().intro());
         CHECK(std::strcmp(g.gameBriefRows()[0].label, "A NEW EGG") == 0);
         for (int i = 0; i < 10; ++i) g.onButton(press(Button::B));
         CHECK(g.gameBriefOpen());
@@ -92,7 +92,7 @@ void test_hatch_briefing_skips_and_stays_off_the_arcade() {
     {
         Game g;
         if (g.inLineSelect()) g.onButton(press(Button::B));
-        CHECK(g.gameBriefIntro());
+        CHECK(g.gameBrief().intro());
         g.onButton(press(Button::C));
         CHECK(!g.gameBriefOpen());
         CHECK(g.nav() == Game::Nav::Decryption && g.decryption().running());

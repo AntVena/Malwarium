@@ -28,7 +28,6 @@ namespace {
 // Where the RULES page's prose starts, under drawHeaderBand's title + rule: the same
 // offset ROCK THE DOCK's own BRIEFING opens its reader at (kDockBriefTop,
 // ui/tourney_screen.h), since both sit under the identical band.
-constexpr int kGameBriefReaderTop = 46;
 }  // namespace
 
 // --- Mid-play RULES overlay --------------------------------------------------
@@ -80,60 +79,33 @@ std::vector<ProseRow> Game::gameBriefRows() const {
 
 void Game::openGameBrief() {
     if (!gameBriefAvailable()) return;
-    gameBriefOpen_ = true;
-    gameBriefScroll_ = 0;
+    gameBrief_.open();
     dirty_ = true;
 }
 
 void Game::closeGameBrief() {
-    gameBriefOpen_ = false;
-    gameBriefIntro_ = false;
-    gameBriefScroll_ = 0;
+    gameBrief_.close();
     dirty_ = true;
 }
 
 void Game::toggleGameBrief() {
-    if (gameBriefOpen_) closeGameBrief();
+    if (gameBrief_.isOpen()) closeGameBrief();
     else openGameBrief();
 }
 
-// Called first by every game engine's input handler. Consumes B (scroll)
-// and C (close) while the overlay is up and reports so via the return, so the caller
-// returns immediately instead of also feeding the same press to the paused game
-// underneath; reports false the moment the overlay isn't open, so a normal press falls
+// Called first by every game engine's input handler. Consumes every press while the
+// overlay is up, so the caller returns at once instead of also feeding it to the paused
+// game underneath; false the moment the overlay isn't open, so a normal press falls
 // through untouched.
 bool Game::onGameBriefInput(const ButtonEvent& ev) {
-    if (!gameBriefOpen_) return false;
-    const std::vector<ProseRow> rows = gameBriefRows();
-    const int total = static_cast<int>(rows.size());
-    if (ev.button == Button::B && total > 0) {
-        const int shown = proseRowsFitting(rows, gameBriefScroll_, kGameBriefReaderTop);
-        gameBriefScroll_ += shown;
-        // The chord's reader wraps, since it is something to re-read; the hatch's
-        // briefing is something to get through, so B off its last page starts play.
-        if (gameBriefScroll_ >= total) {
-            if (gameBriefIntro_) closeGameBrief();
-            else gameBriefScroll_ = 0;
-        }
-        dirty_ = true;
-    } else if (ev.button == Button::C || ev.chordAC) {
-        closeGameBrief();
-    }
+    if (!gameBrief_.isOpen()) return false;
+    if (gameBrief_.onButton(gameBriefRows(), ev)) dirty_ = true;
     return true;
 }
 
 void Game::drawGameBrief(Framebuffer& fb) const {
     const ArcadeGameDef* def = arcadeGameByKind(gameBriefKind());
-    drawHeaderBand(fb, def ? def->displayName : "RULES", "RULES");
-    const std::vector<ProseRow> rows = gameBriefRows();
-    const char* hint = "B MORE   C BACK";
-    if (gameBriefIntro_) {
-        const bool last = gameBriefScroll_ +
-            proseRowsFitting(rows, gameBriefScroll_, kGameBriefReaderTop) >=
-            static_cast<int>(rows.size());
-        hint = last ? "B PLAY" : "B NEXT   C SKIP";
-    }
-    drawProseRows(fb, {rows, gameBriefScroll_, kGameBriefReaderTop, beat_, hint});
+    gameBrief_.draw(fb, def ? def->displayName : "RULES", gameBriefRows(), beat_);
 }
 
 // --- The cabinet list (L2) -------------------------------------------------

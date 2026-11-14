@@ -442,14 +442,14 @@ Game::AchBannerCopy Game::achBannerCopy() const {
     // in the hatch menu. It gets the held plate (a different colour, its own copy, and
     // no deadline), because it is the only banner with an instruction in it, and a
     // three-second window is no way to deliver one.
-    const EggLineDef* eggLine = achBannerCount_ == 1 ? achEggLineUnlocked(*d) : nullptr;
+    const EggLineDef* eggLine = achBanner_.count() == 1 ? achEggLineUnlocked(*d) : nullptr;
     c.held = eggLine != nullptr;
     c.kicker = c.held ? "NEW EGG LINE" : "ACHIEVEMENT";
 
     // A burst says how many first and names one of them, so a long back-catalogue drop
     // still tells the player something specific about what they got.
-    if (achBannerCount_ > 1)
-        std::snprintf(c.name, sizeof(c.name), "%d UNLOCKED", achBannerCount_);
+    if (achBanner_.count() > 1)
+        std::snprintf(c.name, sizeof(c.name), "%d UNLOCKED", achBanner_.count());
     else if (c.held)
         // The LINE, not the achievement that earned it: "Hash Collision" is the thing
         // they just did, and "Metamorphic" is the thing they can now do about it. Only
@@ -471,7 +471,7 @@ Game::AchBannerCopy Game::achBannerCopy() const {
         // A held plate says where to go and how to dismiss it. The rewards are still
         // paid; they are simply not what this banner is for.
         std::snprintf(c.reward, sizeof(c.reward), "ARCH > NEW EGG - ANY KEY");
-    else if (achBannerCount_ > 1)
+    else if (achBanner_.count() > 1)
         std::snprintf(c.reward, sizeof(c.reward), "%s +MORE", d->displayName);
     else if (rewardItem && rewardBits > 0) {
         // Two rewards on one line is the only combination too wide for the plate:
@@ -537,7 +537,7 @@ void Game::drawAchievementBanner(Framebuffer& fb) const {
     // at a glance in grayscale, where a fade is only a value the eye has nothing to
     // compare against. Held plates open too: the instruction can wait three beats.
     constexpr int kOpenBeats = 3;
-    const int age = beat_ - achBannerOpenBeat_;
+    const int age = beat_ - achBanner_.openBeat();
     const int open = (age >= kOpenBeats || age < 0) ? bandH
                                                     : bandH * (age + 1) / (kOpenBeats + 1);
     const int drawH = open < 2 ? 2 : open;            // never thinner than its own rules

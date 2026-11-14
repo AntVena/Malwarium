@@ -412,9 +412,9 @@ int Game::achPendingNotify() const {
 }
 
 const AchievementDef* Game::achBanner() const {
-    if (achBannerWire_ < 0) return nullptr;
+    if (!achBanner_.showing()) return nullptr;
     for (int i = 0; i < kAchievementCount; ++i)
-        if (kAchievements[i].wire == achBannerWire_) return &kAchievements[i];
+        if (kAchievements[i].wire == achBanner_.wire()) return &kAchievements[i];
     return nullptr;
 }
 
@@ -429,16 +429,15 @@ bool Game::achBannerHeld() const {
     // A COLLAPSED burst is never held, however many egg lines are inside it: that banner
     // is already saying "a lot happened", and holding the home screen hostage on a
     // firmware update that retro-awarded the back catalogue is the opposite of a favour.
-    if (achBannerCount_ != 1) return false;
+    if (achBanner_.count() != 1) return false;
     const AchievementDef* d = achBanner();
     return d && achEggLineUnlocked(*d) != nullptr;
 }
 
 void Game::dismissAchievementBanner() {
-    if (achBannerWire_ < 0) return;
-    setAchBit(op_.reveals.achNotified, achBannerWire_);
-    achBannerWire_ = -1;
-    achBannerCount_ = 0;
+    if (!achBanner_.showing()) return;
+    setAchBit(op_.reveals.achNotified, achBanner_.wire());
+    achBanner_.clear();
     markSaveDirty();
     dirty_ = true;
 }
@@ -450,52 +449,37 @@ void Game::tickAchievementBanner() {
     // dismissAchievementBanner(), so the retire below must not see it. Everything after
     // that point is unchanged: one at a time, and only while the player is actually
     // looking at the home screen.
-    if (achBannerWire_ >= 0 && nowMs_ >= achBannerUntilMs_ && !achBannerHeld()) {
-        if (achBannerCount_ > 1) {
+    if (achBanner_.showing() && achBanner_.expired(nowMs_) && !achBannerHeld()) {
+        if (achBanner_.count() > 1) {
             for (int i = 0; i < kAchievementCount; ++i)
                 if (achBit(op_.reveals.achEarned, kAchievements[i].wire))
                     setAchBit(op_.reveals.achNotified, kAchievements[i].wire);
         } else {
-            setAchBit(op_.reveals.achNotified, achBannerWire_);
+            setAchBit(op_.reveals.achNotified, achBanner_.wire());
         }
-        achBannerWire_ = -1;
-        achBannerCount_ = 0;
+        achBanner_.clear();
         markSaveDirty();
         dirty_ = true;
     }
-    if (achBannerWire_ >= 0) return;                      // one at a time
+    if (achBanner_.showing()) return;                     // one at a time
     // The home screen, and only the home screen: the pet face, idle, nothing modal over
     // it. Anywhere else the player is mid-task and an interrupt would be noise.
     if (face_ != Face::Pet || nav_ != Nav::Idle) return;
     const int pending = achPendingNotify();
     if (pending == 0) return;
     // A long burst (usually a firmware update awarding many at once) collapses into one
-    // "N ACHIEVEMENTS" banner so the home screen stays usable. Under the threshold they
-    // are announced properly, by name, one after another.
-    if (pending > kAchBannerBurstMax) {
-        achBannerWire_ = -1;
-        for (int i = 0; i < kAchievementCount; ++i) {
-            const AchievementDef& d = kAchievements[i];
-            if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) {
-                achBannerWire_ = d.wire;     // a name to show under the count
-                break;
-            }
-        }
-        achBannerCount_ = pending;
-    } else {
-        for (int i = 0; i < kAchievementCount; ++i) {
-            const AchievementDef& d = kAchievements[i];
-            if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) {
-                achBannerWire_ = d.wire;
-                achBannerCount_ = 1;
-                break;
-            }
+    // "N UNLOCKED" banner that names the first of them, so the home screen stays usable.
+    // Under the threshold they are announced properly, by name, one after another.
+    for (int i = 0; i < kAchievementCount; ++i) {
+        const AchievementDef& d = kAchievements[i];
+        if (achBit(op_.reveals.achEarned, d.wire) && !achBit(op_.reveals.achNotified, d.wire)) {
+            achBanner_.compose(d.wire, pending > kAchBannerBurstMax ? pending : 1);
+            break;
         }
     }
-    // Dwell is set AFTER the wire/count above, because what the banner will say is what
-    // decides how long it needs (achBannerDwellMs reads the composed copy).
-    achBannerOpenBeat_ = beat_;
-    achBannerUntilMs_ = nowMs_ + achBannerDwellMs();
+    // Opened AFTER compose, because what the banner will say is what decides how long
+    // it needs (achBannerDwellMs reads the composed copy).
+    achBanner_.open(beat_, nowMs_ + achBannerDwellMs());
     dirty_ = true;
     playSound(Sound::Achievement);
 }

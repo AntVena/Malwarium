@@ -357,7 +357,7 @@ void test_achievement_banner_announces_on_the_home_screen() {
     g.tick(t += kHeartbeatMs);
     const AchievementDef* shown = g.achBanner();
     CHECK(shown && std::strcmp(shown->id, ach::kSurvivedLockout) == 0);
-    CHECK(g.achBannerCount() == 1);
+    CHECK(g.achievementBanner().count() == 1);
     CHECK(g.achPendingNotify() == 1);             // still pending until it retires
 
     passBanner(g, t);
@@ -400,7 +400,7 @@ void test_achievement_banner_collapses_a_burst() {
     }
     CHECK(g.achPendingNotify() > kAchBannerBurstMax);
     g.tick(t += kHeartbeatMs);
-    CHECK(g.achBannerCount() > 1);                // one banner speaking for the lot
+    CHECK(g.achievementBanner().count() > 1);                // one banner speaking for the lot
     passBanner(g, t);
     CHECK(g.achPendingNotify() == 0);             // and it clears the whole backlog
 }

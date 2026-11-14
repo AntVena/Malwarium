@@ -186,7 +186,7 @@ void Game::startHatchGame(const EggLineDef* line) {
     if (!tipSeen(tip)) {
         markTipSeen(tip);
         openGameBrief();
-        gameBriefIntro_ = gameBriefOpen_;
+        gameBrief_.markIntro();
     }
 }
 
