@@ -441,7 +441,7 @@ void test_rig_services_switchboard() {
         // dirty, and the wallet is untouched, because a stopped service spends nothing.
         openServices(g);
         g.onButton(press(Button::A));               // cursor -> DISK MAINTENANCE
-        CHECK(g.rigServiceRow() == 1);
+        CHECK(g.rigShopScreen().serviceRow() == 1);
         tapB(g);
         CHECK(!g.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));
         tapC(g);                                    // C backs to the storefront, not out
@@ -503,7 +503,7 @@ void test_rig_service_info_on_hold_b() {
     // DISK MAINTENANCE and hold there. Its live per-run price is the one thing the
     // content table cannot state, so the page is where a player can find it.
     g.onButton(press(Button::A));
-    CHECK(g.rigServiceRow() == 1);
+    CHECK(g.rigShopScreen().serviceRow() == 1);
     g.onButton(press(Button::B));
     g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
     CHECK(g.rigShopScreen().view() == Game::ShopView::ServiceInfo);

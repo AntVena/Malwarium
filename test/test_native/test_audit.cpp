@@ -678,13 +678,13 @@ void test_audit_capture_toggle_persists() {
     MemSaveStore store;
     {
         Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(!g.auditCaptureEnabled());     // default OFF (authorized-use opt-in)
+        CHECK(!g.captureEnabled());     // default OFF (authorized-use opt-in)
         g.setAuditCaptureEnabled(true);
         g.tick(kSaveAutosaveMs + kHeartbeatMs);   // flush the debounced write
     }
     {
         Game g(StartMode::Hatched, "paypup", &store);
-        CHECK(g.auditCaptureEnabled());      // survived the reboot
+        CHECK(g.captureEnabled());      // survived the reboot
     }
 }
 
@@ -695,24 +695,24 @@ void test_audit_mode_enforces_scan_dependency() {
     Game g(StartMode::Hatched, "paypup", &store);
     CHECK(g.auditMode() == Game::AuditMode::Off);
     CHECK(!g.netScanEnabled());
-    CHECK(!g.auditCaptureEnabled());
+    CHECK(!g.captureEnabled());
 
     // ScanCapture arms both; Scan keeps scan but disarms capture.
     g.setAuditMode(Game::AuditMode::ScanCapture);
     CHECK(g.auditMode() == Game::AuditMode::ScanCapture);
-    CHECK(g.netScanEnabled() && g.auditCaptureEnabled());
+    CHECK(g.netScanEnabled() && g.captureEnabled());
     g.setAuditMode(Game::AuditMode::Scan);
-    CHECK(g.netScanEnabled() && !g.auditCaptureEnabled());
+    CHECK(g.netScanEnabled() && !g.captureEnabled());
 
     // Turning scan OFF via the low-level setter also disarms capture (invariant).
     g.setAuditMode(Game::AuditMode::ScanCapture);
     g.setNetScanEnabled(false);
-    CHECK(!g.netScanEnabled() && !g.auditCaptureEnabled());
+    CHECK(!g.netScanEnabled() && !g.captureEnabled());
     CHECK(g.auditMode() == Game::AuditMode::Off);
 
     // Enabling capture via the low-level setter pulls scan up to match.
     g.setAuditCaptureEnabled(true);
-    CHECK(g.netScanEnabled() && g.auditCaptureEnabled());
+    CHECK(g.netScanEnabled() && g.captureEnabled());
     CHECK(g.auditMode() == Game::AuditMode::ScanCapture);
 }
 
@@ -728,7 +728,7 @@ void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     store.save(serializeSave(a));
     Game g(StartMode::Hatched, "paypup", &store);
     CHECK(g.netScanEnabled());               // pulled up to match capture
-    CHECK(g.auditCaptureEnabled());
+    CHECK(g.captureEnabled());
     CHECK(g.auditMode() == Game::AuditMode::ScanCapture);
 }
 

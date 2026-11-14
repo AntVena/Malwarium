@@ -367,7 +367,6 @@ public:
     // the board, since a switch thrown months after the purchase is the one a player
     // no longer remembers the terms of.
     using ShopView = mal::ShopView;
-    int rigServiceRow() const { return rigShop_.serviceRow(); }   // cursor within SERVICES
     // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
     // bench of a favourite mod buys the room for it rather than accumulating copies
@@ -682,7 +681,6 @@ public:
     bool shopIsModShop() const;                                 // false = item shop, true = mod shop
     const char* shopStoreName() const override;
     int shopListingCount() const override;
-    int shopCursor() const { return shop_.row(); }              // A-cycled row selection
     const char* shopListingId(int i) const;                     // raw content id (tests/debug)
     const char* shopListingName(int i) const override;                   // resolved display name
     // Resolved concrete-effect text: the listing's own description with its
@@ -1280,7 +1278,7 @@ public:
     // path. The policy/timing lives in the AuditCapture SM; the device tier reads
     // auditCapture().capturing()/broadcasting() to drive the radio and calls
     // auditCapture().noteHandshake() when its sniffer sees a real 4-way handshake.
-    bool auditCaptureEnabled() const { return auditCapture_.enabled(); }
+    bool captureEnabled() const override { return auditCapture_.enabled(); }
     void setAuditCaptureEnabled(bool on);
     const AuditCapture& auditCapture() const { return auditCapture_; }
     AuditCapture& auditCapture() { return auditCapture_; }
@@ -1853,6 +1851,7 @@ public:
     // itself, through its own accessors, rather than through one Game method per field.
     const FightScreen& fightScreen() const { return fightScreen_; }
     const RigShopScreen& rigShopScreen() const { return rigShop_; }
+    const ShopScreen& shopScreen() const { return shop_; }
     const ArenaScreen& arenaScreen() const { return arena_; }
     const TipCardScreen& tipCardScreen() const { return tipCardScreen_; }
     const ShiboleetScreen& shiboleetScreen() const { return shiboleet_; }
@@ -2240,7 +2239,6 @@ private:
     int32_t heldBMs() const override {
         return bHeld_ ? static_cast<int32_t>(nowMs_ - bDownMs_) : -1;
     }
-    bool captureEnabled() const override { return auditCapture_.enabled(); }
     void equipTitle(int sector) override;
     void clearSdFormatResult() override { sdFormatState_ = SdFormatState::Idle; }
     void clearInstallReport() override { installStatus_ = InstallStatus{}; }

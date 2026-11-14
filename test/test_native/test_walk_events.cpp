@@ -285,7 +285,7 @@ void test_shop_event_buy_decrements() {
     Game g{StartMode::Hatched};
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     CHECK(id != nullptr && id[0] != '\0');
     const int price = g.shopListingBitsPrice(row);
@@ -311,7 +311,7 @@ void test_shop_buy_gated_when_broke() {
     Game g{StartMode::Hatched};
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     const int price = g.shopListingBitsPrice(row);
     CHECK(id != nullptr && price > 0);
@@ -331,7 +331,7 @@ void test_shop_sold_out_after_stock() {
     Game g{StartMode::Hatched};
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     CHECK(id != nullptr);
     const int stock0 = g.shopListingStock(row);
@@ -357,10 +357,10 @@ void test_shop_cursor_cycles_all_listings() {
     const int n = g.shopListingCount();
     CHECK(n >= 1);
     for (int i = 0; i < n; ++i) {
-        CHECK(g.shopCursor() == i);
+        CHECK(g.shopScreen().row() == i);
         g.onButton(press(Button::A));
     }
-    CHECK(g.shopCursor() == 0);   // wrapped back to the first listing
+    CHECK(g.shopScreen().row() == 0);   // wrapped back to the first listing
 }
 
 // Mod shop: buying spends Bits AND every item cost the listing carries (not Bits
@@ -371,7 +371,7 @@ void test_mod_shop_buy_grants_mod() {
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
     CHECK(g.shopIsModShop());
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     CHECK(id != nullptr && id[0] != '\0');
     const int price = g.shopListingBitsPrice(row);
@@ -394,7 +394,7 @@ void test_mod_shop_buy_gated_by_item_cost() {
     Game g{StartMode::Hatched};
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     CHECK(g.shopListingCostCount(row) >= 1);
     g.liveOperator().bits = g.shopListingBitsPrice(row) * 10;   // plenty of Bits
@@ -414,7 +414,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     Game g{StartMode::Hatched};
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     const int cap = g.modStorageCap();
     CHECK(g.shopListingHeldCap(row) == cap);          // a mod row carries the ceiling
@@ -459,7 +459,7 @@ void test_shop_rows_report_what_is_already_held() {
     Game g{StartMode::Hatched};
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
-    const int row = g.shopCursor();
+    const int row = g.shopScreen().row();
     const char* id = g.shopListingId(row);
     CHECK(g.shopListingHeldCap(row) == 0);            // an item stack has no ceiling
     const int held0 = g.shopListingHeld(row);
