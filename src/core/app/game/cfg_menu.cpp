@@ -63,7 +63,7 @@ void CfgMenu::openPage(CfgHost& host, CfgScreen target) {
         case CfgScreen::Brightness:
         case CfgScreen::Sound:
         case CfgScreen::Volume: settings_.open(host, target); break;
-        case CfgScreen::Tips: tipsRow_ = 0; break;
+        case CfgScreen::Tips: tips_.open(); break;
         case CfgScreen::Theme:
         case CfgScreen::Titles:
         case CfgScreen::Background:
@@ -126,7 +126,7 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
         case CfgScreen::Travel:     follow(host, hardware_.onTravel(host, ev)); break;
         case CfgScreen::FormatSd:   follow(host, hardware_.onFormatSd(host, ev)); break;
         case CfgScreen::HackerTag:  follow(host, looks_.onHackerTag(host, ev)); break;
-        case CfgScreen::Tips:       onTips(host, ev); break;
+        case CfgScreen::Tips:       follow(host, tips_.onButton(host, ev)); break;
         case CfgScreen::UiMode:     follow(host, settings_.onUiMode(host, ev)); break;
         case CfgScreen::Brightness: follow(host, settings_.onBrightness(host, ev)); break;
         case CfgScreen::Sound:      follow(host, settings_.onSound(host, ev)); break;
@@ -166,20 +166,6 @@ bool CfgMenu::holdB(CfgHost& host, uint32_t heldMs) {
     return false;
 }
 
-void CfgMenu::onTips(CfgHost& host, const ButtonEvent& ev) {
-    const std::vector<Tip> tips = host.replayableTips();
-    const int n = static_cast<int>(tips.size());
-    if (ev.button == Button::A && n > 0) {
-        tipsRow_ = stepRow(tipsRow_, n, +1);
-        host.markDirty();
-    } else if (ev.button == Button::B && n > 0) {
-        if (tipsRow_ >= n) tipsRow_ = 0;
-        host.openTip(tips[tipsRow_]);
-    } else if (ev.button == Button::C) {
-        leavePage(host);
-    }
-}
-
 // What a page asked of the menu. A page it shows (a QR behind a row) is a page of the
 // menu's like any other, whose parent is the page that showed it, so leaving it lands
 // back there.
@@ -204,7 +190,7 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::Titles: looks_.drawTitles(fb, host); break;
         case CfgScreen::Background: looks_.drawBackground(fb, host); break;
         case CfgScreen::UiMode: settings_.drawUiMode(fb, host); break;
-        case CfgScreen::Tips: drawTipsPage(fb, host); break;
+        case CfgScreen::Tips: tips_.draw(fb, host); break;
         case CfgScreen::Brightness: settings_.drawBrightness(fb, host); break;
         case CfgScreen::Sound: settings_.drawSound(fb, host); break;
         case CfgScreen::Volume: settings_.drawVolume(fb, host); break;
@@ -242,30 +228,6 @@ void CfgMenu::drawDevicePage(Framebuffer& fb, const CfgHost& host) const {
     v.background = bg == SceneId::None ? "AUTO" : backgroundFor(bg)->name;
     v.careAlerts = s.careAlerts;
     drawCfgDevice(fb, v);
-}
-
-void CfgMenu::drawTipsPage(Framebuffer& fb, const CfgHost& host) const {
-    fb.clear(palColor(Pal::PAPER));
-    drawHeaderBand(fb, "TIPS");
-    const std::vector<Tip> tips = host.replayableTips();
-    const int n = static_cast<int>(tips.size());
-    if (n == 0) {
-        const char* none = "- NONE SHOWN YET -";
-        drawText(fb, (kActiveW - textWidth(none)) / 2, kActiveH / 2, none,
-                 palColor(Pal::INK_DIM));
-        drawHintBand(fb, "C BACK");
-        return;
-    }
-    const int cursor = tipsRow_ < n ? tipsRow_ : 0;
-    const int scrollTop = listScrollTop(cursor, n, kVisibleRows);
-    for (int v = 0; v < kVisibleRows && scrollTop + v < n; ++v) {
-        const int i = scrollTop + v;
-        const int y = kRowTop + v * kRowH;
-        if (i == cursor) drawRowSelection(fb, y, kRowH);
-        drawText(fb, 22, y + (kRowH - kFontH) / 2, TipCardScreen::title(tips[i]),
-                 i == cursor ? palColor(Pal::ACCENT) : palColor(Pal::INK));
-    }
-    drawHintBand(fb, "A NEXT  B READ  C BACK");
 }
 
 }  // namespace mal

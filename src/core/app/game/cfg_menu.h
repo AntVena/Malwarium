@@ -20,6 +20,7 @@
 #include "core/app/game/looks_pages.h"
 #include "core/app/game/radio_pages.h"
 #include "core/app/game/settings_pages.h"
+#include "core/app/game/tips_page.h"
 #include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
 #include "core/device/power_status.h"
@@ -44,7 +45,7 @@ enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
 // itself is declared here, even where a page's host declares it too, so a call through
 // CfgHost names one function.
 class CfgHost : public UpdatesHost, public RadioHost, public HardwareHost,
-                public LooksHost, public SettingsHost {
+                public LooksHost, public SettingsHost, public TipsHost {
 public:
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
@@ -55,13 +56,10 @@ public:
     virtual RadioOwner radioOwner() const = 0;        // the CFG list's radio line
     virtual const char* equippedTitleName() const = 0;
     virtual const char* themeName() const = 0;
-    // The tips seen so far, in the order TIPS lists them.
-    virtual std::vector<Tip> replayableTips() const = 0;
 
     // What the pages change. A setter returning bool refuses a locked choice.
     virtual void resetToHatch() = 0;
     virtual void executeFactoryReset(FactoryScope scope) = 0;
-    virtual void openTip(Tip t) = 0;                  // read, then back to TIPS
     virtual void armHoldB() = 0;
     virtual void disarmHoldB() = 0;
     virtual void markDirty() = 0;
@@ -98,10 +96,8 @@ private:
     void openPage(CfgHost& host, CfgScreen target);
     void leavePage(CfgHost& host);
     void onGroup(CfgHost& host, const ButtonEvent& ev);
-    void onTips(CfgHost& host, const ButtonEvent& ev);
     void follow(CfgHost& host, CfgMove move);
     void drawDevicePage(Framebuffer& fb, const CfgHost& host) const;
-    void drawTipsPage(Framebuffer& fb, const CfgHost& host) const;
 
     int row_ = 0;                          // the CFG list
     CfgScreen page_ = CfgScreen::SysInfo;  // the open L3
@@ -111,10 +107,10 @@ private:
     // The open page's focused choice: a picker's row, a confirm's NO/YES, the Factory
     // Reset scope. Only one page is open at a time, and each seeds it on opening.
     int pick_ = 0;
-    int tipsRow_ = 0;
     HardwarePages hardware_;
     LooksPages looks_;
     SettingsPages settings_;
+    TipsPage tips_;
     UpdatesPage updates_;
     RadioPages radio_;
 };
