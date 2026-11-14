@@ -36,6 +36,7 @@
 #include "core/app/game/feeding_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/fragger_screen.h"
+#include "core/app/game/hacker_screen.h"
 #include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
@@ -160,7 +161,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
              private FraggerHost, private IsolationHost, private ChromaHost,
-             private DecryptionHost, private CryptogramHost, private LockoutHost {
+             private DecryptionHost, private CryptogramHost, private LockoutHost, private HackerHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -271,7 +272,7 @@ public:
     // confirm a level-up.
     int lastLevelUpStat() const { return lastLevelUpStat_; }
     int bits() const { return op_.bits; }
-    int bandwidth() const { return bandwidth_; }   // farming resource: see below
+    int bandwidth() const override { return bandwidth_; }   // farming resource: see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
@@ -699,7 +700,7 @@ public:
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
     // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
     // kPendingNetworkQueueCap, past which new sightings are dropped.
-    int pendingNetworks() const { return pendingNetworkCount_; }
+    int pendingNetworks() const override { return pendingNetworkCount_; }
     // Storefront (item shop AND mod shop share this accessor set: shopIsModShop()
     // says which registry a row's `id` resolves through). `i` is bounds-clamped to
     // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
@@ -772,7 +773,7 @@ public:
     const PowerStatus& powerStatus() const override { return power_; }
     // Which ICON_SYS_BATTERY frame the current reading draws as, or -1 when there is
     // no reading to draw (host builds, or a board with the monitor disabled).
-    int batteryLevel() const { return batteryLevel_; }
+    int batteryLevel() const override { return batteryLevel_; }
 
     // microSD presence pushed from the platform tier at boot (device mounts the
     // card + round-trips it; host leaves it absent). Surfaced on the CFG "SD" line
@@ -1359,7 +1360,7 @@ public:
     // The letters of the Cant this device can read (core/model/cant.h). The one
     // durable half of the whole guardian system.
     SigilSet cantSigils() const override { return op_.cant.sigils; }
-    int sigilsKnown() const { return sigilCount(op_.cant.sigils); }
+    int sigilsKnown() const override { return sigilCount(op_.cant.sigils); }
     // The guardian encounter's live state, for the screen and for tests: which band the
     // fluency roll landed in, how the riddle ended, and the riddle itself already drawn
     // in the Cant. `shiboleetReplyText` fills `out` with the reply on shown row `row`.
@@ -1767,12 +1768,12 @@ public:
     // NETWORK is the network the operator has designated as theirs to defend; holding
     // one is the precondition for belonging to a crew (joinCrew refuses without it).
     int crewIndex() const { return op_.crewIndex; }            // kCrews row, or -1
-    const CrewDef* activeCrew() const { return crew(op_.crewIndex); }
+    const CrewDef* activeCrew() const override { return crew(op_.crewIndex); }
     // The CREW screen's views (game/crew_screen.h), named here so the gates can say
     // which is up.
     using CrewView = mal::CrewView;
     CrewView crewView() const { return crew_.view(); }
-    bool hasHomeNetwork() const { return op_.homeNetworkKey != 0; }
+    bool hasHomeNetwork() const override { return op_.homeNetworkKey != 0; }
     uint64_t homeNetworkKey() const { return op_.homeNetworkKey; }
     const char* homeNetworkName() const { return op_.homeNetworkName; }
     // Designate `key` (a packed 48-bit BSSID, as Game::registerNetwork builds them)
@@ -1870,7 +1871,7 @@ public:
     void markCreatureRaised(const char* id);
     bool creatureRaised(const char* id) const { return op_.shelves.creatureRaised(id); }
     // How many DISTINCT species this device has raised (PROFILE's SPECIES row).
-    int speciesRaised() const { return static_cast<int>(op_.shelves.raisedCreatures.size()); }
+    int speciesRaised() const override { return static_cast<int>(op_.shelves.raisedCreatures.size()); }
     // The fixed wild-malbeast roster's (combat.h kWildMalbeastIds) seen/defeated
     // state, set by a real wild encounter roll (seen) / a won live wild fight
     // (defeated): see Game::startEncounter / Game::finishCombat.
@@ -2919,7 +2920,7 @@ private:
     // B is inert on them (hackerSlotAccessible).
     void toggleFace();
     HackerSlotId enteredHackerId() const;          // hacker slot under the cursor (L2 subject)
-    bool hackerSlotAccessible(int slot) const;     // false = inaccessible (B inert)
+    bool hackerSlotAccessible(int slot) const override;   // false = inaccessible (B inert)
     void enterHackerSubmenu();                      // Cursor B → the focused hacker slot's L2
     void onHackerSubmenu(const ButtonEvent& ev);   // L2 dispatch (PROFILE viewer / SHOP / VAULT)
     // Generic Rig Shop buy: looks up `row`'s RigUpgradeDef (game_rig_shop.h), checks
@@ -2967,9 +2968,7 @@ private:
         if (bonus < 1) bonus = 1;
         return value + bonus;
     }
-    void drawHackerHome(Framebuffer& fb, int cursor) const;  // terminal centre + identity + carousel
     void drawHackerSubmenu(Framebuffer& fb) const;  // L2 dispatch, one case per HackerSlotId
-    void drawHackerProfile(Framebuffer& fb) const;
     // VaultHost. A cache opens for a reward draw, a Decryptogram rolls a quote and
     // starts a board: the one place a VAULT row resolves, so the tap and the bulk hold
     // cannot diverge.
@@ -3782,6 +3781,8 @@ private:
     // The feeding in progress (core/model/feeding.h), held while its modal is up.
     std::optional<Feeding> feeding_;
     FeedingScreen feedingScreen_;   // its modal (game/feeding_screen.h)
+
+    HackerScreen hacker_;   // the Hacker face's home and PROFILE (game/hacker_screen.h)
 
     // Lockout modal.
     LockoutScreen lockoutScreen_;          // game/lockout_screen.h

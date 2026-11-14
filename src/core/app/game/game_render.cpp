@@ -39,11 +39,11 @@ void Game::render(Framebuffer& fb) const {
     const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     switch (nav_) {
         case Nav::Idle:
-            if (face_ == Face::Hacker) drawHackerHome(fb, -1);
+            if (face_ == Face::Hacker) hacker_.drawHome(fb, *this, -1);
             else drawHabitat(fb, -1);
             break;
         case Nav::Cursor:
-            if (face_ == Face::Hacker) drawHackerHome(fb, cursor_);
+            if (face_ == Face::Hacker) hacker_.drawHome(fb, *this, cursor_);
             else drawHabitat(fb, cursor_);
             break;
         case Nav::Submenu:
