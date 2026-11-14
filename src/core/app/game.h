@@ -94,6 +94,7 @@
 #include "core/model/storefront_visit.h"
 #include "core/model/story_run.h"
 #include "core/model/tournament.h"
+#include "core/model/wifi_event.h"
 #include "core/net/audit_capture.h"
 #include "core/net/handshake_ledger.h"
 #include "core/net/network_ledger.h"
@@ -151,17 +152,10 @@ public:
     //   ModalFeeding / ModalLockout: event overlays.
     enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
 
-    // Wi-Fi network event sub-outcomes. Public so tests/dev tools can
-    // steer/inspect which outcome the step-roll landed on.
-    enum class WifiOutcome { SleepingGuardian, AwakenedGuardian, OpenCache, FriendlyVisit };
-
-    // What the last Wi-Fi event's real-network discovery actually was, as a value
-    // rather than only as the sentence resolveNetworkDiscovery() wrote. The Wi-Fi
-    // screen draws the pet taking the network in (FX_ABSORB), and how much of the
-    // glyph it gets through is the picture of the same reward the line states in
-    // words: a new network is eaten whole, one it is merely fond of is nibbled, its
-    // own home turf is left standing, and an empty queue has nothing to show at all.
-    enum class NetDiscovery : uint8_t { None, New, Fond, HomeTurf };
+    // The Wi-Fi event's two results (core/model/wifi_event.h), under the names the
+    // gates already use.
+    using WifiOutcome = mal::WifiOutcome;
+    using NetDiscovery = mal::NetDiscovery;
 
     // How a guardian receives the pet, graded on how much of the CANT it can read
     // (cantFluencyPct, core/model/cant.h). Public so a test can steer/inspect the band a
@@ -635,7 +629,10 @@ public:
     // model. Public so a gate can assert what a page SAYS rather than read it out of
     // pixels.
     std::vector<ProseRow> storyRows() const;
-    WifiOutcome wifiOutcome() const { return wifiOutcome_; }   // rolled sub-outcome
+    // The open Wi-Fi event's rolled outcome; SleepingGuardian with none open.
+    WifiOutcome wifiOutcome() const {
+        return wifi_ ? wifi_->outcome : WifiOutcome::SleepingGuardian;
+    }
     // WHICH of the rival's moves beating it could teach this pet: one bit per index
     // into its kit. Every part of the screen that asks uses this. The combat STAT
     // panel's KIT page marks each set bit in its gutter (RivalPrizes,
@@ -673,12 +670,10 @@ public:
     int subAreaMovesToLearn(int area, int sub) const override;
     int deepWebMovesToLearn() const override;
     int darkWebMovesToLearn() const override;
-    // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
-    // (new/familiar/home-turf/empty-queue): "" if none has resolved yet.
-    const char* netDiscoveryFlavor() const { return netDiscoveryFlavor_; }
-    // The same beat as a value, for the screen's picture of it (and for a gate to
-    // assert against without reading the sentence).
-    NetDiscovery netDiscovery() const { return netDiscovery_; }
+    // The open Wi-Fi event's discovery beat, as its line and as a value: "" and None
+    // with no event open.
+    const char* netDiscoveryFlavor() const { return wifi_ ? wifi_->discoveryLine : ""; }
+    NetDiscovery netDiscovery() const { return wifi_ ? wifi_->discovery : NetDiscovery::None; }
     int networksSeen() const { return op_.networksSeen; }         // lifetime, dedup'd
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
     // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
@@ -2820,20 +2815,18 @@ private:
     // Cant is already complete.
     bool buySigil();
 
-    // Wi-Fi network event: a self-contained typed event. First resolves real-
-    // network discovery (resolveNetworkDiscovery: pops the pending sighting
-    // queue against the NetworkLedger; sets netDiscoveryFlavor_), independent of
-    // and always followed by the Sleeping/Awakened-Guardian / Open-Cache /
-    // Friendly-Visit roll (sets wifiFlavor_; unrelated flavor/combat system), then
-    // B plays that roll's outcome out (loot / wild combat / ally buff).
+    // Wi-Fi network event (core/model/wifi_event.h). Opening one resolves real-network
+    // discovery first (resolveNetworkDiscovery pops the pending sighting queue against
+    // the NetworkLedger), then rolls what the pet meets, and B plays that outcome out
+    // (loot / wild combat / ally buff), which ends the event.
     void startWifiEvent();
     void onWifi(const ButtonEvent& ev);
     void resolveWifiOutcome();
     // Real-network discovery resolution: the sole place a real network is
     // credited (Hacker Rank XP + Sealed Cache) or an occasional-repeat pet-XP is
-    // granted. See game_net.cpp for the four-outcome breakdown (new / familiar
-    // repeat / home-turf repeat / empty queue).
-    void resolveNetworkDiscovery();
+    // granted, written into the event it is handed. See game_net.cpp for the
+    // four-outcome breakdown (new / familiar repeat / home-turf repeat / empty queue).
+    void resolveNetworkDiscovery(WifiEvent& ev);
 
     // Shop event: a storefront explore event, either the current sector's item shop
     // (startShopEvent, Nav::Shop) or its mod shop (startModShopEvent, Nav::ModShop),
@@ -3493,14 +3486,11 @@ private:
         if (c) markCreatureRaised(c->id);
     }
 
-    // Wi-Fi network event. wifiOutcome_/wifiFlavor_ are set when the
-    // guardian/cache/friendly roll happens (startWifiEvent) and consumed on B
-    // (resolveWifiOutcome). Operator::networksSeen is the lifetime unique-REAL-network
-    // counter, and only resolveNetworkDiscovery() bumps it.
-    // allyBuffBattlesLeft_ is the friendly-visit buff consumed one per battle in
-    // buildPlayerCombatant.
-    WifiOutcome wifiOutcome_ = WifiOutcome::SleepingGuardian;
-    char wifiFlavor_[40] = "";
+    // The Wi-Fi event on screen, from startWifiEvent until resolveWifiOutcome plays it
+    // out. Operator::networksSeen is the lifetime unique-REAL-network counter, and only
+    // resolveNetworkDiscovery() bumps it. allyBuffBattlesLeft_ is the friendly-visit
+    // buff consumed one per battle in buildPlayerCombatant.
+    std::optional<WifiEvent> wifi_;
     PowerStatus power_;  // last SMOOTHED reading from the platform tier
     // The battery fill currently on screen, which is the state batteryLevelStable
     // needs to hold a glyph steady across a reading that sits on a band edge. -1 =
@@ -3551,8 +3541,7 @@ private:
     //   networkLedger_. What this pet has actually walked past: the SD-backed
     //     per-BSSID history deciding new-vs-familiar-vs-home-turf.
     //
-    // netDiscoveryFlavor_ is the line resolveNetworkDiscovery() sets, drawn alongside
-    // wifiFlavor_. emptyQueueStreak_ throttles the empty-queue Happiness penalty
+    // emptyQueueStreak_ throttles the empty-queue Happiness penalty
     // (kNetDiscoveryEmptyCooldownStrikes) and resets whenever a sighting IS found.
     struct PendingNetwork {
         uint64_t key = 0;
@@ -3577,8 +3566,6 @@ private:
     PendingNetwork pendingNetworks_[kPendingNetworkQueueCap];
     int pendingNetworkCount_ = 0;
     NetworkLedger networkLedger_;
-    char netDiscoveryFlavor_[40] = "";
-    NetDiscovery netDiscovery_ = NetDiscovery::None;
     int emptyQueueStreak_ = 0;
 
     // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h): the same

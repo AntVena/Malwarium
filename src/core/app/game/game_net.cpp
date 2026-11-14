@@ -31,7 +31,7 @@ uint64_t packBssid(const uint8_t* bssid) {
     return key;
 }
 // Display names are capped well under the pending-queue's 32-byte SSID
-// headroom so every netDiscoveryFlavor_ template (game_net.cpp resolution
+// headroom so every WifiEvent::discoveryLine template (game_net.cpp resolution
 // below) fits its 40-char buffer even for a max-length real SSID.
 constexpr size_t kDisplayNameCap = 18;
 void formatDisplayName(const uint8_t* bssid, const char* ssid, char* out, size_t cap) {
@@ -55,7 +55,8 @@ void Game::startWifiEvent() {
     // Three sentences about three different things. The sighting queue decides instead:
     // something to resolve makes this the discovery beat, and an empty queue is what puts
     // the area's GUARDIAN in front of the pet.
-    resolveNetworkDiscovery();
+    WifiEvent ev;
+    resolveNetworkDiscovery(ev);
 
     // A dry queue on the cadence beat: the guardian is standing there
     // (game_shiboleet.cpp). Every Nth dry event, never the first: arming a walk resets
@@ -65,37 +66,17 @@ void Game::startWifiEvent() {
     // before anything comes out to look at it, which is the fiction. The dry events
     // between fall through to the ordinary sub-outcome below, so the walk's event
     // density is the same either way.
-    if (netDiscovery_ == NetDiscovery::None &&
+    if (ev.discovery == NetDiscovery::None &&
         emptyQueueStreak_ % kNetDiscoveryEmptyGuardianStrikes == 0) {
         startShiboleet();
         return;
     }
 
     rng_ = rng_ * 1664525u + 1013904223u;
-    const int roll = static_cast<int>((rng_ >> 16) % 100);
-    if (roll < kWifiSleepingPct) {
-        wifiOutcome_ = WifiOutcome::SleepingGuardian;
-        std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "GUARDIAN'S ASLEEP...");
-    } else if (roll < kWifiSleepingPct + kWifiAwakenedPct) {
-        // A guardian only WAKES (→ attacks) when the player is "hot": i.e. actively
-        // broadcasting after a real handshake capture. Merely *discovering*
-        // a network never flags you hot, so an un-hot player sneaks the cache instead
-        // of being auto-attacked. `broadcasting()` is the only path into AuditPhase::Hot
-        // (registerHandshake → noteHandshake), so a pcap is the sole trigger.
-        if (auditCapture_.broadcasting()) {
-            wifiOutcome_ = WifiOutcome::AwakenedGuardian;
-            std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "GUARDIAN AWAKENS!");
-        } else {
-            wifiOutcome_ = WifiOutcome::SleepingGuardian;
-            std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "GUARDIAN'S ASLEEP...");
-        }
-    } else if (roll < kWifiSleepingPct + kWifiAwakenedPct + kWifiOpenCachePct) {
-        wifiOutcome_ = WifiOutcome::OpenCache;
-        std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "CACHE WIDE OPEN...");
-    } else {
-        wifiOutcome_ = WifiOutcome::FriendlyVisit;
-        std::snprintf(wifiFlavor_, sizeof(wifiFlavor_), "A FRIEND STOPS BY...");
-    }
+    // broadcasting() is the only path into AuditPhase::Hot (registerHandshake →
+    // noteHandshake), so a pcap is the sole thing that can wake a guardian.
+    ev.rollOutcome(static_cast<int>((rng_ >> 16) % 100), auditCapture_.broadcasting());
+    wifi_ = ev;
     walk_.eventBeat = 0;   // start the hands-off hold clock
     fxBeat_ = 0;             // and the dissolve's, which no press restarts
     nav_ = Nav::Wifi;
@@ -110,7 +91,10 @@ void Game::onWifi(const ButtonEvent& ev) {
 }
 
 void Game::resolveWifiOutcome() {
-    switch (wifiOutcome_) {
+    // Playing the outcome out is the event's end, whatever comes after it.
+    const WifiOutcome outcome = wifi_ ? wifi_->outcome : WifiOutcome::SleepingGuardian;
+    wifi_.reset();
+    switch (outcome) {
         case WifiOutcome::SleepingGuardian:
         case WifiOutcome::OpenCache:
             // Sneak the cache / it's just sitting open: same reward pool as a
@@ -289,11 +273,9 @@ void Game::loadHandshakeLedger(const char* path) {
     handshakeLedger_.load(path);
 }
 
-void Game::resolveNetworkDiscovery() {
+void Game::resolveNetworkDiscovery(WifiEvent& ev) {
     if (pendingNetworkCount_ == 0) {
         ++emptyQueueStreak_;
-        netDiscoveryFlavor_[0] = '\0';
-        netDiscovery_ = NetDiscovery::None;
         // No penalty. A dry queue costs the pet nothing. An empty area is not the pet's
         // fault, and a Happiness tax would drain a long unattended walk. The streak is
         // still counted, because startWifiEvent reads it to decide when the guardian
@@ -328,12 +310,12 @@ void Game::resolveNetworkDiscovery() {
 
         rng_ = rng_ * 1664525u + 1013904223u;
         if ((rng_ >> 16) % 2 == 0)
-            std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
+            std::snprintf(ev.discoveryLine, sizeof(ev.discoveryLine),
                          "ADMIRING %s", picked.name);
         else
-            std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
+            std::snprintf(ev.discoveryLine, sizeof(ev.discoveryLine),
                          "ENVIES %s'S BANDWIDTH", picked.name);
-        netDiscovery_ = NetDiscovery::New;
+        ev.discovery = NetDiscovery::New;
         markSaveDirty();
         return;
     }
@@ -347,16 +329,16 @@ void Game::resolveNetworkDiscovery() {
         networkLedger_.inTopN(picked.key, kNetDiscoveryTopFavoritesCount);
     networkLedger_.recordSeenAgain(picked.key, picked.name);
     if (wasHomeTurf) {
-        std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
+        std::snprintf(ev.discoveryLine, sizeof(ev.discoveryLine),
                      "TIRED OF %s...", picked.name);
-        netDiscovery_ = NetDiscovery::HomeTurf;
+        ev.discovery = NetDiscovery::HomeTurf;
         return;
     }
     addCombatXp(kNetDiscoveryFondXpAmount);
     pet_.model.setHappiness(pet_.model.happiness() + kNetDiscoveryFoundHappyBonus);
-    std::snprintf(netDiscoveryFlavor_, sizeof(netDiscoveryFlavor_),
+    std::snprintf(ev.discoveryLine, sizeof(ev.discoveryLine),
                  "FONDLY REMEMBERS %s", picked.name);
-    netDiscovery_ = NetDiscovery::Fond;
+    ev.discovery = NetDiscovery::Fond;
     markSaveDirty();
 }
 

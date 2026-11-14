@@ -818,11 +818,11 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
     // says.
     //
     // The banner states the same fact in words, so it is derived here from
-    // netDiscovery_. A fixed "NEW WI-FI NETWORK" over a repeat sighting or an empty
+    // the event's discovery. A fixed "NEW WI-FI NETWORK" over a repeat sighting or an empty
     // queue would contradict the two flavor lines.
     WifiEventView v;
     v.banner = "QUIET AIR";
-    switch (netDiscovery_) {
+    switch (netDiscovery()) {
         case NetDiscovery::New:
             v.absorb = WifiAbsorb::Whole; v.banner = "NEW WI-FI NETWORK"; break;
         case NetDiscovery::Fond:
@@ -832,8 +832,8 @@ void Game::drawWifiScreen(Framebuffer& fb) const {
         case NetDiscovery::None: break;
     }
     v.sectorName = explSectorName(walk_.sector);
-    v.outcomeLine = wifiFlavor_;
-    v.discoveryLine = netDiscoveryFlavor_;
+    v.outcomeLine = wifi_ ? wifi_->outcomeLine() : "";
+    v.discoveryLine = netDiscoveryFlavor();
     v.pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
     v.beat = beat_;
     v.fxBeat = fxBeat_;

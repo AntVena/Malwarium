@@ -313,9 +313,10 @@ struct EncounterIntroView {
 void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v);
 
 // How much of the network glyph the pet gets through on a Wi-Fi event: the picture of
-// the discovery beat's reward, matched to Game::NetDiscovery. Eaten whole for a network
-// it has never seen, nibbled for one it is merely fond of, left standing for its own
-// home turf, and absent entirely when the radio queued nothing to find.
+// the discovery beat's reward, matched to NetDiscovery (core/model/wifi_event.h). Eaten
+// whole for a network it has never seen, nibbled for one it is merely fond of, left
+// standing for its own home turf, and absent entirely when the radio queued nothing to
+// find.
 enum class WifiAbsorb { None, Whole, Nibble, Untouched };
 
 // Wi-Fi network event: a self-contained typed event that resolves in place: the banner +
