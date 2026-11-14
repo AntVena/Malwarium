@@ -1678,9 +1678,9 @@ int main(int argc, char** argv) {
                 } else ping();
             }
             if (wantMods && hasFlag(argc, argv, "full"))
-                for (int i = 0; i < game.shopListingCount(); ++i)
+                for (int i = 0; i < game.storefrontVisit()->listingCount(); ++i)
                     for (int k = 0; k < game.modStorageCap(); ++k)
-                        game.grantMod(game.shopListingId(i));
+                        game.grantMod(game.storefrontVisit()->id(i));
         } else if (hasFlag(argc, argv, "outro")) {
             // Ride a wild fight to a WIN and hold ON the combat screen for `beats`, so
             // the frame lands inside the beaten rival's dissolve rather than past it.

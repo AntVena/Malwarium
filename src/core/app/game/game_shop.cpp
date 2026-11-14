@@ -13,10 +13,12 @@
 // of it: nothing here reads the streak, the boss state or the step counter.
 #include "core/app/game.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 
 #include "core/content/areas/area_defs.h"
+#include "core/ui/expl_screen.h"   // ShopRowView
 
 namespace mal {
 
@@ -36,31 +38,32 @@ void Game::startModShopEvent() {
     nav_ = Nav::ModShop;
 }
 
-// The row reads are the visit's; with none open they read as empty.
-bool Game::shopIsModShop() const { return shopVisit_ && shopVisit_->sellsMods(); }
-const char* Game::shopStoreName() const { return shopVisit_ ? shopVisit_->storeName() : ""; }
-int Game::shopListingCount() const { return shopVisit_ ? shopVisit_->listingCount() : 0; }
-const char* Game::shopListingId(int i) const { return shopVisit_ ? shopVisit_->id(i) : ""; }
-const char* Game::shopListingName(int i) const {
-    return shopVisit_ ? shopVisit_->name(i, registry_) : "";
+int Game::shopRows(ShopRowView* out, int max) const {
+    if (!shopVisit_) return 0;
+    const StorefrontVisit& v = *shopVisit_;
+    const int n = std::min(v.listingCount(), max);
+    for (int i = 0; i < n; ++i) {
+        ShopRowView& r = out[i];
+        r.name = v.name(i, registry_);
+        r.bitsPrice = v.bitsPrice(i);
+        r.stock = v.stock(i);
+        r.costCount = std::min(v.costCount(i), kMaxShopCostItems);
+        for (int k = 0; k < r.costCount; ++k) {
+            r.costName[k] = v.costName(i, k, registry_);
+            r.costQty[k] = v.costQty(i, k);
+        }
+        r.held = shopListingHeld(i);
+        r.heldCap = shopListingHeldCap(i);
+    }
+    return n;
 }
+
 EffectText Game::shopListingDescription(int i) const {
     return shopVisit_ ? shopVisit_->description(i, registry_) : EffectText{};
 }
-int Game::shopListingStock(int i) const { return shopVisit_ ? shopVisit_->stock(i) : 0; }
-int Game::shopListingBitsPrice(int i) const { return shopVisit_ ? shopVisit_->bitsPrice(i) : 0; }
-int Game::shopListingCostCount(int i) const { return shopVisit_ ? shopVisit_->costCount(i) : 0; }
-const char* Game::shopListingCostId(int i, int k) const {
-    return shopVisit_ ? shopVisit_->costId(i, k) : "";
-}
-const char* Game::shopListingCostName(int i, int k) const {
-    return shopVisit_ ? shopVisit_->costName(i, k, registry_) : "";
-}
-int Game::shopListingCostQty(int i, int k) const {
-    return shopVisit_ ? shopVisit_->costQty(i, k) : 0;
-}
+
 int Game::shopListingCostHave(int i, int k) const {
-    const char* id = shopListingCostId(i, k);
+    const char* id = shopVisit_ ? shopVisit_->costId(i, k) : "";
     return id[0] ? inventory_.count(id) : 0;
 }
 
@@ -77,7 +80,7 @@ int Game::shopListingHeld(int i) const {
     // The MOD count is the un-equipped SPARE pool, the same number the cap bounds
     // (ModPool::grant): an installed mod left the pool, so it does not count
     // against the cap.
-    return shopIsModShop() ? op_.modPool.countOf(id) : inventory_.count(id);
+    return shopVisit_->sellsMods() ? op_.modPool.countOf(id) : inventory_.count(id);
 }
 
 int Game::shopListingHeldCap(int i) const {
@@ -86,7 +89,7 @@ int Game::shopListingHeldCap(int i) const {
     // other grant site measures against. An inventory stack has none, so an item row
     // reports 0: the screen then shows no HAVE column, and the buy gate never reports
     // full.
-    return shopIsModShop() ? modStorageCap() : 0;
+    return shopVisit_->sellsMods() ? modStorageCap() : 0;
 }
 
 const char* Game::shopRowRefusal(int i) const {

@@ -677,24 +677,16 @@ public:
     int networksSeen() const { return op_.networksSeen; }         // lifetime, dedup'd
     // What the scan has heard this boot and what still owes a reward.
     const NetworkSightings& networkSightings() const override { return networkSightings_; }
-    // Storefront (item shop AND mod shop share this accessor set: shopIsModShop()
-    // says which registry a row's `id` resolves through). `i` is bounds-clamped to
-    // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
-    bool shopIsModShop() const;                                 // false = item shop, true = mod shop
-    const char* shopStoreName() const override;
-    int shopListingCount() const override;
-    const char* shopListingId(int i) const;                     // raw content id (tests/debug)
-    const char* shopListingName(int i) const override;                   // resolved display name
+    // The storefront visit in play (core/model/storefront_visit.h), or null with none.
+    // An item shop and a mod shop differ only in which registry resolves a row's id.
+    const StorefrontVisit* storefrontVisit() const override {
+        return shopVisit_ ? &*shopVisit_ : nullptr;
+    }
+    int shopRows(ShopRowView* out, int max) const override;
     // Resolved concrete-effect text: the listing's own description with its
     // magnitudes substituted in (core/content/effect_text.h). Returned by value
     // because the text is rendered from the row.
     EffectText shopListingDescription(int i) const override;
-    int shopListingStock(int i) const override;                          // remaining THIS visit
-    int shopListingBitsPrice(int i) const override;
-    int shopListingCostCount(int i) const override;                      // non-empty extra item costs
-    const char* shopListingCostId(int i, int k) const;          // raw content id (tests/debug)
-    const char* shopListingCostName(int i, int k) const override;        // display name of cost item k
-    int shopListingCostQty(int i, int k) const override;
     int shopListingCostHave(int i, int k) const;                // held count, for the buy gate
     // How many of the row's own goods the player already holds, and the ceiling that
     // count is measured against (0 = no ceiling). A MOD row reads the un-equipped spare
@@ -702,8 +694,8 @@ public:
     // cap at all. A capped row shows the pair as "HAVE n/cap", so a storefront answers
     // "have I got this already, and can I take another" before the Bits are spent.
     // STORAGE FULL is the same pair given as the reason a buy is refused.
-    int shopListingHeld(int i) const override;
-    int shopListingHeldCap(int i) const override;
+    int shopListingHeld(int i) const;
+    int shopListingHeldCap(int i) const;
     // Is this row's buy available right now? The single answer the till (buyShopItem)
     // and the sign (shopStatusLine) both defer to, so a shop can never refuse a
     // purchase it drew as available, or take Bits for one it drew as refused.

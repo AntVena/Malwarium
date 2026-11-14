@@ -286,18 +286,18 @@ void test_shop_event_buy_decrements() {
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
+    const char* id = g.storefrontVisit()->id(row);
     CHECK(id != nullptr && id[0] != '\0');
-    const int price = g.shopListingBitsPrice(row);
+    const int price = g.storefrontVisit()->bitsPrice(row);
     CHECK(price > 0);
-    const int stock0 = g.shopListingStock(row);       // refilled for this visit
+    const int stock0 = g.storefrontVisit()->stock(row);       // refilled for this visit
     CHECK(stock0 > 0);
     const int bits0 = g.bits();
     const int inv0 = g.inventory().count(id);
     g.onButton(press(Button::B));                     // buy one
     CHECK(g.bits() == bits0 - price);
     CHECK(g.inventory().count(id) == inv0 + 1);
-    CHECK(g.shopListingStock(row) == stock0 - 1);
+    CHECK(g.storefrontVisit()->stock(row) == stock0 - 1);
     CHECK(g.nav() == Game::Nav::Shop);               // still open
     CHECK(g.log().size() >= 1 &&
           g.log().at(0).type == LogEventType::ItemGained);
@@ -312,16 +312,16 @@ void test_shop_buy_gated_when_broke() {
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
-    const int price = g.shopListingBitsPrice(row);
+    const char* id = g.storefrontVisit()->id(row);
+    const int price = g.storefrontVisit()->bitsPrice(row);
     CHECK(id != nullptr && price > 0);
     g.liveOperator().bits = price - 1;                       // one Bit short
     const int inv0 = g.inventory().count(id);
-    const int stock0 = g.shopListingStock(row);
+    const int stock0 = g.storefrontVisit()->stock(row);
     g.onButton(press(Button::B));                    // try to buy -> inert
     CHECK(g.bits() == price - 1);                    // unchanged
     CHECK(g.inventory().count(id) == inv0);
-    CHECK(g.shopListingStock(row) == stock0);
+    CHECK(g.storefrontVisit()->stock(row) == stock0);
     CHECK(g.nav() == Game::Nav::Shop);
 }
 
@@ -332,18 +332,18 @@ void test_shop_sold_out_after_stock() {
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
+    const char* id = g.storefrontVisit()->id(row);
     CHECK(id != nullptr);
-    const int stock0 = g.shopListingStock(row);
-    g.liveOperator().bits = g.shopListingBitsPrice(row) * (stock0 + 5);  // plenty to clear the shelf
+    const int stock0 = g.storefrontVisit()->stock(row);
+    g.liveOperator().bits = g.storefrontVisit()->bitsPrice(row) * (stock0 + 5);  // plenty to clear the shelf
     for (int i = 0; i < stock0; ++i) g.onButton(press(Button::B));
-    CHECK(g.shopListingStock(row) == 0);
+    CHECK(g.storefrontVisit()->stock(row) == 0);
     const int bits0 = g.bits();
     const int inv0 = g.inventory().count(id);
     g.onButton(press(Button::B));                       // sold out -> inert
     CHECK(g.bits() == bits0);
     CHECK(g.inventory().count(id) == inv0);
-    CHECK(g.shopListingStock(row) == 0);
+    CHECK(g.storefrontVisit()->stock(row) == 0);
 }
 
 // Arbitrary-length listing cycling: A steps the cursor through EVERY listing (not
@@ -354,7 +354,7 @@ void test_shop_cursor_cycles_all_listings() {
     Game g{StartMode::Hatched};
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
-    const int n = g.shopListingCount();
+    const int n = g.storefrontVisit()->listingCount();
     CHECK(n >= 1);
     for (int i = 0; i < n; ++i) {
         CHECK(g.shopScreen().row() == i);
@@ -370,15 +370,15 @@ void test_mod_shop_buy_grants_mod() {
     Game g{StartMode::Hatched};
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
-    CHECK(g.shopIsModShop());
+    CHECK(g.storefrontVisit()->sellsMods());
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
+    const char* id = g.storefrontVisit()->id(row);
     CHECK(id != nullptr && id[0] != '\0');
-    const int price = g.shopListingBitsPrice(row);
-    const int costCount = g.shopListingCostCount(row);
+    const int price = g.storefrontVisit()->bitsPrice(row);
+    const int costCount = g.storefrontVisit()->costCount(row);
     CHECK(costCount >= 1);   // the mod shop's whole point: an item cost beyond Bits
     for (int k = 0; k < costCount; ++k)
-        g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
+        g.inventory().add(g.storefrontVisit()->costId(row, k), g.storefrontVisit()->costQty(row, k));
     g.liveOperator().bits = price;
     g.onButton(press(Button::B));
     CHECK(g.modPool().owns(id));
@@ -395,9 +395,9 @@ void test_mod_shop_buy_gated_by_item_cost() {
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
-    CHECK(g.shopListingCostCount(row) >= 1);
-    g.liveOperator().bits = g.shopListingBitsPrice(row) * 10;   // plenty of Bits
+    const char* id = g.storefrontVisit()->id(row);
+    CHECK(g.storefrontVisit()->costCount(row) >= 1);
+    g.liveOperator().bits = g.storefrontVisit()->bitsPrice(row) * 10;   // plenty of Bits
     const int bits0 = g.bits();
     const bool ownedBefore = g.modPool().owns(id);
     g.onButton(press(Button::B));                       // no cost items held -> inert
@@ -415,7 +415,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     walkToModShop(g);
     CHECK(g.nav() == Game::Nav::ModShop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
+    const char* id = g.storefrontVisit()->id(row);
     const int cap = g.modStorageCap();
     CHECK(g.shopListingHeldCap(row) == cap);          // a mod row carries the ceiling
     CHECK(g.shopListingHeld(row) == g.modPool().countOf(id));
@@ -424,20 +424,20 @@ void test_mod_shop_buy_gated_when_storage_full() {
     // the row asks for: only storage is short.
     for (int i = 0; i < cap; ++i) g.grantMod(id);
     CHECK(g.shopListingHeld(row) == cap);
-    for (int k = 0; k < g.shopListingCostCount(row); ++k)
-        g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
-    g.liveOperator().bits = g.shopListingBitsPrice(row) * 4;
+    for (int k = 0; k < g.storefrontVisit()->costCount(row); ++k)
+        g.inventory().add(g.storefrontVisit()->costId(row, k), g.storefrontVisit()->costQty(row, k));
+    g.liveOperator().bits = g.storefrontVisit()->bitsPrice(row) * 4;
 
     const int bits0 = g.bits();
-    const int stock0 = g.shopListingStock(row);
+    const int stock0 = g.storefrontVisit()->stock(row);
     CHECK(!g.shopRowBuyable(row));
     CHECK(std::strcmp(g.shopStatusLine(), "STORAGE FULL") == 0);
     g.onButton(press(Button::B));                     // inert: nothing changes hands
     CHECK(g.bits() == bits0);
-    CHECK(g.shopListingStock(row) == stock0);
+    CHECK(g.storefrontVisit()->stock(row) == stock0);
     CHECK(g.modPool().countOf(id) == cap);
-    for (int k = 0; k < g.shopListingCostCount(row); ++k)
-        CHECK(g.shopListingCostHave(row, k) == g.shopListingCostQty(row, k));
+    for (int k = 0; k < g.storefrontVisit()->costCount(row); ++k)
+        CHECK(g.shopListingCostHave(row, k) == g.storefrontVisit()->costQty(row, k));
 
     // Room is what was missing: buying a MOD STORAGE tier makes the same row buyable.
     g.liveOperator().bits = bits0 + kModStorageStart;
@@ -448,7 +448,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     CHECK(std::strcmp(g.shopStatusLine(), "B TO BUY") == 0);
     g.onButton(press(Button::B));
     CHECK(g.modPool().countOf(id) == cap + 1);
-    CHECK(g.shopListingStock(row) == stock0 - 1);
+    CHECK(g.storefrontVisit()->stock(row) == stock0 - 1);
 }
 
 // The storefront reports what the shopper already HOLDS of a row, so "do I need this"
@@ -460,16 +460,16 @@ void test_shop_rows_report_what_is_already_held() {
     walkToShop(g);
     CHECK(g.nav() == Game::Nav::Shop);
     const int row = g.shopScreen().row();
-    const char* id = g.shopListingId(row);
+    const char* id = g.storefrontVisit()->id(row);
     CHECK(g.shopListingHeldCap(row) == 0);            // an item stack has no ceiling
     const int held0 = g.shopListingHeld(row);
     CHECK(held0 == g.inventory().count(id));
     g.inventory().add(id, 3);
     CHECK(g.shopListingHeld(row) == held0 + 3);
     // ...and a buy moves the same number, so the row and the bag never disagree.
-    g.liveOperator().bits = g.shopListingBitsPrice(row);
-    for (int k = 0; k < g.shopListingCostCount(row); ++k)
-        g.inventory().add(g.shopListingCostId(row, k), g.shopListingCostQty(row, k));
+    g.liveOperator().bits = g.storefrontVisit()->bitsPrice(row);
+    for (int k = 0; k < g.storefrontVisit()->costCount(row); ++k)
+        g.inventory().add(g.storefrontVisit()->costId(row, k), g.storefrontVisit()->costQty(row, k));
     g.onButton(press(Button::B));
     CHECK(g.shopListingHeld(row) == held0 + 4);
 }
