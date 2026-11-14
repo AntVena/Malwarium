@@ -587,6 +587,8 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     nav_ = Nav::ModalFeeding;
 }
 
+const SpriteData* Game::itemSprite(const char* itemId) const { return itemIcon(registry_, itemId); }
+
 void Game::endFeeding() {
     const bool fromLockout = feeding_ && feeding_->fromLockout;
     const ItemDef* fed = feeding_ ? feeding_->item : nullptr;

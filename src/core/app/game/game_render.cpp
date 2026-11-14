@@ -83,19 +83,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::Chroma: drawChroma(fb); break;
         case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
-        case Nav::ModalFeeding: {
-            FeedingView v;
-            v.pet = pet;
-            if (feeding_) {
-                v.food = feeding_->item;
-                v.foodIcon = itemIcon(registry_, feeding_->item->id);
-                v.before = feeding_->before;
-                v.beat = feeding_->beat;
-            }
-            v.fxBeat = fxBeat_;
-            drawFeedingModal(fb, pet_.model, v);
-            break;
-        }
+        case Nav::ModalFeeding: feedingScreen_.draw(fb, *this); break;
         case Nav::ModalEvolve: drawEvolve(fb); break;
         case Nav::ModalCSF: drawCSF(fb); break;
         case Nav::ModalLockout: {

@@ -27,6 +27,7 @@
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/expl_screen.h"
 #include "core/app/game/explore_control_screen.h"
+#include "core/app/game/feeding_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
@@ -143,7 +144,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
-             private StatPickerHost, private ItemOfferHost {
+             private StatPickerHost, private ItemOfferHost, private FeedingHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -199,7 +200,7 @@ public:
 
     // --- Inspection (tests / debug / host) ---------------------------------
     PetModel& model() { return pet_.model; }
-    const PetModel& model() const { return pet_.model; }
+    const PetModel& model() const override { return pet_.model; }
     Inventory& inventory() { return inventory_; }
     const Inventory& inventory() const override { return inventory_; }
     const EventLog& log() const { return log_; }
@@ -2999,7 +3000,10 @@ private:
     // Roll every held perishable (ItemDef::spoil) once. Called on the beats that already
     // disturb the bag rather than from a clock of its own; advances rng_.
     void rollPantrySpoilage();
-    void endFeeding();
+    void endFeeding() override;
+    // FeedingHost.
+    const Feeding* feeding() const override { return feeding_ ? &*feeding_ : nullptr; }
+    const SpriteData* itemSprite(const char* itemId) const override;
     // Non-vitals item side effects: Fragmentation delta + the Null
     // Noodles "empty feeling" Happiness pull toward 50%. Applied on consume for
     // both the feeding flow and the buff-use path.
@@ -3771,6 +3775,7 @@ private:
 
     // The feeding in progress (core/model/feeding.h), held while its modal is up.
     std::optional<Feeding> feeding_;
+    FeedingScreen feedingScreen_;   // its modal (game/feeding_screen.h)
 
     // Lockout modal.
     bool lockoutPayOption_ = false;        // false = Open Items · true = Pay Bits

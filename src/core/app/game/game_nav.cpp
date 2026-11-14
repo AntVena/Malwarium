@@ -227,9 +227,7 @@ void Game::onButton(const ButtonEvent& ev) {
                 nav_ = Nav::Detail;
             }
             break;
-        case Nav::ModalFeeding:
-            if (ev.button == Button::B || ev.button == Button::C) endFeeding();
-            break;
+        case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
         case Nav::ModalLineSelect: {
             // Line-select: A cycles the highlighted line, B lays that line's egg
             // (-> idle). The A+C chord is the reserved no-op stub, already filtered above.
