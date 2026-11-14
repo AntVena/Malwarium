@@ -23,11 +23,11 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
     std::vector<ProseRow> out;
     // An egg can't train or mod (Game::slotLocked): nothing to show.
     if (isEgg) {
-        out.push_back({false, "- NO LOADOUT -", {}, {}});
+        out.push_back({RowKind::Item, "- NO LOADOUT -", {}, {}});
         return out;
     }
 
-    out.push_back({true, "MOVES", {}, {}});
+    out.push_back({RowKind::Header, "MOVES", {}, {}});
     // One row per unlocked slot: the equipped move, or (when the slot is empty) the
     // innate Quick Jab fallback marked (DEFAULT). Quick Jab is NOT a standalone row;
     // it surfaces only in a slot that has no move (mirrors the combat per-slot fallback,
@@ -37,24 +37,24 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
     for (int i = 0; i < unlocked; ++i) {
         const char* id = moveLoad.equipped(i);
         if (const MoveDef* m = id ? reg.move(id) : nullptr) {
-            out.push_back({false, m->displayName, {}, effectText(*m)});
+            out.push_back({RowKind::Item, m->displayName, {}, effectText(*m)});
         } else if (def) {
-            out.push_back({false, def->displayName, {}, effectText(*def)});
+            out.push_back({RowKind::Item, def->displayName, {}, effectText(*def)});
             setProseTag(out.back(), "DEFAULT");
         }
     }
 
-    out.push_back({true, "MODS", {}, {}});
+    out.push_back({RowKind::Header, "MODS", {}, {}});
     bool anyMod = false;
     for (int i = 0; i < kModSlots; ++i) {
         if (const char* id = modLoad.equipped(i)) {
             if (const ModDef* m = reg.mod(id)) {
-                out.push_back({false, m->displayName, {}, effectText(*m)});
+                out.push_back({RowKind::Item, m->displayName, {}, effectText(*m)});
                 anyMod = true;
             }
         }
     }
-    if (!anyMod) out.push_back({false, "- NONE -", {}, {}});
+    if (!anyMod) out.push_back({RowKind::Item, "- NONE -", {}, {}});
 
     return out;
 }
@@ -71,7 +71,7 @@ std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
         const int points = statPoints[i];
         const int reached = statTiersReached(points);
         ProseRow head{};
-        head.header = true;
+        head.kind = RowKind::Header;
         head.label = kStatNames[i];
         // The stat's own point total rides its heading: it is the one number on the page
         // that is about the STAT rather than about a rung, and every "N TO GO" below is
@@ -105,10 +105,10 @@ std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
     // has told the reader something false about the pet.
     auto section = [&](const char* label) {
         for (const ProseRow& r : out)
-            if (r.header && std::strcmp(r.label, label) == 0) return;
+            if (isHeading(r.kind) && std::strcmp(r.label, label) == 0) return;
         ProseRow head{};
         head.label = label;
-        head.header = true;
+        head.kind = RowKind::Header;
         out.push_back(head);
     };
     auto entry = [&](const ItemDef& d) {

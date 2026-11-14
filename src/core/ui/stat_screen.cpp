@@ -448,7 +448,7 @@ private:
 // Where the section opened by the header at `from` ends (the next header, or the end).
 int sectionEnd(const std::vector<ProseRow>& rows, int from) {
     for (int i = from + 1; i < static_cast<int>(rows.size()); ++i)
-        if (rows[i].header) return i;
+        if (isHeading(rows[i].kind)) return i;
     return static_cast<int>(rows.size());
 }
 
@@ -466,7 +466,7 @@ std::vector<ProseRow> tierRows(const StatSources& s) {
 int rungsHeld(const std::vector<ProseRow>& rows, int from, int to) {
     int n = 0;
     for (int i = from; i < to && i < static_cast<int>(rows.size()); ++i)
-        if (!rows[i].header && std::strcmp(rows[i].tag, "HELD") == 0) ++n;
+        if (!isHeading(rows[i].kind) && std::strcmp(rows[i].tag, "HELD") == 0) ++n;
     return n;
 }
 
@@ -474,14 +474,14 @@ void tierIndex(const StatPage& page, const StatSources& /*s*/,
                const std::vector<ProseRow>& rows, std::vector<StatIndexRow>& out) {
     int rungTotal = 0;
     for (const ProseRow& r : rows)
-        if (!r.header) ++rungTotal;
+        if (!isHeading(r.kind)) ++rungTotal;
     out.push_back(pageIndexRow(page, "%d/%d",
                                rungsHeld(rows, 0, static_cast<int>(rows.size())), rungTotal));
     // One sub-row per stat, anchored at that stat's own heading: choosing MAX HEALTH
     // opens TIERS with MAX HEALTH's rungs already on screen, which on a levelled pet is
     // several scroll steps saved and the reason this page exists.
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        if (!rows[i].header) continue;
+        if (!isHeading(rows[i].kind)) continue;
         const int end = sectionEnd(rows, i);
         out.push_back(sectionIndexRow(page, rows[i].label, i, "%d/%d",
                                       rungsHeld(rows, i, end), end - i - 1));
@@ -510,7 +510,7 @@ void loadoutIndex(const StatPage& page, const StatSources& s,
     // The sections come off the page's own rows, so an egg (whose page collapses to a
     // single row and carries no headings) offers none of them.
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        if (!rows[i].header) continue;
+        if (!isHeading(rows[i].kind)) continue;
         const bool moves = std::strcmp(rows[i].label, "MOVES") == 0;
         out.push_back(sectionIndexRow(page, rows[i].label, i, "%d/%d",
                                       moves ? movesOn : modsOn,
@@ -528,7 +528,7 @@ void buffIndex(const StatPage& page, const StatSources& /*s*/,
     // them would tell the reader they have two more buffs than they do.
     int armed = 0;
     for (const ProseRow& b : rows)
-        if (!b.header) ++armed;
+        if (!isHeading(b.kind)) ++armed;
     out.push_back(armed > 0 ? pageIndexRow(page, "%d", armed) : pageIndexRow(page, "NONE"));
 }
 

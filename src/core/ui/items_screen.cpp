@@ -256,9 +256,9 @@ void appendGrouped(std::vector<InvRow>& rows, const ContentRegistry& reg,
     for (const OwnedStack& o : owned) {
         if (o.key != curKey) {
             curKey = o.key;
-            rows.push_back({true, headerLabel(o.key, filter), nullptr, 0, nullptr});
+            rows.push_back({RowKind::Header, headerLabel(o.key, filter), nullptr, 0, nullptr});
         }
-        rows.push_back({false, o.def->displayName, o.def, o.qty, itemIcon(reg, o.def->id)});
+        rows.push_back({RowKind::Item, o.def->displayName, o.def, o.qty, itemIcon(reg, o.def->id)});
     }
 }
 
@@ -293,14 +293,14 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
     // menu, and an empty bag is otherwise silent about that.
     const bool listsFood = filter == ItemFilter::All || filter == ItemFilter::Food;
     if (listsFood && !holdsMeal)
-        rows.push_back({true, kNoMealNotice, nullptr, 0, nullptr, true});
+        rows.push_back({RowKind::Notice, kNoMealNotice, nullptr, 0, nullptr});
     appendGrouped(rows, reg, owned, filter);
     return rows;
 }
 
 int firstSelectableRow(const std::vector<InvRow>& rows) {
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
-        if (!rows[i].header) return i;
+        if (!isHeading(rows[i].kind)) return i;
     return -1;
 }
 
@@ -309,7 +309,7 @@ int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir) {
     if (n == 0) return -1;
     for (int step = 0; step < n; ++step) {
         cur = (cur + dir + n) % n;
-        if (!rows[cur].header) return cur;
+        if (!isHeading(rows[cur].kind)) return cur;
     }
     return cur;  // all headers (shouldn't happen)
 }
@@ -342,7 +342,7 @@ void drawItemsChrome(Framebuffer& fb, const std::vector<InvRow>& rows, const Ite
     // Position indicator counts selectable rows.
     int total = 0, sel = 0;
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        if (rows[i].header) continue;
+        if (isHeading(rows[i].kind)) continue;
         ++total;
         if (i == v.cursor) sel = total;
     }
@@ -421,9 +421,9 @@ void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const Items
         const int i = scrollTop + slot;
         const InvRow& r = rows[i];
         const int y = kRowTop + slot * kRowH;
-        if (r.header) {
+        if (isHeading(r.kind)) {
             drawText(fb, kMargin, y + 8, r.label,
-                     r.notice ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
+                     r.kind == RowKind::Notice ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
             drawHeadingRule(fb, y + 8);
             continue;
         }

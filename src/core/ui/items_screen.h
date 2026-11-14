@@ -7,6 +7,7 @@
 
 #include "core/content/defs.h"
 #include "core/model/pet_upgrades.h"  // PetLifetimeGates: the once-per-life note
+#include "core/ui/row_kind.h"
 #include "core/ui/ui_state.h"  // ItemFilter
 
 namespace mal {
@@ -16,16 +17,14 @@ class ContentRegistry;
 class Inventory;
 struct SpriteData;
 
-// One rendered row: a non-selectable section header, or an item with its count.
+// One rendered row: an item with its count, or a non-selectable heading (a group
+// name, or the notice that says where food comes from).
 struct InvRow {
-    bool header;
-    const char* label;        // header text (FOOD/INGREDIENTS/BUFFS/QUEST) or item name
-    const ItemDef* def;       // null on a header row
+    RowKind kind;
+    const char* label;        // heading text (FOOD/INGREDIENTS/BUFFS/QUEST) or item name
+    const ItemDef* def;       // null on a heading
     int qty;
-    const SpriteData* icon;   // ICON_ITEM_* (null on a header row)
-    // A header that is a NOTICE rather than a group name: drawn in full INK, since it is
-    // the one header on the list that tells the player something they must act on.
-    bool notice = false;
+    const SpriteData* icon;   // ICON_ITEM_* (null on a heading)
 };
 
 // Two Rig Shop rows read ItemFilter (ui_state.h) on two different axes:
@@ -81,9 +80,9 @@ std::vector<InvRow> buildInventoryRows(const ContentRegistry& reg,
                                        ItemOrder order = ItemOrder::ByGroup,
                                        ItemFilter filter = ItemFilter::All);
 
-// First selectable (non-header) row index, or -1 if the list is empty.
+// First selectable (non-heading) row index, or -1 if the list is empty.
 int firstSelectableRow(const std::vector<InvRow>& rows);
-// Step from `cur` by `dir` (+1/-1), skipping headers and wrapping.
+// Step from `cur` by `dir` (+1/-1), skipping headings and wrapping.
 int stepSelectableRow(const std::vector<InvRow>& rows, int cur, int dir);
 
 // --- ITEMS type-picker (the Rig Shop's "ITEMS Type-Picker" upgrade) ----------

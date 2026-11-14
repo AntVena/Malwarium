@@ -93,7 +93,7 @@ void ItemsMenu::stepList(const ItemsHost& host, int dir) {
 // but a bag that changed under a held button can move the rows beneath it.
 void ItemsMenu::openFocused(ItemsHost& host) {
     const auto& r = rows(host);
-    if (row_ < 0 || row_ >= static_cast<int>(r.size()) || r[row_].header) return;
+    if (row_ < 0 || row_ >= static_cast<int>(r.size()) || isHeading(r[row_].kind)) return;
     detail_ = r[row_].def;
     host.openDetail();
 }

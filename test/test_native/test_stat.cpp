@@ -79,8 +79,8 @@ void test_loadout_rows_model() {
 
     bool sawMovesHeader = false, sawModsHeader = false;
     for (const auto& row : rows) {
-        if (row.header && std::strcmp(row.label, "MOVES") == 0) sawMovesHeader = true;
-        if (row.header && std::strcmp(row.label, "MODS") == 0) sawModsHeader = true;
+        if (isHeading(row.kind) && std::strcmp(row.label, "MOVES") == 0) sawMovesHeader = true;
+        if (isHeading(row.kind) && std::strcmp(row.label, "MODS") == 0) sawModsHeader = true;
     }
     CHECK(sawMovesHeader && sawModsHeader);
 
@@ -94,7 +94,7 @@ void test_loadout_rows_model() {
     const ProseRow* firstMove = nullptr;
     const ProseRow* defaultRow = nullptr;
     for (const auto& row : rows) {
-        if (row.header) continue;
+        if (isHeading(row.kind)) continue;
         if (!firstMove) firstMove = &row;
         if (isDefaultRow(row) && !defaultRow) defaultRow = &row;
     }
@@ -108,7 +108,7 @@ void test_loadout_rows_model() {
     // the default. Exact row count = 2 headers + (one row per unlocked slot) + mod rows.
     auto containsNameAndEffect = [&](const char* name, const EffectText& effect) {
         for (const auto& row : rows)
-            if (!row.header && std::strcmp(row.label, name) == 0 &&
+            if (!isHeading(row.kind) && std::strcmp(row.label, name) == 0 &&
                 !row.body.empty() &&
                 std::strcmp(row.body.c_str(), effect.c_str()) == 0)
                 return true;
@@ -137,12 +137,12 @@ void test_loadout_rows_model() {
     auto rowsNoMods = buildLoadoutRows(r, ml, noMods, Stage::Process, false);
     bool sawNone = false;
     for (const auto& row : rowsNoMods)
-        if (!row.header && std::strcmp(row.label, "- NONE -") == 0) sawNone = true;
+        if (!isHeading(row.kind) && std::strcmp(row.label, "- NONE -") == 0) sawNone = true;
     CHECK(sawNone);
 
     // An egg collapses the whole page to one line, no headers.
     auto eggRows = buildLoadoutRows(r, ml, mods, Stage::BootSector, /*isEgg=*/true);
-    CHECK(eggRows.size() == 1 && !eggRows[0].header && eggRows[0].body.empty());
+    CHECK(eggRows.size() == 1 && !isHeading(eggRows[0].kind) && eggRows[0].body.empty());
     CHECK(std::strcmp(eggRows[0].label, "- NO LOADOUT -") == 0);
 }
 
@@ -399,7 +399,7 @@ void test_tier_rows_report_where_the_pet_stands() {
     for (int i = 0; i < kLevelStatCount; ++i) {
         const int base = i * (1 + kStatTierCount);
         const ProseRow& head = rows[base];
-        CHECK(head.header);
+        CHECK(isHeading(head.kind));
         CHECK(head.body.empty());                    // a heading explains nothing itself
         char expect[16];
         std::snprintf(expect, sizeof(expect), "%d PTS", points[i]);
@@ -408,7 +408,7 @@ void test_tier_rows_report_where_the_pet_stands() {
         const int reached = statTiersReached(points[i]);
         for (int t = 0; t < kStatTierCount; ++t) {
             const ProseRow& row = rows[base + 1 + t];
-            CHECK(!row.header);
+            CHECK(!isHeading(row.kind));
             CHECK(!row.body.empty());                // every rung says what it does
             CHECK(std::strcmp(row.label, statTier(static_cast<LevelStat>(i), t).name) == 0);
             if (t < reached) {
@@ -631,12 +631,12 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     auto entries = [](const std::vector<ProseRow>& rows) {
         std::vector<const ProseRow*> out;
         for (const ProseRow& row : rows)
-            if (!row.header) out.push_back(&row);
+            if (!isHeading(row.kind)) out.push_back(&row);
         return out;
     };
     auto hasHeading = [](const std::vector<ProseRow>& rows, const char* label) {
         for (const ProseRow& row : rows)
-            if (row.header && std::strcmp(row.label, label) == 0) return true;
+            if (isHeading(row.kind) && std::strcmp(row.label, label) == 0) return true;
         return false;
     };
 
@@ -790,7 +790,7 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     for (int i = 0; i < kLevelStatCount; ++i) points[i] = g.petRecord().totalStatPoint(i);
     const auto tierRows = buildTierRows(points);
     CHECK(anchor < static_cast<int>(tierRows.size()));
-    CHECK(tierRows[anchor].header);
+    CHECK(isHeading(tierRows[anchor].kind));
 
     // Re-entering STAT still lands on the front door, not on the page last read.
     tapC(g);
@@ -819,7 +819,7 @@ void test_prose_windows_break_on_sections() {
         const int shown = proseRowsFitting(rows, top, kTop);
         CHECK(shown >= 1);                          // the fit never stalls
         // No window ENDS on a heading: a fence with nothing behind it is not a fence.
-        CHECK(!rows[top + shown - 1].header || shown == 1);
+        CHECK(!isHeading(rows[top + shown - 1].kind) || shown == 1);
         top += shown;
     }
     // Every stat's heading opens a window of its own: the sections here are the whole
@@ -933,7 +933,7 @@ void test_favourite_food_is_found_by_feeding_it() {
     CHECK(marked == 1);
     bool listed = false;
     for (const ProseRow& b : buildBuffRows(g.content(), g.petRecord(), 0))
-        if (!b.header && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;
+        if (!isHeading(b.kind) && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;
     CHECK(listed);
 
     // A new egg is a new pet with its own secret.
@@ -1008,7 +1008,7 @@ void test_move_dex_lists_only_what_this_pet_could_learn() {
 
     int sections = 0, listed = 0, known = 0;
     for (const ProseRow& r : rows) {
-        if (r.header) { ++sections; continue; }
+        if (isHeading(r.kind)) { ++sections; continue; }
         ++listed;
         if (r.tag[0]) ++known;
         // Every row names a move this pet is allowed to hold.

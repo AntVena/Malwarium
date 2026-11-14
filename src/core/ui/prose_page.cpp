@@ -61,7 +61,7 @@ std::vector<int> proseRowHeights(const std::vector<ProseRow>& rows, int top) {
     std::vector<int> h;
     h.reserve(rows.size());
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
-        h.push_back(rows[i].header ? headerLead(i, top) + kProseHeaderH
+        h.push_back(isHeading(rows[i].kind) ? headerLead(i, top) + kProseHeaderH
                                    : proseBodyH(rows[i].body.c_str()));
     return h;
 }
@@ -83,7 +83,7 @@ int proseRowsFitting(const std::vector<ProseRow>& rows, int top, int rowTop) {
         // window already holds a screen's worth to break AFTER. Half the body is the
         // line: above it the window reads as full and the heading below reads as the
         // next thing; under it the heading is better off packed in behind the tail.
-        if (n > 0 && rows[i].header && y - rowTop >= (kProseBottom - rowTop) / 2) break;
+        if (n > 0 && isHeading(rows[i].kind) && y - rowTop >= (kProseBottom - rowTop) / 2) break;
         if (n > 0 && y + heights[i] > kProseBottom) break;
         y += heights[i];
         ++n;
@@ -125,7 +125,7 @@ void drawProseRows(Framebuffer& fb, const ProseView& v) {
     int y = rowTop;
     for (int i = 0; i < shown; ++i) {
         const ProseRow& r = rows[top + i];
-        if (r.header) {
+        if (isHeading(r.kind)) {
             drawProseHeading(fb, y + headerLead(top + i, top), r, v.beat);
         } else {
             drawProseName(fb, y, r, v.beat);

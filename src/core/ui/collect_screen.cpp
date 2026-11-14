@@ -243,7 +243,7 @@ std::vector<ProseRow> buildMoveDexRows(const ContentRegistry& reg,
             if (moves.owns(m->id) || moves.isInnate(m->id)) ++known;
 
         ProseRow head{};
-        head.header = true;
+        head.kind = RowKind::Header;
         head.label = label;
         setProseTag(head, "%d/%d", known, static_cast<int>(group.size()));
         out.push_back(head);
@@ -301,7 +301,7 @@ std::vector<ProseRow> moveDexRows(const StatSources& s) {
 void moveDexScore(const std::vector<ProseRow>& rows, int& have, int& total) {
     have = total = 0;
     for (const ProseRow& r : rows) {
-        if (r.header) continue;
+        if (isHeading(r.kind)) continue;
         ++total;
         if (r.tag[0]) ++have;   // a gap carries no tag (buildMoveDexRows)
     }

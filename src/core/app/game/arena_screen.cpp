@@ -288,7 +288,7 @@ std::vector<ProseRow> ArenaScreen::scoutRows(const ArenaHost& host) const {
     // is deliberately NOT stated, which moment a rival commits to is the read the
     // arena exists to teach, and printing it would answer the question for them.
     ProseRow stats;
-    stats.header = true;
+    stats.kind = RowKind::Header;
     stats.label = "STATS";
     out.push_back(stats);
     for (int i = 0; i < kLevelStatCount; ++i) {
@@ -299,7 +299,7 @@ std::vector<ProseRow> ArenaScreen::scoutRows(const ArenaHost& host) const {
     }
     if (scouted_.exploit.kind != CrewExploitKind::None) {
         ProseRow head;
-        head.header = true;
+        head.kind = RowKind::Header;
         head.label = "EXPLOIT";
         out.push_back(head);
         ProseRow r;

@@ -847,18 +847,18 @@ void test_item_filter_narrows_rows() {
     auto quest = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Quest);
 
     auto headerCount = [](const std::vector<InvRow>& rows) {
-        int n = 0; for (const auto& row : rows) if (row.header) ++n; return n;
+        int n = 0; for (const auto& row : rows) if (isHeading(row.kind)) ++n; return n;
     };
     auto itemCount = [](const std::vector<InvRow>& rows) {
-        int n = 0; for (const auto& row : rows) if (!row.header) ++n; return n;
+        int n = 0; for (const auto& row : rows) if (!isHeading(row.kind)) ++n; return n;
     };
     CHECK(headerCount(all) == 4 && itemCount(all) == 6);
     CHECK(headerCount(food) == 2 && itemCount(food) == 2);
     CHECK(headerCount(buffs) == 1 && itemCount(buffs) == 2);
     CHECK(headerCount(quest) == 1 && itemCount(quest) == 2);
-    for (const auto& row : food)  if (!row.header) CHECK(row.def->type == ItemDef::Type::Food);
-    for (const auto& row : buffs) if (!row.header) CHECK(row.def->type == ItemDef::Type::Buff);
-    for (const auto& row : quest) if (!row.header) CHECK(row.def->type == ItemDef::Type::Quest);
+    for (const auto& row : food)  if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Food);
+    for (const auto& row : buffs) if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Buff);
+    for (const auto& row : quest) if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Quest);
 }
 
 // The ITEMS hold-B gesture. Unowned: B opens the focused row's detail immediately on
@@ -947,7 +947,7 @@ void test_item_category_filters_split_quest() {
     ContentRegistry r = ContentRegistry::embedded();
     Inventory inv = Inventory::starting();
     auto itemCount = [](const std::vector<InvRow>& rows) {
-        int n = 0; for (const auto& row : rows) if (!row.header) ++n; return n;
+        int n = 0; for (const auto& row : rows) if (!isHeading(row.kind)) ++n; return n;
     };
 
     auto quest = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Quest);
@@ -957,7 +957,7 @@ void test_item_category_filters_split_quest() {
     CHECK(tools.empty());                                   // nothing carried yet
     CHECK(std::strcmp(keys[0].label, "KEYS") == 0);         // header names the category
     for (const auto& row : keys)
-        if (!row.header) CHECK(itemCategory(*row.def) == ItemDef::Category::Keys);
+        if (!isHeading(row.kind)) CHECK(itemCategory(*row.def) == ItemDef::Category::Keys);
 
     inv.add("disk_scrubber", 2);                            // a Defrag Tool is a TOOL
     tools = buildInventoryRows(r, inv, ItemOrder::ByGroup, ItemFilter::Tools);

@@ -33,6 +33,7 @@
 #include "core/render/font.h"   // kFontH: the row heights are derived from it
 #include "core/render/canvas.h"
 #include "core/ui/layout.h"
+#include "core/ui/row_kind.h"
 #include "core/ui/widgets.h"    // kHintBandH: the foot the flow stops at
 
 namespace mal {
@@ -51,7 +52,7 @@ class Framebuffer;
 // countdown). Empty = none. It is ignored on a header row.
 // `body` is the prose, already templated (effect_text.h). Empty on a header row.
 struct ProseRow {
-    bool header = false;        // a section heading (MOVES/MODS): dim, no prose
+    RowKind kind = RowKind::Item;   // Header: a section heading (MOVES/MODS), dim, no prose
     const char* label = "";
     char tag[12] = {0};
     EffectText body;

@@ -48,21 +48,21 @@ void test_inventory_rows_grouped() {
     auto rows = buildInventoryRows(r, inv, ItemOrder::ByGroup);
 
     int headers = 0, items = 0;
-    for (const auto& row : rows) (row.header ? headers : items)++;
+    for (const auto& row : rows) (isHeading(row.kind) ? headers : items)++;
     // FOOD/INGREDIENTS/BUFFS/QUEST: tortilla_chip is both a snack and a Nachos
     // ingredient, so it splits the starting shelf's Food stack into its own group
     // alongside dyno_nuggets's.
     CHECK(items == 6 && headers == 4);
-    CHECK(rows.front().header && std::strcmp(rows.front().label, "FOOD") == 0);
+    CHECK(isHeading(rows.front().kind) && std::strcmp(rows.front().label, "FOOD") == 0);
 
     const int f = firstSelectableRow(rows);
-    CHECK(f >= 0 && !rows[f].header);
+    CHECK(f >= 0 && !isHeading(rows[f].kind));
     // Stepping never lands on a header; one lap over the selectable items wraps
     // back to the start.
     int cur = f;
     for (int i = 0; i < items; ++i) {
         cur = stepSelectableRow(rows, cur, +1);
-        CHECK(!rows[cur].header);
+        CHECK(!isHeading(rows[cur].kind));
     }
     CHECK(cur == f);                                 // full wrap returns to start
 }
@@ -146,7 +146,7 @@ void test_inventory_rows_rarity_desc() {
                                      "Breadcrumbs"};
     int seen = 0;
     for (const auto& row : rows) {
-        if (row.header) continue;
+        if (isHeading(row.kind)) continue;
         CHECK(seen < 4 && std::strcmp(row.def->displayName, kExpected[seen]) == 0);
         ++seen;
     }
@@ -1375,14 +1375,14 @@ void test_food_signpost_when_the_bag_has_no_meal() {
     g.model().setFragmentation(10);
     g.careAttention(att, urg);
     CHECK(att == bitOf(SubmenuId::Items));             // meals in the bag: feed it
-    CHECK(!buildInventoryRows(reg, g.inventory())[0].notice);
+    CHECK(buildInventoryRows(reg, g.inventory())[0].kind != RowKind::Notice);
 
     stripMeals(g);
     CHECK(!inventoryHoldsMeal(reg, g.inventory()));
     g.careAttention(att, urg);
     CHECK(att == bitOf(SubmenuId::Expl));              // nothing to feed: go find some
     const std::vector<InvRow> rows = buildInventoryRows(reg, g.inventory());
-    CHECK(rows[0].header && rows[0].notice &&
+    CHECK(rows[0].kind == RowKind::Notice &&
           std::strcmp(rows[0].label, kNoMealNotice) == 0);
     CHECK(textWidth(kNoMealNotice) <= kActiveW - 2 * kMargin);
 
@@ -1426,8 +1426,8 @@ void test_caches_listed_and_first_cache_card() {
     g.inventory().add(cache->id, 2);
     bool header = false, row = false;
     for (const InvRow& r : buildInventoryRows(reg, g.inventory())) {
-        if (r.header && std::strcmp(r.label, "CACHES - OPEN IN VAULT") == 0) header = true;
-        if (!r.header && r.def == cache) row = true;
+        if (isHeading(r.kind) && std::strcmp(r.label, "CACHES - OPEN IN VAULT") == 0) header = true;
+        if (!isHeading(r.kind) && r.def == cache) row = true;
     }
     CHECK(header && row);
     for (ItemFilter f : {ItemFilter::Food, ItemFilter::Quest, ItemFilter::Keys,
