@@ -238,7 +238,8 @@ untouched, and hold every step's screen, face and frame hash to a recording
 to change nothing passes them unchanged, and a walk that drifts names the first step that
 moved. A change that MEANS to alter what a walk shows runs `./tools/golden_walks.sh`, which
 records the walks again, and commits the headers with it, so the diff shows which steps
-moved and the message says why. Never record again to get a refactor green.
+moved and the message says why. A release's version bump is one such change: SYSTEM INFO and
+UPDATES draw the version. Never record again to get a refactor green.
 
 Commit verified work as logical units. A message should carry the motivation and the *why*, not
 a restatement of the diff.

@@ -460,7 +460,8 @@ Cutting a release is: land the release commit on `main`, then dispatch `publish.
 (**Run workflow**, or the Actions API) straight away. **Bump both versions first**:
 `include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
 an unbumped publish is one nobody receives, and bumping both means never having to work out which
-one moved. `make manifest` validates its own output with the device's parser before anything is
+one moved. SYSTEM INFO and UPDATES draw the firmware version, so the bump also records the golden
+walks again (`./tools/golden_walks.sh`) in the same commit. `make manifest` validates its own output with the device's parser before anything is
 served, so CI cannot publish a manifest the device would reject, which from the operator's side
 is indistinguishable from a dead network.
 
@@ -478,10 +479,14 @@ and nothing else: a digest published over an archive that moves with the build i
 device loses as `Corrupt`.
 
 **When to publish: whenever the gates are green.** Shipping is pull-based (a device checks, sees a
-higher code, and asks its operator), so a release interrupts nobody and needs no permission. Two
-changes are the exception, because no later tag undoes them: a **save-format change** (trial-boot
-rollback can put the previous firmware back underneath a save the new one already rewrote) and a
-**partition-table or bootloader change** (an OTA writes neither, so every device needs USB).
+higher code, and asks its operator), so a release interrupts nobody and needs no permission. A
+save bump is not an exception: the stream is append-only (`deserializeSave`), so a previous
+firmware rolled back underneath a newer save reads the prefix it knows and loses only what the
+newer build appended, and that ships without asking. Two changes are the exception, because no
+later tag undoes them: a save change that **breaks the append-only stream** (one that has to
+raise `kOldestAcceptedVersion`, so a rollback would find a save it refuses, which reads as a
+fresh hatch) and a **partition-table or bootloader change** (an OTA writes neither, so every
+device needs USB).
 
 The second of those is what `/flash/` is for. It writes all four boot images, so a table or
 bootloader change costs a remote operator a cable and a browser rather than a toolchain: the
