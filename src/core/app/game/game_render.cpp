@@ -64,7 +64,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::StoryArchive: chapters_.draw(fb, *this); break;
         case Nav::ExploreControl: exploreControl_.draw(fb, *this); break;
         case Nav::Encounter: encounter_.draw(fb, *this); break;
-        case Nav::Wifi: drawWifiScreen(fb); break;
+        case Nav::Wifi: wifiScreen_.draw(fb, *this); break;
         case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;
         case Nav::Shiboleet: drawShiboleetScreen(fb); break;
         case Nav::ShiboleetVerdict: drawShiboleetVerdictScreen(fb); break;
@@ -811,34 +811,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawWifiScreen(Framebuffer& fb) const {
-    // The discovery beat's reward, as the thing the pet does to the network glyph.
-    // Untouched means the pet declined its own home turf, which the TIRED OF line
-    // says.
-    //
-    // The banner states the same fact in words, so it is derived here from
-    // the event's discovery. A fixed "NEW WI-FI NETWORK" over a repeat sighting or an empty
-    // queue would contradict the two flavor lines.
-    WifiEventView v;
-    v.banner = "QUIET AIR";
-    switch (netDiscovery()) {
-        case NetDiscovery::New:
-            v.absorb = WifiAbsorb::Whole; v.banner = "NEW WI-FI NETWORK"; break;
-        case NetDiscovery::Fond:
-            v.absorb = WifiAbsorb::Nibble; v.banner = "A KNOWN NETWORK"; break;
-        case NetDiscovery::HomeTurf:
-            v.absorb = WifiAbsorb::Untouched; v.banner = "HOME TURF"; break;
-        case NetDiscovery::None: break;
-    }
-    v.sectorName = explSectorName(walk_.sector);
-    v.outcomeLine = wifi_ ? wifi_->outcomeLine() : "";
-    v.discoveryLine = netDiscoveryFlavor();
-    v.pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
-    v.beat = beat_;
-    v.fxBeat = fxBeat_;
-    drawWifiEvent(fb, v);
-}
 
 void Game::drawShiboleetScreen(Framebuffer& fb) const {
     char riddle[kRiddleBodyLines * kRiddleBodyCols + 16];

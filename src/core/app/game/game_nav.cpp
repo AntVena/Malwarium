@@ -199,7 +199,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::AwayDigest: onAwayDigest(ev); break;
         case Nav::StoryArchive: chapters_.onButton(*this, ev); break;
         case Nav::Encounter: encounter_.onButton(*this, ev); break;
-        case Nav::Wifi: onWifi(ev); break;
+        case Nav::Wifi: wifiScreen_.onButton(*this, ev); break;
         case Nav::ShiboleetHail: onShiboleetHail(ev); break;
         case Nav::Shiboleet: onShiboleet(ev); break;
         case Nav::ShiboleetVerdict: onShiboleetVerdict(ev); break;

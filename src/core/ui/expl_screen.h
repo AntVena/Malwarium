@@ -327,7 +327,7 @@ enum class WifiAbsorb { None, Whole, Nibble, Untouched };
 struct WifiEventView {
     const char* sectorName = "";
     // What the radio actually FOUND, in words. The caller derives it from the same
-    // discovery state `absorb` is derived from (Game::drawWifiScreen), so the headline,
+    // discovery state `absorb` is derived from (WifiScreen::draw), so the headline,
     // the sweep and the two lines below can never disagree about whether anything was
     // found.
     const char* banner = "";

@@ -38,6 +38,7 @@
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
 #include "core/app/game/story_reader.h"
+#include "core/app/game/wifi_screen.h"
 #include "core/app/game/tip_card_screen.h"
 #include "core/app/game/vault_screen.h"
 #include "core/device/net_status.h"
@@ -133,7 +134,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
              private CfgHost, private LoadoutHost, private LinkHost,
              private StoryReaderHost, private ExplHost,
-             private ExploreControlHost {
+             private ExploreControlHost, private WifiHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -2384,7 +2385,7 @@ private:
     // The rest of it is public above (fight, pvpFighting, stageScene, playSound, ...)
     // or the fight's own lifecycle below (advanceCombatTurn, finishCombat, ...).
     Fight& liveFight() override { return fight_; }
-    const SpriteData* petSprite() const override;
+    const SpriteData* petSprite() const override;   // also WifiHost's
     int fxBeat() const override { return fxBeat_; }
     int screenBeat() const override { return beat_; }
     SwarmView guardianSwarm() const override;
@@ -2437,7 +2438,6 @@ private:
     // back to back. A family added to the roster joins automatically. Resolved once per
     // drift by the tick, never per repaint.
     const SpriteData* idleCamoSprite(int slot) const;
-    void drawWifiScreen(Framebuffer& fb) const;
     void drawShiboleetHailScreen(Framebuffer& fb) const;
     void drawShiboleetScreen(Framebuffer& fb) const;
     void drawShiboleetVerdictScreen(Framebuffer& fb) const;
@@ -2820,8 +2820,12 @@ private:
     // the NetworkLedger), then rolls what the pet meets, and B plays that outcome out
     // (loot / wild combat / ally buff), which ends the event.
     void startWifiEvent();
-    void onWifi(const ButtonEvent& ev);
     void resolveWifiOutcome();
+    // WifiHost.
+    const WifiEvent* wifiEvent() const override { return wifi_ ? &*wifi_ : nullptr; }
+    const char* walkSectorName() const override;
+    void restartEventHold() override { walk_.eventBeat = 0; }
+    void playOutWifiEvent() override { resolveWifiOutcome(); }
     // Real-network discovery resolution: the sole place a real network is
     // credited (Hacker Rank XP + Sealed Cache) or an occasional-repeat pet-XP is
     // granted, written into the event it is handed. See game_net.cpp for the
@@ -3491,6 +3495,7 @@ private:
     // resolveNetworkDiscovery() bumps it. allyBuffBattlesLeft_ is the friendly-visit
     // buff consumed one per battle in buildPlayerCombatant.
     std::optional<WifiEvent> wifi_;
+    WifiScreen wifiScreen_;   // its screen (game/wifi_screen.h)
     PowerStatus power_;  // last SMOOTHED reading from the platform tier
     // The battery fill currently on screen, which is the state batteryLevelStable
     // needs to hold a glyph steady across a reading that sits on a band edge. -1 =

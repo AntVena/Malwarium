@@ -82,13 +82,7 @@ void Game::startWifiEvent() {
     nav_ = Nav::Wifi;
 }
 
-void Game::onWifi(const ButtonEvent& ev) {
-    // B plays out the rolled outcome; A/C are no-ops: it resolves itself, with no
-    // engage/flee choice. Any press restarts the hands-off hold so a watching player
-    // isn't rushed.
-    walk_.eventBeat = 0;
-    if (ev.button == Button::B) resolveWifiOutcome();
-}
+const char* Game::walkSectorName() const { return explSectorName(walk_.sector); }
 
 void Game::resolveWifiOutcome() {
     // Playing the outcome out is the event's end, whatever comes after it.
