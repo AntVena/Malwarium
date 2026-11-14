@@ -82,10 +82,10 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModalEggPick: eggPickScreen_.draw(fb, *this); break;
         case Nav::Isolation: drawIsolation(fb); break;
         case Nav::Chroma: drawChroma(fb); break;
-        case Nav::ModalHatchReveal: drawHatchReveal(fb); break;
+        case Nav::ModalHatchReveal: hatchReveal_.draw(fb, *this); break;
         case Nav::ModalFeeding: feedingScreen_.draw(fb, *this); break;
-        case Nav::ModalEvolve: drawEvolve(fb); break;
-        case Nav::ModalCSF: drawCSF(fb); break;
+        case Nav::ModalEvolve: evolve_.draw(fb, *this); break;
+        case Nav::ModalCSF: csf_.draw(fb, *this); break;
         case Nav::ModalLockout: {
             LockoutView v;
             v.pet = pet;
@@ -794,45 +794,6 @@ void Game::drawProcess(Framebuffer& fb) const {
         drawMaintOutcome(fb, run.kind,
                          run.success ? MaintOutcome::Cleaned : MaintOutcome::Failed,
                          run.kind == MaintKind::Defrag ? kDefragReduction : kAvReduction);
-}
-
-void Game::drawEvolve(Framebuffer& fb) const {
-    EvolveView v;
-    // The cinematic phase from the beat counter.
-    v.phase = evolveBeat_ < kEvoHoldBeats                    ? EvolvePhase::Hold
-              : evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats ? EvolvePhase::Flash
-                                                             : EvolvePhase::Reveal;
-    v.from = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
-    v.to = evolveTo_ ? registry_.creatureSprite(*evolveTo_) : nullptr;
-    // What changed, in words: the path the errors so far put it on (the thing that
-    // decides a Daemon's form), and any move slot the new stage opens.
-    char path[28];
-    const int errors = pet_.model.careMistakes();
-    std::snprintf(path, sizeof path, "%s PATH - %d ERROR%s",
-                  effectiveCareBranch() == CareBranch::Bad ? "BAD" : "GOOD", errors,
-                  errors == 1 ? "" : "S");
-    char slot[40];
-    if (pet_.creature && evolveTo_) {
-        const int gained = MoveLoadout::slotsForStage(evolveTo_->stage) -
-                           MoveLoadout::slotsForStage(pet_.creature->stage);
-        if (gained > 0) {
-            std::snprintf(slot, sizeof slot, "+%d MOVE SLOT%s - SEE MODS", gained,
-                          gained == 1 ? "" : "S");
-            v.slotLine = slot;
-        }
-    }
-    v.toName = evolveTo_ ? evolveTo_->displayName : "";
-    v.toStage = evolveTo_ ? evolveTo_->stage : Stage::Process;
-    v.pathLine = path;
-    v.beat = beat_;
-    drawEvolveModal(fb, v);
-}
-
-void Game::drawCSF(Framebuffer& fb) const {
-    // The heaviest modal in the game: the dying pet corrupts out under a
-    // FX_CRITICAL_FAIL crash overlay. B is gated behind the crash hold (csfRevealed).
-    const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
-    drawCSFModal(fb, pet, csfRevealed() ? CsfPhase::Held : CsfPhase::Crashing, beat_);
 }
 
 }  // namespace mal

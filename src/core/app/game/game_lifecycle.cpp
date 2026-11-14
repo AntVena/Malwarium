@@ -336,10 +336,6 @@ uint32_t Game::evolveRemainMs() const {
     return elapsed >= duration ? 0 : duration - elapsed;
 }
 
-bool Game::evolveRevealed() const {
-    return evolveBeat_ >= kEvoHoldBeats + kEvoFlashBeats;
-}
-
 void Game::fireEvolution() {
     const char* id = evolutionTargetId();
     const CreatureDef* next = id ? registry_.creature(id) : nullptr;
@@ -379,16 +375,15 @@ void Game::fireEvolution() {
             }
         }
     }
-    evolveTo_ = next;           // pet_.creature holds the OLD sprite through the cinematic
-    evolveBeat_ = 0;
+    evolve_.open(next);         // pet_.creature holds the OLD sprite through the cinematic
     nav_ = Nav::ModalEvolve;
     dirty_ = true;
     playSound(Sound::Evolve);
 }
 
-void Game::completeEvolution() {
-    if (evolveTo_) away_.evolved = evolveTo_;
-    if (evolveTo_) {
+void Game::completeEvolution(const CreatureDef* to) {
+    if (to) away_.evolved = to;
+    if (to) {
         // 'Pedia achievements, evaluated BEFORE the swap: pet_.model still holds the care
         // budget that decided which branch fired. The branch not taken is not marked
         // seen: seen means faced in combat (Game::markCreatureSeen), and the evolution
@@ -396,7 +391,7 @@ void Game::completeEvolution() {
         // no device can make a run flawless. Gone Rogue is about the DAEMON that came
         // out, so it reads effectiveCareBranch(): a pet that ended up on the bad line
         // went rogue whether a Bad-USB steered it there or five months of neglect did.
-        if (evolveTo_->stage == Stage::Daemon) {
+        if (to->stage == Stage::Daemon) {
             if (pet_.model.careMistakes() == 0) unlockAchievement(ach::kFlawlessRun);
             if (effectiveCareBranch() == CareBranch::Bad)
                 unlockAchievement(ach::kGoneRogue);
@@ -406,11 +401,11 @@ void Game::completeEvolution() {
         // kit and let the new creature's slot layout govern (reset + re-stamp). The first
         // Trojan divert unlocks the family.
         const char* oldLine = pet_.creature ? pet_.creature->line : nullptr;
-        const char* newLine = evolveTo_->line;
+        const char* newLine = to->line;
         const bool lineChanged =
             (oldLine == nullptr) != (newLine == nullptr) ||
             (oldLine && newLine && std::strcmp(oldLine, newLine) != 0);
-        installPet(evolveTo_);   // commit the swap; the stage indicator advances
+        installPet(to);   // commit the swap; the stage indicator advances
         if (lineChanged) {
             pet_.moves = MoveLoadout::startingForLine(registry_, pet_.creature->line);
             for (SlotKind& k : pet_.slotKinds) k = SlotKind::Unset;
@@ -423,7 +418,7 @@ void Game::completeEvolution() {
                 if (cl->raisedAchievement) unlockAchievement(cl->raisedAchievement);
         }
     }
-    evolveTo_ = nullptr;
+    evolve_ = EvolveScreen{};
     // The USB port empties at the boundary it was steering. The branch override is
     // consumed HERE rather than in fireEvolution (where the Ambig-USB's divert flag goes)
     // because the achievements above still had to see which branch fired; the soak is
@@ -491,8 +486,6 @@ void Game::enforceSlotKindInvariant() {
 
 // Critical System Failure ---------------------------------------
 
-bool Game::csfRevealed() const { return csfBeat_ >= kCsfHoldBeats; }
-
 void Game::fireCSF() {
     // The dying state's ageing window expired: terminal. CSF is the top modal
     // priority, so it clears any lower-priority modal state it preempts,
@@ -501,10 +494,10 @@ void Game::fireCSF() {
     clearDiveDepthBuffs();
     pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
-    evolveTo_ = nullptr;
+    evolve_ = EvolveScreen{};
     pet_.dyingArmed = false;
     pet_.dyingElapsedMs = 0;
-    csfBeat_ = 0;
+    csf_.open();
     nav_ = Nav::ModalCSF;
     dirty_ = true;
     playSound(Sound::PetLost);
@@ -521,7 +514,6 @@ void Game::acknowledgeCSF() {
         rec.generation = pet_.generation;
         op_.arch.records.push_back(rec);
     }
-    csfBeat_ = 0;
     pet_.dyingArmed = false;
     pet_.dyingElapsedMs = 0;
     startHatch();      // pet_.creature = nullptr -> line-select, then a fresh egg

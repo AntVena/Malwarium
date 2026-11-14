@@ -279,19 +279,16 @@ void Game::stepScreenBeat() {
     case Nav::ModalEvolve:
         // Cinematic advances on the heartbeat: hold -> flash -> reveal, then it parks at
         // the reveal and waits for B (completeEvolution).
-        if (evolveBeat_ < kEvoHoldBeats + kEvoFlashBeats) evolveBeat_++;
+        evolve_.tick();
         break;
-    case Nav::ModalHatchReveal: {
+    case Nav::ModalHatchReveal:
         // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
         // last one, then hatches itself. Nothing to press.
-        const SpriteData* egg = hatchEggSprite();
-        const int last = (egg ? egg->frames : 1) - 1;
-        if (++hatchRevealBeat_ >= last + kHatchRevealHoldBeats) completeHatch();
+        hatchReveal_.tick(*this);
         break;
-    }
     case Nav::ModalCSF:
         // The crash FX holds a few beats, then parks and waits for B.
-        if (csfBeat_ < kCsfHoldBeats) csfBeat_++;
+        csf_.tick();
         break;
     case Nav::Combat:
         stepCombatBeat();

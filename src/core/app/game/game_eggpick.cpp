@@ -23,8 +23,8 @@
 //
 // Entered from Game::startHatchGame the instant the egg is laid; leaves to idle.
 //
-// The unit also owns the HATCH REVEAL (bottom of the file): the on-demand crack that
-// lets a line without a decrypt show its shell opening.
+// The unit also opens the HATCH REVEAL (game/hatch_reveal_screen.h): the on-demand
+// crack that lets a line without a decrypt show its shell opening.
 
 namespace mal {
 
@@ -79,32 +79,9 @@ void Game::eggPickCommit() {
 
 void Game::openHatchReveal() {
     if (!hatchRevealReady()) return;
-    hatchRevealBeat_ = 0;
+    hatchReveal_.open();
     nav_ = Nav::ModalHatchReveal;
     dirty_ = true;
-}
-
-int Game::hatchRevealFrame() const {
-    const SpriteData* egg = hatchEggSprite();
-    const int frames = egg ? egg->frames : 1;
-    int f = hatchRevealBeat_;
-    if (f >= frames) f = frames - 1;
-    if (f < 0) f = 0;
-    return f;
-}
-
-void Game::drawHatchReveal(Framebuffer& fb) const {
-    fb.clear(palColor(Pal::PAPER));
-    const char* title = "HATCHING";
-    drawText(fb, (kActiveW - textWidth(title)) / 2, 20, title, palColor(Pal::INK));
-
-    // The shell's own one-shot, played big and centred with nothing else on screen.
-    if (const SpriteData* egg = hatchEggSprite()) {
-        const int w = egg->frameW * kScaleNum / kScaleDen;
-        const int h = egg->h * kScaleNum / kScaleDen;
-        drawSpriteUpscaled(fb, *egg, hatchRevealFrame(), (kActiveW - w) / 2,
-                           (kActiveH - h) / 2, kScaleNum, kScaleDen);
-    }
 }
 
 }  // namespace mal

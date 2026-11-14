@@ -24,12 +24,15 @@
 #include "core/app/game/away_digest_screen.h"
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
+#include "core/app/game/csf_screen.h"
 #include "core/app/game/egg_pick_screen.h"
 #include "core/app/game/encounter_screen.h"
+#include "core/app/game/evolve_screen.h"
 #include "core/app/game/expl_screen.h"
 #include "core/app/game/explore_control_screen.h"
 #include "core/app/game/feeding_screen.h"
 #include "core/app/game/fight_screen.h"
+#include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
 #include "core/app/game/items_menu.h"
@@ -147,7 +150,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
-             private LineSelectHost, private EggPickHost {
+             private LineSelectHost, private EggPickHost, private HatchRevealHost,
+             private EvolveHost, private CsfHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1463,7 +1467,7 @@ public:
         if (!pet_.creature || pet_.creature->stage == Stage::BootSector) return 0;
         return rigUpgradeCost(kDefragCostStart, pet_.defragCount, RigCostCurve::kLogStep);
     }
-    const CreatureDef* pet() const { return pet_.creature; }   // null while the save is empty (Hatch)
+    const CreatureDef* pet() const override { return pet_.creature; }   // null while the save is empty (Hatch)
     const Pet& petRecord() const override { return pet_; }
     // Where the habitat is currently standing its occupant, in logical px off the
     // shelf anchor (core/model/idle_wander.h). drawHabitat draws from this; it is
@@ -1559,7 +1563,7 @@ public:
     // "The egg can be cracked open now": what the idle prompt advertises with the
     // flashing Exploit pip, and what the chord acts on.
     bool eggCrackable() const { return hatchRevealReady(); }
-    int hatchRevealFrame() const;   // the one-shot's current frame (tests/render)
+    int hatchRevealFrame() const { return hatchReveal_.frame(*this); }   // (tests)
     uint32_t bootHatchRemainMs() const { return pet_.bootHatchRemainMs; }
     // Shaves `ms` off the incubation clock (floors at 0); a no-op outside the egg
     // phase. Walk/network steps use this to advance a laid egg, and it's also the
@@ -2340,7 +2344,7 @@ public:
     // branch fired. A DYING pet is returned unchanged: 5/5 routes to Critical System
     // Failure rather than to a successor, and no device on the shelf sells a way out
     // of having starved a pet.
-    CareBranch effectiveCareBranch() const;
+    CareBranch effectiveCareBranch() const override;
 
     // The dwell the CURRENT stage's evolution gate is waiting on: the stage's own
     // duration, stretched by an armed Sandbox/Hypervisor-USB soak. Every read of the
@@ -2429,8 +2433,6 @@ private:
     void drawProcess(Framebuffer& fb) const;
     void drawStacker(Framebuffer& fb) const;
     void drawFragger(Framebuffer& fb) const;
-    void drawEvolve(Framebuffer& fb) const;
-    void drawCSF(Framebuffer& fb) const;          // Critical System Failure
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
@@ -3180,8 +3182,8 @@ private:
     // The unlock's display name for the board's prize line, or nullptr: resolved off
     // whichever content table the reward kind names.
     const char* cryptogramPrizeLabel() const;
-    void completeHatch();    // decrypt done -> hatch straight to Process, return to idle
-    const SpriteData* hatchEggSprite() const;
+    void completeHatch() override;    // decrypt done -> hatch straight to Process, return to idle
+    const SpriteData* hatchEggSprite() const override;
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
 
     // Clutch Pick lifecycle (game_eggpick.cpp): see kEggPickRounds above. `rounds` is
@@ -3192,10 +3194,9 @@ private:
     void eggPickCommit() override;               // B: halve, or dismiss the reveal
     const EggPick* eggPick() const override { return eggPick_ ? &*eggPick_ : nullptr; }
 
-    // Hatch reveal cinematic (game_eggpick.cpp): the on-demand crack, see
+    // Hatch reveal cinematic (game/hatch_reveal_screen.h): the on-demand crack, see
     // hatchRevealReady(). Non-interactive: it runs on the heartbeat and hatches itself.
     void openHatchReveal();
-    void drawHatchReveal(Framebuffer& fb) const;
 
     // Isolation Protocol lifecycle (game_isolation.cpp): see inIsolation() above.
     // `goalDots` is how many bytes make a CLEAN run: the hatch prices it off whatever
@@ -3216,10 +3217,13 @@ private:
 
     // Evolution boundary lifecycle (stub).
     bool evolveEligible() const;   // time-in-stage + care gate + a defined successor
-    bool evolveRevealed() const;   // cinematic past hold+flash -> the reveal (B active)
     const char* evolutionTargetId() const;  // the successor id (care-picked pool)
     void fireEvolution();          // enter the modal toward the successor
-    void completeEvolution();      // commit the swap, restart the in-stage clock, idle
+    // Commit the swap onto `to`, restart the in-stage clock, idle.
+    void completeEvolution(const CreatureDef* to) override;
+    const SpriteData* creatureSprite(const CreatureDef& c) const override {
+        return registry_.creatureSprite(c);
+    }
 
     // Stamp the Attack/Defend kind of every UNLOCKED slot
     // that's still Unset from the CURRENT pet_.creature's CreatureDef::slotKinds, then never
@@ -3242,9 +3246,8 @@ private:
     // Critical System Failure: the ONLY death path. The 5/5 dying state,
     // once its ageing/recovery window expires, is terminal: the pet becomes a
     // [CORRUPTED] ARCH record and the active save vacates -> the Decryption Hatch.
-    bool csfRevealed() const;      // crash FX held long enough that B acknowledges
     void fireCSF();                // enter the terminal modal
-    void acknowledgeCSF();         // B: archive the corpse -> record + new-egg Hatch
+    void acknowledgeCSF() override;   // B: archive the corpse -> record + new-egg Hatch
 
     ContentRegistry registry_;
     // The active pet (core/model/pet.h).
@@ -3827,29 +3830,26 @@ private:
     uint32_t lastChromaMs_ = 0;
     int chromaBanked_ = 0;           // passes already spent on the clock, so B can't double-pay
 
-    // Hatch reveal cinematic. Counts heartbeats since the chord cracked the egg, which
-    // maps straight onto the shell's hatch frames; completeHatch fires off the end.
-    int hatchRevealBeat_ = 0;
+    HatchRevealScreen hatchReveal_;   // game/hatch_reveal_screen.h
     // The line-select modal (game/line_select_screen.h). Runtime-only: an empty save
     // re-prompts on reboot (the modal precedes laying/persisting an egg, so there's
     // nothing to persist).
     LineSelectScreen lineSelect_;
 
-    // Evolution modal (stub). evolveTo_ is the successor being revealed; the
-    // swap onto pet_.creature is deferred to completeEvolution so the cinematic holds the
-    // old sprite first. pet_.stageEnteredMs clocks time-in-stage for the trigger.
-    const CreatureDef* evolveTo_ = nullptr;
-    int evolveBeat_ = 0;
+    // The evolution modal (game/evolve_screen.h) holds the successor; the swap onto
+    // pet_.creature waits for completeEvolution so the cinematic holds the old sprite
+    // first. pet_.stageEnteredMs clocks time-in-stage for the trigger.
+    EvolveScreen evolve_;
 
     // Critical System Failure. pet_.dyingArmed latches when the pet enters the
-    // 5/5 dying state and pet_.dyingEnteredMs is the anchor it clocks from; csfBeat_
-    // paces the crash-FX hold before B acknowledges into an ARCH record (OperatorArch).
+    // 5/5 dying state and pet_.dyingEnteredMs is the anchor it clocks from; csf_ paces
+    // the crash-FX hold before B acknowledges into an ARCH record (OperatorArch).
     //
     // pet_.dyingElapsedMs is the total burned so far and the ONLY one of the three that
     // persists (save v42), which is what stops a power cycle from refunding the
     // window. The pair splits because the anchor is in monotonic game-ms, meaningless
     // across a boot, while the accumulator is a duration and survives one intact.
-    int csfBeat_ = 0;
+    CsfScreen csf_;   // game/csf_screen.h
 
     // Persistence plumbing. store_ is the platform save sink (nullptr = none).
     // saveDirty_ schedules a debounced write; lastSaveMs_ paces autosaves.

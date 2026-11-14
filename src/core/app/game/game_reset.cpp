@@ -43,9 +43,8 @@ void Game::resetToHatch() {
     maint_.reset();
     feeding_.reset();
     lockoutItemsContext_ = false;
-    evolveTo_ = nullptr;
-    evolveBeat_ = 0;
-    csfBeat_ = 0;
+    evolve_ = EvolveScreen{};
+    csf_ = CsfScreen{};
     cfg_.reset();
     bHeld_ = false;
     // A full wipe: clear the persisted save + the rack + lifetime/identity state,

@@ -231,23 +231,13 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
         case Nav::Decryption: onDecryption(ev); break;
         case Nav::Cryptogram: onCryptogram(ev); break;
-        case Nav::ModalHatchReveal:
-            // The crack cinematic runs by itself and hatches at the end. Every button
-            // is inert for its ~2 seconds so a stray press cannot skip it.
-            break;
+        case Nav::ModalHatchReveal: hatchReveal_.onButton(*this, ev); break;
         case Nav::ModalEggPick: eggPickScreen_.onButton(*this, ev); break;
-        case Nav::ModalEvolve:
-            // B continues once the reveal is up; A is a no-op and C is
-            // disabled, because the evolution already happened. The A+C chord
-            // is the reserved no-op stub, already filtered above.
-            if (ev.button == Button::B && evolveRevealed()) completeEvolution();
-            break;
-        case Nav::ModalCSF:
-            // B acknowledges once the crash FX has held. A is a no-op and C
-            // is DISABLED: death is not cancellable. A+C is the reserved no-op stub
-            // (already filtered above).
-            if (ev.button == Button::B && csfRevealed()) acknowledgeCSF();
-            break;
+        // B continues once the reveal is up and acknowledges once the crash has held.
+        // C is disabled on both: the evolution already happened, and death is not
+        // cancellable. The A+C chord is the reserved no-op stub, already filtered above.
+        case Nav::ModalEvolve: evolve_.onButton(*this, ev); break;
+        case Nav::ModalCSF: csf_.onButton(*this, ev); break;
         case Nav::ModalLockout:
             if (ev.button == Button::A) lockoutPayOption_ = !lockoutPayOption_;
             else if (ev.button == Button::B) {
