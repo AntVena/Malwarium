@@ -33,6 +33,7 @@
 #include "core/app/game/loadout_screen.h"
 #include "core/app/game/maint_screen.h"
 #include "core/app/game/merge_screen.h"
+#include "core/app/game/post_encounter_screen.h"
 #include "core/app/game/peers_screen.h"
 #include "core/app/game/shop_screen.h"
 #include "core/app/game/rig_shop_screen.h"
@@ -134,7 +135,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
              private CfgHost, private LoadoutHost, private LinkHost,
              private StoryReaderHost, private ExplHost,
-             private ExploreControlHost, private WifiHost {
+             private ExploreControlHost, private WifiHost,
+             private PostEncounterHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -249,7 +251,7 @@ public:
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
-    int bandwidthMax() const {
+    int bandwidthMax() const override {
         return kBandwidthMax + op_.rig.level[kRigRowBandwidth] * kBandwidthUpgradeStep;
     }
     int bwUpgradeCount() const { return op_.rig.level[kRigRowBandwidth]; }   // a purchases made
@@ -2441,7 +2443,6 @@ private:
     void drawShiboleetHailScreen(Framebuffer& fb) const;
     void drawShiboleetScreen(Framebuffer& fb) const;
     void drawShiboleetVerdictScreen(Framebuffer& fb) const;
-    void drawPostEncounterScreen(Framebuffer& fb) const;
 
     // Navigation.
     void summonCursor(int slot);
@@ -2643,11 +2644,13 @@ private:
     // finishBossRound (every gauntlet round).
     void settleBackupDrive();
     void applyBattleFatigue();                      // per-wild-fight frag tax
-    // Post-encounter status readout: a fought WILD battle (win or
-    // loss) parks on Nav::PostEncounter first, showing the BANDWIDTH/FRAG delta
-    // applyCombatResult() just caused. Any button press, or the kPostEncounterMs
-    // timer (tick()), dismisses it back to the explore habitat (returnToExplore()).
-    void dismissPostEncounter();
+    // Post-encounter status readout (game/post_encounter_screen.h): a fought WILD
+    // battle (win or loss) parks on Nav::PostEncounter first, showing the
+    // BANDWIDTH/FRAG delta applyCombatResult() just caused. Any button press, or the
+    // kPostEncounterMs timer (tick()), dismisses it back to the explore habitat.
+    const FightResult& lastFightResult() const override { return fight_.result; }
+    void dismissPostEncounter() override;
+    PostEncounterScreen postEncounter_;
     void addCombatXp(int xp);                       // bank XP → level-up (+1 random stat)
     // A FIGHT's XP: the same award, and it also builds the pet's adventure Bond. Passive
     // farming, Sinkholes and Wi-Fi finds go straight to addCombatXp and build none.

@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "core/app/game_internal.h"   // levelStatName()
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"   // area(): the place a walk is happening in
 #include "core/content/content_homes.h"     // sceneForCreature, where a pet lives
@@ -76,7 +75,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
         case Nav::CacheYield: vault_.drawReveal(fb, *this); break;
         case Nav::BulkYield: vault_.drawBulkReveal(fb, *this); break;
-        case Nav::PostEncounter: drawPostEncounterScreen(fb); break;
+        case Nav::PostEncounter: postEncounter_.draw(fb, *this); break;
         case Nav::ModalLineSelect: drawLineSelect(fb); break;
         case Nav::Decryption: drawDecryption(fb); break;
         case Nav::Cryptogram: drawCryptogram(fb); break;
@@ -875,41 +874,6 @@ void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
     g.sigils = op_.cant.sigils;
     g.swarm = &swarm;
     drawShiboleetVerdict(fb, g, v);
-}
-
-void Game::drawPostEncounterScreen(Framebuffer& fb) const {
-    // Frag state, dual-coded (a distinct WORD per state). The ACTUAL delta wins:
-    // if fragmentation rose we say so honestly (a Bandwidth-shielded LOSS still takes the
-    // separate loss penalty, so it can be both shielded AND up). Only a genuinely-clean
-    // fight where a charge was spent reads SHIELDED; no charge + no rise reads None.
-    const PostEncounterFragState st =
-        (fight_.result.fragAfter > fight_.result.fragBefore) ? PostEncounterFragState::Rose
-        : (fight_.result.shielded ? PostEncounterFragState::Shielded
-                            : PostEncounterFragState::None);
-    // Compose the level-up line (nullptr if this fight didn't level up): "LVL n" +
-    // one "STAT +k" chip per stat that gained (usually one. A wild win grants a
-    // single level → a single random stat). game_render owns the stat labels
-    // (levelStatName), so drawPostEncounter stays label-agnostic.
-    char lvlBuf[64];   // "LVL n" + up to kLevelStatCount " STAT +k" chips (multi-level lump)
-    const char* lvlLine = nullptr;
-    int gained = 0;
-    for (int i = 0; i < kLevelStatCount; ++i) gained += fight_.result.statGain[i];
-    if (gained > 0) {
-        int off = std::snprintf(lvlBuf, sizeof(lvlBuf), "LVL %d", fight_.result.levelAfter);
-        for (int i = 0; i < kLevelStatCount && off > 0 && off < (int)sizeof(lvlBuf); ++i)
-            if (fight_.result.statGain[i] > 0)
-                off += std::snprintf(lvlBuf + off, sizeof(lvlBuf) - off, "  %s +%d",
-                                     levelStatName(i), fight_.result.statGain[i]);
-        lvlLine = lvlBuf;
-    }
-    PostEncounterView v;
-    v.bwBefore = fight_.result.bwBefore;
-    v.bwAfter = fight_.result.bwAfter;
-    v.bwMax = bandwidthMax();
-    v.fragState = st;
-    v.fragDelta = fight_.result.fragAfter - fight_.result.fragBefore;
-    v.levelLine = lvlLine;
-    drawPostEncounter(fb, v);
 }
 
 void Game::drawWarpPickerScreen(Framebuffer& fb) const {

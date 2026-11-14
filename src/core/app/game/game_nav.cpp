@@ -211,9 +211,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
         case Nav::CacheYield: vault_.onReveal(*this, ev); break;
         case Nav::BulkYield: vault_.onBulkReveal(*this, ev); break;
-        // Post-encounter status readout: informational only. ANY
-        // button (A/B/C) dismisses it, unlike the standard A/B/C contract.
-        case Nav::PostEncounter: dismissPostEncounter(); break;
+        case Nav::PostEncounter: postEncounter_.onButton(*this, ev); break;
         case Nav::Stacker: onStacker(ev); break;
         case Nav::Fragger: onFragger(ev); break;
         case Nav::Isolation: onIsolation(ev); break;
