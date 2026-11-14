@@ -52,8 +52,8 @@ void Game::render(Framebuffer& fb) const {
             break;
         case Nav::Detail:  drawDetail(fb); break;
         case Nav::Process: drawProcess(fb); break;
-        case Nav::Stacker: drawStacker(fb); break;
-        case Nav::Fragger: drawFragger(fb); break;
+        case Nav::Stacker: stackerScreen_.draw(fb, *this); break;
+        case Nav::Fragger: fraggerScreen_.draw(fb, *this); break;
         case Nav::ArcadeResult: arcadeScreen_.drawResult(fb, *this); break;
         case Nav::Combat: fightScreen_.draw(fb, *this); break;
         case Nav::Tourney: arena_.draw(fb, *this); break;
@@ -767,15 +767,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawStacker(Framebuffer& fb) const {
-    if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    PlayOutcome sofar;
-    sofar.units = stacker_.blocks();
-    sofar.score = stacker_.score();
-    sofar.scoreMax = kStackerMaxScore;
-    drawStackerBoard(fb, stacker_, playHud(sofar));
-}
 
 void Game::drawProcess(Framebuffer& fb) const {
     if (!maint_) return;

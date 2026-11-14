@@ -65,28 +65,6 @@ void Game::beginStackerBoard() {
     nav_ = Nav::Stacker;
 }
 
-void Game::onStacker(const ButtonEvent& ev) {
-    if (onGameBriefInput(ev)) return;
-    if (!stacker_.running()) {                  // parked on the result: any press moves on
-        finishStacker();
-        return;
-    }
-    if (ev.button == Button::B) {
-        const int hand = stacker_.width();
-        const int threats = stacker_.threatCount();
-        stacker_.drop();
-        // A shrunk hand is the louder news; a clean lock that touched the ground still
-        // has to say it called an intruder.
-        if (stacker_.width() < hand) playSound(Sound::Miss);
-        else if (stacker_.threatCount() > threats) playSound(Sound::Probe);
-        else playSound(Sound::Point);
-    } else if (ev.button == Button::C) {
-        // Stop early and bank the board. A run that ends mid-air keeps what it locked, so
-        // quitting keeps it too and C never throws away earned blocks.
-        finishStacker();
-    }
-}
-
 // One beat of the board. Only the intruders' drop takes a block or ends a run, so those
 // sound here rather than on a press.
 void Game::stepStacker() {

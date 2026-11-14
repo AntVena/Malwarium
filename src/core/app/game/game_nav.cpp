@@ -212,8 +212,8 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::CacheYield: vault_.onReveal(*this, ev); break;
         case Nav::BulkYield: vault_.onBulkReveal(*this, ev); break;
         case Nav::PostEncounter: postEncounter_.onButton(*this, ev); break;
-        case Nav::Stacker: onStacker(ev); break;
-        case Nav::Fragger: onFragger(ev); break;
+        case Nav::Stacker: stackerScreen_.onButton(*this, ev); break;
+        case Nav::Fragger: fraggerScreen_.onButton(*this, ev); break;
         case Nav::Isolation: onIsolation(ev); break;
         case Nav::Chroma: onChroma(ev); break;
         // The arcade payout: informational, so ANY button dismisses it (the

@@ -84,7 +84,7 @@ inline constexpr int arcadeRewardMult(ArcadeDifficulty d) {
 }
 
 // Which minigame each MAINT process's PLAYED variant runs. Any engine can stand on either
-// side: every played game reports the same PlayOutcome (core/app/game.h), and what it
+// side: every played game reports the same PlayOutcome (core/app/game/board_host.h), and what it
 // buys is decided by the process, never by the game, so swapping these two is the whole
 // change. An engine joins the pool by reporting one (Game::beginPlayedGame lists them).
 inline constexpr ArcadeGameKind kDefragPlayedGame = ArcadeGameKind::Fragger;

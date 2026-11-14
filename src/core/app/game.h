@@ -32,6 +32,7 @@
 #include "core/app/game/explore_control_screen.h"
 #include "core/app/game/feeding_screen.h"
 #include "core/app/game/fight_screen.h"
+#include "core/app/game/fragger_screen.h"
 #include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
@@ -48,6 +49,7 @@
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_picker_screen.h"
 #include "core/app/game/stat_reader.h"
+#include "core/app/game/stacker_screen.h"
 #include "core/app/game/story_reader.h"
 #include "core/app/game/warp_picker_screen.h"
 #include "core/app/game/wifi_screen.h"
@@ -151,7 +153,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ShiboleetHost, private WarpPickerHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
-             private EvolveHost, private CsfHost {
+             private EvolveHost, private CsfHost, private StackerHost,
+             private FraggerHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1681,7 +1684,7 @@ public:
     bool exploreSound() const override { return settings_.exploreSound; }
     void setExploreSound(bool on) override;
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
-    void playSound(Sound s);
+    void playSound(Sound s) override;
     // Ignores the SOUND mode on purpose: the VOLUME picker's sample.
     void previewVolume(int level) override;
     // The PAL_CORE colour set the interface is drawn in: an index into the generated
@@ -2121,12 +2124,12 @@ public:
     // Re-deal the board from `seed` (Stacker::reset) at the dial's ground calls, so a
     // gate can aim its column functions at known intruders.
     void debugSeedStacker(uint32_t seed) { stacker_.reset(seed, stacker_.calls()); }
-    const Stacker& stacker() const { return stacker_; }
+    const Stacker& stacker() const override { return stacker_; }
     // The same seam for FRAGGER: one row of fall, on demand. `fragger()` is mutable so a
     // test can stage a lane (Fragger::place) before driving the real buttons at it.
     void debugStepFragger() { stepFragger(); }
     Fragger& fragger() { return fragger_; }
-    const Fragger& fragger() const { return fragger_; }
+    const Fragger& fragger() const override { return fragger_; }
     // Set a quote's standing directly (tests / dump_frame): reach the eight-solve
     // arcade unlock, or a mid-ladder tier, without playing eight boards by hand. The
     // real paths are Game::settleCryptogram's win and its loss ratchet.
@@ -2431,8 +2434,6 @@ private:
     void drawSubmenu(Framebuffer& fb) const;
     void drawDetail(Framebuffer& fb) const;
     void drawProcess(Framebuffer& fb) const;
-    void drawStacker(Framebuffer& fb) const;
-    void drawFragger(Framebuffer& fb) const;
     // The ART a CamoTarget names (FX_CAMO), or null for nothing to wear. Rival answers
     // with the sprite standing opposite; Line answers with that line's own creature at
     // the wearer's stage, so a pet channelling Ransomware looks like a Ransomware of its
@@ -2517,8 +2518,6 @@ private:
     void releaseHoldB();
 
     // Per-state input handlers.
-    void onStacker(const ButtonEvent& ev);
-    void onFragger(const ButtonEvent& ev);
     // CfgHost: the CFG pages' way back into the game (game_config.cpp).
     void executeFactoryReset(FactoryScope scope) override;   // the hold-B commit
     uint32_t uptimeMs() const override { return nowMs_; }
@@ -3056,18 +3055,7 @@ private:
     void moveStatPoint(const ItemDef& item, int from, int to) override;
     StatPickerScreen statPicker_;
     void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) override;
-    // What every played game reports when it ends, whoever was paying for it. `units`
-    // and `bitsUnits` are what a MAINT process prices (ArcadeGameDef::unitName /
-    // bitsUnitName: cleaning, and Bits); `score` / `scoreMax` are what the arcade till
-    // prices. One shape for every engine is what lets any of
-    // them stand behind either MAINT process.
-    struct PlayOutcome {
-        int units = 0;
-        int bitsUnits = 0;
-        bool won = false;
-        int score = 0;
-        int scoreMax = 0;
-    };
+    using PlayOutcome = mal::PlayOutcome;   // game/board_host.h
     // Open `g`'s board for whichever context is armed (an ArcadeRun or maintKind_). False
     // for an engine that cannot be played outside its own context (a hatch game).
     bool beginPlayedGame(ArcadeGameKind g);
@@ -3080,13 +3068,15 @@ private:
     int playedBitsWorth(int bitsUnits) const;
     // The footer a played board shows for a run worth this much so far, in whichever
     // context is armed: the one place a board learns what it is for.
-    PlayHud playHud(const PlayOutcome& sofar) const;
+    PlayHud playHud(const PlayOutcome& sofar) const override;
     void beginStackerBoard();   // reset the board + enter it, whoever is paying for it
-    void finishStacker();
+    void finishStacker() override;
+    Stacker& liveStacker() override { return stacker_; }
+    Fragger& liveFragger() override { return fragger_; }
     void stepStacker();
     void beginFraggerRun();     // the same, for FRAGGER
     void stepFragger();         // one row of fall, with its sound
-    void finishFragger();
+    void finishFragger() override;
     void resolveMaint();
     bool rollMaintSuccess();
 
@@ -3313,9 +3303,8 @@ private:
     uint32_t lastStackerStepMs_ = 0;
     Fragger fragger_;
     uint32_t lastFraggerStepMs_ = 0;
-    // The last shot, for the beam the screen draws up its lane until the next row falls.
-    int fraggerShotLane_ = -1;
-    int fraggerShotRow_ = -1;
+    StackerScreen stackerScreen_;   // game/stacker_screen.h
+    FraggerScreen fraggerScreen_;   // game/fragger_screen.h, and the last shot's beam
     // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
     // a dive, so a sector walk never collects a bonus armed for the dive after it.
     int diveRewardBonusPct() const {
