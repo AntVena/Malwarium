@@ -146,39 +146,15 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
   the draw, the heartbeat step, the A+C chord (null where it means nothing), and a fact the
   tick reads off the screen that is up, as an enum field defaulted to what most screens are
   (`FxSweep`, `Incubation`). A guard that lists screens by hand is a missing column.
+- A slot whose pages front different subsystems is a menu over page types (`CfgMenu`
+  over `UpdatesPage`, `RadioPages`, `HardwarePages`, ...). Each page type holds its focus
+  and is handed a host carrying only its subsystem's verbs; the menu's host extends them
+  all, so it can hand each page its own. A page answers a press with the move it asks of
+  the menu (`CfgMove`) rather than moving it, and pickers share `pickerPress`.
 - Small screens go in batches, one commit each, checked together.
 
 #### Screens
 
-- **CFG is a menu of subsystems behind one host.** `CfgHost` has forty-one methods of its
-  own because every subsystem with a setting is reached through it, and every page can see
-  all of them. `UpdatesPage` and `RadioPages` show the cut for the rest: the page owns its
-  state, input and draw, is handed only its own host (`UpdatesHost`, `RadioHost`, which
-  `CfgHost` extends so the menu can hand them on), and answers a press with the move it
-  asks of the menu (`CfgMove` in `cfg_page.h`, made by `CfgMenu::follow`) instead of
-  moving the menu. Pickers take a press through `pickerPress`. A shared `CfgPageHost`
-  waits for a page that needs more of the menu than `markDirty`, which each host declares
-  for itself. One page per commit, by subsystem (the audit, every remaining method against
-  the page in `cfg_menu.cpp` that calls it):
-  - DEVICE's display and sound settings over `Settings`: `setUiMode`, `setCareAlerts`,
-    `setBrightness`, `setSoundMode`, `previewVolume`, `setVolume`.
-  - The looks the operator has unlocked (THEME, BACKGROUND, TITLE, HACKERTAG):
-    `themeName`, `themeRow`, `themesUnlockedMask`, `setThemePick`, `backgroundOwned`,
-    `setBackgroundPick`, `equippedTitleName`, `nextSelectableTitle`, `equipTitle`,
-    `setHackerTag`.
-  - The hardware (SYSTEM INFO, TRAVEL MODE, FORMAT SD): `sdStatus`, `sdFormatState`,
-    `sdCardUse`, `requestSdFormat`, `clearSdFormatResult`, `requestSdRecheck`,
-    `powerStatus`, `uptimeMs`, `captureEnabled`, `travelSleepRequested`,
-    `requestTravelSleep`.
-  - TIPS: `replayableTips`, `openTip`. The resets: `resetToHatch` (the RESET TO HATCH
-    row), `executeFactoryReset` (the hold behind SYSTEM INFO).
-  - The menu's own moves and reads, which stay on `CfgHost`: `openDetail`, `closeDetail`,
-    `leaveToCarousel`, `markDirty`, `armHoldB`, `disarmHoldB`, `heldBMs`, `screenBeat`,
-    `settingsRecord`, `operatorRecord`.
-  DEVICE is a menu group, not a subsystem: its pages split across settings, looks, tips
-  and hardware above. SYSTEM INFO reads `radioOwner`, `sdStatus` and `equippedTitleName`
-  for its summary, which is its job: it takes those reads from the hosts that own them. |
-  `cfg_menu.h`, `cfg_menu.cpp`, `game_config.cpp` | M |
 - **RESET PET's confirm undersells it.** The Factory Reset page says RESET PET "KEEPS PEDIA
   PROGRESS", and it now keeps everything on the `Operator` (the tag, the wallet, the spare
   mods, the ARCH rack, the tallies, the rank). Say so in the panel's width, or say what it
