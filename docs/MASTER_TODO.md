@@ -129,8 +129,9 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 - Played boards reach the game through one `BoardHost` (`game/board_host.h`: the RULES
   overlay, sounds, heartbeat, the footer) that each board's host extends, and a board's
   host hands it the live run (`liveStacker()`), as `liveFight()` does for combat.
-- Lists join the gestures with one `listTarget` entry (`screenList`), holds with one
-  `holdTarget` entry (`screenHold`), step with `stepRow`, confirm with `InlineConfirm`.
+- Lists join the gestures through their `ScreenRow`'s list column (`screenList`), holds
+  through its hold column (`screenHold`); the menu tree's two levels answer by the entered
+  slot. Lists step with `stepRow`, confirm with `InlineConfirm`.
 - A thing on its own clock with a continuation (`StoryRun`) or a lifetime of its own
   (`StorefrontVisit`) is a run, not a screen. Layout stays out of a run: the reader tells
   `StoryRun::turn` how many rows the window showed.
@@ -155,45 +156,11 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
   the menu (`CfgMove`) rather than moving it, and pickers share `pickerPress`.
 - Small screens go in batches, one commit each, checked together.
 
-#### Screens
-
-- **The storefront reaches its screen one cell at a time.** `ShopHost` serves the listing
-  through eleven getters indexed by row (`shopListingName(i)`, `shopListingStock(i)`,
-  `shopListingCostQty(i, k)`, ...). The listing is a table, so the screen should be handed
-  it whole: the `StorefrontVisit` run by const reference, as the fight screen is handed
-  `liveFight()`, or a row view the run builds. | `shop_screen.h`, `game_shop.cpp` | S-M |
-- **Holds and lists route beside the table.** `holdTarget()` (`game_holds.cpp`) and
-  `listTarget()` (`game_listnav.cpp`) pick their screen with a chain over `nav_` and the
-  entered slot, a second path beside `ScreenRow`. The Nav-level cases could be columns,
-  with the menu tree's levels answering per slot as `MenuIdle::BySlot` does. | S |
-
 #### Still on `Game`
 
-`Game` holds 173 fields. These clusters each have an obvious owner, so each is a type of
-its own, one row each, cut as the screens were (byte-identical, gates through the owner):
-
-- **The home habitat's idle animations** (`petWander_`, `petCamo_`, `idleCamoWorn_`,
-  `petVanish_`, `petMimic_`, `idleMimicWorn_`, `companionWander_`, `petFork_`,
-  `petRelay_`, `petDisguise_`, `petHarvest_`, `petFeeding_`, `petLure_`): what the Idle
-  and Cursor screens draw. A home screen type. | M |
-- **The held-button gestures** (`aHeld_`, `bHeld_`, `cHeld_` and their down times, the
-  list repeat and back-step clocks): one input type that `onButton` and the tick share. |
-  S-M |
-- **Save scheduling** (`saveBlob_`, `lastBlobSize_`, `savesDeferred_`,
-  `savesDeferredLow_`, `saveWritesFailed_`, `saveDirty_`, `lastSaveMs_`). | S |
-- **The update job** (`updateSourceKnown_`, `updateJob_`, `jobTarget_`, `updateStatus_`,
-  `installStatus_`): a run, already fronted by `UpdatesHost`. | S |
-- **Device status** (`sdStatus_`, the SD icon reveal, `sdRecheckRequested_`,
-  `sdFormatState_`, `power_`, `batteryLevel_`, `travelSleepRequested_`, `radioOwner_`):
-  what the device tier pushes and asks, already fronted by `HardwareHost`. | S |
-- **Network sightings** (`visibleNetworks_`, `pendingNetworks_` and their counts,
-  `emptyQueueStreak_`): the queue the radio feeds and the walk drains. | S |
-- **The achievement banner** (`achBannerWire_`, `achBannerCount_`, `achBannerUntilMs_`,
-  `achBannerOpenBeat_`) and **the RULES overlay** (`gameBriefOpen_`, `gameBriefScroll_`,
-  `gameBriefIntro_`): two overlay screens. | S each |
-- **The played boards' clocks and banks** (`lastStackerStepMs_`, `lastFraggerStepMs_`,
-  `lastIsolationStepMs_`, `lastChromaMs_`, `isolationBanked_`, `chromaBanked_`): each
-  belongs to its board's run. | S |
+- **Sort the rest of `Game`'s fields into owners.** The fields in `game.h`'s private
+  section have not been surveyed as clusters. The pass names the next groups (a record
+  part, a run, or a screen), one row each, cut as above. | `game.h` | M (survey first) |
 
 ---
 
