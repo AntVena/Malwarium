@@ -1111,9 +1111,9 @@ void test_vault_bulk_open_consumes_all_of_rarity() {
 
     CHECK(g.inventory().count("sealed_cache_common") == 0);     // ALL of that rarity gone
     CHECK(g.inventory().count("sealed_cache_uncommon") == 2);   // other rarity untouched
-    CHECK(g.bulkYieldCachesOpened() == 4);
-    CHECK(g.bulkYieldBits() == 4 * ContentRegistry::embedded().item("sealed_cache_common")->cache.bits);  // aggregate Bits sum
-    CHECK(g.bits() == bits0 + g.bulkYieldBits());
+    CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 4);
+    CHECK(g.vaultScreen().bulkReveal()->bits == 4 * ContentRegistry::embedded().item("sealed_cache_common")->cache.bits);  // aggregate Bits sum
+    CHECK(g.bits() == bits0 + g.vaultScreen().bulkReveal()->bits);
     CHECK(g.nav() == Game::Nav::BulkYield);
 
     // Each common cache draws exactly 1 item (its row's cache.draws == 1): the tally
@@ -1157,7 +1157,7 @@ void test_vault_hold_b_bulk_opens_tap_opens_one() {
     g.onButton(press(Button::B));                         // arm the hold again
     g.tick(t += kBulkOpenHoldMs + kHeartbeatMs);           // cross the threshold -> bulk
     CHECK(g.inventory().count("sealed_cache_common") == 0);    // the remaining 2, together
-    CHECK(g.bulkYieldCachesOpened() == 2);
+    CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 2);
     CHECK(g.nav() == Game::Nav::BulkYield);
     g.onButton({Button::B, false, false});                 // release AFTER the fire -> no-op
     CHECK(g.nav() == Game::Nav::BulkYield);                 // unchanged

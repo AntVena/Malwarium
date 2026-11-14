@@ -14,7 +14,7 @@ static void walkToWifiOutcome(Game& g, Game::WifiOutcome want) {
     for (int tries = 0; tries < 50 && g.nav() != Game::Nav::Wifi; ++tries) {
         walkToWifiEvent(g);
         if (g.nav() != Game::Nav::Wifi) return;   // search exhausted (shouldn't happen)
-        if (g.wifiOutcome() == want) return;
+        if (g.wifiEvent()->outcome == want) return;
         g.onButton(press(Button::B));             // wrong outcome: resolve, keep looking
         if (g.nav() == Game::Nav::Combat) {        // an awakened-guardian miss
             uint32_t t = 0;
@@ -80,7 +80,7 @@ void test_wifi_sleeping_guardian_grants_loot() {
     Game g{StartMode::Hatched};
     walkToWifiOutcome(g, Game::WifiOutcome::SleepingGuardian);
     CHECK(g.nav() == Game::Nav::Wifi);
-    CHECK(g.wifiOutcome() == Game::WifiOutcome::SleepingGuardian);
+    CHECK(g.wifiEvent()->outcome == Game::WifiOutcome::SleepingGuardian);
     const int bits0 = g.bits();
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
@@ -119,7 +119,7 @@ void test_wifi_awakened_guardian_enters_combat() {
     walkToWifiOutcome(g, Game::WifiOutcome::AwakenedGuardian);
     CHECK(g.auditCapture().broadcasting());          // still hot at the decision point
     CHECK(g.nav() == Game::Nav::Wifi);
-    CHECK(g.wifiOutcome() == Game::WifiOutcome::AwakenedGuardian);
+    CHECK(g.wifiEvent()->outcome == Game::WifiOutcome::AwakenedGuardian);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Combat);
     CHECK(g.combat().stakes() == Combat::Stakes::Live);
@@ -140,7 +140,7 @@ void test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild() {
     uint32_t t = 0;
     for (int i = 0; i < 4000 && !met && g.inDarkWebCrawl(); ++i) {
         if (g.nav() == Game::Nav::Wifi &&
-            g.wifiOutcome() == Game::WifiOutcome::AwakenedGuardian) {
+            g.wifiEvent()->outcome == Game::WifiOutcome::AwakenedGuardian) {
             g.onButton(press(Button::B));
             CHECK(g.nav() == Game::Nav::Combat);
             const char* name = g.combat().enemy().name;
@@ -179,7 +179,7 @@ void test_wifi_never_awakens_when_not_hot() {
         walkToWifiEvent(g);                          // robust: reaches a Wi-Fi screen
         if (g.nav() != Game::Nav::Wifi) break;       // search exhausted (shouldn't happen)
         CHECK(!g.auditCapture().broadcasting());     // still not hot
-        CHECK(g.wifiOutcome() != Game::WifiOutcome::AwakenedGuardian);
+        CHECK(g.wifiEvent()->outcome != Game::WifiOutcome::AwakenedGuardian);
         ++wifiEvents;
         g.onButton(press(Button::B));                // a peaceful outcome -> back to idle
         CHECK(g.nav() != Game::Nav::Combat);         // never a fight from a Wi-Fi event
@@ -772,8 +772,8 @@ void test_cache_yield_reveal_and_dismiss() {
     g.inventory().add("sealed_cache_epic", 1);
     g.debugOpenCache("sealed_cache_epic");            // decrypt (VAULT path)
     CHECK(g.nav() == Game::Nav::CacheYield);          // reveal is up
-    CHECK(g.cacheYieldItemCount() == 2);              // epic yielded two items
-    CHECK(g.cacheYieldBits() == ContentRegistry::embedded().item("sealed_cache_epic")->cache.bits);  // and the Bits it paid
+    CHECK(g.vaultScreen().reveal()->itemCount == 2);              // epic yielded two items
+    CHECK(g.vaultScreen().reveal()->bits == ContentRegistry::embedded().item("sealed_cache_epic")->cache.bits);  // and the Bits it paid
     g.onButton(press(Button::B));                     // OK dismisses...
     CHECK(g.nav() == Game::Nav::Submenu);             // ...back to the submenu (VAULT list)
 }

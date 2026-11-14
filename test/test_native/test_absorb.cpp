@@ -301,13 +301,13 @@ void test_wifi_discovery_kind() {
     // A BSSID the ledger has never held is genuinely new: the one that pays, and the
     // one the pet eats whole.
     queueAndReachWifiEvent(g, bssid, "THE_PROMISED_LAN");
-    CHECK(g.netDiscovery() == Game::NetDiscovery::New);
+    CHECK(g.wifiEvent()->discovery == Game::NetDiscovery::New);
     resolveWifiEventToIdle(g);
 
     // Seen again while it sits at the head of the favourites: home turf, no reward,
     // and a glyph the pet leaves standing.
     queueAndReachWifiEvent(g, bssid, "THE_PROMISED_LAN");
-    CHECK(g.netDiscovery() == Game::NetDiscovery::HomeTurf);
+    CHECK(g.wifiEvent()->discovery == Game::NetDiscovery::HomeTurf);
     resolveWifiEventToIdle(g);
 
     // Crowded out of the top favourites by networks it has seen far more of, the same
@@ -316,11 +316,11 @@ void test_wifi_discovery_kind() {
     for (int i = 0; i < kNetDiscoveryTopFavoritesCount + 2; ++i)
         g.debugSeedNetworkLedger(key + 0x100ull * (i + 1), "NEIGHBOUR", 20 + i);
     queueAndReachWifiEvent(g, bssid, "THE_PROMISED_LAN");
-    CHECK(g.netDiscovery() == Game::NetDiscovery::Fond);
+    CHECK(g.wifiEvent()->discovery == Game::NetDiscovery::Fond);
     resolveWifiEventToIdle(g);
 
     // With the queue drained, the next event has nothing to find and shows no glyph.
     walkToWifiEvent(g);
     CHECK(g.nav() == Game::Nav::Wifi);
-    CHECK(g.netDiscovery() == Game::NetDiscovery::None);
+    CHECK(g.wifiEvent()->discovery == Game::NetDiscovery::None);
 }

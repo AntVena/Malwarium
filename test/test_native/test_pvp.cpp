@@ -255,7 +255,7 @@ void test_pvp_two_devices_duel_end_to_end() {
 
     CHECK(relayPvp(a, macA, b, macB) == 1);                   // the INVITE lands
     CHECK(b.pvpPhase() == PvpPhase::Invited);
-    CHECK(std::strcmp(b.pvpOpponentTag(), "NETRUNNER_99") == 0);
+    CHECK(std::strcmp(b.pvpSession()->peerTag, "NETRUNNER_99") == 0);
 
     // B's human accepts. B is the guest, so it sends its fighter and waits.
     b.pvpAcceptChallenge();
@@ -300,7 +300,7 @@ void test_pvp_two_devices_duel_end_to_end() {
     CHECK(a.pvpPhase() == PvpPhase::Result);
     CHECK(b.pvpPhase() == PvpPhase::Result);
     // Exactly one of them won, and each was told so from its own side.
-    CHECK(a.pvpLocalWon() != b.pvpLocalWon());
+    CHECK(a.pvpSession()->won != b.pvpSession()->won);
 
     // No stakes: nothing was earned, lost, or corrupted by fighting.
     CHECK(a.bits() == bitsBefore);
@@ -309,7 +309,7 @@ void test_pvp_two_devices_duel_end_to_end() {
 
     // A verdict left on screen must not pin the radio awake, only a session that
     // still needs the air does that.
-    CHECK(a.pvpActive() && !a.pvpSessionLive());
+    CHECK(a.pvpSession() && !a.pvpSessionLive());
 
     // Any key clears the verdict back to the challengeable list.
     a.onButton(press(Button::A));
@@ -485,7 +485,7 @@ void test_pvp_unanswered_challenge_times_out() {
     uint64_t keys[8];
     CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
     CHECK(a.pvpChallenge(keys[0]));
-    CHECK(a.pvpActive() && a.linkWanted());
+    CHECK(a.pvpSession() && a.linkWanted());
 
     a.tick(t += kPvpInviteTimeoutMs + 1);
     CHECK(a.pvpPhase() == PvpPhase::Idle);
@@ -517,15 +517,15 @@ void test_pvp_session_opens_whole_and_is_gone_when_it_ends() {
     enterHackerSlot(a, HackerSlotId::Link);
     enterHackerSlot(b, HackerSlotId::Link);
     hearBeacon(a, macB, "OPERATOR_B");
-    CHECK(!a.pvpActive() && a.pvpOpponentTag()[0] == '\0');
+    CHECK(!a.pvpSession());
     uint64_t keys[8];
     CHECK(a.pvpChallengeableKeys(keys, 8) == 1);
     CHECK(a.pvpChallenge(keys[0]));
-    CHECK(a.pvpActive() && a.pvpLocalIsHost());
+    CHECK(a.pvpSession() && a.pvpLocalIsHost());
     relayPvp(a, macA, b, macB);
     b.pvpDeclineChallenge();
     relayPvp(b, macB, a, macA);
-    CHECK(!a.pvpActive() && !a.pvpLocalIsHost() && a.pvpOpponentTag()[0] == '\0');
+    CHECK(!a.pvpSession() && !a.pvpLocalIsHost());
     CHECK(std::strcmp(a.pvpStatusText(), "DECLINED") == 0);
 }
 
@@ -969,8 +969,8 @@ void test_pvp_link_screen_verdict_grayscale() {
         a.onButton(press(Button::B));
         b.onButton(press(Button::B));
         // Whichever engine holds the outcome we were asked for renders the panel.
-        Game& shown = a.pvpLocalWon() == asWinner ? a : b;
-        CHECK(shown.pvpLocalWon() == asWinner);
+        Game& shown = a.pvpSession()->won == asWinner ? a : b;
+        CHECK(shown.pvpSession()->won == asWinner);
         shown.render(fb);
     };
 

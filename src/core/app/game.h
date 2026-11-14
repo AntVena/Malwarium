@@ -632,10 +632,6 @@ public:
     // model. Public so a gate can assert what a page SAYS rather than read it out of
     // pixels.
     std::vector<ProseRow> storyRows() const;
-    // The open Wi-Fi event's rolled outcome; SleepingGuardian with none open.
-    WifiOutcome wifiOutcome() const {
-        return wifi_ ? wifi_->outcome : WifiOutcome::SleepingGuardian;
-    }
     // WHICH of the rival's moves beating it could teach this pet: one bit per index
     // into its kit. Every part of the screen that asks uses this. The combat STAT
     // panel's KIT page marks each set bit in its gutter (RivalPrizes,
@@ -673,10 +669,8 @@ public:
     int subAreaMovesToLearn(int area, int sub) const override;
     int deepWebMovesToLearn() const override;
     int darkWebMovesToLearn() const override;
-    // The open Wi-Fi event's discovery beat, as its line and as a value: "" and None
-    // with no event open.
-    const char* netDiscoveryFlavor() const { return wifi_ ? wifi_->discoveryLine : ""; }
-    NetDiscovery netDiscovery() const { return wifi_ ? wifi_->discovery : NetDiscovery::None; }
+    // The open Wi-Fi event (core/model/wifi_event.h), or null with none.
+    const WifiEvent* wifiEvent() const override { return wifi_ ? &*wifi_ : nullptr; }
     int networksSeen() const { return op_.networksSeen; }         // lifetime, dedup'd
     // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
     // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
@@ -1207,7 +1201,6 @@ public:
 
     // The open duel session (core/model/pvp_session.h), or Idle when there is none.
     PvpPhase pvpPhase() const { return pvp_ ? pvp_->phase : PvpPhase::Idle; }
-    bool pvpActive() const { return pvp_.has_value(); }
     // A session that still NEEDS the air: mid-handshake, or a fight whose host is still
     // repeating its START. Result is deliberately excluded: a verdict left on screen
     // must not pin the radio (and, through radioScreenOpen, the panel) awake for as
@@ -1226,10 +1219,6 @@ public:
     // guests. Shared by the Combat screen and by anything that has to bind a resolved
     // turn to the LOCAL seat rather than to Combat's own.
     bool combatLocalIsEnemySide() const { return pvpFighting() && !pvpLocalIsHost(); }
-    const char* pvpOpponentTag() const { return pvp_ ? pvp_->peerTag : ""; }
-    // The finished duel's verdict from the LOCAL operator's point of view. Only
-    // meaningful in PvpPhase::Result.
-    bool pvpLocalWon() const { return pvp_ && pvp_->won; }
     // Why the last session ended without a fight (empty = it didn't). Rendered by the
     // LINK screen so a refusal never reads as a hang.
     const char* pvpStatusText() const override { return pvpStatus_; }
@@ -1407,10 +1396,6 @@ public:
     bool tagEditorActive() const {
         return nav_ == Nav::Detail && cfg_.page() == CfgScreen::HackerTag;
     }
-    // Cache-yield reveal inspection (tests): what the opened cache produced, while
-    // nav() == Nav::CacheYield; 0 with no reveal up.
-    int cacheYieldItemCount() const { return vault_.reveal() ? vault_.reveal()->itemCount : 0; }
-    int cacheYieldBits() const { return vault_.reveal() ? vault_.reveal()->bits : 0; }
     // Bits cost of a Defrag at the pet's current stage (0 on the egg).
     int defragCost() const override {
         // An egg has nothing to defragment, so it is never charged for one.
@@ -1468,8 +1453,10 @@ public:
     bool inCryptogram() const { return nav_ == Nav::Cryptogram; }
     // The board in play (core/model/cryptogram_run.h), or an empty one with none.
     const Cryptogram& cryptogram() const;
-    // The roster row (content_quotes.h index) the board is playing, or -1.
-    int cryptogramQuote() const { return cryptogramRun_ ? cryptogramRun_->quote : -1; }
+    // The board in play and its stake (core/model/cryptogram_run.h), or null with none.
+    const CryptogramRun* cryptogramRun() const override {
+        return cryptogramRun_ ? &*cryptogramRun_ : nullptr;
+    }
     // This device's standing with the quote on roster row `i`. Out-of-range, and any
     // row whose wire is past kQuoteWireCap, read Hard, never played.
     CryptogramTier quoteTier(int i) const override;
@@ -2009,6 +1996,7 @@ public:
     const ItemsMenu& itemsMenu() const { return items_; }
     const ExplScreen& explScreen() const { return expl_; }
     const LoadoutScreen& loadoutScreen() const { return loadout_; }
+    const VaultScreen& vaultScreen() const { return vault_; }
     StatSources statSources() const override;
     // Grant mods in tests without walking a boss drop or a cache roll.
     ModPool& debugModPool() { return op_.modPool; }
@@ -2035,9 +2023,7 @@ public:
     void debugBulkOpenCaches(const char* id) {
         if (const ItemDef* d = registry_.item(id)) openAllCachesOfRarity(*d);
     }
-    // The bulk-open reveal (tests), while nav() == Nav::BulkYield; 0 / empty with none.
-    int bulkYieldCachesOpened() const { return vault_.bulkReveal() ? vault_.bulkReveal()->cachesOpened : 0; }
-    int bulkYieldBits() const { return vault_.bulkReveal() ? vault_.bulkReveal()->bits : 0; }
+    // The bulk-open reveal's tally (tests), while nav() == Nav::BulkYield; empty with none.
     int bulkYieldTallyCount() const {
         return vault_.bulkReveal() ? static_cast<int>(vault_.bulkReveal()->tally.size()) : 0;
     }
@@ -2767,7 +2753,6 @@ private:
     void startWifiEvent();
     void resolveWifiOutcome();
     // WifiHost.
-    const WifiEvent* wifiEvent() const override { return wifi_ ? &*wifi_ : nullptr; }
     const char* walkSectorName() const override;
     void restartEventHold() override { walk_.eventBeat = 0; }
     void playOutWifiEvent() override { resolveWifiOutcome(); }
@@ -3096,9 +3081,6 @@ private:
     void settleCryptogram() override;
     void finishCryptogram() override;   // leave the board: to the arcade's till, or to the VAULT
     CryptogramRun* liveCryptogram() override { return cryptogramRun_ ? &*cryptogramRun_ : nullptr; }
-    const CryptogramRun* cryptogramRun() const override {
-        return cryptogramRun_ ? &*cryptogramRun_ : nullptr;
-    }
     void armHoldRepeat(Button b) override;
     // A roster row to play, drawn off the shared LCG from whatever is eligible, or -1
     // when nothing is. Advances rng_.

@@ -425,14 +425,14 @@ void test_network_discovery_repeat_familiar_vs_home_turf() {
     queueAndReachWifiEvent(g, rare, "Rare");
     CHECK(g.networksSeen() == 9);                 // no Hacker Rank credit
     CHECK(g.hackerRank() == rank0);
-    CHECK(std::strstr(g.netDiscoveryFlavor(), "FONDLY REMEMBERS") != nullptr);
+    CHECK(std::strstr(g.wifiEvent()->discoveryLine, "FONDLY REMEMBERS") != nullptr);
     resolveWifiEventToIdle(g);
 
     // A repeat of one of the "common" (home-turf) networks stays flat: the
     // flavor reads "TIRED OF", not "FONDLY REMEMBERS". No pet-XP branch taken,
     // no further Hacker Rank movement.
     queueAndReachWifiEvent(g, common[0], "Common");
-    CHECK(std::strstr(g.netDiscoveryFlavor(), "TIRED OF") != nullptr);
+    CHECK(std::strstr(g.wifiEvent()->discoveryLine, "TIRED OF") != nullptr);
     CHECK(g.hackerRank() == rank0);
     resolveWifiEventToIdle(g);
 }
@@ -1089,8 +1089,8 @@ void test_network_discovery_reward_fires_once_per_network() {
 
     uint8_t a[6] = {0x40, 0, 0, 0, 0, 0x01};
     queueAndReachWifiEvent(g, a, "A");
-    CHECK(std::strstr(g.netDiscoveryFlavor(), "ADMIRING") ||
-          std::strstr(g.netDiscoveryFlavor(), "ENVIES"));   // genuinely-new flavor
+    CHECK(std::strstr(g.wifiEvent()->discoveryLine, "ADMIRING") ||
+          std::strstr(g.wifiEvent()->discoveryLine, "ENVIES"));   // genuinely-new flavor
     CHECK(cacheTotal() >= 1);                                // reward granted
     resolveWifiEventToIdle(g);
 
@@ -1100,15 +1100,15 @@ void test_network_discovery_reward_fires_once_per_network() {
     // reward, confirmed by the flavor never reading as genuinely-new again.
     for (int i = 0; i < 3; ++i) {
         queueAndReachWifiEvent(g, a, "A");
-        CHECK(std::strstr(g.netDiscoveryFlavor(), "TIRED OF") != nullptr);
+        CHECK(std::strstr(g.wifiEvent()->discoveryLine, "TIRED OF") != nullptr);
         resolveWifiEventToIdle(g);
     }
 
     uint8_t b[6] = {0x40, 0, 0, 0, 0, 0x02};
     const int cacheBeforeB = cacheTotal();
     queueAndReachWifiEvent(g, b, "B");
-    CHECK(std::strstr(g.netDiscoveryFlavor(), "ADMIRING") ||
-          std::strstr(g.netDiscoveryFlavor(), "ENVIES"));   // a second, DIFFERENT network
+    CHECK(std::strstr(g.wifiEvent()->discoveryLine, "ADMIRING") ||
+          std::strstr(g.wifiEvent()->discoveryLine, "ENVIES"));   // a second, DIFFERENT network
     CHECK(cacheTotal() >= cacheBeforeB + 1);
     resolveWifiEventToIdle(g);
 }
@@ -1133,8 +1133,8 @@ void test_network_discovery_reward_rarity_ratio() {
         const int commonBefore = g.inventory().count("sealed_cache_common");
         const int uncommonBefore = g.inventory().count("sealed_cache_uncommon");
         queueAndReachWifiEvent(g, bssid, "S");
-        CHECK(std::strstr(g.netDiscoveryFlavor(), "ADMIRING") ||
-              std::strstr(g.netDiscoveryFlavor(), "ENVIES"));
+        CHECK(std::strstr(g.wifiEvent()->discoveryLine, "ADMIRING") ||
+              std::strstr(g.wifiEvent()->discoveryLine, "ENVIES"));
         if (g.inventory().count("sealed_cache_common") > commonBefore) ++common;
         else if (g.inventory().count("sealed_cache_uncommon") > uncommonBefore) ++uncommon;
         resolveWifiEventToIdle(g);

@@ -2030,18 +2030,17 @@ void test_reveals_hold_their_result_only_while_up() {
     Game g{StartMode::Hatched};
     g.inventory().add("sealed_cache_epic", 1);
     g.inventory().add("sealed_cache_common", 3);
-    CHECK(g.cacheYieldItemCount() == 0 && g.bulkYieldCachesOpened() == 0);
+    CHECK(!g.vaultScreen().reveal() && !g.vaultScreen().bulkReveal());
     g.debugOpenCache("sealed_cache_epic");
-    CHECK(g.nav() == Game::Nav::CacheYield && g.cacheYieldItemCount() > 0);
+    CHECK(g.nav() == Game::Nav::CacheYield && g.vaultScreen().reveal()->itemCount > 0);
     g.onButton(press(Button::B));
-    CHECK(g.nav() == Game::Nav::Submenu && g.cacheYieldItemCount() == 0);
-    CHECK(g.cacheYieldBits() == 0);
+    CHECK(g.nav() == Game::Nav::Submenu && !g.vaultScreen().reveal());
 
     g.debugBulkOpenCaches("sealed_cache_common");
-    CHECK(g.nav() == Game::Nav::BulkYield && g.bulkYieldCachesOpened() == 3);
+    CHECK(g.nav() == Game::Nav::BulkYield && g.vaultScreen().bulkReveal()->cachesOpened == 3);
     g.onButton(press(Button::A));                 // scrolling keeps it up
-    CHECK(g.bulkYieldCachesOpened() == 3);
+    CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 3);
     g.onButton(press(Button::C));
-    CHECK(g.nav() == Game::Nav::Submenu && g.bulkYieldCachesOpened() == 0);
-    CHECK(g.bulkYieldTallyCount() == 0 && g.bulkYieldBits() == 0);
+    CHECK(g.nav() == Game::Nav::Submenu && !g.vaultScreen().bulkReveal());
+    CHECK(g.bulkYieldTallyCount() == 0);
 }

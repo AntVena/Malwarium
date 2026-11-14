@@ -394,7 +394,7 @@ void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     cashADecryptogram(g, 2);
     CHECK(g.nav() == Game::Nav::Cryptogram);
     CHECK(g.inventory().count("decryptogram") == 1);   // spent up front
-    const int quote = g.cryptogramQuote();
+    const int quote = g.cryptogramRun()->quote;
     CHECK(quote >= 0);
     CHECK(g.quoteTier(quote) == CryptogramTier::Hard); // every quote starts here
 
@@ -422,7 +422,7 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
     const int bought = g.bwUpgradeCount();
 
     cashADecryptogram(g, 4);
-    const int quote = g.cryptogramQuote();
+    const int quote = g.cryptogramRun()->quote;
     const int hardPool = g.cryptogram().poolSize();
     missOnce(g);
     CHECK(!g.cryptogram().running() && !g.cryptogram().solved());
@@ -452,16 +452,16 @@ void test_cryptogram_run_holds_its_stake_until_the_verdict_is_left() {
     CHECK(r.quote == 7 && r.prizeBits == kQuoteWinBits && r.prize.magnitude == 2);
 
     Game g{StartMode::Hatched};
-    CHECK(g.cryptogramQuote() == -1 && !g.cryptogram().running());
+    CHECK(!g.cryptogramRun() && !g.cryptogram().running());
     cashADecryptogram(g);
-    const int quote = g.cryptogramQuote();
+    const int quote = g.cryptogramRun()->quote;
     CHECK(quote >= 0 && g.cryptogram().running());
     CHECK(g.quoteTier(quote) == CryptogramTier::Hard);
     missOnce(g);
-    CHECK(!g.cryptogram().running() && g.cryptogramQuote() == quote);   // the verdict
+    CHECK(!g.cryptogram().running() && g.cryptogramRun()->quote == quote);   // the verdict
     g.onButton(press(Button::B));                 // leave it
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.cryptogramQuote() == -1 && g.cryptogram().poolSize() == 0);
+    CHECK(!g.cryptogramRun() && g.cryptogram().poolSize() == 0);
 }
 
 // An achievement-gated quote is not in the pool until it is earned: the second
@@ -559,7 +559,7 @@ void test_cryptogram_arcade_replays_a_solved_quote_for_bits() {
     g.onButton(press(Button::B));                  // START
     CHECK(g.nav() == Game::Nav::Cryptogram);
     CHECK(g.inArcadeRun());
-    const int quote = g.cryptogramQuote();
+    const int quote = g.cryptogramRun()->quote;
     CHECK(quote >= 0 && g.quoteTier(quote) == CryptogramTier::Solved);
 
     solveBoard(g);
