@@ -159,22 +159,15 @@ bool Game::tickModelClocks(uint32_t nowMs) {
             }
         }
         // Boot-Sector incubation clock (egg-at-idle): counts down in real time while the
-        // egg sits at idle. Frozen on every screen that is part of the hatch: the
-        // decrypt runs its own countdown; the crack cinematic must be allowed to finish
-        // its frames (it can legitimately be opened with seconds left, and the clock
-        // running out underneath would hatch the pet mid-animation); and the Isolation
-        // Protocol priced its goal off the clock as it stood when the run began, so
-        // draining it underneath would quietly discount the run. Reaching 0 out here
-        // auto-hatches straight to Process (no soft-lock if the player never opens any
-        // of them).
+        // egg sits at idle. Held on every screen that is part of the hatch (its row says
+        // Incubation::Holds, and why). Reaching 0 out here auto-hatches straight to
+        // Process (no soft-lock if the player never opens any of them).
         //
         // Note what inEggPhase() means for anything that shaves the clock from OUTSIDE
         // this block: it requires a remainder above zero, so an egg shaved straight to 0
         // elsewhere leaves the phase in the same instant and this will never see it.
         // Such a caller has to hatch the egg itself: Game::finishIsolation does.
-        if (inEggPhase() && nav_ != Nav::Decryption &&
-            nav_ != Nav::ModalHatchReveal && nav_ != Nav::Isolation &&
-            nav_ != Nav::Chroma) {
+        if (inEggPhase() && screenRow(nav_).incubation == Incubation::Runs) {
             pet_.bootHatchRemainMs = pet_.bootHatchRemainMs > elapsed
                                      ? pet_.bootHatchRemainMs - elapsed : 0;
             if (pet_.bootHatchRemainMs == 0) { completeHatch(); changed = true; }
@@ -373,9 +366,10 @@ Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
 
 // The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the only one
 // gated on a specific effect being on screen: it runs for the ~2s a sweep takes and costs
-// nothing the rest of the time. Three hosts, one counter, only one dissolve is ever up.
-// Each resets it at its own start (startFeeding / startWifiEvent / every fight start), so
-// this only has to decide when to ADVANCE.
+// nothing the rest of the time. The screens whose row names a sweep (FxSweep) are its
+// hosts: one counter, and only one dissolve is ever up. Each resets it at its own start
+// (startFeeding / startWifiEvent / every fight start), so this only has to decide when to
+// ADVANCE.
 //
 // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
 // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
@@ -383,18 +377,18 @@ Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
 // the two screens that DRAW the body (game_render.cpp) and skips the riddle board between
 // them, where only the patience bar moves and a 16fps repaint would be wasted.
 Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
-    const bool swarmLive = nav_ == Nav::ShiboleetHail || nav_ == Nav::ShiboleetVerdict;
-    const bool fxSweeping =
-        nav_ == Nav::ModalFeeding || nav_ == Nav::Wifi || swarmLive ||
-        (nav_ == Nav::Combat && fight_.combat.outcome() != Combat::Outcome::Ongoing);
-    if (!fxSweeping) {
+    const FxSweep fx = screenRow(nav_).fx;
+    const bool sweeping = fx == FxSweep::FightOutro
+                              ? fight_.combat.outcome() != Combat::Outcome::Ongoing
+                              : fx != FxSweep::None;
+    if (!sweeping) {
         lastFxMs_ = nowMs;
         return Cadence::Closed;
     }
     if (nowMs - lastFxMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
     lastFxMs_ = nowMs;
     fxBeat_++;
-    if (swarmLive) shib_.flock.step(guardianFlockMood());
+    if (fx == FxSweep::Swarm) shib_.flock.step(guardianFlockMood());
     return Cadence::Fired;
 }
 

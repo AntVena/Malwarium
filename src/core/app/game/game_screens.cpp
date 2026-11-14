@@ -1,6 +1,6 @@
 // game_screens.cpp: the per-screen table. For each Nav, in Nav's order, what a press does
-// on that screen, what render draws, what the heartbeat steps, and what the A+C chord
-// means there (Game::ScreenRow).
+// on that screen, what render draws, what the heartbeat steps, what the A+C chord means
+// there, and the two clocks the tick runs or holds for it (Game::ScreenRow).
 //
 // onButton, render and stepScreenBeat each look their row up here, so a screen joins the
 // game by gaining one row, and they can never disagree about which screen is up.
@@ -63,7 +63,7 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          [](const G& g, Fb& fb) { g.maintScreen_.drawProcess(fb, g); },
          [](G& g) { g.stepProcessBeat(); }, crackEgg},
         {Nav::ModalFeeding, pressScreen<&G::feedingScreen_>, drawScreen<&G::feedingScreen_>,
-         [](G& g) { g.stepFeedingBeat(); }, crackEgg},
+         [](G& g) { g.stepFeedingBeat(); }, crackEgg, FxSweep::Dissolve},
         {Nav::ModalLockout, pressScreen<&G::lockoutScreen_>, drawScreen<&G::lockoutScreen_>,
          nullptr, crackEgg},
         {Nav::ModalLineSelect, pressScreen<&G::lineSelect_>, drawScreen<&G::lineSelect_>,
@@ -71,9 +71,10 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::ModalEggPick, pressScreen<&G::eggPickScreen_>, drawScreen<&G::eggPickScreen_>,
          nullptr, rulesChord},
         // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
-        // last one, then hatches itself.
+        // last one, then hatches itself. It can be opened with seconds left on the egg, so
+        // the egg's clock holds, or running out underneath would hatch mid-animation.
         {Nav::ModalHatchReveal, pressScreen<&G::hatchReveal_>, drawScreen<&G::hatchReveal_>,
-         [](G& g) { g.hatchReveal_.tick(g); }, crackEgg},
+         [](G& g) { g.hatchReveal_.tick(g); }, crackEgg, FxSweep::None, Incubation::Holds},
         // Hold, flash, reveal on the heartbeat, then it parks at the reveal and waits for B
         // (completeEvolution). C does nothing: the evolution already happened.
         {Nav::ModalEvolve, pressScreen<&G::evolve_>, drawScreen<&G::evolve_>,
@@ -84,7 +85,7 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          [](G& g) { g.csf_.tick(); }, crackEgg},
         // The chord opens the fight's Exploit override picker.
         {Nav::Combat, pressScreen<&G::fightScreen_>, drawScreen<&G::fightScreen_>,
-         [](G& g) { g.stepCombatBeat(); }, pressScreen<&G::fightScreen_>},
+         [](G& g) { g.stepCombatBeat(); }, pressScreen<&G::fightScreen_>, FxSweep::FightOutro},
         {Nav::ExploreControl, pressScreen<&G::exploreControl_>,
          drawScreen<&G::exploreControl_>, nullptr, crackEgg},
         {Nav::Encounter, pressScreen<&G::encounter_>, drawScreen<&G::encounter_>, nullptr,
@@ -93,7 +94,8 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // so it reads, then played out (a guardian awakened enters a fight; the rest
         // resolve to the habitat).
         {Nav::Wifi, pressScreen<&G::wifiScreen_>, drawScreen<&G::wifiScreen_>,
-         [](G& g) { g.stepEventHold(kExploreRevealHoldBeats, &G::resolveWifiOutcome); }, crackEgg},
+         [](G& g) { g.stepEventHold(kExploreRevealHoldBeats, &G::resolveWifiOutcome); }, crackEgg,
+         FxSweep::Dissolve},
         // Hands-off DECISION: a shop (item or mod) is a real buy/leave choice, so it holds
         // ~10s for a watching player to act, then leaves and keeps exploring.
         {Nav::Shop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
@@ -117,12 +119,16 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          nullptr, rulesChord},
         {Nav::Fragger, pressScreen<&G::fraggerScreen_>, drawScreen<&G::fraggerScreen_>,
          nullptr, rulesChord},
+        // The Isolation Protocol priced its goal off the egg's clock as it stood when the
+        // run began, so draining it underneath would quietly discount the run.
         {Nav::Isolation, pressScreen<&G::isolationScreen_>, drawScreen<&G::isolationScreen_>,
-         nullptr, rulesChord},
+         nullptr, rulesChord, FxSweep::None, Incubation::Holds},
+        // The CHROMATOPHORE spends its passes against the egg's clock, so it holds too.
         {Nav::Chroma, pressScreen<&G::chromaScreen_>, drawScreen<&G::chromaScreen_>, nullptr,
-         rulesChord},
+         rulesChord, FxSweep::None, Incubation::Holds},
+        // The decrypt runs its own countdown in place of the egg's.
         {Nav::Decryption, pressScreen<&G::decryptionScreen_>,
-         drawScreen<&G::decryptionScreen_>, nullptr, rulesChord},
+         drawScreen<&G::decryptionScreen_>, nullptr, rulesChord, FxSweep::None, Incubation::Holds},
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord hands a
         // taken letter back to the pool. The screen sorts its two meanings out itself (a
         // letter held drops it; nothing held opens the RULES page), since only it knows
@@ -144,7 +150,7 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::ShiboleetHail, [](G& g, const Ev& e) { g.shiboleet_.onHail(g, e); },
          [](const G& g, Fb& fb) { g.shiboleet_.drawHail(fb, g); },
          [](G& g) { g.stepEventHold(kShiboleetHailHoldBeats, &G::openShiboleetWelcome); },
-         crackEgg},
+         crackEgg, FxSweep::Swarm},
         // Hands-off DECISION: silence past the hold is an answer, the wrong one. A restarts
         // the hold (ShiboleetScreen::onRiddle), so a player still reading is not timed out.
         {Nav::Shiboleet, [](G& g, const Ev& e) { g.shiboleet_.onRiddle(g, e); },
@@ -155,7 +161,8 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // out. The consequence is already paid; the hold only sets how long it is read.
         {Nav::ShiboleetVerdict, [](G& g, const Ev& e) { g.shiboleet_.onVerdict(g, e); },
          [](const G& g, Fb& fb) { g.shiboleet_.drawVerdict(fb, g); },
-         [](G& g) { g.stepEventHold(kShiboleetVerdictHoldBeats, &G::finishShiboleet); }, crackEgg},
+         [](G& g) { g.stepEventHold(kShiboleetVerdictHoldBeats, &G::finishShiboleet); }, crackEgg,
+         FxSweep::Swarm},
         {Nav::Story, pressScreen<&G::storyReader_>, drawScreen<&G::storyReader_>, nullptr,
          crackEgg},
         {Nav::StoryArchive, pressScreen<&G::chapters_>, drawScreen<&G::chapters_>, nullptr,

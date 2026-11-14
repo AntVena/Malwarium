@@ -2606,13 +2606,27 @@ private:
     // press does on the screen that is up, what render draws for it, what it steps on the
     // heartbeat (null for nothing), and what the A+C chord means there. The cadences faster than the heartbeat keep
     // their own entry point (tickAnimClocks): each must also run on every tick its
-    // screen is NOT up, to prime its clock, and two of them share the Combat screen.
+    // screen is NOT up, to prime its clock, and two of them share the Combat screen. Two
+    // facts the tick reads off the screen that is up close the row, defaulted to what
+    // most screens are.
+    //
+    // Which effect the dissolve clock steps while the screen is up (tickFxSweep).
+    enum class FxSweep : uint8_t {
+        None,
+        Dissolve,     // a dissolve host (FX_ABSORB / FX_SHRED), for as long as it is up
+        Swarm,        // the guardian's flock, which rides the dissolve clock
+        FightOutro,   // the fight's dissolve, once the fight has an outcome
+    };
+    // Whether the egg's incubation clock drains while the screen is up (tickModelClocks).
+    enum class Incubation : uint8_t { Runs, Holds };
     struct ScreenRow {
         Nav nav;
         void (*press)(Game& g, const ButtonEvent& ev);
         void (*draw)(const Game& g, Framebuffer& fb);
         void (*beat)(Game& g);
         void (*chord)(Game& g, const ButtonEvent& ev);
+        FxSweep fx = FxSweep::None;
+        Incubation incubation = Incubation::Runs;
     };
     static const ScreenRow& screenRow(Nav n);
     // A row for a screen type that owns its whole page: onButton(host, ev), draw(fb, host).
