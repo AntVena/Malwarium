@@ -2,7 +2,6 @@
 
 #include "core/content/content_quotes.h"
 #include "core/content/content_recipes.h"   // kMergeRecipes: the prize ladder names a recipe
-#include "core/ui/cryptogram_screen.h"
 
 // game_cryptogram.cpp: THE DECRYPTOGRAM, the quote board.
 //
@@ -19,8 +18,8 @@
 //
 // Three files, and the split is the usual one: the rules are core/model/cryptogram.h
 // (no Game, no framebuffer), the pool is core/content/content_quotes.h (no rules), and
-// this file is the lifecycle, the eligibility roll and the payout. The board is
-// core/ui/cryptogram_screen.cpp.
+// this file is the lifecycle, the eligibility roll and the payout. The board's input is
+// CryptogramScreen (game/cryptogram_screen.h) and its draw core/ui/cryptogram_screen.cpp.
 //
 // Entered from Game::cashCryptogramTicket (the VAULT), and from the GAMES arcade's own
 // cabinet once kQuoteArcadeUnlockWins quotes are solved. Leaves to the VAULT, or to the
@@ -139,54 +138,6 @@ void Game::startCryptogram(int quote, int extraReveals) {
     dirty_ = true;
 }
 
-void Game::onCryptogram(const ButtonEvent& ev) {
-    if (onGameBriefInput(ev)) return;
-    if (!cryptogramRun_) return;
-    Cryptogram& board = cryptogramRun_->board;
-    if (!board.running()) {
-        // Parked on the verdict, which the settle has already banked. B leaves. C is
-        // disabled, as on every board, because the ticket is spent either way.
-        if (ev.button == Button::B) finishCryptogram();
-        return;
-    }
-    // A and C are the live cursor's two DIRECTIONS: forward and back through the pool,
-    // or through the closed cells once a letter is in hand. Bidirectional because a
-    // board opens with thirty-odd gaps, and overshooting by one on a forward-only
-    // cursor costs a full lap of the quote.
-    //
-    // That uses both buttons a cancel would need, so the A+C chord hands the letter
-    // back. C is therefore not "cancel" here and there is no way off a board at all,
-    // which is the deal every ticket is bought on.
-    //
-    // dropLetter() is inert with nothing held (PickLetter), which is exactly when the
-    // chord is free to mean something else instead: the RULES page. A player mid-place
-    // (PickCell) still gets the drop, never the page, so the chord can never strand a
-    // held letter behind an overlay.
-    if (ev.chordAC) {
-        if (board.stage() == Cryptogram::Stage::PickCell) board.dropLetter();
-        else openGameBrief();
-        dirty_ = true;
-        return;
-    }
-    if (ev.button == Button::A) {
-        board.cycle();
-        aHeld_ = true;              // ...and holding it repeats (tick, kCryptogramRepeatMs)
-        aDownMs_ = nowMs_;
-    } else if (ev.button == Button::C) {
-        board.cycleBack();
-        cHeld_ = true;
-        cDownMs_ = nowMs_;
-    } else if (ev.button == Button::B) {
-        const int opened = board.score();
-        board.accept();
-        if (board.solved()) playSound(Sound::Clear);
-        else if (!board.running()) playSound(Sound::Crash);
-        else if (board.score() > opened) playSound(Sound::Point);
-    }
-    if (!board.running()) settleCryptogram();
-    dirty_ = true;
-}
-
 void Game::settleCryptogram() {
     // An arcade run is played off a solved quote for Bits; it has no standing to move
     // and no first-solve prize to pay. Its till is finishArcadeRun, on the way out.
@@ -279,22 +230,6 @@ const char* Game::cryptogramPrizeLabel() const {
             break;
     }
     return nullptr;
-}
-
-void Game::drawCryptogram(Framebuffer& fb) const {
-    if (gameBriefOpen_) { drawGameBrief(fb); return; }
-    if (!cryptogramRun_) return;
-    const CryptogramRun& run = *cryptogramRun_;
-    const QuoteDef* q = (run.quote >= 0 && run.quote < quoteCount()) ? &quotes()[run.quote]
-                                                                     : nullptr;
-    CryptogramView v;
-    v.attribution = q ? q->attribution : "";
-    v.tier = quoteTier(run.quote);
-    v.prizeBits = run.prizeBits;
-    v.prizeLabel = cryptogramPrizeLabel();
-    v.arcade = inArcadeRun();
-    v.beat = beat_;
-    drawCryptogramBoard(fb, run.board, v);
 }
 
 }  // namespace mal

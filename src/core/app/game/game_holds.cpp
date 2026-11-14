@@ -71,4 +71,16 @@ void Game::releaseHoldB() {
     lastInputMs_ = nowMs_;
 }
 
+// A board whose A and C step a cursor repeats the step while either is held (the
+// tick reads these, kCryptogramRepeatMs).
+void Game::armHoldRepeat(Button b) {
+    if (b == Button::A) {
+        aHeld_ = true;
+        aDownMs_ = nowMs_;
+    } else if (b == Button::C) {
+        cHeld_ = true;
+        cDownMs_ = nowMs_;
+    }
+}
+
 }  // namespace mal

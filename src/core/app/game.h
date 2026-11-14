@@ -26,6 +26,7 @@
 #include "core/app/game/chroma_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/decryption_screen.h"
+#include "core/app/game/cryptogram_screen.h"
 #include "core/app/game/csf_screen.h"
 #include "core/app/game/egg_pick_screen.h"
 #include "core/app/game/encounter_screen.h"
@@ -158,7 +159,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
              private FraggerHost, private IsolationHost, private ChromaHost,
-             private DecryptionHost {
+             private DecryptionHost, private CryptogramHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1529,7 +1530,7 @@ public:
     int cryptogramQuote() const { return cryptogramRun_ ? cryptogramRun_->quote : -1; }
     // This device's standing with the quote on roster row `i`. Out-of-range, and any
     // row whose wire is past kQuoteWireCap, read Hard, never played.
-    CryptogramTier quoteTier(int i) const;
+    CryptogramTier quoteTier(int i) const override;
     // Quotes SOLVED, which is what gates the arcade cabinet and what decides whether
     // the VAULT still has a first-solve prize to offer.
     int quotesSolved() const;
@@ -2613,7 +2614,7 @@ private:
     ProseRow hatchBriefLeadRow() const;
     bool gameBriefAvailable() const;         // is nav_ one of the five?
     ArcadeGameKind gameBriefKind() const;    // which one, as the content row's key
-    void openGameBrief();
+    void openGameBrief() override;
     void closeGameBrief();
     void toggleGameBrief();   // the chord's job when it isn't Cryptogram's drop-letter
     // Handles B (scroll) / C or the chord (close) while the overlay is open and
@@ -3155,13 +3156,16 @@ private:
     // VAULT reads both off the quote's own tier, and the arcade's dial supplies the
     // second. Nothing here rolls the quote: pickQuote does that, once, at the cash-in.
     void startCryptogram(int quote, int extraReveals);
-    void onCryptogram(const ButtonEvent& ev);
     // Runs the instant the board stops, not when the player leaves it: the tier ratchet
     // and the prize both have to have LANDED before the verdict screen can name them.
     // A no-op on an arcade run, which never touches a quote's standing.
-    void settleCryptogram();
-    void finishCryptogram();   // leave the board: to the arcade's till, or to the VAULT
-    void drawCryptogram(Framebuffer& fb) const;
+    void settleCryptogram() override;
+    void finishCryptogram() override;   // leave the board: to the arcade's till, or to the VAULT
+    CryptogramRun* liveCryptogram() override { return cryptogramRun_ ? &*cryptogramRun_ : nullptr; }
+    const CryptogramRun* cryptogramRun() const override {
+        return cryptogramRun_ ? &*cryptogramRun_ : nullptr;
+    }
+    void armHoldRepeat(Button b) override;
     // A roster row to play, drawn off the shared LCG from whatever is eligible, or -1
     // when nothing is. Advances rng_.
     int pickQuote(QuotePick pick);
@@ -3174,7 +3178,7 @@ private:
     void applyQuoteReward();   // the win: Bits + the one account unlock
     // The unlock's display name for the board's prize line, or nullptr: resolved off
     // whichever content table the reward kind names.
-    const char* cryptogramPrizeLabel() const;
+    const char* cryptogramPrizeLabel() const override;
     void completeHatch() override;    // decrypt done -> hatch straight to Process, return to idle
     const SpriteData* hatchEggSprite() const override;
     void startHatchGame(const EggLineDef* line);  // route a freshly laid egg to its HatchGame
@@ -3791,6 +3795,7 @@ private:
     // OperatorTallies::quoteStates: two bits per QuoteDef::wire holding the tier ladder,
     // which is at once the loss ratchet and the "already won" record.
     std::optional<CryptogramRun> cryptogramRun_;
+    CryptogramScreen cryptogramScreen_;   // game/cryptogram_screen.h
 
     // GAMES / the arcade (game_arcade.cpp). arcade_ is the cabinet run in play
     // (core/model/arcade_run.h), empty between runs: a minigame reads it to know it is

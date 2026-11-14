@@ -100,7 +100,7 @@ class Cryptogram {
     };
 
     // Which half of the two-stage pick the buttons are driving. A press means different
-    // things in each, and the hint band says which: see Game::onCryptogram.
+    // things in each, and the hint band says which: see CryptogramScreen::onButton.
     enum class Stage : uint8_t {
         PickLetter,   // A/C walk the pool, B takes the focused letter
         PickCell,     // A/C walk the closed cells, B places, A+C hands the letter back
@@ -166,7 +166,7 @@ class Cryptogram {
     // quote opens with thirty-odd closed cells, so a forward-only cursor makes
     // overshooting by one cost a full lap of the quote. A and C are the two directions,
     // which leaves no button for "put the letter back", so that is the A+C chord
-    // (Game::onCryptogram). Held, either direction repeats; see kCryptogramRepeatMs.
+    // (CryptogramScreen::onButton). Held, either direction repeats; see kCryptogramRepeatMs.
     void cycle();       // A: next pool letter, or next closed cell
     void cycleBack();   // C: the same, backwards
     void accept();      // B: take the letter, or place it (which decides the run)

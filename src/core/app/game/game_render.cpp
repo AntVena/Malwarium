@@ -78,7 +78,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::PostEncounter: postEncounter_.draw(fb, *this); break;
         case Nav::ModalLineSelect: lineSelect_.draw(fb, *this); break;
         case Nav::Decryption: decryptionScreen_.draw(fb, *this); break;
-        case Nav::Cryptogram: drawCryptogram(fb); break;
+        case Nav::Cryptogram: cryptogramScreen_.draw(fb, *this); break;
         case Nav::ModalEggPick: eggPickScreen_.draw(fb, *this); break;
         case Nav::Isolation: isolationScreen_.draw(fb, *this); break;
         case Nav::Chroma: chromaScreen_.draw(fb, *this); break;

@@ -73,10 +73,10 @@ void Game::onButton(const ButtonEvent& ev) {
         // control overlay uses.
         else if (nav_ == Nav::Tourney) arena_.onButton(*this, ev);
         // THE DECRYPTOGRAM: A and C are the cursor's two directions, so the chord is
-        // already spent on handing a taken letter back to the pool. onCryptogram sorts
+        // already spent on handing a taken letter back to the pool. Its screen sorts
         // the two meanings out itself (a letter held drops it; nothing held opens the
         // RULES page instead), since only it knows which stage the board is in.
-        else if (nav_ == Nav::Cryptogram) onCryptogram(ev);
+        else if (nav_ == Nav::Cryptogram) cryptogramScreen_.onButton(*this, ev);
         // Nothing else in these engines uses the chord, so it toggles the RULES page.
         // The egg-hatch entrants (Decrypt/Clutch/Isolation/Chroma land on their Nav
         // straight out of layEgg with no menu stop) have no other route to this at all,
@@ -230,7 +230,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
         case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
         case Nav::Decryption: decryptionScreen_.onButton(*this, ev); break;
-        case Nav::Cryptogram: onCryptogram(ev); break;
+        case Nav::Cryptogram: cryptogramScreen_.onButton(*this, ev); break;
         case Nav::ModalHatchReveal: hatchReveal_.onButton(*this, ev); break;
         case Nav::ModalEggPick: eggPickScreen_.onButton(*this, ev); break;
         // B continues once the reveal is up and acknowledges once the crash has held.
