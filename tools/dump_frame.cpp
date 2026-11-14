@@ -425,9 +425,9 @@ int main(int argc, char** argv) {
     // "bonded" earns Bond from fights, so the BOND page has a bar part filled.
     if (hasFlag(argc, argv, "bonded")) game.addFightXp(4321);
 
-    // "armbuffs" arms all three item buffs (Restore Point/Ambig-USB/Backup
-    // Drive) regardless of which screen flag follows, so it shows on the
-    // idle habitat's top-left buff badge as well as the STAT BUFFS page.
+    // "armbuffs" arms every buff (the item ones and FRESH PATCH) regardless of which
+    // screen flag follows, so it shows on the idle habitat's top-left buff badge as
+    // well as the STAT BUFFS page.
     // Stocks 2 of each (not 1): useItem() flips nav_ to Nav::Submenu when an
     // item's count hits 0 ("item left the list"), which would confuse the
     // enterSlot() navigation below. Leaving 1 in stock sidesteps that.
@@ -444,6 +444,8 @@ int main(int argc, char** argv) {
         useItem(game, "deep_learning_core");
         game.inventory().add("zeroday_bell", 2);
         useItem(game, "zeroday_bell");
+        // FRESH PATCH is granted by a boot on newer firmware, which a frame cannot stage.
+        game.livePet().armed.patchBuffUntilMs = game.lifetimeUptimeMs() + kPatchBuffMs;
     }
     // "fullkit" equips every unlocked move slot and every mod slot: pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
