@@ -64,9 +64,9 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ExploreControl: exploreControl_.draw(fb, *this); break;
         case Nav::Encounter: encounter_.draw(fb, *this); break;
         case Nav::Wifi: wifiScreen_.draw(fb, *this); break;
-        case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;
-        case Nav::Shiboleet: drawShiboleetScreen(fb); break;
-        case Nav::ShiboleetVerdict: drawShiboleetVerdictScreen(fb); break;
+        case Nav::ShiboleetHail: shiboleet_.drawHail(fb, *this); break;
+        case Nav::Shiboleet: shiboleet_.drawRiddle(fb, *this); break;
+        case Nav::ShiboleetVerdict: shiboleet_.drawVerdict(fb, *this); break;
         case Nav::Shop:
         case Nav::ModShop: shop_.draw(fb, *this); break;
         case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
@@ -810,71 +810,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawShiboleetScreen(Framebuffer& fb) const {
-    char riddle[kRiddleBodyLines * kRiddleBodyCols + 16];
-    shiboleetRiddleText(riddle, sizeof(riddle));
-    char reply[kRiddleReplies][40];
-    const char* rows[kRiddleReplies];
-    for (int i = 0; i < kRiddleReplies; ++i) {
-        shiboleetReplyText(i, reply[i], sizeof(reply[i]));
-        rows[i] = reply[i];
-    }
-    char greeting[kRiddleBodyCols * 2 + 8];
-    shiboleetGreeting(greeting, sizeof(greeting));
-    RiddleView r;
-    r.greeting = greeting;
-    r.riddle = riddle;
-    r.replies = rows;
-    r.cursor = shibRow_;
-    r.holdFrac = static_cast<float>(walk_.eventBeat) / kShiboleetReplyHoldBeats;
-    GuardianView g;
-    g.name = guardianName();
-    g.demeanour = guardianDemeanour();
-    g.sigils = op_.cant.sigils;
-    drawShiboleet(fb, g, r);
-}
-
-void Game::drawShiboleetHailScreen(Framebuffer& fb) const {
-    char greeting[kRiddleBodyCols * 2 + 8];
-    shiboleetGreeting(greeting, sizeof(greeting));
-    const SwarmView swarm = swarmViewOf(guardianFlock_);
-    GuardianView g;
-    g.name = guardianName();
-    g.demeanour = guardianDemeanour();
-    g.sigils = op_.cant.sigils;
-    g.swarm = &swarm;
-    drawShiboleetHail(fb, g, greeting, shakesUnspent());
-}
-
-void Game::drawShiboleetVerdictScreen(Framebuffer& fb) const {
-    // The content layer's outcome mapped onto the screen's own four. The two enums
-    // stay separate: an area row is authored against GuardianOutcome, and the renderer
-    // needs only the banner word and whether it is bad news.
-    ShiboleetVerdictKind kind = ShiboleetVerdictKind::Pleased;
-    switch (shiboleetOutcome()) {
-        case GuardianOutcome::Pleased:    kind = ShiboleetVerdictKind::Pleased; break;
-        case GuardianOutcome::Displeased: kind = ShiboleetVerdictKind::Displeased; break;
-        case GuardianOutcome::Affront:    kind = ShiboleetVerdictKind::Refused; break;
-        case GuardianOutcome::Boon:       kind = ShiboleetVerdictKind::Boon; break;
-    }
-    char speech[kRiddleBodyCols * 2 + 8];
-    shiboleetOutcomeSpeech(speech, sizeof(speech));
-    VerdictView v;
-    v.kind = kind;
-    v.speech = speech;
-    v.ledger = shiboleetVerdictLine();
-    v.flavor = shiboleetFlavor();
-    v.next = shiboleetVerdictFights() ? VerdictNext::Fight : VerdictNext::Continue;
-    // The verdict shows what the guardian made of the answer, not its standing demeanour.
-    const SwarmView swarm = swarmViewOf(guardianFlock_);
-    GuardianView g;
-    g.name = guardianName();
-    g.demeanour = shiboleetOutcomeSeen();
-    g.sigils = op_.cant.sigils;
-    g.swarm = &swarm;
-    drawShiboleetVerdict(fb, g, v);
-}
 
 void Game::drawWarpPickerScreen(Framebuffer& fb) const {
     // Snapshot the held keys' display names into a small array the UI helper reads

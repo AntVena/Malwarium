@@ -200,9 +200,9 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::StoryArchive: chapters_.onButton(*this, ev); break;
         case Nav::Encounter: encounter_.onButton(*this, ev); break;
         case Nav::Wifi: wifiScreen_.onButton(*this, ev); break;
-        case Nav::ShiboleetHail: onShiboleetHail(ev); break;
-        case Nav::Shiboleet: onShiboleet(ev); break;
-        case Nav::ShiboleetVerdict: onShiboleetVerdict(ev); break;
+        case Nav::ShiboleetHail: shiboleet_.onHail(*this, ev); break;
+        case Nav::Shiboleet: shiboleet_.onRiddle(*this, ev); break;
+        case Nav::ShiboleetVerdict: shiboleet_.onVerdict(*this, ev); break;
         case Nav::Shop:
         case Nav::ModShop: shop_.onButton(*this, ev); break;
         case Nav::WarpPicker: onWarpPicker(ev); break;

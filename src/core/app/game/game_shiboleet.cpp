@@ -50,8 +50,8 @@
 //
 // Three files, the usual split: the rules of the tongue are core/model/cant.h (no Game,
 // no framebuffer), the pool is core/content/content_riddles.h (no rules), and this file
-// is the lifecycle, the fluency roll and the payout. The screen is
-// core/ui/shiboleet_screen.cpp.
+// is the lifecycle, the fluency roll and the payout. The pages are ShiboleetScreen
+// (game/shiboleet_screen.h), drawn by core/ui/shiboleet_screen.cpp.
 
 namespace mal {
 
@@ -113,7 +113,7 @@ void Game::startShiboleet() {
                  : (welcome >= 100 - boon)      ? ShiboleetWelcome::Boon
                                                 : ShiboleetWelcome::Riddle;
     shibReply_ = ShiboleetReply::Pending;
-    shibRow_ = 0;
+    shiboleet_.open();
     shibFlavor_[0] = '\0';
     shibVerdictLine_[0] = '\0';
 
@@ -198,15 +198,6 @@ FlockMood Game::guardianFlockMood() const {
     return FlockMood::Watching;
 }
 
-void Game::onShiboleetHail(const ButtonEvent& ev) {
-    // A REVEAL, like the Wi-Fi event's: B plays it forward, and any press restarts the
-    // hold so a player still reading a guardian's greeting is not hurried past it. There
-    // is nothing to cancel: the meeting has already happened.
-    walk_.eventBeat = 0;
-    dirty_ = true;
-    if (ev.button == Button::B) openShiboleetWelcome();
-}
-
 void Game::openShiboleetWelcome() {
     // What the hail was the front of. Two of the three bands were decided by the fluency
     // roll before the pet ever saw the screen, so they resolve straight into their
@@ -227,28 +218,13 @@ void Game::openShiboleetWelcome() {
             enterShiboleetVerdict();
             return;
         case ShiboleetWelcome::Riddle:
-            shibRow_ = 0;
+            shiboleet_.open();
             walk_.eventBeat = 0;   // start the ~15s answer clock (game_core.cpp's tick)
             fxBeat_ = 0;
             nav_ = Nav::Shiboleet;
             dirty_ = true;
             return;
     }
-}
-
-void Game::onShiboleet(const ButtonEvent& ev) {
-    // A cursor list, the same contract every other picker keeps: A steps the row, B
-    // commits it, C backs out. C does not leave the encounter. Backing away from a
-    // question counts as a wrong answer, so C resolves the riddle as unanswered.
-    if (shibReply_ != ShiboleetReply::Pending) return;
-    if (ev.button == Button::A) {
-        shibRow_ = (shibRow_ + 1) % kRiddleReplies;
-        walk_.eventBeat = 0;   // a player who is reading is not being rushed
-        dirty_ = true;
-        return;
-    }
-    if (ev.button == Button::B) { answerShiboleet(/*answered=*/true); return; }
-    if (ev.button == Button::C) { answerShiboleet(/*answered=*/false); return; }
 }
 
 int Game::shiboleetTrueRow() const {
@@ -258,11 +234,14 @@ int Game::shiboleetTrueRow() const {
     return 0;
 }
 
-void Game::answerShiboleet(bool answered) {
-    if (shibReply_ != ShiboleetReply::Pending) return;
-    const bool right = answered && shibRow_ == shiboleetTrueRow();
-    if (!right) {
-        shibReply_ = answered ? ShiboleetReply::Wrong : ShiboleetReply::Unanswered;
+void Game::answerShiboleet(int row) {
+    settleShiboleet(row == shiboleetTrueRow() ? ShiboleetReply::Answered : ShiboleetReply::Wrong);
+}
+
+void Game::settleShiboleet(ShiboleetReply reply) {
+    if (shibReply_ != ShiboleetReply::Pending || reply == ShiboleetReply::Pending) return;
+    if (reply != ShiboleetReply::Answered) {
+        shibReply_ = reply;
         // The cost of getting it wrong, which is the same cost as not trying: a guardian
         // does not distinguish between an insult and a silence. The fight that follows
         // carries the rest of it, and the verdict screen is where the two are joined up.
@@ -272,7 +251,7 @@ void Game::answerShiboleet(bool answered) {
         // way (GuardianOutcome::Displeased): this line says what the pet did, which the
         // player can act on next time.
         std::snprintf(shibFlavor_, sizeof(shibFlavor_), "%s",
-                      answered ? "YOU ANSWERED WRONG" : "YOU SAID NOTHING");
+                      reply == ShiboleetReply::Wrong ? "YOU ANSWERED WRONG" : "YOU SAID NOTHING");
         std::snprintf(shibVerdictLine_, sizeof(shibVerdictLine_), "-%d HAPPY  +%d FRAG",
                       kShiboleetLoseHappy, kShiboleetLoseFrag);
         markSaveDirty();
@@ -344,14 +323,6 @@ void Game::enterShiboleetVerdict() {
     fxBeat_ = 0;
     nav_ = Nav::ShiboleetVerdict;
     dirty_ = true;
-}
-
-void Game::onShiboleetVerdict(const ButtonEvent& ev) {
-    // A REVEAL again: B plays out what the guardian decided, any press restarts the hold.
-    // Nothing here asks for input; the reply already decided it.
-    walk_.eventBeat = 0;
-    dirty_ = true;
-    if (ev.button == Button::B) finishShiboleet();
 }
 
 void Game::finishShiboleet() {

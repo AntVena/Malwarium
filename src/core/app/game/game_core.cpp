@@ -320,10 +320,10 @@ void Game::stepScreenBeat() {
     case Nav::Shiboleet:
         // Hands-off decision: a guardian asked a question, and silence past
         // kShiboleetReplyHoldBeats counts as an answer. The wrong one. Pressing A
-        // restarts the hold (onShiboleet), so a player who is genuinely reading is never
-        // timed out mid-sentence.
+        // restarts the hold (ShiboleetScreen::onRiddle), so a player who is genuinely
+        // reading is never timed out mid-sentence.
         if (walk_.active && ++walk_.eventBeat >= kShiboleetReplyHoldBeats)
-            answerShiboleet(/*answered=*/false);
+            leaveShiboleetUnanswered();
         break;
     case Nav::Shop:
     case Nav::ModShop:
