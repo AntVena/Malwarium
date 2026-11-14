@@ -586,11 +586,11 @@ void test_line_select_phishing_egg() {
     g.resetToHatch();                           // re-hatch: now two lines -> the modal
     CHECK(g.inLineSelect());
     CHECK(g.pet() == nullptr);                  // empty save while choosing
-    CHECK(g.lineSelectRow() == 0);              // Ransomware first
+    CHECK(g.lineSelectScreen().row() == 0);              // Ransomware first
     tapC(g);               // C disabled -> still choosing
     CHECK(g.inLineSelect());
     g.onButton(press(Button::A));               // cycle to Phishing (row 1)
-    CHECK(g.lineSelectRow() == 1);
+    CHECK(g.lineSelectScreen().row() == 1);
     g.onButton(press(Button::B));               // select -> lay the Phrogspawn egg
     CHECK(g.pet() && std::strcmp(g.pet()->id, "phrogspawn") == 0);
     CHECK(g.inEggPhase() && std::strcmp(g.pet()->line, "phishing") == 0);

@@ -374,11 +374,11 @@ void backToPetFace(Game& g) {
 void openServices(Game& g) {
     backToPetFace(g);
     enterHackerSlot(g, HackerSlotId::Shop);
-    for (int i = 0; i <= kRigUpgradeCount && g.shopSlot() != kRigSlotServices; ++i)
+    for (int i = 0; i <= kRigUpgradeCount && g.rigShopScreen().slot() != kRigSlotServices; ++i)
         g.onButton(press(Button::A));
-    CHECK(g.shopSlot() == kRigSlotServices);
+    CHECK(g.rigShopScreen().slot() == kRigSlotServices);
     tapB(g);
-    CHECK(g.shopView() == Game::ShopView::Services);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::Services);
 }
 }  // namespace
 
@@ -394,9 +394,9 @@ void test_rig_services_switchboard() {
         // of the whole storefront never lands on one.
         CHECK(!g.operatorRecord().rig.servicesOffered());
         enterHackerSlot(g, HackerSlotId::Shop);
-        CHECK(g.nav() == Game::Nav::Submenu && g.shopView() == Game::ShopView::Rows);
+        CHECK(g.nav() == Game::Nav::Submenu && g.rigShopScreen().view() == Game::ShopView::Rows);
         for (int i = 0; i <= kRigUpgradeCount; ++i) {
-            CHECK(g.shopSlot() != kRigSlotServices);
+            CHECK(g.rigShopScreen().slot() != kRigSlotServices);
             g.onButton(press(Button::A));
         }
 
@@ -445,7 +445,7 @@ void test_rig_services_switchboard() {
         tapB(g);
         CHECK(!g.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));
         tapC(g);                                    // C backs to the storefront, not out
-        CHECK(g.shopView() == Game::ShopView::Rows && g.nav() == Game::Nav::Submenu);
+        CHECK(g.rigShopScreen().view() == Game::ShopView::Rows && g.nav() == Game::Nav::Submenu);
 
         g.debugSetBits(9999);
         g.model().setFragmentation(100);
@@ -475,9 +475,9 @@ void test_rig_service_info_on_hold_b() {
 
     // Held past the threshold: the info page opens and the service is untouched.
     g.onButton(press(Button::B));                       // arm: nothing flips yet
-    CHECK(g.shopView() == Game::ShopView::Services);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::Services);
     g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
-    CHECK(g.shopView() == Game::ShopView::ServiceInfo);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::ServiceInfo);
     CHECK(g.operatorRecord().rig.featureActive(kRigRowAutoBackup));       // ...still running
     g.onButton(lift(Button::B));                        // release after the fire: no-op
     CHECK(g.operatorRecord().rig.featureActive(kRigRowAutoBackup));
@@ -492,11 +492,11 @@ void test_rig_service_info_on_hold_b() {
 
     // C returns to the board, where a short tap of B still flips the switch.
     tapC(g);
-    CHECK(g.shopView() == Game::ShopView::Services);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::Services);
     g.onButton(press(Button::B));
     g.tick(t += kServiceInfoHoldMs / 2);                // well under the threshold
     g.onButton(lift(Button::B));
-    CHECK(g.shopView() == Game::ShopView::Services);    // no page opened...
+    CHECK(g.rigShopScreen().view() == Game::ShopView::Services);    // no page opened...
     CHECK(!g.operatorRecord().rig.featureActive(kRigRowAutoBackup));      // ...the tap switched it off
 
     // The page reads out the service under the cursor, whichever that is: step to
@@ -506,12 +506,12 @@ void test_rig_service_info_on_hold_b() {
     CHECK(g.rigServiceRow() == 1);
     g.onButton(press(Button::B));
     g.tick(t += kServiceInfoHoldMs + kHeartbeatMs);
-    CHECK(g.shopView() == Game::ShopView::ServiceInfo);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::ServiceInfo);
     g.onButton(lift(Button::B));
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     tapB(g);                                            // B leaves the reader too
-    CHECK(g.shopView() == Game::ShopView::Services);
+    CHECK(g.rigShopScreen().view() == Game::ShopView::Services);
     CHECK(g.operatorRecord().rig.featureActive(kRigRowDiskMaintenance));  // and left the switch alone
 }
 
@@ -886,7 +886,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         g.debugBuyItemTabs();
         CHECK(g.itemTabsUnlocked());
         enterSubmenuId(g, SubmenuId::Items);
-        CHECK(g.itemFilter() == ItemFilter::All);
+        CHECK(g.itemsMenu().filter() == ItemFilter::All);
         uint32_t t = 0;
         g.tick(t);
         g.onButton(press(Button::A));                 // A steps to row 1 on press
@@ -895,7 +895,7 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         g.onButton(press(Button::B));                 // arm the hold: nothing opens yet
         g.tick(t += kItemFilterHoldMs / 2);           // well under the threshold
         g.onButton(lift(Button::B));                  // release -> short tap -> opens
-        CHECK(g.itemFilter() == ItemFilter::All);     // a tap never touches the filter
+        CHECK(g.itemsMenu().filter() == ItemFilter::All);     // a tap never touches the filter
         g.onButton(press(Button::B));                 // Use
         CHECK(g.inventory().count("tortilla_chip") == tc0 - 1);  // row 1, same as unowned
     }
@@ -909,10 +909,10 @@ void test_item_hold_b_cycles_filter_tap_opens() {
         g.tick(t);
         g.onButton(press(Button::B));                  // arm the hold
         g.tick(t += kItemFilterHoldMs + kHeartbeatMs);  // cross the threshold -> cycles
-        CHECK(g.itemFilter() == ItemFilter::Food);      // ALL -> FOOD
+        CHECK(g.itemsMenu().filter() == ItemFilter::Food);      // ALL -> FOOD
         CHECK(g.nav() == Game::Nav::Submenu);           // and never opened a detail
         g.onButton(lift(Button::B));                    // release AFTER the fire -> no-op
-        CHECK(g.itemFilter() == ItemFilter::Food);      // unchanged by the release
+        CHECK(g.itemsMenu().filter() == ItemFilter::Food);      // unchanged by the release
         CHECK(g.nav() == Game::Nav::Submenu);
         // The list is now narrowed to FOOD: B opens the first (only) food row.
         const int as0 = g.inventory().count("dyno_nuggets");
@@ -986,7 +986,7 @@ void test_item_picker_nav_drills_in_and_back() {
     {   // (a) Unowned: no picker layer anywhere.
         Game g{StartMode::Hatched};
         enterSubmenuId(g, SubmenuId::Items);
-        CHECK(g.itemsView() == ItemsView::List);
+        CHECK(g.itemsMenu().view() == ItemsView::List);
         tapC(g);                       // straight back out
         CHECK(g.nav() == Game::Nav::Cursor);
     }
@@ -995,41 +995,41 @@ void test_item_picker_nav_drills_in_and_back() {
     g.debugSetBits(kShopItemPickerCost);
     g.debugBuyItemPicker();
     enterSubmenuId(g, SubmenuId::Items);
-    CHECK(g.itemsView() == ItemsView::Picker && g.itemPickRow() == 0);
+    CHECK(g.itemsMenu().view() == ItemsView::Picker && g.itemsMenu().pickRow() == 0);
 
     g.onButton(press(Button::A));                           // ALL -> FOOD
     g.onButton(press(Button::A));                           // FOOD -> INGREDIENTS
     g.onButton(press(Button::A));                           // INGREDIENTS -> BUFFS
     g.onButton(press(Button::A));                           // BUFFS -> KEYS
-    CHECK(g.itemPickRow() == 4);
+    CHECK(g.itemsMenu().pickRow() == 4);
     g.onButton(press(Button::B));                           // drill into KEYS
-    CHECK(g.itemsView() == ItemsView::List);
-    CHECK(g.itemFilter() == ItemFilter::Keys);
+    CHECK(g.itemsMenu().view() == ItemsView::List);
+    CHECK(g.itemsMenu().filter() == ItemFilter::Keys);
     CHECK(g.nav() == Game::Nav::Submenu);                   // still L2, new screen
 
     tapC(g);                           // back to the tiles
-    CHECK(g.itemsView() == ItemsView::Picker && g.nav() == Game::Nav::Submenu);
-    CHECK(g.itemPickRow() == 4);                            // the tile is where we left it
+    CHECK(g.itemsMenu().view() == ItemsView::Picker && g.nav() == Game::Nav::Submenu);
+    CHECK(g.itemsMenu().pickRow() == 4);                            // the tile is where we left it
     tapC(g);                           // out of ITEMS
     CHECK(g.nav() == Game::Nav::Cursor);
 
     // Re-entering resets both the tile cursor and the filter: a visit never
     // inherits the last one's state.
     enterSubmenuId(g, SubmenuId::Items);
-    CHECK(g.itemPickRow() == 0 && g.itemFilter() == ItemFilter::All);
+    CHECK(g.itemsMenu().pickRow() == 0 && g.itemsMenu().filter() == ItemFilter::All);
 
     // An EMPTY category still opens; the list is simply empty and C walks back.
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::A)); g.onButton(press(Button::A));
     g.onButton(press(Button::A));                                // -> TOOLS (x0)
     g.onButton(press(Button::B));
-    CHECK(g.itemsView() == ItemsView::List && g.itemFilter() == ItemFilter::Tools);
+    CHECK(g.itemsMenu().view() == ItemsView::List && g.itemsMenu().filter() == ItemFilter::Tools);
     CHECK(buildInventoryRows(ContentRegistry::embedded(), g.inventory(), ItemOrder::ByGroup,
-                             g.itemFilter()).empty());
+                             g.itemsMenu().filter()).empty());
     g.onButton(press(Button::B));                           // B on an empty list is inert
     CHECK(g.nav() == Game::Nav::Submenu);
     tapC(g);
-    CHECK(g.itemsView() == ItemsView::Picker);
+    CHECK(g.itemsMenu().view() == ItemsView::Picker);
 }
 
 // The Lockout Open-Items escape hatch never routes through the picker, even when
@@ -1044,7 +1044,7 @@ void test_item_picker_skipped_in_lockout() {
     CHECK(g.nav() == Game::Nav::ModalLockout);
     g.onButton(press(Button::B));                    // "Open Items" (lockout ctx)
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.itemsView() == ItemsView::List);   // straight onto the list
+    CHECK(g.itemsMenu().view() == ItemsView::List);   // straight onto the list
     tapC(g);                    // C goes back to the crisis
     CHECK(g.nav() == Game::Nav::ModalLockout);
 }
@@ -1069,11 +1069,11 @@ void test_item_hold_b_follows_picker_axis() {
         uint32_t t = 0;
         g.tick(t);
         holdB(g, t); holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::Buffs);
+        CHECK(g.itemsMenu().filter() == ItemFilter::Buffs);
         holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::Tools);
+        CHECK(g.itemsMenu().filter() == ItemFilter::Tools);
         holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::Quest);
+        CHECK(g.itemsMenu().filter() == ItemFilter::Quest);
     }
     {   // (b) Both owned: ALL -> FOOD -> INGREDIENTS -> BUFFS -> KEYS -> TOOLS -> ALL.
         Game g{StartMode::Hatched};
@@ -1086,14 +1086,14 @@ void test_item_hold_b_follows_picker_axis() {
         // On the PICKER, B commits the focused tile: the hold gesture is never armed
         // there, so holding it drills in exactly as a tap would.
         holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::All);
-        CHECK(g.itemsView() == ItemsView::List);
+        CHECK(g.itemsMenu().filter() == ItemFilter::All);
+        CHECK(g.itemsMenu().view() == ItemsView::List);
         holdB(g, t); holdB(g, t); holdB(g, t); holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::Keys);
+        CHECK(g.itemsMenu().filter() == ItemFilter::Keys);
         holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::Tools);
+        CHECK(g.itemsMenu().filter() == ItemFilter::Tools);
         holdB(g, t);
-        CHECK(g.itemFilter() == ItemFilter::All);    // wraps, never lands on QUEST
+        CHECK(g.itemsMenu().filter() == ItemFilter::All);    // wraps, never lands on QUEST
     }
 }
 

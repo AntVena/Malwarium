@@ -329,7 +329,7 @@ void test_stacker_win_credits_the_tally_and_the_shape_rows() {
 // What `blocks` are worth off an AV scan at the dial's current setting: per block, up to
 // what a full scan takes.
 int scanWorth(const Game& g, int blocks, int frag) {
-    int worth = blocks * kPlayFragPerUnit * arcadeRewardMult(g.maintDifficulty());
+    int worth = blocks * kPlayFragPerUnit * arcadeRewardMult(g.maintScreen().difficulty());
     if (worth > kAvReduction) worth = kAvReduction;
     return worth > frag ? frag : worth;
 }
@@ -434,11 +434,11 @@ void test_maint_played_variant_walks_the_dial() {
     enterSubmenuId(d, SubmenuId::Maint);
     d.onButton(press(Button::B));                       // open DEFRAG
     for (int i = 0; i < kDefragVariants - 1; ++i) d.onButton(press(Button::A));
-    CHECK(d.maintDifficulty() == ArcadeDifficulty::Easy);
+    CHECK(d.maintScreen().difficulty() == ArcadeDifficulty::Easy);
     d.onButton(press(Button::A));
-    CHECK(d.maintDifficulty() == ArcadeDifficulty::Medium);
+    CHECK(d.maintScreen().difficulty() == ArcadeDifficulty::Medium);
     d.onButton(press(Button::A));
-    CHECK(d.maintDifficulty() == ArcadeDifficulty::Hard);
+    CHECK(d.maintScreen().difficulty() == ArcadeDifficulty::Hard);
     const int before = d.bits();
     d.onButton(press(Button::B));
     CHECK(d.nav() == (kDefragPlayedGame == ArcadeGameKind::Stacker ? Game::Nav::Stacker
@@ -475,7 +475,7 @@ void test_maint_run_lives_from_the_run_to_the_dismissed_outcome() {
     d.onButton(press(Button::A));                       // the AV row
     d.onButton(press(Button::B));
     for (int i = 0; i < kAvVariants - 1 + 1; ++i) d.onButton(press(Button::A));
-    CHECK(d.maintDifficulty() == ArcadeDifficulty::Medium && d.maintRun() == nullptr);
+    CHECK(d.maintScreen().difficulty() == ArcadeDifficulty::Medium && d.maintRun() == nullptr);
     d.onButton(press(Button::B));                       // run the played variant
     CHECK(d.maintRun() && d.maintRun()->played && d.maintRun()->boardLive());
     CHECK(d.maintRun()->kind == MaintKind::Av);

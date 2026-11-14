@@ -21,27 +21,27 @@ void test_list_hold_a_repeats_the_step() {
     enterSubmenuId(g, SubmenuId::Items);
     uint32_t t = 0;
     g.tick(t);
-    const int start = g.itemsRow();
+    const int start = g.itemsMenu().row();
 
     // A press alone steps exactly one row: the repeat has not begun.
     g.onButton(press(Button::A));
-    const int afterPress = g.itemsRow();
+    const int afterPress = g.itemsMenu().row();
     CHECK(afterPress != start);
     g.tick(t += kListRepeatDelayMs / 2);         // still inside the tap window
-    CHECK(g.itemsRow() == afterPress);            // ...so nothing has repeated yet
+    CHECK(g.itemsMenu().row() == afterPress);            // ...so nothing has repeated yet
 
     // Past the delay the same held press keeps stepping, one row per interval.
     g.tick(t += kListRepeatDelayMs);
-    const int afterFirstRepeat = g.itemsRow();
+    const int afterFirstRepeat = g.itemsMenu().row();
     CHECK(afterFirstRepeat != afterPress);
     g.tick(t += kListRepeatMs);
-    CHECK(g.itemsRow() != afterFirstRepeat);
+    CHECK(g.itemsMenu().row() != afterFirstRepeat);
 
     // Release stops it: further ticks move nothing.
     g.onButton(lift(Button::A));
-    const int parked = g.itemsRow();
+    const int parked = g.itemsMenu().row();
     g.tick(t += 10 * kListRepeatMs);
-    CHECK(g.itemsRow() == parked);
+    CHECK(g.itemsMenu().row() == parked);
 }
 
 // C keeps its tap (Cancel is the one button whose meaning never bends), and puts the
@@ -69,17 +69,17 @@ void test_list_hold_c_steps_back_tap_cancels() {
         g.onButton(lift(Button::A));
         g.onButton(press(Button::A));
         g.onButton(lift(Button::A));
-        const int forward = g.itemsRow();
+        const int forward = g.itemsMenu().row();
 
         g.onButton(press(Button::C));               // arm: nothing happens yet
         CHECK(g.nav() == Game::Nav::Submenu);       // in particular, no cancel
-        CHECK(g.itemsRow() == forward);
+        CHECK(g.itemsMenu().row() == forward);
         g.tick(t += kListRepeatDelayMs + kHeartbeatMs);   // cross into the hold
-        CHECK(g.itemsRow() != forward);              // ...and it stepped BACK
-        const int back = g.itemsRow();
+        CHECK(g.itemsMenu().row() != forward);              // ...and it stepped BACK
+        const int back = g.itemsMenu().row();
         g.onButton(lift(Button::C));                // release after a step: no cancel
         CHECK(g.nav() == Game::Nav::Submenu);
-        CHECK(g.itemsRow() == back);
+        CHECK(g.itemsMenu().row() == back);
     }
     // (c) One press each way is a round trip: the overshoot this exists to undo.
     {
@@ -89,14 +89,14 @@ void test_list_hold_c_steps_back_tap_cancels() {
         enterSubmenuId(g, SubmenuId::Items);
         uint32_t t = 0;
         g.tick(t);
-        const int start = g.itemsRow();
+        const int start = g.itemsMenu().row();
         g.onButton(press(Button::A));
         g.onButton(lift(Button::A));
-        CHECK(g.itemsRow() != start);
+        CHECK(g.itemsMenu().row() != start);
         g.onButton(press(Button::C));
         g.tick(t += kListRepeatDelayMs + kHeartbeatMs);
         g.onButton(lift(Button::C));
-        CHECK(g.itemsRow() == start);                // back where it started
+        CHECK(g.itemsMenu().row() == start);                // back where it started
     }
 }
 
@@ -185,8 +185,8 @@ void test_mod_picker_cursor_matches_drawn_order() {
     g.onButton(press(Button::B));                   // open slot 0's picker
     CHECK(g.nav() == Game::Nav::Detail);
     g.onButton(press(Button::B));                   // drill into the focused row
-    CHECK(g.modDetailId() != nullptr);
-    CHECK(std::strcmp(g.modDetailId(), rows[0]->id) == 0);   // the row the cursor drew
+    CHECK(g.loadoutScreen().modDetailId() != nullptr);
+    CHECK(std::strcmp(g.loadoutScreen().modDetailId(), rows[0]->id) == 0);   // the row the cursor drew
 }
 
 // Row text can never print through the column beside it. Both pickers hand their name

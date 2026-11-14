@@ -263,18 +263,18 @@ void test_crew_screen_pick_home_then_enlist() {
     CHECK(g.nav() == Game::Nav::Submenu);
 
     Framebuffer fb(kActiveW, kActiveH);
-    CHECK(g.crewView() == Game::CrewView::Hub);    // entry is always the top view
+    CHECK(g.crewScreen().view() == Game::CrewView::Hub);    // entry is always the top view
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
     // Hub row 0 is HOME NET: B opens the picker over it, B again takes the focused
     // network and drops back to the Hub.
     g.onButton(press(Button::B));
-    CHECK(g.crewView() == Game::CrewView::Picker);
+    CHECK(g.crewScreen().view() == Game::CrewView::Picker);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
     g.onButton(press(Button::B));
-    CHECK(g.crewView() == Game::CrewView::Hub);
+    CHECK(g.crewScreen().view() == Game::CrewView::Hub);
     CHECK(g.hasHomeNetwork());
     CHECK(std::strcmp(g.homeNetworkName(), "Neighbour") == 0);
 
@@ -283,13 +283,13 @@ void test_crew_screen_pick_home_then_enlist() {
     g.onButton(press(Button::A));
     g.onButton(press(Button::A));
     g.onButton(press(Button::B));
-    CHECK(g.crewView() == Game::CrewView::Team);
+    CHECK(g.crewScreen().view() == Game::CrewView::Team);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
     // The side's first row is its first crew in table order, and B opens its page.
     g.onButton(press(Button::B));
-    CHECK(g.crewView() == Game::CrewView::Detail);
+    CHECK(g.crewScreen().view() == Game::CrewView::Detail);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
@@ -303,9 +303,9 @@ void test_crew_screen_pick_home_then_enlist() {
 
     // C steps back up one view at a time, and only leaves the screen from the Hub.
     tapC(g);
-    CHECK(g.crewView() == Game::CrewView::Team && g.nav() == Game::Nav::Submenu);
+    CHECK(g.crewScreen().view() == Game::CrewView::Team && g.nav() == Game::Nav::Submenu);
     tapC(g);
-    CHECK(g.crewView() == Game::CrewView::Hub && g.nav() == Game::Nav::Submenu);
+    CHECK(g.crewScreen().view() == Game::CrewView::Hub && g.nav() == Game::Nav::Submenu);
     tapC(g);
     CHECK(g.nav() == Game::Nav::Cursor);
 }
@@ -342,11 +342,11 @@ void test_crew_sides_filter_the_roster() {
 
     g.onButton(press(Button::A));                    // Hub row 1 = RED
     g.onButton(press(Button::B));
-    CHECK(g.crewView() == Game::CrewView::Team);
+    CHECK(g.crewScreen().view() == Game::CrewView::Team);
     Framebuffer fb(kActiveW, kActiveH);
     for (int i = 0; i < crewTeamCount(CrewTeam::Red); ++i) {
         g.onButton(press(Button::B));                // open row i's page
-        CHECK(g.crewView() == Game::CrewView::Detail);
+        CHECK(g.crewScreen().view() == Game::CrewView::Detail);
         g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
         g.onButton(press(Button::B));                // enlist from it
@@ -373,14 +373,14 @@ void test_crew_detail_gates_enlist_on_the_home_net() {
     g.onButton(press(Button::A));                    // past HOME NET to a side
     g.onButton(press(Button::B));
     g.onButton(press(Button::B));                    // ...and into a crew's page
-    CHECK(g.crewView() == Game::CrewView::Detail);
+    CHECK(g.crewScreen().view() == Game::CrewView::Detail);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);                                    // renders the gated verb
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
 
     g.onButton(press(Button::B));                    // the verb is inert
     CHECK(g.crewIndex() == -1);
-    CHECK(g.crewView() == Game::CrewView::Detail);   // ...and doesn't bounce you out
+    CHECK(g.crewScreen().view() == Game::CrewView::Detail);   // ...and doesn't bounce you out
 }
 
 // Every crew's page has a description and it resolves its template: the same gate

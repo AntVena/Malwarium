@@ -458,7 +458,7 @@ int main(int argc, char** argv) {
     auto enterExplCat = [&](ExplCat cat) {
         enterSlot(SubmenuId::Expl);
         const int want = explCatRow(cat);
-        for (int i = 0; i < kExplCatRows && game.explRow() != want; ++i)
+        for (int i = 0; i < kExplCatRows && game.explScreen().row() != want; ++i)
             game.onButton({Button::A, true, false});
         game.onButton({Button::B, true, false});
     };
@@ -560,7 +560,7 @@ int main(int argc, char** argv) {
         const int tile = hasFlag(argc, argv, "ingredients") ? 2
                        : hasFlag(argc, argv, "keys") ? 4
                        : hasFlag(argc, argv, "tools") ? 5 : -1;
-        if (tile >= 0 && game.itemsView() == ItemsView::Picker) {
+        if (tile >= 0 && game.itemsMenu().view() == ItemsView::Picker) {
             for (int i = 0; i < tile; ++i) game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});
         }
@@ -920,7 +920,7 @@ int main(int argc, char** argv) {
                            : hasFlag(argc, argv, "fragger")    ? "fragger"
                                                                : nullptr;
         for (int i = 0; want && i < arcadeGameCount(); ++i) {
-            if (std::strcmp(arcadeGames()[game.arcadeRow()].id, want) == 0) break;
+            if (std::strcmp(arcadeGames()[game.arcadeScreen().row()].id, want) == 0) break;
             game.onButton({Button::A, true, false});
         }
         if (hasFlag(argc, argv, "cabinet")) {
@@ -1145,7 +1145,7 @@ int main(int argc, char** argv) {
         } else if (hasFlag(argc, argv, "scout")) {
             // Park on a rival rather than on the operator's own row, so the sheet shows
             // somebody else's kit, which is what the gesture is for.
-            while (game.tourneyCursor() == game.tourneySlot())
+            while (game.arenaScreen().cursor() == game.tourneySlot())
                 game.onButton({Button::A, true, false});
             game.onButton({Button::B, true, false});   // arm the hold...
             game.tick(static_cast<uint32_t>(beats + 1) * kHeartbeatMs + kTourneyScoutHoldMs);
@@ -1243,7 +1243,7 @@ int main(int argc, char** argv) {
             enterHackerSlot(HackerSlotId::Shop);
             if (services) {
                 for (int k = 0; k <= kRigUpgradeCount &&
-                                game.shopSlot() != kRigSlotServices; ++k)
+                                game.rigShopScreen().slot() != kRigSlotServices; ++k)
                     game.onButton({Button::A, true, false});
                 if (hasFlag(argc, argv, "board") || hasFlag(argc, argv, "info")) {
                     game.onButton({Button::B, true, false});
@@ -1562,7 +1562,7 @@ int main(int argc, char** argv) {
                     // `sigils:` or the search will not find one.
                     const auto want = wantRefused ? Game::ShiboleetWelcome::Affront
                                                   : Game::ShiboleetWelcome::Boon;
-                    if (game.shiboleetWelcome() != want) continue;
+                    if (game.shiboleetMeeting().welcome != want) continue;
                     game.onButton({Button::B, true, false});
                     break;
                 }
@@ -1586,7 +1586,7 @@ int main(int argc, char** argv) {
             if (wantVerdict && game.nav() == Game::Nav::Shiboleet) {
                 if (hasFlag(argc, argv, "wrong"))
                     for (int i = 0; i < kRiddleReplies &&
-                            game.shiboleetRow() == game.shiboleetTrueRow(); ++i)
+                            game.shiboleetScreen().row() == game.shiboleetMeeting().trueRow(); ++i)
                         game.onButton({Button::A, true, false});
                 game.onButton({Button::B, true, false});
             }
@@ -1861,7 +1861,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 8; ++i) {
             const auto lines = game.availableEggLines();
             if (!lines.empty() &&
-                std::strcmp(lines[game.lineSelectRow() % lines.size()]->id,
+                std::strcmp(lines[game.lineSelectScreen().row() % lines.size()]->id,
                             "metamorphic") == 0)
                 break;
             game.onButton({Button::A, true, false});

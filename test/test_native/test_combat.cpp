@@ -11,7 +11,7 @@ void test_arch_list_and_record() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Arch);
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.archScreen() == ArchView::Picker);  // ARCH opens on its groups
+    CHECK(g.archScreen().view() == ArchView::Picker);  // ARCH opens on its groups
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));   // picker reads in grayscale
@@ -24,9 +24,9 @@ void test_arch_list_and_record() {
     CHECK(g.nav() == Game::Nav::Detail);                // still on the record
     tapC(g);                       // back to the group's list
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(g.archScreen() == ArchView::List);
+    CHECK(g.archScreen().view() == ArchView::List);
     tapC(g);                       // back to the picker
-    CHECK(g.archScreen() == ArchView::Picker);
+    CHECK(g.archScreen().view() == ArchView::Picker);
     tapC(g);                       // back to the carousel
     CHECK(g.nav() == Game::Nav::Cursor);
 }
@@ -3062,20 +3062,20 @@ void test_combat_panel_pages_cycle() {
     Game g{StartMode::Hatched, "paypup"};
     g.debugStartCombat(/*live=*/false);
     CHECK(g.nav() == Game::Nav::Combat);
-    CHECK(g.combatStatsPage() == 0);
+    CHECK(g.fightScreen().statsPage() == 0);
     for (int expect = 1; expect <= kCombatStatPages; ++expect) {
         g.onButton(press(Button::B));
-        CHECK(g.combatStatsPage() == expect);
+        CHECK(g.fightScreen().statsPage() == expect);
     }
     g.onButton(press(Button::B));
-    CHECK(g.combatStatsPage() == 0);          // wraps closed rather than sticking open
+    CHECK(g.fightScreen().statsPage() == 0);          // wraps closed rather than sticking open
     // The next fight opens closed, whatever the last one was left on.
     g.onButton(press(Button::B));
-    CHECK(g.combatStatsPage() == 1);
+    CHECK(g.fightScreen().statsPage() == 1);
     while (g.combat().outcome() == Combat::Outcome::Ongoing) g.onButton(press(Button::A));
     g.onButton(press(Button::B));
     g.debugStartCombat(/*live=*/false);
-    CHECK(g.combatStatsPage() == 0);
+    CHECK(g.fightScreen().statsPage() == 0);
 }
 
 // POLYMORPH: the distinct rule, and what one absorption pays. Asserted against a

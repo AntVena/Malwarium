@@ -235,7 +235,7 @@ inline bool reachGuardianFight(Game& g) {
         g.debugStartShiboleet();
         if (g.nav() != Game::Nav::ShiboleetHail) return false;
         const bool affront =
-            g.shiboleetWelcome() == Game::ShiboleetWelcome::Affront;
+            g.shiboleetMeeting().welcome == Game::ShiboleetWelcome::Affront;
         g.onButton(press(Button::B));                 // the hail -> the band's screen
         if (affront) {
             g.onButton(press(Button::B));             // the verdict -> its fight
@@ -295,7 +295,7 @@ void test_the_guardians_body_moves_into_the_fighters_seat() {
     uint32_t t = 0;
     for (int i = 0; i < 60 && g.nav() == Game::Nav::Combat; ++i)
         g.tick(t += kCombatAnimMs);
-    const Flock& f = g.guardianFlock();
+    const Flock& f = g.shiboleetMeeting().flock;
     CHECK(f.count() == kGuardianSwarmMarks);
     for (int i = 0; i < f.count(); ++i) {
         CHECK(f.x(i) >= 0 && f.x(i) <= kSwarmSeatW);

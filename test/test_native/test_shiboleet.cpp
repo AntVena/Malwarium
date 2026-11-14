@@ -185,7 +185,7 @@ inline void speakAndDismiss(Game& g) {
 }
 // Step the cursor onto the row carrying the true reply.
 inline void focusTrueReply(Game& g) {
-    for (int i = 0; i < kRiddleReplies && g.shiboleetRow() != g.shiboleetTrueRow(); ++i)
+    for (int i = 0; i < kRiddleReplies && g.shiboleetScreen().row() != g.shiboleetMeeting().trueRow(); ++i)
         g.onButton(press(Button::A));
 }
 }  // namespace
@@ -200,7 +200,7 @@ void test_shiboleet_is_reachable_from_zero_sigils() {
     CHECK(g.sigilsKnown() == 0);
     CHECK(reachRiddle(g));
     CHECK(g.nav() == Game::Nav::Shiboleet);
-    CHECK(g.shiboleetWelcome() == Game::ShiboleetWelcome::Riddle);
+    CHECK(g.shiboleetMeeting().welcome == Game::ShiboleetWelcome::Riddle);
     Framebuffer fb(kActiveW, kActiveH);
     g.render(fb);
     CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
@@ -221,16 +221,16 @@ void test_shiboleet_win_pays_without_a_shake_but_buys_no_sigil() {
     const int frag0 = g.model().fragmentation();
     focusTrueReply(g);
     g.onButton(press(Button::B));
-    CHECK(g.shiboleetReply() == Game::ShiboleetReply::Answered);
+    CHECK(g.shiboleetMeeting().reply == Game::ShiboleetReply::Answered);
     CHECK(g.model().happiness() == happy0 + kShiboleetWinHappy);
     CHECK(g.model().fragmentation() == frag0 - kShiboleetWinFragCut);
     CHECK(g.sigilsKnown() == 0);                 // nothing to trade: no sigil
     // The reply lands on the VERDICT, which is where a player finds out the answer was
     // taken and. Here. What the empty purse cost them. Only then back to the walk.
     CHECK(g.nav() == Game::Nav::ShiboleetVerdict);
-    CHECK(g.shiboleetOutcome() == GuardianOutcome::Pleased);
-    CHECK(!g.shiboleetVerdictFights());
-    CHECK(std::strstr(g.shiboleetFlavor(), "SHAKE") != nullptr);
+    CHECK(g.shiboleetMeeting().outcome() == GuardianOutcome::Pleased);
+    CHECK(!g.shiboleetMeeting().verdictFights());
+    CHECK(std::strstr(g.shiboleetMeeting().flavor, "SHAKE") != nullptr);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);           // and back to the walk, not a fight
 }
@@ -271,11 +271,11 @@ void test_shiboleet_wrong_and_silent_both_cost_and_fight() {
         } else {
             // Step OFF the true row, then commit.
             for (int i = 0; i < kRiddleReplies &&
-                            g.shiboleetRow() == g.shiboleetTrueRow(); ++i)
+                            g.shiboleetScreen().row() == g.shiboleetMeeting().trueRow(); ++i)
                 g.onButton(press(Button::A));
             g.onButton(press(Button::B));
         }
-        CHECK(g.shiboleetReply() == (silent ? Game::ShiboleetReply::Unanswered
+        CHECK(g.shiboleetMeeting().reply == (silent ? Game::ShiboleetReply::Unanswered
                                              : Game::ShiboleetReply::Wrong));
         CHECK(g.model().happiness() == happy0 - kShiboleetLoseHappy);
         CHECK(g.model().fragmentation() == frag0 + kShiboleetLoseFrag);
@@ -283,10 +283,10 @@ void test_shiboleet_wrong_and_silent_both_cost_and_fight() {
         // answer, and the player is told so (with the button named for where it leads)
         // before the boss is on screen.
         CHECK(g.nav() == Game::Nav::ShiboleetVerdict);
-        CHECK(g.shiboleetOutcome() == GuardianOutcome::Displeased);
-        CHECK(g.shiboleetVerdictFights());
-        CHECK(g.shiboleetFlavor()[0] != '\0');
-        CHECK(g.shiboleetVerdictLine()[0] != '\0');
+        CHECK(g.shiboleetMeeting().outcome() == GuardianOutcome::Displeased);
+        CHECK(g.shiboleetMeeting().verdictFights());
+        CHECK(g.shiboleetMeeting().flavor[0] != '\0');
+        CHECK(g.shiboleetMeeting().verdictLine[0] != '\0');
         g.onButton(press(Button::B));
         CHECK(g.nav() == Game::Nav::Combat);
         CHECK(g.combat().stakes() == Combat::Stakes::Live);
@@ -325,14 +325,14 @@ void test_a_complete_cant_earns_boons() {
         if (g.nav() != Game::Nav::ShiboleetHail) break;
         g.onButton(press(Button::B));             // the hail -> whichever band it was
         if (g.nav() == Game::Nav::ShiboleetVerdict &&
-            g.shiboleetWelcome() == Game::ShiboleetWelcome::Boon) {
+            g.shiboleetMeeting().welcome == Game::ShiboleetWelcome::Boon) {
             sawBoon = true;
             // A boon is one of two shapes and always pays ONE of them.
             CHECK(g.model().happiness() > happy0 ||
                   g.allyBuffBattlesLeft() > ally0);
-            CHECK(g.shiboleetOutcome() == GuardianOutcome::Boon);
-            CHECK(!g.shiboleetVerdictFights());  // a quiet word is never a fight
-            CHECK(g.shiboleetFlavor()[0] != '\0');
+            CHECK(g.shiboleetMeeting().outcome() == GuardianOutcome::Boon);
+            CHECK(!g.shiboleetMeeting().verdictFights());  // a quiet word is never a fight
+            CHECK(g.shiboleetMeeting().flavor[0] != '\0');
         } else if (g.nav() == Game::Nav::Shiboleet) {
             g.onButton(press(Button::B));         // a riddle: answer and keep looking
         }
@@ -440,7 +440,7 @@ void test_guardian_greeting_rides_the_riddles_cipher() {
     enterWalk(g);
     CHECK(reachRiddle(g));
     char greet[80];
-    g.shiboleetGreeting(greet, sizeof(greet));
+    g.shiboleetMeeting().greeting(greet, sizeof(greet));
     CHECK(greet[0] != '\0');
     // At zero sigils NOTHING it says reads plainly: every letter is drawn as another, so
     // the enciphered greeting cannot equal any authored one.
@@ -450,7 +450,7 @@ void test_guardian_greeting_rides_the_riddles_cipher() {
             if (l.cant) CHECK(std::strcmp(greet, l.cant) != 0);
     // The demeanour is the other half and is NEVER enciphered: it is what the pet sees,
     // and it has to be readable from the very first meeting or the pair teaches nothing.
-    const char* seen = g.guardianDemeanour();
+    const char* seen = g.shiboleetMeeting().demeanour();
     CHECK(seen != nullptr && seen[0] != '\0');
     bool authored = false;
     for (int a = 0; a < kAreaCount; ++a)
@@ -467,7 +467,7 @@ void test_a_fluent_pet_hears_the_guardian_plainly() {
     g.debugLearnSigils(kCantSigils);
     CHECK(reachRiddle(g));
     char greet[80];
-    g.shiboleetGreeting(greet, sizeof(greet));
+    g.shiboleetMeeting().greeting(greet, sizeof(greet));
     bool authored = false;
     for (int a = 0; a < kAreaCount; ++a)
         for (const GuardianLine& l : area(a).guardian.lines)
@@ -493,17 +493,17 @@ void test_every_welcome_band_is_met_on_the_hail() {
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);
         CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
-        CHECK(g.guardianDemeanour()[0] != '\0');
+        CHECK(g.shiboleetMeeting().demeanour()[0] != '\0');
 
-        const Game::ShiboleetWelcome band = g.shiboleetWelcome();
+        const Game::ShiboleetWelcome band = g.shiboleetMeeting().welcome;
         g.onButton(press(Button::B));
         if (band == Game::ShiboleetWelcome::Affront) {
             sawAffront = true;
             // A refusal is a VERDICT, not a fight: the guardian says it will not ask, and
             // the button says where pressing it goes.
             CHECK(g.nav() == Game::Nav::ShiboleetVerdict);
-            CHECK(g.shiboleetOutcome() == GuardianOutcome::Affront);
-            CHECK(g.shiboleetVerdictFights());
+            CHECK(g.shiboleetMeeting().outcome() == GuardianOutcome::Affront);
+            CHECK(g.shiboleetMeeting().verdictFights());
             g.render(fb);
             CHECK(hasDarkInk(fb, 0, 0, kActiveW, kActiveH));
             g.onButton(press(Button::B));
@@ -557,7 +557,7 @@ void test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned() {
     CHECK(g.sigilsKnown() == 1);                        // the shake bought it...
 
     char speech[80];
-    g.shiboleetOutcomeSpeech(speech, sizeof(speech));
+    g.shiboleetMeeting().outcomeSpeech(speech, sizeof(speech));
     CHECK(speech[0] != '\0');
     // One sigil is not fluency: what it says about the answer is still drawn in the Cant,
     // so no authored outcome line comes back verbatim.
@@ -571,7 +571,7 @@ void test_the_verdict_speaks_the_cant_and_shows_the_sigil_earned() {
     bool authored = false;
     for (int a = 0; a < kAreaCount; ++a)
         for (const GuardianLine& l : area(a).guardian.outcomes)
-            if (l.seen && std::strcmp(g.shiboleetOutcomeSeen(), l.seen) == 0)
+            if (l.seen && std::strcmp(g.shiboleetMeeting().outcomeSeen(), l.seen) == 0)
                 authored = true;
     CHECK(authored);
 

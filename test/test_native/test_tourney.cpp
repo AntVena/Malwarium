@@ -246,7 +246,7 @@ void test_tourney_run_from_the_expl_row() {
     // areas the ladder grows to.
     enterSubmenuId(g, SubmenuId::Expl);
     explPickCategory(g, ExplCat::Arena);
-    CHECK(g.explRow() == explCatRow(ExplCat::Arena));
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Arena));
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Tourney);
     CHECK(g.tourneyRunning());
@@ -539,13 +539,13 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     CHECK(g.nav() == Game::Nav::Tourney);
 
     // Park on a rival, then HOLD B: the tap starts a bout, the hold opens the sheet.
-    while (g.tourneyCursor() == g.tourneySlot()) g.onButton(press(Button::A));
-    const int scouted = g.tourneyCursor();
+    while (g.arenaScreen().cursor() == g.tourneySlot()) g.onButton(press(Button::A));
+    const int scouted = g.arenaScreen().cursor();
     uint32_t t = 0;
     g.onButton(press(Button::B));
     g.tick(t += kTourneyScoutHoldMs + kHeartbeatMs);
     g.onButton(lift(Button::B));
-    CHECK(g.tourneyView() == Game::TourneyView::Scout);
+    CHECK(g.arenaScreen().view() == Game::TourneyView::Scout);
     CHECK(g.nav() == Game::Nav::Tourney);          // a reader, not a bout
 
     const TourneyFighter f = tourneyEntrant(g.content(), g.tourneySeed(), scouted);
@@ -580,13 +580,13 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
             CHECK(std::strstr(r.body.c_str(), pct) == nullptr);
     // C returns to the bracket, and the run is untouched by having been read.
     tapC(g);
-    CHECK(g.tourneyView() == Game::TourneyView::Bracket && g.tourneyRunning());
+    CHECK(g.arenaScreen().view() == Game::TourneyView::Bracket && g.tourneyRunning());
 
     // The chord opens the BRIEFING from the same screen, and C closes that too.
     g.onButton(chordAC());
-    CHECK(g.tourneyView() == Game::TourneyView::Brief);
+    CHECK(g.arenaScreen().view() == Game::TourneyView::Brief);
     tapC(g);
-    CHECK(g.tourneyView() == Game::TourneyView::Bracket);
+    CHECK(g.arenaScreen().view() == Game::TourneyView::Bracket);
 }
 
 // A bracket is four bytes plus a bitmask, so it has to survive a reboot exactly,

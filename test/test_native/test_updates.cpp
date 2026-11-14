@@ -1035,18 +1035,18 @@ void test_qr_setup_step_appears_only_until_provisioned() {
     enterCfgTarget(g, CfgScreen::PediaAp);             // CFG -> RADIO -> PEDIA AP (OFF)
     g.onButton(press(Button::A));                      // OFF -> ON
     g.onButton(press(Button::B));                      // apply -> the QR screen
-    CHECK(g.cfgScreen() == CfgScreen::PediaQr && g.pediaQrPage() == 0);
+    CHECK(g.cfgScreen() == CfgScreen::PediaQr && g.cfgMenu().pediaQrPage() == 0);
 
     // Unprovisioned: three steps, wrapping back to the join code.
-    g.onButton(press(Button::A)); CHECK(g.pediaQrPage() == 1);   // set up
-    g.onButton(press(Button::A)); CHECK(g.pediaQrPage() == 2);   // 'Pedia
-    g.onButton(press(Button::A)); CHECK(g.pediaQrPage() == 0);
+    g.onButton(press(Button::A)); CHECK(g.cfgMenu().pediaQrPage() == 1);   // set up
+    g.onButton(press(Button::A)); CHECK(g.cfgMenu().pediaQrPage() == 2);   // 'Pedia
+    g.onButton(press(Button::A)); CHECK(g.cfgMenu().pediaQrPage() == 0);
 
     // Once a network is stored the setup step drops out, and the cursor can't be
     // left pointing past the end of the shorter carousel.
     g.setNetProvisioned(true);
-    g.onButton(press(Button::A)); CHECK(g.pediaQrPage() == 1);   // 'Pedia
-    g.onButton(press(Button::A)); CHECK(g.pediaQrPage() == 0);
+    g.onButton(press(Button::A)); CHECK(g.cfgMenu().pediaQrPage() == 1);   // 'Pedia
+    g.onButton(press(Button::A)); CHECK(g.cfgMenu().pediaQrPage() == 0);
 }
 
 // How an attempt ends decides whether the radio goes back. There is no screen
@@ -1184,13 +1184,13 @@ void test_pedia_qr_two_pages_no_timeout() {
     enterCfgTarget(g, CfgScreen::PediaAp);        // CFG -> RADIO -> PEDIA AP (OFF)
     g.onButton(press(Button::A));                 // -> ON
     g.onButton(press(Button::B));                 // apply ON -> QR
-    CHECK(g.qrScreenActive() && g.pediaQrPage() == 0);
+    CHECK(g.qrScreenActive() && g.cfgMenu().pediaQrPage() == 0);
 
     // A cycles the two pages without leaving the QR screen.
     g.onButton(press(Button::A));
-    CHECK(g.qrScreenActive() && g.pediaQrPage() == 1);
+    CHECK(g.qrScreenActive() && g.cfgMenu().pediaQrPage() == 1);
     g.onButton(press(Button::A));
-    CHECK(g.qrScreenActive() && g.pediaQrPage() == 0);
+    CHECK(g.qrScreenActive() && g.cfgMenu().pediaQrPage() == 0);
 
     // No timeout on the QR page: ticking well past the auto-defocus window keeps
     // the page up (the menu does NOT collapse to idle). tick() takes an absolute

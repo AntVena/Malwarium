@@ -291,7 +291,7 @@ void test_care_cards_show_once_each() {
 
     g.onButton(press(Button::A));
     CHECK(g.nav() == Game::Nav::TipCard);
-    CHECK(g.tipCard() == Game::Tip::CareFrag);
+    CHECK(g.tipCardScreen().tip() == Game::Tip::CareFrag);
     CHECK(g.tipSeen(Game::Tip::CareFrag));
     std::vector<ProseRow> rows = g.tipCardRows();
     CHECK(hasRow(rows, "GLITCHY") && hasRow(rows, "THE ! MARK"));
@@ -307,7 +307,7 @@ void test_care_cards_show_once_each() {
     toIdle(g, t);
     g.model().setHappiness(kHappyCautionMin - 1);
     g.onButton(press(Button::A));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::CareHappy);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::CareHappy);
     CHECK(!hasRow(g.tipCardRows(), "THE ! MARK"));     // the "!" was explained already
     g.onButton(press(Button::C));                      // C skips straight to the menu
     CHECK(g.nav() == Game::Nav::Cursor);
@@ -315,7 +315,7 @@ void test_care_cards_show_once_each() {
     toIdle(g, t);
     g.model().setHunger(kHungerCautionMax);
     g.onButton(press(Button::A));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::CareFed);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::CareFed);
     for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
 
     Game seam{StartMode::Hatched};                     // a raised pet's operator: no cards
@@ -343,7 +343,7 @@ void test_error_warnings_before_failing() {
 
     g.model().setCareMistakes(1);
     g.onButton(press(Button::A));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstError);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::FirstError);
     for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
     g.onButton(press(Button::C));
     g.tick(t += kAutoDefocusMs + 1);
@@ -357,7 +357,7 @@ void test_error_warnings_before_failing() {
     g.careAttention(att, urg);
     CHECK((urg & bitOf(SubmenuId::Stat)) != 0);        // one short: STAT, urgent
     g.onButton(press(Button::A));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::NearTheLine);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::NearTheLine);
     for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
     g.onButton(press(Button::C));
     g.tick(t += kAutoDefocusMs + 1);
@@ -382,7 +382,7 @@ void test_error_warnings_before_failing() {
     h.model().setFragmentation(10);
     h.model().setCareMistakes(kCareDying - 1);
     h.onButton(press(Button::A));
-    CHECK(h.tipCard() == Game::Tip::NearTheLine);
+    CHECK(h.tipCardScreen().tip() == Game::Tip::NearTheLine);
     CHECK(h.tipSeen(Game::Tip::FirstError));    CHECK(h.tipCardRows().size() == 2 &&
           std::strcmp(h.tipCardRows()[1].label, "BLOCK THE NEXT ONE") == 0);
 
@@ -401,7 +401,7 @@ void test_error_warnings_before_failing() {
     CHECK(armed.nav() == Game::Nav::Idle);
     armed.model().setCareMistakes(kCareDying - 1);
     armed.onButton(press(Button::A));
-    CHECK(armed.tipCard() == Game::Tip::NearTheLine);
+    CHECK(armed.tipCardScreen().tip() == Game::Tip::NearTheLine);
     CHECK(armed.tipCardRows().size() == 2 &&
           std::strcmp(armed.tipCardRows()[1].label, "YOUR SHIELD IS UP") == 0);
     for (const ProseRow& r : armed.tipCardRows()) CHECK(!r.body.atCap());
@@ -420,7 +420,7 @@ void test_first_walk_card() {
     g.onButton(press(Button::B));                      // drill into the area
     g.onButton(press(Button::B));                      // arm its first sub-area
     CHECK(g.exploreActive());
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstWalk);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::FirstWalk);
     const std::vector<ProseRow> rows = g.tipCardRows();
     CHECK(rows.size() >= 3);
     for (const ProseRow& r : rows) CHECK(!r.body.atCap());

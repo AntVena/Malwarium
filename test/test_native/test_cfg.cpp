@@ -461,7 +461,7 @@ void test_cfg_tips_replay() {
 
     g.onButton(press(Button::A));                      // second row
     g.onButton(press(Button::B));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == tips[1]);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == tips[1]);
     for (int i = 0; i < 8 && g.nav() == Game::Nav::TipCard; ++i)
         g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Detail && g.cfgScreen() == CfgScreen::Tips);

@@ -177,7 +177,7 @@ static Game metaEgg() {
     g.resetToHatch();
     const auto lines = g.availableEggLines();
     for (int i = 0; i < static_cast<int>(lines.size()); ++i) {
-        if (std::strcmp(lines[g.lineSelectRow()]->id, "metamorphic") == 0) break;
+        if (std::strcmp(lines[g.lineSelectScreen().row()]->id, "metamorphic") == 0) break;
         g.onButton(press(Button::A));           // cycle the highlighted line
     }
     g.onButton(press(Button::B));               // lay it

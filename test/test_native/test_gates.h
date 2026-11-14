@@ -341,9 +341,9 @@ inline void archOpenStoredPet(Game& g, const char* creatureId) {
     for (int i = 1; i < groups; ++i) {
         // Bounded, never `while`: a helper that walks the UI must fail its gate when the
         // UI stops agreeing with it, not spin forever with no output.
-        for (int k = 0; k < groups && g.archPickRow() != i; ++k)
+        for (int k = 0; k < groups && g.archScreen().pickRow() != i; ++k)
             g.onButton(press(Button::A));
-        CHECK(g.archPickRow() == i);
+        CHECK(g.archScreen().pickRow() == i);
         g.onButton(press(Button::B));                 // open the group
         const int rows = g.archRowCount();
         for (int j = 0; j < rows; ++j) {
@@ -368,9 +368,9 @@ inline void enterArchStoredPet(Game& g, const char* creatureId) {
 inline void enterArchActivePet(Game& g) {
     archBackToIdle(g);
     enterSubmenuId(g, SubmenuId::Arch);
-    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != 1; ++k)
+    for (int k = 0; k < g.archPickRowCount() && g.archScreen().pickRow() != 1; ++k)
         g.onButton(press(Button::A));                            // NEW EGG, then ACTIVE
-    CHECK(g.archPickRow() == 1);
+    CHECK(g.archScreen().pickRow() == 1);
     g.onButton(press(Button::B));                                // open the group
     g.onButton(press(Button::B));                                // open the pet's record
 }
@@ -386,9 +386,9 @@ inline void enterArchSellList(Game& g) {
     for (int i = 0; i < static_cast<int>(tiles.size()); ++i)
         if (tiles[i].group.kind == ArchGroup::Kind::Sell) row = i;
     CHECK(row >= 0);
-    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != row; ++k)
+    for (int k = 0; k < g.archPickRowCount() && g.archScreen().pickRow() != row; ++k)
         g.onButton(press(Button::A));
-    CHECK(g.archPickRow() == row);
+    CHECK(g.archScreen().pickRow() == row);
     g.onButton(press(Button::B));                 // open the counter
 }
 
@@ -410,9 +410,9 @@ inline void enterArchSale(Game& g, const char* creatureId) {
 inline void enterArchNewEgg(Game& g) {
     archBackToIdle(g);
     enterSubmenuId(g, SubmenuId::Arch);
-    for (int k = 0; k < g.archPickRowCount() && g.archPickRow() != 0; ++k)
+    for (int k = 0; k < g.archPickRowCount() && g.archScreen().pickRow() != 0; ++k)
         g.onButton(press(Button::A));
-    CHECK(g.archPickRow() == 0);
+    CHECK(g.archScreen().pickRow() == 0);
     g.onButton(press(Button::B));                 // NEW EGG -> its confirm screen
     g.onButton(press(Button::B));                 // -> confirm prompt (default Cancel)
     g.onButton(press(Button::A));                 // Cancel -> Confirm
@@ -544,10 +544,10 @@ inline void enterArcadeCabinet(Game& g, int row, ArcadeDifficulty difficulty) {
     // Walk to the ROW, not `row` presses: the A-cycle skips a locked cabinet
     // (ArcadeUnlock), so counting presses lands somewhere else entirely once anything
     // ahead of the target is hidden.
-    for (int i = 0; i < arcadeGameCount() && g.arcadeRow() != row; ++i)
+    for (int i = 0; i < arcadeGameCount() && g.arcadeScreen().row() != row; ++i)
         g.onButton(press(Button::A));
     g.onButton(press(Button::B));
-    while (g.arcadeDifficulty() != difficulty) g.onButton(press(Button::A));
+    while (g.arcadeScreen().difficulty() != difficulty) g.onButton(press(Button::A));
 }
 
 // Open the LOADOUT hub (MODS) on `row` (0 MODS · 1 MOVES · 2 PRACTISE), and enter it.
@@ -593,7 +593,7 @@ inline void enterWalk(Game& g) {
 // a category sits on is the enum's business, not each gate's.
 inline void explPickCategory(Game& g, ExplCat cat) {
     const int want = explCatRow(cat);
-    for (int i = 0; i < kExplCatRows && g.explRow() != want; ++i)
+    for (int i = 0; i < kExplCatRows && g.explScreen().row() != want; ++i)
         g.onButton(press(Button::A));
 }
 

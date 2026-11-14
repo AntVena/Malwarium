@@ -196,7 +196,7 @@ void test_story_archive_collects_what_the_walk_fired() {
         // picker's first landable row is still STORY.
         enterSubmenuId(g, SubmenuId::Expl);
         explPickCategory(g, ExplCat::Chapters);
-        CHECK(g.explRow() != explCatRow(ExplCat::Chapters));
+        CHECK(g.explScreen().row() != explCatRow(ExplCat::Chapters));
         tapC(g);
 
         g.inventory().add("sinkhole_trap", 60);
@@ -213,7 +213,7 @@ void test_story_archive_collects_what_the_walk_fired() {
         stopExplore(g);
         enterSubmenuId(g, SubmenuId::Expl);
         explPickCategory(g, ExplCat::Chapters);
-        CHECK(g.explRow() == explCatRow(ExplCat::Chapters));
+        CHECK(g.explScreen().row() == explCatRow(ExplCat::Chapters));
         g.onButton(press(Button::B));
         CHECK(g.nav() == Game::Nav::StoryArchive);
 
@@ -236,7 +236,7 @@ void test_story_archive_collects_what_the_walk_fired() {
         // ...and a TAP of C lands back on the CHAPTERS row the archive was opened from.
         tapC(g);
         CHECK(g.nav() == Game::Nav::Submenu);
-        CHECK(g.explRow() == explCatRow(ExplCat::Chapters));
+        CHECK(g.explScreen().row() == explCatRow(ExplCat::Chapters));
 
         Framebuffer fb(kActiveW, kActiveH);
         g.render(fb);
@@ -312,12 +312,12 @@ void test_expl_categories_are_the_top_level() {
     g.debugMarkStoryRead();                          // the archive's own gate covers that
     enterSubmenuId(g, SubmenuId::Expl);
     // Fresh device: only STORY is open, so A round-trips back to it.
-    CHECK(g.explRow() == explCatRow(ExplCat::Story));
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Story));
     for (int i = 0; i < kExplCatRows; ++i) {
         g.onButton(press(Button::A));
         g.onButton(lift(Button::A));     // A arms a repeat on a list; let go of it
     }
-    CHECK(g.explRow() == explCatRow(ExplCat::Story));
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Story));
     // ...and so does the device-wide backward walk, which is a HOLD on C: the picker is
     // a list like any other, so it joins the shared cursor rather than ignoring the
     // gesture (game_listnav.cpp). Stepping back from the first row wraps to the LAST
@@ -327,22 +327,22 @@ void test_expl_categories_are_the_top_level() {
     g.tick(t += kListRepeatDelayMs + kHeartbeatMs);
     g.onButton(lift(Button::C));
     CHECK(g.nav() == Game::Nav::Submenu);            // a HOLD walks, it does not cancel
-    CHECK(g.explRow() == explCatRow(ExplCat::Chapters));
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Chapters));
     explPickCategory(g, ExplCat::Story);
 
     // B opens STORY onto the AREA list: area 0's header, not its sub-areas.
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(explRowArea(g.explRow()) == 0 && explRowSub(g.explRow()) < 0);
+    CHECK(explRowArea(g.explScreen().row()) == 0 && explRowSub(g.explScreen().row()) < 0);
     tapC(g);
-    CHECK(g.explRow() == explCatRow(ExplCat::Story));   // ...and C comes back to it
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Story));   // ...and C comes back to it
 
     // Reaching The Pirate Bayou opens the ARENA, which has no rows of its own: B on it
     // draws a bracket outright rather than opening a list of one.
     g.debugSetSectorCleared(0, true);
     g.debugAddCombatXp(600000);                        // a pet that can stand in a bout
     explPickCategory(g, ExplCat::Arena);
-    CHECK(g.explRow() == explCatRow(ExplCat::Arena));
+    CHECK(g.explScreen().row() == explCatRow(ExplCat::Arena));
     tapB(g);
     CHECK(g.nav() == Game::Nav::Tourney);
     CHECK(g.tourneyRunning());
@@ -354,7 +354,7 @@ void test_expl_categories_are_the_top_level() {
     enterSubmenuId(h, SubmenuId::Expl);
     explPickCategory(h, ExplCat::Endless);
     h.onButton(press(Button::B));
-    CHECK(explRowIsDeepWeb(h.explRow()));
+    CHECK(explRowIsDeepWeb(h.explScreen().row()));
     h.onButton(press(Button::B));
     CHECK(h.exploreActive() && h.exploreSector() == kDeepWebSector);
 }

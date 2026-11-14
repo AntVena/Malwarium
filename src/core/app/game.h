@@ -213,8 +213,6 @@ public:
     Inventory& inventory() { return inventory_; }
     const Inventory& inventory() const override { return inventory_; }
     const EventLog& log() const { return log_; }
-    // Which page of the mid-combat panel is showing (0 = closed). B cycles it.
-    int combatStatsPage() const { return fightScreen_.statsPage(); }
     const ModSlots& modSlots() const { return pet_.mods; }
     const ModPool& modPool() const { return op_.modPool; }
     // The two halves the MODS screen reads together.
@@ -369,10 +367,6 @@ public:
     // the board, since a switch thrown months after the purchase is the one a player
     // no longer remembers the terms of.
     using ShopView = mal::ShopView;
-    ShopView shopView() const { return rigShop_.view(); }
-    // The SHOP list's cursor: a RigRow, or kRigSlotServices on the head slot. A slot
-    // index. It differs from the row position by every row the list filters out.
-    int shopSlot() const { return rigShop_.slot(); }
     int rigServiceRow() const { return rigShop_.serviceRow(); }   // cursor within SERVICES
     // Mod Storage tier -> how many spare copies of ONE mod the pool will hold
     // (modCopyCap, tunables). Every grant runs through it, so a player who wants a
@@ -546,8 +540,6 @@ public:
     // bracket screen can name its species and Exploit without walking the content
     // tables every repaint.
     const TourneyFighter& tourneyOpponent() const;
-    TourneyView tourneyView() const { return arena_.view(); }
-    int tourneyCursor() const { return arena_.cursor(); }
     // Is a game engine's mid-play RULES overlay open right now? (game_arcade.cpp)
     bool gameBriefOpen() const override { return gameBriefOpen_; }
     // True when the hatch opened it (the first time a line's egg is laid on this
@@ -586,9 +578,6 @@ public:
     bool feedYubiToSave();
     // Feed it, through the real Use path (gate, effects, the feeding modal), from the
     // FAILING banner's B or the Lockout's feed row. False if it would not save the pet.
-    // The one-time TIP CARD (Nav::TipCard): which tip it is showing, and the page it
-    // shows as prose rows. Public so a gate can assert what a card SAYS.
-    Tip tipCard() const { return tipCardScreen_.tip(); }
     std::vector<ProseRow> tipCardRows() const;
     // CFG > DEVICE > TIPS: the cards this device has shown, in a fixed order, to read
     // again (game_onboard.cpp). A card not yet shown is not listed, so the list never
@@ -1353,51 +1342,16 @@ public:
     // durable half of the whole guardian system.
     SigilSet cantSigils() const override { return op_.cant.sigils; }
     int sigilsKnown() const override { return sigilCount(op_.cant.sigils); }
-    // The guardian encounter's live state (ShiboleetMeeting): the meeting itself for its
-    // screen, and the reads below for the gates: which band the fluency roll landed in,
-    // how the riddle ended, and its words already drawn in the Cant.
-    ShiboleetWelcome shiboleetWelcome() const { return shib_.welcome; }
-    ShiboleetReply shiboleetReply() const { return shib_.reply; }
-    int shiboleetRow() const { return shiboleet_.row(); }
+    // The guardian meeting in progress, or the last one (core/model/shiboleet_meeting.h).
     const ShiboleetMeeting& shiboleetMeeting() const override { return shib_; }
-    // The two halves of what the guardian is doing. `shiboleetGreeting` is what it SAYS,
-    // already drawn in the Cant like the riddle; `guardianDemeanour` is what the pet can
-    // SEE, always plain, so a pet with no sigils still learns something (GuardianLine,
-    // area_defs.h).
-    void shiboleetGreeting(char* out, int cap) const { shib_.greeting(out, cap); }
-    const char* guardianDemeanour() const { return shib_.demeanour(); }
-    // The two beats that BRACKET the riddle (Nav::ShiboleetHail, Nav::ShiboleetVerdict).
-    // A guardian encounter has three parts: a hail, the riddle, and a verdict on what the
-    // pet said.
-    //
-    // `shiboleetOutcome` is how this meeting came out, folded from the fluency band and
-    // the reply into the one axis the content is authored against (GuardianOutcome,
-    // area_defs.h). `shiboleetOutcomeSpeech` fills `out` with what the guardian SAYS
-    // about it, in the same cipher as the riddle; `shiboleetOutcomeSeen` is what the pet
-    // can see it doing, always plain. `shiboleetVerdictLine` is the engine's own plain
-    // ledger of what the meeting paid or cost ("+6 HAPPY  -4 FRAG"), and
-    // `shiboleetFlavor` is the consequence in words ("LEARNED A SIGIL - 3/26").
-    GuardianOutcome shiboleetOutcome() const { return shib_.outcome(); }
-    void shiboleetOutcomeSpeech(char* out, int cap) const { shib_.outcomeSpeech(out, cap); }
-    const char* shiboleetOutcomeSeen() const { return shib_.outcomeSeen(); }
-    const char* shiboleetVerdictLine() const { return shib_.verdictLine; }
-    const char* shiboleetFlavor() const { return shib_.flavor; }
-    // Whether the verdict hands the pet to the guardian's fight rather than back to the
-    // walk. The screen names the button with it, so "B CONTINUE" never turns out to have
-    // meant a boss.
-    bool shiboleetVerdictFights() const { return shib_.verdictFights(); }
-    // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h). It has no sprite. It is a
-    // flock, and this is the live one: reset when a guardian speaks and stepped on the
-    // fast FX clock for as long as the pet is looking at it (game_core.cpp).
+    // THE GUARDIAN'S BODY (FX_SWARM, core/render/swarm.h) is the meeting's flock: reset
+    // when a guardian speaks and stepped on the fast FX clock for as long as the pet is
+    // looking at it (game_core.cpp).
     //
     // `guardianFlockMood` is what it is DOING, folded from where the meeting has got to
     // and how it came out. It is a standing disposition, as RENDER_PIPELINE.md requires
     // of an effect that describes a state.
-    const Flock& guardianFlock() const { return shib_.flock; }
     FlockMood guardianFlockMood() const;
-    // Which shown row carries the true reply. Exposed for the gates only; no screen
-    // or press handler calls it.
-    int shiboleetTrueRow() const { return shib_.trueRow(); }
     // Register a handshake the device-tier promiscuous capture just observed +
     // wrote to the .pcap. Always drives the AuditCapture SM hot (a capture DID
     // happen), but only counts + persists once per distinct BSSID. Returns true if
@@ -1415,10 +1369,6 @@ public:
     bool lockoutActive() const { return pet_.armed.lockoutActive; }
     Nav nav() const { return nav_; }
     CfgScreen cfgScreen() const { return cfg_.page(); }  // active CFG L3 (tests/inspection)
-    // Which QR step is showing. The steps run in the order they happen: join the
-    // AP, set up the home network (only while none is stored), open the 'Pedia,
-    // so the index of the last one depends on netProvisioned() (pediaQrPages).
-    int pediaQrPage() const { return cfg_.pediaQrPage(); }
 
     // True while either QR page is showing: the 'Pedia AP steps or the USB
     // flasher's address. The device tier reads this to keep the panel AWAKE (a code
@@ -1534,10 +1484,8 @@ public:
     // are answered, so the VAULT and the cabinet can never disagree about the pool.
     bool quoteEligible(int i, QuotePick pick) const;
     // Line-select modal: true while the player is choosing which egg line
-    // to lay (fires at an empty save when >1 line is unlocked). `lineSelectRow()` is
-    // the current cursor into the unlocked egg lines.
+    // to lay (fires at an empty save when >1 line is unlocked).
     bool inLineSelect() const { return nav_ == Nav::ModalLineSelect; }
-    int lineSelectRow() const { return lineSelect_.row(); }
     // The egg lines offered at line-select right now: every content line whose unlock
     // gate is satisfied (eggLineUnlocked). Ransomware is always on; Phishing unlocks
     // once DEEPWEB_DEPTH_8 is earned. The line-select modal (input/render/startHatch)
@@ -1612,19 +1560,12 @@ public:
     // ArcadeCabinetBest). The roster is free to reorder, so a wire-stable question has
     // to be asked by id rather than by index.
     int arcadeBestById(const char* id) const;
-    ArcadeDifficulty arcadeDifficulty() const { return arcadeScreen_.difficulty(); }
-    // The MAINT action screen's own dial for its played row: reset to EASY each time the
-    // screen opens, and separate from the cabinets' so neither moves the other.
-    ArcadeDifficulty maintDifficulty() const { return maintScreen_.difficulty(); }
     // The MAINT process in play (its board or its process screen), or nullptr.
     const MaintRun* maintRun() const override { return maint_ ? &*maint_ : nullptr; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
     ArcadeGameKind maintPlayedGame(MaintKind k) const override {
         return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
     }
-    // The cabinet list's cursor, as a roster index (content_arcade.h's order). It
-    // differs from the row position whenever a cabinet is locked out of the list.
-    int arcadeRow() const { return arcadeScreen_.row(); }
     // Is cabinet `i` in the GAMES list right now (ArcadeUnlock)? A locked cabinet is
     // absent, not greyed. Shared by the A-cycle, the render loop and B, so the list can
     // never show a row the cursor skips or start one it never drew.
@@ -1735,10 +1676,7 @@ public:
     bool setHackerTag(const char* s) override;
     const std::vector<SaveStoredPet>& rack() const { return op_.arch.rack; }
     int rackCount() const { return static_cast<int>(op_.arch.rack.size()); }
-    // Read-only forwarders onto ArchScreen for the gates that drive ARCH.
-    ArchView archScreen() const { return arch_.view(); }
-    ArchGroup archGroup() const { return arch_.group(); }
-    int archPickRow() const { return arch_.pickRow(); }
+    // ArchScreen's reads that need the game to answer them, for the gates that drive ARCH.
     int archPickRowCount() const { return arch_.pickRowCount(*this); }
     int archRowCount() const { return arch_.rowCount(*this); }
     const char* archFocusedPetId() const { return arch_.focusedPetId(*this); }
@@ -1759,10 +1697,8 @@ public:
     // one is the precondition for belonging to a crew (joinCrew refuses without it).
     int crewIndex() const { return op_.crewIndex; }            // kCrews row, or -1
     const CrewDef* activeCrew() const override { return crew(op_.crewIndex); }
-    // The CREW screen's views (game/crew_screen.h), named here so the gates can say
-    // which is up.
+    // The CREW screen's views (game/crew_screen.h).
     using CrewView = mal::CrewView;
-    CrewView crewView() const { return crew_.view(); }
     bool hasHomeNetwork() const override { return op_.homeNetworkKey != 0; }
     uint64_t homeNetworkKey() const { return op_.homeNetworkKey; }
     const char* homeNetworkName() const { return op_.homeNetworkName; }
@@ -2054,29 +1990,32 @@ public:
     // gesture (nextItemFilter); this exercises buildInventoryRows/drawItemsList
     // filtering without driving the tap/hold timing.
     void debugSetItemFilter(ItemFilter f) { items_.setFilter(f); dirty_ = true; }
-    ItemFilter itemFilter() const { return items_.filter(); }
     // The STAT reader, and what its pages read (game_stat.cpp). Public for the gates,
     // which find a page by its title and assert where a jump landed.
     const StatReader& statReader() const { return stat_; }
+    // Each screen, read-only, for the gates: a gate reads a screen's state off the screen
+    // itself, through its own accessors, rather than through one Game method per field.
+    const FightScreen& fightScreen() const { return fightScreen_; }
+    const RigShopScreen& rigShopScreen() const { return rigShop_; }
+    const ArenaScreen& arenaScreen() const { return arena_; }
+    const TipCardScreen& tipCardScreen() const { return tipCardScreen_; }
+    const ShiboleetScreen& shiboleetScreen() const { return shiboleet_; }
+    const CfgMenu& cfgMenu() const { return cfg_; }
+    const LineSelectScreen& lineSelectScreen() const { return lineSelect_; }
+    const ArcadeScreen& arcadeScreen() const { return arcadeScreen_; }
+    const MaintScreen& maintScreen() const { return maintScreen_; }
+    const ArchScreen& archScreen() const { return arch_; }
+    const CrewScreen& crewScreen() const { return crew_; }
+    const ItemsMenu& itemsMenu() const { return items_; }
+    const ExplScreen& explScreen() const { return expl_; }
+    const LoadoutScreen& loadoutScreen() const { return loadout_; }
     StatSources statSources() const override;
-    // Which ITEMS L2 screen is showing, the picker's tile cursor and the list's row
-    // cursor (tests / render).
-    ItemsView itemsView() const { return items_.view(); }
-    int itemPickRow() const { return items_.pickRow(); }
-    int itemsRow() const { return items_.row(); }
-    // The EXPL list's cursor and the MOD picker's, for the list-navigation gates:
-    // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
-    // which is the one thing a rendered frame states least directly.
-    int explRow() const { return expl_.row(); }
-    int modPick() const { return loadout_.modPick(); }
-    const char* modDetailId() const { return loadout_.modDetailId(); }
     // Grant mods in tests without walking a boss drop or a cache roll.
     ModPool& debugModPool() { return op_.modPool; }
     // Set the move picker's showAll flag directly (tests): the real path is its
     // own hold-B gesture; this exercises ownedMoveList's filtering without driving
     // the tap/hold timing.
     void debugSetMoveShowAll(bool v) { loadout_.setMoveShowAll(v); dirty_ = true; }
-    bool moveShowAll() const { return loadout_.moveShowAll(); }
     // Fill every unlocked move slot and every mod slot (tests / tools/dump_frame.cpp).
     // A Daemon carrying a full kit is the state STAT's LOADOUT page has to WINDOW
     // rather than run down the screen, and it is otherwise only reachable by playing

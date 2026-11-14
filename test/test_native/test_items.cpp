@@ -1442,7 +1442,7 @@ void test_caches_listed_and_first_cache_card() {
                         Game::Tip::FirstError, Game::Tip::NearTheLine})
         g.markTipSeen(k);
     g.onButton(press(Button::A));
-    CHECK(g.nav() == Game::Nav::TipCard && g.tipCard() == Game::Tip::FirstCache);
+    CHECK(g.nav() == Game::Nav::TipCard && g.tipCardScreen().tip() == Game::Tip::FirstCache);
     for (const ProseRow& r : g.tipCardRows()) CHECK(!r.body.atCap());
     CHECK(textWidth("CACHES - OPEN IN VAULT") <= kActiveW - 2 * kMargin);
 }
@@ -2002,13 +2002,13 @@ void test_items_list_sees_bag_change_while_open() {
     Game g{StartMode::Hatched};
     enterSubmenuId(g, SubmenuId::Items);
     auto stepsToWrap = [&] {
-        const int start = g.itemsRow();
+        const int start = g.itemsMenu().row();
         int steps = 0;
         do {
             g.onButton(press(Button::A));
             g.onButton(lift(Button::A));
             ++steps;
-        } while (g.itemsRow() != start && steps < 100);
+        } while (g.itemsMenu().row() != start && steps < 100);
         return steps;
     };
     const int before = stepsToWrap();

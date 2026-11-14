@@ -1687,10 +1687,10 @@ void test_arch_record_readonly() {
     CHECK(g.nav() == Game::Nav::Submenu);
     // RECORDS is its own group on the picker now: the last row, after the families.
     for (int k = 0; k < g.archPickRowCount() &&
-                    g.archPickRow() != g.archPickRowCount() - 1; ++k)
+                    g.archScreen().pickRow() != g.archPickRowCount() - 1; ++k)
         g.onButton(press(Button::A));
     g.onButton(press(Button::B));                     // open the RECORDS group
-    CHECK(g.archGroup().kind == ArchGroup::Kind::Records);
+    CHECK(g.archScreen().group().kind == ArchGroup::Kind::Records);
     g.onButton(press(Button::B));                     // open the record (read-only)
     CHECK(g.nav() == Game::Nav::Detail);
     Framebuffer fb(kActiveW, kActiveH);

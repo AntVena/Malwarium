@@ -532,10 +532,10 @@ void test_cryptogram_arcade_cabinet_waits_for_eight_wins() {
     // walked past its position twice over, and B never opens it.
     enterSubmenuId(g, SubmenuId::Games);
     for (int i = 0; i < 2 * arcadeGameCount(); ++i) {
-        CHECK(g.arcadeRow() != row);
+        CHECK(g.arcadeScreen().row() != row);
         g.onButton(press(Button::A));
     }
-    CHECK(g.arcadeRow() != row);
+    CHECK(g.arcadeScreen().row() != row);
 
     for (int i = 0; i < kQuoteArcadeUnlockWins; ++i)
         g.debugSetQuoteTier(i, CryptogramTier::Solved);

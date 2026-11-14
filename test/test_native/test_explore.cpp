@@ -1369,7 +1369,7 @@ void test_expl_nested_list_nav() {
       CHECK(g.nav() == Game::Nav::Submenu);         // still in EXPL, not the carousel
       tapC(g);                 // C → the activity picker, parked on STORY
       CHECK(g.nav() == Game::Nav::Submenu);
-      CHECK(g.explRow() == explCatRow(ExplCat::Story));
+      CHECK(g.explScreen().row() == explCatRow(ExplCat::Story));
       tapC(g);                 // C at the picker → leave EXPL
       CHECK(g.nav() == Game::Nav::Cursor); }
 
