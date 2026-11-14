@@ -9,16 +9,13 @@
 
 #include <cstdint>
 
+#include "core/model/disk_decryption.h"   // DecryptHints
+
 namespace mal {
 
 class Framebuffer;
 class DiskDecryption;
 
-// How a played row's fragmentation damage lands. Exact is the EASY setting: it spends
-// the damage PER CELL, so a cell that was exactly right stays clean. That is information
-// the standard rules keep anonymous, which is why nothing but the arcade's easy cabinet
-// may pass Exact.
-enum class DecryptHints : uint8_t { Anonymous, Exact };
 // Where the board is played. Arcade swaps the prize line, which is otherwise priced in
 // incubation a cabinet run doesn't have.
 enum class DecryptStakes : uint8_t { Hatch, Arcade };

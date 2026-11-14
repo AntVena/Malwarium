@@ -25,6 +25,12 @@
 
 namespace mal {
 
+// How a played row's fragmentation damage lands. Exact is the EASY setting: it spends
+// the damage PER CELL, so a cell that was exactly right stays clean. That is information
+// the standard rules keep anonymous, which is why nothing but the arcade's easy cabinet
+// may pass Exact.
+enum class DecryptHints : uint8_t { Anonymous, Exact };
+
 // The board. Three slots and five colours fit one row of legible cells across the
 // active canvas with the two feedback numbers beside it; five attempts fill the height
 // without scrolling, which matters more here than anywhere else: a row the player

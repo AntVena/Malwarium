@@ -229,7 +229,7 @@ void Game::onButton(const ButtonEvent& ev) {
             break;
         case Nav::ModalFeeding: feedingScreen_.onButton(*this, ev); break;
         case Nav::ModalLineSelect: lineSelect_.onButton(*this, ev); break;
-        case Nav::Decryption: onDecryption(ev); break;
+        case Nav::Decryption: decryptionScreen_.onButton(*this, ev); break;
         case Nav::Cryptogram: onCryptogram(ev); break;
         case Nav::ModalHatchReveal: hatchReveal_.onButton(*this, ev); break;
         case Nav::ModalEggPick: eggPickScreen_.onButton(*this, ev); break;

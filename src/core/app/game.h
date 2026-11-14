@@ -25,6 +25,7 @@
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/chroma_screen.h"
 #include "core/app/game/crew_screen.h"
+#include "core/app/game/decryption_screen.h"
 #include "core/app/game/csf_screen.h"
 #include "core/app/game/egg_pick_screen.h"
 #include "core/app/game/encounter_screen.h"
@@ -156,7 +157,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
-             private FraggerHost, private IsolationHost, private ChromaHost {
+             private FraggerHost, private IsolationHost, private ChromaHost,
+             private DecryptionHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1515,7 +1517,7 @@ public:
     // Protocol. Cracking the key halves what is left of the incubation clock; running out
     // of attempts costs only that bonus. Rules: core/model/disk_decryption.h.
     bool inDecryption() const { return nav_ == Nav::Decryption; }
-    const DiskDecryption& decryption() const { return decryption_; }
+    const DiskDecryption& decryption() const override { return decryption_; }
     // THE DECRYPTOGRAM (game_cryptogram.cpp): the quote board, launched by cashing a
     // Decryptogram in at the Hacker VAULT and, once kQuoteArcadeUnlockWins quotes are
     // solved, from its own arcade cabinet. Rules: core/model/cryptogram.h; the pool:
@@ -3145,9 +3147,8 @@ private:
     // a played row got exactly right; the hatch passes false to both, and only the
     // arcade's dial moves either.
     void startDecryption(bool allowDuplicates, bool easyHints);
-    void onDecryption(const ButtonEvent& ev);
-    void finishDecryption();   // bank the crack against the clock (or the till) and leave
-    void drawDecryption(Framebuffer& fb) const;
+    void finishDecryption() override;   // bank the crack against the clock (or the till) and leave
+    DiskDecryption& liveDecryption() override { return decryption_; }
 
     // DECRYPTOGRAM lifecycle (game_cryptogram.cpp): see inCryptogram() above.
     // `quote` is a content_quotes.h roster row and `extraReveals` the opening gift; the
@@ -3780,10 +3781,10 @@ private:
     // DISK DECRYPTION (the Ransomware hatch minigame, game_decryption.cpp). Un-persisted for
     // the same reason the Clutch Pick and the Isolation Protocol below are: it is played
     // out in the minute after the egg is laid, so a reboot mid-board forfeits the bonus
-    // and leaves a normal egg incubating. decryptionEasy_ is the arcade dial's hint
-    // setting, read only by the screen.
+    // and leaves a normal egg incubating. Its screen holds the arcade dial's hint
+    // setting, since only the draw reads it.
     DiskDecryption decryption_;
-    bool decryptionEasy_ = false;
+    DecryptionScreen decryptionScreen_;   // game/decryption_screen.h
 
     // THE DECRYPTOGRAM (game_cryptogram.cpp): the board in play and its stake
     // (core/model/cryptogram_run.h), empty otherwise. What persists (save v48) is
