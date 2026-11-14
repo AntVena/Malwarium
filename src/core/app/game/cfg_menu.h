@@ -19,6 +19,7 @@
 #include "core/app/game/hardware_pages.h"
 #include "core/app/game/looks_pages.h"
 #include "core/app/game/radio_pages.h"
+#include "core/app/game/settings_pages.h"
 #include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
 #include "core/device/power_status.h"
@@ -43,7 +44,7 @@ enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
 // itself is declared here, even where a page's host declares it too, so a call through
 // CfgHost names one function.
 class CfgHost : public UpdatesHost, public RadioHost, public HardwareHost,
-                public LooksHost {
+                public LooksHost, public SettingsHost {
 public:
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
@@ -58,12 +59,6 @@ public:
     virtual std::vector<Tip> replayableTips() const = 0;
 
     // What the pages change. A setter returning bool refuses a locked choice.
-    virtual void setUiMode(UiMode m) = 0;
-    virtual void setBrightness(int level) = 0;
-    virtual void setSoundMode(SoundMode m) = 0;
-    virtual void previewVolume(int level) = 0;
-    virtual void setVolume(int level) = 0;
-    virtual void setCareAlerts(bool on) = 0;
     virtual void resetToHatch() = 0;
     virtual void executeFactoryReset(FactoryScope scope) = 0;
     virtual void openTip(Tip t) = 0;                  // read, then back to TIPS
@@ -103,8 +98,6 @@ private:
     void openPage(CfgHost& host, CfgScreen target);
     void leavePage(CfgHost& host);
     void onGroup(CfgHost& host, const ButtonEvent& ev);
-    template <class Step, class Apply>
-    void onPicker(CfgHost& host, const ButtonEvent& ev, Step step, Apply apply);
     void onTips(CfgHost& host, const ButtonEvent& ev);
     void follow(CfgHost& host, CfgMove move);
     void drawDevicePage(Framebuffer& fb, const CfgHost& host) const;
@@ -121,6 +114,7 @@ private:
     int tipsRow_ = 0;
     HardwarePages hardware_;
     LooksPages looks_;
+    SettingsPages settings_;
     UpdatesPage updates_;
     RadioPages radio_;
 };

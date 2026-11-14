@@ -53,18 +53,17 @@ void CfgMenu::draw(Framebuffer& fb, const CfgHost& host) const {
 // Open a page, seeding its focus at the applied value. The one seam the list and a
 // group page both enter through, so a row behaves the same wherever it is reached from.
 void CfgMenu::openPage(CfgHost& host, CfgScreen target) {
-    const Settings& s = host.settingsRecord();
     page_ = target;
     switch (target) {
         case CfgScreen::Device:
         case CfgScreen::Radio: groupRow_ = 0; break;
         case CfgScreen::Travel:
         case CfgScreen::FormatSd: hardware_.open(host, target); break;
-        case CfgScreen::UiMode: pick_ = static_cast<int>(s.uiMode); break;
+        case CfgScreen::UiMode:
+        case CfgScreen::Brightness:
+        case CfgScreen::Sound:
+        case CfgScreen::Volume: settings_.open(host, target); break;
         case CfgScreen::Tips: tipsRow_ = 0; break;
-        case CfgScreen::Brightness: pick_ = s.brightness; break;
-        case CfgScreen::Sound: pick_ = static_cast<int>(s.soundMode); break;
-        case CfgScreen::Volume: pick_ = s.volume; break;
         case CfgScreen::Theme:
         case CfgScreen::Titles:
         case CfgScreen::Background:
@@ -109,7 +108,7 @@ void CfgMenu::onGroup(CfgHost& host, const ButtonEvent& ev) {
         groupRow_ = stepRow(groupRow_, n, +1);
     } else if (ev.button == Button::B) {
         if (rows[groupRow_].target == CfgScreen::CareAlerts)
-            host.setCareAlerts(!host.settingsRecord().careAlerts);
+            settings_.flipCareAlerts(host);
         else
             openPage(host, rows[groupRow_].target);
     } else if (ev.button == Button::C) {
@@ -118,14 +117,6 @@ void CfgMenu::onGroup(CfgHost& host, const ButtonEvent& ev) {
 }
 
 // --- L3: the pages ------------------------------------------------------------
-
-// The menu's own pickers (pickerPress), whose `apply` returns whether to back out, so a
-// row that refuses (a locked set) stays put.
-template <class Step, class Apply>
-void CfgMenu::onPicker(CfgHost& host, const ButtonEvent& ev, Step step, Apply apply) {
-    follow(host, pickerPress(ev, step,
-                             [&] { return apply() ? CfgMove::leave() : CfgMove::stay(); }));
-}
 
 void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
     switch (page_) {
@@ -136,26 +127,10 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
         case CfgScreen::FormatSd:   follow(host, hardware_.onFormatSd(host, ev)); break;
         case CfgScreen::HackerTag:  follow(host, looks_.onHackerTag(host, ev)); break;
         case CfgScreen::Tips:       onTips(host, ev); break;
-        case CfgScreen::UiMode:
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, 3, +1); },
-                     [&] { host.setUiMode(static_cast<UiMode>(pick_)); return true; });
-            break;
-        case CfgScreen::Brightness:
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, kBrightnessLevels, +1); },
-                     [&] { host.setBrightness(pick_); return true; });
-            break;
-        case CfgScreen::Sound:
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, kSoundModeCount, +1); },
-                     [&] { host.setSoundMode(static_cast<SoundMode>(pick_)); return true; });
-            break;
-        case CfgScreen::Volume:
-            onPicker(host, ev,
-                     [&] {
-                         pick_ = stepRow(pick_, kVolumeLevels, +1);
-                         host.previewVolume(pick_);
-                     },
-                     [&] { host.setVolume(pick_); return true; });
-            break;
+        case CfgScreen::UiMode:     follow(host, settings_.onUiMode(host, ev)); break;
+        case CfgScreen::Brightness: follow(host, settings_.onBrightness(host, ev)); break;
+        case CfgScreen::Sound:      follow(host, settings_.onSound(host, ev)); break;
+        case CfgScreen::Volume:     follow(host, settings_.onVolume(host, ev)); break;
         case CfgScreen::Theme:      follow(host, looks_.onTheme(host, ev)); break;
         case CfgScreen::Titles:     follow(host, looks_.onTitles(host, ev)); break;
         case CfgScreen::Background: follow(host, looks_.onBackground(host, ev)); break;
@@ -219,7 +194,6 @@ void CfgMenu::follow(CfgHost& host, CfgMove move) {
 // --- Drawing ------------------------------------------------------------------
 
 void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
-    const Settings& s = host.settingsRecord();
     switch (page_) {
         case CfgScreen::SysInfo: hardware_.drawSysInfo(fb, host); break;
         case CfgScreen::Device: drawDevicePage(fb, host); break;
@@ -229,11 +203,11 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::HackerTag: looks_.drawHackerTag(fb); break;
         case CfgScreen::Titles: looks_.drawTitles(fb, host); break;
         case CfgScreen::Background: looks_.drawBackground(fb, host); break;
-        case CfgScreen::UiMode: drawUiModeToggle(fb, pick_, s.uiMode); break;
+        case CfgScreen::UiMode: settings_.drawUiMode(fb, host); break;
         case CfgScreen::Tips: drawTipsPage(fb, host); break;
-        case CfgScreen::Brightness: drawBrightness(fb, pick_, s.brightness); break;
-        case CfgScreen::Sound: drawSoundMode(fb, pick_, s.soundMode); break;
-        case CfgScreen::Volume: drawVolume(fb, pick_, s.volume); break;
+        case CfgScreen::Brightness: settings_.drawBrightness(fb, host); break;
+        case CfgScreen::Sound: settings_.drawSound(fb, host); break;
+        case CfgScreen::Volume: settings_.drawVolume(fb, host); break;
         case CfgScreen::Theme: looks_.drawTheme(fb, host); break;
         case CfgScreen::Audit: radio_.drawAudit(fb, host); break;
         case CfgScreen::PediaAp: radio_.drawAp(fb, host); break;
