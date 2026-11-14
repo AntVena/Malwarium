@@ -36,6 +36,7 @@
 #include "core/app/game/hatch_reveal_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/item_offer_screen.h"
+#include "core/app/game/isolation_screen.h"
 #include "core/app/game/items_menu.h"
 #include "core/app/game/line_select_screen.h"
 #include "core/app/game/link_screen.h"
@@ -154,7 +155,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
-             private FraggerHost {
+             private FraggerHost, private IsolationHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1642,7 +1643,7 @@ public:
     // the protocol clean, which hatches on the spot and fires WORM_WHISPERER. The rules
     // are core/model/isolation.h; the screen and the payout are game_isolation.cpp.
     bool inIsolation() const { return nav_ == Nav::Isolation; }
-    const Isolation& isolation() const { return isolation_; }
+    const Isolation& isolation() const override { return isolation_; }
 
     // --- CHROMATOPHORE (the Metamorphic line's hatch minigame) -------------
     // A Polystaria egg rehearses the only defence its line has: the water under it
@@ -3192,9 +3193,8 @@ private:
     // `goalDots` is how many bytes make a CLEAN run: the hatch prices it off whatever
     // is left of the incubation clock, the arcade off a flat target.
     void startIsolation(int goalDots);   // turn the worm loose in the buffer, open the screen
-    void onIsolation(const ButtonEvent& ev);
-    void finishIsolation();              // spend the bytes on the clock and leave
-    void drawIsolation(Framebuffer& fb) const;
+    void finishIsolation() override;     // spend the bytes on the clock and leave
+    Isolation& liveIsolation() override { return isolation_; }
 
     // CHROMATOPHORE lifecycle (game_chroma.cpp): see inChroma() above. `windowMs` is
     // the opening window before the sweep arrives (the pace dial, scaled by the arcade)
@@ -3807,6 +3807,7 @@ private:
     // minute after the egg is laid, so a reboot mid-run forfeits the bonus and leaves a
     // normal egg incubating. The run's own step clock is real-ms, like the Stacker's.
     Isolation isolation_;
+    IsolationScreen isolationScreen_;   // game/isolation_screen.h
     uint32_t lastIsolationStepMs_ = 0;
     int isolationBanked_ = 0;        // bytes already spent on the clock, so B can't double-pay
 

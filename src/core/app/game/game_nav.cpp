@@ -214,7 +214,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::PostEncounter: postEncounter_.onButton(*this, ev); break;
         case Nav::Stacker: stackerScreen_.onButton(*this, ev); break;
         case Nav::Fragger: fraggerScreen_.onButton(*this, ev); break;
-        case Nav::Isolation: onIsolation(ev); break;
+        case Nav::Isolation: isolationScreen_.onButton(*this, ev); break;
         case Nav::Chroma: onChroma(ev); break;
         // The arcade payout: informational, so ANY button dismisses it (the
         // PostEncounter contract, not the standard A/B/C one).

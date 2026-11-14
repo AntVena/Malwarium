@@ -80,7 +80,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::Decryption: drawDecryption(fb); break;
         case Nav::Cryptogram: drawCryptogram(fb); break;
         case Nav::ModalEggPick: eggPickScreen_.draw(fb, *this); break;
-        case Nav::Isolation: drawIsolation(fb); break;
+        case Nav::Isolation: isolationScreen_.draw(fb, *this); break;
         case Nav::Chroma: drawChroma(fb); break;
         case Nav::ModalHatchReveal: hatchReveal_.draw(fb, *this); break;
         case Nav::ModalFeeding: feedingScreen_.draw(fb, *this); break;
