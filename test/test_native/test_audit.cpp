@@ -78,10 +78,10 @@ void test_register_network_queue_dedup() {
                         static_cast<uint8_t>(i >> 8), static_cast<uint8_t>(i)};
         CHECK(g.registerNetwork(m, "M"));
     }
-    CHECK(g.pendingNetworks() == kPendingNetworkQueueCap);
+    CHECK(g.networkSightings().pendingCount() == kPendingNetworkQueueCap);
     uint8_t overflow[6] = {0x99, 0x99, 0x99, 0x99, 0x99, 0x99};
     CHECK(g.registerNetwork(overflow, "Overflow"));    // queue full -> admitted anyway
-    CHECK(g.pendingNetworks() == kPendingNetworkQueueCap);   // ...by eviction, not growth
+    CHECK(g.networkSightings().pendingCount() == kPendingNetworkQueueCap);   // ...by eviction, not growth
     // `a` was the oldest, so it's what got evicted: it re-queues as a new sighting.
     CHECK(g.registerNetwork(a, "A"));
     CHECK(g.networksSeen() == 0);                      // none of this ever credits
@@ -451,7 +451,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
                                    // clamped, so its ABSENCE is a real observation
     g.inventory().add("sinkhole_trap", 20);   // bypass any Wild roll along the way, free
     enterWalk(g);   // ONCE: walkToWifiEvent re-enters via enterWalk on every call, which
-                     // re-arms the sub-area and resets emptyQueueStreak_
+                     // re-arms the sub-area and resets the empty-queue streak
                      // (game_explore.cpp's startExplore), defeating the whole point of
                      // this test (observing the streak persist ACROSS misses).
                      // Step with pingExplore instead, staying in the same session.

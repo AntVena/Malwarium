@@ -443,7 +443,7 @@ void test_crew_picker_unaffected_by_saturated_reward_queue() {
                               static_cast<uint8_t>(i >> 8), static_cast<uint8_t>(i)};
         g.registerNetwork(m, "BACKLOG");
     }
-    CHECK(g.pendingNetworks() == kPendingNetworkQueueCap);   // full, nothing resolved
+    CHECK(g.networkSightings().pendingCount() == kPendingNetworkQueueCap);   // full, nothing resolved
 
     const uint8_t home[6] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
     g.registerNetwork(home, "HOME_WIFI");

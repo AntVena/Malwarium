@@ -82,9 +82,9 @@ void HackerScreen::drawHome(Framebuffer& fb, const HackerHost& host, int cursor)
     y += kFontH + 4;
     // Queued sightings not yet flushed to SD, which tells the player to walk soon.
     char queued[24];
-    std::snprintf(queued, sizeof(queued), "QUEUED %d/%d", host.pendingNetworks(),
+    std::snprintf(queued, sizeof(queued), "QUEUED %d/%d", host.networkSightings().pendingCount(),
                   kPendingNetworkQueueCap);
-    const Rgb565 queuedColor = host.pendingNetworks() >= kPendingNetworkQueueCap
+    const Rgb565 queuedColor = host.networkSightings().pendingCount() >= kPendingNetworkQueueCap
                                     ? palColor(Pal::WARN)
                                     : palColor(Pal::INK_DIM);
     drawText(fb, kMargin, y, queued, queuedColor);
@@ -212,9 +212,9 @@ void HackerScreen::drawProfile(Framebuffer& fb, const HackerHost& host) const {
     // them into the SD-backed ledger; near kPendingNetworkQueueCap new
     // sightings start dropping, so this tells the player to walk soon.
     char queued[16];
-    std::snprintf(queued, sizeof(queued), "%d/%d", host.pendingNetworks(),
+    std::snprintf(queued, sizeof(queued), "%d/%d", host.networkSightings().pendingCount(),
                   kPendingNetworkQueueCap);
-    const Rgb565 queuedColor = host.pendingNetworks() >= kPendingNetworkQueueCap
+    const Rgb565 queuedColor = host.networkSightings().pendingCount() >= kPendingNetworkQueueCap
                                     ? palColor(Pal::WARN)
                                     : palColor(Pal::INK);
     statRow(172, "QUEUED", queued, queuedColor);

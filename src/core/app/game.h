@@ -123,6 +123,7 @@
 #include "core/net/audit_capture.h"
 #include "core/net/handshake_ledger.h"
 #include "core/net/network_ledger.h"
+#include "core/net/network_sightings.h"
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
 #include "core/render/scene_id.h"
@@ -674,10 +675,8 @@ public:
     // The open Wi-Fi event (core/model/wifi_event.h), or null with none.
     const WifiEvent* wifiEvent() const override { return wifi_ ? &*wifi_ : nullptr; }
     int networksSeen() const { return op_.networksSeen; }         // lifetime, dedup'd
-    // Scan-time sightings queued in RAM, not yet resolved into the SD-backed
-    // NetworkLedger by an EXPL Wi-Fi event: how close the pet is to
-    // kPendingNetworkQueueCap, past which new sightings are dropped.
-    int pendingNetworks() const override { return pendingNetworkCount_; }
+    // What the scan has heard this boot and what still owes a reward.
+    const NetworkSightings& networkSightings() const override { return networkSightings_; }
     // Storefront (item shop AND mod shop share this accessor set: shopIsModShop()
     // says which registry a row's `id` resolves through). `i` is bounds-clamped to
     // "" / 0 for an out-of-range row, so a caller can safely loop `0..shopListingCount()`.
@@ -1187,8 +1186,8 @@ public:
     void setAuditMode(AuditMode m) override;
     // Note a network observed by the device-tier passive scan (net_sniff.h calls this
     // once per heard AP per sweep, dups included). Feeds two independent structures:
-    // visibleNetworks_, the in-range snapshot the CREW picker reads, and
-    // pendingNetworks_, the reward queue the EXPL Wi-Fi event drains one at a time.
+    // the in-range snapshot the CREW picker reads, and the reward queue the EXPL Wi-Fi
+    // event drains one at a time (NetworkSightings).
     // Nothing is credited here: uniqueness against the ledger, XP and rewards all
     // happen when resolveNetworkDiscovery() pops it.
     //
@@ -1585,7 +1584,7 @@ public:
     void leaveCrew() override;
 
     // The home-network picker's offers: every network the radio can hear RIGHT NOW
-    // (visibleNetworks_), most-sighted first, capped at `max`. Returns the count. The
+    // (NetworkSightings::inRange), most-sighted first, capped at `max`. Returns the count. The
     // picker's render and input and the gates all walk the same list.
     using CrewNetRow = mal::CrewNetRow;
     int crewNetworkRows(CrewNetRow* rows, int max) const override;
@@ -3053,44 +3052,11 @@ private:
     ShiboleetMeeting shib_;
     ShiboleetScreen shiboleet_;   // the meeting's three pages, and the riddle's cursor
 
-    // Real-network discovery (game_net.cpp, core/net/network_ledger.h). Three
-    // structures answering three questions:
-    //
-    //   visibleNetworks_. What the radio can hear right now: a RAM-only snapshot
-    //     (kNetVisibleCap) aged out by kNetVisibleFreshMs. Feeds the CREW picker and
-    //     nothing else, so no reward bookkeeping can shape what the picker offers.
-    //   pendingNetworks_. What still owes the player a reward: a RAM-only FIFO
-    //     (kPendingNetworkQueueCap) drained one entry per EXPL Wi-Fi event. Evicts
-    //     oldest-first when full, so an unwalked backlog goes stale rather than deaf.
-    //   networkLedger_. What this pet has actually walked past: the SD-backed
-    //     per-BSSID history deciding new-vs-familiar-vs-home-turf.
-    //
-    // emptyQueueStreak_ throttles the empty-queue Happiness penalty
-    // (kNetDiscoveryEmptyCooldownStrikes) and resets whenever a sighting IS found.
-    struct PendingNetwork {
-        uint64_t key = 0;
-        char name[33] = {0};
-    };
-    struct VisibleNetwork {
-        uint64_t key = 0;
-        char name[33] = {0};
-        uint32_t lastSeenMs = 0;
-    };
-    // True while `v` is still inside the freshness window. Unsigned subtraction, so a
-    // nowMs_ wrap behaves like every other elapsed-time check in the engine.
-    bool networkVisible(const VisibleNetwork& v) const {
-        return nowMs_ - v.lastSeenMs <= kNetVisibleFreshMs;
-    }
-    // Record/refresh one sighting in the in-range snapshot. Returns true when the
-    // network ARRIVED (absent, or present but aged out) rather than merely being
-    // re-heard: registerNetwork keys the egg-hatch nudge off that edge.
-    bool noteVisibleNetwork(uint64_t key, const char* name);
-    VisibleNetwork visibleNetworks_[kNetVisibleCap];
-    int visibleNetworkCount_ = 0;
-    PendingNetwork pendingNetworks_[kPendingNetworkQueueCap];
-    int pendingNetworkCount_ = 0;
+    // Real-network discovery (game_net.cpp). What the scan has heard this boot, and what
+    // still owes a reward, are networkSightings_; what this pet has actually walked past,
+    // deciding new-vs-familiar-vs-home-turf, is the SD-backed networkLedger_.
+    NetworkSightings networkSightings_;   // core/net/network_sightings.h
     NetworkLedger networkLedger_;
-    int emptyQueueStreak_ = 0;
 
     // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h): the same
     // snapshot-vs-history split as the networks above. livePeers_ is a RAM-only

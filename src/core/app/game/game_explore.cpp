@@ -69,10 +69,8 @@ void Game::startExplore(int sector, int sub) {
     // Idle. The streak resets on a fresh arm (per-sub-area); durable sub-area
     // clear/boss-unlock persist.
     walk_ = ExploreWalk::started(sector, sub, 0);
-    // A fresh walk starts with a clean slate for the empty-queue Happiness-penalty
-    // throttle too: a drought from an earlier walk must not suppress this walk's
-    // first miss (see game.h's comment on emptyQueueStreak_).
-    emptyQueueStreak_ = 0;
+    // A drought from an earlier walk must not summon on this walk's first miss.
+    networkSightings_.resetEmptyStreak();
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
     markSaveDirty();
@@ -104,7 +102,7 @@ void Game::startDeepWebDive() {
         pet_.armed.pendingDiveStartBonusPct = 0;
     }
     walk_ = ExploreWalk::started(kDeepWebSector, 0, depth);
-    emptyQueueStreak_ = 0;  // see startExplore's comment above
+    networkSightings_.resetEmptyStreak();
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
     markSaveDirty();
@@ -120,7 +118,7 @@ void Game::startDarkWebCrawl() {
     // the farm, and the end of the map is not a thing you skip the front of.
     if (!darkWebUnlocked()) return;
     walk_ = ExploreWalk::started(kDarkWebSector, 0, 0);
-    emptyQueueStreak_ = 0;
+    networkSightings_.resetEmptyStreak();
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
     markSaveDirty();

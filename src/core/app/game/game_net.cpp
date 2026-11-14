@@ -67,7 +67,7 @@ void Game::startWifiEvent() {
     // between fall through to the ordinary sub-outcome below, so the walk's event
     // density is the same either way.
     if (ev.discovery == NetDiscovery::None &&
-        emptyQueueStreak_ % kNetDiscoveryEmptyGuardianStrikes == 0) {
+        networkSightings_.emptyStreak() % kNetDiscoveryEmptyGuardianStrikes == 0) {
         startShiboleet();
         return;
     }
@@ -189,7 +189,7 @@ bool Game::registerNetwork(const uint8_t* bssid, const char* ssid) {
     // --- The in-range snapshot (what the CREW picker reads) -------------------
     // Every sighting lands here, dups included: a network the radio keeps hearing
     // must keep reading as in-range no matter what the reward queue is doing.
-    const bool arrived = noteVisibleNetwork(key, name);
+    const bool arrived = networkSightings_.noteInRange(key, name, nowMs_);
     if (arrived) {
         // An egg can't explore (no EXPL event ever runs), so a network COMING INTO
         // RANGE is the only hatch-accelerating signal it gets. Keyed off the
@@ -199,65 +199,10 @@ bool Game::registerNetwork(const uint8_t* bssid, const char* ssid) {
     }
 
     // --- The reward queue (what an EXPL Wi-Fi event will pay out) -------------
-    for (int i = 0; i < pendingNetworkCount_; ++i)
-        if (pendingNetworks_[i].key == key) return false;  // already owed a reward
-    if (pendingNetworkCount_ >= kPendingNetworkQueueCap) {
-        // Full: drop the OLDEST unresolved sighting to make room. A player who
-        // hasn't walked in a while loses the tail of a backlog they were never
-        // going to reach anyway, rather than having the queue go deaf to
-        // everything new for the rest of the boot.
-        for (int i = 1; i < pendingNetworkCount_; ++i)
-            pendingNetworks_[i - 1] = pendingNetworks_[i];
-        --pendingNetworkCount_;
-    }
-
-    PendingNetwork& slot = pendingNetworks_[pendingNetworkCount_++];
-    slot.key = key;
-    std::strncpy(slot.name, name, sizeof(slot.name) - 1);
-    slot.name[sizeof(slot.name) - 1] = '\0';
-    return true;
+    return networkSightings_.queue(key, name);
 }
 
-bool Game::noteVisibleNetwork(uint64_t key, const char* name) {
-    // Already in the snapshot: refresh its timestamp (and its label. A hidden
-    // network that later broadcasts its SSID should stop reading as NET-xxxxxx).
-    // "Arrived" means arrived: a stale entry for a network that dropped out and came
-    // back counts as a fresh arrival, matching what the player just experienced.
-    for (int i = 0; i < visibleNetworkCount_; ++i) {
-        VisibleNetwork& v = visibleNetworks_[i];
-        if (v.key != key) continue;
-        const bool wasStale = !networkVisible(v);
-        std::strncpy(v.name, name, sizeof(v.name) - 1);
-        v.name[sizeof(v.name) - 1] = '\0';
-        v.lastSeenMs = nowMs_;
-        return wasStale;
-    }
-
-    int at = visibleNetworkCount_;
-    if (at >= kNetVisibleCap) {
-        // Full: evict the STALEST entry (oldest sighting). Anything still in range is
-        // being refreshed every sweep, so what goes is whatever the radio has heard
-        // least recently, never something the player is standing in front of.
-        at = 0;
-        for (int i = 1; i < visibleNetworkCount_; ++i)
-            if (visibleNetworks_[i].lastSeenMs < visibleNetworks_[at].lastSeenMs) at = i;
-    } else {
-        ++visibleNetworkCount_;
-    }
-    VisibleNetwork& v = visibleNetworks_[at];
-    v.key = key;
-    std::strncpy(v.name, name, sizeof(v.name) - 1);
-    v.name[sizeof(v.name) - 1] = '\0';
-    v.lastSeenMs = nowMs_;
-    return true;
-}
-
-int Game::visibleNetworkCount() const {
-    int n = 0;
-    for (int i = 0; i < visibleNetworkCount_; ++i)
-        if (networkVisible(visibleNetworks_[i])) ++n;
-    return n;
-}
+int Game::visibleNetworkCount() const { return networkSightings_.inRangeCount(nowMs_); }
 
 void Game::loadNetworkLedger(const char* path) {
     networkLedger_.load(path);
@@ -268,8 +213,8 @@ void Game::loadHandshakeLedger(const char* path) {
 }
 
 void Game::resolveNetworkDiscovery(WifiEvent& ev) {
-    if (pendingNetworkCount_ == 0) {
-        ++emptyQueueStreak_;
+    NetworkSightings::Sighting picked;
+    if (!networkSightings_.popPending(&picked)) {
         // No penalty. A dry queue costs the pet nothing. An empty area is not the pet's
         // fault, and a Happiness tax would drain a long unattended walk. The streak is
         // still counted, because startWifiEvent reads it to decide when the guardian
@@ -277,11 +222,6 @@ void Game::resolveNetworkDiscovery(WifiEvent& ev) {
         return;
     }
 
-    emptyQueueStreak_ = 0;
-    // Pop the oldest pending sighting (FIFO: resolve in scan order).
-    const PendingNetwork picked = pendingNetworks_[0];
-    for (int i = 1; i < pendingNetworkCount_; ++i) pendingNetworks_[i - 1] = pendingNetworks_[i];
-    --pendingNetworkCount_;
 
     NetworkLedger::Entry existing;
     if (!networkLedger_.lookup(picked.key, &existing)) {

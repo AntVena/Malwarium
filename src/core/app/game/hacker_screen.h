@@ -12,6 +12,7 @@
 
 #include "core/app/game/device_status.h"
 #include "core/device/platform.h"
+#include "core/net/network_sightings.h"
 
 namespace mal {
 
@@ -33,7 +34,7 @@ public:
     virtual int shakesUnspent() const = 0;
     virtual int sigilsKnown() const = 0;
     virtual int speciesRaised() const = 0;
-    virtual int pendingNetworks() const = 0;                // sightings not yet on SD
+    virtual const NetworkSightings& networkSightings() const = 0;   // the QUEUED readout
     virtual int bandwidth() const = 0;
     virtual int bandwidthMax() const = 0;
     virtual bool hackerSlotAccessible(int slot) const = 0;  // the same answer B is given

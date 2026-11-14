@@ -65,12 +65,12 @@ void Game::rememberNetwork(uint64_t key, const char* name, int count) {
 int Game::crewNetworkRows(CrewNetRow* rows, int max) const {
     int n = 0;
     // Exactly one source of rows: what the radio can hear right now. The reward queue
-    // (pendingNetworks_) is not consulted. It says nothing about which networks are
-    // in range, and a full backlog would hide the network the operator is standing
-    // next to.
-    for (int i = 0; i < visibleNetworkCount_ && n < max; ++i) {
-        const VisibleNetwork& v = visibleNetworks_[i];
-        if (!networkVisible(v)) continue;
+    // is not consulted. It says nothing about which networks are in range, and a full
+    // backlog would hide the network the operator is standing next to.
+    const NetworkSightings::Sighting* inRange[kNetVisibleCap];
+    const int heard = networkSightings_.inRange(inRange, std::min(max, kNetVisibleCap), nowMs_);
+    for (int i = 0; i < heard; ++i) {
+        const NetworkSightings::Sighting& v = *inRange[i];
         // The ledger contributes evidence, never an offer: how many times this pet has
         // walked this network in, which is what tells the familiar one apart from the
         // six neighbours' APs sitting next to it in the list.

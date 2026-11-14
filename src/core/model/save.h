@@ -402,7 +402,7 @@ struct LadderInsert {
 const LadderInsert* ladderInserts(int& count);
 
 // Max home-network display-name length incl. the NUL: matches the ledger's own
-// Entry::name cell (core/net/network_ledger.h) and Game::PendingNetwork::name.
+// Entry::name cell (core/net/network_ledger.h) and NetworkSightings::Sighting::name.
 constexpr int kSaveNetNameCap = 33;
 
 // A borrowed/owned content id, fixed cell (avoids per-entry heap on embedded).
