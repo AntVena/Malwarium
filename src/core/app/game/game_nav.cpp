@@ -97,7 +97,7 @@ void Game::onButton(const ButtonEvent& ev) {
         // Cancel explore). An egg can't explore, so the hatch chord below is unaffected.
         else if (walk_.active && (nav_ == Nav::Idle || nav_ == Nav::Cursor)) {
             nav_ = Nav::ExploreControl;
-            exploreCtlRow_ = 0;                     // always opens on the first action
+            exploreControl_.open();
         }
         // Egg home stretch (redesign): the Exploit chord IS how you hatch.
         // The ⚡ exploit symbol on the idle screen invites A+C to crack the egg. Which
@@ -192,7 +192,7 @@ void Game::onButton(const ButtonEvent& ev) {
             }
             break;
         case Nav::Combat: fightScreen_.onButton(*this, ev); break;
-        case Nav::ExploreControl: onExploreControl(ev); break;
+        case Nav::ExploreControl: exploreControl_.onButton(*this, ev); break;
         case Nav::Tourney: arena_.onButton(*this, ev); break;
         case Nav::Story: storyReader_.onButton(*this, ev); break;
         case Nav::TipCard: tipCardScreen_.onButton(*this, ev); break;

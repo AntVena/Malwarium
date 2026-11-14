@@ -25,6 +25,7 @@
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
 #include "core/app/game/expl_screen.h"
+#include "core/app/game/explore_control_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
@@ -130,7 +131,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private MergeHost, private PeersHost, private ChaptersHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
              private CfgHost, private LoadoutHost, private LinkHost,
-             private StoryReaderHost, private ExplHost {
+             private StoryReaderHost, private ExplHost,
+             private ExploreControlHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -434,7 +436,7 @@ public:
     // The line under the walk's badge: what the last resolved event left behind
     // (drawExploreScreen). Empty between events.
     const char* exploreFlavor() const { return walk_.flavor; }
-    bool autoProgress() const { return autoProgress_; }     // hands-off ladder stepping
+    bool autoProgress() const override { return autoProgress_; }     // hands-off ladder stepping
     // How many more wins auto-progress needs before it steps off the armed rung:
     // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
     // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
@@ -450,7 +452,7 @@ public:
     // own depth level, the Well-Fed window (applyCombatXpBonus), an armed evolution soak,
     // and Profilerole's permanent rate, so it is the whole payout in one number. Read by
     // the walk's A+C control overlay (drawExploreControl).
-    int exploreXpEfficiencyPct() const;
+    int exploreXpEfficiencyPct() const override;
     // What ONE wild win in `sector` pays before the level-difference curve scales it: the
     // flat base on every rung of the ladder and in the dive, and a multiple of it in the
     // CRAWL, whose runs are too short to ever reach the paying end of a depth curve
@@ -1664,13 +1666,13 @@ public:
     // host tier ignores it. setBrightness clamps + persists.
     int brightness() const { return settings_.brightness; }
     void setBrightness(int level) override;
-    SoundMode soundMode() const { return settings_.soundMode; }
+    SoundMode soundMode() const override { return settings_.soundMode; }
     void setSoundMode(SoundMode m) override;
     int volume() const { return settings_.volume; }
     void setVolume(int level) override;
     // The walk's A+C SOUND row: false mutes every Event cue an explore fight would play.
-    bool exploreSound() const { return settings_.exploreSound; }
-    void setExploreSound(bool on);
+    bool exploreSound() const override { return settings_.exploreSound; }
+    void setExploreSound(bool on) override;
     void setSoundOut(ISoundOut* out) { soundOut_ = out; }
     void playSound(Sound s);
     // Ignores the SOUND mode on purpose: the VOLUME picker's sample.
@@ -2394,7 +2396,7 @@ private:
     void stepGuardianFlock() override;
     void openExploitPicker() override;
     // Rendering.
-    void drawHabitat(Framebuffer& fb, int cursor) const;
+    void drawHabitat(Framebuffer& fb, int cursor) const override;
     // drawHabitat's steps, in the order it draws them (back to front).
     void drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const;
     void drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const;
@@ -2665,7 +2667,7 @@ private:
     // EXPL / Explore-mode: the sector list arms explore-mode, which runs as
     // a background mode on the IDLE habitat; auto-stepping guaranteed events (each
     // resolving via the shared event/combat plumbing) with a win-streak that unlocks
-    // the sector's boss. onExploreControl drives the A+C control overlay
+    // the sector's boss. ExploreControlScreen is the A+C control overlay
     // (Nav::ExploreControl → A ping / B warp / C stop).
     // Open EXPL: ExplScreen picks the level and row to enter on.
     void openExplList();
@@ -2699,7 +2701,13 @@ private:
     // from returnToExplore; a no-op if the upgrade isn't owned or Bits can't
     // cover the run.
     void maybeAutoDefrag();
-    void onExploreControl(const ButtonEvent& ev);   // A+C overlay: ping / warp / stop
+    // ExploreControlHost.
+    bool hasWarpKey() const override { return !heldWarpKeys().empty(); }
+    void pingWalk() override;
+    void openWarpPicker() override;
+    void toggleAutoProgress() override { autoProgress_ = !autoProgress_; }
+    void stopWalk() override;
+    void leaveToIdle() override { nav_ = Nav::Idle; }
     void resolveLootEvent();                        // reward-pool draw, in place
     void resolveCacheEvent();                       // drop a Sealed Cache (non-interrupting)
     void grantLootReward(char* outFlavor, size_t outFlavorSize);  // shared reward-pool draw
@@ -3300,10 +3308,7 @@ private:
     // Defaults ON: hands-off ladder stepping is the expected experience; the chord
     // opts OUT rather than in.
     bool autoProgress_ = true;
-    // Focused row of the explore-control overlay (0..kExploreControlRows-1). Reset to
-    // the first action each time the chord opens it, so the list never reopens pointing
-    // at whatever was last pressed.
-    int exploreCtlRow_ = 0;
+    ExploreControlScreen exploreControl_;   // the walk's A+C overlay (game/explore_control_screen.h)
     // The Rollback or Repartition item the open stat picker spends on its commit.
     const ItemDef* statPickerItem_ = nullptr;
     MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)

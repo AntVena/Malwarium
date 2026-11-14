@@ -62,20 +62,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::TipCard: tipCardScreen_.draw(fb, *this); break;
         case Nav::AwayDigest: drawAwayDigest(fb); break;
         case Nav::StoryArchive: chapters_.draw(fb, *this); break;
-        case Nav::ExploreControl: {
-            // The A+C control overlay floats over the idle habitat.
-            drawHabitat(fb, -1);
-            ExploreControlView v;
-            v.cursor = exploreCtlRow_;
-            v.hasWarpKey = !heldWarpKeys().empty();
-            v.autoProgress = autoProgress_;
-            v.sound = !soundModeAllows(soundMode(), SoundTier::Event) ? ExploreSound::OffInCfg
-                      : exploreSound()                                ? ExploreSound::On
-                                                                      : ExploreSound::Muted;
-            v.xpEfficiencyPct = exploreXpEfficiencyPct();
-            drawExploreControl(fb, v);
-            break;
-        }
+        case Nav::ExploreControl: exploreControl_.draw(fb, *this); break;
         case Nav::Encounter: encounter_.draw(fb, *this); break;
         case Nav::Wifi: drawWifiScreen(fb); break;
         case Nav::ShiboleetHail: drawShiboleetHailScreen(fb); break;

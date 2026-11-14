@@ -295,47 +295,25 @@ void Game::dismissPostEncounter() {
     returnToExplore();
 }
 
-void Game::onExploreControl(const ButtonEvent& ev) {
-    // The A+C control overlay is a CURSOR LIST, exactly like combat's Exploit picker:
-    // the chord opens it, and inside it A cycles the row, B does the focused thing and
-    // C backs out to the habitat with the walk still running. The chord only opens
-    // this. Driving the screen with it would be awkward, because A registers on its
-    // own first.
-    if (ev.button == Button::A) {
-        exploreCtlRow_ = (exploreCtlRow_ + 1) % kExploreControlRows;
-        return;
-    }
-    if (ev.button == Button::C) { nav_ = Nav::Idle; return; }   // back: walk continues
-    if (ev.button != Button::B) return;
-    switch (static_cast<ExploreControlRow>(exploreCtlRow_)) {
-        case ExploreControlRow::Ping:
-            // Fire the next guaranteed event NOW, skipping the step timer.
-            nav_ = Nav::Idle;
-            doExploreStep();                        // may re-enter a full-screen event
-            break;
-        case ExploreControlRow::Warp:
-            // Inert with no key to spend: the row stays, and says so.
-            if (!heldWarpKeys().empty()) { warpRow_ = 0; nav_ = Nav::WarpPicker; }
-            break;
-        case ExploreControlRow::AutoProgress:
-            // A MODE, not an action: toggling it leaves the overlay open so the ON/OFF
-            // it just changed is the thing the player is looking at.
-            autoProgress_ = !autoProgress_;
-            break;
-        case ExploreControlRow::Sound:
-            setExploreSound(!settings_.exploreSound);      // a mode too: the overlay stays open
-            break;
-        case ExploreControlRow::Stop:
-            // Read the dive flag BEFORE clearing walk_.active: inDeepWebDive() is
-            // derived from it. Only a DIVE ending spends the depth multiplier; stopping
-            // a sector walk leaves an armed Module/Core armed for the dive it was for.
-            if (inDeepWebDive()) clearDiveDepthBuffs();
-            walk_.end();
-            walk_.flavor[0] = '\0';
-            nav_ = Nav::Idle;
-            markSaveDirty();
-            break;
-    }
+void Game::pingWalk() {
+    nav_ = Nav::Idle;
+    doExploreStep();                        // may re-enter a full-screen event
+}
+
+void Game::openWarpPicker() {
+    warpRow_ = 0;
+    nav_ = Nav::WarpPicker;
+}
+
+void Game::stopWalk() {
+    // Read the dive flag before clearing walk_.active: inDeepWebDive() is derived from
+    // it. Only a dive ending spends the depth multiplier; stopping a sector walk leaves
+    // an armed Module/Core armed for the dive it was for.
+    if (inDeepWebDive()) clearDiveDepthBuffs();
+    walk_.end();
+    walk_.flavor[0] = '\0';
+    nav_ = Nav::Idle;
+    markSaveDirty();
 }
 
 std::vector<const ItemDef*> Game::heldWarpKeys() const {
