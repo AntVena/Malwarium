@@ -1754,8 +1754,8 @@ int main(int argc, char** argv) {
         int opens = hasFlag(argc, argv, "win") ? 64 : 0;
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "open:", 5) == 0) opens = std::atoi(argv[i] + 5);
-        for (int n = 0; n < opens && game.cryptogram().running(); ++n) {
-            const Cryptogram& c = game.cryptogram();
+        for (int n = 0; n < opens && game.cryptogramRun() && game.cryptogramRun()->board.running(); ++n) {
+            const Cryptogram& c = game.cryptogramRun()->board;
             const char want = c.at(c.cellCursor());
             for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) != want; ++i)
                 game.onButton({Button::A, true, false});
@@ -1764,10 +1764,10 @@ int main(int argc, char** argv) {
         }
         // "take" leaves a letter in hand, which is the OTHER control state: the
         // cell cursor and its own hint band.
-        if (hasFlag(argc, argv, "take") && game.cryptogram().running())
+        if (hasFlag(argc, argv, "take") && game.cryptogramRun() && game.cryptogramRun()->board.running())
             game.onButton({Button::B, true, false});
-        if (hasFlag(argc, argv, "lose") && game.cryptogram().running()) {
-            const Cryptogram& c = game.cryptogram();
+        if (hasFlag(argc, argv, "lose") && game.cryptogramRun() && game.cryptogramRun()->board.running()) {
+            const Cryptogram& c = game.cryptogramRun()->board;
             const char want = c.at(c.cellCursor());
             for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) == want; ++i)
                 game.onButton({Button::A, true, false});

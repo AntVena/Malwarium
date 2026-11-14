@@ -114,11 +114,6 @@ QuoteReward Game::quoteFirstSolvePrize() const {
 
 // --- Lifecycle --------------------------------------------------------------
 
-const Cryptogram& Game::cryptogram() const {
-    static const Cryptogram kNone{};
-    return cryptogramRun_ ? cryptogramRun_->board : kNone;
-}
-
 void Game::startCryptogram(int quote, int extraReveals) {
     if (quote < 0 || quote >= quoteCount()) return;
     // The stake is decided at the START, not at the payout, so the board can state what

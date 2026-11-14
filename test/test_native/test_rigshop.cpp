@@ -1119,7 +1119,7 @@ void test_vault_bulk_open_consumes_all_of_rarity() {
     // Each common cache draws exactly 1 item (its row's cache.draws == 1): the tally
     // sums to 4 across however many distinct item ids were drawn.
     int tallied = 0;
-    for (int i = 0; i < g.bulkYieldTallyCount(); ++i) tallied += g.bulkYieldTallyCountAt(i);
+    for (const auto& e : g.vaultScreen().bulkReveal()->tally) tallied += e.count;
     CHECK(tallied == 4);
 }
 

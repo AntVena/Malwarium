@@ -2042,5 +2042,4 @@ void test_reveals_hold_their_result_only_while_up() {
     CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 3);
     g.onButton(press(Button::C));
     CHECK(g.nav() == Game::Nav::Submenu && !g.vaultScreen().bulkReveal());
-    CHECK(g.bulkYieldTallyCount() == 0);
 }

@@ -76,10 +76,6 @@ std::vector<ProseRow> Game::storyRows() const {
     return story_ ? StoryReader::rows(*story_) : std::vector<ProseRow>{};
 }
 
-int Game::storyWindows() const { return story_ ? StoryReader::windows(*story_) : 1; }
-
-int Game::storyWindow() const { return story_ ? StoryReader::window(*story_) : 0; }
-
 void Game::turnStoryPage() {
     // One window on, by exactly the rows that were shown, so the next window starts
     // right after what the reader saw. Past the last window the chapter is over.

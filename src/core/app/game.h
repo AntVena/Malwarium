@@ -620,8 +620,8 @@ public:
     const StoryChapterDef* currentStoryChapter() const {
         return story_ ? story_->chapter : nullptr;
     }
-    int storyWindow() const;
-    int storyWindows() const;
+    // The chapter being read (core/model/story_run.h), or null with none open.
+    const StoryRun* storyRun() const override { return story_ ? &*story_ : nullptr; }
     // Has this device read `chapter`? The read-set is player-level and persisted, so a
     // chapter fires once per device and a new egg does not replay the premise.
     bool storyRead(const StoryChapterDef* chapter) const;
@@ -1445,8 +1445,6 @@ public:
     // solved, from its own arcade cabinet. Rules: core/model/cryptogram.h; the pool:
     // core/content/content_quotes.h.
     bool inCryptogram() const { return nav_ == Nav::Cryptogram; }
-    // The board in play (core/model/cryptogram_run.h), or an empty one with none.
-    const Cryptogram& cryptogram() const;
     // The board in play and its stake (core/model/cryptogram_run.h), or null with none.
     const CryptogramRun* cryptogramRun() const override {
         return cryptogramRun_ ? &*cryptogramRun_ : nullptr;
@@ -1858,18 +1856,6 @@ public:
     const LoadoutScreen& loadoutScreen() const { return loadout_; }
     const VaultScreen& vaultScreen() const { return vault_; }
     StatSources statSources() const override;
-    // The bulk-open reveal's tally (tests), while nav() == Nav::BulkYield; empty with none.
-    int bulkYieldTallyCount() const {
-        return vault_.bulkReveal() ? static_cast<int>(vault_.bulkReveal()->tally.size()) : 0;
-    }
-    // The i'th tally entry's item id + count (tests). Empty id / 0 count if out of range.
-    const char* bulkYieldTallyId(int i) const {
-        return (i >= 0 && i < bulkYieldTallyCount() && vault_.bulkReveal()->tally[i].def)
-                   ? vault_.bulkReveal()->tally[i].def->id : "";
-    }
-    int bulkYieldTallyCountAt(int i) const {
-        return (i >= 0 && i < bulkYieldTallyCount()) ? vault_.bulkReveal()->tally[i].count : 0;
-    }
     const Stacker& stacker() const override { return stacker_; }
     // Mutable so a gate can stage a lane (Fragger::place) before pressing the buttons at it.
     Fragger& fragger() { return fragger_; }
@@ -2483,7 +2469,6 @@ private:
     bool fireStory(int sector, StoryBeat beat, StoryThen then, int thenArea = -1);
     bool fireStoryPair(int sector, StoryBeat first, StoryBeat second, StoryThen then);
     // StoryReaderHost. turnStoryPage is B on a page and what the page clock calls.
-    const StoryRun* storyRun() const override { return story_ ? &*story_ : nullptr; }
     void turnStoryPage() override;
     void skipStory() override;
     void finishStoryChapter();     // the queued second chapter, or hand back to `then`

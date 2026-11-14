@@ -109,7 +109,7 @@ void test_story_arrival_fires_once_and_hands_back() {
     CHECK(walkToStory(g));
     CHECK(g.currentStoryChapter() == ch);
     CHECK(g.storyRead(ch));                          // spent on OPEN, not on finish
-    CHECK(g.storyWindow() == 0 && g.storyWindows() >= 1);
+    CHECK(StoryReader::window(*g.storyRun()) == 0 && StoryReader::windows(*g.storyRun()) >= 1);
 
     // B pages it, and the last B hands back the encounter the chapter stood in front of.
     // An encounter met ON A WALK resolves itself (there is nobody at the intro to press
@@ -139,22 +139,22 @@ void test_story_panel_turns_on_its_own_clock() {
     CHECK(ch != nullptr);
     g.openStoryChapter(ch, nullptr, StoryThen::Walk, -1);
     CHECK(g.nav() == Game::Nav::Story);
-    const int windows = g.storyWindows();
+    const int windows = StoryReader::windows(*g.storyRun());
     CHECK(windows >= 2);                             // or there is no turn to observe
     uint32_t t = 0;
     // Just short of the deadline, nothing moves.
     g.tick(t += kStoryPanelMs - kHeartbeatMs);
-    CHECK(g.storyWindow() == 0);
+    CHECK(StoryReader::window(*g.storyRun()) == 0);
     // Crossing it turns the page by itself.
     g.tick(t += 2 * kHeartbeatMs);
-    CHECK(g.storyWindow() == 1);
+    CHECK(StoryReader::window(*g.storyRun()) == 1);
     // A press re-arms: the clock that was about to fire is reset by the reader's own B.
     const uint32_t nearly = t + kStoryPanelMs - kHeartbeatMs;
     g.tick(nearly - kHeartbeatMs);
     g.onButton(press(Button::B));                    // window 1 -> 2 (or the chapter ends)
-    const int after = g.nav() == Game::Nav::Story ? g.storyWindow() : -1;
+    const int after = g.nav() == Game::Nav::Story ? StoryReader::window(*g.storyRun()) : -1;
     g.tick(nearly);                                  // the OLD deadline, now spent
-    if (after >= 0) CHECK(g.storyWindow() == after);
+    if (after >= 0) CHECK(StoryReader::window(*g.storyRun()) == after);
 
     // And the reading screens are held open against the menu idle collapse: fifteen
     // seconds is shorter than a page of prose.
@@ -174,7 +174,7 @@ void test_story_skip_still_runs_what_it_interrupted() {
     g.startExplore(0, 0);
     setAutoProgress(g, false);
     CHECK(walkToStory(g));
-    CHECK(g.storyWindows() >= 2);                    // there is something left to skip
+    CHECK(StoryReader::windows(*g.storyRun()) >= 2);                    // there is something left to skip
     const int traps = g.inventory().count("sinkhole_trap");
     tapC(g);
     CHECK(g.currentStoryChapter() == nullptr);

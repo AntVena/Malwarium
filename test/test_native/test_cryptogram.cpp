@@ -28,8 +28,8 @@ int distinctLetters(const char* s) {
 // sitting on, find it in the pool, and place it there. Bounded so a rules bug ends the
 // test rather than hanging it.
 void solveBoard(Game& g) {
-    for (int guard = 0; guard < 64 && g.cryptogram().running(); ++guard) {
-        const Cryptogram& c = g.cryptogram();
+    for (int guard = 0; guard < 64 && g.cryptogramRun() && g.cryptogramRun()->board.running(); ++guard) {
+        const Cryptogram& c = g.cryptogramRun()->board;
         const char want = c.at(c.cellCursor());
         for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) != want; ++i)
             g.onButton(press(Button::A));
@@ -41,7 +41,7 @@ void solveBoard(Game& g) {
 
 // Place a letter that is NOT the one under the cursor, which is the whole of losing.
 void missOnce(Game& g) {
-    const Cryptogram& c = g.cryptogram();
+    const Cryptogram& c = g.cryptogramRun()->board;
     const char want = c.at(c.cellCursor());
     for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) == want; ++i)
         g.onButton(press(Button::A));
@@ -222,7 +222,7 @@ void test_cryptogram_one_wrong_letter_ends_the_run() {
 void test_cryptogram_cursors_run_both_ways() {
     Game g{StartMode::Hatched};
     cashADecryptogram(g);
-    const Cryptogram& c = g.cryptogram();
+    const Cryptogram& c = g.cryptogramRun()->board;
     CHECK(c.stage() == Cryptogram::Stage::PickLetter);
 
     // The pool: forward then back lands exactly where it started, and back from the
@@ -262,18 +262,18 @@ void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
     Game g{StartMode::Hatched};
     cashADecryptogram(g);
     CHECK(g.nav() == Game::Nav::Cryptogram);
-    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
+    CHECK(g.cryptogramRun()->board.stage() == Cryptogram::Stage::PickLetter);
     g.onButton(chordAC());        // nothing held: opens RULES, not an exit
     CHECK(g.nav() == Game::Nav::Cryptogram);
-    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
+    CHECK(g.cryptogramRun()->board.stage() == Cryptogram::Stage::PickLetter);
     CHECK(g.gameBriefOpen());
     g.onButton(chordAC());        // closes it, back to the board
     CHECK(!g.gameBriefOpen());
 
     g.onButton(press(Button::B));                 // take a letter
-    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickCell);
+    CHECK(g.cryptogramRun()->board.stage() == Cryptogram::Stage::PickCell);
     g.onButton(chordAC());                        // ...and put it back
-    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickLetter);
+    CHECK(g.cryptogramRun()->board.stage() == Cryptogram::Stage::PickLetter);
     CHECK(g.nav() == Game::Nav::Cryptogram);
 
     // C alone is a cursor step, never an exit: the deviation the hint band spells out.
@@ -287,7 +287,7 @@ void test_cryptogram_chord_drops_the_letter_but_never_leaves() {
 void test_cryptogram_held_cursor_repeats() {
     Game g{StartMode::Hatched};
     cashADecryptogram(g);
-    const Cryptogram& c = g.cryptogram();
+    const Cryptogram& c = g.cryptogramRun()->board;
     uint32_t t = 1000;
     g.tick(t);
 
@@ -399,7 +399,7 @@ void test_cryptogram_vault_ticket_pays_bits_and_an_upgrade() {
     CHECK(g.quoteTier(quote) == CryptogramTier::Hard); // every quote starts here
 
     solveBoard(g);
-    CHECK(g.cryptogram().solved());
+    CHECK(g.cryptogramRun()->board.solved());
     CHECK(g.quoteTier(quote) == CryptogramTier::Solved);
     CHECK(g.quotesSolved() == 1);
     CHECK(g.bits() == bits + kQuoteWinBits);
@@ -423,9 +423,9 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
 
     cashADecryptogram(g, 4);
     const int quote = g.cryptogramRun()->quote;
-    const int hardPool = g.cryptogram().poolSize();
+    const int hardPool = g.cryptogramRun()->board.poolSize();
     missOnce(g);
-    CHECK(!g.cryptogram().running() && !g.cryptogram().solved());
+    CHECK(!g.cryptogramRun()->board.running() && !g.cryptogramRun()->board.solved());
     CHECK(g.bits() == bits);                       // nothing at all
     CHECK(g.bwUpgradeCount() == bought);
     CHECK(g.quoteTier(quote) == CryptogramTier::Medium);
@@ -433,13 +433,13 @@ void test_cryptogram_losing_ratchets_the_quote_easier() {
 
     // Play that exact quote again, at the rung the loss bought.
     g.startCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
-    CHECK(g.cryptogram().poolSize() == hardPool - 1);
+    CHECK(g.cryptogramRun()->board.poolSize() == hardPool - 1);
     missOnce(g);
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);
     g.onButton(press(Button::B));
 
     g.startCryptogram(quote, cryptogramExtraReveals(g.quoteTier(quote)));
-    CHECK(g.cryptogram().poolSize() == hardPool - 3);
+    CHECK(g.cryptogramRun()->board.poolSize() == hardPool - 3);
     missOnce(g);
     CHECK(g.quoteTier(quote) == CryptogramTier::Easy);   // Easy is the floor
 }
@@ -452,16 +452,16 @@ void test_cryptogram_run_holds_its_stake_until_the_verdict_is_left() {
     CHECK(r.quote == 7 && r.prizeBits == kQuoteWinBits && r.prize.magnitude == 2);
 
     Game g{StartMode::Hatched};
-    CHECK(!g.cryptogramRun() && !g.cryptogram().running());
+    CHECK(!g.cryptogramRun());
     cashADecryptogram(g);
     const int quote = g.cryptogramRun()->quote;
-    CHECK(quote >= 0 && g.cryptogram().running());
+    CHECK(quote >= 0 && g.cryptogramRun()->board.running());
     CHECK(g.quoteTier(quote) == CryptogramTier::Hard);
     missOnce(g);
-    CHECK(!g.cryptogram().running() && g.cryptogramRun()->quote == quote);   // the verdict
+    CHECK(!g.cryptogramRun()->board.running() && g.cryptogramRun()->quote == quote);   // the verdict
     g.onButton(press(Button::B));                 // leave it
     CHECK(g.nav() == Game::Nav::Submenu);
-    CHECK(!g.cryptogramRun() && g.cryptogram().poolSize() == 0);
+    CHECK(!g.cryptogramRun());
 }
 
 // An achievement-gated quote is not in the pool until it is earned: the second
@@ -563,7 +563,7 @@ void test_cryptogram_arcade_replays_a_solved_quote_for_bits() {
     CHECK(quote >= 0 && g.quoteTier(quote) == CryptogramTier::Solved);
 
     solveBoard(g);
-    CHECK(g.cryptogram().solved());
+    CHECK(g.cryptogramRun()->board.solved());
     CHECK(g.bits() == bits);                       // the till pays on the way out
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::ArcadeResult);
@@ -590,7 +590,7 @@ void test_cryptogram_grayscale() {
     const int lit0 = litTile(fb, 8, 156);
     g.onButton(press(Button::B));
     g.render(fb);
-    CHECK(g.cryptogram().stage() == Cryptogram::Stage::PickCell);
+    CHECK(g.cryptogramRun()->board.stage() == Cryptogram::Stage::PickCell);
     CHECK(litTile(fb, 8, 156) != lit0);
 
     // ...and the cell cursor is a solid bar in the grid, over and above the dim rules.
