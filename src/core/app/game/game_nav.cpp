@@ -174,7 +174,7 @@ void Game::onButton(const ButtonEvent& ev) {
                     loadout_.onButton(*this, ev);
                     break;
                 case SubmenuId::Games: arcadeScreen_.onList(*this, ev); break;
-                case SubmenuId::Expl: onExplList(ev); break;
+                case SubmenuId::Expl: expl_.onButton(*this, ev); break;
                 default: if (ev.button == Button::C) nav_ = Nav::Cursor; break;
             }
             break;

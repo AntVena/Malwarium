@@ -24,6 +24,7 @@
 #include "core/app/game/chapters_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/encounter_screen.h"
+#include "core/app/game/expl_screen.h"
 #include "core/app/game/fight_screen.h"
 #include "core/app/game/inline_confirm.h"
 #include "core/app/game/items_menu.h"
@@ -116,7 +117,6 @@ struct ProseRow;
 // EXPL's list view (core/ui/expl_screen.h). Named here only as explView()'s return
 // type, per the include note above: the screen header stays in the game_*.cpp units
 // that draw and navigate with it.
-struct ExplListView;
 struct PlayHud;
 
 // How a Game starts. FreshHatch = empty save -> Decryption Hatch (the real
@@ -130,7 +130,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private MergeHost, private PeersHost, private ChaptersHost,
              private MaintHost, private ShopHost, private TipCardHost, private ArchHost,
              private CfgHost, private LoadoutHost, private LinkHost,
-             private StoryReaderHost {
+             private StoryReaderHost, private ExplHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -472,7 +472,7 @@ public:
     // Either endless zone: the two share the walk, the depth streak and the "a loss ends
     // the run" rule, and differ in what they field and what they take from you. Callers
     // that mean "no sub-area ladder here" want this rather than one of the two above.
-    bool inEndlessZone() const { return inDeepWebDive() || inDarkWebCrawl(); }
+    bool inEndlessZone() const override { return inDeepWebDive() || inDarkWebCrawl(); }
     // The crawl's unlock: the area whose shrine holds the portal has been CLEARED.
     bool darkWebUnlocked() const {
         return op_.world.areaCleared(areaIndexById(kDarkWebUnlockAreaId));
@@ -516,10 +516,10 @@ public:
     using StoryThen = mal::StoryThen;
     // A bracket is in play (core/model/tourney_run.h), verdict included. With none, the
     // seed reads 0, the bitmask and round 0, and the phase Ready.
-    bool tourneyRunning() const { return tourney_.has_value(); }
+    bool tourneyRunning() const override { return tourney_.has_value(); }
     uint32_t tourneySeed() const { return tourney_ ? tourney_->seed : 0; }
-    uint8_t tourneyAlive() const { return tourney_ ? tourney_->alive : 0; }  // survivors
-    int tourneyRound() const { return tourney_ ? tourney_->round : 0; }      // 0-based
+    uint8_t tourneyAlive() const override { return tourney_ ? tourney_->alive : 0; }  // survivors
+    int tourneyRound() const override { return tourney_ ? tourney_->round : 0; }      // 0-based
     TourneyPhase tourneyPhase() const {
         return tourney_ ? tourney_->phase : TourneyPhase::Ready;
     }
@@ -628,7 +628,7 @@ public:
     bool storyRead(const StoryChapterDef* chapter) const;
     // How many chapters the walk has written so far. The CHAPTERS row shows it, and
     // it decides whether that row can be entered.
-    int storyChapterCount() const;
+    int storyChapterCount() const override;
     // The chapter flowed as prose rows, built on demand like every other reader's
     // model. Public so a gate can assert what a page SAYS rather than read it out of
     // pixels.
@@ -663,14 +663,14 @@ public:
     // (core/ui/expl_screen.h's ExplListView).
     //
     // A zone with no pet (an empty rack) counts 0.
-    int areaMovesToLearn(int area) const;
+    int areaMovesToLearn(int area) const override;
     // The AREA GAUNTLET row's own count, which is not the area's: the gauntlet is five
     // boss rounds and the area boss's own move, and a player standing on that row is
     // asking what THAT fight pays, not what the whole zone holds.
-    int areaGauntletMovesToLearn(int area) const;
-    int subAreaMovesToLearn(int area, int sub) const;
-    int deepWebMovesToLearn() const;
-    int darkWebMovesToLearn() const;
+    int areaGauntletMovesToLearn(int area) const override;
+    int subAreaMovesToLearn(int area, int sub) const override;
+    int deepWebMovesToLearn() const override;
+    int darkWebMovesToLearn() const override;
     // The on-screen line resolveNetworkDiscovery() set on the last Wi-Fi event
     // (new/familiar/home-turf/empty-queue): "" if none has resolved yet.
     const char* netDiscoveryFlavor() const { return netDiscoveryFlavor_; }
@@ -2058,7 +2058,7 @@ public:
     // The EXPL list's cursor and the MOD picker's, for the list-navigation gates:
     // A's repeat and C's backward walk are assertions about where a cursor ENDED UP,
     // which is the one thing a rendered frame states least directly.
-    int explRow() const { return explRow_; }
+    int explRow() const { return expl_.row(); }
     int modPick() const { return loadout_.modPick(); }
     const char* modDetailId() const { return loadout_.modDetailId(); }
     // Grant mods in tests without walking a boss drop or a cache roll.
@@ -2667,31 +2667,11 @@ private:
     // resolving via the shared event/combat plumbing) with a win-streak that unlocks
     // the sector's boss. onExploreControl drives the A+C control overlay
     // (Nav::ExploreControl → A ping / B warp / C stop).
-    void onExplList(const ButtonEvent& ev);
-    // ...and the ACTIVITY PICKER it opens on (ui_state.h's ExplCat), which walks its own
-    // four rows rather than the ladder's row space. Split out rather than folded into a
-    // branch of onExplList because the two levels share no state but `explRow_`.
-    void onExplCategories(const ButtonEvent& ev);
-    // Flatten the durable per-sub flag blocks to the row-major layout the shared
-    // expl_screen row helpers read ([area*kSubAreasPerArea+sub]).
-    void flattenSubFlags(bool (&cleared)[kAreaCount * kSubAreasPerArea],
-                         bool (&bossUnlocked)[kAreaCount * kSubAreasPerArea]) const;
-    // Open EXPL: pick the nav level + cursor row to enter on (resuming a running
-    // explore-mode where it left off, else the top level's first landable row).
+    // Open EXPL: ExplScreen picks the level and row to enter on.
     void openExplList();
-    // THREE-level EXPL nav: is `row` a stop at the CURRENT level (explCat_ +
-    // explNavArea_)? A category's own level → its zone rows / open area headers; inside
-    // an area → that area's own selectable rows. `explCatLandable` is the same question
-    // asked of the picker's four rows, and `areaHeaderRow` is an area's header row
-    // index.
-    bool explRowLandable(int row) const;
-    bool explCatLandable(int catRow) const;
-    // The EXPL list's view struct, filled from this Game's own state. The NAV reads it
-    // (which categories the cursor stops on) and the RENDERER draws from it, so a
-    // category that is skipped and a category drawn as "??????" can never be two
-    // different sets. The renderer fills in the per-row blocks it also needs.
-    ExplListView explView() const;
-    int areaHeaderRow(int area) const;
+    // ExplHost.
+    const ExploreWalk& exploreWalk() const override { return walk_; }
+    void explainFirstWalk() override;
     // Compose the idle badge label: the armed area's short (first-word) name + the
     // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
     void exploreBadgeLabel(char* out, size_t n) const;
@@ -2703,9 +2683,9 @@ private:
     void autoProgressStep();
     void autoProgressAdvance(int area, int sub);
     int nextOpenArea(int area) const;
-    void startExplore(int sector, int sub);         // arm a sub-area → idle background mode
+    void startExplore(int sector, int sub) override;         // arm a sub-area → idle background mode
     void startDeepWebDive();                         // arm the mid-game endless zone
-    void startDarkWebCrawl();                        // ...and the terminal one
+    void startDarkWebCrawl() override;                        // ...and the terminal one
     void doExploreStep();                           // one guaranteed-event step
     void returnToExplore();                         // event/fight → back to idle, mode continues
     // Auto Backup / Continuous Auto-Backup (Rig Shop g/h): re-arm the Backup
@@ -2775,8 +2755,8 @@ private:
     // cleared (OperatorWorld::sectorCleared → next area) + grants the Title.
     // Each opens a GauntletRun (core/model/gauntlet_run.h). startBossRound(carryHealth)
     // begins one round; finishBossRound() advances, clears or fails it.
-    void startSubAreaBoss(int area, int sub);
-    void startAreaBoss(int area);
+    void startSubAreaBoss(int area, int sub) override;
+    void startAreaBoss(int area) override;
     void startBossRound(int carryHealth);
     void finishBossRound();
 
@@ -2802,7 +2782,7 @@ private:
     // The CHAPTERS list. `storyArchiveRows` resolves the unlocked chapters into the row
     // models the screen draws and is the ONE place the archive's order and membership
     // are decided: the list, its cursor and the B that opens a row all read it.
-    void openStoryArchive();
+    void openStoryArchive() override;
     // ChaptersHost.
     std::vector<StoryEntry> storyArchiveEntries() const override;
     void rereadChapter(const StoryChapterDef* chapter) override;
@@ -2895,7 +2875,7 @@ private:
     enum class OfferFor : uint8_t { Dive, Egg };
     std::vector<const ItemDef*> offerItems() const;
     bool offerRelevant(const ItemDef& d) const;
-    void offerThenDive();           // the EXPL list's dive row: offer, else dive now
+    void offerThenDive() override;           // the EXPL list's dive row: offer, else dive now
     void openItemOffer(OfferFor f);
     void onItemOffer(const ButtonEvent& ev);
     void finishItemOffer();         // the last row: carry on with what was paused
@@ -3310,16 +3290,7 @@ private:
     Nav nav_ = Nav::Idle;
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
 
-    // The EXPL list's cursor.
-    int explRow_ = 0;
-    // EXPL's THREE-level nav. `explCat_` is the activity (ExplCat::None = the picker
-    // itself, EXPL's own top level); `explNavArea_` is the level INSIDE one: -1 = the
-    // category's own rows, >= 0 = inside that area (its sub-areas). `explRow_` indexes
-    // the picker's four rows while explCat_ is None and the ladder's row space
-    // otherwise: the same field either way, because only one of the two levels is ever
-    // on screen. Runtime-only; openExplList re-derives both every time EXPL is opened.
-    ExplCat explCat_ = ExplCat::None;
-    int explNavArea_ = -1;
+    ExplScreen expl_;   // the EXPL list's cursor and level (game/expl_screen.h)
     // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Toggled
     // with the A+C chord from inside the explore-control overlay, which is only
     // reachable while explore-mode is running, so the mode is scoped to exploring by
@@ -3740,7 +3711,7 @@ private:
     // --- ROCK THE DOCK (game_tourney.cpp) -----------------------------------
     // Open the bracket screen off the EXPL row: draws a fresh bracket when no run is
     // in play, else resumes the one that is.
-    void openTourney();
+    void openTourney() override;
     // ArenaHost.
     const TourneyRun* tourneyRun() const override { return tourney_ ? &*tourney_ : nullptr; }
     void startTourneyMatch() override;             // the operator's own match, live

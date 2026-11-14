@@ -144,9 +144,7 @@ void Game::rereadChapter(const StoryChapterDef* chapter) {
 void Game::leaveChapters() {
     // Back to EXPL, parked on the CHAPTERS row the archive was opened from.
     nav_ = Nav::Submenu;
-    explCat_ = ExplCat::None;
-    explNavArea_ = -1;
-    explRow_ = explCatRow(ExplCat::Chapters);
+    expl_.parkOnCategory(ExplCat::Chapters);
 }
 
 }  // namespace mal

@@ -18,7 +18,6 @@ namespace mal {
 // (row-major [area*kExplSubAreas+sub]). Small stack copies: the caller reads them
 // once per press or frame and never keeps the pointer.
 namespace {
-constexpr int kSubFlags = kExplSectors * kExplSubAreas;
 
 // Per-area MOD loot tables ------------------------------------
 // Each explore area (+ the endless DeepWeb) has its own mod pool (owned by that
@@ -47,15 +46,6 @@ int modRarityWeight(const ContentRegistry& reg, const char* id) {
     return (r >= 0 && r < 4) ? kModRarityWeight[r] : 0;
 }
 }  // namespace
-void Game::flattenSubFlags(bool (&cleared)[kSubFlags],
-                           bool (&bossUnlocked)[kSubFlags]) const {
-    for (int a = 0; a < kExplSectors; ++a)
-        for (int s = 0; s < kExplSubAreas; ++s) {
-            cleared[a * kExplSubAreas + s] = op_.world.subCleared[a][s];
-            bossUnlocked[a * kExplSubAreas + s] = op_.world.subBossUnlocked[a][s];
-        }
-}
-
 bool Game::areaBossReady(int area) const {
     if (area < 0 || area >= kExplSectors) return false;
     if (!explSectorOpen(area, op_.world.sectorCleared) || op_.world.sectorCleared[area])
@@ -65,175 +55,12 @@ bool Game::areaBossReady(int area) const {
     return true;                                     // all 5 cleared, area not yet
 }
 
-// THREE-level EXPL navigation. explCat_ == None is the ACTIVITY PICKER (ui_state.h's
-// ExplCat) and `explRow_` indexes its four rows; inside a category `explRow_` indexes
-// the ladder's row space and explNavArea_ picks the level: -1 for the category's own
-// rows, N for inside area N. `explRowLandable` centralises which LADDER rows a level
-// stops on, and explCatLandable does the same job for the picker.
-bool Game::explRowLandable(int row) const {
-    if (!explRowInLevel(row, explCat_, explNavArea_)) return false;
-    bool cleared[kSubFlags], boss[kSubFlags];
-    flattenSubFlags(cleared, boss);
-    const ExplRowState st = explRowState(row, op_.world.sectorCleared, cleared, boss,
-                                         walk_.active ? walk_.sector : -1,
-                                         walk_.active ? walk_.sub : -1,
-                                         tourneyRunning());
-    // An AREA HEADER at STORY's own level is the one row that is landable while not
-    // selectable: you enter an open area whether or not its gauntlet is standing yet,
-    // so AreaProgress/BossReady/Cleared all drill in and only AreaLocked does not.
-    if (explCat_ == ExplCat::Story && explNavArea_ < 0)
-        return st != ExplRowState::AreaLocked;
-    return explRowSelectable(st);
-}
+void Game::openExplList() { expl_.open(*this); }
 
-// The picker's own filter: the cursor stops on a category there is something behind.
-bool Game::explCatLandable(int catRow) const {
-    if (catRow < 0 || catRow >= kExplCatRows) return false;
-    return explCatOpen(explCatAt(catRow), explView());
-}
-
-// The view struct the picker's lock/detail rules are answered from. Built here for
-// both the nav and the renderer, so the categories the cursor skips are the same set
-// drawn as "??????".
-ExplListView Game::explView() const {
-    ExplListView v;
-    v.areaCleared = op_.world.sectorCleared;
-    v.exploringSector = walk_.active ? walk_.sector : -1;
-    v.exploringSub = walk_.active ? walk_.sub : -1;
-    v.bestDeepWebDepth = pet_.bestDeepWebDepth;
-    v.bestDarkWebDepth = pet_.bestDarkWebDepth;
-    v.tourneyRunning = tourneyRunning();
-    v.tourneyAlive = tourneyAliveCount(tourneyAlive());
-    v.tourneyRound = tourneyRound();
-    v.storyChapters = storyChapterCount();
-    return v;
-}
-
-int Game::areaHeaderRow(int area) const {
-    // Past the LEAD rows (the two endless zones), then one block per area. Reads the
-    // constant rather than a literal, so adding a zone above the ladder moves every area
-    // block with it instead of silently pointing this one row short.
-    return kExplLeadRows + area * kExplRowsPerArea;
-}
-
-void Game::openExplList() {
-    // Entering EXPL. An explore-mode already running is almost always why the list is
-    // being opened mid-walk (to check the streak, or to move on), so a running walk
-    // RESUMES where the pet is, at the level it is standing on: a ladder area drills
-    // straight to the armed sub-area, an endless zone parks on its own row. So the
-    // ACTIVITY PICKER adds no press to returning to the walk you are on.
-    if (walk_.active) {
-        if (walk_.sector >= 0 && walk_.sector < kExplSectors) {
-            explCat_ = ExplCat::Story;
-            explNavArea_ = walk_.sector;
-            explRow_ = areaHeaderRow(walk_.sector) + 1 + walk_.sub;
-            if (explRowLandable(explRow_)) return;
-        } else if (inEndlessZone()) {
-            explCat_ = ExplCat::Endless;
-            explNavArea_ = -1;
-            explRow_ = walk_.sector == kDeepWebSector ? 0 : 1;
-            if (explRowLandable(explRow_)) return;
-        }
-    }
-    // Otherwise the picker opens on STORY, which is never locked.
-    explCat_ = ExplCat::None;
-    explNavArea_ = -1;
-    for (int r = 0; r < kExplCatRows; ++r)
-        if (explCatLandable(r)) { explRow_ = r; return; }
-    explRow_ = 0;                                    // nothing landable → park at 0
-}
-
-void Game::onExplCategories(const ButtonEvent& ev) {
-    // EXPL's own top level. A cycles the open categories, B opens the focused one, C
-    // leaves EXPL for the carousel. The two categories with rows behind them
-    // (explCatHasRows) drop into their level; the other two ARE their action, so B on
-    // them goes straight to the bracket or the archive rather than through a list of
-    // one.
-    if (ev.button == Button::A) {
-        for (int i = 1; i <= kExplCatRows; ++i) {
-            const int r = (explRow_ + i) % kExplCatRows;
-            if (explCatLandable(r)) { explRow_ = r; break; }
-        }
-    } else if (ev.button == Button::B) {
-        if (!explCatLandable(explRow_)) return;
-        const ExplCat c = explCatAt(explRow_);
-        if (!explCatHasRows(c)) {
-            if (c == ExplCat::Arena) openTourney();
-            else if (c == ExplCat::Chapters) openStoryArchive();
-            return;
-        }
-        explCat_ = c;
-        explNavArea_ = -1;
-        for (int r = 0, n = explRowCount(); r < n; ++r)
-            if (explRowLandable(r)) { explRow_ = r; return; }
-        explRow_ = 0;
-    } else if (ev.button == Button::C) {
-        nav_ = Nav::Cursor;
-    }
-}
-
-void Game::onExplList(const ButtonEvent& ev) {
-    // No category open -> the press belongs to the ACTIVITY PICKER, which walks its own
-    // four rows and not the ladder's row space.
-    if (explCat_ == ExplCat::None) { onExplCategories(ev); return; }
-    bool cleared[kSubFlags], boss[kSubFlags];
-    flattenSubFlags(cleared, boss);
-    const int exSec = walk_.active ? walk_.sector : -1;
-    const int exSub = walk_.active ? walk_.sub : -1;
-    const int n = explRowCount();
-    auto stateOf = [&](int r) {
-        return explRowState(r, op_.world.sectorCleared, cleared, boss, exSec, exSub,
-                            tourneyRunning());
-    };
-    if (ev.button == Button::A) {
-        // Advance to the next row LANDABLE at the current level, wrapping.
-        for (int i = 1; i <= n; ++i) {
-            const int r = (explRow_ + i) % n;
-            if (explRowLandable(r)) { explRow_ = r; break; }
-        }
-    } else if (ev.button == Button::B) {
-        if (explRow_ < 0 || explRow_ >= n || !explRowLandable(explRow_)) return;
-        // STORY's own level, on an area header → DRILL IN: drop to that area's first
-        // landable row (its boss-ready header, else its first open/farmable sub).
-        // ENDLESS's two rows have nothing to drill into and act directly.
-        if (explCat_ == ExplCat::Story && explNavArea_ < 0) {
-            explNavArea_ = explRowArea(explRow_);
-            for (int r = 0; r < n; ++r)
-                if (explRowLandable(r)) { explRow_ = r; break; }
-            return;
-        }
-        const ExplRowState st = stateOf(explRow_);
-        const int area = explRowArea(explRow_);
-        const int sub = explRowSub(explRow_);
-        switch (st) {
-            case ExplRowState::AreaBossReady:
-            case ExplRowState::AreaCleared:   startAreaBoss(area); break;
-            case ExplRowState::SubBossReady:  startSubAreaBoss(area, sub); break;
-            case ExplRowState::DeepWebOpen:                     // endless zone
-            case ExplRowState::DeepWebDiving: offerThenDive(); break;   // bells first
-            case ExplRowState::DarkWebOpen:                     // the terminal zone
-            case ExplRowState::DarkWebCrawling: startDarkWebCrawl(); break;
-            default:                          startExplore(area, sub);  // arm/re-arm
-                // The first walk a player arms is the one moment they are certainly
-                // watching before it runs hands-off, so it is when the walk is explained.
-                if (!tipSeen(Tip::FirstWalk)) openTipCard(Tip::FirstWalk, Nav::Idle);
-                break;
-        }
-    } else if (ev.button == Button::C) {
-        // One level out, every time: inside an area → that category's own rows, parked
-        // on the area's header; at a category's level → the ACTIVITY PICKER, parked on
-        // the category just left. C never skips a level, so the way out of EXPL is the
-        // same number of presses as the way in.
-        if (explNavArea_ >= 0) {
-            const int a = explNavArea_;
-            explNavArea_ = -1;
-            explRow_ = areaHeaderRow(a);
-        } else {
-            const ExplCat c = explCat_;
-            explCat_ = ExplCat::None;
-            explRow_ = explCatRow(c);
-        }
-    }
+void Game::explainFirstWalk() {
+    // The first walk a player arms is the one moment they are certainly watching before
+    // it runs hands-off, so it is when the walk is explained.
+    if (!tipSeen(Tip::FirstWalk)) openTipCard(Tip::FirstWalk, Nav::Idle);
 }
 
 void Game::startExplore(int sector, int sub) {

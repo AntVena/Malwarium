@@ -729,48 +729,7 @@ void Game::drawSubmenu(Framebuffer& fb) const {
         case SubmenuId::Games:
             arcadeScreen_.drawList(fb, *this);
             break;
-        case SubmenuId::Expl: {
-            bool cleared[kExplSectors * kExplSubAreas];
-            bool boss[kExplSectors * kExplSubAreas];
-            flattenSubFlags(cleared, boss);
-            // The shared half: everything the NAV also reads, so the cursor and the
-            // drawing always agree about what is open (Game::explView).
-            ExplListView v = explView();
-            v.cursor = explRow_;
-            v.subCleared = cleared;
-            v.subBossUnlocked = boss;
-            v.cat = explCat_;
-            v.navArea = explNavArea_;
-            v.streakWins = walk_.streak;
-            v.winsToBoss = kExploreStreakToBoss;
-            // Only the rows this level draws are counted (explRowInLevel), so STORY's
-            // zone list pays for the area pools, an opened area pays for its own five
-            // rungs, and ENDLESS pays for its two, never for the whole ladder on every
-            // repaint, and the ACTIVITY PICKER (which draws no zone rows at all) for
-            // none of it. Everything else stays 0, which is what a row nobody is looking
-            // at is worth.
-            int areaLearn[kExplSectors] = {};
-            int gauntletLearn[kExplSectors] = {};
-            int subLearn[kExplSectors * kExplSubAreas] = {};
-            if (explCat_ == ExplCat::Story && explNavArea_ >= 0 &&
-                explNavArea_ < kExplSectors) {
-                gauntletLearn[explNavArea_] = areaGauntletMovesToLearn(explNavArea_);
-                for (int sub = 0; sub < kExplSubAreas; ++sub)
-                    subLearn[explNavArea_ * kExplSubAreas + sub] =
-                        subAreaMovesToLearn(explNavArea_, sub);
-            } else if (explCat_ == ExplCat::Story) {
-                for (int a = 0; a < kExplSectors; ++a) areaLearn[a] = areaMovesToLearn(a);
-            } else if (explCat_ == ExplCat::Endless) {
-                v.deepWebMovesToLearn = deepWebMovesToLearn();
-                v.darkWebMovesToLearn = darkWebMovesToLearn();
-            }
-            v.areaMovesToLearn = areaLearn;
-            v.gauntletMovesToLearn = gauntletLearn;
-            v.subMovesToLearn = subLearn;
-            v.beat = beat_;
-            drawExplList(fb, registry_, v);
-            break;
-        }
+        case SubmenuId::Expl: expl_.draw(fb, *this); break;
         default:
             drawPlaceholderSubmenu(fb, carouselSlots()[cursor_].label);
             break;
