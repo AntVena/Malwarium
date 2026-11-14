@@ -16,6 +16,7 @@
 
 #include "tunables.h"                   // kHackerTagMax
 #include "core/app/operator.h"          // Tip
+#include "core/app/game/radio_pages.h"
 #include "core/app/game/updates_page.h"
 #include "core/device/platform.h"
 #include "core/device/power_status.h"
@@ -25,7 +26,6 @@
 #include "core/device/net_status.h"
 #include "core/render/scene_id.h"
 #include "core/audio/sound.h"           // SoundMode
-#include "core/net/audit_capture.h"     // AuditMode
 #include "core/ui/ui_state.h"           // CfgScreen, UiMode
 
 namespace mal {
@@ -38,7 +38,7 @@ enum class FactoryScope : uint8_t { ResetPet, WipeEverything };
 
 // What CFG needs from the game. Game implements it; a test can too. Each page that is a
 // type of its own is handed only its own host, which this extends.
-class CfgHost : public UpdatesHost {
+class CfgHost : public UpdatesHost, public RadioHost {
 public:
     virtual const Settings& settingsRecord() const = 0;
     virtual const Operator& operatorRecord() const = 0;
@@ -48,8 +48,6 @@ public:
     virtual int32_t heldBMs() const = 0;
 
     // What the pages show.
-    virtual RadioOwner radioOwner() const = 0;
-    virtual bool netConnectWanted() const = 0;   // the Update claim the arbiter resolves
     virtual const SdStatus& sdStatus() const = 0;
     virtual const PowerStatus& powerStatus() const = 0;
     virtual SdFormatState sdFormatState() const = 0;
@@ -62,10 +60,6 @@ public:
     virtual uint32_t themesUnlockedMask() const = 0;
     virtual int nextSelectableTitle(int cur) const = 0;
     virtual bool backgroundOwned(SceneId s) const = 0;
-    virtual AuditMode auditMode() const = 0;
-    virtual bool apEnabled() const = 0;
-    virtual bool linkEnabled() const = 0;
-    virtual bool linkAmbientStarved() const = 0;
     // The tips seen so far, in the order TIPS lists them.
     virtual std::vector<Tip> replayableTips() const = 0;
 
@@ -78,9 +72,6 @@ public:
     virtual bool setThemePick(int paletteIndex) = 0;
     virtual void equipTitle(int sector) = 0;          // -1 for NONE
     virtual bool setBackgroundPick(SceneId s) = 0;
-    virtual void setAuditMode(AuditMode m) = 0;
-    virtual void setApEnabled(bool on) = 0;
-    virtual void setLinkEnabled(bool on) = 0;
     virtual void setCareAlerts(bool on) = 0;
     virtual bool setHackerTag(const char* tag) = 0;   // false on a tag it refuses
     virtual void requestTravelSleep() = 0;
@@ -120,8 +111,7 @@ public:
     void releaseB(CfgHost&) {}
 
     CfgScreen page() const { return page_; }
-    // Which QR step the 'Pedia page shows (pediaQrPages orders them).
-    int pediaQrPage() const { return qrPage_; }
+    const RadioPages& radioPages() const { return radio_; }
 
 private:
     void openPage(CfgHost& host, CfgScreen target);
@@ -133,11 +123,9 @@ private:
     void onFormatSd(CfgHost& host, const ButtonEvent& ev);
     void onHackerTag(CfgHost& host, const ButtonEvent& ev);
     void onTips(CfgHost& host, const ButtonEvent& ev);
-    void follow(CfgHost& host, UpdatesPage::Move move);
-    void onPediaQr(CfgHost& host, const ButtonEvent& ev);
+    void follow(CfgHost& host, CfgMove move);
     void drawSysInfoPage(Framebuffer& fb, const CfgHost& host) const;
     void drawDevicePage(Framebuffer& fb, const CfgHost& host) const;
-    void drawRadioPage(Framebuffer& fb, const CfgHost& host) const;
     void drawBackgroundPage(Framebuffer& fb, const CfgHost& host) const;
     void drawTipsPage(Framebuffer& fb, const CfgHost& host) const;
 
@@ -149,13 +137,13 @@ private:
     // The open page's focused choice: a picker's row, a confirm's NO/YES, the Factory
     // Reset scope. Only one page is open at a time, and each seeds it on opening.
     int pick_ = 0;
-    int qrPage_ = 0;
     int tipsRow_ = 0;
     // The HackerTag editor: the tag being typed, and the caret (kHackerTagMax is the
     // confirm cell).
     char tag_[kHackerTagMax + 1] = {0};
     int caret_ = 0;
     UpdatesPage updates_;
+    RadioPages radio_;
 };
 
 }  // namespace mal

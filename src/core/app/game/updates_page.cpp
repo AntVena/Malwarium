@@ -8,19 +8,19 @@ namespace mal {
 
 // Leaving does not cancel a job. The job holds the radio, so a download finishes and
 // its outcome waits here.
-UpdatesPage::Move UpdatesPage::onButton(UpdatesHost& host, const ButtonEvent& ev) {
+CfgMove UpdatesPage::onButton(UpdatesHost& host, const ButtonEvent& ev) {
     if (host.updateJobLive() || host.installStatus().state != InstallState::Idle) {
-        if (ev.button != Button::C) return Move::Stay;
+        if (ev.button != Button::C) return CfgMove::stay();
         // Only a finished job's report is cleared on the way out; a live one keeps its
         // progress to come back to.
         if (!host.updateJobLive()) host.clearInstallReport();
-        return Move::Leave;
+        return CfgMove::leave();
     }
     if (confirm_ != UpdateTarget::None) return onConfirm(host, ev);
     return onRows(host, ev);
 }
 
-UpdatesPage::Move UpdatesPage::onConfirm(UpdatesHost& host, const ButtonEvent& ev) {
+CfgMove UpdatesPage::onConfirm(UpdatesHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::A) confirmPick_ ^= 1;      // NO <-> YES
     else if (ev.button == Button::B) {
         // The second yes, and the only path to a write.
@@ -32,10 +32,10 @@ UpdatesPage::Move UpdatesPage::onConfirm(UpdatesHost& host, const ButtonEvent& e
         confirmPick_ = 0;
     }
     host.markDirty();
-    return Move::Stay;
+    return CfgMove::stay();
 }
 
-UpdatesPage::Move UpdatesPage::onRows(UpdatesHost& host, const ButtonEvent& ev) {
+CfgMove UpdatesPage::onRows(UpdatesHost& host, const ButtonEvent& ev) {
     const UpdateStatus& status = host.updateStatus();
     if (ev.button == Button::A) {
         row_ = stepRow(row_, updateCheckRows(status), +1);
@@ -56,21 +56,21 @@ UpdatesPage::Move UpdatesPage::onRows(UpdatesHost& host, const ButtonEvent& ev) 
                 // device already holds, so it opens even when a check cannot run.
                 if (host.updateSourceKnown()) {
                     host.markDirty();
-                    return Move::OpenFlashQr;
+                    return CfgMove::show(CfgScreen::UpdateQr);
                 }
                 break;
         }
     } else if (ev.button == Button::C) {
-        return Move::Leave;
+        return CfgMove::leave();
     }
-    return Move::Stay;
+    return CfgMove::stay();
 }
 
 // C returns to UPDATES with its cursor still on the row that opened this. The defocus
 // and the sleep are held off while it shows (qrScreenActive): a phone takes longer
 // than the idle window to read it.
-UpdatesPage::Move UpdatesPage::onFlashQr(const ButtonEvent& ev) const {
-    return ev.button == Button::C ? Move::Leave : Move::Stay;
+CfgMove UpdatesPage::onFlashQr(const ButtonEvent& ev) const {
+    return ev.button == Button::C ? CfgMove::leave() : CfgMove::stay();
 }
 
 void UpdatesPage::draw(Framebuffer& fb, const UpdatesHost& host) const {

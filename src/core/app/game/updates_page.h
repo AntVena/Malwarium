@@ -3,17 +3,16 @@
 // Three faces on one page: a job's progress, the yes/no confirm an install row opens,
 // and the row list. The page holds the focused row and the target sitting at its
 // confirm. The job, what it reports and the radio it holds are the game's, reached
-// through UpdatesHost. Where the page sits in the CFG menu is the menu's business, so a
-// press answers with the move it asks of the menu rather than making it.
+// through UpdatesHost. A press answers with the move it asks of the menu (CfgMove).
 //
-// This header names no core/ui type, so game.h can hold the page (inside CfgMenu) by
-// value.
+// This header names no core/ui type beyond ui_state.h, so game.h can hold the page
+// (inside CfgMenu) by value.
 #pragma once
 
 #include <cstdint>
 
+#include "core/app/game/cfg_page.h"
 #include "core/device/net_status.h"
-#include "core/device/platform.h"
 #include "core/device/update_status.h"
 
 namespace mal {
@@ -45,18 +44,15 @@ protected:
 
 class UpdatesPage {
 public:
-    // What a press asks of the menu the page sits in.
-    enum class Move : uint8_t { Stay, Leave, OpenFlashQr };
-
-    Move onButton(UpdatesHost& host, const ButtonEvent& ev);
+    CfgMove onButton(UpdatesHost& host, const ButtonEvent& ev);
     void draw(Framebuffer& fb, const UpdatesHost& host) const;
     // The flash QR: one page, so A does nothing and C goes back to the rows.
-    Move onFlashQr(const ButtonEvent& ev) const;
+    CfgMove onFlashQr(const ButtonEvent& ev) const;
     void drawFlashQr(Framebuffer& fb, const UpdatesHost& host) const;
 
 private:
-    Move onConfirm(UpdatesHost& host, const ButtonEvent& ev);
-    Move onRows(UpdatesHost& host, const ButtonEvent& ev);
+    CfgMove onConfirm(UpdatesHost& host, const ButtonEvent& ev);
+    CfgMove onRows(UpdatesHost& host, const ButtonEvent& ev);
 
     // The focused row, and the target sitting at its yes/no confirm. The confirm
     // clears on the way out; the job does not.

@@ -31,10 +31,6 @@ int backgroundRow(SceneId s) {
             if (kBackgrounds[i].wire == b->wire) row = i + 1;
     return row;
 }
-
-HomeNetwork homeNetwork(const CfgHost& host) {
-    return host.netProvisioned() ? HomeNetwork::Saved : HomeNetwork::Unsaved;
-}
 }  // namespace
 
 // --- L2: the CFG list ---------------------------------------------------------
@@ -89,9 +85,9 @@ void CfgMenu::openPage(CfgHost& host, CfgScreen target) {
         case CfgScreen::Theme: pick_ = host.themeRow(); break;
         case CfgScreen::Titles: pick_ = host.operatorRecord().world.equippedTitle; break;
         case CfgScreen::Background: pick_ = backgroundRow(host.operatorRecord().backgroundPick); break;
-        case CfgScreen::Audit: pick_ = static_cast<int>(host.auditMode()); break;
-        case CfgScreen::PediaAp: pick_ = host.apEnabled() ? 1 : 0; break;
-        case CfgScreen::Link: pick_ = host.linkEnabled() ? 1 : 0; break;
+        case CfgScreen::Audit:
+        case CfgScreen::PediaAp:
+        case CfgScreen::Link: radio_.open(host, target); break;
         case CfgScreen::HackerTag: {
             // The tag padded to the fixed cell count with '_', a valid alphabet char.
             const char* live = host.operatorRecord().hackerTag;
@@ -147,14 +143,12 @@ void CfgMenu::onGroup(CfgHost& host, const ButtonEvent& ev) {
 
 // --- L3: the pages ------------------------------------------------------------
 
-// The shape every value picker shares: A steps the focus, B applies it and backs out, C
-// backs out with nothing changed. `apply` returns whether to back out, so a row that
-// refuses (a locked set) or moves on to a page of its own (the AP's QR) stays put.
+// The menu's own pickers (pickerPress), whose `apply` returns whether to back out, so a
+// row that refuses (a locked set) stays put.
 template <class Step, class Apply>
 void CfgMenu::onPicker(CfgHost& host, const ButtonEvent& ev, Step step, Apply apply) {
-    if (ev.button == Button::A) step();
-    else if (ev.button == Button::B) { if (apply()) leavePage(host); }
-    else if (ev.button == Button::C) leavePage(host);
+    follow(host, pickerPress(ev, step,
+                             [&] { return apply() ? CfgMove::leave() : CfgMove::stay(); }));
 }
 
 void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
@@ -215,30 +209,12 @@ void CfgMenu::onDetail(CfgHost& host, const ButtonEvent& ev) {
                              pick_ == 0 ? SceneId::None : kBackgrounds[pick_ - 1].scene);
                      });
             break;
-        case CfgScreen::Audit:
-            // Escalating picker: OFF -> SCAN -> SCAN+CAP -> OFF.
-            onPicker(host, ev, [&] { pick_ = stepRow(pick_, 3, +1); },
-                     [&] { host.setAuditMode(static_cast<AuditMode>(pick_)); return true; });
-            break;
-        case CfgScreen::PediaAp:
-            onPicker(host, ev, [&] { pick_ ^= 1; },
-                     [&] {
-                         host.setApEnabled(pick_ != 0);
-                         // Turning the AP ON leads straight to the QR to connect (also the
-                         // "see the QR" path when it is already on). OFF has no QR to show.
-                         if (pick_ == 0) return true;
-                         page_ = CfgScreen::PediaQr;
-                         qrPage_ = 0;             // start on the join-network QR
-                         return false;
-                     });
-            break;
-        case CfgScreen::Link:
-            onPicker(host, ev, [&] { pick_ ^= 1; },
-                     [&] { host.setLinkEnabled(pick_ != 0); return true; });
-            break;
+        case CfgScreen::Audit:      follow(host, radio_.onAudit(host, ev)); break;
+        case CfgScreen::PediaAp:    follow(host, radio_.onAp(host, ev)); break;
+        case CfgScreen::Link:       follow(host, radio_.onLink(host, ev)); break;
+        case CfgScreen::PediaQr:    follow(host, radio_.onPediaQr(host, ev)); break;
         case CfgScreen::Update:     follow(host, updates_.onButton(host, ev)); break;
         case CfgScreen::UpdateQr:   follow(host, updates_.onFlashQr(ev)); break;
-        case CfgScreen::PediaQr:    onPediaQr(host, ev); break;
         case CfgScreen::FactoryReset:
             if (ev.button == Button::A) pick_ ^= 1;                  // cycle scope
             else if (ev.button == Button::B) host.armHoldB();         // arm hold-to-commit
@@ -334,23 +310,14 @@ void CfgMenu::onTips(CfgHost& host, const ButtonEvent& ev) {
     }
 }
 
-// What the UPDATES page asked of the menu. Its flash QR is a page of the menu's like any
-// other, whose parent is UPDATES, so leaving it lands back on the rows.
-void CfgMenu::follow(CfgHost& host, UpdatesPage::Move move) {
-    switch (move) {
-        case UpdatesPage::Move::Stay: break;
-        case UpdatesPage::Move::Leave: leavePage(host); break;
-        case UpdatesPage::Move::OpenFlashQr: page_ = CfgScreen::UpdateQr; break;
-    }
-}
-
-// Two QR pages: A cycles join-network and the 'Pedia URL; C exits.
-void CfgMenu::onPediaQr(CfgHost& host, const ButtonEvent& ev) {
-    if (ev.button == Button::A) {
-        qrPage_ = stepRow(qrPage_, pediaQrPages(homeNetwork(host)), +1);
-        host.markDirty();
-    } else if (ev.button == Button::C) {
-        leavePage(host);
+// What a page asked of the menu. A page it shows (a QR behind a row) is a page of the
+// menu's like any other, whose parent is the page that showed it, so leaving it lands
+// back there.
+void CfgMenu::follow(CfgHost& host, CfgMove move) {
+    switch (move.kind) {
+        case CfgMove::Kind::Stay: break;
+        case CfgMove::Kind::Leave: leavePage(host); break;
+        case CfgMove::Kind::Show: page_ = move.page; break;
     }
 }
 
@@ -361,7 +328,7 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
     switch (page_) {
         case CfgScreen::SysInfo: drawSysInfoPage(fb, host); break;
         case CfgScreen::Device: drawDevicePage(fb, host); break;
-        case CfgScreen::Radio: drawRadioPage(fb, host); break;
+        case CfgScreen::Radio: radio_.drawGroup(fb, host, groupRow_); break;
         case CfgScreen::Travel:
             // Two faces, like UPDATES: the question, then the notice that replaces it for
             // as long as the device is still on its way down.
@@ -389,17 +356,12 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
         case CfgScreen::Theme:
             drawThemePicker(fb, pick_, host.themeRow(), host.themesUnlockedMask());
             break;
-        case CfgScreen::Audit: drawAuditMode(fb, pick_, static_cast<int>(host.auditMode())); break;
-        case CfgScreen::PediaAp:
-            drawApToggle(fb, pick_, host.apEnabled() ? OnOff::On : OnOff::Off);
-            break;
-        case CfgScreen::Link:
-            drawLinkToggle(fb, pick_, host.linkEnabled() ? OnOff::On : OnOff::Off,
-                           host.linkAmbientStarved() ? LinkReach::PeersOnly : LinkReach::Ambient);
-            break;
+        case CfgScreen::Audit: radio_.drawAudit(fb, host); break;
+        case CfgScreen::PediaAp: radio_.drawAp(fb, host); break;
+        case CfgScreen::Link: radio_.drawLink(fb, host); break;
         case CfgScreen::Update: updates_.draw(fb, host); break;
         case CfgScreen::UpdateQr: updates_.drawFlashQr(fb, host); break;
-        case CfgScreen::PediaQr: drawPediaQr(fb, qrPage_, homeNetwork(host)); break;
+        case CfgScreen::PediaQr: radio_.drawPediaQr(fb, host); break;
         case CfgScreen::FactoryReset: {
             const int32_t held = host.heldBMs();
             const float hf = held >= 0 ? static_cast<float>(held) / kFactoryCommitMs : 0.0f;
@@ -451,17 +413,6 @@ void CfgMenu::drawDevicePage(Framebuffer& fb, const CfgHost& host) const {
     v.background = bg == SceneId::None ? "AUTO" : backgroundFor(bg)->name;
     v.careAlerts = s.careAlerts;
     drawCfgDevice(fb, v);
-}
-
-void CfgMenu::drawRadioPage(Framebuffer& fb, const CfgHost& host) const {
-    CfgRadioView v;
-    v.cursor = groupRow_;
-    v.owner = host.radioOwner();
-    v.auditLevel = static_cast<int>(host.auditMode());
-    v.linkOn = host.linkEnabled();
-    v.apOn = host.apEnabled();
-    v.updateLive = host.netConnectWanted();
-    drawCfgRadio(fb, v);
 }
 
 void CfgMenu::drawBackgroundPage(Framebuffer& fb, const CfgHost& host) const {
