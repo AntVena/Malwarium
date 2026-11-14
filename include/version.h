@@ -50,7 +50,7 @@
 #  define FW_VERSION_MAJOR 0
 #endif
 #ifndef FW_VERSION_MINOR
-#  define FW_VERSION_MINOR 101
+#  define FW_VERSION_MINOR 102
 #endif
 #ifndef FW_VERSION_PATCH
 #  define FW_VERSION_PATCH 0
