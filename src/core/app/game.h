@@ -23,6 +23,7 @@
 #include "core/app/game/arena_screen.h"
 #include "core/app/game/away_digest_screen.h"
 #include "core/app/game/chapters_screen.h"
+#include "core/app/game/chroma_screen.h"
 #include "core/app/game/crew_screen.h"
 #include "core/app/game/csf_screen.h"
 #include "core/app/game/egg_pick_screen.h"
@@ -155,7 +156,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private StatPickerHost, private ItemOfferHost, private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost,
-             private FraggerHost, private IsolationHost {
+             private FraggerHost, private IsolationHost, private ChromaHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -1568,7 +1569,7 @@ public:
     // flashing Exploit pip, and what the chord acts on.
     bool eggCrackable() const { return hatchRevealReady(); }
     int hatchRevealFrame() const { return hatchReveal_.frame(*this); }   // (tests)
-    uint32_t bootHatchRemainMs() const { return pet_.bootHatchRemainMs; }
+    uint32_t bootHatchRemainMs() const override { return pet_.bootHatchRemainMs; }
     // Shaves `ms` off the incubation clock (floors at 0); a no-op outside the egg
     // phase. Walk/network steps use this to advance a laid egg, and it's also the
     // seam dev_config.h's DEV_EGG_TIMER_MS uses to fast-forward a fresh boot.
@@ -1653,13 +1654,13 @@ public:
     // caught in the wrong one ends the run with what it already earned. The rules are
     // core/model/chromatophore.h; the screen and the payout are game_chroma.cpp.
     bool inChroma() const { return nav_ == Nav::Chroma; }
-    const Chromatophore& chroma() const { return chroma_; }
+    const Chromatophore& chroma() const override { return chroma_; }
     // Who the board is actually painting. The pet if its family wears borrowed colours
     // (CreatureLine::wearsBorrowedColours) (which is every route in from a hatch,
     // since the egg on the shelf IS that pet), and otherwise the Metamorphic egg, so
     // an arcade cabinet played by a Ransomware pet still has a plausible subject
     // rehearsing on it. nullptr only if the roster somehow holds neither.
-    const CreatureDef* chromaSubject() const;
+    const CreatureDef* chromaSubject() const override;
 
     int cursor() const { return cursor_; }      // focused carousel slot 0..7
     UiMode uiMode() const { return settings_.uiMode; }
@@ -3201,9 +3202,8 @@ private:
     // and `switching` lets a round change the water mid-window, which only the hardest
     // cabinet setting turns on.
     void startChroma(int rounds, int windowMs, bool switching);
-    void onChroma(const ButtonEvent& ev);
-    void finishChroma();                 // spend the passes on the clock and leave
-    void drawChroma(Framebuffer& fb) const;
+    void finishChroma() override;        // spend the passes on the clock and leave
+    Chromatophore& liveChroma() override { return chroma_; }
 
     // Evolution boundary lifecycle (stub).
     bool evolveEligible() const;   // time-in-stage + care gate + a defined successor
@@ -3817,6 +3817,7 @@ private:
     // incubating. Its clock is real-ms and DELTAS rather than a step cadence: the
     // board is a stopwatch, not a board that steps.
     Chromatophore chroma_;
+    ChromaScreen chromaScreen_;   // game/chroma_screen.h
     uint32_t lastChromaMs_ = 0;
     int chromaBanked_ = 0;           // passes already spent on the clock, so B can't double-pay
 
