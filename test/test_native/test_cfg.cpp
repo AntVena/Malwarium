@@ -127,6 +127,10 @@ void test_cfg_format_sd_refused_during_update() {
     g.onButton(press(Button::B));
     CHECK(!g.sdFormatRequested());
     CHECK(g.cfgScreen() == CfgScreen::FormatSd);  // stays, saying why
+    // The card's owner refuses, not the screen: any other caller is refused alike.
+    CHECK(g.sdCardUse() == SdCardUse::Busy);
+    g.requestSdFormat();
+    CHECK(!g.sdFormatRequested());
 }
 
 // The travel-sleep contract, and the reason the mode needs no clock-freeze machinery

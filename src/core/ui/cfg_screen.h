@@ -144,9 +144,8 @@ void drawTravelSleeping(Framebuffer& fb);
 // L3 FORMAT SD confirm. Leads with what is lost (everything on the card), names the
 // card it would act on (`sd`: its size, or that it can't be read yet. The usual reason
 // to be here is a card the boot mount refused), and says what to do once it is ready.
-// Starts on NO like every screen that asks a second time. Busy is an update job holding
-// the card: the YES row is struck through and the screen says why.
-enum class SdCardUse : uint8_t { Free, Busy };
+// Starts on NO like every screen that asks a second time. A busy card (SdCardUse) has
+// its YES row struck through, and the screen says why.
 void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUse use);
 
 // The FORMAT SD faces after the yes: FORMATTING while the device tier works (no hint

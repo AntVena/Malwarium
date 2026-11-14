@@ -52,6 +52,7 @@ public:
     virtual const SdStatus& sdStatus() const = 0;
     virtual const PowerStatus& powerStatus() const = 0;
     virtual SdFormatState sdFormatState() const = 0;
+    virtual SdCardUse sdCardUse() const = 0;
     virtual bool travelSleepRequested() const = 0;
     virtual bool captureEnabled() const = 0;
     virtual const char* equippedTitleName() const = 0;

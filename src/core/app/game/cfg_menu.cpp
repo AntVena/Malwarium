@@ -279,8 +279,8 @@ void CfgMenu::onTravel(CfgHost& host, const ButtonEvent& ev) {
 }
 
 // Working: every button is inert, as travel's are once latched, since nothing pressed
-// here could stop a format. A result is read, then any button leaves. YES is refused
-// while an update job runs: it is writing to this card.
+// here could stop a format. A result is read, then any button leaves. YES on a busy
+// card is refused by the request itself.
 void CfgMenu::onFormatSd(CfgHost& host, const ButtonEvent& ev) {
     const SdFormatState st = host.sdFormatState();
     if (st == SdFormatState::Working) return;
@@ -291,7 +291,7 @@ void CfgMenu::onFormatSd(CfgHost& host, const ButtonEvent& ev) {
         pick_ ^= 1;
     } else if (ev.button == Button::B) {
         if (pick_ == 0) leavePage(host);
-        else if (!host.updateJobLive()) host.requestSdFormat();
+        else host.requestSdFormat();
     } else if (ev.button == Button::C) {
         leavePage(host);
     }
@@ -370,8 +370,7 @@ void CfgMenu::drawDetail(Framebuffer& fb, const CfgHost& host) const {
             break;
         case CfgScreen::FormatSd:
             if (host.sdFormatState() == SdFormatState::Idle)
-                drawSdFormatConfirm(fb, pick_, host.sdStatus(),
-                                    host.updateJobLive() ? SdCardUse::Busy : SdCardUse::Free);
+                drawSdFormatConfirm(fb, pick_, host.sdStatus(), host.sdCardUse());
             else
                 drawSdFormatStatus(fb, host.sdFormatState(), host.sdStatus());
             break;

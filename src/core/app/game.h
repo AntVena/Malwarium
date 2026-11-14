@@ -857,8 +857,17 @@ public:
     // reports through finishSdFormat(), which lands Done or Failed for the screen.
     // Latched rather than pulsed for the reason travel sleep is: the device tier may
     // decline a pass (an update job is writing to the card) and be asked again.
-    // Host and browser tiers have no card, so they answer finishSdFormat(false).
-    void requestSdFormat() override { sdFormatState_ = SdFormatState::Working; dirty_ = true; }
+    // Host and browser tiers have no card, so they answer finishSdFormat(false). A card
+    // something is writing to (sdCardUse) is refused here, whoever asks.
+    void requestSdFormat() override {
+        if (sdCardUse() == SdCardUse::Busy) return;
+        sdFormatState_ = SdFormatState::Working;
+        dirty_ = true;
+    }
+    // An update job writes its download to the card.
+    SdCardUse sdCardUse() const override {
+        return updateJob_ ? SdCardUse::Busy : SdCardUse::Free;
+    }
     bool sdFormatRequested() const { return sdFormatState_ == SdFormatState::Working; }
     void finishSdFormat(bool ok) {
         sdFormatState_ = ok ? SdFormatState::Done : SdFormatState::Failed;

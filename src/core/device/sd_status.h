@@ -17,6 +17,10 @@ struct SdStatus {
     uint32_t sizeMB = 0;    // capacity in MB, 0 when absent/unknown
 };
 
+// Whether something is writing to the card, so it cannot be formatted under it. Busy is
+// an update job holding the card.
+enum class SdCardUse : uint8_t { Free, Busy };
+
 // Where a CFG → DEVICE → FORMAT SD job stands. Idle is the confirm question;
 // Working is latched from the operator's yes until the device tier reports back
 // through Game::finishSdFormat, which lands Done or Failed for the screen to say.
