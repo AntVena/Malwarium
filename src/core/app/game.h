@@ -39,6 +39,7 @@
 #include "core/app/game/peers_screen.h"
 #include "core/app/game/shop_screen.h"
 #include "core/app/game/rig_shop_screen.h"
+#include "core/app/game/stat_picker_screen.h"
 #include "core/app/game/stat_reader.h"
 #include "core/app/game/story_reader.h"
 #include "core/app/game/warp_picker_screen.h"
@@ -140,7 +141,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private StoryReaderHost, private ExplHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
-             private ShiboleetHost, private WarpPickerHost {
+             private ShiboleetHost, private WarpPickerHost,
+             private StatPickerHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -243,7 +245,7 @@ public:
     int xpForLevel(int level) const;
     // Earned points in combat stat `i` (0 power · 1 defense · 2 speed · 3 max-Health);
     // sum == pet_.level (the level == total earned points invariant). Out-of-range → 0.
-    int levelStatPoint(int i) const {
+    int levelStatPoint(int i) const override {
         return (i >= 0 && i < kLevelStatCount) ? pet_.statPoints[i] : 0;
     }
     // The combat stat the most-recent level-up bumped (0..3), or -1 before the first
@@ -3033,31 +3035,17 @@ private:
     // dismisses back to the VAULT list (Nav::Submenu. Mirrors onCacheYield).
     // Boot Accelerator: consume it + apply its CutIncubationMin to the incubation.
     void useBootAccelerator(const ItemDef& d);
-    // Rollback: open the stat picker (nav_ = RollbackPicker) parked on the
-    // first eligible stat; onRollbackPicker drives A cycle / B shed / C cancel;
-    // rollbackEligible tests a stat has ≥1 earned point (skipped otherwise);
-    // drawRollbackPickerScreen renders it.
+    // ROLLBACK and REPARTITION (game/stat_picker_screen.h, game_stat_pickers.cpp): the
+    // pickers over the pet's earned stat points that the two items open, and the two
+    // commits they spend the item on. A stat can give up a point only if it has one.
     void openRollbackPicker(const ItemDef& item);
-    void onRollbackPicker(const ButtonEvent& ev);
-    bool rollbackEligible(int stat) const {
+    void openRepartitionPicker(const ItemDef& item);
+    bool statCanGiveUp(int stat) const override {
         return stat >= 0 && stat < kLevelStatCount && pet_.statPoints[stat] > 0;
     }
-    int nextEligibleStat(int cur) const;            // A-cycle target (skips 0-point stats)
-    void drawRollbackPickerScreen(Framebuffer& fb) const;
-    // Repartition: the same stat table, moved rather than shed. One nav state
-    // (Nav::RepartitionPicker) over TWO steps, because the two questions are the same
-    // question asked twice and a second Nav row would only make the A/B/C contract
-    // harder to read: repartitionFrom_ < 0 is step one (pick the stat to take FROM,
-    // rollbackEligible again. A point can only be moved off a stat that has one), and
-    // once it is set the cursor is picking the stat to move it TO. B advances the step
-    // then commits; C walks it back one step rather than straight out, so a mis-picked
-    // source costs one press. Nothing is spent until the commit.
-    void openRepartitionPicker(const ItemDef& item);
-    void onRepartitionPicker(const ButtonEvent& ev);
-    // The TO step's A-cycle target: any stat but the source (a move onto the stat the
-    // point is already on is a no-op, and the picker should never offer one).
-    int nextRepartitionTarget(int cur) const;
-    void drawRepartitionPickerScreen(Framebuffer& fb) const;
+    void rollBackStat(const ItemDef& item, int stat) override;
+    void moveStatPoint(const ItemDef& item, int from, int to) override;
+    StatPickerScreen statPicker_;
     void startMaint(MaintKind kind, int variant, ArcadeDifficulty dial) override;
     // What every played game reports when it ends, whoever was paying for it. `units`
     // and `bitsUnits` are what a MAINT process prices (ArcadeGameDef::unitName /
@@ -3305,8 +3293,6 @@ private:
     // opts OUT rather than in.
     bool autoProgress_ = true;
     ExploreControlScreen exploreControl_;   // the walk's A+C overlay (game/explore_control_screen.h)
-    // The Rollback or Repartition item the open stat picker spends on its commit.
-    const ItemDef* statPickerItem_ = nullptr;
     MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)
     // Which engine each process's played variant runs (debugSetMaintPlayedGame).
     ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;
@@ -3388,11 +3374,6 @@ private:
     // The stat index (0..3) of the most-recent level-up, or -1 if none yet: the
     // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
     int lastLevelUpStat_ = -1;
-    int rollbackRow_ = 0;       // Rollback picker cursor (RollbackPicker nav state)
-    // Repartition picker (RepartitionPicker nav state): the row the cursor is on, and
-    // the stat the point is being taken from; -1 while that is still the question.
-    int repartitionRow_ = 0;
-    int repartitionFrom_ = -1;
 
     // The explore walk (core/model/explore_walk.h), a background mode on the IDLE
     // habitat. The wild-encounter intro and event screens are their own Nav states, past

@@ -71,8 +71,8 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ModShop: shop_.draw(fb, *this); break;
         case Nav::WarpPicker: warpPicker_.draw(fb, *this); break;
         case Nav::ItemOffer: drawItemOfferScreen(fb); break;
-        case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
-        case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
+        case Nav::RollbackPicker: statPicker_.drawRollback(fb, *this); break;
+        case Nav::RepartitionPicker: statPicker_.drawRepartition(fb, *this); break;
         case Nav::CacheYield: vault_.drawReveal(fb, *this); break;
         case Nav::BulkYield: vault_.drawBulkReveal(fb, *this); break;
         case Nav::PostEncounter: postEncounter_.draw(fb, *this); break;
@@ -810,18 +810,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawRollbackPickerScreen(Framebuffer& fb) const {
-    const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],
-                           pet_.statPoints[3]};
-    drawRollbackPicker(fb, points, rollbackRow_);
-}
-
-void Game::drawRepartitionPickerScreen(Framebuffer& fb) const {
-    const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],
-                           pet_.statPoints[3]};
-    drawRepartitionPicker(fb, points, repartitionRow_, repartitionFrom_);
-}
 
 void Game::drawStacker(Framebuffer& fb) const {
     if (gameBriefOpen_) { drawGameBrief(fb); return; }
