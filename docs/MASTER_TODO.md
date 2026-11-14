@@ -148,23 +148,24 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
   (`FxSweep`, `Incubation`). A guard that lists screens by hand is a missing column.
 - Small screens go in batches, one commit each, checked together.
 
-#### Records
-
-**RESET PET restarts part of the `Operator`.** `resetToHatch` puts the HackerTag, the
-lifetime counters, Bits, the spare mods and the arcade tallies back to a fresh operator's
-and empties the ARCH rack and records (`OperatorArch`), while the CFG screen says RESET
-PET "KEEPS PEDIA PROGRESS" and `executeFactoryReset` says it keeps every player-level
-tally. Decide which is meant: either a pet reset leaves the record alone, or the part it
-restarts is a lifetime of its own on `Operator`. | `game_reset.cpp`, `game_config.cpp`'s
-`executeFactoryReset`, `cfg_screen.cpp` | S |
-`test_cfg_factory_reset_scopes_differ` states the answer. |
-
 #### Screens
 
-- **`CfgHost` is wide** (about sixty methods), because CFG fronts every subsystem that has a
-  setting. UPDATES is the part with a reason of its own to change: its row, confirm and
-  three faces, and a third of the host's reads. It can be its own page type under
-  `CfgMenu`, handed a narrower host, when a second CFG page needs the same split. | S |
+- **CFG is a menu of subsystems behind one host.** `CfgHost` has about sixty-three methods
+  because every subsystem with a setting is reached through it, and each page can see all
+  of them. Grouped by what they serve: the menu moves every page shares (8: `openDetail`,
+  `closeDetail`, `leaveToCarousel`, the hold), display, sound and theme over `Settings`
+  (~13), UPDATES (~11), the radio consents and network status (~11), storage, power and
+  system info (~9), the operator's identity (5: titles, the tag), and the resets and tips
+  (4). Each group changes for its own reason, so `CfgMenu` becomes the menu only (the page
+  table, the moves, the shared focus) and each page a type with its own host named for its
+  subsystem (`UpdatesHost`, `RadioHost`, ...), extending one `CfgPageHost` for the shared
+  moves, the way each played board's host extends `BoardHost`. Start by listing each
+  method against the page that calls it, then one page per commit. | `cfg_menu.h`,
+  `cfg_menu.cpp`, `game_config.cpp` | M |
+- **RESET PET's confirm undersells it.** The Factory Reset page says RESET PET "KEEPS PEDIA
+  PROGRESS", and it now keeps everything on the `Operator` (the tag, the wallet, the spare
+  mods, the ARCH rack, the tallies, the rank). Say so in the panel's width, or say what it
+  loses (the pet). | `cfg_screen.cpp` | S |
 
 ---
 
