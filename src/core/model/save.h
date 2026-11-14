@@ -347,7 +347,10 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     each), the USB patch's branch, soak and hold (u8 each), and the egg incubation
 //     clock (u32). Pre-v75 -> no grants, an empty USB port, no crawl record and a zero
 //     clock, which is what a deploy handed over before the rack kept them.
-constexpr uint16_t kSaveVersion = 75;
+// v76 APPEND, one tail after v75's: the firmware version code that wrote the blob (u32),
+//     then the active pet's FRESH PATCH deadline (u32, lifetimeUptimeMs). Pre-v76 -> code 0,
+//     which reads as written by an older build, and no buff.
+constexpr uint16_t kSaveVersion = 76;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -503,6 +506,7 @@ struct SaveRecord {
 struct SaveArmedPet {
     uint8_t trojanDivert = 0;           // v28: Ambig-USB
     uint32_t backupShieldUntilMs = 0;   // v30: the Backup Drive's lifetimeUptimeMs() deadline
+    uint32_t patchBuffUntilMs = 0;      // v76: FRESH PATCH's lifetimeUptimeMs() deadline
     // v15: post-clear wild wins per sub-area, flat row-major (area*kSubAreasPerArea + sub).
     // Ladder-indexed (see `ladderInserts`). Length-prefixed on the wire, so a short or
     // empty list reads as 0.
@@ -830,6 +834,9 @@ struct SaveData {
     SaveArmedPet activeArmed;
     SaveOperator op;
     SaveSettings settings;
+    // v76: kFirmwareVersionCode of the build that wrote this blob; 0 = an older build.
+    // A boot that reads a lower code than its own has just been updated.
+    uint32_t firmwareCode = 0;
 
     // Collections.
     std::vector<SaveStack> items;

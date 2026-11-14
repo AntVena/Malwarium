@@ -187,21 +187,43 @@ void test_wifi_never_awakens_when_not_hot() {
     CHECK(wifiEvents >= 20);                          // sampled enough to trust the gate
 }
 
-// Friendly visit grants a transient ally buff for the next 3 battles (
-// ). The v1 substitute for the doc-07 Met-Pets Roster: it boosts
-// the player's combat power (buildPlayerCombatant) rather than naming a
-// remembered pet, consumed one battle at a time regardless of outcome.
+// A friendly visit joins the walk for its next 3 wild fights, each with the escort's power
+// bonus, spent one fight at a time regardless of outcome.
 void test_wifi_friendly_visit_grants_ally_buff() {
     Game g{StartMode::Hatched};
     walkToWifiOutcome(g, Game::WifiOutcome::FriendlyVisit);
-    CHECK(g.allyBuffBattlesLeft() == 0);
+    CHECK(g.exploreWalk().escortBattles == 0);
     g.onButton(press(Button::B));
     CHECK(g.nav() == Game::Nav::Idle);
-    CHECK(g.allyBuffBattlesLeft() == kAllyBuffBattles);
+    CHECK(g.exploreWalk().escortBattles == kAllyBuffBattles);
 
     walkToAnyCombat(g);                                  // a REAL battle entry
     CHECK(g.nav() == Game::Nav::Combat);
-    CHECK(g.allyBuffBattlesLeft() == kAllyBuffBattles - 1);
+    CHECK(g.exploreWalk().escortBattles == kAllyBuffBattles - 1);
+}
+
+// The escort belongs to the walk: a Sim Battle taken while the walk runs never draws on
+// it, and stopping the walk ends it.
+void test_escort_belongs_to_the_walk() {
+    {
+        Game g{StartMode::Hatched};
+        walkToWifiOutcome(g, Game::WifiOutcome::FriendlyVisit);
+        g.onButton(press(Button::B));
+        CHECK(g.exploreActive() && g.exploreWalk().escortBattles == kAllyBuffBattles);
+        Game plain{StartMode::Hatched};                     // the same pet with no escort
+        enterSimBattle(plain);
+        const int power0 = plain.combat().player().powerMultPct;
+        enterSimBattle(g);
+        CHECK(g.nav() == Game::Nav::Combat);
+        CHECK(g.combat().player().powerMultPct == power0);   // no escort in a Sim Battle
+        CHECK(g.exploreWalk().escortBattles == kAllyBuffBattles);
+    }
+    Game g{StartMode::Hatched};
+    walkToWifiOutcome(g, Game::WifiOutcome::FriendlyVisit);
+    g.onButton(press(Button::B));
+    CHECK(g.exploreWalk().escortBattles == kAllyBuffBattles);
+    stopExplore(g);
+    CHECK(g.exploreWalk().escortBattles == 0);
 }
 
 // Hands-off Wi-Fi reveal: with no button press the rolled outcome auto-

@@ -108,8 +108,9 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v)
 // so the display and the item's own 'Pedia/detail text never drift apart even if the
 // item roster is renamed or rebalanced later. The USB hold earns its row more than any of
 // them: it is the reason STAT's own EVOLVE readout says MAX, and this page is where that
-// gets explained. `backupRemainMs` is the Backup Drive's time left (0 = not armed), which
-// the pet alone cannot say because its deadline is on the device's uptime clock.
+// gets explained. `now` carries what the pet alone cannot say: the timed buffs' time left,
+// whose deadlines are on the device's uptime clock, and the dive arming a dive in progress
+// has taken over from the pet.
 //
 // The PERMANENT entries are one row per grant an Epic dish has made this pet
 // (core/model/pet_upgrades.h). They arm nothing and never lapse, so they carry no timer
@@ -117,7 +118,7 @@ void drawStatScreen(Framebuffer& fb, const PetModel& m, const StatScreenView& v)
 // on); the BUFFS page is where a pet's standing upgrades are readable, which is the only
 // place they belong.
 std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
-                                    uint32_t backupRemainMs);
+                                    const BuffReadings& now);
 
 // --- The INDEX -------------------------------------------------------------
 //

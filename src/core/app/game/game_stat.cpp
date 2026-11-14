@@ -11,9 +11,12 @@ StatSources Game::statSources() const {
     s.xpToNext = xpToNextLevel();
     s.hasNextEvo = hasNextEvolution();
     s.evoRemainMs = evolveRemainMs();
-    // The deadline is on the device's uptime clock, which the pet does not keep.
-    s.backupRemainMs =
+    // The deadlines are on the device's uptime clock, which the pet does not keep.
+    s.buffs.backupRemainMs =
         backupShieldArmed() ? pet_.armed.backupShieldUntilMs - lifetimeUptimeMs() : 0;
+    s.buffs.patchRemainMs =
+        patchBuffArmed() ? pet_.armed.patchBuffUntilMs - lifetimeUptimeMs() : 0;
+    s.buffs.dive = diveArming();
     return s;
 }
 

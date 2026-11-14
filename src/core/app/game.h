@@ -450,6 +450,8 @@ public:
     Face face() const { return face_; }
     int exploreSteps() const { return walk_.steps; }      // steps this explore run
     bool exploreActive() const { return walk_.active; }   // explore-mode running
+    // The walk (core/model/explore_walk.h): in play, or the last one, inactive.
+    const ExploreWalk& exploreWalk() const override { return walk_; }
     int exploreStreak() const { return walk_.streak; }    // current win-streak
     int exploreSector() const { return walk_.sector; }    // armed area (or last)
     int exploreSub() const { return walk_.sub; }          // armed sub-area
@@ -1238,7 +1240,6 @@ public:
     // be created once per arm/seal radio session regardless of whether it held
     // anything new). `bssid` is 6 bytes.
     bool handshakeAlreadyCaptured(const uint8_t* bssid) const;
-    int allyBuffBattlesLeft() const { return allyBuffBattlesLeft_; }  // friendly-visit buff
     bool lockoutActive() const { return pet_.armed.lockoutActive; }
     Nav nav() const { return nav_; }
     CfgScreen cfgScreen() const { return cfg_.page(); }  // active CFG L3 (tests/inspection)
@@ -1726,6 +1727,10 @@ public:
     // fight, nor lapsed)? Lazily checked against the deadline, like
     // Game::buildPlayerCombatant() itself, so nothing clears it when it expires.
     // Read by the STAT BUFFS page and the idle-habitat buff badge (game_render.cpp).
+    // FRESH PATCH (grantPatchBuff), on the same awake-time clock as the Backup Drive.
+    bool patchBuffArmed() const {
+        return pet_.armed.patchBuffUntilMs != 0 && lifetimeUptimeMs() < pet_.armed.patchBuffUntilMs;
+    }
     bool backupShieldArmed() const {
         return pet_.armed.backupShieldUntilMs != 0 && lifetimeUptimeMs() < pet_.armed.backupShieldUntilMs;
     }
@@ -1904,8 +1909,14 @@ public:
     // What a DeepWeb Dive win pays on top, in percent: both halves, added. Zero outside
     // a dive, so a sector walk never collects a bonus armed for the dive after it.
     int diveRewardBonusPct() const {
-        return inDeepWebDive() ? pet_.armed.diveStartBonusPct + pet_.armed.diveStepBonusPct : 0;
+        return inDeepWebDive() ? walk_.diveStartBonusPct + walk_.dive.stepBonusPct : 0;
     }
+    // The dive arming an item reaches right now: the dive's own while one runs, so a
+    // Module used mid-dive applies at once, else the pet's, waiting for the next dive.
+    const DiveArming& diveArming() const {
+        return inDeepWebDive() ? walk_.dive : pet_.armed.nextDive;
+    }
+    DiveArming& diveArming() { return inDeepWebDive() ? walk_.dive : pet_.armed.nextDive; }
     // The depth a dive would actually START at right now (-1 = nothing armed), with the
     // Checkpoint sentinel resolved through pet_.bestDeepWebDepth exactly as startDeepWebDive()
     // resolves it. Anything COMPARING bells reads this rather than the raw field: the
@@ -2230,7 +2241,6 @@ private:
     // Open EXPL: ExplScreen picks the level and row to enter on.
     void openExplList();
     // ExplHost.
-    const ExploreWalk& exploreWalk() const override { return walk_; }
     void explainFirstWalk() override;
     // AUTO-PROGRESS. `autoProgressStep` is the hook every hand-back to the walk runs
     // (returnToExplore): it fires only once the armed sub-area has met its win target,
@@ -2537,6 +2547,10 @@ private:
     // Persistence ------------------------------------
     SaveData captureSave() const;                  // snapshot all persisted state
     void applySave(const SaveData& d);             // restore from a loaded snapshot
+    // FRESH PATCH: a boot that loads a save an older build wrote has just been updated,
+    // and the update ended any walk with its escort or dive arming. The pet gets a timed
+    // power bonus in their place (kPatchBuffPowerPct for kPatchBuffMs of awake time).
+    void grantPatchBuff();
     // captureSave's sections, each the mirror of the restore* of the same name.
     void captureBag(SaveData& d) const;
     void captureHistory(SaveData& d) const;
@@ -2829,13 +2843,6 @@ private:
     Fragger fragger_;
     StackerScreen stackerScreen_;   // game/stacker_screen.h
     FraggerScreen fraggerScreen_;   // game/fragger_screen.h, and the last shot's beam
-    // Every site that ends a dive (or a pet) spends both live halves in one call, so the
-    // bonus can't outlive the run it was paid for at one exit and not another.
-    void clearDiveDepthBuffs() {
-        pet_.armed.deepWebDepthMultiplier = 1;
-        pet_.armed.diveStepBonusPct = 0;
-        pet_.armed.diveStartBonusPct = 0;
-    }
 
     HeldButtons held_;   // game/held_buttons.h
     CfgMenu cfg_;   // the CFG slot's pages, cursors and focus (game/cfg_menu.h)
@@ -2940,11 +2947,9 @@ private:
 
     // The Wi-Fi event on screen, from startWifiEvent until resolveWifiOutcome plays it
     // out. Operator::networksSeen is the lifetime unique-REAL-network counter, and only
-    // resolveNetworkDiscovery() bumps it. allyBuffBattlesLeft_ is the friendly-visit
-    // buff consumed one per battle in buildPlayerCombatant.
+    // resolveNetworkDiscovery() bumps it.
     std::optional<WifiEvent> wifi_;
     WifiScreen wifiScreen_;   // its screen (game/wifi_screen.h)
-    int allyBuffBattlesLeft_ = 0;
 
     // THE SHIBOLEET: the guardian encounter (game_shiboleet.cpp). What the ladder
     // remembers is the Operator's (OperatorCant); the meeting in progress, or the last

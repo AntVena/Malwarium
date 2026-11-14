@@ -905,6 +905,12 @@ constexpr int kWifiOpenCachePct = 25;   // open cache -> straight loot
 constexpr int kAllyBuffBattles = 3;     // friendly-visit buff duration
 constexpr int kAllyBuffPowerPct = 20;   // +power for the buffed battles
 
+// FRESH PATCH: the power bonus the pet carries for a while after booting on newer firmware
+//     (Game::grantPatchBuff). An update reboots the device and ends any walk, and with it
+//     an escort or a dive's arming, so the bonus matches the escort's and outlasts a walk.
+constexpr int kPatchBuffPowerPct = kAllyBuffPowerPct;
+constexpr uint32_t kPatchBuffMs = 30u * 60u * 1000u;   // of awake time (lifetimeUptimeMs)
+
 // THE SHIBOLEET: the guardian encounter an empty sighting queue routes to
 //     (game_shiboleet.cpp, core/model/cant.h). A guardian grades its welcome on how
 //     much of the CANT the pet can read, so these three bands are read against

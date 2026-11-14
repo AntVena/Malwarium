@@ -1,6 +1,7 @@
 // explore_walk.h: the explore walk, a run (CONTRIBUTING, "Where state lives"). One walk on
 // the idle habitat, from arming an area (or an endless zone) until a stop, a loss or a
-// crisis ends it. Runtime-only: a reboot ends it, and the save keeps nothing of it.
+// crisis ends it. Runtime-only: a reboot ends it, and the save keeps nothing of it, so
+// what rides along with it (an escort, a dive's arming) ends there too.
 //
 // Game holds the last walk after it ends, inactive: EXPL opens with its cursor on the area
 // last walked, and the screens that report on a walk that just ended (the post-encounter
@@ -8,6 +9,15 @@
 #pragma once
 
 namespace mal {
+
+// What a Deep-Learning Module/Core and the dive-pay items arm for a DeepWeb dive: depth
+// per win, and the extra pay per win. The pet holds one for its next dive
+// (PetArmed::nextDive); a dive takes it over as it starts, and an item used mid-dive
+// writes the dive's own.
+struct DiveArming {
+    int depthMultiplier = 1;
+    int stepBonusPct = 0;
+};
 
 struct ExploreWalk {
     bool active = false;
@@ -25,6 +35,13 @@ struct ExploreWalk {
     // the widest cache name); wrapped to two lines on screen.
     char flavor[48] = "";
 
+    // What rides along for this walk only, and ends with it.
+    // Wild fights left with a friend or a guardian's escort at the pet's side.
+    int escortBattles = 0;
+    // On a DeepWeb dive: the dive's arming, and the Bell's start bonus once its dive began.
+    DiveArming dive;
+    int diveStartBonusPct = 0;
+
     static ExploreWalk started(int sector, int sub, int streak) {
         ExploreWalk w;
         w.active = true;
@@ -37,6 +54,9 @@ struct ExploreWalk {
     void end() {
         active = false;
         streak = 0;
+        escortBattles = 0;
+        dive = DiveArming{};
+        diveStartBonusPct = 0;
     }
 };
 

@@ -665,6 +665,10 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
         w.u8(p.usbHold);
         w.u32(p.bootHatchRemainMs);
     }
+
+    // v76: the build that wrote this, and the active pet's FRESH PATCH deadline.
+    w.u32(d.firmwareCode);
+    w.u32(armed.patchBuffUntilMs);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1393,6 +1397,12 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
             p.usbHold = k.usbHold;
             p.bootHatchRemainMs = k.bootHatchRemainMs;
         }
+    }
+
+    // v76 tail: the writing build and FRESH PATCH. Absent in an older blob -> 0, no buff.
+    if (version >= 76) {
+        d.firmwareCode = r.u32();
+        armed.patchBuffUntilMs = r.u32();
     }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty

@@ -33,9 +33,10 @@ void Game::fireLockout() {
     addCareMistakeShielded(kWentHungryMistakes);
     log_.push(LogEventType::CareMistake, "went hungry");
     ++away_.hungry;
-    // A crisis modal preempts AND cancels explore-mode: the streak resets.
+    // A crisis modal preempts AND cancels explore-mode: the streak resets. It also drops
+    // what the pet armed for its next dive.
     walk_.end();
-    clearDiveDepthBuffs();
+    pet_.armed.nextDive = DiveArming{};
     pet_.armed.lockoutActive = true;
     pet_.armed.lockoutDeadlineMs = nowMs_ + kLockoutDurationMs;
     pet_.armed.lockoutReminded = false;
@@ -513,7 +514,7 @@ void Game::fireCSF() {
     // priority, so it clears any lower-priority modal state it preempts,
     // including explore-mode.
     walk_.end();
-    clearDiveDepthBuffs();
+    pet_.armed.nextDive = DiveArming{};
     pet_.armed.lockoutActive = false;
     lockoutItemsContext_ = false;
     evolve_ = EvolveScreen{};

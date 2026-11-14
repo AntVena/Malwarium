@@ -615,7 +615,7 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     ContentRegistry r = ContentRegistry::embedded();
     // Nothing armed, and nothing granted: the page is empty.
     Pet pet;
-    CHECK(buildBuffRows(r, pet, 0).empty());
+    CHECK(buildBuffRows(r, pet, {}).empty());
 
     // The DISH that grants an effect, resolved off the item table rather than named by a
     // literal here: renaming a dish must not need a test edit to go with it.
@@ -642,7 +642,7 @@ void test_buffs_page_lists_the_permanent_upgrades() {
 
     PetUpgrades& u = pet.upgrades;
     u.bandwidthRegenMin = 1;
-    const std::vector<ProseRow> one = buildBuffRows(r, pet, 0);
+    const std::vector<ProseRow> one = buildBuffRows(r, pet, {});
     CHECK(entries(one).size() == 1);
     // The standing grant is filed under PERMANENT, and nothing is armed, so the page
     // carries no ARMED heading over an empty section.
@@ -655,7 +655,7 @@ void test_buffs_page_lists_the_permanent_upgrades() {
     // Everything at once: the regen shave, one row per off-level stat point, the XP rate.
     for (int& b : u.statBonus) b = 1;
     u.xpRatePct = 25;
-    const std::vector<ProseRow> all = buildBuffRows(r, pet, 0);
+    const std::vector<ProseRow> all = buildBuffRows(r, pet, {});
     CHECK(entries(all).size() == static_cast<size_t>(2 + kLevelStatCount));
     for (const ProseRow& row : all) CHECK(!row.suffix[0]);
     // Each stat point is named by its own dish, in stat order.
@@ -932,7 +932,7 @@ void test_favourite_food_is_found_by_feeding_it() {
             if (r.favourite[c]) { ++marked; CHECK(r.cells[c] == fav); }
     CHECK(marked == 1);
     bool listed = false;
-    for (const ProseRow& b : buildBuffRows(g.content(), g.petRecord(), 0))
+    for (const ProseRow& b : buildBuffRows(g.content(), g.petRecord(), {}))
         if (!isHeading(b.kind) && std::strcmp(b.label, "FAVOURITE DISH") == 0) listed = true;
     CHECK(listed);
 

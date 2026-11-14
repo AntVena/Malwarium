@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "version.h"
+
 #include "core/content/content_backgrounds.h"   // kBackgrounds: a pick the round trip can name
 #include "core/render/palette.h"                // palThemeByName: the settings gates name a set
 
@@ -381,7 +383,7 @@ void test_save_active_pet_round_trips_through_a_reboot() {
         g.livePet().moves.grant("buffer_overflow");
         CHECK(g.petRecord().grants.shieldActive && g.petRecord().grants.yubiSpent);
         CHECK(g.backupShieldArmed() && g.petRecord().armed.trojanDivert);
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 2);
         before = g.petRecord();
         CHECK(g.saveNow());
     }
@@ -395,7 +397,47 @@ void test_save_active_pet_round_trips_through_a_reboot() {
     CHECK(after.armed.trojanDivert);
     CHECK(after.armed.backupShieldUntilMs == before.armed.backupShieldUntilMs);
     CHECK(g.backupShieldArmed());
-    CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);
+    CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);
+}
+
+// FRESH PATCH (save v76): a boot that reads a save an older build wrote has just been
+// updated, and the pet carries a timed power bonus; a save this build wrote grants
+// nothing. The deadline survives a reboot inside the window, and lapses on awake time.
+void test_fresh_patch_after_an_update() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "malbear", &store};
+        CHECK(!g.patchBuffArmed());
+        CHECK(g.saveNow());
+    }
+    {
+        Game g(StartMode::FreshHatch, "malbear", &store);
+        CHECK(!g.patchBuffArmed());                      // the same build: no update
+    }
+    // The same blob, as the build before this one wrote it.
+    SaveData d;
+    CHECK(deserializeSave(store.load(), d));
+    CHECK(d.firmwareCode == kFirmwareVersionCode);
+    d.firmwareCode = kFirmwareVersionCode - 1;
+    CHECK(store.save(serializeSave(d)));
+    uint32_t deadline = 0;
+    {
+        Game g(StartMode::FreshHatch, "malbear", &store);
+        CHECK(g.patchBuffArmed());
+        deadline = g.petRecord().armed.patchBuffUntilMs;
+        CHECK(deadline == g.lifetimeUptimeMs() + kPatchBuffMs);
+        enterSimBattle(g);
+        Game plain{StartMode::Hatched, "malbear"};
+        enterSimBattle(plain);
+        CHECK(g.combat().player().powerMultPct ==
+              plain.combat().player().powerMultPct + kPatchBuffPowerPct);
+        CHECK(g.saveNow());
+    }
+    Game g(StartMode::FreshHatch, "malbear", &store);
+    CHECK(g.petRecord().armed.patchBuffUntilMs == deadline);   // kept, not granted again
+    CHECK(g.patchBuffArmed());
+    g.livePet().armed.patchBuffUntilMs = g.lifetimeUptimeMs();   // the window runs out
+    CHECK(!g.patchBuffArmed());
 }
 
 // A new egg is a whole new Pet: nothing of the pet before it carries over, and it owns
@@ -419,7 +461,7 @@ void test_new_egg_is_a_fresh_pet_record() {
     g.livePet().upgrades.favouriteFood = g.content().item("spam");
     g.livePet().bestDarkWebDepth = 5;
     g.livePet().moves.grant("buffer_overflow");
-    CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
+    CHECK(g.petRecord().armed.nextDive.depthMultiplier == 2);
 
     enterArchNewEgg(g);
     pickFirstEggLine(g);
@@ -437,7 +479,7 @@ void test_new_egg_is_a_fresh_pet_record() {
     CHECK(!p.grants.shieldActive && !p.grants.shieldSpent && !p.grants.yubiSpent);
     CHECK(p.usb.branch == BranchOverride::None && p.usb.soakFactor == 1 && !p.usb.hold);
     CHECK(!p.armed.trojanDivert && p.armed.backupShieldUntilMs == 0);
-    CHECK(p.armed.deepWebDepthMultiplier == 1 && !p.armed.lockoutActive);
+    CHECK(p.armed.nextDive.depthMultiplier == 1 && !p.armed.lockoutActive);
     CHECK(p.bestDeepWebDepth == 0 && p.bestDarkWebDepth == 0);
     CHECK(p.defragCount == 0 && p.dyingElapsedMs == 0);
 }

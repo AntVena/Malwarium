@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "tunables.h"
+#include "version.h"
 #include "core/content/content_backgrounds.h"
 #include "core/content/content_tournament.h"
 
@@ -22,6 +23,7 @@ namespace mal {
 // Every capture is a read, so unlike applySave the order carries no dependency.
 SaveData Game::captureSave() const {
     SaveData d;
+    d.firmwareCode = kFirmwareVersionCode;
     captureBag(d);
     captureHistory(d);
     captureRadio(d);
@@ -218,6 +220,15 @@ void Game::applySave(const SaveData& d) {
     restoreSettings(d);
     settleBackgroundPick();
     save_.settle(nowMs_);
+}
+
+void Game::grantPatchBuff() {
+    // An empty save has no pet to carry it, and a vacated one gets its next egg fresh.
+    if (!pet_.creature) return;
+    pet_.armed.patchBuffUntilMs = lifetimeUptimeMs() + kPatchBuffMs;
+    log_.push(LogEventType::ItemGained, "FRESH PATCH +POWER");
+    // The save now has to record this build, or the next boot grants it again.
+    markSaveDirty();
 }
 
 void Game::persistSave() {

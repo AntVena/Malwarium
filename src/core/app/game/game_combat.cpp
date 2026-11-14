@@ -76,9 +76,7 @@ Combatant Game::buildPlayerCombatant() {
     // Crib Sheet still answers it, which is why the ward is checked here and not only in
     // applyEffect: a mod that refused a three-turn rider but not the zone built out of it
     // would be selling half of what it says.
-    // The friendly-visit ally buff: a transient combat modifier
-    // consumed one per battle, applied at every real entry into combat (Sim +
-    // wild). debugStartCombat is the dev/test hook and stays raw/deterministic.
+    // debugStartCombat is the dev/test hook and stays raw/deterministic.
     Combatant p = makePlayerCombatant(registry_, *pet_.creature, pet_.moves, pet_.mods);
     // Backup Drive's timed death-save (save v30): armed while lifetimeUptimeMs() is
     // still under the buff's deadline. Consumption is read back in applyCombatResult /
@@ -95,10 +93,9 @@ Combatant Game::buildPlayerCombatant() {
     int points[kLevelStatCount];
     for (int i = 0; i < kLevelStatCount; ++i) points[i] = pet_.totalStatPoint(i);
     applyLevelStatPoints(p, points);
-    if (allyBuffBattlesLeft_ > 0) {
-        p.powerMultPct += kAllyBuffPowerPct;
-        --allyBuffBattlesLeft_;
-    }
+    // FRESH PATCH: timed on awake time, so every fight inside the window has it and none
+    // spends it.
+    if (patchBuffArmed()) p.powerMultPct += kPatchBuffPowerPct;
     return p;
 }
 
@@ -495,7 +492,7 @@ void Game::finishCombat() {
                 // the streak (= depth) by more than one step per win, so a
                 // blitzing endgame pet catches back up to a genuine struggle faster.
                 // Every other area always advances by exactly 1.
-                walk_.streak += inDeepWebDive() ? pet_.armed.deepWebDepthMultiplier : 1;
+                walk_.streak += inDeepWebDive() ? walk_.dive.depthMultiplier : 1;
                 // 10 wins in a row unlock the ARMED sub-area's boss, unless
                 // it's already cleared (re-farming a done sub-area never re-arms it).
                 if (walk_.streak >= kExploreStreakToBoss &&
@@ -527,10 +524,7 @@ void Game::finishCombat() {
                 }
             }
         } else if (fight_.combat.lostOrDrawn()) {
-            // A loss ends the run: a draw is one. Same rule as the Stop row: only a DIVE ending spends
-            // the depth multiplier, and inDeepWebDive() is derived from walk_.active,
-            // so it has to be read first.
-            if (inEndlessZone()) clearDiveDepthBuffs();
+            // A loss ends the run: a draw is one. What rode along with it ends with it.
             walk_.end();
         }
         // Post-encounter status readout: a FOUGHT battle (win or loss, a draw
@@ -748,6 +742,13 @@ void Game::resolveSinkhole(const ItemDef& d) {
 void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
     if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
+    // A friend's visit or a guardian's escort walks with the pet, so it fights the walk's
+    // own fights and is spent one per fight; a Sim Battle or a bout away from the walk
+    // never draws on it.
+    if (walk_.active && walk_.escortBattles > 0) {
+        p.powerMultPct += kAllyBuffPowerPct;
+        --walk_.escortBattles;
+    }
     Combatant e = makeEnemyCombatant(registry_, wild);
     rng_ = rng_ * 1664525u + 1013904223u;
     fight_ = Fight::started(FightCaller::Wild);

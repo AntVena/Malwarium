@@ -276,6 +276,7 @@ int g_failures = 0;
     RUN(test_save_active_pet_reads_from_a_v75_blob) \
     RUN(test_save_active_pet_loads_from_a_v75_blob) \
     RUN(test_save_active_pet_round_trips_through_a_reboot) \
+    RUN(test_fresh_patch_after_an_update) \
     RUN(test_new_egg_is_a_fresh_pet_record) \
     RUN(test_save_operator_reads_from_a_v75_blob) \
     RUN(test_save_operator_loads_from_a_v75_blob) \
@@ -470,6 +471,7 @@ int g_failures = 0;
     RUN(test_wifi_awakened_guardian_in_the_crawl_is_a_crawl_wild) \
     RUN(test_wifi_never_awakens_when_not_hot)     \
     RUN(test_wifi_friendly_visit_grants_ally_buff) \
+    RUN(test_escort_belongs_to_the_walk) \
     RUN(test_wifi_auto_plays_out_after_hold)      \
     RUN(test_wifi_discovery_kind)                 \
     /* THE SHIBOLEET: the Cant, the guardian, the riddle pool */ \

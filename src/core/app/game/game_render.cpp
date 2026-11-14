@@ -333,10 +333,12 @@ void Game::drawHabitatStatusColumn(Framebuffer& fb) const {
         // on a pet that plainly has a successor, so the habitat has to say it is there.
         if (pet_.usb.hold) marker("halt_usb", "[HELD]");
         if (backupShieldArmed()) marker("backup_drive", "[BKUP]");
+        // Granted by an update rather than an item, so it has no item icon: the tag draws.
+        if (patchBuffArmed()) marker("fresh_patch", "[PTCH]");
         // The two DeepWeb Dive depth buffs record only that they are armed, not
         // which of the several items did it, so both show the shared Buff-item
         // stand-in itemIcon() falls back to rather than guessing an id.
-        if (pet_.armed.deepWebDepthMultiplier > 1) marker("deep_learning_module", "[DEEP]");
+        if (diveArming().depthMultiplier > 1) marker("deep_learning_module", "[DEEP]");
         if (pet_.armed.deepWebStartDepth != -1) marker("backdoor_bell", "[BELL]");
     }
 }

@@ -106,7 +106,7 @@ void Game::resolveWifiOutcome() {
         case WifiOutcome::FriendlyVisit:
             // v1 substitute for the doc-07 Met-Pets Roster (out of scope):
             // a generic ally buff rather than a named remembered pet.
-            allyBuffBattlesLeft_ = kAllyBuffBattles;
+            walk_.escortBattles = kAllyBuffBattles;
             std::snprintf(walk_.flavor, sizeof(walk_.flavor), "ALLY BUFF X%d",
                          kAllyBuffBattles);
             markSaveDirty();

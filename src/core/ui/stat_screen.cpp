@@ -519,7 +519,7 @@ void loadoutIndex(const StatPage& page, const StatSources& s,
 }
 
 std::vector<ProseRow> buffRows(const StatSources& s) {
-    return buildBuffRows(s.reg, s.pet, s.backupRemainMs);
+    return buildBuffRows(s.reg, s.pet, s.buffs);
 }
 
 void buffIndex(const StatPage& page, const StatSources& /*s*/,

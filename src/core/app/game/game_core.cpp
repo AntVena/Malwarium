@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "tunables.h"
+#include "version.h"
 #include "core/render/canvas.h"   // kHeartbeatMs/kCombatAnimMs: the tick cadences
 #include "core/render/camo.h"
 #include "core/render/sprite.h"
@@ -32,6 +33,7 @@ Game::Game(StartMode mode, const char* hatchedCreature, ISaveStore* store)
         SaveData d;
         if (deserializeSave(store_->load(), d)) {
             applySave(d);
+            if (d.firmwareCode < kFirmwareVersionCode) grantPatchBuff();
             if (pet_.creature) { nav_ = Nav::Idle; return; }
             startHatch();   // active save was vacated mid-Store; rack survives
             return;

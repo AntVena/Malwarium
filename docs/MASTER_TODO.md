@@ -176,12 +176,9 @@ the shape. These loose fields each have an owner:
   `game_net.cpp`, `game_peers.cpp` | M |
 - **Live peers** (`livePeers_`, `livePeerCount_`): the in-range peer snapshot, the same
   shape `NetworkSightings` gives networks, beside `PeerLedger` in `core/net`. | S |
-- **Two pet fields sit on `Game`.** `allyBuffBattlesLeft_` (the friendly-visit and escort
-  buff, spent one per battle) is armed on the pet, and `lastLevelUpStat_` (the level-up
-  tell, cleared on hatch) is the pet's progress. Both go on `Pet`. The buff is unsaved
-  today, so a reboot drops it; putting it in the armed part decides whether it is saved,
-  which is a save bump. | `pet.h`, `game_combat.cpp`, `game_net.cpp`,
-  `game_shiboleet.cpp` | S, L if saved |
+- **`lastLevelUpStat_` is the pet's.** The level-up tell (which stat the last level
+  raised, cleared on hatch) is the pet's progress and goes on `Pet`. | `pet.h`,
+  `game_combat.cpp`, `game_lifecycle.cpp` | S |
 - **Where a screen returns to is the screen's.** `tipCardReturn_` belongs on
   `TipCardScreen`, `offerBackNav_` on `ItemOfferScreen`, and `lockoutItemsContext_` (ITEMS
   opened over the Lockout modal, read in seven units) on `ItemsMenu`. | S |

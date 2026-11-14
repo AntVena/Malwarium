@@ -15,6 +15,7 @@
 #include "tunables.h"   // kLevelStatCount, kMaxMoveSlots
 #include "core/content/areas/area_defs.h"   // kAreaCount, kSubAreasPerArea: the re-farm grid
 #include "core/content/defs.h"
+#include "core/model/explore_walk.h"   // DiveArming
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
 #include "core/model/pet_model.h"
@@ -63,19 +64,18 @@ struct PetArmed {
     // until, 0 = off. A fight that spends it clears it early; using the item again
     // overwrites it. A Sim Battle fights without it.
     uint32_t backupShieldUntilMs = 0;
-    // The DeepWeb Dive arming. The multiplier (Deep-Learning Module/Core, x2/x4) resets
-    // wherever the dive streak does and does not stack. The start depth is armed by a
-    // Bell and consumed when startDeepWebDive begins a fresh dive: -1 = none, or
-    // kStartDepthUseBest for the Checkpoint Bell.
+    // Armed for the NEXT DeepWeb dive, and handed to it as it starts (Game::startDeepWebDive);
+    // what a dive in progress spends is the walk's (ExploreWalk::dive). The start depth is
+    // armed by a Bell: -1 = none, or kStartDepthUseBest for the Checkpoint Bell. The
+    // Bell's DIVE PAY waits beside it.
     static constexpr int kStartDepthUseBest = -2;
-    int deepWebDepthMultiplier = 1;
+    DiveArming nextDive;
     int deepWebStartDepth = -1;
-    // DIVE PAY (ItemEffect DiveStartBonusPct / DiveStepBonusPct). The Bell's half waits in
-    // pendingDiveStartBonusPct until its dive begins; Game::clearDiveDepthBuffs spends
-    // the two live halves wherever a dive ends.
     int pendingDiveStartBonusPct = 0;
-    int diveStartBonusPct = 0;
-    int diveStepBonusPct = 0;
+    // The FRESH PATCH buff: the lifetimeUptimeMs() deadline of the power bonus a boot on
+    // newer firmware grants (Game::grantPatchBuff), 0 = off. Saved (v76), so a reboot
+    // inside the window keeps what is left of it.
+    uint32_t patchBuffUntilMs = 0;
     // Stacking foods (Polltatoes) eaten since the pet last lost a Hunger point to decay.
     // The next decay tick ends the run, so it is not saved.
     int stackingFoodRun = 0;
@@ -88,8 +88,8 @@ struct PetArmed {
     // training ground.
     uint16_t subRefarmCount[kAreaCount][kSubAreasPerArea] = {};
 
-    // What the active pet's save keeps of this part: the Backup Drive deadline, the
-    // Ambig-USB divert and the re-farm counts. Everything else comes back as a reboot
+    // What the active pet's save keeps of this part: the Backup Drive and FRESH PATCH
+    // deadlines, the Ambig-USB divert and the re-farm counts. Everything else comes back as a reboot
     // leaves it, with no dive armed and no Lockout running.
     SaveArmedPet saved() const;
     static PetArmed loaded(const SaveArmedPet& s);

@@ -370,7 +370,7 @@ struct ItemEffect {
                               // instead of 1, so a pet strong enough to blitz the early
                               // depths catches back up to a real fight faster. Doesn't
                               // stack: using another one just overwrites the
-                              // multiplier (Game::deepWebDepthMultiplier_).
+                              // multiplier (DiveArming::depthMultiplier).
         SetDeepWebStartDepth, // Backdoor/Rootkit/Kernel Bell: arms the NEXT DeepWeb
                               // Dive to start at depth = magnitude instead of 0
                               // (Game::pendingDeepWebStartDepth_), consumed the moment
@@ -432,7 +432,7 @@ struct ItemEffect {
         //   DiveStartBonusPct. Beside a bell's start depth. Armed with it, goes live
         //     when the dive it starts begins, and lasts until that dive ends.
         //   DiveStepBonusPct:  beside a depth multiplier. Replaced and cleared exactly
-        //     when the multiplier is (Game::deepWebDepthMultiplier_).
+        //     when the multiplier is (DiveArming::depthMultiplier).
         // A bell and a device armed together add. Listed AFTER the effect they ride on:
         // that effect's applier zeroes the slot, so a row without a bonus re-arms none.
         DiveStartBonusPct,

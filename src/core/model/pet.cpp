@@ -150,6 +150,7 @@ SaveArmedPet PetArmed::saved() const {
     SaveArmedPet s;
     s.trojanDivert = trojanDivert ? 1 : 0;
     s.backupShieldUntilMs = backupShieldUntilMs;
+    s.patchBuffUntilMs = patchBuffUntilMs;
     s.subRefarm.reserve(static_cast<size_t>(kAreaCount) * kSubAreasPerArea);
     for (const auto& row : subRefarmCount)
         for (uint16_t c : row) s.subRefarm.push_back(c);
@@ -160,6 +161,7 @@ PetArmed PetArmed::loaded(const SaveArmedPet& s) {
     PetArmed a;
     a.trojanDivert = s.trojanDivert != 0;
     a.backupShieldUntilMs = s.backupShieldUntilMs;
+    a.patchBuffUntilMs = s.patchBuffUntilMs;
     for (int i = 0; i < kAreaCount; ++i)
         for (int j = 0; j < kSubAreasPerArea; ++j) {
             const size_t idx = static_cast<size_t>(i) * kSubAreasPerArea + j;

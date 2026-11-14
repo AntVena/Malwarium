@@ -1764,27 +1764,40 @@ void test_deepweb_dive() {
         CHECK(g.nav() == Game::Nav::Combat);          // a wild dive fight started
         CHECK(g.combat().enemy().level == L + kDeepWebEnemyLevelOffset);  // scaled to pet
     }
-    // (4) The Deep-Learning buff SURVIVES the dive it was armed for. It is a
-    //     Context::Anytime item, so the whole point is arming it before diving:
-    //     resetting the multiplier in startDeepWebDive would consume it on the way in
-    //     and it would never once apply. Only a dive ENDING spends it.
+    // (4) The Deep-Learning buff is armed on the pet for the dive AFTER it, and the dive
+    //     takes it over as it starts: resetting it on the way in would mean it never
+    //     once applied. The dive's arming ends with the dive.
     {
         Game g{StartMode::Hatched, "bruinforce"};
         for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);              // nothing armed
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);            // nothing armed
 
         g.inventory().add("deep_learning_core", 1);
         useItem(g, "deep_learning_core");
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 4);              // armed, before the dive
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 4);            // armed, before the dive
 
         g.startDeepWebDive();
         CHECK(g.inDeepWebDive());
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 4);              // ...and it is STILL armed
+        CHECK(g.exploreWalk().dive.depthMultiplier == 4);                    // the dive has it
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);            // ...and the pet doesn't
 
-        // Stopping the dive spends it.
+        // Stopping the dive ends it.
         stopExplore(g);
         CHECK(!g.inDeepWebDive());
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 1);
+        CHECK(g.exploreWalk().dive.depthMultiplier == 1);
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);
+    }
+    // (4b) A Module used MID-dive applies to that dive at once, and is gone with it.
+    {
+        Game g{StartMode::Hatched, "bruinforce"};
+        for (int a = 0; a < kExplSectors; ++a) g.liveOperator().world.sectorCleared[a] = true;
+        g.startDeepWebDive();
+        g.inventory().add("deep_learning_module", 1);
+        useItem(g, "deep_learning_module");
+        CHECK(g.exploreWalk().dive.depthMultiplier == 2);
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);
+        stopExplore(g);
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 1);
     }
     // (5) A SECTOR walk is not a dive: arming the buff and then taking an ordinary
     //     walk must not eat it, because the multiplier only ever applies on
@@ -1793,13 +1806,13 @@ void test_deepweb_dive() {
         Game g{StartMode::Hatched, "bruinforce"};
         g.inventory().add("deep_learning_module", 1);
         useItem(g, "deep_learning_module");
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 2);
 
         g.startExplore(0, 0);
         CHECK(g.exploreActive() && !g.inDeepWebDive());
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);              // survives entering a walk
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 2);              // survives entering a walk
         stopExplore(g);
-        CHECK(g.petRecord().armed.deepWebDepthMultiplier == 2);              // ...and leaving one
+        CHECK(g.petRecord().armed.nextDive.depthMultiplier == 2);              // ...and leaving one
     }
 }
 

@@ -225,7 +225,7 @@ void Game::grantBoon() {
     rng_ = rng_ * 1664525u + 1013904223u;
     const bool escort = static_cast<int>((rng_ >> 16) % 100) < kShiboleetBoonEscortPct;
     if (escort) {
-        allyBuffBattlesLeft_ = kShiboleetEscortBattles;
+        walk_.escortBattles = kShiboleetEscortBattles;
         std::snprintf(shib_.flavor, sizeof(shib_.flavor), "ESCORTED X%d",
                       kShiboleetEscortBattles);
         std::snprintf(shib_.verdictLine, sizeof(shib_.verdictLine), "%d BATTLES AT YOUR SIDE",

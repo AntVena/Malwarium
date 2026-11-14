@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "core/model/explore_walk.h"   // DiveArming
+
 namespace mal {
 
 class ContentRegistry;
@@ -21,6 +23,13 @@ class EventLog;
 class Framebuffer;
 struct Pet;
 class StatPage;
+
+// What the BUFFS page reads that the pet alone cannot say (buildBuffRows).
+struct BuffReadings {
+    uint32_t backupRemainMs = 0;   // the Backup Drive's time left; 0 = not armed
+    uint32_t patchRemainMs = 0;    // FRESH PATCH's time left; 0 = not armed
+    DiveArming dive;               // the dive's while one runs, else the pet's next dive's
+};
 
 // Everything a STAT page reads.
 struct StatSources {
@@ -32,7 +41,7 @@ struct StatSources {
     // an egg).
     bool hasNextEvo = false;
     uint32_t evoRemainMs = 0;
-    uint32_t backupRemainMs = 0;   // the Backup Drive's time left; 0 = not armed
+    BuffReadings buffs;   // the BUFFS page's timers and the dive arming in reach
 };
 
 // Which page of how many is open, for the header's dot pager.

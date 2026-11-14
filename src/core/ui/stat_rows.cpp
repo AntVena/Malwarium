@@ -96,7 +96,7 @@ std::vector<ProseRow> buildTierRows(const int statPoints[kLevelStatCount]) {
 }
 
 std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
-                                    uint32_t backupRemainMs) {
+                                    const BuffReadings& now) {
     const PetArmed& armed = pet.armed;
     const PetUpgrades& upgrades = pet.upgrades;
     std::vector<ProseRow> out;
@@ -129,12 +129,25 @@ std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
     };
     add("restore_point", pet.grants.shieldActive);
     add("ambig_usb", armed.trojanDivert);
-    // The one timed buff: its countdown is the row's suffix, read fresh each repaint
+    // The timed buffs: each countdown is the row's suffix, read fresh each repaint
     // because the page rebuilds its rows every draw.
-    if (ProseRow* row = add("backup_drive", backupRemainMs > 0)) {
-        const uint32_t s = backupRemainMs / 1000u;
-        std::snprintf(row->suffix, sizeof(row->suffix), "%u:%02u LEFT", s / 60u,
+    const auto timeLeft = [](ProseRow& row, uint32_t remainMs) {
+        const uint32_t s = remainMs / 1000u;
+        std::snprintf(row.suffix, sizeof(row.suffix), "%u:%02u LEFT", s / 60u,
                       static_cast<unsigned>(s % 60u));
+    };
+    if (ProseRow* row = add("backup_drive", now.backupRemainMs > 0))
+        timeLeft(*row, now.backupRemainMs);
+    // FRESH PATCH is granted by an update rather than an item, so it names itself.
+    if (now.patchRemainMs > 0) {
+        section("ARMED");
+        ProseRow row{};
+        row.label = "FRESH PATCH";
+        std::snprintf(row.body.buf, sizeof(row.body.buf),
+                      "+%d%% POWER IN EVERY FIGHT, FROM RUNNING NEWLY UPDATED FIRMWARE.",
+                      kPatchBuffPowerPct);
+        timeLeft(row, now.patchRemainMs);
+        out.push_back(row);
     }
     // The two DeepWeb Dive depth buffs: which ITEM armed them isn't tracked
     // directly (the pet only keeps the raw multiplier/depth), so find the item whose
@@ -151,8 +164,8 @@ std::vector<ProseRow> buildBuffRows(const ContentRegistry& reg, const Pet& pet,
                     return;
                 }
     };
-    if (armed.deepWebDepthMultiplier > 1)
-        addByEffect(ItemEffect::Kind::ArmDeepWebDepthMultiplier, armed.deepWebDepthMultiplier,
+    if (now.dive.depthMultiplier > 1)
+        addByEffect(ItemEffect::Kind::ArmDeepWebDepthMultiplier, now.dive.depthMultiplier,
                     false);
     if (armed.deepWebStartDepth == PetArmed::kStartDepthUseBest)
         addByEffect(ItemEffect::Kind::SetDeepWebStartDepthToBest, 0, true);

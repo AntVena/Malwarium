@@ -195,7 +195,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
                 // These overwrite rather than stack, so a weaker one after a
                 // stronger one is a downgrade paid for with an item.
                 ++armingEffects;
-                if (e.magnitude > pet_.armed.deepWebDepthMultiplier) return false;
+                if (e.magnitude > diveArming().depthMultiplier) return false;
                 if (!reason) reason = "STRONGER ONE ARMED";
                 break;
             // Both bells are measured against the depth a dive would actually start at
@@ -421,15 +421,11 @@ void Game::applyItemEffects(const ItemDef& d) {
                 pet_.armed.backupShieldUntilMs = lifetimeUptimeMs() + static_cast<uint32_t>(e.magnitude) * 60u * 1000u;
                 break;
             case ItemEffect::Kind::ArmDeepWebDepthMultiplier:
-                // Deep-Learning Module/Core: overwrites, never stacks. Buying a second one
-                // just replaces the multiplier. Armed AHEAD of the dive it applies to
-                // (Context::Anytime), so it is cleared only where a DIVE ENDS. The Stop
-                // row and a combat loss, both guarded on inDeepWebDive(), and on a new
-                // pet (game_lifecycle.cpp). Deliberately NOT tied to walk_.streak's
-                // reset: the streak resets at both ends of a run, so following it would
-                // clear the buff on the way INTO the dive it was bought for.
-                pet_.armed.deepWebDepthMultiplier = e.magnitude;
-                pet_.armed.diveStepBonusPct = 0;   // the row's own DiveStepBonusPct, if any, follows
+                // Deep-Learning Module/Core: overwrites, never stacks. Used mid-dive it
+                // applies to that dive; anywhere else it waits on the pet for the next
+                // one (diveArming).
+                diveArming().depthMultiplier = e.magnitude;
+                diveArming().stepBonusPct = 0;   // the row's own DiveStepBonusPct, if any, follows
                 break;
             case ItemEffect::Kind::BandwidthRegenBonusMin:
                 // Tiramisudo (save v50): the FIRST helping shaves magnitude minutes off
@@ -502,7 +498,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 pet_.armed.pendingDiveStartBonusPct = e.magnitude;
                 break;
             case ItemEffect::Kind::DiveStepBonusPct:
-                pet_.armed.diveStepBonusPct = e.magnitude;
+                diveArming().stepBonusPct = e.magnitude;
                 break;
             case ItemEffect::Kind::CutIncubationMin: {
                 // Boot Accelerator: a flat bite out of the incubation clock, floored at

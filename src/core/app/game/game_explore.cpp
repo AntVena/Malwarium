@@ -82,26 +82,25 @@ void Game::startDeepWebDive() {
     // doExploreStep()/startEncounter() special-case it to scale enemies to the pet and
     // never reach the (nonexistent) boss ladder. A loss ends the dive like any wild.
     if (!deepWebUnlocked()) return;
-    // NB: pet_.armed.deepWebDepthMultiplier is deliberately NOT reset here. A Deep-Learning
-    // Module/Core is armed BEFORE the dive (ItemDef::Context::Anytime) so it applies
-    // to this dive. Clearing it on the way in would waste it. It is cleared where a
-    // dive ENDS instead. A Backdoor/Rootkit/Kernel/Checkpoint Bell arms a start depth
-    // ahead of time (Game::applyItemEffects); consume it here so a fresh dive begins
-    // there instead of at 0. Checkpoint's sentinel resolves to this pet's own best
-    // depth NOW (not at Use-time), so it never targets a stale, since-improved record.
-    // The bell's DIVE PAY half goes live with it, for this dive only; a dive started
-    // with no bell armed pays no start bonus, whatever an earlier dive carried.
-    pet_.armed.diveStartBonusPct = 0;
+    // The dive takes over what the pet armed for it: a Module/Core's depth and dive pay
+    // (bought Context::Anytime, so ahead of the dive), and a Backdoor/Rootkit/Kernel/
+    // Checkpoint Bell's start depth with its DIVE PAY half. The Checkpoint's sentinel
+    // resolves to this pet's best depth NOW, never a stale record. A dive started with no
+    // bell armed pays no start bonus.
     int depth = 0;
+    int startBonusPct = 0;
     if (pet_.armed.deepWebStartDepth != -1) {
         depth = pet_.armed.deepWebStartDepth == PetArmed::kStartDepthUseBest
                     ? pet_.bestDeepWebDepth
                     : pet_.armed.deepWebStartDepth;
+        startBonusPct = pet_.armed.pendingDiveStartBonusPct;
         pet_.armed.deepWebStartDepth = -1;
-        pet_.armed.diveStartBonusPct = pet_.armed.pendingDiveStartBonusPct;
         pet_.armed.pendingDiveStartBonusPct = 0;
     }
     walk_ = ExploreWalk::started(kDeepWebSector, 0, depth);
+    walk_.dive = pet_.armed.nextDive;
+    walk_.diveStartBonusPct = startBonusPct;
+    pet_.armed.nextDive = DiveArming{};
     networkSightings_.resetEmptyStreak();
     nav_ = Nav::Idle;
     autoArmBackupShield(kRigRowAutoBackup);
@@ -304,10 +303,8 @@ void Game::openWarpPicker() {
 }
 
 void Game::stopWalk() {
-    // Read the dive flag before clearing walk_.active: inDeepWebDive() is derived from
-    // it. Only a dive ending spends the depth multiplier; stopping a sector walk leaves
-    // an armed Module/Core armed for the dive it was for.
-    if (inDeepWebDive()) clearDiveDepthBuffs();
+    // What rode along ends with the walk. A Module/Core armed on the pet for its next
+    // dive stays armed: a sector walk never took it over.
     walk_.end();
     walk_.flavor[0] = '\0';
     nav_ = Nav::Idle;

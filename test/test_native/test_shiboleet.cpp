@@ -320,7 +320,7 @@ void test_a_complete_cant_earns_boons() {
     bool sawBoon = false;
     for (int i = 0; i < 200 && !sawBoon; ++i) {
         const int happy0 = g.model().happiness();
-        const int ally0 = g.allyBuffBattlesLeft();
+        const int ally0 = g.exploreWalk().escortBattles;
         g.startShiboleet();
         if (g.nav() != Game::Nav::ShiboleetHail) break;
         g.onButton(press(Button::B));             // the hail -> whichever band it was
@@ -329,7 +329,7 @@ void test_a_complete_cant_earns_boons() {
             sawBoon = true;
             // A boon is one of two shapes and always pays ONE of them.
             CHECK(g.model().happiness() > happy0 ||
-                  g.allyBuffBattlesLeft() > ally0);
+                  g.exploreWalk().escortBattles > ally0);
             CHECK(g.shiboleetMeeting().outcome() == GuardianOutcome::Boon);
             CHECK(!g.shiboleetMeeting().verdictFights());  // a quiet word is never a fight
             CHECK(g.shiboleetMeeting().flavor[0] != '\0');
