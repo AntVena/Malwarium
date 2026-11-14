@@ -301,7 +301,7 @@ void Game::pingWalk() {
 }
 
 void Game::openWarpPicker() {
-    warpRow_ = 0;
+    warpPicker_.open();
     nav_ = Nav::WarpPicker;
 }
 
@@ -326,22 +326,6 @@ std::vector<const ItemDef*> Game::heldWarpKeys() const {
         if (d && d->walkWarp != ItemDef::WalkWarp::None) out.push_back(d);
     }
     return out;
-}
-
-void Game::onWarpPicker(const ButtonEvent& ev) {
-    // A flat list of held warp keys: A cycles the row, B spends the focused key
-    // (warp), C backs out to the idle habitat (explore-mode continues). The list is
-    // rebuilt each press so a key that ran out (spent) can't leave a stale cursor.
-    auto keys = heldWarpKeys();
-    if (keys.empty()) { returnToExplore(); return; }
-    if (warpRow_ >= static_cast<int>(keys.size())) warpRow_ = 0;
-    if (ev.button == Button::A) {
-        warpRow_ = (warpRow_ + 1) % static_cast<int>(keys.size());
-    } else if (ev.button == Button::B) {
-        useWarpKey(*keys[warpRow_]);
-    } else if (ev.button == Button::C) {
-        returnToExplore();
-    }
 }
 
 void Game::useWarpKey(const ItemDef& d) {

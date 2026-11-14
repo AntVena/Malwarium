@@ -69,7 +69,7 @@ void Game::render(Framebuffer& fb) const {
         case Nav::ShiboleetVerdict: shiboleet_.drawVerdict(fb, *this); break;
         case Nav::Shop:
         case Nav::ModShop: shop_.draw(fb, *this); break;
-        case Nav::WarpPicker: drawWarpPickerScreen(fb); break;
+        case Nav::WarpPicker: warpPicker_.draw(fb, *this); break;
         case Nav::ItemOffer: drawItemOfferScreen(fb); break;
         case Nav::RollbackPicker: drawRollbackPickerScreen(fb); break;
         case Nav::RepartitionPicker: drawRepartitionPickerScreen(fb); break;
@@ -810,21 +810,6 @@ SwarmView swarmViewOf(const Flock& f) {
 }  // namespace
 
 SwarmView Game::guardianSwarm() const { return swarmViewOf(guardianFlock_); }
-
-void Game::drawWarpPickerScreen(Framebuffer& fb) const {
-    // Snapshot the held keys' display names into a small array the UI helper reads
-    // (the picker is at most a couple of rows: one per warp-key type).
-    auto keys = heldWarpKeys();
-    const char* names[8];
-    int n = 0;
-    for (const ItemDef* d : keys) {
-        if (n >= 8) break;
-        names[n++] = d->displayName;
-    }
-    int cursor = warpRow_;
-    if (n > 0 && cursor >= n) cursor = 0;
-    drawWarpPicker(fb, names, n, cursor);
-}
 
 void Game::drawRollbackPickerScreen(Framebuffer& fb) const {
     const int points[4] = {pet_.statPoints[0], pet_.statPoints[1], pet_.statPoints[2],

@@ -41,6 +41,7 @@
 #include "core/app/game/rig_shop_screen.h"
 #include "core/app/game/stat_reader.h"
 #include "core/app/game/story_reader.h"
+#include "core/app/game/warp_picker_screen.h"
 #include "core/app/game/wifi_screen.h"
 #include "core/app/game/tip_card_screen.h"
 #include "core/app/game/vault_screen.h"
@@ -139,7 +140,7 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private StoryReaderHost, private ExplHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
-             private ShiboleetHost {
+             private ShiboleetHost, private WarpPickerHost {
 public:
     // `hatchedCreature` is the pet installed when mode == Hatched (the dev/test
     // seam); ignored for FreshHatch, which installs the egg-line creature.
@@ -2682,7 +2683,7 @@ private:
     void startDeepWebDive();                         // arm the mid-game endless zone
     void startDarkWebCrawl() override;                        // ...and the terminal one
     void doExploreStep();                           // one guaranteed-event step
-    void returnToExplore();                         // event/fight → back to idle, mode continues
+    void returnToExplore() override;                // event/fight → back to idle, mode continues
     // Auto Backup / Continuous Auto-Backup (Rig Shop g/h): re-arm the Backup
     // Drive death-save for free if `gateRow`'s upgrade is owned and it isn't already
     // armed. Called from startExplore/startDeepWebDive (Auto Backup) and
@@ -2862,11 +2863,9 @@ private:
     // draw); resolveSafeRestEvent() applies the key's own effects (a negative Frag
     // magnitude on its row) and returns to the walk.
     void resolveKeyItemEvent();
-    std::vector<const ItemDef*> heldWarpKeys() const;
-    void onWarpPicker(const ButtonEvent& ev);
-    void useWarpKey(const ItemDef& d);
+    std::vector<const ItemDef*> heldWarpKeys() const override;
+    void useWarpKey(const ItemDef& d) override;
     void resolveSafeRestEvent(const ItemDef& d);
-    void drawWarpPickerScreen(Framebuffer& fb) const;
 
     // The ITEM OFFER (game_offer.cpp): items that only matter at one rare moment are put
     // in front of the player AT that moment, instead of waiting in the bag for someone to
@@ -3738,10 +3737,7 @@ private:
     StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
     MergeScreen merge_;       // the MERGE HUB's cursor (game/merge_screen.h)
     CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
-    // Warp-key picker. warpRow_ is the focused row into the live
-    // heldWarpKeys() list while nav_ == Nav::WarpPicker; transient run state (the
-    // keys themselves persist in the inventory, but the picker cursor does not).
-    int warpRow_ = 0;
+    WarpPickerScreen warpPicker_;   // the held warp keys (game/warp_picker_screen.h)
 
     // The ITEM OFFER's cursor, what it is offering for, and where C goes back to.
     // pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not

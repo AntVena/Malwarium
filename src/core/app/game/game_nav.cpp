@@ -205,7 +205,7 @@ void Game::onButton(const ButtonEvent& ev) {
         case Nav::ShiboleetVerdict: shiboleet_.onVerdict(*this, ev); break;
         case Nav::Shop:
         case Nav::ModShop: shop_.onButton(*this, ev); break;
-        case Nav::WarpPicker: onWarpPicker(ev); break;
+        case Nav::WarpPicker: warpPicker_.onButton(*this, ev); break;
         case Nav::ItemOffer: onItemOffer(ev); break;
         case Nav::RollbackPicker: onRollbackPicker(ev); break;
         case Nav::RepartitionPicker: onRepartitionPicker(ev); break;
