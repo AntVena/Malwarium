@@ -62,10 +62,12 @@ ArchPickRow pickRow(ArchGroup group, const char* label, int count) {
 }
 
 // Every ARCH confirm opens on this box and closes on this pair: CANCEL at the left
-// margin, CONFIRM against the right one. `choice` 0 focuses CANCEL, 1 CONFIRM.
+// margin, CONFIRM against the right one. `choice` 0 focuses CANCEL, 1 CONFIRM. The box
+// sits at kConfirmBoxY over a pet's page; the sale sheet opens it lower, over the trade's
+// description, so the offer rows stay in view (kSaleConfirmY).
 constexpr int kConfirmBoxY = 80, kConfirmBoxH = 56;
-void drawConfirmBox(Framebuffer& fb) {
-    fb.fillRect(4, kConfirmBoxY, kActiveW - 8, kConfirmBoxH, palColor(Pal::TRACK));
+void drawConfirmBox(Framebuffer& fb, int y) {
+    fb.fillRect(4, y, kActiveW - 8, kConfirmBoxH, palColor(Pal::TRACK));
 }
 void drawConfirmChoices(Framebuffer& fb, int y, int choice) {
     if (choice == 0) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
@@ -276,7 +278,7 @@ void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
                  v.rackFull ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
 
     if (v.confirmOpen) {
-        drawConfirmBox(fb);
+        drawConfirmBox(fb, kConfirmBoxY);
         drawText(fb, kMargin, kConfirmBoxY + 8, "HATCH A NEW EGG?", palColor(Pal::INK));
         drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
@@ -341,7 +343,7 @@ void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v
 
     // Inline confirm: a light prompt with Cancel/Confirm (default Cancel).
     if (v.confirmOpen) {
-        drawConfirmBox(fb);
+        drawConfirmBox(fb, kConfirmBoxY);
         const char* prompt = (action == ArchAction::Store)
                                  ? "STORE & HATCH A NEW EGG?"
                              : (action == ArchAction::Release)
@@ -369,27 +371,12 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
     drawText(fb, kMargin, 34, give, palColor(Pal::INK));
     drawText(fb, kMargin, 52, "GONE FOR GOOD. GET ONE:", palColor(Pal::INK_DIM));
 
-    // The focused offer's whole trade, spelled out above the rows. The two patches land
-    // on the ACTIVE pet, never the Daemon being sold, so the copy names who gets them.
+    // The offers answer the question directly under it.
     static const char* const kLabel[kSaleOfferCount] = {"BITS", "REIMAGE", "HOTFIX"};
-    static const char* const kWhat[kSaleOfferCount][2] = {
-        {"BITS FOR ITS LEVEL,", nullptr},   // the par level is a tunable, so built below
-        {"YOUR ACTIVE TWIN GOES BACK", nullptr},   // names its Script, built below
-        {"YOUR ACTIVE PET HAS ALL", "ITS ERRORS CLEARED."},
-    };
+    constexpr int kOfferTop = 70, kOfferStep = 20;
     const int f = static_cast<int>(sheet.focus);
-    drawText(fb, kMargin, 82, kWhat[f][0], palColor(Pal::INK));
-    char second[28];
-    if (sheet.focus == SaleOffer::Bits)
-        std::snprintf(second, sizeof(second), "CLIMBING PAST LV %d.", kDaemonSaleParLevel);
-    else if (sheet.reimageTo[0])
-        std::snprintf(second, sizeof(second), "TO %s, 0 ERRORS", sheet.reimageTo);
-    else
-        std::snprintf(second, sizeof(second), "TO ITS SCRIPT, 0 ERRORS");
-    drawText(fb, kMargin, 96, kWhat[f][1] ? kWhat[f][1] : second, palColor(Pal::INK));
-
     for (int i = 0; i < kSaleOfferCount; ++i) {
-        const int y = 148 + i * 20;          // clear of the confirm box below 136
+        const int y = kOfferTop + i * kOfferStep;
         const ArchSaleSheet::Offer& o = sheet.offers[i];
         if (i == f) drawRowCursor(fb, kMargin, y, palColor(Pal::ACCENT));
         drawLabelValue(fb, kMargin + 12, y, kLabel[i],
@@ -397,13 +384,34 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
                        palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
 
+    // The focused offer's whole trade, spelled out under the rows. The two patches land
+    // on the ACTIVE pet, never the Daemon being sold, so the copy names who gets them.
+    static const char* const kWhat[kSaleOfferCount][2] = {
+        {"BITS FOR ITS LEVEL,", nullptr},   // the par level is a tunable, so built below
+        {"YOUR ACTIVE TWIN GOES BACK", nullptr},   // names its Script, built below
+        {"YOUR ACTIVE PET HAS ALL", "ITS ERRORS CLEARED."},
+    };
+    constexpr int kWhatTop = kOfferTop + kSaleOfferCount * kOfferStep + 10;
+    drawText(fb, kMargin, kWhatTop, kWhat[f][0], palColor(Pal::INK));
+    char second[28];
+    if (sheet.focus == SaleOffer::Bits)
+        std::snprintf(second, sizeof(second), "CLIMBING PAST LV %d.", kDaemonSaleParLevel);
+    else if (sheet.reimageTo[0])
+        std::snprintf(second, sizeof(second), "TO %s, 0 ERRORS", sheet.reimageTo);
+    else
+        std::snprintf(second, sizeof(second), "TO ITS SCRIPT, 0 ERRORS");
+    drawText(fb, kMargin, kWhatTop + 14, kWhat[f][1] ? kWhat[f][1] : second,
+             palColor(Pal::INK));
+
     if (sheet.confirmOpen) {
-        drawConfirmBox(fb);
+        // Over the description, which the confirm's own two lines restate.
+        constexpr int kSaleConfirmY = kWhatTop - 8;
+        drawConfirmBox(fb, kSaleConfirmY);
         static const char* const kFor[kSaleOfferCount] = {
             "FOR BITS?", "FOR A REIMAGE?", "FOR A HOTFIX?"};
-        drawText(fb, kMargin, kConfirmBoxY + 6, give, palColor(Pal::INK));
-        drawText(fb, kMargin, kConfirmBoxY + 18, kFor[f], palColor(Pal::INK));
-        drawConfirmChoices(fb, kConfirmBoxY + 38, sheet.confirmChoice);
+        drawText(fb, kMargin, kSaleConfirmY + 6, give, palColor(Pal::INK));
+        drawText(fb, kMargin, kSaleConfirmY + 18, kFor[f], palColor(Pal::INK));
+        drawConfirmChoices(fb, kSaleConfirmY + 38, sheet.confirmChoice);
     }
     drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
                                        : "A NEXT  B TRADE  C BACK");

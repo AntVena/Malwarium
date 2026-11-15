@@ -62,14 +62,6 @@ today's constants. Decide: add `B <verb>  C BACK` like its siblings, or record t
 in VISUAL_LANGUAGE §4.1. | `items_screen.cpp`'s `drawItemDetail`; VISUAL_LANGUAGE §4.1 and
 §4.2. | S | A design call, which is why the design pass left it. |
 
-**ARCH TRADE IN separates its question from its answers with dead space.** "GONE FOR GOOD.
-GET ONE:" points at the offers, but the focused offer's description sits under it and the
-offer rows start at y 148, below a band held empty for the confirm box (`kConfirmBoxY`)
-that only opens on B. The page reads as two islands. Put the offers directly under the
-question with the description beneath them, and open the confirm over the description. |
-`arch_screen.cpp`'s sale sheet. | S | Check `arch_sale`, `arch_sale_twin` and
-`arch_sale_confirm` on the contact sheet. |
-
 **Wild and boss levels do not follow the pet.** The tier rosters are hand-tuned; only the
 DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level (`kSimDummyHealthPerLevel`,
 `kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Decide the curve every
