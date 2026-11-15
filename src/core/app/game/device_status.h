@@ -1,5 +1,6 @@
 // device_status.h: what the device tier last reported about the hardware (battery, card,
-// radio owner, the web bundle on the card) and the one-shot requests the CFG pages leave for it (re-mount the card,
+// radio owner, the web bundle on the card, whether a network is stored, the radio's own
+// MAC) and the one-shot requests the CFG pages leave for it (re-mount the card,
 // format it, travel sleep). Runtime only: each is a reading of the hardware now or a
 // request a reboot answers, so none of it is saved.
 //
@@ -109,6 +110,20 @@ public:
     }
     const char* webBundleVersion() const { return webBundle_; }
 
+    // Whether a home network is STORED (platform/esp32/net_credentials.h). Just a bool:
+    // the engine never holds, renders or saves the credentials, and nothing saved may let
+    // this device reach the 'net without the operator asking again.
+    bool setNetProvisioned(bool on) {
+        if (netProvisioned_ == on) return false;
+        netProvisioned_ = on;
+        return true;
+    }
+    bool netProvisioned() const { return netProvisioned_; }
+
+    // This device's own radio MAC, packed (packPeerKey); 0 on host, which has none.
+    void setRadioKey(uint64_t key) { radioKey_ = key; }
+    uint64_t radioKey() const { return radioKey_; }
+
 private:
     PowerStatus power_;
     int batteryLevel_ = -1;
@@ -120,6 +135,8 @@ private:
     bool travelSleep_ = false;
     RadioOwner radioOwner_ = RadioOwner::None;
     char webBundle_[16] = "UNKNOWN";
+    bool netProvisioned_ = false;
+    uint64_t radioKey_ = 0;
 };
 
 }  // namespace mal

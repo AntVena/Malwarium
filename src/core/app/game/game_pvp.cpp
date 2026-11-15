@@ -49,7 +49,7 @@ namespace mal {
 // --- Identity ----------------------------------------------------------------
 
 void Game::setLocalRadioMac(const uint8_t* mac) {
-    localRadioKey_ = packPeerKey(mac);
+    device_.setRadioKey(packPeerKey(mac));
 }
 
 bool Game::buildPvpFighter(PvpFighter* out) const {
@@ -167,7 +167,7 @@ bool Game::pvpChallenge(uint64_t key) {
     if (pvp_) return false;
     // Without a local MAC there is no way to pick the host, so the host build and any
     // board without one cannot duel. Inert, not broken.
-    if (localRadioKey_ == 0 || key == 0 || key == localRadioKey_) return false;
+    if (localRadioKey() == 0 || key == 0 || key == localRadioKey()) return false;
     PvpFighter local;
     if (!buildPvpFighter(&local)) {
         endPvpSession("NO PET TO FIGHT", /*notify=*/false);
@@ -182,7 +182,7 @@ bool Game::pvpChallenge(uint64_t key) {
     unpackPeerKey(key, mac);
     rng_ = rng_ * 1664525u + 1013904223u;
     pvp_ = PvpSession::opened(PvpPhase::Inviting, rng_ ? rng_ : 1u, key, mac, live->tag,
-                              pvpHostIsLocal(localRadioKey_, key), nowMs_);
+                              pvpHostIsLocal(localRadioKey(), key), nowMs_);
     pvp_->local = local;
     pvpStatus_[0] = '\0';
     sendPvpPending();
@@ -237,7 +237,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
     if (!decodePvpFrame(payload, len, &f)) return false;
 
     const uint64_t key = packPeerKey(mac);
-    if (key == 0 || key == localRadioKey_) return false;
+    if (key == 0 || key == localRadioKey()) return false;
 
     // An INVITE opens a session, so it is the one frame that doesn't have to match the
     // one we're already in. Everything else must, which is what makes a stale or
@@ -271,7 +271,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
             uint8_t buf[kPvpFrameCap];
             PvpDeclineReason refuse = PvpDeclineReason::Busy;
             bool ok = true;
-            if (!linkScreenOpen() || localRadioKey_ == 0) ok = false;
+            if (!linkScreenOpen() || localRadioKey() == 0) ok = false;
             else if (!pet_.creature) { ok = false; refuse = PvpDeclineReason::NoPet; }
             else if (f.rules != kPvpRulesVersion ||
                      !canBuildPvpCombatant(registry_, f.fighter)) {
@@ -287,7 +287,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
                 return false;
             }
             pvp_ = PvpSession::opened(PvpPhase::Invited, f.session, key, mac, f.fighter.tag,
-                                      pvpHostIsLocal(localRadioKey_, key), nowMs_);
+                                      pvpHostIsLocal(localRadioKey(), key), nowMs_);
             pvp_->remote = f.fighter;
             pvpStatus_[0] = '\0';
             dirty_ = true;

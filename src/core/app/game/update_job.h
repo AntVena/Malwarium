@@ -4,13 +4,15 @@
 // check's answer is stale the moment the device is off, so none of it is saved.
 //
 // Game owns one and starts, cancels and feeds it (setUpdateStatus, setInstallStatus,
-// setNetStatus), because a job also raises the connection it needs. Everything else reads
+// setNetStatus), because a job also raises the connection it needs. Each job raises its
+// own, so how that association went is the job's too. Everything else reads
 // it through Game::updateJob().
 #pragma once
 
 #include <cstdint>
 #include <cstring>
 
+#include "core/device/net_status.h"
 #include "core/device/update_status.h"
 
 namespace mal {
@@ -26,6 +28,9 @@ public:
     UpdateTarget target() const { return target_; }
     const UpdateStatus& status() const { return status_; }
     const InstallStatus& install() const { return install_; }
+    // The association the job raised: CONNECTING from its start, then what the device
+    // tier pushes back (setNetStatus), the first step the UPDATES screen reports.
+    const NetStatus& net() const { return net_; }
 
     // Whether this device knows WHERE to check. A device with no source isn't offered a
     // check it cannot perform.
@@ -53,6 +58,7 @@ public:
     bool startCheck() {
         if (live_) return false;
         live_ = true;
+        connect();
         target_ = UpdateTarget::None;
         status_ = UpdateStatus{};
         status_.state = UpdateState::Checking;
@@ -68,6 +74,7 @@ public:
         if (t == UpdateTarget::Web && !status_.webNewer) return false;
         if (t == UpdateTarget::None) return false;
         live_ = true;
+        connect();
         target_ = t;
         install_ = InstallStatus{};
         install_.state = InstallState::Downloading;
@@ -99,6 +106,14 @@ public:
         end();
     }
 
+    // The association outcome the device tier pushes back. A terminal FAILURE ends the
+    // job as NoNetwork: a dead attempt must not keep the radio's top owner holding the AP
+    // down while nothing happens.
+    void reportNet(const NetStatus& s) {
+        net_ = s;
+        if (s.state == NetState::Failed) failNoNetwork();
+    }
+
     // What the device tier reports. A terminal state ends the job and hands the radio
     // back; Checking (or an install still under way) keeps it. A finished install's
     // status stands so the screen can report what happened.
@@ -114,6 +129,12 @@ public:
     void clearInstallReport() { install_ = InstallStatus{}; }
 
 private:
+    // An install after a check reconnects rather than riding the check's association:
+    // the window is shorter, and re-joining a known network costs seconds.
+    void connect() {
+        net_ = NetStatus{};
+        net_.state = NetState::Connecting;
+    }
     // One job ends the same way whatever it was.
     void end() {
         live_ = false;
@@ -128,6 +149,7 @@ private:
     bool live_ = false;
     UpdateTarget target_ = UpdateTarget::None;
     UpdateStatus status_;
+    NetStatus net_;
     InstallStatus install_;
 };
 

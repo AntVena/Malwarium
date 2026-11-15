@@ -351,7 +351,7 @@ private:
     void handleProbe(int status, const char* mime, const char* body) {
         const bool wantsSetup =
             !creds_.provisioned() ||
-            (game_ && game_->netStatus().state == NetState::Failed);
+            (game_ && game_->updateJob().net().state == NetState::Failed);
         if (wantsSetup) {
             server_.sendHeader("Location", "http://192.168.4.1/setup");
             server_.send(302, "text/plain", "");

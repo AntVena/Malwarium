@@ -465,7 +465,7 @@ void test_update_job_dies_when_the_join_fails() {
     g.setUpdateSourceKnown(true);
     g.requestUpdateCheck();
     CHECK(g.updateJob().live());
-    CHECK(g.netStatus().state == NetState::Connecting);  // joining is step one
+    CHECK(g.updateJob().net().state == NetState::Connecting);  // joining is step one
 
     NetStatus failed; failed.state = NetState::Failed;
     g.setNetStatus(failed);
@@ -687,7 +687,7 @@ void test_update_install_progress_is_not_terminal() {
     // when that join never comes up: nothing else would take the radio off it.
     g.requestUpdateInstall(UpdateTarget::Web);
     CHECK(g.updateJob().live());
-    CHECK(g.netStatus().state == NetState::Connecting);
+    CHECK(g.updateJob().net().state == NetState::Connecting);
     NetStatus noJoin; noJoin.state = NetState::Failed;
     g.setNetStatus(noJoin);
     CHECK(!g.updateJob().live());
@@ -1061,7 +1061,7 @@ void test_net_attempt_outcomes() {
     NetStatus failed; failed.state = NetState::Failed;
     g.setNetStatus(failed);
     CHECK(!g.netConnectWanted());                     // radio handed back
-    CHECK(g.netStatus().state == NetState::Failed);   // ...but the screen says why
+    CHECK(g.updateJob().net().state == NetState::Failed);   // ...but the screen says why
 
     // Online is NOT terminal: the job holds the link it just raised, and only its
     // own outcome gives the radio back.
@@ -1070,7 +1070,7 @@ void test_net_attempt_outcomes() {
     std::strcpy(online.ip, "192.168.1.9");
     g.setNetStatus(online);
     CHECK(g.netConnectWanted());                      // an online link is held
-    CHECK(std::strcmp(g.netStatus().ip, "192.168.1.9") == 0);
+    CHECK(std::strcmp(g.updateJob().net().ip, "192.168.1.9") == 0);
 
     UpdateStatus done; done.state = UpdateState::UpToDate;
     g.setUpdateStatus(done);

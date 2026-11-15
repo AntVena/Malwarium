@@ -27,7 +27,6 @@ class UpdatesHost {
 public:
     virtual const UpdateJob& updateJob() const = 0;
     virtual bool updateCheckReady() const = 0;
-    virtual const NetStatus& netStatus() const = 0;
     virtual bool netProvisioned() const = 0;
     virtual const DeviceStatus& deviceStatus() const = 0;   // the web bundle on the card
     virtual void requestUpdateCheck() = 0;

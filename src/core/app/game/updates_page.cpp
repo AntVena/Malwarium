@@ -91,15 +91,15 @@ void UpdatesPage::draw(Framebuffer& fb, const UpdatesHost& host) const {
     // the confirm, which outranks the list.
     if (job.live() || install.state != InstallState::Idle) {
         if (job.target() == UpdateTarget::None && install.state == InstallState::Idle)
-            drawUpdateCheck(fb, status, host.netStatus(), checkView);
+            drawUpdateCheck(fb, status, host.updateJob().net(), checkView);
         else
-            drawUpdateProgress(fb, install, host.netStatus());
+            drawUpdateProgress(fb, install, host.updateJob().net());
     } else if (confirm_ != UpdateTarget::None) {
         const bool fw = confirm_ == UpdateTarget::Firmware;
         drawUpdateConfirm(fb, confirm_, fw ? kFirmwareVersion : host.deviceStatus().webBundleVersion(),
                           fw ? status.firmwareVersion : status.webVersion, confirmPick_);
     } else {
-        drawUpdateCheck(fb, status, host.netStatus(), checkView);
+        drawUpdateCheck(fb, status, host.updateJob().net(), checkView);
     }
 }
 

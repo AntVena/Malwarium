@@ -297,7 +297,7 @@ responsibility, and combat.cpp is the turn engine alone.
 
 The units past 600 are one concern each and stay: `game_render` (one function per screen),
 `game_persist` (the flat save mapping), `game_core` (the tick clocks), `game_combat` (the fight's
-lifecycle, entry to settle, plus the `debug*` combat hooks §1j retires), `game_explore` (the
+lifecycle, entry to settle, and the staged-fight test seams), `game_explore` (the
 walk), `game_lifecycle` (one pet's life: hatch, evolution, lockout and CSF), `game_items` (the
 ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), and
 `game_config`, `game_pvp` (one screen each, just over).

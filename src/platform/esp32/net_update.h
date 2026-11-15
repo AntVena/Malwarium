@@ -98,7 +98,7 @@ public:
         if (ran_ && !installing) return;   // a check gets exactly one fetch
 
         if (!online()) {
-            const NetStatus& ns = game_->netStatus();
+            const NetStatus& ns = game_->updateJob().net();
             if (ns.state == NetState::Failed) { abandon(UpdateFail::NoNetwork); return; }
             // Backstop only: net_sta.h times the join out itself and reports
             // Failed. This catches a job that somehow never gets that far, so a
@@ -156,7 +156,7 @@ private:
     static constexpr const char* kWebTmpPath = "/sdcard/web_update.tar";
     static constexpr const char* kWebRoot = "/sdcard/web";
 
-    bool online() const { return game_->netStatus().state == NetState::Online; }
+    bool online() const { return game_->updateJob().net().state == NetState::Online; }
 
     // End whatever job is live with a failure, whichever kind it is. One place, so
     // a check and an install can't disagree about what "give up" means.

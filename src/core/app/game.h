@@ -927,11 +927,9 @@ public:
     // connect. It connects only for a job the operator started (see
     // netConnectWanted).
     void setNetProvisioned(bool on) {
-        if (netProvisioned_ == on) return;
-        netProvisioned_ = on;
-        dirty_ = true;
+        if (device_.setNetProvisioned(on)) dirty_ = true;
     }
-    bool netProvisioned() const override { return netProvisioned_; }
+    bool netProvisioned() const override { return device_.netProvisioned(); }
 
     // What platform/esp32/net_sta.h asks each loop, and what the arbiter reads to pick
     // the Update owner. ONE ASKER: the device joins a network for exactly as long as an
@@ -939,19 +937,12 @@ public:
     // reboot. Latched rather than nav-derived, because a fetch that died the moment the
     // menu collapsed could never finish. When it lets go the arbiter re-resolves and the
     // radio falls back to whichever toggle was already on.
-    bool netConnectWanted() const override { return netProvisioned_ && update_.live(); }
-    // The association outcome, pushed back by the device tier and reported by the
-    // UPDATES screen as the first step of a job (CONNECTING → CHECKING → the verdict).
-    // A terminal FAILURE ends the job and fails it as NoNetwork: there is nothing to
-    // fetch over a connection that never came up, a dead attempt must not keep the
-    // radio's top owner holding the AP down while nothing happens, and the screen
-    // has to say which step gave up rather than sitting on CHECKING forever.
+    bool netConnectWanted() const override { return device_.netProvisioned() && update_.live(); }
+    // The association outcome, pushed back by the device tier (UpdateJob::reportNet).
     void setNetStatus(const NetStatus& s) {
-        netStatus_ = s;
-        if (s.state == NetState::Failed) update_.failNoNetwork();
+        update_.reportNet(s);
         dirty_ = true;
     }
-    const NetStatus& netStatus() const override { return netStatus_; }
 
     // Whether this device knows WHERE to check, pushed from the platform tier at
     // boot (platform/esp32/update_source.h). Runtime-only and just a bool, like
@@ -980,15 +971,12 @@ public:
     // there is no consent bit to arm first. The UPDATES screen reads this to say
     // which piece is missing instead of offering a button that would silently do
     // nothing.
-    bool updateCheckReady() const override { return netProvisioned_ && update_.sourceKnown(); }
+    bool updateCheckReady() const override { return device_.netProvisioned() && update_.sourceKnown(); }
 
-    // Ask what is published. Raises the connection itself and seeds the CONNECTING
-    // step the screen reports, because the radio comes up only for the job, with
-    // nothing to switch on before it or left on after.
+    // Ask what is published. The job raises its own connection, because the radio
+    // comes up only for the job, with nothing to switch on before it or left on after.
     void requestUpdateCheck() override {
         if (!updateCheckReady() || !update_.startCheck()) return;
-        netStatus_ = NetStatus{};
-        netStatus_.state = NetState::Connecting;
         dirty_ = true;
     }
 
@@ -997,12 +985,6 @@ public:
     // it refuses).
     void requestUpdateInstall(UpdateTarget t) override {
         if (!updateCheckReady() || !update_.startInstall(t)) return;
-        // Its own connection, raised and dropped with this job. An install after a
-        // check reconnects rather than riding the check's association: the window is
-        // shorter, the lifetime is the same rule every job follows, and re-joining a
-        // known network costs seconds.
-        netStatus_ = NetStatus{};
-        netStatus_.state = NetState::Connecting;
         dirty_ = true;
     }
 
@@ -1133,7 +1115,7 @@ public:
     // This device's own radio MAC, needed to decide who hosts (pvpHostIsLocal). The
     // device tier hands it over once at boot; on host it stays 0 and duels are inert.
     void setLocalRadioMac(const uint8_t* mac);
-    uint64_t localRadioKey() const { return localRadioKey_; }
+    uint64_t localRadioKey() const { return device_.radioKey(); }
 
     // 'Pedia local Access Point. Runtime opt-in, persisted
     // (save v20), default OFF. The device tier reads apEnabled() each loop; when
@@ -2282,8 +2264,8 @@ private:
     void resolveSinkhole(const ItemDef& bypass) override;   // spend it for its XP
     // Live-stakes combat against `wild`: an encounter's roll, or an area guardian.
     void startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst);
-    // The tail both debug combat hooks share once the player is built: roll the fight
-    // open against `spec` and hand the screen to it (debugStartCombat / ...Vs).
+    // The tail the staged-fight seams share once the player is built: roll the fight
+    // open against `spec` and hand the screen to it (startDummyFight and its siblings).
     void beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat::Stakes stakes);
     void endTourneyRun(TourneyPhase end);
     void forceDefragOutcome(bool success);
@@ -2926,14 +2908,6 @@ private:
     // SD-backed roster of everyone met, which takes only the snapshot's arrival edge.
     PeerSightings peerSightings_;   // core/net/peer_sightings.h
     PeerLedger peerLedger_;
-    // Runtime-only, never saved: whether the platform tier has a stored network, and
-    // how the current job's association went. A credential store is device-tier
-    // (platform/esp32/net_credentials.h) and the outcome is worthless after a reboot,
-    // so neither belongs in the save blob. There is deliberately no saved bit
-    // alongside them: nothing may persist that lets this device reach the 'net
-    // without the operator asking again (see netConnectWanted).
-    bool netProvisioned_ = false;
-    NetStatus netStatus_;
     // Live largest-allocatable-block probe, wired by the platform tier
     // (see setHeapProbe). Null = nothing reports, which reads as "no reason to hold
     // back" and is the host build's normal state.
@@ -2964,7 +2938,6 @@ private:
     std::optional<StoryRun> story_;
     StoryReader storyReader_;
     ChaptersScreen chapters_;                // the CHAPTERS archive (game/chapters_screen.h)
-    uint64_t localRadioKey_ = 0;         // this device's own MAC, packed (0 = host build)
 
     // Outbound frames waiting for the device tier to drain (takePvpOut). The radio
     // link's, so it lives here beside onPvpFrame and outlasts any session.
