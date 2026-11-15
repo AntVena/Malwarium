@@ -56,13 +56,9 @@ void Game::captureHistory(SaveData& d) const {
     }
 }
 
-// The radio toggles persist as intent only: hot/cooldown timers are runtime-only (no RTC).
+// The radio consents are the Settings record's (captureSettings). Capture persists as
+// intent only: hot/cooldown timers are runtime-only (no RTC).
 void Game::captureRadio(SaveData& d) const {
-    d.netScanEnabled = netScanEnabled_ ? 1 : 0;       // v5
-    d.apEnabled = apEnabled_ ? 1 : 0;                 // v20
-    // v37: only the LINK consent bit. The met operators live in the SD-backed
-    // PeerLedger (core/net/peer_ledger.h).
-    d.linkEnabled = linkEnabled_;
     d.auditCaptureEnabled = auditCapture_.enabled() ? 1 : 0;   // v6
 
     // v7: the real-radio SHAKES dedup ledger + the lifetime handshake count, so
@@ -107,20 +103,6 @@ void Game::restoreHistory(const SaveData& d) {
 }
 
 void Game::restoreRadio(const SaveData& d) {
-    // Audit-mode passive-scan toggle (v5). A pre-v5 blob defaults it OFF (never
-    // silently arm the radio on a migrated save).
-    netScanEnabled_ = d.netScanEnabled != 0;
-
-    // 'Pedia local-AP toggle (v20). A pre-v20 blob defaults it OFF (never silently
-    // stand up an AP on a migrated save).
-    apEnabled_ = d.apEnabled != 0;
-
-    // Pet-to-pet LINK toggle (v37). A pre-v37 blob defaults it OFF, so an upgrade
-    // never starts broadcasting the operator's identity. Unlike capture/scan there
-    // is no invariant to normalize: LINK is independent of the audit ladder, since
-    // listening and announcing are separate consents.
-    linkEnabled_ = d.linkEnabled;
-
     // The v38 slot is deliberately not read back: it held a standing internet opt-in,
     // and this device now goes online only for the duration of a job somebody started
     // (see Game::netConnectWanted). A save carrying the old bit lands off the 'net.
@@ -131,12 +113,6 @@ void Game::restoreRadio(const SaveData& d) {
     // recovery window is the one exception (Pet::dyingElapsedMs).
     auditCapture_ = AuditCapture{};
     auditCapture_.setEnabled(d.auditCaptureEnabled != 0, nowMs_);
-
-    // Normalize the escalating-audit invariant on load: a legacy save from before
-    // the single AuditMode control could hold capture-on with scan-off (the two
-    // toggles were independent). Capture depends on the scan, so pull scan up to
-    // match rather than run capture without its discovery feed.
-    if (auditCapture_.enabled() && !netScanEnabled_) netScanEnabled_ = true;
 
     // Audit SHAKES dedup ledger (v7), so a reboot never re-credits a handshake already
     // counted. A pre-v7 blob carries an empty ledger (dedup rebuilds from scratch
@@ -186,7 +162,8 @@ void Game::restoreActivePet(const SaveData& d) {
     }
 }
 
-// The device's preferences, through the record's own mapping. The theme is applied
+// The device's preferences, through the record's own mapping. Runs after restoreRadio,
+// which arms capture. The theme is applied
 // through setThemePick, which validates it against the collected-items shelf, so this
 // runs after restoreOperator: any earlier, an earned set reads as locked. A set the
 // device has not unlocked leaves the theme in force where it was.
@@ -196,6 +173,10 @@ void Game::restoreSettings(const SaveData& d) {
     loaded.theme = settings_.theme;
     settings_ = loaded;
     setThemePick(theme);
+    // The escalating-audit invariant, normalized on load against the capture restoreRadio
+    // armed: a save from before the single AuditMode control could hold capture-on with
+    // scan-off. Capture depends on the scan, so pull the scan up to match.
+    if (auditCapture_.enabled()) settings_.setNetScan(true);
 }
 
 // The chosen background, validated rather than trusted: one the operator does not own is

@@ -807,6 +807,30 @@ struct SaveSettings {
 
     // --- v71 ---
     uint8_t exploreSound = 1;
+
+    // The three radio consents. Written where their version put them on the wire.
+    // v5: Audit-mode passive-scan runtime toggle -------- The authorized-use
+    // opt-in the player flips in CFG (default OFF). Persisted so the choice
+    // survives a reboot; drives whether the device-tier radio does any passive
+    // WiFi.scanNetworks() at all. No hacker XP field: XP is derived
+    // (networksSeen * kHackerRankXpPerNetwork), so it needs no field of its own.
+    uint8_t netScanEnabled = 0;
+
+    // v20: 'Pedia local-AP runtime toggle ------------
+    // The player's opt-in for the standalone Wi-Fi Access Point that serves the
+    // 'Pedia landing page (a sibling of netScanEnabled). Default OFF; persisted so
+    // the choice survives a reboot. Drives whether the device-tier RadioArbiter
+    // brings up SoftAP + the HTTP server at all, and, being the radio's top
+    // owner, it stands the audit scan/capture down while on and hands the radio
+    // back to whichever of those is still toggled on when it goes off. Pre-v20 → 0.
+    uint8_t apEnabled = 0;
+
+    // v37: the pet-to-pet LINK opt-in --------------------------------------
+    // Player-level, default OFF. Consent to BROADCAST identity, which is why it is
+    // its own bit rather than riding netScanEnabled's consent to listen. The met
+    // operators themselves are not here: they live in the SD-backed PeerLedger
+    // (core/net/peer_ledger.h), like the network history.
+    bool linkEnabled = false;
 };
 
 // What a save keeps of the arena run (TourneyRun::saved / TourneyRun::loaded): the whole
@@ -842,12 +866,6 @@ struct SaveData {
     std::vector<SaveStack> items;
     std::vector<SaveLogEntry> log;    // chronological, oldest first
 
-    // v5: Audit-mode passive-scan runtime toggle -------- The authorized-use
-    // opt-in the player flips in CFG (default OFF). Persisted so the choice
-    // survives a reboot; drives whether the device-tier radio does any passive
-    // WiFi.scanNetworks() at all. No hacker XP field: XP is derived
-    // (networksSeen * kHackerRankXpPerNetwork), so it needs no field of its own.
-    uint8_t netScanEnabled = 0;
 
     // v6: Audit-mode handshake-CAPTURE runtime toggle ----
     // The authorized-use opt-in for the passive WPA-handshake -> .pcap capture
@@ -866,21 +884,7 @@ struct SaveData {
     // NETS/seenBssids dedup set was REMOVED as of v33: see the v33 note above.)
     std::vector<uint64_t> seenHandshakeBssids;  // SHAKES dedup fallback (per-network handshake)
 
-    // v20: 'Pedia local-AP runtime toggle ------------
-    // The player's opt-in for the standalone Wi-Fi Access Point that serves the
-    // 'Pedia landing page (a sibling of netScanEnabled). Default OFF; persisted so
-    // the choice survives a reboot. Drives whether the device-tier RadioArbiter
-    // brings up SoftAP + the HTTP server at all, and, being the radio's top
-    // owner, it stands the audit scan/capture down while on and hands the radio
-    // back to whichever of those is still toggled on when it goes off. Pre-v20 → 0.
-    uint8_t apEnabled = 0;
 
-    // v37: the pet-to-pet LINK opt-in --------------------------------------
-    // Player-level, default OFF. Consent to BROADCAST identity, which is why it is
-    // its own bit rather than riding netScanEnabled's consent to listen. The met
-    // operators themselves are not here: they live in the SD-backed PeerLedger
-    // (core/net/peer_ledger.h), like the network history.
-    bool linkEnabled = false;
 
     // v38: RESERVED ----------------------------------------------------------
     // Held a standing internet/STA opt-in. Nothing reads it: the association is

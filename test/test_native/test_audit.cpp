@@ -722,7 +722,7 @@ void test_audit_mode_enforces_scan_dependency() {
 void test_audit_legacy_capture_without_scan_normalizes_on_load() {
     SaveData a;
     std::strcpy(a.active.id, "paypup");
-    a.netScanEnabled = 0;
+    a.settings.netScanEnabled = 0;
     a.auditCaptureEnabled = 1;               // the inconsistent legacy state
     MemSaveStore store;
     store.save(serializeSave(a));

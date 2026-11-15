@@ -1,7 +1,8 @@
 // settings.h: the Settings record (CONTRIBUTING, "Where state lives"). The hardware's
-// preferences: what the device looks and sounds like, which belongs to no pet and no
-// operator. Kept through a pet's death and through both factory resets, which reset
-// progress rather than preferences. Game holds it as Game::settings_ and reads it
+// preferences: what the device looks and sounds like and which radios it may use, which
+// belongs to no pet and no operator. Kept through a pet's death and through both factory
+// resets, which reset progress rather than preferences, except the radio consents: WIPE
+// EVERYTHING turns those off (Game::wipeDeviceProgress), so a wiped device is silent. Game holds it as Game::settings_ and reads it
 // through Game::settingsRecord().
 //
 // Settings::saved and Settings::loaded are its only mapping to the save.
@@ -27,6 +28,11 @@ struct Settings {
     // still loads the set the operator chose. Game::setThemePick is its only writer,
     // because a set must be unlocked to be applied.
     int theme = 0;
+    // The radio consents, each off out of the box. Game's setters keep the audit ladder
+    // (capture implies the scan) and the arbiter reads them through Game.
+    bool netScan = false;   // the passive audit scan
+    bool ap = false;        // the 'Pedia access point
+    bool link = false;      // the pet-to-pet LINK beacon
 
     // Each setter clamps out-of-range input and answers whether the value changed, so
     // the caller repaints and saves only on a real change.
@@ -36,6 +42,9 @@ struct Settings {
     bool setSoundMode(SoundMode m);
     bool setVolume(int level);
     bool setExploreSound(bool on);
+    bool setNetScan(bool on);
+    bool setAp(bool on);
+    bool setLink(bool on);
 
     SaveSettings saved() const;
     // A value this build has no meaning for (a corrupt level, a mode or a theme name

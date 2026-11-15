@@ -102,7 +102,7 @@ void test_save_roundtrip() {
     a.activeArmed.subRefarm[2] = 7; a.activeArmed.subRefarm[9] = 3;
     a.active.defragCount = 12;                        // v16: the active pet's defrag tally
     a.op.bwUpgradeCount = 5;                       // v19: Hacker SHOP bandwidth upgrades bought
-    a.apEnabled = 1;                            // v20: 'Pedia local-AP toggle
+    a.settings.apEnabled = 1;                            // v20: 'Pedia local-AP toggle
 
     SaveData b;
     CHECK(deserializeSave(serializeSave(a), b));
@@ -139,7 +139,7 @@ void test_save_roundtrip() {
     CHECK(b.active.defragCount == 12);                          // v16: active defrag tally
     CHECK(b.op.rack.size() == 1 && b.op.rack[0].defragCount == 9);  // v16: rack pet tally
     CHECK(b.op.bwUpgradeCount == 5);                         // v19: SHOP bandwidth upgrades
-    CHECK(b.apEnabled == 1);                              // v20: 'Pedia AP toggle round-trips
+    CHECK(b.settings.apEnabled == 1);                              // v20: 'Pedia AP toggle round-trips
 }
 
 // the CFG Brightness row cycles a discrete level and B applies it to the

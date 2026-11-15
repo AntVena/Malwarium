@@ -120,11 +120,11 @@ void test_save_mod_count_for_a_retired_wire_is_dropped() {
 // the met operators themselves ride the SD-backed PeerLedger.
 void test_save_v37_link_roundtrip() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
-    a.linkEnabled = true;
+    a.settings.linkEnabled = true;
     auto blob = serializeSave(a);
     SaveData out;
     CHECK(deserializeSave(blob, out));
-    CHECK(out.linkEnabled);
+    CHECK(out.settings.linkEnabled);
 }
 
 // The v38 byte is RESERVED: it held a standing internet opt-in and no longer means
@@ -134,12 +134,12 @@ void test_save_v37_link_roundtrip() {
 void test_save_v38_net_slot_is_reserved() {
     SaveData a; std::strcpy(a.active.id, "paypup"); a.active.generation = 1;
     a.netReserved = true;                       // whatever a caller puts here...
-    a.linkEnabled = true;
+    a.settings.linkEnabled = true;
     auto blob = serializeSave(a);
     SaveData out;
     CHECK(deserializeSave(blob, out));
     CHECK(!out.netReserved);                    // ...never survives the round trip
-    CHECK(out.linkEnabled);                     // the v37 field ahead of it still does
+    CHECK(out.settings.linkEnabled);                     // the v37 field ahead of it still does
 
     // The slot still occupies its byte, so everything appended behind it lands where
     // the reader expects. A v39 field is the nearest one to prove that with.
@@ -200,7 +200,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     CHECK(low.saveSchedule().deferred() == 0);
     SaveData back;
     CHECK(deserializeSave(store.bytes(), back));
-    CHECK(back.apEnabled);
+    CHECK(back.settings.apEnabled);
 
     // That write bought the blob buffer, so every save after it writes into memory the
     // engine already holds and is judged on the everyday floor instead. This is what
@@ -215,7 +215,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     CHECK(low.saveSchedule().deferred() == 0);
     SaveData after;
     CHECK(deserializeSave(store.bytes(), after));
-    CHECK(after.linkEnabled);
+    CHECK(after.settings.linkEnabled);
 }
 
 // A write the STORE refused is not a write. Counting it as one is what makes the
@@ -231,7 +231,7 @@ void test_a_refused_write_is_not_a_save() {
     for (int i = 1; i <= 5; ++i) g.tick(t += 1000);
     SaveData landed;
     CHECK(deserializeSave(store.bytes(), landed));       // a baseline reached "flash"
-    CHECK(landed.apEnabled);
+    CHECK(landed.settings.apEnabled);
     CHECK(g.saveSchedule().writesFailed() == 0);
 
     // Now the medium starts refusing, and the state moves on without it.
@@ -241,7 +241,7 @@ void test_a_refused_write_is_not_a_save() {
     CHECK(g.saveSchedule().writesFailed() > 0);
     SaveData stale;
     CHECK(deserializeSave(store.bytes(), stale));
-    CHECK(!stale.linkEnabled);                           // flash is behind RAM: the revert
+    CHECK(!stale.settings.linkEnabled);                           // flash is behind RAM: the revert
 
     // It keeps trying rather than giving up, and NOT once per beat. A store that just
     // said no is not one to hammer, so the retries are paced by the same debounce every
@@ -260,7 +260,7 @@ void test_a_refused_write_is_not_a_save() {
     CHECK(g.saveNow());
     SaveData caught;
     CHECK(deserializeSave(store.bytes(), caught));
-    CHECK(caught.linkEnabled);
+    CHECK(caught.settings.linkEnabled);
 }
 
 // The reported shape of it, end to end. A hatch persists IMMEDIATELY, and that one call

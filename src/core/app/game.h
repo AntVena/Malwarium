@@ -862,11 +862,11 @@ public:
     // raises the SCAN only; the handshake CAPTURE opt-in is untouched and stays
     // strictly explicit. The RadioArbiter still decides who actually owns the radio,
     // so a live AP or capture owner continues to stand this down.
-    bool radioScanWanted() const { return netScanEnabled_ || crewScreenOpen(); }
+    bool radioScanWanted() const { return settings_.netScan || crewScreenOpen(); }
     // The persisted CFG opt-in itself: what the AUDIT row shows and the save stores,
     // and the baseline radioScanWanted() reads. registerNetwork() is how a heard AP
     // feeds back in from the device tier's WiFi.scanNetworks().
-    bool netScanEnabled() const { return netScanEnabled_; }
+    bool netScanEnabled() const { return settings_.netScan; }
     void setNetScanEnabled(bool on);
 
     // Pet-to-pet LINK (game_peers.cpp, core/net/peer_link.h). Runtime opt-in,
@@ -895,7 +895,7 @@ public:
     // fight's BYE both need the air. The RadioArbiter still decides who actually owns
     // the radio.
     bool linkWanted() const {
-        return linkEnabled_ || peersScreenOpen() || linkScreenOpen() || pvpSessionLive();
+        return settings_.link || peersScreenOpen() || linkScreenOpen() || pvpSessionLive();
     }
     // Whether LINK should hold the radio in the FOREGROUND (the arbiter's Link owner)
     // rather than riding the scan's ambient window. True exactly when a screen or a
@@ -917,7 +917,7 @@ public:
         return crewScreenOpen() || peersScreenOpen() || linkScreenOpen() ||
                pvpSessionLive() || netConnectWanted();
     }
-    bool linkEnabled() const override { return linkEnabled_; }
+    bool linkEnabled() const override { return settings_.link; }
     void setLinkEnabled(bool on) override;
 
     // Whether a home network is STORED, pushed from the platform tier at boot and
@@ -1032,7 +1032,7 @@ public:
     // while the PEERS screen is open. The dependency is REPORTED, never silently
     // fixed: arming the scan from here would grant a listening consent the operator
     // didn't give. The LINK and PEERS screens say so instead.
-    bool linkAmbientStarved() const override { return linkEnabled_ && !netScanEnabled_; }
+    bool linkAmbientStarved() const override { return settings_.link && !settings_.netScan; }
 
     // What this device broadcasts about itself: filled from the live pet/crew/tag.
     // The device tier encodes it (encodePeerHello) and beacons it; nothing here
@@ -1140,7 +1140,7 @@ public:
     // on it is the radio's TOP owner (SoftAP + the HTTP 'Pedia server), standing
     // the audit scan/capture down, and handing the radio back to whichever of
     // those is still toggled on the moment the AP is switched off.
-    bool apEnabled() const override { return apEnabled_; }
+    bool apEnabled() const override { return settings_.ap; }
     void setApEnabled(bool on) override;
 
     // Audit-mode handshake CAPTURE. A sibling authorized-use opt-in
@@ -1159,7 +1159,7 @@ public:
     using AuditMode = mal::AuditMode;
     AuditMode auditMode() const override {
         return auditCapture_.enabled() ? AuditMode::ScanCapture
-             : netScanEnabled_         ? AuditMode::Scan
+             : settings_.netScan       ? AuditMode::Scan
                                        : AuditMode::Off;
     }
     void setAuditMode(AuditMode m) override;
@@ -2933,7 +2933,6 @@ private:
     // SD-backed roster of everyone met, which takes only the snapshot's arrival edge.
     PeerSightings peerSightings_;   // core/net/peer_sightings.h
     PeerLedger peerLedger_;
-    bool linkEnabled_ = false;   // persisted CFG opt-in (save v37)
     // Runtime-only, never saved: whether the platform tier has a stored network, and
     // how the current job's association went. A credential store is device-tier
     // (platform/esp32/net_credentials.h) and the outcome is worthless after a reboot,
@@ -3035,15 +3034,6 @@ private:
     ItemOfferScreen itemOffer_;
 
     RankUpNotice rankUp_;   // game/rank_up_notice.h; applyPendingRankUp shows it
-
-    // Audit-mode passive discovery scan. netScanEnabled_ is the
-    // persisted runtime opt-in (save v5, default OFF). Real-radio BSSID dedup lives in
-    // the SD-backed networkLedger_ above (see its comment), not here: this scan only
-    // queues a sighting via registerNetwork, and never dedups or credits directly.
-    bool netScanEnabled_ = false;
-    // 'Pedia local-AP runtime opt-in (save v20, default OFF). Read by the device
-    // tier's RadioArbiter (top radio owner while on). See apEnabled() above.
-    bool apEnabled_ = false;
 
     // Audit-mode handshake-capture policy. Runtime timing brain
     // (hot-broadcast window + re-arm cooldown); only its enabled() toggle intent is

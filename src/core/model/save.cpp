@@ -281,7 +281,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     w.i32(op.hackerRank);
 
     // v5: Audit-mode passive-scan runtime toggle.
-    w.u8(d.netScanEnabled);
+    w.u8(d.settings.netScanEnabled);
 
     // v6: Audit-mode handshake-capture runtime toggle.
     w.u8(d.auditCaptureEnabled);
@@ -350,7 +350,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v20: the 'Pedia local-AP runtime toggle. Appended, so a
     // v19 reader ignores it; a pre-v20 blob reads back as OFF.
-    w.u8(d.apEnabled);
+    w.u8(d.settings.apEnabled);
 
     // v21: the per-pet care-mistake shield + once-per-lifetime item gates, and the
     // shop-pre-alloc fragAmountTier. Appended, so a v20 reader ignores it. (The full
@@ -454,7 +454,7 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v37: the pet-to-pet LINK opt-in. The met operators live in the SD-backed
     // PeerLedger; only the consent bit is here.
-    w.u8(d.linkEnabled ? 1 : 0);
+    w.u8(d.settings.linkEnabled ? 1 : 0);
 
     // v38: reserved. Always 0: the standing internet opt-in it held is gone, and
     // the byte only survives to keep the v39+ tail aligned (see save.h).
@@ -793,7 +793,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // stays OFF (the authorized-use default: a migrated save never silently
     // enables the radio).
     if (version >= 5) {
-        d.netScanEnabled = r.u8();
+        d.settings.netScanEnabled = r.u8();
     }
 
     // v6 tail: the Audit-CAPTURE toggle. Absent in a v1..v5 blob. It stays OFF
@@ -914,7 +914,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     if (version >= 19) op.bwUpgradeCount = r.i32();
 
     // v20 tail: the 'Pedia local-AP toggle. Absent in a v1..v19 blob → stays OFF.
-    if (version >= 20) d.apEnabled = r.u8();
+    if (version >= 20) d.settings.apEnabled = r.u8();
 
     // v21 tail: the per-pet care-mistake shield + once-per-lifetime item gates, and
     // the shop-pre-alloc fragAmountTier. Absent in a v1..v20 blob → the per-pet flags
@@ -1083,7 +1083,7 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v37 tail: the LINK opt-in. Absent in a v1..v36 blob → off, so an upgraded
     // device never starts announcing itself.
-    if (version >= 37) d.linkEnabled = r.u8() != 0;
+    if (version >= 37) d.settings.linkEnabled = r.u8() != 0;
 
     // v38 tail: reserved. Read to advance the cursor, never acted on: a save that
     // still carries the old opt-in must not put this device back on the 'net.

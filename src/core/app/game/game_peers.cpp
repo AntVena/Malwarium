@@ -28,8 +28,7 @@ namespace mal {
 // --- The LINK opt-in ---------------------------------------------------------
 
 void Game::setLinkEnabled(bool on) {
-    if (linkEnabled_ == on) return;
-    linkEnabled_ = on;
+    if (!settings_.setLink(on)) return;
     markSaveDirty();   // a persisted CFG opt-in: survives a reboot (save v37)
     dirty_ = true;
 }

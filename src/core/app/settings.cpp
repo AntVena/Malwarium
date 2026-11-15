@@ -39,6 +39,12 @@ bool Settings::setVolume(int level) { return change(volume, clampLevel(level, kV
 
 bool Settings::setExploreSound(bool on) { return change(exploreSound, on); }
 
+bool Settings::setNetScan(bool on) { return change(netScan, on); }
+
+bool Settings::setAp(bool on) { return change(ap, on); }
+
+bool Settings::setLink(bool on) { return change(link, on); }
+
 SaveSettings Settings::saved() const {
     SaveSettings s;
     s.brightness = brightness;
@@ -47,6 +53,9 @@ SaveSettings Settings::saved() const {
     s.soundMode = static_cast<uint8_t>(soundMode);
     s.volume = static_cast<uint8_t>(volume);
     s.exploreSound = exploreSound ? 1 : 0;
+    s.netScanEnabled = netScan ? 1 : 0;
+    s.apEnabled = ap ? 1 : 0;
+    s.linkEnabled = link;
     std::snprintf(s.theme, sizeof(s.theme), "%s", kPalThemeNames[theme]);
     return s;
 }
@@ -61,6 +70,9 @@ Settings Settings::loaded(const SaveSettings& s) {
                                                 : SoundMode::Off;
     v.volume = s.volume < kVolumeLevels ? s.volume : kVolumeLevels - 1;
     v.exploreSound = s.exploreSound != 0;
+    v.netScan = s.netScanEnabled != 0;
+    v.ap = s.apEnabled != 0;
+    v.link = s.linkEnabled;
     // An empty name (every pre-v64 blob) and a name this build ships no set for both
     // resolve to base.
     v.theme = palThemeByName(s.theme);

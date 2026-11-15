@@ -142,8 +142,7 @@ void Game::setNetScanEnabled(bool on) {
     // capture: the escalating Off<Scan<Capture ladder can never sit in a
     // scan-off/capture-on state (see AuditMode).
     const bool disarmCapture = !on && auditCapture_.enabled();
-    if (netScanEnabled_ == on && !disarmCapture) return;
-    netScanEnabled_ = on;
+    if (!settings_.setNetScan(on) && !disarmCapture) return;
     if (disarmCapture) auditCapture_.setEnabled(false, nowMs_);
     markSaveDirty();   // an authorized-use choice: persist it (save v5/v6)
 }
@@ -151,9 +150,9 @@ void Game::setNetScanEnabled(bool on) {
 void Game::setAuditCaptureEnabled(bool on) {
     // Capture implies scan: arming capture also arms the scan it feeds off (needed
     // for the SSID names + the NETS breadth the capture rides on).
-    const bool armScan = on && !netScanEnabled_;
+    const bool armScan = on && !settings_.netScan;
     if (auditCapture_.enabled() == on && !armScan) return;
-    if (armScan) netScanEnabled_ = true;
+    if (armScan) settings_.setNetScan(true);
     auditCapture_.setEnabled(on, nowMs_);
     markSaveDirty();   // authorized-use opt-in: persist the toggle (save v5/v6)
 }
@@ -167,8 +166,7 @@ void Game::setAuditMode(AuditMode m) {
 }
 
 void Game::setApEnabled(bool on) {
-    if (apEnabled_ == on) return;
-    apEnabled_ = on;
+    if (!settings_.setAp(on)) return;
     markSaveDirty();   // a persisted CFG opt-in: survives a reboot (save v20)
 }
 
