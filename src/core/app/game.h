@@ -21,6 +21,7 @@
 #include "core/app/game/achievement_banner.h"
 #include "core/app/game/arcade_screen.h"
 #include "core/app/game/arch_screen.h"
+#include "core/app/game/rank_up_notice.h"
 #include "core/app/game/cfg_menu.h"
 #include "core/app/game/arena_screen.h"
 #include "core/app/game/away_digest_screen.h"
@@ -969,18 +970,10 @@ public:
         if (update_.setManifestUrl(url)) dirty_ = true;
     }
 
-    // What web 'Pedia bundle is on the card, read off its marker by the platform
-    // tier (platform/esp32/web_bundle.h) and refreshed after an install. Display
-    // only: every "is it newer" comparison is made device-side against the packed
-    // code, which never enters the engine. Empty means no card, or no marker.
+    // The web bundle the platform tier read off the card (DeviceStatus::setWebBundleVersion).
     void setWebBundleVersion(const char* v) {
-        const char* src = (v && v[0]) ? v : "UNKNOWN";
-        if (std::strcmp(webBundleVersion_, src) == 0) return;
-        std::strncpy(webBundleVersion_, src, sizeof(webBundleVersion_) - 1);
-        webBundleVersion_[sizeof(webBundleVersion_) - 1] = '\0';
-        dirty_ = true;
+        if (device_.setWebBundleVersion(v)) dirty_ = true;
     }
-    const char* webBundleVersion() const override { return webBundleVersion_; }
 
     // Everything a check needs before it can even start: a network to reach through
     // and somewhere to look. Both are setup. Pressing the button is the consent, so
@@ -1396,7 +1389,7 @@ public:
     const MaintRun* maintRun() const override { return maint_ ? &*maint_ : nullptr; }
     // Which minigame a MAINT process's played variant runs (content_arcade.h's defaults).
     ArcadeGameKind maintPlayedGame(MaintKind k) const override {
-        return k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_;
+        return k == MaintKind::Defrag ? seams_.defragPlayedGame : seams_.avPlayedGame;
     }
     // Is cabinet `i` in the GAMES list right now (ArcadeUnlock)? A locked cabinet is
     // absent, not greyed. Shared by the A-cycle, the render loop and B, so the list can
@@ -1856,11 +1849,11 @@ public:
     }
     // Which engine a process's played run uses, swapped without editing content.
     void setMaintPlayedGame(MaintKind k, ArcadeGameKind g) {
-        (k == MaintKind::Defrag ? defragPlayedGame_ : avPlayedGame_) = g;
+        (k == MaintKind::Defrag ? seams_.defragPlayedGame : seams_.avPlayedGame) = g;
     }
     // The away summary, which the Hatched constructor turns off so a gate that ticks
     // hours and then presses a button means the press.
-    void enableAwayDigest() { awayDigestOn_ = true; }
+    void enableAwayDigest() { seams_.awayDigestOn = true; }
     //
     // World events without a radio. The LEDGER is everyone ever met (an absent peer is
     // a ledger-only row) and the LIVE snapshot is who is in range now, which LINK duels.
@@ -1958,6 +1951,15 @@ public:
     void toggleAutoProgress() override { autoProgress_ = !autoProgress_; }   // the overlay's A+C
 
 private:
+    // What only the test-seam block above sets: the away summary (off on the Hatched
+    // start) and which engine each MAINT process's played variant runs.
+    struct Seams {
+        bool awayDigestOn = true;
+        ArcadeGameKind defragPlayedGame = kDefragPlayedGame;
+        ArcadeGameKind avPlayedGame = kAvPlayedGame;
+    };
+    Seams seams_;
+
     // RigShopHost: the SHOP screen's way back into the game (game_rigshop.cpp). The
     // first two also serve ItemsHost.
     void leaveToCarousel() override;
@@ -2151,7 +2153,6 @@ private:
     // the first cache. Returns whether it opened one.
     bool openCareTipIfDue();
     AwayTally away_;
-    bool awayDigestOn_ = true;
     AwayDigestScreen awayDigest_;
     void resetAwayTally();
     // On a press: open the summary if the quiet before it was long enough and the tally
@@ -2822,9 +2823,6 @@ private:
     bool autoProgress_ = true;
     ExploreControlScreen exploreControl_;   // the walk's A+C overlay (game/explore_control_screen.h)
     MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)
-    // Which engine each process's played variant runs (debugSetMaintPlayedGame).
-    ArcadeGameKind defragPlayedGame_ = kDefragPlayedGame;
-    ArcadeGameKind avPlayedGame_ = kAvPlayedGame;
     // The MAINT process in play (core/model/maint_run.h): its board or its process
     // screen. Empty otherwise.
     std::optional<MaintRun> maint_;
@@ -2968,7 +2966,6 @@ private:
     HeapProbe heapProbe_ = nullptr;
     ISoundOut* soundOut_ = nullptr;
     UpdateJob update_;   // game/update_job.h
-    char webBundleVersion_[16] = "UNKNOWN";
 
     // PEERS screen cursor (game_peers.cpp).
     PeersScreen peers_;
@@ -3055,11 +3052,7 @@ private:
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
     ItemOfferScreen itemOffer_;
 
-    // A Hacker Rank crossing (Operator::hackerRank), held until the next Walk-screen
-    // render (both the direct Wi-Fi-resolve return and the wild-combat-return path
-    // check it).
-    bool rankUpPending_ = false;
-    char rankUpFlavor_[32] = "";
+    RankUpNotice rankUp_;   // game/rank_up_notice.h; applyPendingRankUp shows it
 
     // Audit-mode passive discovery scan. netScanEnabled_ is the
     // persisted runtime opt-in (save v5, default OFF). Real-radio BSSID dedup lives in

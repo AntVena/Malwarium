@@ -203,7 +203,7 @@ bool Game::openAwayDigestIfDue(uint32_t quietMs) {
     // A failing pet comes first: the press may be the one that feeds it the cookie, and
     // the summary keeps until the next press after the crisis.
     if (failingLeftMs() >= 0) return false;
-    const bool due = awayDigestOn_ && quietMs >= kAwayDigestMs && pet_.creature &&
+    const bool due = seams_.awayDigestOn && quietMs >= kAwayDigestMs && pet_.creature &&
                      face_ == Face::Pet && nav_ == Nav::Idle && !awayRows().empty();
     if (!due) {
         resetAwayTally();   // the player is here: what they missed starts again from now

@@ -127,17 +127,12 @@ void Game::checkHackerRankUp() {
     const int gained = newRank - op_.hackerRank;
     op_.hackerRank = newRank;
     op_.bits += kHackerRankUpBitsReward * gained;
-    std::snprintf(rankUpFlavor_, sizeof(rankUpFlavor_), "RANK UP R%d +%dB",
-                 op_.hackerRank, kHackerRankUpBitsReward * gained);
-    rankUpPending_ = true;
+    rankUp_.hold(op_.hackerRank, kHackerRankUpBitsReward * gained);
     markSaveDirty();
 }
 
 void Game::applyPendingRankUp() {
-    if (!rankUpPending_) return;
-    std::strncpy(walk_.flavor, rankUpFlavor_, sizeof(walk_.flavor) - 1);
-    walk_.flavor[sizeof(walk_.flavor) - 1] = '\0';
-    rankUpPending_ = false;
+    rankUp_.take(walk_.flavor, sizeof(walk_.flavor));
 }
 
 // Audit-mode passive discovery scan ----------------------

@@ -1,5 +1,7 @@
 #include "core/app/game/updates_page.h"
 
+#include "core/app/game/device_status.h"
+
 #include "version.h"
 #include "core/ui/cfg_screen.h"
 #include "core/ui/layout.h"
@@ -94,7 +96,7 @@ void UpdatesPage::draw(Framebuffer& fb, const UpdatesHost& host) const {
             drawUpdateProgress(fb, install, host.netStatus());
     } else if (confirm_ != UpdateTarget::None) {
         const bool fw = confirm_ == UpdateTarget::Firmware;
-        drawUpdateConfirm(fb, confirm_, fw ? kFirmwareVersion : host.webBundleVersion(),
+        drawUpdateConfirm(fb, confirm_, fw ? kFirmwareVersion : host.deviceStatus().webBundleVersion(),
                           fw ? status.firmwareVersion : status.webVersion, confirmPick_);
     } else {
         drawUpdateCheck(fb, status, host.netStatus(), checkView);

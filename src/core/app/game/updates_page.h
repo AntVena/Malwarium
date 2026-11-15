@@ -18,6 +18,7 @@
 
 namespace mal {
 
+class DeviceStatus;
 class Framebuffer;
 
 // What UPDATES needs from the game: the update job, what it reports, and whether a
@@ -28,7 +29,7 @@ public:
     virtual bool updateCheckReady() const = 0;
     virtual const NetStatus& netStatus() const = 0;
     virtual bool netProvisioned() const = 0;
-    virtual const char* webBundleVersion() const = 0;
+    virtual const DeviceStatus& deviceStatus() const = 0;   // the web bundle on the card
     virtual void requestUpdateCheck() = 0;
     virtual void requestUpdateInstall(UpdateTarget t) = 0;
     virtual void clearInstallReport() = 0;

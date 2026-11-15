@@ -1,5 +1,5 @@
 // device_status.h: what the device tier last reported about the hardware (battery, card,
-// radio owner) and the one-shot requests the CFG pages leave for it (re-mount the card,
+// radio owner, the web bundle on the card) and the one-shot requests the CFG pages leave for it (re-mount the card,
 // format it, travel sleep). Runtime only: each is a reading of the hardware now or a
 // request a reboot answers, so none of it is saved.
 //
@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include "tunables.h"
 #include "core/device/power_status.h"
@@ -95,6 +96,19 @@ public:
     }
     RadioOwner radioOwner() const { return radioOwner_; }
 
+    // The web 'Pedia bundle on the card, read off its marker by the platform tier
+    // (platform/esp32/web_bundle.h) and refreshed after an install. Display only: every
+    // "is it newer" comparison is made device-side. Empty or null reads as UNKNOWN (no
+    // card, or no marker).
+    bool setWebBundleVersion(const char* v) {
+        const char* src = (v && v[0]) ? v : "UNKNOWN";
+        if (std::strcmp(webBundle_, src) == 0) return false;
+        std::strncpy(webBundle_, src, sizeof(webBundle_) - 1);
+        webBundle_[sizeof(webBundle_) - 1] = '\0';
+        return true;
+    }
+    const char* webBundleVersion() const { return webBundle_; }
+
 private:
     PowerStatus power_;
     int batteryLevel_ = -1;
@@ -105,6 +119,7 @@ private:
     SdFormatState sdFormat_ = SdFormatState::Idle;
     bool travelSleep_ = false;
     RadioOwner radioOwner_ = RadioOwner::None;
+    char webBundle_[16] = "UNKNOWN";
 };
 
 }  // namespace mal
