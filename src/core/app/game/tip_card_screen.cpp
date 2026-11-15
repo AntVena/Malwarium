@@ -144,9 +144,9 @@ void TipCardScreen::onButton(TipCardHost& host, const ButtonEvent& ev) {
     const int total = static_cast<int>(rows.size());
     if (ev.button == Button::B) {
         scroll_ += proseRowsFitting(rows, scroll_, kTipCardTop);
-        if (scroll_ >= total) host.closeTipCard();   // off the end: done
+        if (scroll_ >= total) host.closeTipCard(returnTo_);   // off the end: done
     } else if (ev.button == Button::C) {
-        host.closeTipCard();
+        host.closeTipCard(returnTo_);
     }
 }
 

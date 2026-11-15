@@ -524,8 +524,11 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         expireLockout();
         changed = true;
     }
-    // No reminder while ITEMS is open from the modal: the owner is already answering.
-    if (pet_.armed.lockoutActive && !pet_.armed.lockoutReminded && !lockoutItemsContext_ &&
+    // No reminder while ITEMS is open from the modal: the owner is already answering. A
+    // Lockout leaves only for that list or by ending, so off the modal, a list entered
+    // from it is the one up.
+    const bool answering = nav_ != Nav::ModalLockout && items_.from() == ItemUseFrom::Lockout;
+    if (pet_.armed.lockoutActive && !pet_.armed.lockoutReminded && !answering &&
         pet_.armed.lockoutDeadlineMs - nowMs_ <= kLockoutReminderMs) {
         pet_.armed.lockoutReminded = true;
         playSound(Sound::Lockout);

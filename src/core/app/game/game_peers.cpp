@@ -14,7 +14,7 @@
 // stretch this screen raises it for), so a device with LINK off neither sends nor
 // listens, and opening this screen is the explicit act that turns it on.
 //
-// Two sources feed one list, and keeping them apart is the point: livePeers_ is
+// Two sources feed one list, and keeping them apart is the point: peerSightings_ is
 // what the radio can hear this second, peerLedger_ is everyone ever met. A LIVE row
 // renders from the snapshot's fresh HELLO, so it shows what someone is raising
 // right now; a remembered row renders from the roster's last-meeting copy. The
@@ -75,42 +75,12 @@ bool Game::registerPeer(const uint8_t* mac, const uint8_t* payload, size_t len) 
     // The snapshot takes every beacon; the roster only takes the arrival edge. That
     // split makes timesMet count meetings: a device parked next to this one beacons
     // once a second and must still read as one encounter.
-    if (!noteLivePeer(key, hello)) return false;
+    if (!peerSightings_.note(key, hello, nowMs_)) return false;
 
     const bool firstEver = peerLedger_.record(key, hello);
     log_.push(LogEventType::ItemGained, hello.tag[0] ? hello.tag : "UNKNOWN OP");
     dirty_ = true;
     return firstEver;
-}
-
-bool Game::noteLivePeer(uint64_t key, const PeerHello& hello) {
-    int stalest = -1;
-    uint32_t stalestSeen = 0;
-    for (int i = 0; i < livePeerCount_; ++i) {
-        LivePeer& p = livePeers_[i];
-        if (p.key == key) {
-            const bool arrived = !peerLive(p);   // aged out and came back = a new meeting
-            p.hello = hello;                     // a live row always shows the latest
-            p.lastSeenMs = nowMs_;
-            return arrived;
-        }
-        const uint32_t age = nowMs_ - p.lastSeenMs;
-        if (stalest < 0 || age > stalestSeen) { stalest = i; stalestSeen = age; }
-    }
-
-    int slot;
-    if (livePeerCount_ < kPeerVisibleCap) {
-        slot = livePeerCount_++;
-    } else {
-        // Full: evict the STALEST entry rather than refusing the new one, so a room
-        // that has churned through more than kPeerVisibleCap devices still tracks
-        // whoever is actually present now.
-        slot = stalest >= 0 ? stalest : 0;
-    }
-    livePeers_[slot].key = key;
-    livePeers_[slot].hello = hello;
-    livePeers_[slot].lastSeenMs = nowMs_;
-    return true;
 }
 
 void Game::loadPeerLedger(const char* path) { peerLedger_.load(path); }
@@ -123,17 +93,12 @@ void Game::rememberPeer(uint64_t key, const PeerHello& hello) {
 void Game::meetPeer(uint64_t key, const PeerHello& hello) {
     // Both halves, which is what a real beacon does (registerPeer above): a peer
     // standing in front of you is in range AND has now been met.
-    noteLivePeer(key, hello);
+    peerSightings_.note(key, hello, nowMs_);
     peerLedger_.record(key, hello);
     dirty_ = true;
 }
 
-int Game::livePeerCount() const {
-    int n = 0;
-    for (int i = 0; i < livePeerCount_; ++i)
-        if (peerLive(livePeers_[i])) ++n;
-    return n;
-}
+int Game::livePeerCount() const { return peerSightings_.inRangeCount(nowMs_); }
 
 // --- The merged list ---------------------------------------------------------
 
@@ -143,9 +108,10 @@ int Game::peerRows(PeerRow* rows, int max) const {
 
     // Live first, straight from the snapshot: these rows show what the operator is
     // raising now, which is why the snapshot keeps the full HELLO.
-    for (int i = 0; i < livePeerCount_ && n < max; ++i) {
-        const LivePeer& p = livePeers_[i];
-        if (!peerLive(p)) continue;
+    const PeerSightings::Sighting* live[kPeerVisibleCap];
+    const int liveN = peerSightings_.inRange(live, kPeerVisibleCap, nowMs_);
+    for (int i = 0; i < liveN && n < max; ++i) {
+        const PeerSightings::Sighting& p = *live[i];
         PeerLedger::Entry known;
         const uint32_t met = peerLedger_.lookup(p.key, &known) ? known.timesMet : 1;
         rows[n++] = {p.key,        p.hello.tag,  p.hello.petName, p.hello.crewName,

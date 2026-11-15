@@ -175,10 +175,7 @@ bool Game::pvpChallenge(uint64_t key) {
     }
     // Only someone actually in range: a duel needs both devices powered and present,
     // and a remembered peer is neither.
-    const PeerHello* live = nullptr;
-    for (int i = 0; i < livePeerCount_; ++i)
-        if (livePeers_[i].key == key && peerLive(livePeers_[i]))
-            live = &livePeers_[i].hello;
+    const PeerHello* live = peerSightings_.find(key, nowMs_);
     if (!live) return false;
 
     uint8_t mac[6];
@@ -428,9 +425,9 @@ void Game::clearPvpVerdict() {
 int Game::pvpChallengeableKeys(uint64_t* out, int max) const {
     // Live peers only. A remembered operator cannot be challenged: a duel needs
     // both devices powered, present, and on the same rendezvous channel.
-    int n = 0;
-    for (int i = 0; i < livePeerCount_ && n < max; ++i)
-        if (peerLive(livePeers_[i])) out[n++] = livePeers_[i].key;
+    const PeerSightings::Sighting* live[kPeerVisibleCap];
+    const int n = peerSightings_.inRange(live, std::min(max, kPeerVisibleCap), nowMs_);
+    for (int i = 0; i < n; ++i) out[i] = live[i]->key;
     return n;
 }
 

@@ -121,6 +121,8 @@ struct Pet {
     // Earned combat-stat points: 0 power · 1 defense · 2 speed · 3 max-Health. A level-up
     // adds one at random; Rollback sheds one and Repartition moves one (save v11).
     int statPoints[kLevelStatCount] = {0};
+    // The stat (0..3) the most recent level-up raised, -1 before the first. Not saved.
+    int lastLevelUpStat = -1;
     SlotKind slotKinds[kMaxMoveSlots] = {SlotKind::Unset, SlotKind::Unset, SlotKind::Unset,
                                          SlotKind::Unset};
     MoveLoadout moves;

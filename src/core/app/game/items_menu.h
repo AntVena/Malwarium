@@ -38,14 +38,12 @@ class ItemsHost {
 public:
     virtual const ContentRegistry& content() const = 0;
     virtual const Inventory& inventory() const = 0;
-    // ITEMS was opened from the Lockout modal: the list floats the resolving items to
-    // the top and C goes back to the modal.
-    virtual bool itemsFromLockout() const = 0;
     virtual bool itemTabsUnlocked() const = 0;
     virtual bool itemPickerUnlocked() const = 0;
     virtual PetLifetimeGates petLifetimeGates() const = 0;
-    // Can `d` be used right now? When not, `gateMsg` says why, in the words the page shows.
-    virtual bool itemUsable(const ItemDef& d, const char*& gateMsg) const = 0;
+    // Can `d` be used right now, from `from`? When not, `gateMsg` says why, in the words
+    // the page shows.
+    virtual bool itemUsable(const ItemDef& d, ItemUseFrom from, const char*& gateMsg) const = 0;
 
     virtual void useItem(const ItemDef& d, ItemUseFrom from) = 0;
     virtual void openDetail() = 0;        // the list -> the focused item's page
@@ -66,8 +64,9 @@ public:
     ItemsMenu& operator=(const ItemsMenu&);
 
     // Every entry resets the filter and cursors. A Lockout entry lands on the list, since
-    // a crisis gets no extra screen; otherwise an owned picker comes first.
-    void enter(const ItemsHost& host);
+    // a crisis gets no extra screen; otherwise an owned picker comes first. Opened from
+    // the Lockout, the list floats the resolving items to the top and C goes back to it.
+    void enter(const ItemsHost& host, ItemUseFrom from);
     void onButton(ItemsHost& host, const ButtonEvent& ev);
     // Step the focused screen's cursor by `dir`, wrapping. The A tap, the A hold-repeat
     // and the C backward walk (game_listnav.cpp) all land here.
@@ -87,6 +86,7 @@ public:
     const ItemDef* detail() const { return detail_; }
 
     ItemsView view() const { return view_; }
+    ItemUseFrom from() const { return from_; }
     ItemFilter filter() const { return filter_; }
     int row() const { return row_; }
     int pickRow() const { return pickRow_; }
@@ -101,6 +101,7 @@ private:
     const std::vector<InvRow>& rows(const ItemsHost& host) const;
 
     ItemsView view_ = ItemsView::List;
+    ItemUseFrom from_ = ItemUseFrom::Bag;
     ItemFilter filter_ = ItemFilter::All;
     int row_ = 0;       // index into rows(); -1 on an empty list
     const ItemDef* detail_ = nullptr;

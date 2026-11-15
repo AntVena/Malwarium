@@ -7,21 +7,15 @@
 
 namespace mal {
 
-namespace {
-
-ItemOrder orderFor(const ItemsHost& host) {
-    return host.itemsFromLockout() ? ItemOrder::LockoutFirst : ItemOrder::ByGroup;
-}
-
-}  // namespace
-
 ItemsMenu::ItemsMenu() = default;
 ItemsMenu::~ItemsMenu() = default;
 ItemsMenu::ItemsMenu(const ItemsMenu&) = default;
 ItemsMenu& ItemsMenu::operator=(const ItemsMenu&) = default;
 
 const std::vector<InvRow>& ItemsMenu::rows(const ItemsHost& host) const {
-    const RowsKey want{host.inventory().stamp(), filter_, orderFor(host)};
+    const ItemOrder order =
+        from_ == ItemUseFrom::Lockout ? ItemOrder::LockoutFirst : ItemOrder::ByGroup;
+    const RowsKey want{host.inventory().stamp(), filter_, order};
     if (want.stamp != rowsKey_.stamp || want.filter != rowsKey_.filter ||
         want.order != rowsKey_.order) {
         rows_ = buildInventoryRows(host.content(), host.inventory(), want.order, filter_);
@@ -34,9 +28,10 @@ void ItemsMenu::parkOnFirstRow(const ItemsHost& host) {
     row_ = firstSelectableRow(rows(host));
 }
 
-void ItemsMenu::enter(const ItemsHost& host) {
+void ItemsMenu::enter(const ItemsHost& host, ItemUseFrom from) {
+    from_ = from;
     filter_ = ItemFilter::All;
-    const bool picker = !host.itemsFromLockout() && host.itemPickerUnlocked();
+    const bool picker = from != ItemUseFrom::Lockout && host.itemPickerUnlocked();
     view_ = picker ? ItemsView::Picker : ItemsView::List;
     pickRow_ = 0;
     detail_ = nullptr;
@@ -73,7 +68,7 @@ void ItemsMenu::onList(ItemsHost& host, const ButtonEvent& ev) {
         if (host.itemTabsUnlocked()) host.armHoldB();
         else openFocused(host);
     } else if (ev.button == Button::C) {
-        if (host.itemsFromLockout()) host.returnToLockout();
+        if (from_ == ItemUseFrom::Lockout) host.returnToLockout();
         else if (host.itemPickerUnlocked()) view_ = ItemsView::Picker;
         else host.leaveToCarousel();
     }
@@ -124,7 +119,7 @@ void ItemsMenu::draw(Framebuffer& fb, const ItemsHost& host, int beat) const {
     const PetLifetimeGates gates = host.petLifetimeGates();
     ItemsListView v;
     v.cursor = row_;
-    v.lockout = host.itemsFromLockout();
+    v.lockout = from_ == ItemUseFrom::Lockout;
     v.filter = filter_;
     v.tabsOwned = host.itemTabsUnlocked();
     v.pickerOwned = host.itemPickerUnlocked();
@@ -135,7 +130,7 @@ void ItemsMenu::draw(Framebuffer& fb, const ItemsHost& host, int beat) const {
 
 void ItemsMenu::onDetail(ItemsHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::B && detail_) {
-        host.useItem(*detail_, host.itemsFromLockout() ? ItemUseFrom::Lockout : ItemUseFrom::Bag);
+        host.useItem(*detail_, from_);
     } else if (ev.button == Button::C) {
         host.closeDetail();
     }
@@ -144,7 +139,7 @@ void ItemsMenu::onDetail(ItemsHost& host, const ButtonEvent& ev) {
 void ItemsMenu::drawDetail(Framebuffer& fb, const ItemsHost& host, int beat) const {
     if (!detail_) return;
     ItemDetailView v;
-    v.usable = host.itemUsable(*detail_, v.gateMsg);
+    v.usable = host.itemUsable(*detail_, from_, v.gateMsg);
     v.icon = itemIcon(host.content(), detail_->id);
     v.qty = host.inventory().count(detail_->id);
     v.lifetime = lifetimeMark(*detail_, host.petLifetimeGates());

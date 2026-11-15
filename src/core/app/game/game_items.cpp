@@ -16,7 +16,7 @@ namespace mal {
 
 void Game::returnToLockout() { nav_ = Nav::ModalLockout; }
 
-bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
+bool Game::itemUsable(const ItemDef& d, ItemUseFrom from, const char*& gateMsg) const {
     if (inventory_.count(d.id) <= 0) { gateMsg = "- NONE LEFT -"; return false; }
     // Boot-Sector egg: only quest items are usable (an egg can't be fed or buffed).
     // Quest items still fall through to their own context gate below.
@@ -86,7 +86,7 @@ bool Game::itemUsable(const ItemDef& d, const char*& gateMsg) const {
     }
     // If the state already holds, say so and keep the item.
     if (itemUseIsInert(d, gateMsg)) return false;
-    if (lockoutItemsContext_) {
+    if (from == ItemUseFrom::Lockout) {
         if (itemResolvesLockout(d)) return true;
         gateMsg = "- WONT RESOLVE LOCKOUT -";
         return false;
@@ -259,7 +259,7 @@ bool Game::itemUseIsInert(const ItemDef& d, const char*& why) const {
 
 void Game::useItem(const ItemDef& d, ItemUseFrom from) {
     const char* gate = "";
-    if (!itemUsable(d, gate)) return;   // inert when gated
+    if (!itemUsable(d, from, gate)) return;   // inert when gated
     const bool fromLockout = from == ItemUseFrom::Lockout;
 
     // Openable containers (sealed caches) are decrypted from the Hacker VAULT: itemUsable

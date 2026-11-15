@@ -191,11 +191,7 @@ void Game::summonCursor(int slot) {
 void Game::enterSubmenu() {
     nav_ = Nav::Submenu;
     switch (enteredId()) {
-        case SubmenuId::Items: {
-            lockoutItemsContext_ = false;
-            items_.enter(*this);
-            break;
-        }
+        case SubmenuId::Items: items_.enter(*this, ItemUseFrom::Bag); break;
         case SubmenuId::Maint: maintScreen_.enter(); break;
         case SubmenuId::Cfg: cfg_.enter(); held_.disarm(Button::B); break;
         case SubmenuId::Arch: arch_.enter(); break;

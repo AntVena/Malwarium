@@ -55,7 +55,7 @@ const char* backupDriveAchievement(Combatant::BackupUse used, Combat::Outcome ou
 
 
 // Combat-stat labels ---------------------------------------------
-// Indexed to pet_.statPoints/lastLevelUpStat_: 0 power · 1 defense · 2 speed · 3
+// Indexed to Pet::statPoints and Pet::lastLevelUpStat: 0 power · 1 defense · 2 speed · 3
 // max-Health. Shared by the Rollback picker + its log line, the
 // post-encounter level-up readout (PostEncounterScreen), and any other unit that needs to
 // name a levelled stat. The words themselves come from content/defs.h's levelStatWord,

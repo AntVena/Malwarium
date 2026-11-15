@@ -15,6 +15,7 @@
 #include "tunables.h"
 #include "core/app/game_achievements.h"
 #include "core/app/game_rig_shop.h"
+#include "core/app/nav.h"
 #include "core/app/operator.h"
 #include "core/app/settings.h"
 #include "core/app/game/achievement_banner.h"
@@ -128,6 +129,7 @@
 #include "core/net/handshake_ledger.h"
 #include "core/net/network_ledger.h"
 #include "core/net/network_sightings.h"
+#include "core/net/peer_sightings.h"
 #include "core/net/peer_ledger.h"
 #include "core/net/pvp_link.h"
 #include "core/render/scene_id.h"
@@ -181,13 +183,7 @@ public:
                   const char* hatchedCreature = "paypup",
                   ISaveStore* store = nullptr);
 
-    // Navigation layers. The carousel is always drawn at Idle/Cursor.
-    //   Idle/Cursor: resting / a slot focused.
-    //   Submenu:     L2 (STAT viewer · ITEMS/MAINT list · placeholder).
-    //   Detail:      L3 (item detail · MAINT action).
-    //   Process:     a running MAINT process (non-interruptible).
-    //   ModalFeeding / ModalLockout: event overlays.
-    enum class Nav { Idle, Cursor, Submenu, Detail, Process, ModalFeeding, ModalLockout, ModalLineSelect, ModalEggPick, ModalHatchReveal, ModalEvolve, ModalCSF, Combat, ExploreControl, Encounter, Wifi, Shop, ModShop, WarpPicker, RollbackPicker, RepartitionPicker, CacheYield, BulkYield, PostEncounter, Stacker, Fragger, Isolation, Chroma, Decryption, Cryptogram, ArcadeResult, Tourney, ShiboleetHail, Shiboleet, ShiboleetVerdict, Story, StoryArchive, TipCard, AwayDigest, ItemOffer };
+    using Nav = mal::Nav;   // core/app/nav.h
 
     // The Wi-Fi event's two results (core/model/wifi_event.h), under the names the
     // gates already use.
@@ -265,10 +261,6 @@ public:
     int levelStatPoint(int i) const override {
         return (i >= 0 && i < kLevelStatCount) ? pet_.statPoints[i] : 0;
     }
-    // The combat stat the most-recent level-up bumped (0..3), or -1 before the first
-    // level-up. STAT's LVL n line reads it to show which stat grew. Used by tests to
-    // confirm a level-up.
-    int lastLevelUpStat() const { return lastLevelUpStat_; }
     int bits() const { return op_.bits; }
     int bandwidth() const override { return bandwidth_; }   // farming resource: see below
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
@@ -1972,7 +1964,6 @@ private:
     void armHoldB() override;
     void markDirty() override;
     // ItemsHost: the ITEMS screen's way back into the game (game_items.cpp).
-    bool itemsFromLockout() const override { return lockoutItemsContext_; }
     void returnToLockout() override;
     // FightScreenHost: the Combat screen's way back into the game (game_combat.cpp).
     // The rest of it is public above (fight, pvpFighting, stageScene, playSound, ...)
@@ -2152,11 +2143,9 @@ private:
     // the boards that launch straight out of an egg with no menu stop along the way
     // (startHatchGame: Decrypt/Clutch/Isolation land on their Nav directly).
     GameBriefScreen gameBrief_;
-    // The tip card on screen (game/tip_card_screen.h), and where dismissing it returns.
-    TipCardScreen tipCardScreen_;
-    Nav tipCardReturn_ = Nav::Idle;
+    TipCardScreen tipCardScreen_;   // the tip card on screen (game/tip_card_screen.h)
     void openTipCard(Tip t, Nav returnTo);
-    void closeTipCard() override;
+    void closeTipCard(Nav returnTo) override;
     // On a carousel summon: open the one-time card that is due, most urgent first. One
     // error short of failing, then the first error, then each need's CARE card, then
     // the first cache. Returns whether it opened one.
@@ -2432,7 +2421,7 @@ private:
     bool offerRelevant(const ItemDef& d, OfferFor f) const;
     void openItemOffer(OfferFor f);
     void finishItemOffer(OfferFor f) override;   // carry on with what was paused
-    void leaveItemOffer(OfferFor f) override;
+    void leaveItemOffer(OfferFor f, Nav backTo) override;
     void useOfferedItem(const ItemDef& d) override;
     int heldCount(const char* itemId) const override { return inventory_.count(itemId); }
     void autoUseDiveGear();         // AUTO DIVE GEAR at YES: arm the best of each kind
@@ -2571,7 +2560,7 @@ private:
     void markSaveDirty() { save_.markDirty(); }    // schedule a debounced write
 
     // Raising-loop actions.
-    bool itemUsable(const ItemDef& d, const char*& gateMsg) const override;
+    bool itemUsable(const ItemDef& d, ItemUseFrom from, const char*& gateMsg) const override;
     // Would consuming this row change nothing? An arming effect whose state is
     // ALREADY set spends the item and buys the pet nothing, so itemUsable turns
     // that into a stated gate instead of a silent evaporation. Reads the effect
@@ -2854,9 +2843,6 @@ private:
     Fight fight_;
     // The Combat screen (game/fight_screen.h): its stats panel, stage clock and camo.
     FightScreen fightScreen_;
-    // The stat index (0..3) of the most-recent level-up, or -1 if none yet: the
-    // "which stat grew" tell (STAT's LVL n is the shipped feedback surface).
-    int lastLevelUpStat_ = -1;
 
     // The explore walk (core/model/explore_walk.h), a background mode on the IDLE
     // habitat. The wild-encounter intro and event screens are their own Nav states, past
@@ -2963,28 +2949,9 @@ private:
     NetworkSightings networkSightings_;   // core/net/network_sightings.h
     NetworkLedger networkLedger_;
 
-    // Pet-to-pet discovery (game_peers.cpp, core/net/peer_link.h): the same
-    // snapshot-vs-history split as the networks above. livePeers_ is a RAM-only
-    // snapshot (kPeerVisibleCap) aged out by kPeerVisibleFreshMs, holding the FULL last
-    // HELLO so a row shows what someone is raising this second. peerLedger_ is the
-    // SD-backed roster, updated only on the ARRIVAL edge, which makes timesMet a count
-    // of meetings rather than of frames, so the freshness window is the boundary
-    // between one encounter and the next.
-    struct LivePeer {
-        uint64_t key = 0;
-        PeerHello hello;
-        uint32_t lastSeenMs = 0;
-    };
-    // True while `p` is still inside the freshness window. Unsigned subtraction, so a
-    // nowMs_ wrap behaves like every other elapsed-time check in the engine.
-    bool peerLive(const LivePeer& p) const {
-        return nowMs_ - p.lastSeenMs <= kPeerVisibleFreshMs;
-    }
-    // Record/refresh one sighting in the snapshot. Returns true when the peer
-    // ARRIVED (absent, or present but aged out) rather than merely being re-heard.
-    bool noteLivePeer(uint64_t key, const PeerHello& hello);
-    LivePeer livePeers_[kPeerVisibleCap];
-    int livePeerCount_ = 0;
+    // Pet-to-pet discovery (game_peers.cpp): what the radio hears this second, and the
+    // SD-backed roster of everyone met, which takes only the snapshot's arrival edge.
+    PeerSightings peerSightings_;   // core/net/peer_sightings.h
     PeerLedger peerLedger_;
     bool linkEnabled_ = false;   // persisted CFG opt-in (save v37)
     // Runtime-only, never saved: whether the platform tier has a stored network, and
@@ -3084,11 +3051,9 @@ private:
     CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
     WarpPickerScreen warpPicker_;   // the held warp keys (game/warp_picker_screen.h)
 
-    // The ITEM OFFER, and where backing out of a dive's offer returns to.
-    // pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
+    // The ITEM OFFER. pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
     ItemOfferScreen itemOffer_;
-    Nav offerBackNav_ = Nav::Idle;
 
     // A Hacker Rank crossing (Operator::hackerRank), held until the next Walk-screen
     // render (both the direct Wi-Fi-resolve return and the wild-combat-return path
@@ -3125,7 +3090,6 @@ private:
 
     // Lockout modal.
     LockoutScreen lockoutScreen_;          // game/lockout_screen.h
-    bool lockoutItemsContext_ = false;     // ITEMS opened from the Lockout modal
 
 
     // DISK DECRYPTION (the Ransomware hatch minigame, game_decryption.cpp). Un-persisted for

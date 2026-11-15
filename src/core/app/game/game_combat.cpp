@@ -232,7 +232,7 @@ void Game::addCombatXp(int xp) {
         rng_ = rng_ * 1664525u + 1013904223u;      // deterministic stat roll
         const int stat = static_cast<int>((rng_ >> 16) % kLevelStatCount);
         ++pet_.statPoints[stat];
-        lastLevelUpStat_ = stat;                    // most-recent level-up stat (tell)
+        pet_.lastLevelUpStat = stat;
     }
     if (pet_.level > levelBefore) playSound(Sound::LevelUp);
     markSaveDirty();

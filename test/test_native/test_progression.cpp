@@ -62,7 +62,7 @@ void test_creature_level_curve_and_invariant() {
     CHECK(g.combatXp() == 0);                 // bucket spent exactly
     CHECK(g.levelStatPoint(0) + g.levelStatPoint(1) + g.levelStatPoint(2) +
           g.levelStatPoint(3) == 1);          // one point granted
-    CHECK(g.lastLevelUpStat() >= 0 && g.lastLevelUpStat() < kLevelStatCount);
+    CHECK(g.petRecord().lastLevelUpStat >= 0 && g.petRecord().lastLevelUpStat < kLevelStatCount);
 
     // Second level costs more than the first (geometric, ~1.1x): base+1 XP is short.
     g.addCombatXp(kLevelXpBase);
@@ -213,7 +213,7 @@ void test_rollback_item() {
     { Game g{StartMode::Hatched, "paypup"};
       g.addCombatXp(kLevelXpBase);                 // → level 1, one point somewhere
       CHECK(g.combatLevel() == 1);
-      const int shed = g.lastLevelUpStat();
+      const int shed = g.petRecord().lastLevelUpStat;
       CHECK(g.levelStatPoint(shed) == 1);
       g.inventory().add("rollback", 1);
       useItem(g, "rollback");
@@ -289,7 +289,7 @@ void test_repartition_item() {
       g.addCombatXp(kLevelXpBase);
       CHECK(g.combatLevel() == 1);
       g.addCombatXp(g.xpToNextLevel() / 2);        // ...and part-way up the next rung
-      const int from = g.lastLevelUpStat();
+      const int from = g.petRecord().lastLevelUpStat;
       const int to = (from + 2) % kLevelStatCount;
       const int xp0 = g.combatXp();
       CHECK(xp0 > 0);                                   // so "untouched" means something
@@ -311,7 +311,7 @@ void test_repartition_item() {
     // press: first C returns to the FROM step, the second leaves. Nothing is spent.
     { Game g{StartMode::Hatched, "paypup"};
       g.addCombatXp(kLevelXpBase);
-      const int from = g.lastLevelUpStat();
+      const int from = g.petRecord().lastLevelUpStat;
       g.inventory().add("repartition", 1);
       useItem(g, "repartition");
       g.onButton(press(Button::B));                     // -> the TO step

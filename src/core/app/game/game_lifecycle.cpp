@@ -42,7 +42,6 @@ void Game::fireLockout() {
     pet_.armed.lockoutReminded = false;
     playSound(Sound::Lockout);
     lockoutScreen_.open(*this);
-    lockoutItemsContext_ = false;
     nav_ = Nav::ModalLockout;
 }
 
@@ -55,7 +54,6 @@ void Game::expireLockout() {
     std::snprintf(buf, sizeof(buf), "HAPPY -%d EXPIRED", kLockoutHappyPenalty);
     log_.push(LogEventType::CareMistake, buf);
     pet_.armed.lockoutActive = false;
-    lockoutItemsContext_ = false;
     nav_ = Nav::Idle;
     stat_.reset();
     markSaveDirty();
@@ -67,7 +65,6 @@ void Game::resolveLockout() {
     // expireLockout()'s failure path.
     unlockAchievement(ach::kSurvivedLockout);
     pet_.armed.lockoutActive = false;
-    lockoutItemsContext_ = false;
     if (pet_.model.hunger() == 0) pet_.model.setHunger(kLockoutRecoveryHunger);
     nav_ = Nav::Idle;
     stat_.reset();
@@ -92,9 +89,8 @@ void Game::feedLockout() {
         return;
     }
     // The ITEMS list, in its Lockout context: C there comes back here.
-    lockoutItemsContext_ = true;
     cursor_ = carouselSlotOf(SubmenuId::Items);
-    items_.enter(*this);
+    items_.enter(*this, ItemUseFrom::Lockout);
     nav_ = Nav::Submenu;
 }
 
@@ -132,7 +128,6 @@ void Game::layEgg(const EggLineDef* line) {
     pet_ = Pet::laid(line, MoveLoadout::startingForLine(registry_, line ? line->id : nullptr),
                      op_.petsRaised > 0 ? ModSlots{} : pet_.mods, nowMs_);
     installPet(registry_.creature(line ? line->eggCreatureId : "cryptoshell"));
-    lastLevelUpStat_ = -1;
     walk_.end();   // an egg can't explore; clear any live mode
     lastModelMs_ = nowMs_;
     ++op_.petsRaised;                       // lifetime egg count; this pet's generation = its ordinal
@@ -516,7 +511,6 @@ void Game::fireCSF() {
     walk_.end();
     pet_.armed.nextDive = DiveArming{};
     pet_.armed.lockoutActive = false;
-    lockoutItemsContext_ = false;
     evolve_ = EvolveScreen{};
     pet_.dyingArmed = false;
     pet_.dyingElapsedMs = 0;

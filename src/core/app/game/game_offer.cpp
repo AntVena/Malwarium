@@ -43,7 +43,7 @@ std::vector<const ItemDef*> Game::offerItems(OfferFor f) const {
         if (s.qty <= 0) continue;
         const ItemDef* d = registry_.item(s.id);
         const char* gate = "";
-        if (d && offerRelevant(*d, f) && itemUsable(*d, gate)) out.push_back(d);
+        if (d && offerRelevant(*d, f) && itemUsable(*d, ItemUseFrom::Bag, gate)) out.push_back(d);
     }
     return out;
 }
@@ -100,8 +100,7 @@ void Game::useOfferedItem(const ItemDef& d) {
 void Game::openItemOffer(OfferFor f) {
     if (f == OfferFor::Egg) pet_.eggOfferMade = true;   // asked once per egg, answered or not
     if (offerItems(f).empty()) { finishItemOffer(f); return; }
-    offerBackNav_ = nav_;
-    itemOffer_.open(f);
+    itemOffer_.open(f, nav_);
     nav_ = Nav::ItemOffer;
     dirty_ = true;
 }
@@ -114,10 +113,10 @@ void Game::finishItemOffer(OfferFor f) {
     dirty_ = true;
 }
 
-void Game::leaveItemOffer(OfferFor f) {
+void Game::leaveItemOffer(OfferFor f, Nav backTo) {
     // Backing out of a dive offer cancels the dive (nothing has started); backing out of
     // the egg's is a "not now", and the latch keeps it from asking again.
-    nav_ = f == OfferFor::Dive ? offerBackNav_ : Nav::Idle;
+    nav_ = f == OfferFor::Dive ? backTo : Nav::Idle;
 }
 
 }  // namespace mal

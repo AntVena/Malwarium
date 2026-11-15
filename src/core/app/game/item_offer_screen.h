@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "core/app/nav.h"
 #include "core/device/platform.h"
 
 namespace mal {
@@ -30,7 +31,8 @@ public:
     virtual int heldCount(const char* itemId) const = 0;
     virtual void useOfferedItem(const ItemDef& item) = 0;
     virtual void finishItemOffer(OfferFor f) = 0;   // carry on with what was paused
-    virtual void leaveItemOffer(OfferFor f) = 0;    // C: back out without carrying on
+    // C: back out without carrying on, to `backTo`, the screen the offer opened over.
+    virtual void leaveItemOffer(OfferFor f, Nav backTo) = 0;
 
 protected:
     ~ItemOfferHost() = default;
@@ -38,13 +40,14 @@ protected:
 
 class ItemOfferScreen {
 public:
-    void open(OfferFor f) { for_ = f; row_ = 0; }
+    void open(OfferFor f, Nav backTo) { for_ = f; row_ = 0; backTo_ = backTo; }
     void onButton(ItemOfferHost& host, const ButtonEvent& ev);
     void draw(Framebuffer& fb, const ItemOfferHost& host) const;
 
 private:
     OfferFor for_ = OfferFor::Dive;
     int row_ = 0;
+    Nav backTo_ = Nav::Idle;
 };
 
 }  // namespace mal

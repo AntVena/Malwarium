@@ -39,7 +39,6 @@ void Game::resetToHatch() {
     maintScreen_ = MaintScreen{};
     maint_.reset();
     feeding_.reset();
-    lockoutItemsContext_ = false;
     evolve_ = EvolveScreen{};
     csf_ = CsfScreen{};
     cfg_.reset();
@@ -51,7 +50,6 @@ void Game::resetToHatch() {
     fight_ = Fight{};                    // nothing can be mid-fight after a reset
     gauntlet_.reset();
     fxBeat_ = 0;
-    lastLevelUpStat_ = -1;
     arch_.reset();
     save_.settle(nowMs_);
     if (store_) store_->clear();

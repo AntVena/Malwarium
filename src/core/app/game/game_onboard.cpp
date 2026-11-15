@@ -104,7 +104,7 @@ void Game::careAttention(unsigned& attention, unsigned& urgent) const {
 
 std::vector<ProseRow> Game::tipCardRows() const { return tipCardScreen_.rows(*this); }
 
-void Game::closeTipCard() { nav_ = tipCardReturn_; }
+void Game::closeTipCard(Nav returnTo) { nav_ = returnTo; }
 
 void Game::openTipCard(Tip t, Nav returnTo) {
     const bool care = t == Tip::CareFed || t == Tip::CareFrag || t == Tip::CareHappy;
@@ -112,8 +112,7 @@ void Game::openTipCard(Tip t, Nav returnTo) {
     const bool markRow = care && settings_.careAlerts && !tipSeen(Tip::CareFed) &&
                          !tipSeen(Tip::CareFrag) && !tipSeen(Tip::CareHappy);
     markTipSeen(t);
-    tipCardScreen_.open(t, markRow);
-    tipCardReturn_ = returnTo;
+    tipCardScreen_.open(t, markRow, returnTo);
     nav_ = Nav::TipCard;
     dirty_ = true;
 }
@@ -227,8 +226,7 @@ bool Game::feedYubiToSave() {
     const ItemDef* cookie = registry_.item("yubi_cookie");
     if (!cookie) return false;
     // From the Lockout it is also the meal that clears the Lockout (startFeeding).
-    lockoutItemsContext_ = pet_.armed.lockoutActive;
-    useItem(*cookie, lockoutItemsContext_ ? ItemUseFrom::Lockout : ItemUseFrom::Bag);
+    useItem(*cookie, pet_.armed.lockoutActive ? ItemUseFrom::Lockout : ItemUseFrom::Bag);
     return nav_ == Nav::ModalFeeding;
 }
 

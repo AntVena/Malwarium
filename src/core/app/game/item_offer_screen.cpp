@@ -30,7 +30,7 @@ void ItemOfferScreen::onButton(ItemOfferHost& host, const ButtonEvent& ev) {
         if (host.offerItems(for_).empty()) { host.finishItemOffer(for_); return; }
         row_ = 0;
     } else if (ev.button == Button::C) {
-        host.leaveItemOffer(for_);
+        host.leaveItemOffer(for_, backTo_);
     }
 }
 
