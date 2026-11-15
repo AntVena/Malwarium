@@ -167,33 +167,13 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 #### Still on `Game`
 
 Most of what `game.h` still declares is one record, run or screen held by value, which is
-the shape. These loose fields each have an owner:
+the shape. What is left:
 
-- **The radio switches belong on `Settings`.** `netScanEnabled_`, `apEnabled_` and
-  `linkEnabled_` are hardware preferences the save keeps, mapped field by field in
-  `game_persist.cpp`'s capture and restore rather than by the record. Move them onto
-  `Settings` and its mapping; the wire stays as it is. | `settings.h`, `game_persist.cpp`,
-  `game_net.cpp`, `game_peers.cpp` | M |
-- **Live peers** (`livePeers_`, `livePeerCount_`): the in-range peer snapshot, the same
-  shape `NetworkSightings` gives networks, beside `PeerLedger` in `core/net`. | S |
-- **`lastLevelUpStat_` is the pet's.** The level-up tell (which stat the last level
-  raised, cleared on hatch) is the pet's progress and goes on `Pet`. | `pet.h`,
-  `game_combat.cpp`, `game_lifecycle.cpp` | S |
-- **Where a screen returns to is the screen's.** `tipCardReturn_` belongs on
-  `TipCardScreen`, `offerBackNav_` on `ItemOfferScreen`, and `lockoutItemsContext_` (ITEMS
-  opened over the Lockout modal, read in seven units) on `ItemsMenu`. | S |
-- **The rank-up celebration** (`rankUpPending_`, `rankUpFlavor_`): a pending
-  announcement, an overlay type as `AchievementBanner` is. | S |
-- **The dissolve cadence** (`fxBeat_`, `lastFxMs_`, `fastCadenceActive_`): one clock type
-  beside the heartbeat's `beat_` and `lastBeatMs_`. `fxBeat_` is reset in eight units when
-  a screen opens, so the type wants one restart call they share. | M |
-- **The Bandwidth pool** (`bandwidth_`, `bandwidthAccumMs_`): the farm pool and its refill
-  clock, spent by combat, items and the rig shop and refilled on boot. A type of its own
-  with spend, refill and cap. | S-M |
-- **The rest, in one batch:** `webBundleVersion_` is a device-tier reading and goes on
-  `DeviceStatus`; `awayDigestOn_` is the away digest's; `autoProgress_` is the walk's
-  hands-off switch; `defragPlayedGame_` and `avPlayedGame_` are the MAINT played-variant
-  test seam and go in the test-seam block or on `MaintScreen`. | S |
+- **`autoProgress_` has no owner yet.** The walk's hands-off switch outlives each walk
+  (`ExploreWalk` is replaced whole on start) but not a reboot, so neither the walk nor a
+  record fits as things stand. Decide whether it is the Operator's and saved, or a
+  session-level walk preference type. | `game_explore.cpp`, `game_bosses.cpp`,
+  `game_render.cpp` | S |
 - **The habitat draw is still `Game`'s.** `HomeHabitat` owns the idle animations and their
   step, but `drawHabitat` and its helpers (`drawHabitatPet`, `drawIdleReplicas`,
   `drawDisguiseProp`, the feeding, lure, harvest and mimic draws) are `Game` methods that
