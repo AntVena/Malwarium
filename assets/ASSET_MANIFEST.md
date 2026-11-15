@@ -528,7 +528,7 @@ looking like one creature in a fight and another at home.
 
 Five props for the **whole Trojan line**, all of them the machine or what it holds: every so often a resting Trojan glitches into one of
 them, wobbles, and gives itself away with a pair of eyes (`core/model/idle_disguise.h`, drawn by
-`game_disguise.cpp`). Drawn in `tools/gen_worm_art.py`'s vocabulary: the rest pose is pure outline
+`habitat_disguise.cpp`). Drawn in `tools/gen_worm_art.py`'s vocabulary: the rest pose is pure outline
 with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each: **0** rest,
 **1–2** lean left/right (a shear of 0), **3** eyes open, **4** eyes closing. 1-bit masks on `ink`.
 
@@ -543,8 +543,8 @@ with no solid mass, and the eyes are the mass arriving. Five 24×24 frames each:
 ### C.4c Phishing mail and lure (`SPR_MAIL_*`, `SPR_LURE_*`)
 
 The scraps of identity that sink into a resting Phishing pet's habitat for it to chase and skim
-(`core/model/idle_feeding.h`, drawn by `game_feeding.cpp`), and the bait it sets between skims
-(`core/model/idle_lure.h`, drawn by `game_lure.cpp`). Drawn in `tools/gen_worm_art.py`'s
+(`core/model/idle_feeding.h`, drawn by `habitat_feeding.cpp`), and the bait it sets between skims
+(`core/model/idle_lure.h`, drawn by `habitat_lure.cpp`). Drawn in `tools/gen_worm_art.py`'s
 vocabulary, 1-bit on `ink`. Each scrap is three 14×12 frames: **0** level, **1–2** tipped each way,
 alternated as it sinks.
 

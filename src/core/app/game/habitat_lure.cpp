@@ -1,5 +1,6 @@
-#include "core/app/game.h"
+#include "core/app/game/home_habitat.h"
 
+#include "core/render/framebuffer.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/palette.h"
@@ -7,7 +8,7 @@
 #include "core/render/sprite.h"
 #include "generated/assets.h"
 
-// game_lure.cpp: the bait a skimming line sets between skims (core/model/idle_lure.h).
+// habitat_lure.cpp: the bait a skimming line sets between skims (core/model/idle_lure.h).
 // Prize tags on lines out of the pet's head, the cursor that comes in for one, and the
 // reel back to the pet's mouth. Lines start at the origin the habitat passes, the top of
 // the pet's body.
@@ -51,10 +52,10 @@ void dottedLine(Framebuffer& fb, int x0, int y0, int x1, int y1, Rgb565 c) {
 
 }  // namespace
 
-void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
-    const LureStage stage = home_.lure().stage();
+void HomeHabitat::drawLure(Framebuffer& fb, int originX, int originY, int beat) const {
+    const LureStage stage = lure_.stage();
     if (stage == LureStage::Rest) return;
-    const int b = home_.lure().beatInStage();
+    const int b = lure_.beatInStage();
     const int len = IdleLure::stageBeats(stage);
     const SpriteData& tag = ASSET_SPR_LURE_TAG;
     const int tagW = tag.frameW * kScaleNum / kScaleDen;
@@ -82,17 +83,17 @@ void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
             ty[i] = lerp(seatY[i], oY, b + 1, len);
         } else {
             tx[i] = seatX[i];
-            ty[i] = seatY[i] + (((beat_ + i) & 1) ? 1 : 0);
+            ty[i] = seatY[i] + (((beat + i) & 1) ? 1 : 0);
         }
     }
 
-    const int target = home_.lure().target();
+    const int target = lure_.target();
     if (stage != LureStage::Eat) {
         for (int i = 0; i < kIdleLureTags; ++i)
             dottedLine(fb, originX, originY, tx[i] + eyeX, ty[i] + eyeY,
                        palColor(Pal::INK_DIM));
         for (int i = 0; i < kIdleLureTags; ++i) {
-            const bool hit = i == target && stage == LureStage::Click && (beat_ & 1) == 0;
+            const bool hit = i == target && stage == LureStage::Click && (beat & 1) == 0;
             const int bx0 = tx[i] + logicalToActive(kTagBodyX0);
             const int bx1 = tx[i] + logicalToActive(kTagBodyX1);
             fb.fillRect(bx0, ty[i] + 2, bx1 - bx0, tagH - 4,
@@ -117,7 +118,7 @@ void Game::drawLure(Framebuffer& fb, int originX, int originY) const {
     const int aimY = ty[target] + tagH / 2;
     int cx = aimX, cy = aimY;
     if (stage == LureStage::Approach) {
-        const int fromX = home_.lure().edge() < 0 ? -curW : kActiveW;
+        const int fromX = lure_.edge() < 0 ? -curW : kActiveW;
         cx = lerp(fromX, aimX, b + 1, len);
     } else if (stage == LureStage::Eat) {
         cx = originX;

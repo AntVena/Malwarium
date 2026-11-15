@@ -172,21 +172,23 @@ bool Game::tickHeartbeat(uint32_t nowMs) {
     if (nowMs - lastBeatMs_ < static_cast<uint32_t>(kHeartbeatMs)) return false;
     lastBeatMs_ = nowMs;
     beat_++;
+    home_.step(habitatBeat(), *this);
+    stepScreenBeat();
+    return true;
+}
+
+HabitatBeat Game::habitatBeat() const {
     const CreatureLine* petLine = pet_.creature ? registry_.creatureLine(pet_.creature->line) : nullptr;
-    const RestingTrick trick =
-        petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
     HabitatBeat habitat;
     habitat.creature = pet_.creature;
-    habitat.trick = trick;
+    habitat.trick = petLine && !inEggPhase() ? petLine->restingTrick : RestingTrick::None;
     habitat.companions = idleCompanionCount();
     habitat.replicates = petReplicates();
     // An egg is left out of the colour drift, because the Metamorphic hatch board
     // (game_chroma.cpp) is a minigame about this effect and the player should first see
     // it there.
     habitat.wearsBorrowedColours = petLine && petLine->wearsBorrowedColours && !inEggPhase();
-    home_.step(habitat, *this);
-    stepScreenBeat();
-    return true;
+    return habitat;
 }
 
 // The timer the screen that is up runs on the heartbeat: its row's beat column

@@ -1977,21 +1977,14 @@ private:
     // Rendering.
     void drawHabitat(Framebuffer& fb, int cursor) const override;
     // drawHabitat's steps, in the order it draws them (back to front).
-    void drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const;
     void drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const;
     void drawFailingBanner(Framebuffer& fb) const;
     void drawHabitatStatusColumn(Framebuffer& fb) const;
     void drawAuditBadge(Framebuffer& fb) const;
     void drawExploreStatus(Framebuffer& fb) const;
     void drawHabitatCarousel(Framebuffer& fb, int cursor) const;
-    void drawIdleReplicas(Framebuffer& fb, int petCx) const;
-    void drawDisguiseProp(Framebuffer& fb, int petCx) const;
-    void drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const;
-    void drawFeedingMail(Framebuffer& fb) const;
-    void drawSquatLogin(Framebuffer& fb) const;
-    void drawLure(Framebuffer& fb, int originX, int originY) const;
-    void drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row, int petX,
-                   int petY, bool mirror) const;
+    // What this beat's pet is and does, which the habitat both steps and draws by.
+    HabitatBeat habitatBeat() const;
     // A raised pet whose line carries LinePassive::Replication: the one question both
     // the ambient copies and the fork ask.
     bool petReplicates() const;

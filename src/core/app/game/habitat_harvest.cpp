@@ -1,4 +1,4 @@
-#include "core/app/game.h"
+#include "core/app/game/home_habitat.h"
 
 #include <cmath>
 
@@ -8,7 +8,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 
-// game_harvest.cpp: the strands of data a harvesting line pulls in on the idle shelf
+// habitat_harvest.cpp: the strands of data a harvesting line pulls in on the idle shelf
 // (core/model/idle_harvest.h). The silhouette the hold draws is FX_RAIN
 // (core/render/rain.h), seated by the habitat in place of the creature.
 
@@ -53,9 +53,9 @@ void drawTornDigit(Framebuffer& fb, int x, int y, char digit, Rgb565 color, int 
 
 }  // namespace
 
-void Game::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const {
-    if (home_.harvest().stage() != HarvestStage::Stream) return;
-    const int b = home_.harvest().beatInStage();
+void HomeHabitat::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy, int beat) const {
+    if (harvest_.stage() != HarvestStage::Stream) return;
+    const int b = harvest_.beatInStage();
     // The last strand must have swallowed its last digit by the end of the stage.
     const int travelBeats = kIdleHarvestStreamBeats - kStrandStaggerBeats * (kStrandCount - 1);
     const int travelPx = kStrandStartPx - kAbsorbPx + kStrandDigits * kDigitSpacing;
@@ -72,10 +72,10 @@ void Game::drawHarvestStreams(Framebuffer& fb, int petCx, int petCy) const {
             if (d <= kAbsorbPx) continue;
             const int tear = d >= kTearPx ? 0 : (kTearPx - d) * 255 / (kTearPx - kAbsorbPx);
             const char digit = (dissolveHash(i, k) & 1) ? '1' : '0';
-            const Rgb565 color = ((beat_ + i + k) & 1) ? light : green;
+            const Rgb565 color = ((beat + i + k) & 1) ? light : green;
             const int x = petCx + static_cast<int>(ca * d) - kFontW / 2;
             const int y = petCy + static_cast<int>(sa * d) - kFontH / 2;
-            drawTornDigit(fb, x, y, digit, color, tear, dissolveHash(i * 17 + k, beat_));
+            drawTornDigit(fb, x, y, digit, color, tear, dissolveHash(i * 17 + k, beat));
         }
     }
 }

@@ -1,8 +1,9 @@
-#include "core/app/game.h"
+#include "core/app/game/home_habitat.h"
 
 #include <cctype>
 #include <cstring>
 
+#include "core/render/framebuffer.h"
 #include "core/render/canvas.h"
 #include "core/render/dissolve.h"
 #include "core/render/font.h"
@@ -11,7 +12,7 @@
 #include "core/render/sprite.h"
 #include "generated/assets.h"
 
-// game_feeding.cpp: what a skimming line does on the idle shelf
+// habitat_feeding.cpp: what a skimming line does on the idle shelf
 // (core/model/idle_feeding.h). The scraps it chases are drawn over the pet, which is
 // usually larger than a scrap and would otherwise hide it the moment it arrives. Then
 // the lookalike of its name on the caption row, and the login it types it into.
@@ -73,10 +74,10 @@ void frameRect(Framebuffer& fb, int x, int y, int w, int h, Rgb565 c) {
 
 }  // namespace
 
-void Game::drawFeedingMail(Framebuffer& fb) const {
-    if (!home_.feeding().feeding()) return;
+void HomeHabitat::drawFeedingMail(Framebuffer& fb, int beat) const {
+    if (!feeding_.feeding()) return;
     for (int i = 0; i < kIdleFeedLetters; ++i) {
-        const Mail& m = home_.feeding().letter(i);
+        const Mail& m = feeding_.letter(i);
         if (m.state != MailState::Sinking && m.state != MailState::Bitten) continue;
         const SpriteData& s = mailSprite(m.kind);
         const int w = s.frameW * kScaleNum / kScaleDen;
@@ -90,18 +91,18 @@ void Game::drawFeedingMail(Framebuffer& fb) const {
             continue;
         }
         // Rocking as it sinks, the way a flake does through water; still once it lands.
-        const int frame = m.y == 0 ? 0 : 1 + ((beat_ + i) & 1);
+        const int frame = m.y == 0 ? 0 : 1 + ((beat + i) & 1);
         drawSpriteUpscaled(fb, s, frame, x, y, kScaleNum, kScaleDen);
     }
 }
 
-void Game::drawSquatLogin(Framebuffer& fb) const {
-    const FeedStage stage = home_.feeding().stage();
-    if (!pet_.creature || (stage != FeedStage::Squat && stage != FeedStage::Login)) return;
-    Squat q = squatOf(pet_.creature->displayName);
-    const bool squatted = home_.feeding().squatted();
+void HomeHabitat::drawSquatLogin(Framebuffer& fb, const CreatureDef* creature, int beat) const {
+    const FeedStage stage = feeding_.stage();
+    if (!creature || (stage != FeedStage::Squat && stage != FeedStage::Login)) return;
+    Squat q = squatOf(creature->displayName);
+    const bool squatted = feeding_.squatted();
     const bool swapBeat =
-        stage == FeedStage::Squat && home_.feeding().beatInStage() == kIdleSquatSwapBeat;
+        stage == FeedStage::Squat && feeding_.beatInStage() == kIdleSquatSwapBeat;
     if (squatted && q.swapAt >= 0) {
         for (const auto& swap : kLookalikes)
             if (q.name[q.swapAt] == swap[0]) { q.name[q.swapAt] = swap[1]; break; }
@@ -121,11 +122,11 @@ void Game::drawSquatLogin(Framebuffer& fb) const {
 
     const int x0 = (kActiveW - kLoginW) / 2;
     const int y0 = kLoginTop;
-    const LoginStep step = home_.feeding().loginStep();
+    const LoginStep step = feeding_.loginStep();
     if (step == LoginStep::Torn) {
         // Torn away: the box in bands, each knocked sideways, some gone.
         for (int band = 0; band * kTearBandPx < kLoginH; ++band) {
-            const uint32_t h = dissolveHash(band, beat_);
+            const uint32_t h = dissolveHash(band, beat);
             if (h % 3 == 0) continue;
             const int dx = static_cast<int>((h >> 4) % (2 * kTearMaxShearPx + 1)) -
                            kTearMaxShearPx;
@@ -157,18 +158,18 @@ void Game::drawSquatLogin(Framebuffer& fb) const {
     drawText(fb, x0 + kLoginPad, passY, "*", palColor(Pal::INK_DIM));
     const int len = static_cast<int>(std::strlen(q.name));
     char typed[kNameMax];
-    const int n = home_.feeding().typed(len);
+    const int n = feeding_.typed(len);
     std::memcpy(typed, q.name, static_cast<size_t>(n));
     typed[n] = '\0';
     const int end = drawText(fb, fieldX, userY, typed, palColor(Pal::INK));
-    for (int i = 0; i < home_.feeding().dots(); ++i)
+    for (int i = 0; i < feeding_.dots(); ++i)
         fb.fillRect(fieldX + i * (kDotPx + 4), passY + (kFontH - kDotPx) / 2, kDotPx, kDotPx,
                     palColor(Pal::INK));
     // The caret blinks wherever typing is happening.
-    if (beat_ & 1) {
+    if (beat & 1) {
         const int cx = step == LoginStep::User
                            ? end + 1
-                           : fieldX + home_.feeding().dots() * (kDotPx + 4);
+                           : fieldX + feeding_.dots() * (kDotPx + 4);
         fb.fillRect(cx, step == LoginStep::User ? userY : passY, 1, kFontH,
                     palColor(Pal::INK));
     }

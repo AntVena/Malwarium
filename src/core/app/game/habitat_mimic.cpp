@@ -1,11 +1,11 @@
-#include "core/app/game.h"
+#include "core/app/game/home_habitat.h"
 
 #include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 
-// game_mimic.cpp: a shapeshifting line wearing another family's creature on the idle
+// habitat_mimic.cpp: a shapeshifting line wearing another family's creature on the idle
 // shelf (core/model/idle_mimic.h). Both stand on the pet's feet, centred on it; a
 // scanline comes down over them, and above it is whoever is taking over.
 
@@ -19,9 +19,11 @@ int lerp(int a, int b, int num, int den) { return a + (b - a) * num / den; }
 
 }  // namespace
 
-void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row, int petX,
-                     int petY, bool mirror) const {
-    const SpriteData& worn = *home_.mimicWorn();
+void HomeHabitat::drawMimic(Framebuffer& fb, const PetPose& pose, int beat) const {
+    const SpriteData& pet = *pose.sprite;
+    const int frame = pose.frame, row = pose.row, petX = pose.x, petY = pose.y;
+    const bool mirror = pose.mirror;
+    const SpriteData& worn = *mimicWorn_;
     const int petW = pet.frameW * kScaleNum / kScaleDen;
     const int petH = pet.h * kScaleNum / kScaleDen;
     const int wornW = worn.frameW * kScaleNum / kScaleDen;
@@ -29,8 +31,8 @@ void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row,
     const int feet = petY + petH;
     const int wornX = petX + petW / 2 - wornW / 2;
     const int wornY = feet - wornH;
-    const bool wornMirror = spriteMirrorToFace(worn, home_.wander().headingRight());
-    const int wornFrame = idleFrame(worn, beat_);
+    const bool wornMirror = spriteMirrorToFace(worn, wander_.headingRight());
+    const int wornFrame = idleFrame(worn, beat);
 
     const auto drawPet = [&] {
         drawSpriteUpscaled(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, row, mirror);
@@ -40,11 +42,11 @@ void Game::drawMimic(Framebuffer& fb, const SpriteData& pet, int frame, int row,
                            wornMirror);
     };
 
-    const MimicStage stage = home_.mimic().stage();
+    const MimicStage stage = mimic_.stage();
     if (stage == MimicStage::Hold) { drawWorn(); return; }
 
     const int top = petY < wornY ? petY : wornY;
-    const int lineY = lerp(top, feet, home_.mimic().wipe(), kIdleMimicWipeBeats);
+    const int lineY = lerp(top, feet, mimic_.wipe(), kIdleMimicWipeBeats);
     const bool takingOver = stage == MimicStage::WipeIn;
     fb.setClip(0, 0, kActiveW, lineY);
     if (takingOver) drawWorn(); else drawPet();

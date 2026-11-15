@@ -174,11 +174,6 @@ the shape. What is left:
   record fits as things stand. Decide whether it is the Operator's and saved, or a
   session-level walk preference type. | `game_explore.cpp`, `game_bosses.cpp`,
   `game_render.cpp` | S |
-- **The habitat draw is still `Game`'s.** `HomeHabitat` owns the idle animations and their
-  step, but `drawHabitat` and its helpers (`drawHabitatPet`, `drawIdleReplicas`,
-  `drawDisguiseProp`, the feeding, lure, harvest and mimic draws) are `Game` methods that
-  read it. Move them onto the habitat with a host for what else they read (the pet, the
-  carousel, the status column). | `game_render.cpp` and the `game_<trick>.cpp` draws | M |
 
 `nav_`, `cursor_` and `face_` are the routing `Game` exists to do, and the clocks, the RNG,
 the store and the platform probes are its plumbing; they stay.

@@ -106,15 +106,12 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     if (!drawScene(fb, habitatScene(), beat_, sceneGround(kLivingBottom)))
         fb.clear(palColor(Pal::PAPER));
 
-    // Drawn before the pet so a fork crawls out from behind its body.
-    drawIdleReplicas(fb, kActiveW / 2 + logicalToActive(home_.wander().offsetX()));
-
     const SpriteData* pet = pet_.creature ? registry_.creatureSprite(*pet_.creature) : nullptr;
-    if (pet) drawHabitatPet(fb, *pet);
-    drawFeedingMail(fb);
-    // The squat writes on the caption row, so only while that row is free: no menu
-    // summoned, no nudge, and no explore readout hanging off the corner beside it.
-    if (cursor < 0 && tipSeen(Tip::MenuOpened) && !walk_.active) drawSquatLogin(fb);
+    home_.draw(fb, habitatBeat(), pet, beat_);
+    // The caption row is free: no menu summoned, no nudge, and no explore readout
+    // hanging off the corner beside it.
+    if (cursor < 0 && tipSeen(Tip::MenuOpened) && !walk_.active)
+        home_.drawSquatLogin(fb, pet_.creature, beat_);
 
     drawHabitatPrompt(fb, pet);
     drawFailingBanner(fb);
@@ -137,73 +134,6 @@ void Game::drawHabitat(Framebuffer& fb, int cursor) const {
     drawAchievementBanner(fb);
 
     drawHabitatCarousel(fb, cursor);
-}
-
-void Game::drawHabitatPet(Framebuffer& fb, const SpriteData& pet) const {
-    // An authored clip plays its full row in order; otherwise fall back to the
-    // breathe/blink heuristic on row 0. A creature that authored a "walk" takes it
-    // for exactly the beats the wander below is actually moving the anchor, so the
-    // legs and the drift are one motion rather than two that happen to overlap;
-    // one that authored none simply keeps breathing while it slides, which is what
-    // every single-row sheet does.
-    const AnimClip* clip = nullptr;
-    if (pet_.creature) {
-        if (home_.feeding().biting() || home_.lure().biting()) clip = pet_.creature->clip("attack");
-        if (!clip && home_.wander().travelling()) clip = pet_.creature->clip("walk");
-        if (!clip) clip = pet_.creature->clip("idle");
-    }
-    const int row = clip ? clip->row : 0;
-    const int frame = clip ? clip->frameAt(beat_) : idleFrame(pet, beat_);
-    // Two motions, and the creature is the only thing on this screen that takes
-    // either. The bob is the pose's own 2px lift on alternate beats, which
-    // animates a single-frame creature. A swimmer skips it, because a bob on top
-    // of a continuous drift reads as jitter. The WANDER moves the whole anchor
-    // around the living box, in logical px (core/model/idle_wander.h): sideways
-    // for every mover, and off the shelf for the ones that don't need the floor.
-    const int bob = (IdleWander::bobs(pet_.creature->locomotion) && (beat_ & 1) == 0) ? 2 : 0;
-    const int petW = pet.frameW * kScaleNum / kScaleDen;
-    const int petH = pet.h * kScaleNum / kScaleDen;
-    const int petX = (kActiveW - petW) / 2 + logicalToActive(home_.wander().offsetX());
-    const int petY =
-        kLivingBottom - petH - bob - logicalToActive(home_.wander().offsetY());
-    // Turned to the way it is actually going. A sheet with no declared facing is
-    // never mirrored, so this only turns the creatures the wander was walking
-    // backwards: the ones drawn in profile instead of §2's turned-to-the-viewer
-    // pose (assets/CREATURE_VISUAL_RULES.md). The habitat has no seat and no
-    // opponent, so unlike the combat stage the direction comes off the trip
-    // itself.
-    const bool mirror = spriteMirrorToFace(pet, home_.wander().headingRight());
-    // Resting colour: a line that wears borrowed colours spends a few seconds now
-    // and then in another family's palette (core/model/idle_camo.h). The level and
-    // the art are the tick's; this ranks that art into the ladder the creature is
-    // repainted through, exactly as the combat screen does. Every other pet, and
-    // this one between drifts, takes the plain blit and pays nothing.
-    const CamoRamp drift =
-        home_.camoWorn() ? camoRampFrom(*home_.camoWorn()) : CamoRamp{};
-    if (home_.disguise().showsProp())
-        drawDisguiseProp(fb, petX + petW / 2);
-    else if (home_.harvest().stage() == HarvestStage::Hold)
-        drawSpriteRain(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
-                       palColor(Pal::PAPER), palColor(Pal::DECRYPTION_GREEN), beat_, row,
-                       mirror);
-    else if (home_.vanish().active())
-        drawSpriteCloak(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
-                        home_.vanish().amount(), palColor(Pal::INK), beat_, row, mirror);
-    else if (home_.mimic().active() && home_.mimicWorn())
-        drawMimic(fb, pet, frame, row, petX, petY, mirror);
-    else if (home_.disguise().torn())
-        drawSpriteGlitch(fb, pet, frame, petX, petY, kScaleNum, kScaleDen,
-                         palColor(Pal::INK), palColor(Pal::HOT),
-                         static_cast<uint8_t>(beat_ * 32), row, mirror);
-    else if (home_.camo().level() > 0 && !drift.empty())
-        drawSpriteCamo(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, drift,
-                       home_.camo().level(), /*flashColor=*/0, /*flashAmt=*/0, row,
-                       /*from=*/nullptr, mirror);
-    else
-        drawSpriteUpscaled(fb, pet, frame, petX, petY, kScaleNum, kScaleDen, row,
-                           mirror);
-    drawHarvestStreams(fb, petX + petW / 2, petY + petH / 2);
-    drawLure(fb, petX + petW / 2, petY + petH / 4);
 }
 
 void Game::drawHabitatPrompt(Framebuffer& fb, const SpriteData* pet) const {

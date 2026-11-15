@@ -4,7 +4,8 @@
 // mimic, a worm's fork and relay). Purely presentational, so none of it is saved.
 //
 // Stepped once per heartbeat (Game::tickHeartbeat), which hands it what this beat's pet
-// is and does; the habitat draw (Game::drawHabitat and its helpers) reads it back.
+// is and does, and drawn by the habitat screen (Game::drawHabitat) between the backdrop
+// and the status overlay. Each trick's draw is in its own habitat_<trick>.cpp.
 #pragma once
 
 #include <cstdint>
@@ -24,6 +25,7 @@
 
 namespace mal {
 
+class Framebuffer;
 struct SpriteData;
 
 // The art a borrowed-colour drift or a mimic wears, resolved by family slot. A registry
@@ -50,6 +52,12 @@ public:
     HomeHabitat();
 
     void step(const HabitatBeat& beat, const HomeHost& host);
+    // The copies, the pet in whatever trick it is in, and the mail it chases, at `beat`.
+    // `sprite` is the pet's sheet; null draws only the copies and the mail.
+    void draw(Framebuffer& fb, const HabitatBeat& pet, const SpriteData* sprite, int beat) const;
+    // A skimming line's typosquat of its own name, and the login it types it into. It
+    // writes on the caption row, so the screen calls it only while that row is free.
+    void drawSquatLogin(Framebuffer& fb, const CreatureDef* creature, int beat) const;
 
     // Where the pet is standing, in logical px off the shelf anchor.
     const IdleWander& wander() const { return wander_; }
@@ -77,6 +85,21 @@ public:
 private:
     void stepMotion(const HabitatBeat& beat);
     void stepTricks(const HabitatBeat& beat, const HomeHost& host);
+
+    // Where and how the pet is drawn this beat, which the mimic's wipe redraws.
+    struct PetPose {
+        const SpriteData* sprite = nullptr;
+        int frame = 0, row = 0, x = 0, y = 0;
+        bool mirror = false;
+    };
+    void drawPet(Framebuffer& fb, const CreatureDef& creature, const SpriteData& pet,
+                 int beat) const;
+    void drawReplicas(Framebuffer& fb, const HabitatBeat& pet, int petCx, int beat) const;
+    void drawDisguiseProp(Framebuffer& fb, int petCx, int beat) const;
+    void drawHarvestStreams(Framebuffer& fb, int petCx, int petCy, int beat) const;
+    void drawFeedingMail(Framebuffer& fb, int beat) const;
+    void drawLure(Framebuffer& fb, int originX, int originY, int beat) const;
+    void drawMimic(Framebuffer& fb, const PetPose& pose, int beat) const;
 
     IdleWander wander_;
     IdleWander companions_[kWormReplicaSlots];

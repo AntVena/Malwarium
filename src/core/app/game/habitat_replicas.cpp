@@ -1,4 +1,4 @@
-#include "core/app/game.h"
+#include "core/app/game/home_habitat.h"
 
 #include <algorithm>
 
@@ -9,7 +9,7 @@
 #include "core/ui/worm_replicas.h"
 #include "generated/assets.h"
 
-// game_replicas.cpp: a replicating line's copies in the idle habitat. In a fight the
+// habitat_replicas.cpp: a replicating line's copies in the idle habitat. In a fight the
 // board is Combatant::wormReplicas, standing in rank between parent and enemy; at home
 // there is no combat state, so the copies mill about on their own wanders, and now and
 // then a burst of extras past the line's slots crawls out and dies (core/model/idle_fork.h).
@@ -87,22 +87,23 @@ void drawPacket(Framebuffer& fb, int fromCx, int toCx, int topY, int beatInHop) 
 
 }  // namespace
 
-void Game::drawIdleReplicas(Framebuffer& fb, int petCx) const {
-    const int copies = idleCompanionCount();
+void HomeHabitat::drawReplicas(Framebuffer& fb, const HabitatBeat& pet, int petCx,
+                               int beat) const {
+    const int copies = pet.companions;
     int seatedCx[kWormReplicaSlots] = {};
     for (int i = 0; i < copies; ++i) {
         const SpriteData& glyph = replicaGlyph(i);
-        const int cx = replicaSeatX(i) + logicalToActive(home_.companion(i).offsetX());
+        const int cx = replicaSeatX(i) + logicalToActive(companions_[i].offsetX());
         seatedCx[i] = clampOnCanvas(glyph, cx);
-        const int pose = home_.relay().chomping() == i ? kReplicaAttackFrame : kReplicaIdleFrame;
-        drawReplica(fb, glyph, pose + (beat_ & 1), seatedCx[i], kLivingBottom);
+        const int pose = relay_.chomping() == i ? kReplicaAttackFrame : kReplicaIdleFrame;
+        drawReplica(fb, glyph, pose + (beat & 1), seatedCx[i], kLivingBottom);
     }
-    if (const int h = home_.relay().hop(); h >= 0 && h < copies) {
+    if (const int h = relay_.hop(); h >= 0 && h < copies) {
         const int topY = kLivingBottom - replicaGlyph(h).h * kScaleNum / kScaleDen;
         drawPacket(fb, h == 0 ? petCx : seatedCx[h - 1], seatedCx[h], topY,
-                   home_.relay().beatInHop());
+                   relay_.beatInHop());
     }
-    if (petReplicates()) drawFork(fb, home_.fork(), copies, petCx, beat_);
+    if (pet.replicates) drawFork(fb, fork_, copies, petCx, beat);
 }
 
 }  // namespace mal
