@@ -183,7 +183,7 @@ void Game::autoProgressStep() {
     // condition decides when a step happens: the armed sub-area has to have met its win
     // target. Below that, nothing (the player is still grinding it), which is why an
     // unrelated hand-back like a resolved shop is harmless.
-    if (!autoProgress_ || !walk_.active) return;
+    if (!op_.autoProgress || !walk_.active) return;
     if (inEndlessZone()) return;                    // endless: depth IS the progress
     const int a = walk_.sector, s = walk_.sub;
     if (a < 0 || a >= kExplSectors || s < 0 || s >= kExplSubAreas) return;

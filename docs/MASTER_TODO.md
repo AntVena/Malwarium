@@ -30,18 +30,28 @@ building it up organically.
 
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle (`[ap] down free=126408` → `[cap] armed free=56188`, measured on device). The captures are not what takes it: frames go straight to the SD card through a ~3KB ring. The cost is the Wi-Fi driver, which `powerUp` starts with `WIFI_INIT_CONFIG_DEFAULT()`, sized for a station that sends and receives. A receive-only sniffer can start it with fewer RX buffers and no TX or AMPDU buffers. | `net_capture.h`'s `powerUp`. | S | Needs one flash to measure the new `[cap] armed free=` and to confirm EAPOL is still heard. |
 
-**Wild and boss levels do not follow the pet.** The tier rosters are hand-tuned; only the
-DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level (`kSimDummyHealthPerLevel`,
-`kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Areas 3 to 6 all field the
-same tier-3 wild body (80-85 Health), boss Health climbs 8 per area, and the printed enemy
-levels (wilds 0-29, bosses 2-7) only feed the XP formula. Measured hands-off with perfect
-care and no items: Phishlet clears the ladder in about 5 hours, Paypup stalls 15 hours at
-Net-Sea's gauntlet, and Nodeatode 15 hours at the Bayou and 28 at the Castle. The lean is a
-band per area (enemies match the pet between a floor and a ceiling level). Decide the curve every
-wild and boss encounter follows against the pet's power, then apply it in one place
-instead of per encounter. | `tunables.h`, the area boss and roster tables, `combat_factory.cpp`
-| L | A balance pass: decide the curve before any code. The dummy's comment in `tunables.h`
-points at it. |
+**Wild and boss levels follow the pet inside a band.** The tier rosters are hand-tuned
+and fixed; only the DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level. The
+decided shape: each encounter keeps its authored level as the band's centre, and its
+effective level moves with the pet's by a power curve that matches the pet exactly only
+when the pet is on the centre. Above it the enemy rises more slowly than the pet, so a few
+levels gained still make a wall easier. Below it the enemy eases off more slowly than the
+pet falls short, so an under-levelled pet still meets a fight harder than its own level.
+Either way it stops 5 levels from the centre and never drops below 0. Grinding
+an area for its moves is never wasted, and items and exploits still carry a pet past a
+wall. Open: the curve's shape inside the band, what an effective level buys in stats (the
+Dive's budget spend is the candidate, so there is one spend), and whether the centres are
+today's printed levels (wilds 0-29 by ladder position, bosses 2-7, both XP-only today) or
+new ones. | `tunables.h`, the area boss and roster tables, `combat_factory.cpp` | L | Decide
+the curve before any code; the dummy's comment in `tunables.h` points here. |
+
+**The wild bodies are one body from area 3 on.** Net-Sea, the Moors, the Castle and the
+Silk Lode each name their own wild pair, but every one of them fights on the same tier-3
+row (80-85 Health, speed 13-14); only the name, sprite, signature and moves differ. Give
+each area's pair a body that fits what it is (a bloated adware fish soaks, a fuzzer is
+quick and fragile) and climbs with the ladder. | `combat_factory.cpp`'s `kWildRoster`;
+each area's `wilds`. | M | Lands best with the band above, which sets what the bodies are
+measured against. |
 
 ### 1g. Test-infrastructure gaps
 
@@ -125,13 +135,7 @@ How a screen is cut, as the forty-odd types in `src/core/app/game/` now show:
 #### Still on `Game`
 
 Most of what `game.h` still declares is one record, run or screen held by value, which is
-the shape. What is left:
-
-- **`autoProgress_` has no owner yet.** The walk's hands-off switch outlives each walk
-  (`ExploreWalk` is replaced whole on start) but not a reboot, so neither the walk nor a
-  record fits as things stand. Decide whether it is the Operator's and saved, or a
-  session-level walk preference type. | `game_explore.cpp`, `game_bosses.cpp`,
-  `game_render.cpp` | S |
+the shape.
 
 `nav_`, `cursor_` and `face_` are the routing `Game` exists to do, and the clocks, the RNG,
 the store and the platform probes are its plumbing; they stay.

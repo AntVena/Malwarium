@@ -1414,6 +1414,14 @@ void test_expl_nested_list_nav() {
       tapC(g);                 // C backs out, walk untouched
       CHECK(g.nav() == Game::Nav::Idle && g.exploreActive()); }
 
+    // AUTO is the player's preference, so it outlives the walk and the session.
+    { MemSaveStore store;
+      Game g{StartMode::Hatched, "bruinforce", &store};
+      setAutoProgress(g, false);
+      g.saveNow();
+      Game r{StartMode::FreshHatch, "bruinforce", &store};
+      CHECK(!r.autoProgress()); }
+
     // STOP EXPLORE is now a row rather than the C key, so backing out of the overlay
     // can no longer cancel the walk by accident.
     { Game g{StartMode::Hatched, "bruinforce"};

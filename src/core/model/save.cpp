@@ -669,6 +669,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // v76: the build that wrote this, and the active pet's FRESH PATCH deadline.
     w.u32(d.firmwareCode);
     w.u32(armed.patchBuffUntilMs);
+
+    // v77: the walk's AUTO switch.
+    w.u8(op.autoProgress);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1404,6 +1407,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         d.firmwareCode = r.u32();
         armed.patchBuffUntilMs = r.u32();
     }
+
+    // v77 tail: the walk's AUTO switch. Absent in an older blob -> on.
+    if (version >= 77) op.autoProgress = r.u8();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

@@ -187,6 +187,7 @@ SaveOperator Operator::saved(const ContentRegistry& reg, uint32_t nowMs) const {
     // AUTO writes 0, which is also what a pick with no row writes, since AUTO is the safe
     // reading.
     if (const BackgroundDef* b = backgroundFor(backgroundPick)) s.backgroundPick = b->wire;
+    s.autoProgress = autoProgress ? 1 : 0;
 
     saveWorld(world, s);
     saveIds(s.collectedItems, shelves.collectedItems);
@@ -431,6 +432,7 @@ Operator Operator::loaded(const SaveOperator& s, const SaveId (&activeMods)[kMod
     // build has no row here and reads as AUTO.
     const BackgroundDef* b = backgroundByWire(s.backgroundPick);
     o.backgroundPick = b ? b->scene : SceneId::None;
+    o.autoProgress = s.autoProgress != 0;
     return o;
 }
 

@@ -278,6 +278,10 @@ struct Operator {
     // The chosen habitat background, SceneId::None for AUTO. Owning one is derived
     // (Game::backgroundOwned), so only the pick is kept.
     SceneId backgroundPick = SceneId::None;
+    // AUTO on the explore walk: after a sub-area's win target the walk fights its boss and
+    // moves on by itself (Game::autoProgressStep); off, it farms where it was armed. How
+    // this player likes to walk, whichever pet is doing it, so it outlives every walk.
+    bool autoProgress = true;
 
     // This record as the save keeps it, at game-ms `nowMs`. A spare mod the running
     // content no longer defines has no wire to write to and is dropped.

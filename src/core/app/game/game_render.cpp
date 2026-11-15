@@ -306,7 +306,7 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
     ExploreBadgeMode mode;
     if (inDeepWebDive()) mode = ExploreBadgeMode::DeepDive;
     else if (subCleared(walk_.sector, walk_.sub))
-        mode = autoProgress_ ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
+        mode = op_.autoProgress ? ExploreBadgeMode::AutoNext : ExploreBadgeMode::Farming;
     else if (subBossUnlocked(walk_.sector, walk_.sub)) mode = ExploreBadgeMode::BossReady;
     else mode = ExploreBadgeMode::Wins;
     char label[20];
@@ -356,7 +356,7 @@ void Game::drawHabitatCarousel(Framebuffer& fb, int cursor) const {
     for (int i = 0; i < kCarouselSlots; ++i) {
         const SubmenuId id = carouselSlots()[i].id;
         if (slotLocked(id)) marks.locked |= (1u << i);
-        if (id == SubmenuId::Expl && autoProgress_ && walk_.active)
+        if (id == SubmenuId::Expl && op_.autoProgress && walk_.active)
             marks.spin |= (1u << i);
     }
     // The slots the pet needs visited (game_onboard.cpp) stay lit with a "!" beside

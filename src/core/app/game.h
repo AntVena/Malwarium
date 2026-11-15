@@ -451,7 +451,7 @@ public:
     // The line under the walk's badge: what the last resolved event left behind
     // (drawExploreScreen). Empty between events.
     const char* exploreFlavor() const { return walk_.flavor; }
-    bool autoProgress() const override { return autoProgress_; }     // hands-off ladder stepping
+    bool autoProgress() const override { return op_.autoProgress; }   // Operator::autoProgress
     // How many more wins auto-progress needs before it steps off the armed rung:
     // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
     // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
@@ -1928,7 +1928,10 @@ public:
     void openStoryChapter(const StoryChapterDef* chapter, const StoryChapterDef* next,
                           StoryThen then, int thenArea);
     void markStoryRead(const StoryChapterDef* chapter);
-    void toggleAutoProgress() override { autoProgress_ = !autoProgress_; }   // the overlay's A+C
+    void toggleAutoProgress() override {   // the overlay's A+C
+        op_.autoProgress = !op_.autoProgress;
+        markSaveDirty();
+    }
 
 private:
     // What only the test-seam block above sets: the away summary (off on the Hatched
@@ -2785,15 +2788,6 @@ private:
     int cursor_ = 0;            // focused carousel slot (also the entered slot)
 
     ExplScreen expl_;   // the EXPL list's cursor and level (game/expl_screen.h)
-    // AUTO-PROGRESS: the walk steps the ladder by itself (autoProgressStep). Toggled
-    // with the A+C chord from inside the explore-control overlay, which is only
-    // reachable while explore-mode is running, so the mode is scoped to exploring by
-    // construction. Runtime-only, and deliberately NOT persisted: explore-mode itself
-    // doesn't survive a reboot, so a restored flag would arm a mode with nothing to act
-    // on. It DOES outlive one walk, so cancelling and re-arming explore keeps it set.
-    // Defaults ON: hands-off ladder stepping is the expected experience; the chord
-    // opts OUT rather than in.
-    bool autoProgress_ = true;
     ExploreControlScreen exploreControl_;   // the walk's A+C overlay (game/explore_control_screen.h)
     MaintScreen maintScreen_;   // the MAINT action page (game/maint_screen.h)
     // The MAINT process in play (core/model/maint_run.h): its board or its process

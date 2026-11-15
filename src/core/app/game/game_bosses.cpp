@@ -207,7 +207,7 @@ void Game::finishBossRound() {
             // is the area's last either way. Re-aiming at the next area resets the
             // streak, so the shared hook finds nothing to do and the rotation carries
             // on.
-            if (autoProgress_) startExplore(nextOpenArea(sector), 0);
+            if (op_.autoProgress) startExplore(nextOpenArea(sector), 0);
         }
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard live-stakes Frag hit once

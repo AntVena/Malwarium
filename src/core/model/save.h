@@ -350,7 +350,9 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 // v76 APPEND, one tail after v75's: the firmware version code that wrote the blob (u32),
 //     then the active pet's FRESH PATCH deadline (u32, lifetimeUptimeMs). Pre-v76 -> code 0,
 //     which reads as written by an older build, and no buff.
-constexpr uint16_t kSaveVersion = 76;
+// v77 APPEND, one tail after v76's: the walk's AUTO switch (u8), which an older build kept
+//     only for the session. Pre-v77 -> on.
+constexpr uint16_t kSaveVersion = 77;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -684,6 +686,9 @@ struct SaveOperator {
     // The chosen background's BackgroundDef::wire, or 0 for AUTO (the pet decides).
     // A wire this build has no row for reads back as AUTO: see backgroundByWire.
     uint8_t backgroundPick = 0;
+    // v77: the walk's AUTO switch (Operator::autoProgress), 1 = on. Pre-v77 -> on, which is
+    // where every earlier build started a session.
+    uint8_t autoProgress = 1;
 
     // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
     // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like
