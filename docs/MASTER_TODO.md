@@ -28,27 +28,16 @@ building it up organically.
 
 ### 1a. Ready to build
 
-**Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, but with ~56KB left once capture is armed, anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
-
-**A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes
-the board was designed to hand over ("you find a crew to join"), but crews are ungated today:
-every row in `content_crews.cpp` is enlistable from the first boot, so there is nothing for a
-prize to unlock. Wants a discovery axis on `CrewDef` first, then one `Kind` and one applier case. |
-`content_crews.h`; `game_crew.cpp`'s roster filter; `QuoteReward::Kind`. | M | The gating axis is
-the real work; the prize is three lines once it exists. |
-
-**The two endless cabinets' BEST rows are guesses.** CHROMATOPHORE's DEEP_COVER (20 passes) and
-ISOLATION PROTOCOL's BUFFER_GLUTTON (60 bytes) were set before anyone had played either cabinet
-seriously, and they are the only ladders here that cannot be deepened by adding a rung: a BEST is
-one run, so the right goal is a number off real high scores, not a step up from the last one.
-Collect those, then retune the two rows and decide whether either wants a rung above. |
-`content_achievements.cpp`'s `ArcadeCabinetBest` rows. | S | A ladder past five rungs wraps its
-tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
-spent. |
+**Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle (`[ap] down free=126408` → `[cap] armed free=56188`, measured on device). The captures are not what takes it: frames go straight to the SD card through a ~3KB ring. The cost is the Wi-Fi driver, which `powerUp` starts with `WIFI_INIT_CONFIG_DEFAULT()`, sized for a station that sends and receives. A receive-only sniffer can start it with fewer RX buffers and no TX or AMPDU buffers. | `net_capture.h`'s `powerUp`. | S | Needs one flash to measure the new `[cap] armed free=` and to confirm EAPOL is still heard. |
 
 **Wild and boss levels do not follow the pet.** The tier rosters are hand-tuned; only the
 DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level (`kSimDummyHealthPerLevel`,
-`kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Decide the curve every
+`kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Areas 3 to 6 all field the
+same tier-3 wild body (80-85 Health), boss Health climbs 8 per area, and the printed enemy
+levels (wilds 0-29, bosses 2-7) only feed the XP formula. Measured hands-off with perfect
+care and no items: Phishlet clears the ladder in about 5 hours, Paypup stalls 15 hours at
+Net-Sea's gauntlet, and Nodeatode 15 hours at the Bayou and 28 at the Castle. The lean is a
+band per area (enemies match the pet between a floor and a ceiling level). Decide the curve every
 wild and boss encounter follows against the pet's power, then apply it in one place
 instead of per encounter. | `tunables.h`, the area boss and roster tables, `combat_factory.cpp`
 | L | A balance pass: decide the curve before any code. The dummy's comment in `tunables.h`
@@ -66,13 +55,6 @@ points at it. |
   Threat/Ghost vs. Guardians: Orchestrator/Watchdog/Dispatcher), the capture broadcast-window
   lifecycle, and target-cooldown + Honeypot/IDS defensive mods have no code. Diff **XL**:
   needs a first design pass reconciling the ability list against everything that's shipped since.
-- **The crew roster is seven, both sides, seven ability shapes.** Shipped: Deniers of Service
-  (negate), Shell Smashers (bank damage as Power), Injection Protection (reset + floor the stat
-  leans), Syntax Errorist (copy the enemy's self-buffs), The Last Responders (turn-metered death
-  save that rallies on the overkill), Hot Spares (the next casts resolve twice) and Shakedown Artists (a
-  turn-metered rake of damage dealt back as Health). Adding another is still a `kCrews[]` row; a new ability shape
-  is one `CrewExploitKind` entry plus one case in `Combat::applyCrewExploit`. What's missing is the
-  *earn* model: every crew is joinable the moment a home network exists. Diff **M**.
 - **What "defender of that network" buys you.** The home network is recorded and shown but has no
   mechanical consequence beyond gating enlistment. Diff **M**.
 
