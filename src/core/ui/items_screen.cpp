@@ -113,8 +113,9 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 
 // Detail-page description block: the readout starts at kDetailPanelTop and the prose
 // flows under it, down to kDetailPanelBottom. The HAVE row and the action line sit
-// below that, near the bottom of a page that has no hint band, so the panel gets the
-// room, and the two footer lines take what they need rather than the reverse.
+// below that. kDetailPanelBottom is as low as it goes: a full panel with the
+// once-per-life note puts the action line at y 200, which ends one pixel above the hint
+// band, and the panel still holds seven prose lines.
 //
 // HAVE and the action line are a PAIR and are spaced to say so: their pitch is tighter
 // than the prose pitch above them (kFontH + 4 against kLineH), while the gap ABOVE them
@@ -132,10 +133,12 @@ void drawRarityPips(Framebuffer& fb, int x, int y, ItemDef::Rarity r) {
 // The trade: the action line's y now varies by item. It is the same trade drawModDetail
 // already makes for its ONE-SHOT caveat, and it buys back most of a screen.
 constexpr int kDetailPanelTop = 56;
-constexpr int kDetailPanelBottom = 158;
+constexpr int kDetailPanelBottom = 154;
 constexpr int kDetailFooterPitch = kFontH + 4;
 constexpr int kDetailFooterGap = 14;
 constexpr int kDetailHaveMaxY = kDetailPanelBottom + kDetailFooterGap;
+static_assert(kDetailHaveMaxY + 2 * kDetailFooterPitch + kFontH <= kActiveH - kHintBandH,
+              "the lowest footer line must end above the hint band");
 
 // The band with ITEMS' own right label: the n/total position counter, shown only
 // once the list is long enough to scroll out from under the cursor.
@@ -491,7 +494,7 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
                  palColor(spent ? Pal::INK_DIM : Pal::ACCENT));
     }
 
-    // Action / gate line.
+    // Action / gate line, and the band naming the same verb on B.
     if (v.usable) {
         drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
         // A re-roll reads ROLLBACK and a point move reads MOVE POINT; the egg
@@ -504,9 +507,13 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
                          : def.type == ItemDef::Type::Food       ? "FEED"
                                                                  : "USE";
         drawText(fb, kMargin + 10, actionY, verb, palColor(Pal::ACCENT));
+        char hint[32];
+        std::snprintf(hint, sizeof(hint), "B %s  C BACK", verb);
+        drawHintBand(fb, hint);
     } else {
         drawText(fb, kMargin, actionY, v.gateMsg ? v.gateMsg : "- UNUSABLE HERE -",
                  palColor(Pal::INK_DIM));
+        drawHintBand(fb, "C BACK");
     }
 }
 

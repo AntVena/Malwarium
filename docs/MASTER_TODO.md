@@ -54,14 +54,6 @@ Collect those, then retune the two rows and decide whether either wants a rung a
 tally (`tools/gen_ach_icons.py`'s `tally`), and the bitset holds 256 wires, of which 204 are
 spent. |
 
-**The ITEMS detail page is the one detail page with no hint band.** `drawItemDetail` leaves
-the band off on purpose ("so the panel gets the room", per the comment over
-`kDetailPanelTop`), while MODS, DEFRAG and AV detail all draw one. The footer's lowest line
-ends at y 204, above where a band starts (208), so the room argument no longer holds at
-today's constants. Decide: add `B <verb>  C BACK` like its siblings, or record the exception
-in VISUAL_LANGUAGE §4.1. | `items_screen.cpp`'s `drawItemDetail`; VISUAL_LANGUAGE §4.1 and
-§4.2. | S | A design call, which is why the design pass left it. |
-
 **Wild and boss levels do not follow the pet.** The tier rosters are hand-tuned; only the
 DEEPWEB DIVE and the Sim-Battle dummy scale to the pet's level (`kSimDummyHealthPerLevel`,
 `kSimDummySpeedPerNLevels`, which borrow the dive's linear bump). Decide the curve every

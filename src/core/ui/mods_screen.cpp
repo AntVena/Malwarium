@@ -133,7 +133,8 @@ void drawLoadoutHub(Framebuffer& fb, const ModHoldings& load, const MoveLoadout&
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), v.beat, scrollWhen(i == v.cursor));
-    }    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
+    }
+    drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }
 
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
