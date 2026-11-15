@@ -51,8 +51,7 @@ void Game::grantRigLevel(int row, int levels) {
         // capacity is available to farm with right away, not just on the next regen
         // tick. Applied per level so a multi-level grant tops up by the whole amount.
         if (def.effectKind == RigEffectKind::GrantBandwidth) {
-            bandwidth_ += def.effectMagnitude;
-            if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
+            bandwidth_.add(def.effectMagnitude, bandwidthMax());
         }
     }
     log_.push(LogEventType::ItemGained, def.logText);

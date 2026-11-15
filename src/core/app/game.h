@@ -89,6 +89,7 @@
 #include "core/model/cryptogram_run.h"
 #include "core/model/arcade_run.h"
 #include "core/model/egg_pick.h"
+#include "core/model/bandwidth_pool.h"
 #include "core/model/explore_walk.h"
 #include "core/model/feeding.h"
 #include "core/model/maint_run.h"
@@ -263,7 +264,7 @@ public:
         return (i >= 0 && i < kLevelStatCount) ? pet_.statPoints[i] : 0;
     }
     int bits() const { return op_.bits; }
-    int bandwidth() const override { return bandwidth_; }   // farming resource: see below
+    int bandwidth() const override { return bandwidth_.level(); }   // core/model/bandwidth_pool.h
     // The farming-pool CAP: the base plus every "Increase Bandwidth" upgrade bought on
     // the Rig Shop (a). Replaces the raw kBandwidthMax everywhere the cap is
     // read (regen ceiling, the badge/PROFILE denominator, the debug clamp).
@@ -299,10 +300,8 @@ public:
     // Bandwidth is whole points, so the slice ROUNDS UP: a 150-point hole pays 2, and
     // the +1 floor is then only ever reached by a hole small enough to deserve it.
     int bandwidthRegenAmount() const {
-        if (!linkAggregatorUnlocked()) return 1;
-        const int spent = bandwidthMax() - bandwidth_;
-        const int slice = (spent * kLinkAggregatorPct + 99) / 100;
-        return slice > 1 ? slice : 1;
+        return BandwidthPool::tickAmount(bandwidthMax() - bandwidth_.level(),
+                                         linkAggregatorUnlocked(), kLinkAggregatorPct);
     }
     // Everything an Epic dish has permanently handed this pet, as one value: what STAT's
     // BUFFS page lists and what the rack freezes (core/model/pet_upgrades.h).
@@ -1836,9 +1835,7 @@ public:
     void fillLoadout();
     // The Bandwidth pool, clamped to [0, bandwidthMax()]; it otherwise moves by fights
     // and regeneration.
-    void setBandwidth(int n) {
-        bandwidth_ = n < 0 ? 0 : (n > bandwidthMax() ? bandwidthMax() : n);
-    }
+    void setBandwidth(int n) { bandwidth_.set(n, bandwidthMax()); }
     // `k`'s played run at difficulty `d`, unpaid and before it is due. onButton drives
     // the real board from here, and a finished run settles in settlePlayedRun.
     void startPlayedMaint(MaintKind k, ArcadeDifficulty d) {
@@ -2847,12 +2844,7 @@ private:
     // the 3-deep menu budget, and suspend the global auto-defocus.
     ExploreWalk walk_;
 
-    // Bandwidth is the FARMING resource: spent 1 per re-farm win to keep cleared-sub
-    // loot full; when empty the decay curve applies until it regenerates on the
-    // heartbeat over real time. Session-level, not per-pet, and not persisted.
-    // bandwidthAccumMs_ carries the sub-step regen remainder.
-    int bandwidth_ = kBandwidthMax;
-    uint32_t bandwidthAccumMs_ = 0;
+    BandwidthPool bandwidth_{kBandwidthMax};   // core/model/bandwidth_pool.h
     // THE dissolve clock (FX_ABSORB / FX_SHRED), on the fast kFxAnimMs tick rather than
     // the heartbeat: a sweep is redrawn every frame it is up, and stepping it at 4fps
     // is what made it read as jumping rather than moving. One counter serves all three

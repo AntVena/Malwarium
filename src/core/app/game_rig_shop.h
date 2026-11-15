@@ -272,7 +272,7 @@ struct RigUpgradeDef;  // fwd decl for the table below
 
 enum class RigEffectKind : uint8_t {
     None = 0,          // nothing mutated at buy time: other code reads the level directly
-    GrantBandwidth,     // magnitude added to the LIVE bandwidth_ pool, capped at the new max
+    GrantBandwidth,     // magnitude added to the live Bandwidth pool, capped at the new max
 };
 
 // Where a readout's number comes from at a given purchase level.

@@ -389,7 +389,7 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
     // in a shield the operator is not spending by hand.
     int badgeCount = walk_.streak, badgeMax = kExploreStreakToBoss;
     if (mode == ExploreBadgeMode::Farming) {
-        badgeCount = bandwidth_; badgeMax = bandwidthMax();
+        badgeCount = bandwidth_.level(); badgeMax = bandwidthMax();
     }
     drawExploreBadge(fb, label, badgeCount, badgeMax, mode);
     // Bandwidth is the per-fight fragmentation shield, so it drains on every
@@ -401,8 +401,8 @@ void Game::drawExploreStatus(Framebuffer& fb) const {
         // Line 2 of the block exploreStatusLines() counts; anything else that
         // wants this corner starts below the whole block (statusY, above).
         const int bwLineY = kLivingTop + 4 + kFontH + 2;
-        if (bandwidth_ > 0) {
-            std::snprintf(bw, sizeof(bw), "BW %d/%d", bandwidth_, bandwidthMax());
+        if (bandwidth_.level() > 0) {
+            std::snprintf(bw, sizeof(bw), "BW %d/%d", bandwidth_.level(), bandwidthMax());
             drawText(fb, kExploreStatusX, bwLineY, bw, palColor(Pal::CALM));
         } else {
             std::snprintf(bw, sizeof(bw), "BW 0/%d LOW", bandwidthMax());

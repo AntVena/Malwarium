@@ -315,7 +315,7 @@ void Game::applyCombatResult() {
     // reads the before/after pair (+ the shield flag below) to drive
     // Nav::PostEncounter for a WILD fight; harmless bookkeeping for Sim/boss (they
     // never route to that overlay, so nothing reads it there).
-    fight_.result.bwBefore = bandwidth_;
+    fight_.result.bwBefore = bandwidth_.level();
     fight_.result.fragBefore = pet_.model.fragmentation();
     // Snapshot the pre-reward stat points so the readout can name what this fight's
     // XP levelled up. The reward path below calls addCombatXp, which may cross
@@ -338,8 +338,7 @@ void Game::applyCombatResult() {
     // come home" signal). This covers first-clear grinding and DeepWeb dives too, not
     // just cleared-sub re-farming. Bosses resolve in finishBossRound() and never reach
     // here.
-    const bool bandwidthShielded = !safe && fought && bandwidth_ > 0;
-    if (bandwidthShielded) --bandwidth_;               // spend one charge for the shield
+    const bool bandwidthShielded = !safe && fought && bandwidth_.spendOne();
     fight_.result.shielded = bandwidthShielded;
     if (!safe && fought && !bandwidthShielded)
         applyBattleFatigue();                          // no charge left → the pet corrupts
@@ -446,7 +445,7 @@ void Game::applyCombatResult() {
     }
     // Post-encounter status readout snapshot, part 2: the ENDING values, now that
     // the switch above has applied whatever this outcome caused.
-    fight_.result.bwAfter = bandwidth_;
+    fight_.result.bwAfter = bandwidth_.level();
     fight_.result.fragAfter = pet_.model.fragmentation();
     for (int i = 0; i < kLevelStatCount; ++i)
         fight_.result.statGain[i] = pet_.statPoints[i] - statBefore[i];

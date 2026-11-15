@@ -139,20 +139,9 @@ bool Game::tickModelClocks(uint32_t nowMs) {
         // Bandwidth regenerates slowly over real active time, whether or not
         // EXPL is open, so a walk cannot be farmed in one sitting but recovers
         // between sessions.
-        if (bandwidth_ < bandwidthMax()) {
-            bandwidthAccumMs_ += elapsed;
-            // Per-PET interval: the shared one, less any permanent shave this pet has
-            // eaten (bandwidthRegenMinutes. Tiramisudo's upgrade).
-            const uint32_t step = bandwidthRegenMinutes() * 60u * 1000u;
-            while (bandwidthAccumMs_ >= step && bandwidth_ < bandwidthMax()) {
-                bandwidthAccumMs_ -= step;
-                // Per-TICK amount: a flat point, or the Link Aggregator's slice of
-                // the spent pool (bandwidthRegenAmount). Read inside the loop because
-                // the slice shrinks as the pool it is measured against fills.
-                bandwidth_ += bandwidthRegenAmount();
-                if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
-            }
-        }
+        // The interval is per PET (bandwidthRegenMinutes: Tiramisudo shaves it).
+        bandwidth_.refill(elapsed, bandwidthRegenMinutes() * 60u * 1000u, bandwidthMax(),
+                          linkAggregatorUnlocked(), kLinkAggregatorPct);
         // Boot-Sector incubation clock (egg-at-idle): counts down in real time while the
         // egg sits at idle. Held on every screen that is part of the hatch (its row says
         // Incubation::Holds, and why). Reaching 0 out here auto-hatches straight to

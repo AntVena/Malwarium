@@ -163,7 +163,7 @@ void Game::restoreOperator(const SaveData& d) {
     achBanner_.clear();
     // Bandwidth isn't persisted (it refills on reboot), so re-seed the live pool to the
     // restored cap and a loaded save boots with a full farm pool.
-    bandwidth_ = bandwidthMax();
+    bandwidth_.set(bandwidthMax(), bandwidthMax());
 }
 
 void Game::restoreTourneyRun(const SaveData& d) { tourney_ = TourneyRun::loaded(d.tourney); }

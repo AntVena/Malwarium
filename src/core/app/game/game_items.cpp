@@ -467,8 +467,7 @@ void Game::applyItemEffects(const ItemDef& d) {
                 // A top-up of the live pool, capped at the ceiling the rig has bought:
                 // the same clamp grantRigLevel applies, because overfilling would give
                 // shielded fights the operator has not paid for.
-                bandwidth_ += e.magnitude;
-                if (bandwidth_ > bandwidthMax()) bandwidth_ = bandwidthMax();
+                bandwidth_.add(e.magnitude, bandwidthMax());
                 break;
             case ItemEffect::Kind::SetDeepWebStartDepth:
                 // Backdoor/Rootkit/Kernel Bell: arm the NEXT startDeepWebDive() to
