@@ -28,14 +28,6 @@ building it up organically.
 
 ### 1a. Ready to build
 
-**The two endless zones have no STORY.** Every ladder area's four chapters are written (wires
-1-24); DEEPWEB DIVE and DARKWEB CRAWL still carry a zeroed `AreaStoryDef` (`kStoryDeepWeb`,
-`kStoryDarkWeb`), which reads as "nothing to say yet" and fires nothing. Only the ARRIVAL beat
-can ever fire there: there is no gauntlet down there to open or close. Each wants an arrival
-that pays off the thread the ladder ends on. |
-*The story* in [`AREA_CONTENT_STANDARD.md`](../src/core/content/areas/AREA_CONTENT_STANDARD.md);
-`test_story_chapters_fit_their_page` is the gate. | S each | Wire numbers continue past 24. |
-
 **Capture arming costs ~70KB and the AP ~58KB**, against ~126KB free with the radio idle. The device works, but with ~56KB left once capture is armed, anything else that grows will hit the same wall. Worth a pass at what the capture path actually needs. | `net_capture.h`'s `powerUp` (`esp_wifi_init` + promiscuous + the pcap SD buffers). | M | Measured on device, not estimated: `[ap] down free=126408` → `[cap] armed free=56188`. |
 
 **A crew cannot be DISCOVERED.** `QuoteReward::Kind` has room for it and it is one of the prizes

@@ -96,10 +96,27 @@ const char* const kDeepWebIcon = "ICON_SECTOR_DEEPWEB_DIVE";
 const char* const kDeepWebName = "DEEPWEB DIVE";
 const char* const kDeepWebBadge = "DEEPWEB";
 
-// The Dive's chapters: UNAUTHORED. Every beat is empty, which core/content/story.h
-// reads as "this zone has nothing to say yet" and fires nothing on the walk. The block
-// exists so the archive already has the Dive's slots and filling them is one edit here.
-const AreaStoryDef kStoryDeepWeb = {};
+// The Dive's CHAPTERS (core/content/story.h), wire 25. Only the arrival can fire: an
+// endless zone has no gauntlet to open or close. The Dive opens as the ladder reaches the
+// Net-Sea, so it picks up the cable that chapter follows along the sea floor.
+namespace {
+const StoryPanelDef kDiveIntroPanels[] = {
+    {"THE DROP",
+     "Halfway across the Net-Sea, the cable you are following runs off a shelf in the sea "
+     "floor and straight down, into water too deep for any buoy. Through the link you can "
+     "follow it."},
+    {"THE DEEP WEB",
+     "Down there is the deep web: every page and file nobody links to any more, sunk out "
+     "of sight. Nothing indexes it, so nothing down there has been cleaned up in years."},
+    {"NO FLOOR",
+     "The malbeasts grow older and stronger the further down you go, and the cable never "
+     "reaches a floor. However deep your pet gets, there is always more of it below."},
+};
+}  // namespace
+
+const AreaStoryDef kStoryDeepWeb = {{
+    {/*wire=*/25, "THE DIVE: THE DROP", kDiveIntroPanels, arrLen(kDiveIntroPanels)},
+}};
 
 // The dive's mod pool: earned from milestone wins in the endless zone, the
 // defensive/build-around endgame Epics.

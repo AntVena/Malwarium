@@ -28,9 +28,26 @@ const char* const kDarkWebIcon = "ICON_SECTOR_DARKWEB_CRAWL";
 const char* const kDarkWebName = "DARKWEB CRAWL";
 const char* const kDarkWebBadge = "DARKWEB";
 
-// The Crawl's chapters: UNAUTHORED, exactly as the Dive's are and for the same reason
-// (deepweb_dive/area.cpp).
-const AreaStoryDef kStoryDarkWeb = {};
+// The Crawl's CHAPTERS (core/content/story.h), wire 26, the arrival only, as the Dive's.
+// The Crawl opens once the Silk Lode is cleared, which ends with the operator plugged
+// into the mainframe, so it starts inside it, with the program the logbook described.
+namespace {
+const StoryPanelDef kCrawlIntroPanels[] = {
+    {"INSIDE",
+     "Inside the mainframe the team's program is still running. It never stopped reading, "
+     "and every thread it ever followed is still open, leading out of the machine room."},
+    {"THE DARK WEB",
+     "The threads run through the dark web, the part of the network hidden on purpose. "
+     "Your pet can crawl along them one at a time, as far as the program ever went."},
+    {"UNREADABLE",
+     "Everything along the threads is written in the language the malbeasts spoke. Your "
+     "pet's Exploits come out in it too, and unless you can read it, you choose them blind."},
+};
+}  // namespace
+
+const AreaStoryDef kStoryDarkWeb = {{
+    {/*wire=*/26, "THE CRAWL: THE THREADS", kCrawlIntroPanels, arrLen(kCrawlIntroPanels)},
+}};
 
 const char* const kDarkWebWilds[2] = {"anonymouse", "vulnture"};
 
