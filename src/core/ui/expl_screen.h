@@ -342,7 +342,7 @@ struct WifiEventView {
     // statement as an eaten one.
     WifiAbsorb absorb = WifiAbsorb::None;
     // The heartbeat (the marquee's own pace), and the faster dissolve clock
-    // (Game::fxBeat_) the absorb is paced on.
+    // (FxClock) the absorb is paced on.
     int beat = 0;
     int fxBeat = 0;
 };

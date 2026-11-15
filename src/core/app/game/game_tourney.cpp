@@ -106,7 +106,7 @@ void Game::startTourneyMatch() {
                                          tourneyBlockStart(run.playerSlot(), run.round)),
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
-    fxBeat_ = 0;
+    fx_.restart();
     fightScreen_.shutPanel();
     nav_ = Nav::Combat;
     dirty_ = true;

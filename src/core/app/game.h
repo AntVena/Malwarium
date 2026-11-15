@@ -21,6 +21,7 @@
 #include "core/app/game/achievement_banner.h"
 #include "core/app/game/arcade_screen.h"
 #include "core/app/game/arch_screen.h"
+#include "core/app/game/fx_clock.h"
 #include "core/app/game/rank_up_notice.h"
 #include "core/app/game/cfg_menu.h"
 #include "core/app/game/arena_screen.h"
@@ -1969,7 +1970,7 @@ private:
     // or the fight's own lifecycle below (advanceCombatTurn, finishCombat, ...).
     Fight& liveFight() override { return fight_; }
     const SpriteData* petSprite() const override;   // also WifiHost's
-    int fxBeat() const override { return fxBeat_; }
+    int fxBeat() const override { return fx_.beat(); }
     int screenBeat() const override { return beat_; }
     void stepGuardianFlock() override;
     void openExploitPicker() override;
@@ -2845,18 +2846,7 @@ private:
     ExploreWalk walk_;
 
     BandwidthPool bandwidth_{kBandwidthMax};   // core/model/bandwidth_pool.h
-    // THE dissolve clock (FX_ABSORB / FX_SHRED), on the fast kFxAnimMs tick rather than
-    // the heartbeat: a sweep is redrawn every frame it is up, and stepping it at 4fps
-    // is what made it read as jumping rather than moving. One counter serves all three
-    // hosts because only one dissolve is ever on screen: the feeding modal, the Wi-Fi
-    // event, and the beaten rival's combat outro. Each resets it as its own sweep opens
-    // and gates its advance (game_core.cpp), so it always means beats-since-THIS-sweep.
-    //
-    // Deliberately NOT ExploreWalk::eventBeat / Fight::resultBeat: a press restarts those, and a
-    // dissolve animates something already resolved. Replaying it under a player leaning
-    // on A would be a second helping that never happened.
-    int fxBeat_ = 0;
-    uint32_t lastFxMs_ = 0;
+    FxClock fx_;   // game/fx_clock.h
     // Set by tickAnimClocks each tick: true while any cadence it services is live. Read by
     // highFrameRate() (device-tier CPU-clock scaling). Derived from the same gates that run
     // the fast frames, not a parallel list, so the two cannot drift.

@@ -49,7 +49,7 @@ void Game::resetToHatch() {
     cryptogramRun_.reset();              // ...nor mid-board
     fight_ = Fight{};                    // nothing can be mid-fight after a reset
     gauntlet_.reset();
-    fxBeat_ = 0;
+    fx_.restart();
     arch_.reset();
     save_.settle(nowMs_);
     if (store_) store_->clear();

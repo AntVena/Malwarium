@@ -123,7 +123,7 @@ void Game::startBossRound(int carryHealth) {
     fight_ = Fight::started(FightCaller::Boss);
     fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, /*forceEnemyFirst=*/false,
                         carryHealth, exploitUsesPerBattle());
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::BossStart);

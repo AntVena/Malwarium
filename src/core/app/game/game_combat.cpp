@@ -113,7 +113,7 @@ void Game::startSimBattle(int tier) {
     fight_ = Fight::started(FightCaller::Sim);
     fight_.combat.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::CombatStart);
@@ -561,7 +561,7 @@ bool Game::combatOutroEligible() const {
 }
 
 bool Game::combatDissolveRunning() const {
-    return combatOutroEligible() && fxBeat_ < kAbsorbTotalBeats;
+    return combatOutroEligible() && fx_.beat() < kAbsorbTotalBeats;
 }
 
 uint32_t Game::rivalTeachableMoveMask() const {
@@ -611,7 +611,7 @@ void Game::beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat:
     fight_.combat.begin(p, e, stakes, rng_,
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::Combat;
     dirty_ = true;
 }
@@ -753,7 +753,7 @@ void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
     fight_ = Fight::started(FightCaller::Wild);
     fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, forceEnemyFirst,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::Combat;
     dirty_ = true;
     playSound(Sound::CombatStart);

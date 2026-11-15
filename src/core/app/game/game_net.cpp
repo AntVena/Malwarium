@@ -78,7 +78,7 @@ void Game::startWifiEvent() {
     ev.rollOutcome(static_cast<int>((rng_ >> 16) % 100), auditCapture_.broadcasting());
     wifi_ = ev;
     walk_.eventBeat = 0;   // start the hands-off hold clock
-    fxBeat_ = 0;             // and the dissolve's, which no press restarts
+    fx_.restart();             // and the dissolve's, which no press restarts
     nav_ = Nav::Wifi;
 }
 

@@ -64,7 +64,7 @@ void Game::startShiboleet() {
     shiboleet_.open();
 
     walk_.eventBeat = 0;   // start the hail's hold (game_core.cpp's tick)
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::ShiboleetHail;
     dirty_ = true;
 }
@@ -126,7 +126,7 @@ void Game::openShiboleetWelcome() {
         case ShiboleetWelcome::Riddle:
             shiboleet_.open();
             walk_.eventBeat = 0;   // start the ~15s answer clock (game_core.cpp's tick)
-            fxBeat_ = 0;
+            fx_.restart();
             nav_ = Nav::Shiboleet;
             dirty_ = true;
             return;
@@ -188,7 +188,7 @@ void Game::settleShiboleet(ShiboleetReply reply) {
 
 void Game::enterShiboleetVerdict() {
     walk_.eventBeat = 0;   // start the verdict's hold (game_core.cpp's tick)
-    fxBeat_ = 0;
+    fx_.restart();
     nav_ = Nav::ShiboleetVerdict;
     dirty_ = true;
 }

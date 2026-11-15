@@ -56,7 +56,7 @@ struct FeedingView {
     // without it: the modal does not depend on the picture.
     const SpriteData* foodIcon = nullptr;
     FeedVitals before;
-    // The heartbeat (the pet's breathe), and the faster dissolve clock (Game::fxBeat_)
+    // The heartbeat (the pet's breathe), and the faster dissolve clock (FxClock)
     // the bite is paced on. They are different rates, so a smoother sweep never speeds
     // up the creature breathing behind it.
     int beat = 0;

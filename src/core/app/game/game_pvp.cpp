@@ -374,7 +374,7 @@ void Game::startPvpBattle(uint32_t seed) {
     // ...and, on the same rule, the mirror: recorded at the START, as the reveal and the
     // duel above are.
     noteMirrorMatch(p.remote.creatureId);
-    fxBeat_ = 0;
+    fx_.restart();
     fightScreen_.shutPanel();
     p.enter(PvpPhase::Fighting, nowMs_);
     nav_ = Nav::Combat;

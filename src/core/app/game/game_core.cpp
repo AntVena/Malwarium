@@ -295,12 +295,11 @@ Game::Cadence Game::tickCombatAnim(uint32_t nowMs) {
     return fightScreen_.tick(*this, nowMs) ? Cadence::Fired : Cadence::Open;
 }
 
-// The dissolve clock (FX_ABSORB / FX_SHRED). Fastest tick on the device, and the only one
-// gated on a specific effect being on screen: it runs for the ~2s a sweep takes and costs
-// nothing the rest of the time. The screens whose row names a sweep (FxSweep) are its
-// hosts: one counter, and only one dissolve is ever up. Each resets it at its own start
-// (startFeeding / startWifiEvent / every fight start), so this only has to decide when to
-// ADVANCE.
+// The dissolve clock (FxClock). Fastest tick on the device, and the only one gated on a
+// specific effect being on screen: it runs for the ~2s a sweep takes and costs nothing the
+// rest of the time. The screens whose row names a sweep (FxSweep) are its hosts. Each
+// restarts it at its own start (startFeeding / startWifiEvent / every fight start), so
+// this only has to decide when to ADVANCE.
 //
 // The guardian's SWARM rides the same clock, and is the one thing on it that is not a
 // dissolve: a flock is redrawn every frame it is up for the reason a sweep is, and at
@@ -313,12 +312,10 @@ Game::Cadence Game::tickFxSweep(uint32_t nowMs) {
                               ? fight_.combat.outcome() != Combat::Outcome::Ongoing
                               : fx != FxSweep::None;
     if (!sweeping) {
-        lastFxMs_ = nowMs;
+        fx_.prime(nowMs);
         return Cadence::Closed;
     }
-    if (nowMs - lastFxMs_ < static_cast<uint32_t>(kFxAnimMs)) return Cadence::Open;
-    lastFxMs_ = nowMs;
-    fxBeat_++;
+    if (!fx_.advance(nowMs)) return Cadence::Open;
     if (fx == FxSweep::Swarm) shib_.flock.step(guardianFlockMood());
     return Cadence::Fired;
 }

@@ -576,7 +576,7 @@ void Game::startFeeding(const ItemDef& d, bool fromLockout) {
     // After the FED line, so a favourite found by this bite logs as its consequence.
     markFoodEaten(d);                          // this pet's palate (STAT's FOODS grid)
     feeding_ = Feeding::started(d, before, fromLockout);
-    fxBeat_ = 0;              // the bite's own dissolve clock
+    fx_.restart();              // the bite's own dissolve clock
     rollPantrySpoilage();          // opening the bag is what disturbs the rest of it
     markSaveDirty();
     nav_ = Nav::ModalFeeding;
