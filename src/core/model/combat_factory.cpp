@@ -276,34 +276,40 @@ const CombatEnemy kWildRoster[kWildMalbeastCount] = {
      true, "coil_overrun"},
     {"Kernel Leviathan", "SPR_MALBEAST_KERNEL_LEVIATHAN", 3, 85, 13,
      {"packet_storm", "fork_bomb"}, true, "ring_zero"},
-    // Net-Sea Crossing's own pair (AreaDef::wilds). Tier 3, on the band of the pair they
-    // replace there, so naming them moved nothing on the difficulty curve.
-    {"Bloatfish", "SPR_MALBEAST_BLOATFISH", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
+    // From here on every row is the tier-3 frame (kWildBodyFrameHealth, kWildBodyFrameSpeed,
+    // 100% power, 0 DEF) reshaped zero-sum, so a pair costs what the deep pair does and
+    // differs in how it is built. The trailing pair is power% and DEF.
+    //
+    // Net-Sea Crossing (AreaDef::wilds). Adware bloats into Health and loses its feet; a
+    // free trial is quick and bites, and has nothing behind it.
+    {"Bloatfish", "SPR_MALBEAST_BLOATFISH", 3, 100, 13, {"packet_storm", "fork_bomb"}, true,
      "bundled_extras"},
-    {"Trialobite", "SPR_MALBEAST_TRIALOBITE", 3, 80, 14, {"packet_storm", "fork_bomb"},
-     true, "free_trial"},
-    // Napstorrent Moors' own pair, on the same tier-3 band as the deep pair it replaces
-    // there.
-    {"Hoaxolotl", "SPR_MALBEAST_HOAXOLOTL", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
-     "urban_legend"},
-    {"Fuzzard", "SPR_MALBEAST_FUZZARD", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
+    {"Trialobite", "SPR_MALBEAST_TRIALOBITE", 3, 82, 14, {"packet_storm", "fork_bomb"}, true,
+     "free_trial", 108, 0},
+    // Napstorrent Moors. A hoax regrows what is cut off it, so it walls; a fuzzer throws
+    // input as fast as it can and breaks easily.
+    {"Hoaxolotl", "SPR_MALBEAST_HOAXOLOTL", 3, 88, 13, {"packet_storm", "fork_bomb"}, true,
+     "urban_legend", 100, 14},
+    {"Fuzzard", "SPR_MALBEAST_FUZZARD", 3, 82, 16, {"packet_storm", "fork_bomb"}, true,
      "fuzz_test"},
-    // Castle Rapidscare's own pair, on the band of the deep pair it replaces there.
-    {"Garbagoyle", "SPR_MALBEAST_GARBAGOYLE", 3, 85, 13, {"packet_storm", "fork_bomb"},
-     true, "deallocate"},
-    {"Gatorway", "SPR_MALBEAST_GATORWAY", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
-     "ambush"},
-    // The Silk Lode's own pair, on the band of the deep pair it replaces there.
-    {"Black Window", "SPR_MALBEAST_BLACK_WINDOW", 3, 85, 13, {"packet_storm", "fork_bomb"},
-     true, "unclosable"},
-    {"Terminite", "SPR_MALBEAST_TERMINITE", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
-     "hollow_out"},
-    // The Darkweb Crawl's own pair (kDarkWebWilds), on the band of the deep pair the Dive
-    // fields.
-    {"Anonymouse", "SPR_MALBEAST_ANONYMOUSE", 3, 85, 13, {"packet_storm", "fork_bomb"}, true,
+    // Castle Rapidscare. Stone on the battlements, slow and hard to chip; an ambusher in
+    // the moat that waits and hits hard.
+    {"Garbagoyle", "SPR_MALBEAST_GARBAGOYLE", 3, 82, 13, {"packet_storm", "fork_bomb"}, true,
+     "deallocate", 100, 21},
+    {"Gatorway", "SPR_MALBEAST_GATORWAY", 3, 82, 13, {"packet_storm", "fork_bomb"}, true,
+     "ambush", 112, 0},
+    // The Silk Lode. A window that will not close soaks everything thrown at it; a
+    // termite has no shell and eats through yours.
+    {"Black Window", "SPR_MALBEAST_BLACK_WINDOW", 3, 94, 13, {"packet_storm", "fork_bomb"}, true,
+     "unclosable", 100, 7},
+    {"Terminite", "SPR_MALBEAST_TERMINITE", 3, 82, 15, {"packet_storm", "fork_bomb"}, true,
+     "hollow_out", 104, 0},
+    // The Darkweb Crawl's own pair (kDarkWebWilds), scaled to the pet like the Dive's. An
+    // untraceable thing is gone before it is hit; a weaponized vuln is all payload.
+    {"Anonymouse", "SPR_MALBEAST_ANONYMOUSE", 3, 88, 15, {"packet_storm", "fork_bomb"}, true,
      "untraceable"},
-    {"Vulnture", "SPR_MALBEAST_VULNTURE", 3, 80, 14, {"packet_storm", "fork_bomb"}, true,
-     "weaponized"},
+    {"Vulnture", "SPR_MALBEAST_VULNTURE", 3, 88, 13, {"packet_storm", "fork_bomb"}, true,
+     "weaponized", 108, 0},
 };
 
 CombatEnemy wildMalbeastAt(int rosterIdx) {
@@ -316,7 +322,7 @@ CombatEnemy wildMalbeast(int sectorTier, uint32_t variantRoll) {
     // A tier's pair is two adjacent rows of the roster: tier 1 at 0-1, tier 2 at 2-3,
     // tier 3 (and anything deeper. The clamp) at 4-5.
     if (sectorTier < 1) sectorTier = 1;
-    if (sectorTier > 3) sectorTier = 3;
+    if (sectorTier > kWildTopTier) sectorTier = kWildTopTier;
     const int base = (sectorTier - 1) * static_cast<int>(kWildMalbeastVariants);
     return kWildRoster[base + static_cast<int>(variantRoll % kWildMalbeastVariants)];
 }
@@ -374,6 +380,112 @@ int wildMalbeastIndex(const char* enemyName) {
     return -1;
 }
 
+// Spend stat points across the same four stats a pet levels, in the same order and at the
+// same per-point rates, with Health at the caller's price. Shared by the endless zones'
+// budgets and the ladder's wild bodies: two copies of this arithmetic would be two places
+// for an enemy to stop answering to the player's own curves. Signed, because a body's
+// per-encounter roll takes points away as well as adding them.
+static void spendStatBudget(CombatEnemy& e, const int (&points)[kLevelStatCount],
+                            int healthPerPoint) {
+    e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
+    // Same rating per point as the pet's Defence, so an enemy never gets a wall the
+    // player could not build.
+    e.defense += points[1] >= 0 ? levelDefenseRating(points[1]) : -levelDefenseRating(-points[1]);
+    e.speed += points[2] * kLevelSpeedPerPoint;
+    e.maxHealth += points[3] * healthPerPoint;
+}
+
+void wildBodyPoints(const CombatEnemy& e, int (&out)[kLevelStatCount]) {
+    out[0] = (e.powerMultPct - 100) / kLevelPowerPctPerPoint;
+    out[1] = e.defense / kLevelDefensePerPoint;
+    out[2] = (e.speed - kWildBodyFrameSpeed) / kLevelSpeedPerPoint;
+    out[3] = (e.maxHealth - kWildBodyFrameHealth) / kWildBodyHealthPerPoint;
+}
+
+namespace {
+// What a stat may not be rolled below: a fighter that always acts, never takes the DEF a
+// shred is meant to be the only way to, and never hits softer than the frame. A soft
+// hitter is no threat to a pet that siphons, however much Health it brings, so a body
+// pays for its lean in anything but power.
+bool bodyCanGive(const CombatEnemy& e, int stat) {
+    switch (stat) {
+        case 0: return e.powerMultPct - kLevelPowerPctPerPoint >= 100;
+        case 1: return e.defense - kLevelDefensePerPoint >= 0;
+        case 2: return e.speed - kLevelSpeedPerPoint >= 1;
+        default: return e.maxHealth - kWildBodyHealthPerPoint >= kWildBodyHealthPerPoint;
+    }
+}
+
+// One step of the shared LCG, returning the high bits the rest of combat draws from.
+uint32_t nextRoll(uint32_t& roll) {
+    roll = roll * 1664525u + 1013904223u;
+    return roll >> 16;
+}
+
+// The area's pool, a point at a time, each drawn in proportion to the stats the authored
+// body leans into: a soaker mostly grows Health, a striker mostly power. A body with no
+// lean (the frame itself) draws all four evenly.
+void spendWildPool(CombatEnemy& e, int areaIdx, uint32_t& roll) {
+    const int pool = wildBodyPool(areaIdx);
+    if (pool <= 0) return;
+    int lean[kLevelStatCount];
+    wildBodyPoints(e, lean);
+    int weight = 0;
+    for (int& w : lean) weight += (w = w > 0 ? w : 0);
+    if (weight == 0) {
+        for (int& w : lean) w = 1;
+        weight = kLevelStatCount;
+    }
+    int points[kLevelStatCount] = {};
+    for (int i = 0; i < pool; ++i) {
+        int pick = static_cast<int>(nextRoll(roll) % static_cast<uint32_t>(weight));
+        int s = 0;
+        while (pick >= lean[s]) pick -= lean[s++];
+        ++points[s];
+    }
+    spendStatBudget(e, points, kWildBodyHealthPerPoint);
+}
+
+// The reshuffle: points moved between stats, zero-sum, each stat within the band.
+void reshuffleWildBody(CombatEnemy& e, int band, uint32_t& roll) {
+    int moved[kLevelStatCount] = {};
+    // Twice the band in tries, so a roll usually reaches its edge somewhere and still
+    // lands near the authored body more often than at a corner.
+    for (int t = 0; t < band * 2; ++t) {
+        const uint32_t r = nextRoll(roll);
+        const int from = static_cast<int>(r % kLevelStatCount);
+        const int to = (from + 1 + static_cast<int>((r >> 8) % (kLevelStatCount - 1))) %
+                       kLevelStatCount;
+        if (moved[from] <= -band || moved[to] >= band || !bodyCanGive(e, from)) continue;
+        int step[kLevelStatCount] = {};
+        step[from] = -1;
+        step[to] = 1;
+        spendStatBudget(e, step, kWildBodyHealthPerPoint);
+        --moved[from];
+        ++moved[to];
+    }
+}
+}  // namespace
+
+int wildBodyBand(int areaIdx) {
+    if (areaIdx < 0) areaIdx = 0;
+    const int band = kWildBodyBandWidest - areaIdx / kWildBodyBandAreasPerPoint;
+    return band > kWildBodyBandNarrowest ? band : kWildBodyBandNarrowest;
+}
+
+int wildBodyPool(int areaIdx) {
+    if (areaIdx < 0) areaIdx = 0;
+    const int over = areaTier(areaIdx) - kWildTopTier;
+    return over > 0 ? over * kWildBodyPoolPerArea : 0;
+}
+
+void rollWildBody(CombatEnemy& e, int areaIdx, uint32_t roll) {
+    // The pool reads the lean off the authored body, so it is spent before the reshuffle
+    // moves anything.
+    spendWildPool(e, areaIdx, roll);
+    reshuffleWildBody(e, wildBodyBand(areaIdx), roll);
+}
+
 void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     if (areaIdx < 0) areaIdx = 0;
     if (sub < 0) sub = 0;
@@ -383,10 +495,10 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub) {
     // sub-area AND +kSubAreasPerArea across areas, so it climbs monotonically as the
     // player pushes deeper. It's what wildWinXp() compares against the pet's level to
     // reward punching up / tax farming shallow. The STAT bump is the "rolled level-up
-    // stats" half: the between-AREA jump already rides the tier roster in
-    // wildMalbeast() (tier-2 wilds carry far more Health), so this only scales within
-    // the sector. Health per sub (soaks longer) + speed at the deepest rungs (swings
-    // sooner). Applied for every sub (including 0, a no-op stat-wise).
+    // stats" half. Between areas it rides the tier roster (tier-2 wilds carry far more
+    // Health) and, past the top tier, the body's pool (rollWildBody). Within the sector it is Health
+    // per sub (soaks longer) + speed at the deepest rungs (swings sooner), applied for
+    // every sub (including 0, a no-op stat-wise).
     e.level = areaIdx * kSubAreasPerArea + sub;
     e.hasLevel = true;
     e.maxHealth += sub * kWildSubAreaHealthStep;
@@ -471,19 +583,6 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
     return out;
 }
 
-// Spend a budget of stat points across the same four stats a pet levels, in the same
-// order and at the same per-point rates. Shared by both endless zones: they differ in how
-// big the budget is and in nothing else, and two copies of this arithmetic would be two
-// places for an enemy to stop answering to the player's own curves.
-static void spendStatBudget(CombatEnemy& e, const int (&points)[kLevelStatCount]) {
-    e.powerMultPct += points[0] * kLevelPowerPctPerPoint;
-    // Same rating per point as the pet's Defence, so an enemy never gets a wall the
-    // player could not build.
-    e.defense += levelDefenseRating(points[1]);
-    e.speed += points[2] * kLevelSpeedPerPoint;
-    e.maxHealth += points[3] * kDeepWebHealthPerLevel;
-}
-
 void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     if (petLevel < 0) petLevel = 0;
     if (depth < 0) depth = 0;
@@ -500,7 +599,7 @@ void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
         roll = roll * 1664525u + 1013904223u;
         ++points[(roll >> 16) % kLevelStatCount];
     }
-    spendStatBudget(e, points);
+    spendStatBudget(e, points, kDeepWebHealthPerLevel);
     // Kit: the dive's deep pool at its deepest rung (no depth ladder here), the dive's
     // own wild pair, and the creature's signature. The move a win against it can teach,
     // which no other kit in the crawl carries.
@@ -568,7 +667,7 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     // never be taught.
     if (e.signatureMoveId) e.moveIds.push_back(e.signatureMoveId);
 
-    spendStatBudget(e, points);
+    spendStatBudget(e, points, kDeepWebHealthPerLevel);
 }
 
 // Both endless zones mirror their depth ramp onto Bits with the same curve and differ

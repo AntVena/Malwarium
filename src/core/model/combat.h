@@ -518,15 +518,15 @@ struct CombatEnemy {
     // a signature is the legible reason to hunt one creature over another; being generic
     // (MoveDef::line null) it drops to whatever the player hatched.
     const char* signatureMoveId = nullptr;
+    // The other two of the four stats a PET levels. Here, beside the signature, so a
+    // roster row can state a body that leans into them (kWildRoster) without spelling out
+    // the fields below. The defaults are the neutral values.
+    int powerMultPct = 100;             // attack lean, same units as Combatant's
+    int defense = 0;                    // DEF rating, same units as Combatant's
     int level = 0;                      // depth level (global sub-area rung);
                                         // set by applyWildSubAreaRamp, drives the
                                         // level-difference XP scaling (wildWinXp). 0 =
                                         // unranked (Sim dummies, bosses use their own).
-    // The other two of the four stats a PET levels, so a scaled enemy (the DeepWeb dive)
-    // can hit harder rather than leaning entirely on its move rows. The defaults are the
-    // neutral values, which is what every authored Health/speed/moves row wants.
-    int powerMultPct = 100;             // attack lean, same units as Combatant's
-    int defense = 0;                    // DEF rating, same units as Combatant's
     bool hasLevel = false;              // true once applyWildSubAreaRamp / applyDeepWebScale
                                         // has stamped `level`; Sim dummies + bosses never set
                                         // this, so the combat screen renders "???" for them
@@ -1116,7 +1116,11 @@ extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .
 // pairs an area or tier fields.
 CombatEnemy wildMalbeastAt(int rosterIdx);
 
-// A TIER's pair (1..3, deeper clamps to 3), rolled among kWildMalbeastVariants.
+// The roster's deepest tier. An area deeper than it fields a tier-3 body and grows it by
+// the body's pool (rollWildBody) instead.
+constexpr int kWildTopTier = 3;
+
+// A TIER's pair (1..kWildTopTier, deeper clamps), rolled among kWildMalbeastVariants.
 // `variantRoll` is caller-owned (the shared Game LCG) so the pick is deterministic under a
 // fixed seed; 0 picks the first variant. What the Deepweb Dive fields, and what a named
 // pair falls back to when it names none.
@@ -1148,6 +1152,25 @@ int wildMalbeastIndex(const char* enemyName);
 // Attack at every rung, the Defend from kWildAreaDefendSub. wildMalbeast() is keyed by
 // tier, and three tiers are shared across five areas, so this is where an area is itself.
 void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub);
+
+// A wild body read back as stat points over the top tier's frame (kWildBodyFrame*), in
+// spendStatBudget's order: power, defense, speed, Health. Exact for the rows authored on
+// that frame (every area pair past tier 2, and the crawl's).
+void wildBodyPoints(const CombatEnemy& e, int (&out)[kLevelStatCount]);
+
+// How many points one meeting may move into or out of any single stat in area `areaIdx`:
+// kWildBodyBandWidest at the first area, narrowing to kWildBodyBandNarrowest.
+int wildBodyBand(int areaIdx);
+
+// How many extra points a meeting in area `areaIdx` spends on the body: 0 until the
+// ladder passes the top roster tier, then kWildBodyPoolPerArea per area.
+int wildBodyPool(int areaIdx);
+
+// One meeting's body for a ladder wild, called after applyWildSubAreaRamp: the area's pool
+// drawn toward the stats the creature leans into, then a zero-sum reshuffle within the
+// area's band. The endless zones skip it: their bodies are already a random spend on the
+// pet's level. `roll` is caller-owned (the shared Game LCG).
+void rollWildBody(CombatEnemy& e, int areaIdx, uint32_t roll);
 
 // Level-difference XP scaling: a wild win's flat base scaled by how the ENEMY's level
 // compares to the PET's; kWildXpOverLevelPct% per level above it and the gentler

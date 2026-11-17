@@ -663,6 +663,8 @@ CombatEnemy Game::rollWild() {
     } else {
         wild = wildMalbeastIn(walk_.sector, rng_ >> 16);     // the area's pair
         applyWildSubAreaRamp(wild, walk_.sector, walk_.sub);  // depth ramp
+        rng_ = rng_ * 1664525u + 1013904223u;                // this meeting's body
+        rollWildBody(wild, walk_.sector, rng_);
     }
     // 'Pedia malbeast "seen": the wild roll itself is the
     // glimpse, regardless of what happens next (fight/flee/sinkhole/auto-resolve).

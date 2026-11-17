@@ -5,6 +5,8 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include <algorithm>
+
 // ARCH: the rack list shows the active pet; the record opens, holds on A (Store is the
 // active pet's only action), and backs out.
 void test_arch_list_and_record() {
@@ -140,6 +142,121 @@ void test_every_area_fields_a_resolving_pair() {
     CHECK(netSea >= 0);
     CHECK(std::strcmp(wildMalbeastIn(netSea, 0).name, "Bloatfish") == 0);
     CHECK(std::strcmp(wildMalbeastIn(netSea, 1).name, "Trialobite") == 0);
+}
+
+// --- Gate: a wild past the top tier is the frame reshaped, and grows with the ladder ---
+//
+// Every area pair from the top roster tier on (and the crawl's) is authored as the tier-3
+// frame with points moved between stats, so the pair costs what the frame does and the
+// shape is the creature. Each meeting then spends the area's pool toward that shape and
+// reshuffles within a band that narrows down the ladder.
+static int pointSum(const CombatEnemy& e) {
+    int pts[kLevelStatCount];
+    wildBodyPoints(e, pts);
+    return pts[0] + pts[1] + pts[2] + pts[3];
+}
+
+static std::vector<CombatEnemy> framedRows(std::vector<int>* areaOf) {
+    std::vector<CombatEnemy> rows;
+    for (int a = 0; a < kAreaCount; ++a)
+        if (areaTier(a) >= kWildTopTier)
+            for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
+                rows.push_back(wildMalbeastIn(a, v));
+                areaOf->push_back(a);
+            }
+    for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
+        rows.push_back(wildMalbeastOf(kDarkWebWilds, kWildTopTier, v));
+        areaOf->push_back(-1);
+    }
+    return rows;
+}
+
+void test_wild_bodies_are_the_frame_reshaped() {
+    std::vector<int> areaOf;
+    const std::vector<CombatEnemy> rows = framedRows(&areaOf);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const CombatEnemy& e = rows[i];
+        // Whole points, or the read-back would round a body into balance.
+        CHECK((e.maxHealth - kWildBodyFrameHealth) % kWildBodyHealthPerPoint == 0);
+        CHECK((e.powerMultPct - 100) % kLevelPowerPctPerPoint == 0);
+        CHECK(e.defense % kLevelDefensePerPoint == 0);
+        CHECK(pointSum(e) == 0);
+        // ...and a pair is two builds, not one build under two names.
+        if (i % kWildMalbeastVariants == 1) {
+            int a[kLevelStatCount], b[kLevelStatCount];
+            wildBodyPoints(rows[i - 1], a);
+            wildBodyPoints(e, b);
+            CHECK(!std::equal(a, a + kLevelStatCount, b));
+        }
+    }
+}
+
+void test_wild_body_pool_grows_along_the_lean() {
+    std::vector<int> areaOf;
+    const std::vector<CombatEnemy> rows = framedRows(&areaOf);
+    constexpr int kRolls = 400;
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const int a = areaOf[i];
+        if (a < 0) continue;                          // the crawl scales to the pet instead
+        int lean[kLevelStatCount];
+        wildBodyPoints(rows[i], lean);
+        int gained[kLevelStatCount] = {};
+        for (uint32_t roll = 1; roll <= kRolls; ++roll) {
+            CombatEnemy e = rows[i];
+            applyWildSubAreaRamp(e, a, 0);            // sub 0 adds no stats of its own
+            rollWildBody(e, a, roll * 2654435761u);
+            CHECK(pointSum(e) == wildBodyPool(a));    // the pool, whatever the reshuffle did
+            int now[kLevelStatCount];
+            wildBodyPoints(e, now);
+            for (int s = 0; s < kLevelStatCount; ++s) gained[s] += now[s] - lean[s];
+        }
+        // The pool lands where the body leans, so every stat it leans into gains more on
+        // average than any it gave up (which see only the reshuffle, and drift up off a
+        // floor they cannot be rolled below).
+        if (wildBodyPool(a) == 0) continue;
+        for (int s = 0; s < kLevelStatCount; ++s)
+            for (int t = 0; t < kLevelStatCount; ++t)
+                if (lean[s] > 0 && lean[t] <= 0) CHECK(gained[s] > gained[t]);
+    }
+    // ...and the pool grows down the ladder from the first area past the top tier.
+    for (int a = 1; a < kAreaCount; ++a) {
+        CHECK(wildBodyPool(a) >= wildBodyPool(a - 1));
+        if (areaTier(a) > kWildTopTier) CHECK(wildBodyPool(a) > wildBodyPool(a - 1));
+    }
+}
+
+void test_wild_body_roll_stays_in_band() {
+    for (int a = 0; a < kAreaCount; ++a) {
+        const int band = wildBodyBand(a);
+        if (a > 0) CHECK(band <= wildBodyBand(a - 1));    // loose early, focused deep
+        bool varied = false;
+        for (uint32_t v = 0; v < kWildMalbeastVariants; ++v) {
+            // The deepest rung, whose Health is off the frame's grid: the deltas are read
+            // against the unrolled body directly rather than through wildBodyPoints. The
+            // pool is read off the same way and has to account for every point gained.
+            CombatEnemy base = wildMalbeastIn(a, v);
+            applyWildSubAreaRamp(base, a, kSubAreasPerArea - 1);
+            for (uint32_t roll = 1; roll <= 200; ++roll) {
+                CombatEnemy e = base;
+                rollWildBody(e, a, roll * 2654435761u);
+                const int d[kLevelStatCount] = {
+                    (e.powerMultPct - base.powerMultPct) / kLevelPowerPctPerPoint,
+                    (e.defense - base.defense) / kLevelDefensePerPoint,
+                    (e.speed - base.speed) / kLevelSpeedPerPoint,
+                    (e.maxHealth - base.maxHealth) / kWildBodyHealthPerPoint};
+                int moved = 0;
+                for (int s = 0; s < kLevelStatCount; ++s) {
+                    CHECK(d[s] <= band + wildBodyPool(a) && -d[s] <= band);
+                    moved += d[s];
+                    if (d[s] != 0) varied = true;
+                }
+                CHECK(moved == wildBodyPool(a));      // the reshuffle itself is never a buff
+                CHECK(e.speed >= 1 && e.defense >= 0 && e.powerMultPct >= 50);
+                CHECK(e.maxHealth >= kWildBodyHealthPerPoint);
+            }
+        }
+        CHECK(varied);
+    }
 }
 
 // Every combatant the game can put on screen must name a sprite the atlas actually

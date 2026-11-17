@@ -806,6 +806,24 @@ constexpr int kWildXpDiffMaxPct    = 1024; // ceiling: cap the punching-up bonus
 // starter against wilds, so the gate is read across the starters, not pinned on it: at
 // 10 their apex runs from Phishlet's ~40% to Paypup's ~70%.
 constexpr int kWildSubAreaHealthStep = 10;   // +Health per sub-area index in the ramp
+// A wild's BODY from the top roster tier on. Every row there is this frame reshaped
+// zero-sum: points moved between the four stats at the pet's own per-point rates, with
+// Health at kWildBodyHealthPerPoint. So a soaker and a glass cannon cost the same, and the
+// shape says what the creature is (wildBodyPoints reads it back; test_combat.cpp holds
+// each row to zero).
+constexpr int kWildBodyFrameHealth = 82;
+constexpr int kWildBodyFrameSpeed = 13;
+constexpr int kWildBodyHealthPerPoint = 6;
+// Each meeting builds the body again from two draws (rollWildBody). A POOL of extra points
+// that grows per area past the top tier, which is what makes those areas harder now the
+// tier roster has stopped climbing, each point drawn toward what the body leans into. Then
+// a zero-sum RESHUFFLE of up to the band's points in or out of any stat. The band starts
+// wide and narrows down the ladder, so early wilds are loose and deep ones are focused on
+// what they are.
+constexpr int kWildBodyPoolPerArea = 2;
+constexpr int kWildBodyBandWidest = 3;
+constexpr int kWildBodyBandNarrowest = 1;
+constexpr int kWildBodyBandAreasPerPoint = 2;   // areas per point the band narrows
 // The sub-area rung from which a wild also fields its AREA's Defend (AreaDef::
 // wildDefendMoveId) on top of its Attack, which it carries at every rung. Cross-cutting
 // because it is the shared SHAPE of the ramp. An area declares which two moves are its
