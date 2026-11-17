@@ -4,9 +4,8 @@
 // the native gates call it directly so the shape is verifiable without a device.
 //
 // Shape target: web/fixtures/pedia_state.js (the design-QA sample fixture the
-// front end falls back to when there's no live device). This is a v1/first-cut
-// builder: several blocks are stubbed pending tracking that doesn't exist yet
-// (see the `// TODO(pedia-v2):` comments in pedia_state.cpp).
+// front end falls back to when there's no live device). Blocks the save does not
+// track yet are filled from what it does (the archive's records, in pedia_state.cpp).
 #pragma once
 
 #include <string>

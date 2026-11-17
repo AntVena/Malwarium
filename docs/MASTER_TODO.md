@@ -45,13 +45,12 @@ today's printed levels (wilds 0-29 by ladder position, bosses 2-7, both XP-only 
 new ones. | `tunables.h`, the area boss and roster tables, `combat_factory.cpp` | L | Decide
 the curve before any code; the dummy's comment in `tunables.h` points here. |
 
-**The wild bodies are one body from area 3 on.** Net-Sea, the Moors, the Castle and the
-Silk Lode each name their own wild pair, but every one of them fights on the same tier-3
-row (80-85 Health, speed 13-14); only the name, sprite, signature and moves differ. Give
-each area's pair a body that fits what it is (a bloated adware fish soaks, a fuzzer is
-quick and fragile) and climbs with the ladder. | `combat_factory.cpp`'s `kWildRoster`;
-each area's `wilds`. | M | Lands best with the band above, which sets what the bodies are
-measured against. |
+**The 'Pedia archive has no per-pet record.** A retired or corrupted pet's `SaveRecord`
+keeps only `{id, status, generation}`, so the web 'Pedia names it by species and its record
+line reads "generation N" where the fixture (`web/fixtures/pedia_state.js`) shows a
+nickname and "N care mistakes · N days uptime · ...". The record needs to capture those
+at CSF and retire time. | `save.h`'s `SaveRecord`, `game_lifecycle`, `pedia_state.cpp`'s
+archive block. | L | Save bump. |
 
 ### 1g. Test-infrastructure gaps
 

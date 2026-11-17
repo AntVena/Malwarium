@@ -251,7 +251,7 @@ another area's content.
 Per `src/core/content/CONTENT_STANDARD.md` rule 2: a magnitude used by every area stays a shared
 tunable, not a per-row duplicate. Boss Health/speed scaling
 (`kSubBossHealthBase/Step`/`kSubBossSpeedBase`), the mod rarity-drop-weight ladder
-(`kModRarityWeight`), and the wild sub-area ramp (`kWildSubAreaHealthStep`, `combat_factory.cpp`'s
+(`kModRarityWeight`), and the wild sub-area ramp (`kWildClimbLastPct` and the spread beside it, `combat_factory.cpp`'s
 `applyWildSubAreaRamp`) all read the SAME formula for every area, keyed only by that area's
 own `tier`/index: they live in `tunables.h`/`combat_factory.cpp` and are not duplicated per area.
 The wild-malbeast tier roster (`combat_factory.cpp`'s `wildMalbeast`) is similarly TIER-keyed, not

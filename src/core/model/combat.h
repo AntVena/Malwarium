@@ -1116,8 +1116,7 @@ extern const char* const kWildMalbeastIds[kWildMalbeastCount];  // "glitchhog" .
 // pairs an area or tier fields.
 CombatEnemy wildMalbeastAt(int rosterIdx);
 
-// The roster's deepest tier. An area deeper than it fields a tier-3 body and grows it by
-// the body's pool (rollWildBody) instead.
+// The roster's deepest tier: an area deeper than it fields a tier-3 body.
 constexpr int kWildTopTier = 3;
 
 // A TIER's pair (1..kWildTopTier, deeper clamps), rolled among kWildMalbeastVariants.
@@ -1158,19 +1157,21 @@ void applyWildSubAreaRamp(CombatEnemy& e, int areaIdx, int sub);
 // that frame (every area pair past tier 2, and the crawl's).
 void wildBodyPoints(const CombatEnemy& e, int (&out)[kLevelStatCount]);
 
-// How many points one meeting may move into or out of any single stat in area `areaIdx`:
-// kWildBodyBandWidest at the first area, narrowing to kWildBodyBandNarrowest.
-int wildBodyBand(int areaIdx);
+// How far one meeting at sub-area `sub` may move each stat's share of the body, in percent
+// either way: kWildSpreadFirstPct at an area's first sub-area, kWildSpreadStepPct less
+// at each one after, so the body homes in on its authored shape as the player goes deeper.
+int wildBodySpreadPct(int sub);
 
-// How many extra points a meeting in area `areaIdx` spends on the body: 0 until the
-// ladder passes the top roster tier, then kWildBodyPoolPerArea per area.
-int wildBodyPool(int areaIdx);
+// How much bigger every stat of a wild body is at sub-area `sub`, in percent: 0 at an
+// area's first, kWildClimbLastPct at its last, in even steps (applyWildSubAreaRamp).
+int wildBodyClimbPct(int sub);
 
-// One meeting's body for a ladder wild, called after applyWildSubAreaRamp: the area's pool
-// drawn toward the stats the creature leans into, then a zero-sum reshuffle within the
-// area's band. The endless zones skip it: their bodies are already a random spend on the
-// pet's level. `roll` is caller-owned (the shared Game LCG).
-void rollWildBody(CombatEnemy& e, int areaIdx, uint32_t roll);
+// One meeting's body for a ladder wild, called after applyWildSubAreaRamp: each stat the
+// body has is reweighted within wildBodySpreadPct(sub), then all are scaled back so the
+// body is as big as before and only distributed differently. The endless zones skip it:
+// their bodies are already a random spend on the pet's level. `roll` is caller-owned (the
+// shared Game LCG).
+void rollWildBody(CombatEnemy& e, int sub, uint32_t roll);
 
 // Level-difference XP scaling: a wild win's flat base scaled by how the ENEMY's level
 // compares to the PET's; kWildXpOverLevelPct% per level above it and the gentler

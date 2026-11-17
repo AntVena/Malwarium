@@ -312,11 +312,8 @@ std::string buildPediaStateJson(const Game& g) {
     out += "},";
 
     // --- archive[] (ARCH [RETIRED]/[CORRUPTED] records) ----------------------
-    // TODO(pedia-v2): SaveRecord only carries {id, status, generation}. There
-    // is no per-instance nickname or final-stats snapshot, so `name` falls back
-    // to the species display name and `record` is a bare generation note rather
-    // than the flavorful "N care mistakes · N days uptime · ..." the fixture
-    // shows. Real flavor text needs the record to capture more at CSF/retire time.
+    // A SaveRecord keeps only {id, status, generation}, so `name` is the species'
+    // display name and `record` names the generation.
     appendJsonString(out, "archive");
     out += ':';
     out += '[';

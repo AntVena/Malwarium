@@ -1011,8 +1011,8 @@ int g_failures = 0;
     RUN(test_pedia_evolution_achievements_leave_the_sibling_locked) \
     RUN(test_every_area_fields_a_resolving_pair) \
     RUN(test_wild_bodies_are_the_frame_reshaped) \
-    RUN(test_wild_body_pool_grows_along_the_lean) \
-    RUN(test_wild_body_roll_stays_in_band) \
+    RUN(test_wild_body_climbs_through_an_area) \
+    RUN(test_wild_body_spread_closes_through_an_area) \
     RUN(test_every_combatant_sprite_resolves)
 
 // Every gate's declaration, derived from the roster itself, so a listed gate can
