@@ -804,7 +804,7 @@ constexpr int kWildXpDiffMaxPct    = 1024; // ceiling: cap the punching-up bonus
 // which starts at kWildSpreadFirstPct and closes by kWildSpreadStepPct a sub-area
 // (wildBodySpreadPct). So the first sub-area's wilds are loose builds of the creature and
 // the last one's are bigger and close to how it was authored.
-constexpr int kWildClimbLastPct = 20;
+constexpr int kWildClimbLastPct = 40;
 constexpr int kWildSpreadFirstPct = 30;
 constexpr int kWildSpreadStepPct = 5;
 // A wild's BODY from the top roster tier on. Every row there is this frame reshaped

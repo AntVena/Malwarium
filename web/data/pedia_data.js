@@ -708,8 +708,8 @@ window.PEDIA_DATA = {
       "name": "Bloatfish",
       "tier": 3,
       "sector": "NET-SEA CROSSING",
-      "hp": 85,
-      "pow": 13,
+      "hp": 100,
+      "pow": 11,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -726,7 +726,7 @@ window.PEDIA_DATA = {
       "name": "Trialobite",
       "tier": 3,
       "sector": "NET-SEA CROSSING",
-      "hp": 80,
+      "hp": 70,
       "pow": 14,
       "moves": [
         "packet_storm",
@@ -744,8 +744,8 @@ window.PEDIA_DATA = {
       "name": "Hoaxolotl",
       "tier": 3,
       "sector": "NAPSTORRENT MOORS",
-      "hp": 85,
-      "pow": 13,
+      "hp": 88,
+      "pow": 11,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -762,8 +762,8 @@ window.PEDIA_DATA = {
       "name": "Fuzzard",
       "tier": 3,
       "sector": "NAPSTORRENT MOORS",
-      "hp": 80,
-      "pow": 14,
+      "hp": 70,
+      "pow": 16,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -780,8 +780,8 @@ window.PEDIA_DATA = {
       "name": "Garbagoyle",
       "tier": 3,
       "sector": "CASTLE RAPIDSCARE",
-      "hp": 85,
-      "pow": 13,
+      "hp": 88,
+      "pow": 12,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -798,7 +798,7 @@ window.PEDIA_DATA = {
       "name": "Gatorway",
       "tier": 3,
       "sector": "CASTLE RAPIDSCARE",
-      "hp": 80,
+      "hp": 76,
       "pow": 14,
       "moves": [
         "packet_storm",
@@ -816,8 +816,8 @@ window.PEDIA_DATA = {
       "name": "Black Window",
       "tier": 3,
       "sector": "THE SILK LODE",
-      "hp": 85,
-      "pow": 13,
+      "hp": 94,
+      "pow": 12,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -834,7 +834,7 @@ window.PEDIA_DATA = {
       "name": "Terminite",
       "tier": 3,
       "sector": "THE SILK LODE",
-      "hp": 80,
+      "hp": 70,
       "pow": 14,
       "moves": [
         "packet_storm",
@@ -852,8 +852,8 @@ window.PEDIA_DATA = {
       "name": "Anonymouse",
       "tier": 3,
       "sector": "DARKWEB CRAWL",
-      "hp": 85,
-      "pow": 13,
+      "hp": 70,
+      "pow": 15,
       "moves": [
         "packet_storm",
         "fork_bomb",
@@ -870,8 +870,8 @@ window.PEDIA_DATA = {
       "name": "Vulnture",
       "tier": 3,
       "sector": "DARKWEB CRAWL",
-      "hp": 80,
-      "pow": 14,
+      "hp": 70,
+      "pow": 13,
       "moves": [
         "packet_storm",
         "fork_bomb",
