@@ -222,9 +222,10 @@ imports and runs the codegen, so a fresh container can build and test on arrival
 the S3 tier cannot fetch its toolchain and cannot run at all. CI runs both tiers on pushes to
 `claude/**`, `ccr-*` and `main`, so a remote session's push is checked without a pull request. A
 session has no write on `refs/tags/*`, which costs nothing: releases here are cut by dispatching
-`publish.yml`, not by tagging (see *Releasing*). Pages deploys only from `main`, so **dispatch
-publish after the work lands there**. Dispatched on a branch, it fails with an empty deploy job
-and no log.
+`publish.yml`, not by tagging (see *Releasing*). A session does not push `main` itself: it pushes
+its `release v...` commit to its own branch, and `release-merge.yml` fast-forwards `main` to it
+once the gates pass there and dispatches publish. Pages deploys only from `main`; dispatched on a
+branch, publish fails with an empty deploy job and no log.
 
 Neither tier can see two things drawn on top of each other, or a panel clipping its own
 text. `./tools/screens.sh` renders every screen to one contact sheet so you can look for

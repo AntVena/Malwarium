@@ -1,0 +1,59 @@
+# Land a Claude session's release on main once the gates pass, then publish it.
+#
+# A Claude Code on the web session works on its own claude/** or ccr-* branch and is
+# not allowed to push anywhere else on its own, so the release process (CONTRIBUTING,
+# *Releasing*) would otherwise stop at the end of every piece of work to ask whether it
+# may push main. The owner has decided it should not: a session cuts the release commit
+# on its branch and pushes it there, and this workflow does the rest.
+#
+# What it merges is deliberately narrow:
+# - only after `gates` succeeded on a push to a session branch of this repository (a pull
+#   request, a fork or any other branch never reaches it, so outside contributors still
+#   go through review);
+# - only when the commit the gates checked is a release commit (`release v...`), so
+#   unfinished work pushed for CI never lands;
+# - only as a fast-forward. If main has moved, the run fails and says so; the session
+#   merges main, runs the gates again and pushes a new release commit.
+#
+# Pushes made with GITHUB_TOKEN start no workflows, so the publish is dispatched here
+# explicitly (workflow_dispatch is the exception GitHub allows).
+name: release-merge
+
+on:
+  workflow_run:
+    workflows: [gates]
+    types: [completed]
+    branches: ['claude/**', 'ccr-*']
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  merge:
+    name: fast-forward main and publish
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_commit.message, 'release v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Fast-forward main to the release
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git fetch origin "$RELEASE_SHA"
+          if ! git merge-base --is-ancestor origin/main "$RELEASE_SHA"; then
+            echo "::error::main has moved past this release's base. Merge main into the branch, run the gates and push a new release commit."
+            exit 1
+          fi
+          git push origin "$RELEASE_SHA:refs/heads/main"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish.yml --ref main --repo "${{ github.repository }}"
