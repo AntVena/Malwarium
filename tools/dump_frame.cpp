@@ -118,6 +118,8 @@
 //        settled round, "deep" plays the bracket as far forward as the pet can carry it
 //        so the field has collapsed and the tree has narrowed, "scout" holds B into the
 //        focused entrant's kit sheet, "brief" chords into the paged explainer)
+// diveprep [standing] (DIVE PREP over a bag of dive items; "standing" with standing picks
+//        and AUTO-REDIVE on, resting on DEVICE)
 // explorectl [auto] (the A+C control overlay; "auto" arms AUTO-PROGRESS with the
 //        second chord) · explore auto (the armed habitat with it running: the EXPL
 //        globe spins, so pass a `beats` count to land on a frame) · encounter [sinkhole] ·
@@ -1065,6 +1067,25 @@ int main(int argc, char** argv) {
             enterExplCat(ExplCat::Story);                // the all-CLEARED farmable list
         else
             game.startExplore(0, 2);                  // idle badge: EXPL ... FARMING
+    } else if (hasFlag(argc, argv, "diveprep")) {
+        // DIVE PREP in front of a DeepWeb Dive, the bag stocked with more dive items than
+        // the screen has rows. "standing" sets a standing pick in each slot and AUTO-REDIVE
+        // on, and rests on DEVICE so its item's effect text shows below the rows.
+        for (int a = 0; a < kExplSectors; ++a) game.liveOperator().world.sectorCleared[a] = true;
+        for (const char* id : {"backdoor_bell", "rootkit_bell", "kernel_bell",
+                               "deep_learning_module", "deep_learning_core"})
+            game.inventory().add(id, 2);
+        game.offerThenDive();
+        if (hasFlag(argc, argv, "standing")) {
+            auto tap = [&](Button b) {
+                game.onButton({b, true, false});
+                game.onButton({b, false, false});
+            };
+            tap(Button::A); tap(Button::B);                  // BELL: BEST
+            tap(Button::A); tap(Button::B); tap(Button::B);  // DEVICE: the first held
+            tap(Button::A); tap(Button::B);                  // AUTO-REDIVE: ON
+            tap(Button::A); tap(Button::A); tap(Button::A);  // wraps round to DEVICE
+        }
     } else if (hasFlag(argc, argv, "expl")) {
         // Seed a mid-ladder nested state so the EXPL list shows every tag at
         // once: area 0 has subs 1-2 CLEARED, sub 3 BOSS-READY (> FIGHT BOSS), subs 4-5

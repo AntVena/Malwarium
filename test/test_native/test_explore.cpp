@@ -1437,6 +1437,8 @@ void test_expl_nested_list_nav() {
       g.startDeepWebDive();
       enterSubmenuId(g, SubmenuId::Expl);
       g.onButton(press(Button::B));
+      CHECK(g.nav() == Game::Nav::DivePrep);
+      tapB(g);                                    // DIVE NOW
       CHECK(g.nav() == Game::Nav::Idle);
       CHECK(g.exploreActive() && g.exploreSector() == kDeepWebSector); }
 }

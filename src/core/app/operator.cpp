@@ -27,6 +27,33 @@ void saveIds(std::vector<SaveId>& out, const std::vector<const Def*>& defs) {
     for (const Def* def : defs) out.push_back(saveId(def->id));
 }
 
+void saveDivePick(const DivePick& p, uint8_t& kind, SaveId& item) {
+    kind = static_cast<uint8_t>(p.kind);
+    item = saveId(p.kind == DivePickKind::Item && p.item ? p.item->id : nullptr);
+}
+void saveDiveLoadout(const DiveLoadout& d, SaveOperator& s) {
+    s.diveAutoRedive = d.autoRedive ? 1 : 0;
+    saveDivePick(d.bell, s.diveBellKind, s.diveBellItem);
+    saveDivePick(d.device, s.diveDeviceKind, s.diveDeviceItem);
+}
+
+DivePick loadedDivePick(uint8_t kind, const SaveId& item, const ContentRegistry& reg) {
+    DivePick p;
+    if (kind == static_cast<uint8_t>(DivePickKind::Best)) {
+        p.kind = DivePickKind::Best;
+    } else if (kind == static_cast<uint8_t>(DivePickKind::Item)) {
+        if (const ItemDef* d = reg.item(item.id)) { p.kind = DivePickKind::Item; p.item = d; }
+    }
+    return p;
+}
+DiveLoadout loadedDiveLoadout(const SaveOperator& s, const ContentRegistry& reg) {
+    DiveLoadout d;
+    d.autoRedive = s.diveAutoRedive != 0;
+    d.bell = loadedDivePick(s.diveBellKind, s.diveBellItem, reg);
+    d.device = loadedDivePick(s.diveDeviceKind, s.diveDeviceItem, reg);
+    return d;
+}
+
 // One byte per area for the v8 clears, and a bitmask byte per area (bit s = sub-area s)
 // for the v13 sub-area flags. The v12 per-area boss byte is still written because the
 // stream is version-layered, derived as "any sub-area boss unlocked" so it stays
@@ -188,6 +215,7 @@ SaveOperator Operator::saved(const ContentRegistry& reg, uint32_t nowMs) const {
     // reading.
     if (const BackgroundDef* b = backgroundFor(backgroundPick)) s.backgroundPick = b->wire;
     s.autoProgress = autoProgress ? 1 : 0;
+    saveDiveLoadout(dive, s);
 
     saveWorld(world, s);
     saveIds(s.collectedItems, shelves.collectedItems);
@@ -433,6 +461,7 @@ Operator Operator::loaded(const SaveOperator& s, const SaveId (&activeMods)[kMod
     const BackgroundDef* b = backgroundByWire(s.backgroundPick);
     o.backgroundPick = b ? b->scene : SceneId::None;
     o.autoProgress = s.autoProgress != 0;
+    o.dive = loadedDiveLoadout(s, reg);
     return o;
 }
 

@@ -263,10 +263,14 @@ constexpr int kExploreControlRows = 5;
 // row says so, since a switch reading ON under a silent device lies.
 enum class ExploreSound : uint8_t { On, Muted, OffInCfg };
 
+// What the AUTO row switches: auto-progress on a ladder walk, AUTO-REDIVE on a DeepWeb Dive.
+enum class ExploreAutoRow : uint8_t { Progress, Redive };
+
 struct ExploreControlView {
     int cursor = 0;
     bool hasWarpKey = false;          // false dims the WARP row: B on it is inert
-    bool autoProgress = false;        // the mode row's ON/OFF, dual-coded by the word
+    ExploreAutoRow autoRow = ExploreAutoRow::Progress;
+    bool autoOn = false;              // the AUTO row's ON/OFF, dual-coded by the word
     ExploreSound sound = ExploreSound::On;
     // A FOOTER stat under the rows, not a row: what a wild win on the armed rung
     // actually pays as a percentage of the flat base (Game::exploreXpEfficiencyPct). It

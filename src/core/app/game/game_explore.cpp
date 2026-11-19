@@ -172,6 +172,10 @@ void Game::returnToExplore() {
     // and surface any pending Hacker Rank-up on the flavor line.
     nav_ = Nav::Idle;
     walk_.stepBeat = 0;
+    if (walk_.redive) {                     // AUTO-REDIVE: the lost dive's next one
+        walk_.redive = false;
+        startGearedDive();
+    }
     applyPendingRankUp();
     autoArmBackupShield(kRigRowContinuousBackup);   // Rig Shop h: mid-run re-arm
     maybeAutoDefrag();                              // Rig Shop i: hands-off upkeep

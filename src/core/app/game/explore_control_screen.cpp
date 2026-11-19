@@ -17,7 +17,10 @@ void ExploreControlScreen::onButton(ExploreControlHost& host, const ButtonEvent&
         case ExploreControlRow::Warp: if (host.hasWarpKey()) host.openWarpPicker(); break;
         // The two modes leave the overlay open, so the ON/OFF just changed is what the
         // player is looking at.
-        case ExploreControlRow::AutoProgress: host.toggleAutoProgress(); break;
+        case ExploreControlRow::AutoProgress:
+            if (host.inDeepWebDive()) host.toggleAutoRedive();
+            else host.toggleAutoProgress();
+            break;
         case ExploreControlRow::Sound: host.setExploreSound(!host.exploreSound()); break;
         case ExploreControlRow::Stop: host.stopWalk(); break;
     }
@@ -28,7 +31,8 @@ void ExploreControlScreen::draw(Framebuffer& fb, const ExploreControlHost& host)
     ExploreControlView v;
     v.cursor = row_;
     v.hasWarpKey = host.hasWarpKey();
-    v.autoProgress = host.autoProgress();
+    v.autoRow = host.inDeepWebDive() ? ExploreAutoRow::Redive : ExploreAutoRow::Progress;
+    v.autoOn = host.inDeepWebDive() ? host.autoRedive() : host.autoProgress();
     v.sound = !soundModeAllows(host.soundMode(), SoundTier::Event) ? ExploreSound::OffInCfg
               : host.exploreSound()                                ? ExploreSound::On
                                                                    : ExploreSound::Muted;

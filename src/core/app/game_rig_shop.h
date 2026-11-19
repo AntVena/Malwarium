@@ -262,8 +262,8 @@ inline constexpr int kLinkAggregatorCost = 131072;
 // --- Auto Dive Gear ---------------------------------------------------------
 // A three-way SERVICE (RigUpgradeDef::askable) over what happens to the held bells and
 // Deep-Learning devices when a DeepWeb Dive starts. YES arms the deepest bell and the
-// strongest device on its own (Game::autoUseDiveGear); ASK puts them on the DIVE PREP
-// screen (game_offer.cpp), which is also what a rig without the row does; NO dives with
+// strongest device on its own (Game::startGearedDive); ASK opens DIVE PREP and its standing
+// loadout (game_offer.cpp), which is also what a rig without the row does; NO dives with
 // nothing armed and asks nothing. Priced with the backup pair: the dive it serves is
 // itself endgame, unlocked once every area is cleared.
 inline constexpr int kRigAutoDiveGearCost = 8192;
@@ -485,7 +485,7 @@ inline const RigUpgradeDef kRigUpgrades[] = {
      RigEffectKind::None, 0, "BOUGHT AUTO DIVE GEAR", {{"ARMS BELLS + MODULES"}},
      /*service=*/true,
      "YES: every DeepWeb Dive starts with your deepest bell and strongest Deep-Learning "
-     "device used for you. ASK: you get the DIVE PREP list and choose. NO: you dive "
+     "device used for you. ASK: DIVE PREP's loadout chooses. NO: you dive "
      "with nothing armed. Spends the items either way it uses them.",
      /*askable=*/true},
 

@@ -140,6 +140,8 @@ void renameRetiredIds(SaveData& d, uint16_t version) {
     for (SaveId& s : d.op.speciesDiveIds) renameId(s.id, version);
     for (SaveStack& s : d.items) renameId(s.id, version);
     for (SaveId& s : d.op.collectedItems) renameId(s.id, version);
+    renameId(d.op.diveBellItem.id, version);
+    renameId(d.op.diveDeviceItem.id, version);
     for (SaveId& s : d.active.foodsEaten) renameId(s.id, version);
 }
 
@@ -672,6 +674,13 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
 
     // v77: the walk's AUTO switch.
     w.u8(op.autoProgress);
+
+    // v78: the DIVE PREP loadout.
+    w.u8(op.diveAutoRedive);
+    w.u8(op.diveBellKind);
+    writeId(w, op.diveBellItem);
+    w.u8(op.diveDeviceKind);
+    writeId(w, op.diveDeviceItem);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1410,6 +1419,17 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
 
     // v77 tail: the walk's AUTO switch. Absent in an older blob -> on.
     if (version >= 77) op.autoProgress = r.u8();
+
+    // v78 tail: the DIVE PREP loadout. Absent in an older blob -> nothing armed.
+    if (version >= 78) {
+        op.diveAutoRedive = r.u8();
+        op.diveBellKind = r.u8();
+        r.bytes(op.diveBellItem.id, kSaveIdCap);
+        op.diveBellItem.id[kSaveIdCap - 1] = '\0';
+        op.diveDeviceKind = r.u8();
+        r.bytes(op.diveDeviceItem.id, kSaveIdCap);
+        op.diveDeviceItem.id[kSaveIdCap - 1] = '\0';
+    }
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

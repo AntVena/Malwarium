@@ -2,7 +2,7 @@
 // feature that owns its own state.
 //
 // A cursor list over the habitat, the shape of combat's Exploit picker: ping the next
-// event now, spend a warp key, toggle auto-progress and the walk's sound, or stop the
+// event now, spend a warp key, toggle auto-progress (AUTO-REDIVE on a dive) and the walk's sound, or stop the
 // walk. The screen holds its cursor. The walk and its settings are the game's, reached
 // through ExploreControlHost.
 #pragma once
@@ -19,6 +19,9 @@ class ExploreControlHost {
 public:
     virtual bool hasWarpKey() const = 0;
     virtual bool autoProgress() const = 0;
+    // On a DeepWeb Dive the AUTO row is AUTO-REDIVE: a dive has no rung to progress past.
+    virtual bool inDeepWebDive() const = 0;
+    virtual bool autoRedive() const = 0;
     virtual SoundMode soundMode() const = 0;
     virtual bool exploreSound() const = 0;
     virtual int exploreXpEfficiencyPct() const = 0;
@@ -27,6 +30,7 @@ public:
     virtual void pingWalk() = 0;            // the next event now, skipping the step timer
     virtual void openWarpPicker() = 0;
     virtual void toggleAutoProgress() = 0;
+    virtual void toggleAutoRedive() = 0;
     virtual void setExploreSound(bool on) = 0;
     virtual void stopWalk() = 0;
     virtual void leaveToIdle() = 0;         // back to the habitat, the walk still running

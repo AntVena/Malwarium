@@ -524,7 +524,9 @@ void Game::finishCombat() {
             }
         } else if (fight_.combat.lostOrDrawn()) {
             // A loss ends the run: a draw is one. What rode along with it ends with it.
+            const bool redive = inDeepWebDive() && op_.dive.autoRedive;
             walk_.end();
+            walk_.redive = redive;
         }
         // Post-encounter status readout: a FOUGHT battle (win or loss, a draw
         // being a loss) parks on the BANDWIDTH/FRAG readout before the habitat. A

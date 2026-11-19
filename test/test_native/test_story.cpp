@@ -356,5 +356,6 @@ void test_expl_categories_are_the_top_level() {
     h.onButton(press(Button::B));
     CHECK(explRowIsDeepWeb(h.explScreen().row()));
     h.onButton(press(Button::B));
+    tapB(h);                                      // DIVE PREP's DIVE NOW
     CHECK(h.exploreActive() && h.exploreSector() == kDeepWebSector);
 }

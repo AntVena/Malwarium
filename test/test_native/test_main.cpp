@@ -404,6 +404,8 @@ int g_failures = 0;
     RUN(test_rig_service_info_on_hold_b)          \
     RUN(test_dive_gear_pays_a_bonus)              \
     RUN(test_dive_prep_offer)                     \
+    RUN(test_dive_loadout_stands)                 \
+    RUN(test_auto_redive)                         \
     RUN(test_auto_dive_gear_modes)                \
     RUN(test_egg_offers_the_accelerator)          \
     RUN(test_rig_disk_maintenance_thresholds)     \

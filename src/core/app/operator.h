@@ -248,6 +248,27 @@ struct OperatorArch {
     std::vector<SaveRecord> records;
 };
 
+// What a DIVE PREP slot arms as a dive starts: nothing, the best the bag holds for the slot
+// (Game::bestDiveItem), or one item. An Item pick whose item has run out arms nothing.
+enum class DivePickKind : uint8_t { None, Best, Item };
+struct DivePick {
+    DivePickKind kind = DivePickKind::None;
+    const ItemDef* item = nullptr;   // set only for Item
+};
+// The two things a dive arms ahead of its first fight: a bell's start depth and a
+// Deep-Learning device's depth multiplier. A dive uses at most one of each.
+enum class DiveSlot : uint8_t { Bell, Device };
+
+// The DIVE PREP loadout: what every DeepWeb Dive arms as it starts, and whether a lost dive
+// starts the next one by itself. How this player likes to dive, whichever pet is diving.
+struct DiveLoadout {
+    DivePick bell;
+    DivePick device;
+    bool autoRedive = false;
+    DivePick& pick(DiveSlot s) { return s == DiveSlot::Bell ? bell : device; }
+    const DivePick& pick(DiveSlot s) const { return s == DiveSlot::Bell ? bell : device; }
+};
+
 struct Operator {
     // --- Who they are on the 'net -----------------------------------------------
     char hackerTag[kHackerTagMax + 1] = "NETRUNNER_99";
@@ -282,6 +303,7 @@ struct Operator {
     // moves on by itself (Game::autoProgressStep); off, it farms where it was armed. How
     // this player likes to walk, whichever pet is doing it, so it outlives every walk.
     bool autoProgress = true;
+    DiveLoadout dive;
 
     // This record as the save keeps it, at game-ms `nowMs`. A spare mod the running
     // content no longer defines has no wire to write to and is dropped.

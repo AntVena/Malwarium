@@ -839,15 +839,18 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
             fb.fillRect(bx + 6, y - 3, boxW - 12, rowH - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, bx + 8, y, palColor(Pal::ACCENT));
         }
-        drawText(fb, bx + 20, y, kLabels[i],
+        const char* label = i == static_cast<int>(ExploreControlRow::AutoProgress) &&
+                                    v.autoRow == ExploreAutoRow::Redive
+                                ? "AUTO-REDIVE" : kLabels[i];
+        drawText(fb, bx + 20, y, label,
                  inert ? palColor(Pal::INK_DIM) : palColor(Pal::INK));
         // Right field: the mode's ON/OFF, or WARP's reason for being inert. Both are
         // WORDS: nothing here is carried by colour alone.
         const char* right = nullptr;
         Rgb565 rc = palColor(Pal::INK_DIM);
         if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
-            right = v.autoProgress ? "ON" : "OFF";
-            if (v.autoProgress) rc = palColor(Pal::ACCENT);
+            right = v.autoOn ? "ON" : "OFF";
+            if (v.autoOn) rc = palColor(Pal::ACCENT);
         } else if (i == static_cast<int>(ExploreControlRow::Sound)) {
             right = v.sound == ExploreSound::OffInCfg ? "OFF IN CFG"
                     : v.sound == ExploreSound::On     ? "ON"

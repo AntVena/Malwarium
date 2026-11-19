@@ -41,6 +41,9 @@ struct ExploreWalk {
     // On a DeepWeb dive: the dive's arming, and the Bell's start bonus once its dive began.
     DiveArming dive;
     int diveStartBonusPct = 0;
+    // Set as a dive ends in a loss with AUTO-REDIVE on: the next dive starts as the loss's
+    // readout closes (Game::returnToExplore). Read off the ended walk, so end() keeps it.
+    bool redive = false;
 
     static ExploreWalk started(int sector, int sub, int streak) {
         ExploreWalk w;

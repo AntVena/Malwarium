@@ -47,6 +47,7 @@
 #include "core/app/game/held_buttons.h"
 #include "core/app/game/home_habitat.h"
 #include "core/app/game/inline_confirm.h"
+#include "core/app/game/dive_prep_screen.h"
 #include "core/app/game/item_offer_screen.h"
 #include "core/app/game/isolation_screen.h"
 #include "core/app/game/items_menu.h"
@@ -171,7 +172,8 @@ class Game : private RigShopHost, private ItemsHost, private StatReaderHost,
              private ExploreControlHost, private WifiHost,
              private PostEncounterHost, private AwayDigestHost,
              private ShiboleetHost, private WarpPickerHost,
-             private StatPickerHost, private ItemOfferHost, private FeedingHost,
+             private StatPickerHost, private ItemOfferHost, private DivePrepHost,
+             private FeedingHost,
              private LineSelectHost, private EggPickHost, private HatchRevealHost,
              private EvolveHost, private CsfHost, private StackerHost, private HomeHost,
              private FraggerHost, private IsolationHost, private ChromaHost,
@@ -452,6 +454,7 @@ public:
     // (drawExploreScreen). Empty between events.
     const char* exploreFlavor() const { return walk_.flavor; }
     bool autoProgress() const override { return op_.autoProgress; }   // Operator::autoProgress
+    bool autoRedive() const override { return op_.dive.autoRedive; }
     // How many more wins auto-progress needs before it steps off the armed rung:
     // kExploreStreakToBoss minus the streak, floored at 0. What the walk badge counts
     // down while a CLEARED sub-area is being re-farmed (ExploreBadgeMode::AutoNext), and
@@ -477,7 +480,7 @@ public:
     static int wildWinXpBase(int sector);
     // the endless DeepWeb Dive (terminal zone) is armed. It's an explore mode
     // on the virtual kDeepWebSector: no sub-area/boss, enemies scale to the pet.
-    bool inDeepWebDive() const {
+    bool inDeepWebDive() const override {
         return walk_.active && walk_.sector == kDeepWebSector;
     }
     // ...and the DARKWEB CRAWL, the terminal one. Same idle-background walk on its own
@@ -1867,6 +1870,9 @@ public:
     void startDarkWebCrawl() override;                        // ...and the terminal one
     void returnToExplore() override;                // event/fight → back to idle, mode continues
     void offerThenDive() override;           // the EXPL list's dive row: offer, else dive now
+    // DIVE PREP's standing loadout and AUTO-REDIVE (Operator::dive).
+    const DiveLoadout& diveLoadout() const override { return op_.dive; }
+    void toggleAutoRedive() override;
     void startSubAreaBoss(int area, int sub) override;
     // Compose the idle badge label: the armed area's short (first-word) name + the
     // 1-based sub number, e.g. "CITRUS 3". Compact + collision-free.
@@ -2401,7 +2407,23 @@ private:
     void leaveItemOffer(OfferFor f, Nav backTo) override;
     void useOfferedItem(const ItemDef& d) override;
     int heldCount(const char* itemId) const override { return inventory_.count(itemId); }
-    void autoUseDiveGear();         // AUTO DIVE GEAR at YES: arm the best of each kind
+
+    // DIVE PREP (game_offer.cpp, game/dive_prep_screen.h): the standing loadout a DeepWeb
+    // Dive arms as it starts (Operator::dive), and AUTO-REDIVE. A dive started with no
+    // screen in front of it (AUTO DIVE GEAR at YES or NO, or a redive) is geared by
+    // startGearedDive.
+    void openDivePrep();
+    const ItemDef* divePickItem(DiveSlot s) const override { return resolveDivePick(op_.dive.pick(s), s); }
+    const ItemDef* resolveDivePick(const DivePick& p, DiveSlot s) const;
+    const ItemDef* bestDiveItem(DiveSlot s) const;   // deepest bell, strongest device
+    // What `e` is worth to slot `s`: a bell's start depth, a device's multiplier, else 0.
+    int diveSlotValue(const ItemEffect& e, DiveSlot s) const;
+    std::vector<const ItemDef*> diveSlotItems(DiveSlot s) const;
+    void cycleDivePick(DiveSlot s) override;
+    void diveWithLoadout() override;
+    void leaveDivePrep(Nav backTo) override;
+    void armDivePick(const DivePick& p, DiveSlot s);
+    void startGearedDive();
 
     // Hacker Rank: re-derives rank from op_.networksSeen after
     // every new unique network and arms a pending celebration on a crossing.
@@ -2992,6 +3014,7 @@ private:
     // The ITEM OFFER. pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).
     ItemOfferScreen itemOffer_;
+    DivePrepScreen divePrep_;
 
     RankUpNotice rankUp_;   // game/rank_up_notice.h; applyPendingRankUp shows it
 

@@ -206,8 +206,11 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
          nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::ItemOffer, pressScreen<&G::itemOffer_>, drawScreen<&G::itemOffer_>, nullptr,
          nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
+        {Nav::DivePrep, pressScreen<&G::divePrep_>, drawScreen<&G::divePrep_>, nullptr,
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::divePrep_>(); }},
     };
-    static_assert(std::size(kScreens) == static_cast<size_t>(Nav::ItemOffer) + 1,
+    static_assert(std::size(kScreens) == static_cast<size_t>(Nav::DivePrep) + 1,
                   "one row per Nav");
     static_assert(inNavOrder(kScreens), "rows in Nav's order");
     return kScreens[static_cast<size_t>(n)];

@@ -49,42 +49,120 @@ std::vector<const ItemDef*> Game::offerItems(OfferFor f) const {
 }
 
 void Game::offerThenDive() {
-    // AUTO DIVE GEAR decides how the dive's items are handled once it is owned: YES
-    // arms them without a screen, NO skips them without one, ASK is the DIVE PREP list.
-    // A rig without the row is asked, which is how a player meets the items at all.
+    // AUTO DIVE GEAR at YES or NO answers DIVE PREP without a screen. ASK, and a rig
+    // without the row, get DIVE PREP, which is how a player meets the loadout at all.
     if (!deepWebUnlocked()) return;
+    if (op_.rig.serviceOwned(kRigRowAutoDiveGear) &&
+        op_.rig.serviceMode(kRigRowAutoDiveGear) != ServiceMode::Ask) {
+        startGearedDive();
+        return;
+    }
+    openDivePrep();
+}
+
+void Game::startGearedDive() {
+    // AUTO DIVE GEAR's position when owned: YES arms the best of each, NO arms nothing.
+    // At ASK, or unowned, the standing loadout is the answer DIVE PREP last gave.
     if (op_.rig.serviceOwned(kRigRowAutoDiveGear)) {
         switch (op_.rig.serviceMode(kRigRowAutoDiveGear)) {
-            case ServiceMode::On:  autoUseDiveGear(); startDeepWebDive(); return;
+            case ServiceMode::On:
+                armDivePick({DivePickKind::Best, nullptr}, DiveSlot::Bell);
+                armDivePick({DivePickKind::Best, nullptr}, DiveSlot::Device);
+                startDeepWebDive();
+                return;
             case ServiceMode::Off: startDeepWebDive(); return;
             case ServiceMode::Ask: break;
         }
     }
-    openItemOffer(OfferFor::Dive);
+    diveWithLoadout();
 }
 
-void Game::autoUseDiveGear() {
-    // The deepest start a held bell would give (a Checkpoint's is this pet's record),
-    // and the strongest depth multiplier a held device would arm. A dive uses at most
-    // one of each. offerItems has already dropped anything that would be refused, such
-    // as a bell shallower than the start already armed.
-    const ItemDef* bell = nullptr;
-    const ItemDef* device = nullptr;
-    int deepest = 0, strongest = 1;
+void Game::openDivePrep() {
+    divePrep_.open(nav_);
+    nav_ = Nav::DivePrep;
+    dirty_ = true;
+}
+
+void Game::diveWithLoadout() {
+    armDivePick(op_.dive.bell, DiveSlot::Bell);
+    armDivePick(op_.dive.device, DiveSlot::Device);
+    startDeepWebDive();   // sets nav_ itself
+    dirty_ = true;
+}
+
+void Game::leaveDivePrep(Nav backTo) {
+    // Nothing has started and nothing is spent; a pick changed here still stands.
+    nav_ = backTo;
+    dirty_ = true;
+}
+
+void Game::armDivePick(const DivePick& p, DiveSlot s) {
+    if (const ItemDef* d = resolveDivePick(p, s)) useOfferedItem(*d);
+}
+
+int Game::diveSlotValue(const ItemEffect& e, DiveSlot s) const {
+    switch (s) {
+        case DiveSlot::Bell:
+            if (e.kind == ItemEffect::Kind::SetDeepWebStartDepth) return e.magnitude;
+            if (e.kind == ItemEffect::Kind::SetDeepWebStartDepthToBest) return pet_.bestDeepWebDepth;
+            return 0;
+        case DiveSlot::Device:
+            return e.kind == ItemEffect::Kind::ArmDeepWebDepthMultiplier ? e.magnitude : 0;
+    }
+    return 0;
+}
+
+std::vector<const ItemDef*> Game::diveSlotItems(DiveSlot s) const {
+    std::vector<const ItemDef*> out;
     for (const ItemDef* d : offerItems(OfferFor::Dive))
-        for (const ItemEffect& e : d->effects) {
-            const int depth = e.kind == ItemEffect::Kind::SetDeepWebStartDepth ? e.magnitude
-                            : e.kind == ItemEffect::Kind::SetDeepWebStartDepthToBest
-                                ? pet_.bestDeepWebDepth : 0;
-            if (depth > deepest) { deepest = depth; bell = d; }
-            if (e.kind == ItemEffect::Kind::ArmDeepWebDepthMultiplier &&
-                e.magnitude > strongest) {
-                strongest = e.magnitude;
-                device = d;
-            }
-        }
-    if (bell) useOfferedItem(*bell);
-    if (device) useOfferedItem(*device);
+        for (const ItemEffect& e : d->effects)
+            if (diveSlotValue(e, s) > 0) { out.push_back(d); break; }
+    return out;
+}
+
+const ItemDef* Game::bestDiveItem(DiveSlot s) const {
+    // The deepest start a held bell would give (a Checkpoint's is this pet's record), or
+    // the strongest depth multiplier a held device would arm. diveSlotItems has already
+    // dropped anything that would be refused, such as a bell shallower than the start
+    // already armed.
+    const ItemDef* best = nullptr;
+    int top = 0;
+    for (const ItemDef* d : diveSlotItems(s))
+        for (const ItemEffect& e : d->effects)
+            if (const int v = diveSlotValue(e, s); v > top) { top = v; best = d; }
+    return best;
+}
+
+const ItemDef* Game::resolveDivePick(const DivePick& p, DiveSlot s) const {
+    switch (p.kind) {
+        case DivePickKind::None: return nullptr;
+        case DivePickKind::Best: return bestDiveItem(s);
+        case DivePickKind::Item:
+            for (const ItemDef* d : diveSlotItems(s))
+                if (d == p.item) return d;
+            return nullptr;
+    }
+    return nullptr;
+}
+
+void Game::cycleDivePick(DiveSlot s) {
+    // NONE, BEST, then each item the bag holds for the slot, in inventory order. A pick
+    // whose item has run out is off the cycle, so it steps back to NONE.
+    std::vector<DivePick> cycle = {{DivePickKind::None, nullptr}, {DivePickKind::Best, nullptr}};
+    for (const ItemDef* d : diveSlotItems(s)) cycle.push_back({DivePickKind::Item, d});
+    DivePick& cur = op_.dive.pick(s);
+    size_t at = cycle.size() - 1;
+    for (size_t i = 0; i < cycle.size(); ++i)
+        if (cycle[i].kind == cur.kind && cycle[i].item == cur.item) at = i;
+    cur = cycle[(at + 1) % cycle.size()];
+    markSaveDirty();
+    dirty_ = true;
+}
+
+void Game::toggleAutoRedive() {
+    op_.dive.autoRedive = !op_.dive.autoRedive;
+    markSaveDirty();
+    dirty_ = true;
 }
 
 void Game::useOfferedItem(const ItemDef& d) {

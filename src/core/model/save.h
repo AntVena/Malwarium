@@ -352,7 +352,10 @@ constexpr int kSaveTextCap = 28;     // matches EventLog's LogEntry.text
 //     which reads as written by an older build, and no buff.
 // v77 APPEND, one tail after v76's: the walk's AUTO switch (u8), which an older build kept
 //     only for the session. Pre-v77 -> on.
-constexpr uint16_t kSaveVersion = 77;
+// v78 APPEND, one tail after v77's: the DIVE PREP loadout (Operator::dive). AUTO-REDIVE
+//     (u8), then the bell slot and the device slot, each a DivePickKind (u8) and an item
+//     id. Pre-v78 -> nothing armed and AUTO-REDIVE off.
+constexpr uint16_t kSaveVersion = 78;
 
 // The oldest blob deserialize will read, and the ONLY thing that retires a rename row
 // (see `renamedIds`). Raising it is how a device stops carrying migration weight for saves
@@ -689,6 +692,13 @@ struct SaveOperator {
     // v77: the walk's AUTO switch (Operator::autoProgress), 1 = on. Pre-v77 -> on, which is
     // where every earlier build started a session.
     uint8_t autoProgress = 1;
+    // v78: the DIVE PREP loadout (Operator::dive). A kind this build has no value for, or
+    // an Item pick whose id no item answers to, reads as nothing armed.
+    uint8_t diveAutoRedive = 0;
+    uint8_t diveBellKind = 0;
+    SaveId diveBellItem;
+    uint8_t diveDeviceKind = 0;
+    SaveId diveDeviceItem;
 
     // --- v48: the DECRYPTOGRAM board's per-quote state -----------------------
     // Two bits per QuoteDef::wire, low pair first within each byte. Player-level, like
