@@ -14,6 +14,11 @@ namespace mal {
 class Framebuffer;
 class ContentRegistry;
 class MoveLoadout;
+struct SpriteData;
+
+// A move's glyph: its own ICON_MOVE_<ID> when one is drawn, else its line's ICON_LINE_*,
+// else its family's (moveFamily, defs.h). Null only for an id the registry does not know.
+const SpriteData* moveIcon(const ContentRegistry& reg, const char* id);
 
 // Owned moves of `requiredKind` in registry order (excludes the innate default:
 // it isn't slottable). Every slot is type-locked to one

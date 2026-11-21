@@ -52,6 +52,7 @@ int g_failures = 0;
     RUN(test_palate_is_per_pet_and_counts_meals) \
     RUN(test_favourite_food_is_found_by_feeding_it) \
     RUN(test_rack_keeps_the_palate_and_the_favourite) \
+    RUN(test_every_move_has_an_icon)              \
     RUN(test_move_dex_lists_only_what_this_pet_could_learn) \
     RUN(test_stat_prose_windows_tile_the_list) \
     /* Carousel */                          \

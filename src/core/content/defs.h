@@ -1281,6 +1281,22 @@ inline const char* moveKindTag(MoveDef::Kind k) {
     return k == MoveDef::Kind::Attack ? "ATK" : "DEF";
 }
 
+// What a GENERIC move mainly does, read off its own fields, for the glyph it draws when
+// it has no art of its own (ICON_MOVE_FAMILY_*). A line move draws its line's glyph
+// instead, since "is this one of my line's moves" is the first thing a loadout asks.
+// The families are the mechanics the generic pool carries; the first one a row has
+// wins, so a move that stuns and also ticks reads as a stun. Anything else is a plain
+// hit or a plain brace.
+enum class MoveFamily : uint8_t { Strike, Guard, Stun, Dot, Drain };
+inline MoveFamily moveFamily(const MoveDef& m) {
+    if (m.lockTurns > 0) return MoveFamily::Stun;
+    if (m.dotDamage > 0) return MoveFamily::Dot;
+    if (m.stealPowerPct || m.stealDefensePct || m.stealSpeedPct || m.stealCurrentHpPct ||
+        m.stealMaxHpPct)
+        return MoveFamily::Drain;
+    return m.kind == MoveDef::Kind::Attack ? MoveFamily::Strike : MoveFamily::Guard;
+}
+
 // Line-gating (LINE_MOVE_IDENTITIES.md): a move is learnable/equippable by a pet iff
 // it is GENERIC (no line) or its line matches the pet's own line. This is the single
 // predicate every learn/drop/equip site funnels through, so a Ransomware pet can

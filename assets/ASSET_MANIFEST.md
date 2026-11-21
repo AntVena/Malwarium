@@ -935,7 +935,7 @@ below are new art.
 | `ICON_BTN_A` | Button glyph `A` | 16×16 | reusable wherever a literal button is shown | ⌫ | `/assets/_attic/ICON_BTN_A.png` |
 | `ICON_BTN_B` | Button glyph `B` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_B.png` |
 | `ICON_BTN_C` | Button glyph `C` | 16×16 | | ⌫ | `/assets/_attic/ICON_BTN_C.png` |
-| `ICON_LINE_RANSOMWARE` | Line-select row glyph: Ransomware | 20×20 | one per creature line | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
+| `ICON_LINE_RANSOMWARE` | Line-select row glyph: Ransomware | 20×20 | one per creature line; also every line move's glyph in MOVES where the move has no art of its own (`moveIcon`) | ☑ | `/assets/icons/ICON_LINE_RANSOMWARE.png` |
 | `ICON_LINE_WORM` | Line-select row glyph: Worm | 20×20 | add `ICON_LINE_*` per line as unlocked | ☑ | `/assets/icons/ICON_LINE_WORM.png` |
 | `ICON_LINE_PHISHING` | Line glyph: Phishing | 20×20 | a fish hook with its eye and a 2px shank. Also the SPOT THE PHISH cabinet glyph, the way Worm's and Ransomware's are their cabinets'. Not the FULL_LINE achievement's eyeless hook, which reads as a J outside the achievement grid | ☑ | `/assets/icons/ICON_LINE_PHISHING.png` |
 | `ICON_LINE_TROJAN` | Line glyph: Trojan | 20×20 | the knight's head its FULL_LINE achievement wears, lifted and re-centred by `tools/gen_ach_icons.py` (`line_mark`) | ☑ | `/assets/icons/ICON_LINE_TROJAN.png` |
@@ -1011,6 +1011,7 @@ recognise the blow.
 | `ICON_FIGHT_COPY` | COPY | two overlapping bodies | `ink-dim` | ☑ | `/assets/icons/ICON_FIGHT_COPY.png` |
 | `UI_MOVE_CHANNEL` | Multi-turn move wind-up | ~120×12 | `UI_GAUGE` variant; override decision cue | ☑ | engine-drawn |
 | `ICON_MOVE_SLOT` | Loadout equip-slot row glyph | 20×20 | filled / empty / locked variants | ☑ | `/assets/icons/ICON_MOVE_SLOT{,_EMPTY,_LOCKED}.png` |
+| `ICON_MOVE_FAMILY_*` | A GENERIC move's glyph where it has no `ICON_MOVE_<ID>` (`moveIcon`, `train_screen.cpp`) | 20×20 | five, one per mechanic the generic pool carries (`moveFamily`, `defs.h`): STRIKE a sword and GUARD a solid shield (the combat PWR / GRD glyphs grown), STUN two sparkles and DOT a skull (the combat STUN / DOT glyphs grown), DRAIN fangs over a drop. A LINE move draws its `ICON_LINE_*` instead, so a pet's own line reads at a glance in the loadout | ☑ | `/assets/icons/ICON_MOVE_FAMILY_{STRIKE,GUARD,STUN,DOT,DRAIN}.png` |
 | `ICON_MOVE_<ID>` | Per-move glyph | 20×20 | derived at draw time from the move id (`train_screen.cpp`), so a new move's icon needs no wiring: drop the PNG in `assets/icons/` and it lights up. MOVES falls back to text for a move with none, which is why most of the roster has no glyph yet: `ls assets/icons/ICON_MOVE_*` against `content_moves.cpp` is the real count | ☑/▨ | `/assets/icons/` |
 | `UI_DAMAGE_POPUP` | Floating damage number |. | `FONT_UI` tabular digits; **procedural, no art** | ⊘ |. |
 | `SPR_DUMMY` | Sim-Battle training-dummy sprite | ≤128×64 | wired for both tiers in `simDummy()` (`src/core/model/combat_factory.cpp`): they are the same prop, and the tier reads off the level/stat rows. A burlap sack on a crossbar and footed post, X-stitched face, a ring target on the chest; seated like a wild, so row 1 is its swing, the whole dummy tipped toward its opponent with the stand planted | ☑ | `/assets/sprites/SPR_DUMMY.png` (56×96, two rows) |

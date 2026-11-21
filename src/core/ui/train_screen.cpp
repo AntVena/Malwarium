@@ -26,16 +26,43 @@ namespace {
 // Ceiling on the move picker's list, not its fixed height: the list draws only the
 // rows it has (drawMovePicker's `visibleRows`) and scrolls past this cap, so the
 // slack goes to the description panel below instead of being reserved empty.
-constexpr int kMovePickerMaxRows = 6;
+constexpr int kMovePickerMaxRows = 5;
 
-// ICON_MOVE_<UPPER ID>: the per-move glyph naming convention (like ICON_MOD_*).
-const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
-    char name[40];
-    std::snprintf(name, sizeof(name), "ICON_MOVE_%s", id);
+const SpriteData& familyIcon(MoveFamily f) {
+    switch (f) {
+        case MoveFamily::Strike: return ASSET_ICON_MOVE_FAMILY_STRIKE;
+        case MoveFamily::Guard:  return ASSET_ICON_MOVE_FAMILY_GUARD;
+        case MoveFamily::Stun:   return ASSET_ICON_MOVE_FAMILY_STUN;
+        case MoveFamily::Dot:    return ASSET_ICON_MOVE_FAMILY_DOT;
+        case MoveFamily::Drain:  return ASSET_ICON_MOVE_FAMILY_DRAIN;
+    }
+    return ASSET_ICON_MOVE_FAMILY_STRIKE;
+}
+
+// `prefix` + `id` upper-cased: the sprite naming convention (ICON_MOVE_<ID>, ICON_LINE_<ID>).
+const SpriteData* spriteNamed(const ContentRegistry& reg, const char* prefix, const char* id) {
+    char name[48];
+    std::snprintf(name, sizeof(name), "%s%s", prefix, id);
     for (char* c = name; *c; ++c)
         if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
     return reg.sprite(name);
 }
+
+} // namespace
+
+// The move's own ICON_MOVE_<ID> where one is drawn (like ICON_MOD_*); else a line move's
+// ICON_LINE_<LINE>, so a loadout can pick its line's moves out at a glance; else the
+// generic move's family glyph. Every row carries an icon.
+const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
+    if (const SpriteData* own = spriteNamed(reg, "ICON_MOVE_", id)) return own;
+    const MoveDef* m = reg.move(id);
+    if (!m) return nullptr;
+    if (m->line)
+        if (const SpriteData* line = spriteNamed(reg, "ICON_LINE_", m->line)) return line;
+    return &familyIcon(moveFamily(*m));
+}
+
+namespace {
 
 // One equipped-move row: glyph, name, and the move's own kind tag at the right edge.
 // The tag is enforced to match the slot, so it is the fact the row cannot lose:
@@ -150,9 +177,9 @@ namespace {
 // equipped in a different slot (a mod-style SLOT n tag, mirroring drawModPicker's IN
 // SLOT n gate).
 struct MoveRowLock {
-    int elsewhere;     // the other slot holding it, or -1
-    bool inOtherSlot;
-    bool aboveStage;
+    int elsewhere = -1;   // the other slot holding it, or -1
+    bool inOtherSlot = false;
+    bool aboveStage = false;
     bool any() const { return inOtherSlot || aboveStage; }
 };
 
@@ -162,8 +189,8 @@ MoveRowLock moveRowLock(const MoveDef& m, const MoveLoadout& load, const MovePic
             !moveUnlockedAtStage(m, v.petStage)};
 }
 
-void drawMovePickerRow(Framebuffer& fb, const MoveDef& m, const MoveLoadout& load,
-                       const MovePickerView& v, int y, bool focused) {
+void drawMovePickerRow(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
+                       const MoveLoadout& load, const MovePickerView& v, int y, bool focused) {
     const MoveRowLock lock = moveRowLock(m, load, v);
     const char* equippedHere = load.equipped(v.slot);
     // Whatever the row's right column is (the reason it is locked, or the kind tag with
@@ -189,16 +216,43 @@ void drawMovePickerRow(Framebuffer& fb, const MoveDef& m, const MoveLoadout& loa
             tagCol = palColor(Pal::CALM);
         }
     }
-    drawLabelValue(fb, 22, y + 4, m.displayName,
+    // The glyph leads the row, as on the slot list, so a pet's own line's moves stand
+    // out while choosing (moveIcon).
+    if (const SpriteData* ic = moveIcon(reg, m.id)) drawSprite(fb, *ic, 0, 22, y - 2);
+    drawLabelValue(fb, 46, y + 5, m.displayName,
                    lock.any() ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
                    tag, tagCol, v.beat, scrollWhen(focused));
 }
 
 // The focused move's readout + prose, from `y` down to `bottom`.
-void drawMovePickerPanel(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& m,
-                         const MoveLoadout& load, const MovePickerView& v, int y,
-                         int bottom) {
+// What the focused move's panel holds, worked out before anything draws so the list
+// above it can give up rows when the readout needs them (drawMovePicker).
+struct MovePanel {
+    MoveRowLock lock;
+    const MoveDef* swapOut;   // the move the pick would replace, or null
+    SpecRows spec;
+    // The lead lines and the readout grid: what must fit. The prose takes what is left.
+    int fixedHeight() const {
+        return (lock.any() ? 12 : 0) + (swapOut ? 12 : 0) +
+               gridLines(kActiveW - 2 * kMargin, spec.rows, spec.count) * kLineH;
+    }
+};
+
+MovePanel movePanel(const ContentRegistry& reg, const MoveDef& m, const MoveLoadout& load,
+                    const MovePickerView& v) {
     const MoveRowLock lock = moveRowLock(m, load, v);
+    // A move that would replace a different one reads as the SWAP: what it takes out,
+    // and every number that changes as NOW -> NEXT against the move in the slot.
+    const char* equippedHere = load.equipped(v.slot);
+    const MoveDef* current = equippedHere ? reg.move(equippedHere) : nullptr;
+    const MoveDef* swapOut = current && current != &m && !lock.any() ? current : nullptr;
+    return {lock, swapOut,
+            swapOut ? specRowsVersus(specRows(*swapOut), specRows(m)) : specRows(m)};
+}
+
+void drawMovePickerPanel(Framebuffer& fb, const MoveDef& m, const MovePanel& panel, int y,
+                         int bottom) {
+    const MoveRowLock& lock = panel.lock;
     // A locked focus leads with WHY, then still shows the spec: knowing what a move
     // does is exactly what makes an evolution gate worth waiting for.
     if (lock.any()) {
@@ -210,19 +264,13 @@ void drawMovePickerPanel(Framebuffer& fb, const ContentRegistry& reg, const Move
         drawText(fb, kMargin, y, buf, palColor(Pal::ACCENT));
         y += 12;
     }
-    // A move that would replace a different one reads as the SWAP: what it takes out,
-    // and every number that changes as NOW -> NEXT against the move in the slot.
-    const char* equippedHere = load.equipped(v.slot);
-    const MoveDef* current = equippedHere ? reg.move(equippedHere) : nullptr;
-    const bool swap = current && current != &m && !lock.any();
-    if (swap) {
+    if (panel.swapOut) {
         char vs[40];
-        std::snprintf(vs, sizeof(vs), "SWAPS OUT %s", current->displayName);
+        std::snprintf(vs, sizeof(vs), "SWAPS OUT %s", panel.swapOut->displayName);
         drawText(fb, kMargin, y, vs, palColor(Pal::INK_DIM));
         y += 12;
     }
-    const SpecRows spec =
-        swap ? specRowsVersus(specRows(*current), specRows(m)) : specRows(m);
+    const SpecRows& spec = panel.spec;
     const EffectText prose = effectText(m);   // outlives the draw below
     SpecSheet sheet;
     sheet.rows = spec.rows;
@@ -240,7 +288,7 @@ void drawRemoveRow(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadou
     char lbl[40];
     if (m) std::snprintf(lbl, sizeof(lbl), "REMOVE %s", m->displayName);
     else std::snprintf(lbl, sizeof(lbl), "- SLOT EMPTY -");
-    drawTextMarquee(fb, 22, y + 4, kActiveW - kMargin - 22, lbl, palColor(Pal::INK_DIM),
+    drawTextMarquee(fb, 22, y + 5, kActiveW - kMargin - 22, lbl, palColor(Pal::INK_DIM),
                     v.beat, scrollWhen(focused));
 }
 
@@ -294,29 +342,36 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
     // kMovePickerMaxRows and scrolled past that. A pet owns 2 rows at Process and 4 at
     // Daemon, so reserving the cap unconditionally would leave 36-72px of dead screen
     // directly above a description that had nowhere to go.
-    const int rowH = 18, rowTop = 26;
-    const int visibleRows = std::min(rows, kMovePickerMaxRows);
-    const int scrollTop = listScrollTop(v.pick, rows, kMovePickerMaxRows);
+    const int rowH = 20, rowTop = 26;
+    const int panelBottom = kActiveH - kHintBandH - 2;
+    const MoveDef* focus =
+        v.pick > 0 && v.pick - 1 < static_cast<int>(owned.size()) ? owned[v.pick - 1] : nullptr;
+    const MovePanel panel = focus ? movePanel(reg, *focus, load, v) : MovePanel{};
+    // A swap's NOW -> NEXT readout can be taller than the room under a full list, and the
+    // readout is the reason the panel is there, so the list gives up rows to it (down to
+    // three, one each side of the cursor) and scrolls instead.
+    const int roomForList = panelBottom - 10 - panel.fixedHeight() - rowTop;
+    const int listCap = std::max(3, std::min(kMovePickerMaxRows, roomForList / rowH));
+    const int visibleRows = std::min(rows, listCap);
+    const int scrollTop = listScrollTop(v.pick, rows, listCap);
     for (int slot = 0; slot < visibleRows && scrollTop + slot < rows; ++slot) {
         const int i = scrollTop + slot;
         const int y = rowTop + slot * rowH;
         if (i == v.pick) {
             fb.fillRect(4, y - 1, kActiveW - 8, rowH - 2, palColor(Pal::TRACK));
-            drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
+            drawRowCursor(fb, 8, y + 5, palColor(Pal::ACCENT));
         }
         if (i == 0) drawRemoveRow(fb, reg, load, v, y, i == v.pick);
-        else drawMovePickerRow(fb, *owned[i - 1], load, v, y, i == v.pick);
+        else drawMovePickerRow(fb, reg, *owned[i - 1], load, v, y, i == v.pick);
     }
-    drawScrollbar(fb, rowTop, kMovePickerMaxRows * rowH, rows, scrollTop, kMovePickerMaxRows);
+    drawScrollbar(fb, rowTop, listCap * rowH, rows, scrollTop, listCap);
 
     // The panel sits below a divider that follows the list rather than a fixed y, and
     // leaves the bottom band for the hold-B hint.
     const int listEnd = rowTop + visibleRows * rowH;
     fb.fillRect(kMargin, listEnd + 4, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
     const int panelY = listEnd + 10;
-    if (v.pick > 0 && v.pick - 1 < static_cast<int>(owned.size()))
-        drawMovePickerPanel(fb, reg, *owned[v.pick - 1], load, v, panelY,
-                            kActiveH - kHintBandH - 2);
+    if (focus) drawMovePickerPanel(fb, *focus, panel, panelY, panelBottom);
     else
         drawRemovePanel(fb, reg, load, v, panelY);
 

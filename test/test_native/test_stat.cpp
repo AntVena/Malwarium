@@ -3,6 +3,9 @@
 // One slice of the native suite; see test_gates.h for the shared fixtures and
 // test_main.cpp for the roster that runs these. A save-vNN gate sits with the
 // feature whose field it migrates, not in a migrations pile of its own.
+#include <cctype>
+#include <cstdio>
+
 #include "test_gates.h"
 #include "core/content/items/item_families.h"
 
@@ -999,6 +1002,33 @@ void test_rack_keeps_the_palate_and_the_favourite() {
 // and the common pool after, and NOTHING it could not. A page that listed another line's
 // moves would be inviting the player to chase something the equip gate will never let
 // them hold (moveAllowedForLine).
+// Every shipped move draws a glyph. A line move without art of its own draws its line's
+// glyph, so a loadout picks its line's moves out at a glance, and a generic one draws
+// its family's, which matches the mechanic the row carries.
+void test_every_move_has_an_icon() {
+    const ContentRegistry reg = ContentRegistry::embedded();
+    int families[5] = {};
+    for (const MoveDef* m : reg.allMoves()) {
+        const SpriteData* icon = moveIcon(reg, m->id);
+        CHECK(icon != nullptr);
+        char own[48];
+        std::snprintf(own, sizeof(own), "ICON_MOVE_%s", m->id);
+        for (char* c = own; *c; ++c) *c = static_cast<char>(std::toupper(*c));
+        if (reg.sprite(own)) continue;
+        if (m->line) {
+            char line[32];
+            std::snprintf(line, sizeof(line), "ICON_LINE_%s", m->line);
+            for (char* c = line; *c; ++c) *c = static_cast<char>(std::toupper(*c));
+            CHECK(icon == reg.sprite(line));
+            continue;
+        }
+        ++families[static_cast<int>(moveFamily(*m))];
+        if (m->lockTurns > 0) CHECK(moveFamily(*m) == MoveFamily::Stun);
+        if (m->lockTurns == 0 && m->dotDamage > 0) CHECK(moveFamily(*m) == MoveFamily::Dot);
+    }
+    for (int n : families) CHECK(n > 0);   // no family glyph ships without a move under it
+}
+
 void test_move_dex_lists_only_what_this_pet_could_learn() {
     Game g{StartMode::Hatched};
     const char* line = g.pet()->line;
