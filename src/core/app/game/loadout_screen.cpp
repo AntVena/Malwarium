@@ -401,6 +401,7 @@ void LoadoutScreen::drawMovePage(Framebuffer& fb, const LoadoutHost& host) const
             MoveDetailView dv;
             dv.petStage = petStage(pet);
             dv.equippedHere = eq && std::strcmp(eq, m->id) == 0;
+            if (eq && !dv.equippedHere) dv.replaces = host.content().move(eq);
             dv.proseScroll = moveProseScroll_;
             dv.beat = host.screenBeat();
             drawMoveDetail(fb, host.content(), *m, dv);

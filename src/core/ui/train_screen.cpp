@@ -93,10 +93,12 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
     // Row columns: the slot label on the margin, the state glyph, then the content,
     // with the accepted-kind tag right-aligned opposite. The focused band starts 7px
     // above its row's baseline, so `top` keeps it clear of the header rule.
+    // The slot number is a single digit under the MOVES header, so the label column is
+    // one cell wide and the move name gets the room "SLOT n" used to take.
     const int rowH = 20, top = kRowTop + 8;
     constexpr int kSlotLabelX = 20;   // clear of the row cursor at the margin
-    constexpr int kSlotGlyphX = 72;
-    constexpr int kSlotTextX = 96;
+    constexpr int kSlotGlyphX = 36;
+    constexpr int kSlotTextX = 60;
     for (int i = 0; i < kMaxMoveSlots; ++i) {
         const int y = top + i * rowH;
         const bool unlockedSlot = i < unlocked;
@@ -104,19 +106,13 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
             fb.fillRect(4, y - 7, kActiveW - 8, rowH - 4, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y - 3, palColor(Pal::ACCENT));
         }
-        char slotLbl[10];
-        std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
+        char slotLbl[4];
+        std::snprintf(slotLbl, sizeof(slotLbl), "%d", i + 1);
         drawText(fb, kSlotLabelX, y, slotLbl, palColor(Pal::INK_DIM));
         if (!unlockedSlot) {
             // Locked slot: the path-ahead affordance. The glyph says "shut" and the
             // line says what opens it: "AT SCRIPT" alone read as a property of the
             // slot rather than as the way out of it.
-            //
-            // It is "UNLOCK:" and not "UNLOCK AT" because of the budget: the line
-            // starts at kSlotTextX and a locked row draws no kind tag, so it owns
-            // everything to the right margin; 15 cells at the mono advance. Slot 0
-            // is never locked (kMoveSlotsByStage starts at 1), so the longest stage
-            // that can appear here is PROCESS, and "UNLOCK AT PROCESS" is 17.
             drawSprite(fb, ASSET_ICON_MOVE_SLOT_LOCKED, 0, kSlotGlyphX, y - 6);
             char lk[28];
             std::snprintf(lk, sizeof(lk), "UNLOCK: %s",
@@ -235,6 +231,31 @@ void drawMovePickerPanel(Framebuffer& fb, const ContentRegistry& reg, const Move
     drawSpecSheet(fb, kMargin, y, kActiveW - 2 * kMargin, bottom, sheet);
 }
 
+// Row 0: take the slot's move out. It names the move it removes, since "unequip" alone
+// leaves the player to remember what is in the slot they opened.
+void drawRemoveRow(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                   const MovePickerView& v, int y, bool focused) {
+    const char* id = load.equipped(v.slot);
+    const MoveDef* m = id ? reg.move(id) : nullptr;
+    char lbl[40];
+    if (m) std::snprintf(lbl, sizeof(lbl), "REMOVE %s", m->displayName);
+    else std::snprintf(lbl, sizeof(lbl), "- SLOT EMPTY -");
+    drawTextMarquee(fb, 22, y + 4, kActiveW - kMargin - 22, lbl, palColor(Pal::INK_DIM),
+                    v.beat, scrollWhen(focused));
+}
+
+// What removing does: an empty slot fights with the innate default.
+void drawRemovePanel(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout& load,
+                     const MovePickerView& v, int y) {
+    const MoveDef* def = reg.move(load.defaultMove());
+    char fallback[40];
+    std::snprintf(fallback, sizeof(fallback), "EMPTY SLOT USES %s",
+                  def ? def->displayName : "QUICK JAB");
+    drawText(fb, kMargin, y, load.equipped(v.slot) ? "REMOVE THE EQUIPPED MOVE." : "NOTHING EQUIPPED.",
+             palColor(Pal::INK));
+    drawText(fb, kMargin, y + 12, fallback, palColor(Pal::INK_DIM));
+}
+
 void drawMoveReplaceConfirm(Framebuffer& fb, const ContentRegistry& reg,
                             const MovePickerView& v) {
     fb.fillRect(4, 96, kActiveW - 8, 44, palColor(Pal::TRACK));
@@ -283,7 +304,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
             fb.fillRect(4, y - 1, kActiveW - 8, rowH - 2, palColor(Pal::TRACK));
             drawRowCursor(fb, 8, y + 4, palColor(Pal::ACCENT));
         }
-        if (i == 0) drawText(fb, 22, y + 4, "- EMPTY (UNEQUIP) -", palColor(Pal::INK_DIM));
+        if (i == 0) drawRemoveRow(fb, reg, load, v, y, i == v.pick);
         else drawMovePickerRow(fb, *owned[i - 1], load, v, y, i == v.pick);
     }
     drawScrollbar(fb, rowTop, kMovePickerMaxRows * rowH, rows, scrollTop, kMovePickerMaxRows);
@@ -297,7 +318,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
         drawMovePickerPanel(fb, reg, *owned[v.pick - 1], load, v, panelY,
                             kActiveH - kHintBandH - 2);
     else
-        drawText(fb, kMargin, panelY, "REMOVE THE EQUIPPED MOVE.", palColor(Pal::INK));
+        drawRemovePanel(fb, reg, load, v, panelY);
 
     if (v.confirmActive) drawMoveReplaceConfirm(fb, reg, v);
     drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
@@ -361,8 +382,15 @@ void drawMoveDetail(Framebuffer& fb, const ContentRegistry& reg, const MoveDef& 
     } else if (equippedHere) {
         drawText(fb, kMargin, actionY, "EQUIPPED", palColor(Pal::CALM));
     } else {
+        // The verb names what it swaps out, so the page answers "instead of what".
+        char act[48];
+        if (v.replaces)
+            std::snprintf(act, sizeof(act), "EQUIP - SWAPS OUT %s", v.replaces->displayName);
+        else
+            std::snprintf(act, sizeof(act), "EQUIP");
         drawRowCursor(fb, kMargin, actionY, palColor(Pal::ACCENT));
-        drawText(fb, kMargin + 10, actionY, "EQUIP", palColor(Pal::ACCENT));
+        drawTextMarquee(fb, kMargin + 10, actionY, kActiveW - 2 * kMargin - 10, act,
+                        palColor(Pal::ACCENT), v.beat, scrollWhen(true));
     }
 
     // A already means "advance", so paging the prose with it needs no exception to the

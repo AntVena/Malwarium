@@ -19,7 +19,9 @@
 //             that flow prose: pair it with "fullkit" and a Daemon for the longest lists.
 //             TIERS is the investment ladder, and the pet the preset levels has real
 //             points in it, so the page shows held rungs and not just locked ones)
+//        modspare (with mods: one spare any pet can fit, for the picker's swap readout)
 //        fullkit (every unlocked move slot and every mod slot equipped)
+//        spares (teach every move the pet's line can hold at its stage: a swap to show)
 //        pantry (one of EVERY item in the bag. The whole icon set in a list, and the
 //             deepest the combat picker's ITEMS band gets)
 //        shop | modshop [full] (an area's two storefronts. The ITEM shop and the MOD
@@ -96,7 +98,7 @@
 //             row:<n> walks the cursor down it; daemons stocks the SELL counter, and
 //             offer:<n> cycles a sale sheet to its nth offer. Pet:wire_heir makes the
 //             second one a twin, so REIMAGE reads open)
-//        train [trainpicker] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
+//        train [slot:<n>] [trainpicker [focus]|movedetail] · combat [override [band:<n>]] [stats] [kit] (the raw dev hook;
 //             stats opens the panel's STATE page, kit its second) ·
 //        simbattle [fight [stats] [anim:<n>]] (the REAL entry. Buffs carried in from
 //             outside, e.g. armbuffs simbattle fight stats. "anim:<n>" runs the fight n
@@ -234,6 +236,14 @@ static bool hasFlag(int argc, char** argv, const char* f) {
     for (int i = 3; i < argc; ++i)
         if (std::strcmp(argv[i], f) == 0) return true;
     return false;
+}
+
+// The number after `prefix` ("slot:3" -> 3), or `def` when no argument carries it.
+static int intFlag(int argc, char** argv, const char* prefix, int def) {
+    const size_t n = std::strlen(prefix);
+    for (int i = 3; i < argc; ++i)
+        if (std::strncmp(argv[i], prefix, n) == 0) return std::atoi(argv[i] + n);
+    return def;
 }
 
 // The active canvas composed into the full panel and written out as binary PPM: the
@@ -452,6 +462,15 @@ int main(int argc, char** argv) {
     // "fullkit" equips every unlocked move slot and every mod slot: pair it with a
     // Daemon (pet:wire_heir) for the deepest LOADOUT page the game can produce.
     if (hasFlag(argc, argv, "fullkit")) game.fillLoadout();
+    // "spares" teaches the pet every move its line can hold that is unlocked at its stage,
+    // after fullkit has filled the slots, so a move picker has a swap to show.
+    if (hasFlag(argc, argv, "spares") && game.livePet().creature) {
+        Pet& pet = game.livePet();
+        for (const MoveDef* m : game.content().allMoves())
+            if (moveAllowedForLine(*m, pet.creature->line) &&
+                moveUnlockedAtStage(*m, pet.creature->stage))
+                pet.moves.grant(m->id);
+    }
     // "pantry" puts one of EVERY item in the bag: the whole ICON_ITEM_* set in ITEMS
     // list context, and the deepest the combat Exploit picker's ITEMS band can get.
     if (hasFlag(argc, argv, "pantry"))
@@ -907,9 +926,20 @@ int main(int argc, char** argv) {
         // grant a tier-3 spare (equip gate ~L15-25) so the picker shows a
         // LOCKED row for a level-0 pet (the rolled equip-level gate, grayscale-safe).
         if (hasFlag(argc, argv, "modlocked")) game.grantMod("overclock_chip");
+        // "modspare" grants a spare any pet can fit, so the picker has a swap to show.
+        if (hasFlag(argc, argv, "modspare"))
+            for (const ModDef* d : game.content().allMods())
+                if (modEquipLevel(*d) == 0 && !d->requiresLine &&
+                    game.livePet().mods.slotOf(d->id) < 0) {
+                    game.grantMod(d->id);
+                    break;
+                }
         enterSlot(SubmenuId::Mods);
         game.onButton({Button::B, true, false});     // LOADOUT hub row 0 -> the mod slots
-        if (hasFlag(argc, argv, "picker")) game.onButton({Button::B, true, false});
+        if (hasFlag(argc, argv, "picker")) {
+            game.onButton({Button::B, true, false});
+            if (hasFlag(argc, argv, "focus")) tap(Button::A);   // the row after the first
+        }
         if (hasFlag(argc, argv, "detail")) {         // mod detail (a ONE-SHOT)
             game.onButton({Button::A, true, false}); // slot 1 -> slot 2
             game.onButton({Button::A, true, false}); // slot 2 -> slot 3 (empty)
@@ -976,15 +1006,16 @@ int main(int argc, char** argv) {
         enterSlot(SubmenuId::Mods);                  // the LOADOUT hub itself
     } else if (hasFlag(argc, argv, "train")) {
         enterSlot(SubmenuId::Mods);
-        game.onButton({Button::A, true, false});     // hub -> MOVES
-        game.onButton({Button::B, true, false});     // -> the move slot list
-        // trainpicker → open the focused slot's move picker (L3); + focus → step the
-        // cursor onto a real move row (row 0 is unequip); movedetail → drill into that
-        // move's own entry (L4).
+        tap(Button::A);                              // hub -> MOVES
+        tap(Button::B);                              // -> the move slot list
+        // slot:<n> → step the slot list's cursor n times first; trainpicker → open the
+        // focused slot's move picker (L3); + focus → step the cursor onto a real move row
+        // (row 0 is unequip); movedetail → drill into that move's own entry (L4).
+        for (int i = 0, n = intFlag(argc, argv, "slot:", 0); i < n; ++i) tap(Button::A);
         if (hasFlag(argc, argv, "trainpicker") || hasFlag(argc, argv, "movedetail")) {
-            game.onButton({Button::B, true, false});   // slot list -> the picker
+            tap(Button::B);                            // slot list -> the picker (B is a tap/hold)
             if (hasFlag(argc, argv, "focus") || hasFlag(argc, argv, "movedetail"))
-                game.onButton({Button::A, true, false});
+                tap(Button::A);
             // The picker's B is a tap/hold pair (hold reveals the full roster), so the
             // drill-in needs the release edge to read as a tap.
             if (hasFlag(argc, argv, "movedetail")) tap(Button::B);

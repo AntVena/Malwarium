@@ -82,6 +82,7 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
 struct MoveDetailView {
     Stage petStage = Stage::BootSector;
     bool equippedHere = false;       // the move already in the slot: no EQUIP action
+    const MoveDef* replaces = nullptr;   // the move EQUIP would take out of the slot
     // The first prose line to show; the caller advances it (Game::moveProseScroll_) and
     // wraps at moveProseLines() below.
     int proseScroll = 0;

@@ -200,6 +200,12 @@ void drawModPickerRow(Framebuffer& fb, const ModDef& m, const ModHoldings& load,
         else std::snprintf(rl, sizeof(rl), "L%d", modEquipLevel(m));
         tag = rl;
         tagCol = palColor(Pal::HOT);
+    } else if (elsewhere == v.slot) {
+        // The mod already in this slot, marked the way the MOVES picker marks its own:
+        // ON in front of the tag, one right-hand column.
+        std::snprintf(rl, sizeof(rl), "ON %s", m.effectTag ? m.effectTag : "");
+        tag = rl;
+        tagCol = palColor(Pal::CALM);
     }
     drawLabelValue(fb, 22, y + 4, name,
                    locked ? palColor(Pal::INK_DIM) : palColor(Pal::INK),
@@ -208,9 +214,22 @@ void drawModPickerRow(Framebuffer& fb, const ModDef& m, const ModHoldings& load,
 
 // The focused mod's spec panel from `y`, plus its equip gate on its own row at the
 // bottom of the panel band, above the hint band rather than into it.
-void drawModPickerPanel(Framebuffer& fb, const ModDef& fm, const ModHoldings& load,
-                        const ModPickerView& v, int y) {
-    const SpecRows spec = specRows(fm);
+void drawModPickerPanel(Framebuffer& fb, const ContentRegistry& reg, const ModDef& fm,
+                        const ModHoldings& load, const ModPickerView& v, int y) {
+    // A mod that would replace a different one reads as the swap: what it discards (an
+    // install is permanent) and every number that changes as NOW -> NEXT, the same
+    // shape the MOVES picker draws.
+    const char* inSlot = load.slots.equipped(v.slot);
+    const ModDef* current = inSlot ? reg.mod(inSlot) : nullptr;
+    const bool swap = current && current != &fm &&
+                      !modLockedFor(fm, v.petLevel, v.petLine, load, v.slot);
+    if (swap) {
+        char out[40];
+        std::snprintf(out, sizeof(out), "DISCARDS %s", current->displayName);
+        drawText(fb, kMargin, y, out, palColor(Pal::INK_DIM));
+        y += 12;
+    }
+    const SpecRows spec = swap ? specRowsVersus(specRows(*current), specRows(fm)) : specRows(fm);
     const EffectText prose = effectText(fm);   // must outlive the draw
     SpecSheet sheet;
     sheet.rows = spec.rows;
@@ -306,7 +325,7 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const ModHolding
     const int listEnd = kRowTop + visibleRows * rowH;
     fb.fillRect(kMargin, listEnd + 4, kActiveW - 2 * kMargin, 1, palColor(Pal::TRACK));
     if (rows > 0 && v.pick >= 0 && v.pick < rows)
-        drawModPickerPanel(fb, *owned[v.pick], load, v, listEnd + 10);
+        drawModPickerPanel(fb, reg, *owned[v.pick], load, v, listEnd + 10);
 
     if (v.confirmActive) drawModReplaceConfirm(fb, reg, load, v);
     drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
@@ -369,9 +388,6 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const ModHolding
     const bool levelLocked = !v.equippedHere && v.reqLevel > v.petLevel;
     const bool wrongLine = !v.equippedHere && lineLocked(&mod, v.petLine);
     const bool locked = levelLocked || wrongLine || inOtherSlot;
-    char slotLbl[24];
-    std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", v.slot + 1);
-    drawText(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM));
     // Held spares against the cap that bounds them. ITEMS says "HAVE xN" because an
     // inventory stack has no ceiling; a mod pool does, and a player at it needs to see
     // that the number stopped climbing on purpose: that is the MOD STORAGE row's whole
@@ -379,8 +395,21 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const ModHolding
     char have[16];
     const int held = load.pool.countOf(mod.id);
     std::snprintf(have, sizeof(have), "HAVE %d/%d", held, v.storageCap);
-    drawText(fb, kActiveW - kMargin - textWidth(have), slotY, have,
-             held >= v.storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM));
+    // The slot line names what is in the slot now, since that is what EQUIP discards.
+    // HAVE owns the right end and the slot line yields and scrolls.
+    const char* inSlot = v.equippedHere ? nullptr : load.slots.equipped(v.slot);
+    const ModDef* current = inSlot ? reg.mod(inSlot) : nullptr;
+    char slotLbl[48];
+    if (current)
+        std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d: %s %s", v.slot + 1,
+                      current->displayName, current->effectTag ? current->effectTag : "");
+    else if (v.equippedHere)
+        std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", v.slot + 1);
+    else
+        std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d: EMPTY", v.slot + 1);
+    drawLabelValue(fb, kMargin, slotY, slotLbl, palColor(Pal::INK_DIM), have,
+                   held >= v.storageCap ? palColor(Pal::WARN) : palColor(Pal::INK_DIM),
+                   v.beat, Overflow::Scroll);
     char req[24];
     std::snprintf(req, sizeof(req), "REQUIRES LVL %d", v.reqLevel);
     int y = slotY + kDetailFooterPitch;
