@@ -5,10 +5,8 @@
 // new egg is not retold the premise.
 #include "core/app/game.h"
 
-#include <algorithm>
 #include <cstdio>
 
-#include "tunables.h"
 #include "core/content/story.h"
 #include "core/ui/prose_page.h"   // ProseRow
 

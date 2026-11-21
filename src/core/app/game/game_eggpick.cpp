@@ -1,14 +1,7 @@
 #include "core/app/game.h"
 
-#include <algorithm>
 #include <cstdio>
 
-#include "core/render/canvas.h"
-#include "core/render/font.h"
-#include "core/render/framebuffer.h"
-#include "core/render/palette.h"
-#include "core/render/sprite.h"
-#include "generated/assets.h"
 #include "core/model/lcg.h"
 
 // game_eggpick.cpp: the Clutch Pick, the Phishing line's hatch minigame.

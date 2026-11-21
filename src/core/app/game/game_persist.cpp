@@ -5,8 +5,6 @@
 
 #include "tunables.h"
 #include "version.h"
-#include "core/content/content_backgrounds.h"
-#include "core/content/content_tournament.h"
 
 namespace mal {
 

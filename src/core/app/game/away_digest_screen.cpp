@@ -3,7 +3,6 @@
 #include <cstdio>
 
 #include "core/content/defs.h"   // CreatureDef::displayName
-#include "core/render/canvas.h"
 #include "core/render/framebuffer.h"
 #include "core/render/font.h"
 #include "core/render/palette.h"

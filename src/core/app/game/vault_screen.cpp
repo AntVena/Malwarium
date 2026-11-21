@@ -7,7 +7,6 @@
 #include "core/app/game_internal.h"
 #include "core/content/registry.h"
 #include "core/model/inventory.h"
-#include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/palette.h"
 #include "core/ui/items_screen.h"   // itemIcon

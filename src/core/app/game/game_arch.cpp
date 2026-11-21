@@ -12,7 +12,6 @@
 
 #include <cstring>
 
-#include "tunables.h"
 #include "core/ui/arch_screen.h"   // ArchSaleSheet
 #include "core/ui/carousel.h"
 

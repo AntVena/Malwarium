@@ -5,7 +5,6 @@
 #include "core/app/game_internal.h"   // kMergeRecipes, kMergeVisibleRows
 #include "core/content/registry.h"
 #include "core/model/inventory.h"
-#include "core/render/canvas.h"
 #include "core/render/font.h"
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"

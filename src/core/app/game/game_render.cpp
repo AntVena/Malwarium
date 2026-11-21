@@ -1,13 +1,11 @@
 #include "core/app/game.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <cstring>
 
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"   // area(): the place a walk is happening in
 #include "core/content/content_homes.h"     // sceneForCreature, where a pet lives
-#include "core/content/content_tables.h"
 #include "core/render/camo.h"
 #include "core/render/canvas.h"
 #include "core/render/font.h"

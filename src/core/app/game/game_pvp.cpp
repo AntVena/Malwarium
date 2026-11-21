@@ -6,14 +6,6 @@
 
 #include "tunables.h"
 #include "core/model/pvp_battle.h"
-#include "core/render/canvas.h"
-#include "core/render/font.h"
-#include "core/render/palette.h"
-#include "core/render/sprite.h"
-#include "core/ui/layout.h"
-#include "core/ui/theme.h"
-#include "core/ui/widgets.h"
-#include "generated/assets.h"
 #include "core/model/lcg.h"
 
 // game_pvp.cpp (the Hacker-face LINK slot): 1v1 duels with an operator standing in

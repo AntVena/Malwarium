@@ -1,5 +1,4 @@
 #include "core/app/game.h"
-#include "core/app/game_internal.h"
 
 #include <cstdio>
 

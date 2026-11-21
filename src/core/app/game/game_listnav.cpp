@@ -17,13 +17,7 @@
 #include "core/app/game.h"
 #include "core/app/game_internal.h"
 
-#include "tunables.h"
-#include "core/ui/cfg_screen.h"
-#include "core/ui/expl_screen.h"
-#include "core/ui/layout.h"
-#include "core/ui/mods_screen.h"
 #include "core/ui/stat_pages.h"   // StatSources: what the STAT index steps over
-#include "core/ui/train_screen.h"
 
 namespace mal {
 

@@ -6,8 +6,6 @@
 #include "tunables.h"
 #include "version.h"
 #include "core/render/canvas.h"   // kHeartbeatMs/kCombatAnimMs: the tick cadences
-#include "core/render/camo.h"
-#include "core/render/sprite.h"
 #include "core/ui/combat_screen.h"
 #include "core/ui/items_screen.h"
 #include "core/ui/stat_pages.h"    // StatSources: what the STAT index opens over

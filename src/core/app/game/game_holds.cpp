@@ -5,7 +5,7 @@
 // the way the list gestures go to listTarget's (game_listnav.cpp), so a B armed on one
 // screen can never resolve on another.
 #include "core/app/game.h"
-#include "core/app/game_internal.h"
+#include "core/app/game_internal.h"   // screenHold<>: its template body, instantiated here
 
 #include "core/ui/stat_pages.h"   // StatSources: what the STAT reader's index opens over
 

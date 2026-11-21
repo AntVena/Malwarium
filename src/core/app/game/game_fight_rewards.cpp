@@ -7,8 +7,6 @@
 
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"   // kAreaCount, kSubAreasPerArea
-#include "core/content/areas/darkweb_crawl/area.h"
-#include "core/app/game_internal.h"
 #include "core/model/lcg.h"
 
 namespace mal {

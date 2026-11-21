@@ -170,7 +170,7 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `tunables.h`. Sweep: `grep -nE 'constexpr .* k\w+ *=' include/tunables.h` and flag any whose
 comment names ONE item/mod/move/creature. Inline it onto that row. Verify claims against code.
 
-### Unused-include sweep. Last run: 2026-11-11
+### Unused-include sweep. Last run: 2026-11-21
 The clangd "included header X is not used directly" warnings are noise to read past. The
 `game_*.cpp` units collect the most, because a new unit copies its sibling's include block.
 
@@ -194,8 +194,10 @@ the `src/` entries of `build/compile_commands.json` runs the same analysis, whic
 session without clangd (a remote one) reaches for. Its blind spot is the one `game.h` creates:
 a type `game.h` only forward-declares, used through a `Game` member that returns it by value
 (`statSources()`'s `StatSources`), is instantiated in the calling unit without the
-unit ever naming it, so the scan calls the header unused and the build disagrees. Put the
-reason on the include line when the build says keep, or the next run strips it again.
+unit ever naming it, so the scan calls the header unused and the build disagrees. A
+template whose body sits in `game_internal.h` (`screenHold<>`) is the same blind spot at
+link time. Put the reason on the include line when the build says keep, or the next run
+strips it again.
 
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative. Don't

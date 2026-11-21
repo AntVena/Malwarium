@@ -15,7 +15,6 @@
 #include "core/render/sprite.h"
 #include "core/ui/carousel.h"
 #include "core/ui/layout.h"
-#include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
 

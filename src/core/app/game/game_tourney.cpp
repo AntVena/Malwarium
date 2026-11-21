@@ -4,13 +4,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "tunables.h"
-#include "core/content/content_crews.h"
 #include "core/content/content_tournament.h"
 #include "core/model/tournament.h"
 #include "core/ui/prose_page.h"
-#include "core/model/pvp_battle.h"
-#include "core/app/game_internal.h"
 #include "core/model/lcg.h"
 
 // game_tourney.cpp (ROCK THE DOCK): eight operators, one bracket, in The Pirate Bayou.

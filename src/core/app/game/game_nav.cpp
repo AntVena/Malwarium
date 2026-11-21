@@ -12,7 +12,6 @@
 // on a dwell rather than an edge) is Game::tickHeldGestures in game_core.cpp.
 #include "core/app/game.h"
 
-#include "tunables.h"
 #include "core/ui/carousel.h"     // carouselSlots: the slot table the cursor walks
 
 namespace mal {
@@ -227,9 +226,8 @@ bool Game::slotLocked(SubmenuId id) const {
         case SubmenuId::Mods:
         case SubmenuId::Expl:
             // A Boot-Sector egg cannot fight, so it cannot explore, equip or
-            // maintain. The old walk-to-accelerate-hatch path retires with the Walk
-            // screen; the egg still hatches on its incubation clock + the Wi-Fi
-            // network accel. GAMES is locked with them: the arcade pays a pet in
+            // maintain; it hatches on its incubation clock and the Wi-Fi network
+            // accel. GAMES is locked with them: the arcade pays a pet in
             // Bits and Happiness, and an egg is neither playing nor able to bank
             // either. Its own hatch minigame reaches it from the habitat, not from
             // here.
