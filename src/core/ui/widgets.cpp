@@ -36,18 +36,28 @@ void drawTextMarquee(Framebuffer& fb, int x, int y, int w, const char* s,
     const int overflow = textWidth(s) - w;
     if (overflow <= 0) { drawText(fb, x, y, s, color, 1, face); return; }
 
-    int offset = 0;
-    if (mode == Overflow::Scroll) {
-        // Beats, not milliseconds: this rides the same heartbeat as the pet's
-        // wander and the carousel's spin, so the whole screen moves on one clock.
-        // The two rates are in widgets.h, because a caller that must hold a line on
-        // screen until it has finished travelling has to read them (marqueeCycleBeats).
-        const int travel = (overflow + kMarqueePxPerBeat - 1) / kMarqueePxPerBeat;
-        const int phase = beat % (2 * kMarqueeHoldBeats + travel);
-        if (phase >= kMarqueeHoldBeats)
-            offset = (phase - kMarqueeHoldBeats) * kMarqueePxPerBeat;
-        if (offset > overflow) offset = overflow;   // the hold at the tail
+    if (mode == Overflow::Clip) {
+        // Whole characters up to the last cell, then the ellipsis in that cell.
+        const int shown = (w / kFontAdvance - 1) * kFontAdvance;
+        if (shown > 0) {
+            fb.setClip(x, y, shown, kFontH);
+            drawText(fb, x, y, s, color, 1, face);
+            fb.clearClip();
+        }
+        const int dotsX = x + (shown > 0 ? shown : 0) + 1;
+        for (int i = 0; i < 3; ++i) fb.fillRect(dotsX + i * 2, y + kFontH - 1, 1, 1, color);
+        return;
     }
+
+    // Beats, not milliseconds: this rides the same heartbeat as the pet's wander and
+    // the carousel's spin, so the whole screen moves on one clock. The two rates are in
+    // widgets.h, because a caller that must hold a line on screen until it has finished
+    // travelling has to read them (marqueeCycleBeats).
+    const int travel = (overflow + kMarqueePxPerBeat - 1) / kMarqueePxPerBeat;
+    const int phase = beat % (2 * kMarqueeHoldBeats + travel);
+    int offset = 0;
+    if (phase >= kMarqueeHoldBeats) offset = (phase - kMarqueeHoldBeats) * kMarqueePxPerBeat;
+    if (offset > overflow) offset = overflow;   // the hold at the tail
 
     fb.setClip(x, y, w, kFontH);
     drawText(fb, x - offset, y, s, color, 1, face);

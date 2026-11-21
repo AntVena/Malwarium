@@ -231,8 +231,9 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
     drawText(fb, kMargin, kLastReadoutY, line, palColor(Pal::INK_DIM));
 
     // the three payment VARIANTS as a 3-row pick (A switches, B runs the
-    // focused one). QUICK = Bits-only, may fail; TOOL = spend a Defrag Tool for a
-    // guaranteed clean; the played game = the same Bits, then play for it.
+    // focused one). QUICK = Bits-only, may fail; USE 1 TOOL = spend a Defrag Tool for a
+    // guaranteed clean; the played game = the same Bits, then play for it. Every row
+    // costs the COST line's Bits, so no row repeats it, as on the ANTIVIRUS page.
     // Grayscale-safe: the cursor marks the focus, and each row spells its terms in
     // words (n% FAIL / GUARANTEED / NO TOOL / the dial).
     for (int i = 0; i < kDefragVariants; ++i) {
@@ -244,15 +245,15 @@ void drawDefragAction(Framebuffer& fb, const PetModel& m, const MaintActionView&
         Rgb565 tagCol = palColor(Pal::INK_DIM);
         char quickTag[16];
         if (i == 0) {
-            std::snprintf(line, sizeof(line), "QUICK  -%d B", v.cost);
+            std::snprintf(line, sizeof(line), "QUICK");
             std::snprintf(quickTag, sizeof(quickTag), "%d%% FAIL", v.failPct);
             tag = quickTag;
         } else if (i == 1) {
-            std::snprintf(line, sizeof(line), "TOOL  -%d B -1", v.cost);
+            std::snprintf(line, sizeof(line), "USE 1 TOOL");
             tag = v.toolCount > 0 ? "GUARANTEED" : "NO TOOL";
             tagCol = v.toolCount > 0 ? palColor(Pal::CALM) : palColor(Pal::WARN);
         } else {
-            std::snprintf(line, sizeof(line), "%s  -%d B", v.played.name, v.cost);
+            std::snprintf(line, sizeof(line), "%s", v.played.name);
             tag = playTag;          // never fails; the run sets the size of the clean
         }
         drawLabelValue(fb, kMargin + 12, rowY, line, col, tag, tagCol, 0, Overflow::Clip);

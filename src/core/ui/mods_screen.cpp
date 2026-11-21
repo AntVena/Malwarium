@@ -140,33 +140,32 @@ void drawLoadoutHub(Framebuffer& fb, const ModHoldings& load, const MoveLoadout&
 void drawModsList(Framebuffer& fb, const ContentRegistry& reg,
                   const ModHoldings& load, int cursor, int beat) {
     drawHeaderBand(fb, "MODS");
-    // Each row is two lines, the mod over its slot number, and both have to sit inside
-    // the selection fill (drawRowSelection's 2px inset), the way EXPL's two-line rows do.
-    constexpr int kNameDy = 5;
-    constexpr int kSlotDy = kNameDy + kFontH + 4;
+    // One line per slot, the MOVES list's shape: the slot number in a one-cell column,
+    // the mod's icon, then its name with the effect tag opposite. A second "SLOT n" line
+    // under each name cost the row its height and said only the number.
+    constexpr int kNumX = 20;   // clear of the row cursor at the margin
+    constexpr int kIconX = 32;
+    constexpr int kNameX = kIconX + kRowIcon + 6;
     for (int i = 0; i < kModSlots; ++i) {
         const int y = kRowTop + i * kRowH;
+        const int textY = y + (kRowH - kFontH) / 2;
         if (i == cursor) drawRowSelection(fb, y, kRowH);
-        char slotLbl[10];
-        std::snprintf(slotLbl, sizeof(slotLbl), "SLOT %d", i + 1);
-        const char* id = load.slots.equipped(i);
-        if (id) {
+        char num[4];
+        std::snprintf(num, sizeof(num), "%d", i + 1);
+        drawText(fb, kNumX, textY, num, palColor(Pal::INK_DIM));
+        const int iconY = y + (kRowH - kRowIcon) / 2;
+        if (const char* id = load.slots.equipped(i)) {
             const ModDef* m = reg.mod(id);
-            const SpriteData* icon = modIcon(reg, id);
-            if (icon) drawSprite(fb, *icon, 0, 16, y + (kRowH - kRowIcon) / 2);
+            if (const SpriteData* icon = modIcon(reg, id)) drawSprite(fb, *icon, 0, kIconX, iconY);
             // The effect tag owns the right end; the name yields to it and scrolls when
             // focused, so a long mod name can't print through its own tag.
-            drawLabelValue(fb, 40, y + kNameDy,
-                           m ? m->displayName : id, palColor(Pal::INK),
+            drawLabelValue(fb, kNameX, textY, m ? m->displayName : id, palColor(Pal::INK),
                            m ? m->effectTag : nullptr, palColor(Pal::ACCENT), beat,
                            scrollWhen(i == cursor));
         } else {
-            drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, 16,
-                       y + (kRowH - kRowIcon) / 2);
-            drawText(fb, 40, y + kNameDy, "- EMPTY -",
-                     palColor(Pal::INK_DIM));
+            drawSprite(fb, ASSET_ICON_MODS_SLOT_EMPTY, 0, kIconX, iconY);
+            drawText(fb, kNameX, textY, "- EMPTY -", palColor(Pal::INK_DIM));
         }
-        drawText(fb, 40, y + kSlotDy, slotLbl, palColor(Pal::INK_DIM));
     }
     drawHintBand(fb, "A NEXT  B OPEN  C BACK");
 }

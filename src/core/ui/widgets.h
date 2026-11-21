@@ -62,8 +62,9 @@ constexpr Overflow scrollWhen(bool focused) { return focused ? Overflow::Scroll 
 // Only the FOCUSED row of a list should scroll. An unfocused overflowing row is
 // clipped instead: a screen of lines all travelling at once is unreadable, and
 // the cursor is already the thing that says which row the player is asking about.
-// There is no ellipsis glyph (the glyph table is ASCII, which the content tests
-// enforce), so the clip itself shows the truncation.
+// A clipped line stops on a whole character and ends in a one-cell ellipsis, three dots
+// drawn as pixels because the glyph table is ASCII (the content tests enforce it). A
+// clip that happened to land between letters read as the whole name ("DEFRAGMENTATIO").
 //
 // `face` is passed because a row's name is often its heading and also too long for it,
 // and an overflowing title-weight label has to scroll in its own weight.

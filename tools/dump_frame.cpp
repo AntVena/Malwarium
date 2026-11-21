@@ -232,6 +232,13 @@ static void tapC(mal::Game& g) {
     g.onButton({mal::Button::C, false, false});
 }
 
+// A complete A press. On a list A's hold repeats the step, so a press left down while
+// the scene ticks would walk the cursor on past the row it was aimed at.
+static void tapA(mal::Game& g) {
+    g.onButton({mal::Button::A, true, false});
+    g.onButton({mal::Button::A, false, false});
+}
+
 static bool hasFlag(int argc, char** argv, const char* f) {
     for (int i = 3; i < argc; ++i)
         if (std::strcmp(argv[i], f) == 0) return true;
@@ -347,7 +354,7 @@ int main(int argc, char** argv) {
     // card for the first need the vitals above put out of their OK zone (pair with crit).
     if (hasFlag(argc, argv, "tipcard")) {
         for (uint8_t& b : game.liveOperator().reveals.tipsSeen) b = 0;
-        game.onButton({Button::A, true, false});
+        tapA(game);
     }
     // "dying" puts the pet at 5/5 errors, so the habitat shows its FAILING countdown.
     if (hasFlag(argc, argv, "dying")) game.model().setCareMistakes(kCareDying);
@@ -490,9 +497,9 @@ int main(int argc, char** argv) {
     // Apply navigation AFTER ticking so the 5s auto-defocus timer (which keys off
     // the last tick) doesn't collapse the menu before we render it.
     auto enterSlot = [&](SubmenuId id) {           // A to walk the cursor, then B
-        game.onButton({Button::A, true, false});   // idle A → carousel @ slot 1
+        tapA(game);   // idle A → carousel @ slot 1
         while (carouselSlots()[game.cursor()].id != id)
-            game.onButton({Button::A, true, false});
+            tapA(game);
         game.onButton({Button::B, true, false});
     };
     // EXPL opens on its ACTIVITY PICKER (ui_state.h's ExplCat), so a scene that wants a
@@ -502,7 +509,7 @@ int main(int argc, char** argv) {
         enterSlot(SubmenuId::Expl);
         const int want = explCatRow(cat);
         for (int i = 0; i < kExplCatRows && game.explScreen().row() != want; ++i)
-            game.onButton({Button::A, true, false});
+            tapA(game);
         game.onButton({Button::B, true, false});
     };
     // "feed:<id>" eats one named food through the real Use path and lands on the
@@ -562,7 +569,7 @@ int main(int argc, char** argv) {
         const StatPage* want = StatReader::findPage(title);
         for (std::size_t n = StatReader::pages().size();
              n > 0 && &game.statReader().page() != want; --n)
-            game.onButton({Button::A, true, false});
+            tapA(game);
         // "scroll:<n>" then takes B n times, which on the three flowed pages
         // (TIERS/LOADOUT/BUFFS) advances the row window: the way to see the rows past
         // the first screenful, and that the last window lands clear of the hint band.
@@ -604,7 +611,7 @@ int main(int argc, char** argv) {
                        : hasFlag(argc, argv, "keys") ? 4
                        : hasFlag(argc, argv, "tools") ? 5 : -1;
         if (tile >= 0 && game.itemsMenu().view() == ItemsView::Picker) {
-            for (int i = 0; i < tile; ++i) game.onButton({Button::A, true, false});
+            for (int i = 0; i < tile; ++i) tapA(game);
             game.onButton({Button::B, true, false});
         }
         // "row:<n>" walks the cursor down the list before opening anything, so a
@@ -612,7 +619,7 @@ int main(int argc, char** argv) {
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "row:", 4) == 0)
                 for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "feed")) {        // open detail, then Use
             game.onButton({Button::B, true, false});
@@ -623,7 +630,7 @@ int main(int argc, char** argv) {
         for (int i = 1; i < argc; ++i)
             if (std::strncmp(argv[i], "row:", 4) == 0)
                 for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
         if (hasFlag(argc, argv, "run")) {
             game.liveOperator().bits = 99999;
@@ -640,13 +647,13 @@ int main(int argc, char** argv) {
         auto runPlayed = [&](ArcadeGameKind g) {
             game.liveOperator().bits = 99999;
             const bool av = game.maintPlayedGame(MaintKind::Av) == g;
-            if (av) game.onButton({Button::A, true, false});  // the ANTIVIRUS row
+            if (av) tapA(game);  // the ANTIVIRUS row
             game.onButton({Button::B, true, false});          // open it
             const int n = av ? kAvVariants : kDefragVariants;
             int presses = n - 1;
             if (hasFlag(argc, argv, "medium")) presses += 1;
             if (hasFlag(argc, argv, "hard")) presses += 2;
-            for (int i = 0; i < presses; ++i) game.onButton({Button::A, true, false});
+            for (int i = 0; i < presses; ++i) tapA(game);
             game.onButton({Button::B, true, false});          // run it
         };
         // "stacker" runs the Stacker's process; each following "drop" locks the run where
@@ -668,7 +675,7 @@ int main(int argc, char** argv) {
                 else if (std::strcmp(argv[i], "slide") == 0)
                     game.stepStacker();
                 else if (std::strcmp(argv[i], "stop") == 0)
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
             }
         }
         // "fragger" runs FRAGGER's process. "fall:<n>" drops the disk n rows (a block takes
@@ -681,9 +688,9 @@ int main(int argc, char** argv) {
                 if (std::strncmp(argv[i], "fall:", 5) == 0) {
                     for (int k = std::atoi(argv[i] + 5); k > 0; --k) game.stepFragger();
                 } else if (std::strcmp(argv[i], "left") == 0) {
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
                 } else if (std::strcmp(argv[i], "right") == 0) {
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 } else if (std::strcmp(argv[i], "fire") == 0) {
                     game.onButton({Button::B, true, false});
                 } else if (std::strcmp(argv[i], "crash") == 0) {
@@ -702,12 +709,12 @@ int main(int argc, char** argv) {
             const CfgRow* rows = nullptr;
             int n = cfgRows(rows);
             for (int i = 0; i < n && rows[i].target != group; ++i)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});
             if (group == target) return;
             n = cfgGroupRows(group, rows);
             for (int i = 0; i < n && rows[i].target != target; ++i)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});
         };
         if (hasFlag(argc, argv, "sysinfo")) openTarget(CfgScreen::SysInfo);
@@ -723,7 +730,7 @@ int main(int argc, char** argv) {
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "row:", 4) == 0)
                     for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                        game.onButton({Button::A, true, false});
+                        tapA(game);
         }
         else if (hasFlag(argc, argv, "travel")) {
             openTarget(CfgScreen::Travel);
@@ -745,7 +752,7 @@ int main(int argc, char** argv) {
             const bool after = hasFlag(argc, argv, "busy") || hasFlag(argc, argv, "done") ||
                                hasFlag(argc, argv, "failed");
             if (hasFlag(argc, argv, "yes") || hasFlag(argc, argv, "blocked") || after)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             if (after) game.onButton({Button::B, true, false});
             if (hasFlag(argc, argv, "done")) {
                 game.setSdStatus({true, 30436});
@@ -807,7 +814,7 @@ int main(int argc, char** argv) {
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "row:", 4) == 0)
                     for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                        game.onButton({Button::A, true, false});
+                        tapA(game);
             // "use" applies the focused row and walks back out to the habitat, which is
             // the only place the choice can actually be looked at.
             if (hasFlag(argc, argv, "use")) {
@@ -821,10 +828,10 @@ int main(int argc, char** argv) {
         else if (hasFlag(argc, argv, "pediaap")) openTarget(CfgScreen::PediaAp);
         else if (hasFlag(argc, argv, "qr")) {   // PEDIA QR is reached via PEDIA AP -> ON
             openTarget(CfgScreen::PediaAp);                 // open the PEDIA AP toggle
-            game.onButton({Button::A, true, false});        // focus ON
+            tapA(game);        // focus ON
             game.onButton({Button::B, true, false});        // apply ON -> QR screen (page 0)
             if (hasFlag(argc, argv, "qr2"))                 // A cycles to page 1 ('Pedia URL)
-                game.onButton({Button::A, true, false});
+                tapA(game);
         }
         else if (hasFlag(argc, argv, "updates")) {
             // UPDATES: "ready" fills in what the platform tier would push at boot
@@ -862,10 +869,10 @@ int main(int argc, char** argv) {
                 game.setNetStatus(down);
             }
             if (hasFlag(argc, argv, "confirm")) {
-                game.onButton({Button::A, true, false});   // row 0 -> FIRMWARE
+                tapA(game);   // row 0 -> FIRMWARE
                 game.onButton({Button::B, true, false});   // -> the yes/no confirm
                 if (hasFlag(argc, argv, "yes"))
-                    game.onButton({Button::A, true, false});  // NO -> YES
+                    tapA(game);  // NO -> YES
             }
             if (hasFlag(argc, argv, "installing") || hasFlag(argc, argv, "failed")) {
                 game.requestUpdateInstall(UpdateTarget::Firmware);
@@ -888,7 +895,7 @@ int main(int argc, char** argv) {
             // reaches before any check has run.
             if (hasFlag(argc, argv, "flashqr")) {
                 game.setUpdateManifestUrl("https://antvena.github.io/Malwarium/manifest.json");
-                game.onButton({Button::A, true, false});   // CHECK NOW -> FLASH OVER USB
+                tapA(game);   // CHECK NOW -> FLASH OVER USB
                 game.onButton({Button::B, true, false});   // -> the code
             }
         }
@@ -905,7 +912,7 @@ int main(int argc, char** argv) {
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "group:", 6) == 0) {
                 for (int k = std::atoi(argv[i] + 6); k > 0; --k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
                 game.onButton({Button::B, true, false});
             }
         // "row:<n>" walks the cursor down the open group, which is how a windowed list
@@ -913,12 +920,12 @@ int main(int argc, char** argv) {
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "row:", 4) == 0)
                 for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
         if (hasFlag(argc, argv, "detail")) game.onButton({Button::B, true, false});
         for (int i = 3; i < argc; ++i)
             if (std::strncmp(argv[i], "offer:", 6) == 0)
                 for (int k = std::atoi(argv[i] + 6); k > 0; --k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
         if (hasFlag(argc, argv, "confirm")) {        // open the Store/Deploy/sale confirm
             game.onButton({Button::B, true, false}); // record -> confirm
         }
@@ -941,15 +948,15 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "focus")) tap(Button::A);   // the row after the first
         }
         if (hasFlag(argc, argv, "detail")) {         // mod detail (a ONE-SHOT)
-            game.onButton({Button::A, true, false}); // slot 1 -> slot 2
-            game.onButton({Button::A, true, false}); // slot 2 -> slot 3 (empty)
+            tapA(game); // slot 1 -> slot 2
+            tapA(game); // slot 2 -> slot 3 (empty)
             game.onButton({Button::B, true, false}); // open slot 3 picker
-            game.onButton({Button::A, true, false}); // first spare -> RAID Mirror
+            tapA(game); // first spare -> RAID Mirror
             game.onButton({Button::B, true, false}); // open the mod detail
         }
         if (hasFlag(argc, argv, "confirm")) {        // overwrite an installed mod
             game.onButton({Button::B, true, false}); // picker for slot 1 (Firewall)
-            game.onButton({Button::A, true, false}); // -> a spare (RAID Mirror)
+            tapA(game); // -> a spare (RAID Mirror)
             game.onButton({Button::B, true, false}); // open detail
             game.onButton({Button::B, true, false}); // EQUIP -> overwrite confirm
         }
@@ -975,14 +982,14 @@ int main(int argc, char** argv) {
                                                                : nullptr;
         for (int i = 0; want && i < arcadeGameCount(); ++i) {
             if (std::strcmp(arcadeGames()[game.arcadeScreen().row()].id, want) == 0) break;
-            game.onButton({Button::A, true, false});
+            tapA(game);
         }
         if (hasFlag(argc, argv, "cabinet")) {
             game.onButton({Button::B, true, false});
-            if (hasFlag(argc, argv, "hard")) game.onButton({Button::A, true, false});
+            if (hasFlag(argc, argv, "hard")) tapA(game);
             if (hasFlag(argc, argv, "easy")) {             // MEDIUM -> HARD -> EASY
-                game.onButton({Button::A, true, false});
-                game.onButton({Button::A, true, false});
+                tapA(game);
+                tapA(game);
             }
             // play → start the run and take the board a few steps in.
             if (hasFlag(argc, argv, "play")) {
@@ -991,7 +998,7 @@ int main(int argc, char** argv) {
                     for (int r = 0; r < 3; ++r)
                         for (int s = 0; s < kDecryptionSlots; ++s) {
                             for (int c = 0; c <= (r + s) % kDecryptionColours; ++c)
-                                game.onButton({Button::A, true, false});
+                                tapA(game);
                             game.onButton({Button::B, true, false});
                         }
                 }
@@ -999,7 +1006,7 @@ int main(int argc, char** argv) {
                     game.tick(static_cast<uint32_t>(beats + i) * kHeartbeatMs);
                 // result → stop the run there and land on the payout screen.
                 if (hasFlag(argc, argv, "result"))
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
             }
         }
     } else if (hasFlag(argc, argv, "loadout")) {
@@ -1023,8 +1030,8 @@ int main(int argc, char** argv) {
     } else if (hasFlag(argc, argv, "simbattle")) {
         enterSlot(SubmenuId::Mods);
         // Hub -> PRACTISE (row 2), which opens straight into the dummy-tier pick.
-        game.onButton({Button::A, true, false});
-        game.onButton({Button::A, true, false});
+        tapA(game);
+        tapA(game);
         game.onButton({Button::B, true, false});
         // "fight" takes the tier and runs the real fight: unlike the `combat` flag's
         // dev hook, this enters through Game::buildPlayerCombatant, so buffs carried
@@ -1057,7 +1064,7 @@ int main(int argc, char** argv) {
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "band:", 5) == 0) {
                     for (int k = std::atoi(argv[i] + 5); k > 0; --k)
-                        game.onButton({Button::A, true, false});
+                        tapA(game);
                     game.onButton({Button::B, true, false});
                 }
         }
@@ -1220,7 +1227,7 @@ int main(int argc, char** argv) {
             // Park on a rival rather than on the operator's own row, so the sheet shows
             // somebody else's kit, which is what the gesture is for.
             while (game.arenaScreen().cursor() == game.tourneySlot())
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});   // arm the hold...
             game.tick(static_cast<uint32_t>(beats + 1) * kHeartbeatMs + kTourneyScoutHoldMs);
             game.onButton({Button::B, false, false});
@@ -1274,9 +1281,9 @@ int main(int argc, char** argv) {
         }
         game.onButton({Button::A, true, true});     // A+C chord → hacker home (idle)
         auto enterHackerSlot = [&](HackerSlotId id) {
-            game.onButton({Button::A, true, false}); // summon hacker cursor @ slot 0
+            tapA(game); // summon hacker cursor @ slot 0
             while (hackerCarouselSlots()[game.cursor()].id != id)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});
         };
         if (hasFlag(argc, argv, "profile")) enterHackerSlot(HackerSlotId::Profile);
@@ -1318,7 +1325,7 @@ int main(int argc, char** argv) {
             if (services) {
                 for (int k = 0; k <= kRigUpgradeCount &&
                                 game.rigShopScreen().slot() != kRigSlotServices; ++k)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
                 if (hasFlag(argc, argv, "board") || hasFlag(argc, argv, "info")) {
                     game.onButton({Button::B, true, false});
                     game.onButton({Button::B, false, false});
@@ -1329,8 +1336,7 @@ int main(int argc, char** argv) {
                     // is LIFTED, not left down: a held A repeats its step (the list
                     // contract), and the tick that fires the hold below would walk the
                     // cursor off the row this is trying to reach.
-                    game.onButton({Button::A, true, false});
-                    game.onButton({Button::A, false, false});
+                    tapA(game);
                     uint32_t t = 0;
                     game.tick(t);
                     game.onButton({Button::B, true, false});
@@ -1341,7 +1347,7 @@ int main(int argc, char** argv) {
             for (int i = 3; i < argc; ++i)
                 if (std::strncmp(argv[i], "row:", 4) == 0)
                     for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                        game.onButton({Button::A, true, false});
+                        tapA(game);
             if (hasFlag(argc, argv, "buy")) game.onButton({Button::B, true, false});
         } else if (hasFlag(argc, argv, "merge")) {
             // MERGE HUB: the slot is a Rig Shop purchase, so buy it before entering
@@ -1376,8 +1382,7 @@ int main(int argc, char** argv) {
             }
             enterHackerSlot(HackerSlotId::Vault);
             if (bulk) {
-                game.onButton({Button::A, true, false});
-                game.onButton({Button::A, false, false});
+                tapA(game);
                 game.onButton({Button::B, true, false});
                 // B stays down: its release edge would dismiss the reveal.
                 const uint32_t t = static_cast<uint32_t>(beats) * kHeartbeatMs;
@@ -1403,16 +1408,16 @@ int main(int argc, char** argv) {
             if (hasFlag(argc, argv, "netpick")) {
                 game.onButton({Button::B, true, false});   // Hub row 0 -> the modal
             } else if (red || hasFlag(argc, argv, "blue")) {
-                game.onButton({Button::A, true, false});   // Hub row 1 = RED...
+                tapA(game);   // Hub row 1 = RED...
                 if (!red)
-                    game.onButton({Button::A, true, false});   // ...row 2 = BLUE
+                    tapA(game);   // ...row 2 = BLUE
                 game.onButton({Button::B, true, false});
                 // `row:<n>` walks the side's cursor first, so a page other than that
                 // side's first crew is reachable.
                 for (int i = 3; i < argc; ++i)
                     if (std::strncmp(argv[i], "row:", 4) == 0)
                         for (int k = std::atoi(argv[i] + 4); k > 0; --k)
-                            game.onButton({Button::A, true, false});
+                            tapA(game);
                 if (hasFlag(argc, argv, "detail"))
                     game.onButton({Button::B, true, false});
             }
@@ -1469,7 +1474,7 @@ int main(int argc, char** argv) {
             // arms the sub-area the cursor lands on, and arming is what drops the game
             // back to the IDLE habitat with the explore badge live.
             for (int i = 0; i < deepSector; ++i)
-                game.onButton({Button::A, true, false});   // walk to sector[n]
+                tapA(game);   // walk to sector[n]
             game.onButton({Button::B, true, false});   // expand the focused sector
             game.onButton({Button::B, true, false});   // arm sub-area[0] -> idle explore
         }
@@ -1502,8 +1507,8 @@ int main(int argc, char** argv) {
         // The overlay opens on PING; AUTO-PROGRESS is two rows down.
         auto armAuto = [&]{
             game.onButton({Button::A, true, true});  // A+C -> the control overlay
-            game.onButton({Button::A, true, false}); // -> WARP
-            game.onButton({Button::A, true, false}); // -> AUTO-PROGRESS
+            tapA(game); // -> WARP
+            tapA(game); // -> AUTO-PROGRESS
             game.onButton({Button::B, true, false}); // arm it
         };
         uint32_t t = static_cast<uint32_t>(beats) * kHeartbeatMs;
@@ -1518,13 +1523,13 @@ int main(int argc, char** argv) {
             // The armed habitat with auto-progress running: the EXPL globe turns on the
             // shelf. Pass a `beats` count to land on a particular frame of the spin.
             armAuto();
-            game.onButton({Button::C, true, false}); // C -> back to the habitat
+            tapC(game); // C -> back to the habitat
         } else if (hasFlag(argc, argv, "warp")) {
             // Warp picker: hold both keys, open the control overlay, walk to WARP.
             game.inventory().add("access_token", 1);
             game.inventory().add("safe_mode_key", 1);
             game.onButton({Button::A, true, true});  // A+C -> overlay, on PING
-            game.onButton({Button::A, true, false}); // A -> WARP
+            tapA(game); // A -> WARP
             game.onButton({Button::B, true, false}); // B -> warp-key picker
         } else if (hasFlag(argc, argv, "encounter") || hasFlag(argc, argv, "wildcombat")) {
             // Every screen an explore step can land on has to be answered, because the
@@ -1550,7 +1555,7 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 else if (game.nav() == Game::Nav::Shop ||
                          game.nav() == Game::Nav::ModShop)
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 else if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 800 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -1594,12 +1599,12 @@ int main(int argc, char** argv) {
             }
             for (int i = 0; i < 400 && game.nav() != Game::Nav::Wifi; ++i) {
                 if (game.nav() == Game::Nav::Encounter) {
-                    game.onButton({Button::A, true, false});  // Fight -> Flee
-                    game.onButton({Button::A, true, false});  // Flee -> Sinkhole
+                    tapA(game);  // Fight -> Flee
+                    tapA(game);  // Flee -> Sinkhole
                     game.onButton({Button::B, true, false});  // confirm -> back to idle
                 } else if (game.nav() == Game::Nav::Shop ||
                            game.nav() == Game::Nav::ModShop) {
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 } else ping();
             }
             // The event opens at its own beat 0, so `beats` is re-spent inside it to
@@ -1662,7 +1667,7 @@ int main(int argc, char** argv) {
                 if (hasFlag(argc, argv, "wrong"))
                     for (int i = 0; i < kRiddleReplies &&
                             game.shiboleetScreen().row() == game.shiboleetMeeting().trueRow(); ++i)
-                        game.onButton({Button::A, true, false});
+                        tapA(game);
                 game.onButton({Button::B, true, false});
             }
             // "fight" carries on into the guardian's own COMBAT, the other screen its
@@ -1692,8 +1697,8 @@ int main(int argc, char** argv) {
             for (int i = 0; i < 600 && game.nav() == Game::Nav::Idle; ++i) ping();
             switch (game.nav()) {
                 case Game::Nav::Encounter:
-                    game.onButton({Button::A, true, false});  // Fight -> Flee
-                    game.onButton({Button::A, true, false});  // Flee -> Sinkhole
+                    tapA(game);  // Fight -> Flee
+                    tapA(game);  // Flee -> Sinkhole
                     game.onButton({Button::B, true, false});  // confirm -> back to idle
                     break;
                 case Game::Nav::Combat:
@@ -1703,7 +1708,7 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                     break;
                 case Game::Nav::Wifi: game.onButton({Button::B, true, false}); break;
-                case Game::Nav::Shop: game.onButton({Button::C, true, false}); break;
+                case Game::Nav::Shop: tapC(game); break;
                 default: break;
             }
         } else if (hasFlag(argc, argv, "shop") || hasFlag(argc, argv, "modshop")) {
@@ -1716,14 +1721,14 @@ int main(int argc, char** argv) {
             game.inventory().add("sinkhole_trap", 20);
             for (int i = 0; i < 400 && game.nav() != stopAt; ++i) {
                 if (game.nav() == Game::Nav::Encounter) {
-                    game.onButton({Button::A, true, false});
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
+                    tapA(game);
                     game.onButton({Button::B, true, false});
                 } else if (game.nav() == Game::Nav::Wifi) {
                     game.onButton({Button::B, true, false});
                 } else if (game.nav() == Game::Nav::Shop ||
                            game.nav() == Game::Nav::ModShop) {
-                    game.onButton({Button::C, true, false});   // the other storefront
+                    tapC(game);   // the other storefront
                 } else if (game.nav() == Game::Nav::Combat) {
                     for (int j = 0; j < 800 &&
                             game.combat().outcome() == Combat::Outcome::Ongoing; ++j)
@@ -1747,7 +1752,7 @@ int main(int argc, char** argv) {
                     game.onButton({Button::B, true, false});
                 else if (game.nav() == Game::Nav::Shop ||
                          game.nav() == Game::Nav::ModShop)
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 else if (game.nav() == Game::Nav::PostEncounter)
                     game.onButton({Button::B, true, false});
                 else if (game.nav() == Game::Nav::Combat) {
@@ -1777,7 +1782,7 @@ int main(int argc, char** argv) {
                 if (game.nav() == Game::Nav::Wifi)
                     game.onButton({Button::B, true, false});
                 else if (game.nav() == Game::Nav::Shop)
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 else ping();
             }
             for (int j = 0; j < 800 &&
@@ -1789,9 +1794,9 @@ int main(int argc, char** argv) {
         }
         // ("explore" and "walk": no further driving. The idle badge is the frame.)
     } else if (hasFlag(argc, argv, "bottom")) {   // idle C → carousel@8
-        game.onButton({Button::C, true, false});
+        tapC(game);
     } else if (hasFlag(argc, argv, "carousel")) { // idle A → carousel@1
-        game.onButton({Button::A, true, false});
+        tapA(game);
     } else if (hasFlag(argc, argv, "cryptogram")) {
         // Cash a Decryptogram at the VAULT, which is the real door in. "open:<n>"
         // places n letters correctly (reading each off the cell the cursor is already
@@ -1800,9 +1805,9 @@ int main(int argc, char** argv) {
         // one letter to hold the verdict with its highlighted cell.
         game.inventory().add("decryptogram", 1);
         game.onButton({Button::A, true, true});      // A+C chord -> the Hacker face
-        game.onButton({Button::A, true, false});     // summon the hacker cursor
+        tapA(game);     // summon the hacker cursor
         while (hackerCarouselSlots()[game.cursor()].id != HackerSlotId::Vault)
-            game.onButton({Button::A, true, false});
+            tapA(game);
         game.onButton({Button::B, true, false});     // -> the VAULT
         game.onButton({Button::B, true, false});     // cash it -> the board
         int opens = hasFlag(argc, argv, "win") ? 64 : 0;
@@ -1812,7 +1817,7 @@ int main(int argc, char** argv) {
             const Cryptogram& c = game.cryptogramRun()->board;
             const char want = c.at(c.cellCursor());
             for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) != want; ++i)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});   // take it
             game.onButton({Button::B, true, false});   // place it
         }
@@ -1824,7 +1829,7 @@ int main(int argc, char** argv) {
             const Cryptogram& c = game.cryptogramRun()->board;
             const char want = c.at(c.cellCursor());
             for (int i = 0; i < c.poolSize() && c.poolLetter(c.poolCursor()) == want; ++i)
-                game.onButton({Button::A, true, false});
+                tapA(game);
             game.onButton({Button::B, true, false});
             game.onButton({Button::B, true, false});
         }
@@ -1839,7 +1844,7 @@ int main(int argc, char** argv) {
         for (int r = 0; r < rows; ++r)
             for (int s = 0; s < kDecryptionSlots; ++s) {
                 for (int c = 0; c <= (r + s) % kDecryptionColours; ++c)
-                    game.onButton({Button::A, true, false});
+                    tapA(game);
                 game.onButton({Button::B, true, false});
             }
     } else if (hasFlag(argc, argv, "clutch")) {
@@ -1848,7 +1853,7 @@ int main(int argc, char** argv) {
         // the frame on the reveal.
         game.unlockAchievement(ach::kDeepWebDepth8);   // unlocks Phishing
         game.resetToHatch();
-        game.onButton({Button::A, true, false});   // cycle line-select to Phishing
+        tapA(game);   // cycle line-select to Phishing
         game.onButton({Button::B, true, false});   // lay it -> Nav::ModalEggPick
         if (hasFlag(argc, argv, "win")) {
             // Play it perfectly to land on the won reveal: aim at whichever half holds
@@ -1879,7 +1884,7 @@ int main(int argc, char** argv) {
                 // "round" commits the current aim; "aim" flips to the second half, so
                 // the two interleave to walk any path through the clutch.
                 if (std::strcmp(argv[i], "aim") == 0)
-                    game.onButton({Button::C, true, false});
+                    tapC(game);
                 else if (std::strcmp(argv[i], "round") == 0)
                     game.onButton({Button::B, true, false});
             }
@@ -1888,11 +1893,11 @@ int main(int argc, char** argv) {
         // Lay a Worm egg, which opens its Isolation Protocol on the spot.
         game.unlockAchievement(ach::kSecondInstance);   // unlocks the Worm line
         game.resetToHatch();
-        game.onButton({Button::A, true, false});   // cycle line-select to Worm
+        tapA(game);   // cycle line-select to Worm
         game.onButton({Button::B, true, false});   // lay it -> Nav::Isolation
         uint32_t it = 0;
         if (hasFlag(argc, argv, "crash")) {
-            game.onButton({Button::A, true, false});    // turn into the near wall
+            tapA(game);    // turn into the near wall
             for (int i = 0; i < 4 * kIsolationRows && game.isolation().running(); ++i)
                 game.tick(it += kIsolationStepMs);
         } else {
@@ -1920,8 +1925,8 @@ int main(int argc, char** argv) {
                 // A/C steer. See onIsolation). That silently dropped every right turn,
                 // so the worm took its one working left turn and then ran straight
                 // until it stalled on a wall, instead of actually walking the cycle.
-                if (turn == 3) game.onButton({Button::A, true, false});
-                else if (turn == 1) game.onButton({Button::C, true, false});
+                if (turn == 3) tapA(game);
+                else if (turn == 1) tapC(game);
                 game.tick(it += kIsolationStepMs);
             }
         }
@@ -1939,7 +1944,7 @@ int main(int argc, char** argv) {
                 std::strcmp(lines[game.lineSelectScreen().row() % lines.size()]->id,
                             "metamorphic") == 0)
                 break;
-            game.onButton({Button::A, true, false});
+            tapA(game);
         }
         game.onButton({Button::B, true, false});   // lay it -> Nav::Chroma
         uint32_t ct = 0;
@@ -1972,10 +1977,10 @@ int main(int argc, char** argv) {
         // with the chord. "frame:<n>" holds the cinematic on that frame of the one-shot.
         game.unlockAchievement(ach::kDeepWebDepth8);
         game.resetToHatch();
-        game.onButton({Button::A, true, false});
+        tapA(game);
         game.onButton({Button::B, true, false});
         for (int i = 0; i < kEggPickRounds; ++i) {
-            game.onButton({Button::A, true, false});
+            tapA(game);
             game.onButton({Button::B, true, false});
         }
         game.onButton({Button::B, true, false});     // out of the pick, egg at idle
