@@ -180,9 +180,7 @@ std::vector<Game::Tip> Game::replayableTips() const {
 
 int32_t Game::failingLeftMs() const {
     if (!pet_.creature || inEggPhase() || pet_.model.careBranch() != CareBranch::Dying) return -1;
-    return pet_.dyingElapsedMs < kCsfDyingGraceMs
-               ? static_cast<int32_t>(kCsfDyingGraceMs - pet_.dyingElapsedMs)
-               : 0;
+    return static_cast<int32_t>(pet_.dying.leftMs());
 }
 
 bool Game::yubiReady() const {

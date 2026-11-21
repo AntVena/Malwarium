@@ -351,7 +351,7 @@ void test_save_active_pet_loads_from_a_v75_blob() {
     CHECK(p.mods.equipped(1) == nullptr);
     CHECK(p.mods.equipped(2) && std::strcmp(p.mods.equipped(2), "clock_speed_boost") == 0);
     CHECK(p.defragCount == 12 && p.bestDeepWebDepth == 9 && p.bestDarkWebDepth == 4);
-    CHECK(p.dyingElapsedMs == 5000u && !p.dyingArmed);
+    CHECK(p.dying.elapsedMs == 5000u && !p.dying.armed());
     CHECK(p.grants.shieldActive && p.grants.shieldSpent && p.grants.yubiSpent);
     CHECK(p.usb.branch == BranchOverride::Bad && p.usb.soakFactor == 4 && p.usb.hold);
     CHECK(p.upgrades.bandwidthRegenMin == 2 && p.upgrades.xpRatePct == 25);
@@ -481,7 +481,7 @@ void test_new_egg_is_a_fresh_pet_record() {
     CHECK(!p.armed.trojanDivert && p.armed.backupShieldUntilMs == 0);
     CHECK(p.armed.nextDive.depthMultiplier == 1 && !p.armed.lockoutActive);
     CHECK(p.bestDeepWebDepth == 0 && p.bestDarkWebDepth == 0);
-    CHECK(p.defragCount == 0 && p.dyingElapsedMs == 0);
+    CHECK(p.defragCount == 0 && p.dying.elapsedMs == 0);
 }
 
 // A v75 blob with every Operator field set, written by the build before SaveData grouped

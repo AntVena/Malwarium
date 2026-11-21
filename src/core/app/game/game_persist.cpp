@@ -110,7 +110,7 @@ void Game::restoreRadio(const SaveData& d) {
     // Audit-capture toggle (v6). A pre-v6 blob defaults it OFF. Rebuild the policy
     // SM from the persisted intent. The hot/cooldown clock starts fresh (no RTC,
     // like Lockout): a reboot clears any in-flight PENALTY window. The 5/5 CSF
-    // recovery window is the one exception (Pet::dyingElapsedMs).
+    // recovery window is the one exception (Pet::dying).
     auditCapture_ = AuditCapture{};
     auditCapture_.setEnabled(d.auditCaptureEnabled != 0, nowMs_);
 

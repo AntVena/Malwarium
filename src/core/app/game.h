@@ -820,7 +820,7 @@ public:
     // of three routes: rebased against nowMs_ on load (pet_.stageEnteredMs, lastModelMs_),
     // stored as a REMAINING count rather than a deadline (pet_.bootHatchRemainMs), or
     // anchored on lifetimeUptimeMs(), which is awake time (pet_.armed.backupShieldUntilMs,
-    // pet_.dyingElapsedMs). Nothing observes wall time (the board carries no RTC), so time
+    // pet_.dying). Nothing observes wall time (the board carries no RTC), so time
     // spent asleep is never credited.
     //
     // Latched rather than pulsed: the device tier may have to hold it for a moment (an
@@ -3109,14 +3109,8 @@ private:
     // first. pet_.stageEnteredMs clocks time-in-stage for the trigger.
     EvolveScreen evolve_;
 
-    // Critical System Failure. pet_.dyingArmed latches when the pet enters the
-    // 5/5 dying state and pet_.dyingEnteredMs is the anchor it clocks from; csf_ paces
+    // Critical System Failure. The window it ends is Pet::dying (DyingWindow); csf_ paces
     // the crash-FX hold before B acknowledges into an ARCH record (OperatorArch).
-    //
-    // pet_.dyingElapsedMs is the total burned so far and the ONLY one of the three that
-    // persists (save v42), which is what stops a power cycle from refunding the
-    // window. The pair splits because the anchor is in monotonic game-ms, meaningless
-    // across a boot, while the accumulator is a duration and survives one intact.
     CsfScreen csf_;   // game/csf_screen.h
 
     // Persistence plumbing. store_ is the platform save sink (nullptr = none).

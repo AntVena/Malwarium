@@ -67,7 +67,7 @@ SaveStoredPet Pet::stored(uint32_t nowMs) const {
     for (int i = 0; i < kModSlots; ++i) copyId(p.equippedMods[i].id, mods.equipped(i));
     p.timeInStageMs = nowMs - stageEnteredMs;
     p.bootHatchRemainMs = bootHatchRemainMs;
-    p.dyingElapsedMs = dyingElapsedMs;
+    p.dyingElapsedMs = dying.elapsedMs;
     return p;
 }
 
@@ -130,9 +130,7 @@ Pet Pet::thawed(const SaveStoredPet& s, const ContentRegistry& reg, uint32_t now
         if (const ModDef* def = reg.mod(s.equippedMods[i].id)) p.mods.setEquipped(i, def->id);
     p.stageEnteredMs = nowMs - s.timeInStageMs;
     p.bootHatchRemainMs = s.bootHatchRemainMs;
-    // The dying window resumes from its accumulated time; dyingArmed stays false so the
-    // next tick re-anchors it against the current clock.
-    p.dyingElapsedMs = s.dyingElapsedMs;
+    p.dying.elapsedMs = s.dyingElapsedMs;   // unarmed: the next tick re-anchors it
     return p;
 }
 

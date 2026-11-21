@@ -513,8 +513,7 @@ void Game::fireCSF() {
     pet_.armed.nextDive = DiveArming{};
     pet_.armed.lockoutActive = false;
     evolve_ = EvolveScreen{};
-    pet_.dyingArmed = false;
-    pet_.dyingElapsedMs = 0;
+    pet_.dying.reset();
     csf_.open();
     nav_ = Nav::ModalCSF;
     dirty_ = true;
@@ -532,8 +531,7 @@ void Game::acknowledgeCSF() {
         rec.generation = pet_.generation;
         op_.arch.records.push_back(rec);
     }
-    pet_.dyingArmed = false;
-    pet_.dyingElapsedMs = 0;
+    pet_.dying.reset();
     startHatch();      // pet_.creature = nullptr -> line-select, then a fresh egg
     persistSave();     // the record + vacated active survive an immediate reboot
 }

@@ -15,6 +15,7 @@
 #include "tunables.h"   // kLevelStatCount, kMaxMoveSlots
 #include "core/content/areas/area_defs.h"   // kAreaCount, kSubAreasPerArea: the re-farm grid
 #include "core/content/defs.h"
+#include "core/model/dying_window.h"
 #include "core/model/explore_walk.h"   // DiveArming
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
@@ -130,13 +131,7 @@ struct Pet {
     uint32_t stageEnteredMs = 0;      // game-ms the current stage began
     uint32_t bootHatchRemainMs = 0;   // the egg's incubation clock (save v9)
     bool eggOfferMade = false;        // the egg was offered an accelerator; not saved
-    // The 5/5 dying window. The anchor is in game-ms and means nothing across a boot, so
-    // only the accumulated elapsed time is saved (save v42). It is the one timed window a
-    // reboot keeps: refunding it would make the only death path optional.
-    bool dyingArmed = false;
-    uint32_t dyingEnteredMs = 0;
-    uint32_t dyingElapsedMs = 0;
-    uint32_t failingAlertAtMs = 0;    // in dyingElapsedMs time
+    DyingWindow dying;                // the 5/5 recovery window (save v42)
 
     // --- Armed for now -----------------------------------------------------------
     PetArmed armed;

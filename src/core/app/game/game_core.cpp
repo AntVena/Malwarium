@@ -439,45 +439,20 @@ bool Game::tickLifecycle(uint32_t nowMs) {
         changed = true;
     }
 
-    // Critical System Failure: the only death path, and the highest modal priority (CSF > Lockout >
-    // Evolution). The 5/5 dying state is recoverable by dropping below 5 within the recovery
-    // window, which a Yubi-Cookie does (RemoveCareMistakeOnce), and so does a Daemon sold for a
-    // HOTFIX (game_arch_sale.cpp); the Backup Drive is a combat shield and touches no error, and
-    // once the window expires the pet is permanently lost. The habitat counts the window down
-    // (game_render.cpp's FAILING banner). Never during the Hatch (no pet) or once already in the
-    // modal. The window accumulates and the total persists (save v42), so a power cycle cannot
-    // refund seconds spent at 5/5. It is the only window that survives a reboot, because it ends in
-    // permanent loss and the others end in penalties. What it counts is time AWAKE at 5/5: with no
-    // RTC (config.h HAS_HARDWARE_RTC) the device cannot see how long it was off, so being switched
-    // off neither kills the pet nor buys it a reprieve.
+    // Critical System Failure: the only death path, and the highest modal priority (CSF >
+    // Lockout > Evolution). Dropping below 5/5 inside the window recovers the pet (a
+    // Yubi-Cookie, a Daemon sold for a HOTFIX); once it runs out the pet is lost. The
+    // habitat's FAILING banner counts it down. Between the window's transitions the
+    // periodic autosave keeps the written figure close enough (a sixtieth of the window);
+    // marking dirty every tick would write flash every kSaveDebounceMs for half an hour.
     if (pet_.creature && nav_ != Nav::ModalCSF) {
-        if (pet_.model.careBranch() == CareBranch::Dying) {
-            if (!pet_.dyingArmed) {
-                pet_.dyingArmed = true;
-                pet_.dyingEnteredMs = nowMs_;
-                pet_.failingAlertAtMs = pet_.dyingElapsedMs;
-                markSaveDirty();   // the moment it starts is worth writing at once
-            }
-            pet_.dyingElapsedMs += nowMs_ - pet_.dyingEnteredMs;
-            pet_.dyingEnteredMs = nowMs_;
-            if (pet_.dyingElapsedMs >= pet_.failingAlertAtMs && pet_.dyingElapsedMs < kCsfDyingGraceMs) {
-                playSound(Sound::Failing);
-                pet_.failingAlertAtMs = pet_.dyingElapsedMs + kFailingAlertEveryMs;
-            }
-            // Between the transitions the periodic autosave (kSaveAutosaveMs) keeps the
-            // written figure close enough: it is a sixtieth of the window, so a reboot
-            // refunds at most that much. Marking the save dirty every tick instead would
-            // write flash every kSaveDebounceMs for the whole half hour.
-            if (pet_.dyingElapsedMs >= kCsfDyingGraceMs) {
-                fireCSF();
-                changed = true;
-            }
-        } else if (pet_.dyingArmed || pet_.dyingElapsedMs) {
-            // Recovered below 5/5: disarm, and forget what was burned. A pet pulled
-            // back from the edge gets the full window again next time.
-            pet_.dyingArmed = false;
-            pet_.dyingElapsedMs = 0;
-            markSaveDirty();       // ...and so is the rescue, which zeroes the window
+        const DyingWindow::Step step =
+            pet_.dying.tick(pet_.model.careBranch() == CareBranch::Dying, nowMs_);
+        if (step.saveNow) markSaveDirty();
+        if (step.alert) playSound(Sound::Failing);
+        if (step.expired) {
+            fireCSF();
+            changed = true;
         }
     }
 
