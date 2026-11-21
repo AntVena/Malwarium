@@ -155,10 +155,10 @@ without it**, i.e. where the line that should lead is drawn in a colour that des
 the level of the text it heads. Three places pass that test today, each with its reason at
 the call site:
 
-- **The CREW side roster** (`drawCrewTeam`): the focused crew's name is side-coloured, and
+- **The CREW side roster** (`CrewScreen::drawTeam`): the focused crew's name is side-coloured, and
   in grayscale Blue lands at the motto's `ink-dim` level. Unfocused names are `ink` over a
   dim motto, so they stay Regular.
-- **The CREW detail's Exploit name** (`drawCrewDetail`): `accent` over `ink` prose, which in
+- **The CREW detail's Exploit name** (`CrewScreen::drawDetail`): `accent` over `ink` prose, which in
   grayscale sits between the prose and the dim readout above it.
 - **The Decryptogram status line** (`cryptogram_screen.cpp`), the one line that says what the
   buttons want.

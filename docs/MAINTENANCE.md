@@ -109,7 +109,7 @@ a still and scroll on the device. And a band that ends short of the screen is on
 the group BELOW it has nothing separating it; empty canvas under the last group is just empty
 canvas.
 
-### Stale cross-reference sweep. Last run: 2026-11-11
+### Stale cross-reference sweep. Last run: 2026-11-21
 Grep for links/citations across the docs (file paths, line numbers, `D#`/`S#`/`C#`/`FB-*` row
 IDs), and verify they still resolve to something real. Fix or remove dangling references.
 
@@ -142,7 +142,7 @@ Also check that a doc which ROUTES to another for a process actually finds it th
 line and the section it points at are two places one process is described, and only one of them
 gets updated.
 
-### Test/gate health check. Last run: 2026-11-11
+### Test/gate health check. Last run: 2026-11-21
 Run the gates. Confirm native gates and the S3 build are actually green, not assumed green from
 a doc. Look for test debt: tests asserting behaviour that no longer occurs in
 real play.
