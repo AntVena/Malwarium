@@ -5,7 +5,6 @@
 #include "tunables.h"
 #include "core/content/content_themes.h"   // themeForChip: a chip is inert here, and loot once
 #include "core/ui/items_screen.h"
-#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -542,8 +541,7 @@ void Game::rollPantrySpoilage() {
         if (n == 4) break;
         const ItemDef* d = registry_.item(s.id);
         if (!d || !d->spoil.into || d->spoil.pct <= 0) continue;
-        lcgAdvance(rng_);
-        if (static_cast<int>((rng_ >> 16) % 100) >= d->spoil.pct) continue;
+        if (rollD100() >= d->spoil.pct) continue;
         turned[n++] = {d, d->spoil.into};
     }
     for (int i = 0; i < n; ++i) {

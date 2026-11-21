@@ -379,8 +379,7 @@ void Game::fireEvolution() {
         const bool forced = pet_.armed.trojanDivert;
         pet_.armed.trojanDivert = false;
         if (pet_.creature->evolvesToTrojanId) {
-            lcgAdvance(rng_);
-            const bool rolled = (rng_ >> 16) % 100 < static_cast<uint32_t>(kTrojanDivertPct);
+            const bool rolled = rollD100() < kTrojanDivertPct;
             if (forced || rolled) {
                 // A divert that lands on a Daemon is a BRANCH, read off the same care
                 // budget the normal Script->Daemon hop reads (evolutionTargetId). The

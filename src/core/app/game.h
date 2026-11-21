@@ -114,6 +114,7 @@
 #include "core/model/idle_relay.h"
 #include "core/model/idle_wander.h"
 #include "core/model/inventory.h"
+#include "core/model/lcg.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
 #include "core/model/pet.h"
@@ -2201,6 +2202,8 @@ private:
     void rollWildWinDrops(bool shielded);
     void chargeWildLoss();
     void applyLossFrag();
+    // Advance the shared LCG and roll 0..99: every percentage chance the game takes.
+    int rollD100() { return static_cast<int>((lcgAdvance(rng_) >> 16) % 100); }
     void clearSubArea(int sector, int sub);
     void clearArea(int sector);
     // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and

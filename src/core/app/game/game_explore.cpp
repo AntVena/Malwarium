@@ -155,8 +155,7 @@ void Game::doExploreStep() {
     // than pushing the write out ahead of itself.
     ++op_.lifetimeSteps;
     markSaveDirty();
-    lcgAdvance(rng_);
-    const int roll = static_cast<int>((rng_ >> 16) % 100);
+    const int roll = rollD100();
     int t = kExploreLootPct;
     if (roll < t)                    { resolveLootEvent();    return; }
     t += kExploreWifiPct;  if (roll < t) { startWifiEvent();     return; }
@@ -452,9 +451,7 @@ void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
     // Reused by the loot-cache event and the Wi-Fi sleeping-guardian/open-cache
     // sub-outcomes ("no new ones," same pool, same log path).
     op_.bits += applyCacheBitsBonus(kLootBitsReward);   // Enhanced DataMining
-    lcgAdvance(rng_);
-    const bool dropItem =
-        static_cast<int>((rng_ >> 16) % 100) < kLootItemChancePct;
+    const bool dropItem = rollD100() < kLootItemChancePct;
     if (dropItem) {
         // Weighted through the same draw a container uses (Game::drawCacheItem), so a
         // staple that is common in the caches is common on the walk too.

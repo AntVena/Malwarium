@@ -404,7 +404,7 @@ void Game::rollWildWinDrops(bool shielded) {
     const int dropScalePct = wildDropScalePct(shielded);
     // What a wild win drops is the AREA's business: each area row carries its own wild
     // drop table, including whichever Merge Hub ingredient it makes farmable there.
-    if (static_cast<int>((lcgAdvance(rng_) >> 16) % 100) < kWildItemDropPct * dropScalePct / 100) {
+    if (rollD100() < kWildItemDropPct * dropScalePct / 100) {
         const AreaLootTable t = areaWildLootTable(walk_.sector);
         drawCacheItem(t.rows, t.count);
     }
@@ -412,7 +412,7 @@ void Game::rollWildWinDrops(bool shielded) {
     // The endless zones are the tier-4 mod source. The equip-LEVEL gate still applies,
     // so a lucky drop is held until the pet is deep enough to field it.
     if (walk_.sector == kDeepWebSector || walk_.sector == kDarkWebSector) {
-        if (static_cast<int>((lcgAdvance(rng_) >> 16) % 100) < kModDeepWebDropPct)
+        if (rollD100() < kModDeepWebDropPct)
             if (const char* id = rollAreaModId(walk_.sector))
                 grantMod(id);
     }
@@ -687,8 +687,7 @@ void Game::fightWild(const CombatEnemy& wild) {
 }
 
 void Game::resolveFlee(const CombatEnemy& wild) {
-    lcgAdvance(rng_);
-    const bool escaped = static_cast<int>((rng_ >> 16) % 100) < kFleeChancePct;
+    const bool escaped = rollD100() < kFleeChancePct;
     if (escaped) {
         std::snprintf(walk_.flavor, sizeof(walk_.flavor), "GOT AWAY");
         playSound(Sound::Fled);

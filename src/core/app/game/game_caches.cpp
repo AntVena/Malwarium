@@ -60,8 +60,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     itemCountOut = 0;
     for (int i = 0; i < c.draws; ++i) {
         if (c.drawChancePct < 100) {
-            lcgAdvance(rng_);
-            if (static_cast<int>((rng_ >> 16) % 100) >= c.drawChancePct) continue;
+            if (rollD100() >= c.drawChancePct) continue;
         }
         const ItemDef* got = drawCacheItem(c.pool, c.poolSize);
         if (got && itemCountOut < maxItems) itemsOut[itemCountOut++] = got;
@@ -71,8 +70,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     // is deep enough). Granted + logged here: the yield reveal shows the items/Bits, the
     // mod lands in MODS.
     if (c.modChancePct > 0) {
-        lcgAdvance(rng_);
-        if (static_cast<int>((rng_ >> 16) % 100) < c.modChancePct)
+        if (rollD100() < c.modChancePct)
             if (const char* id = rollAnyModId())
                 grantMod(id);
     }

@@ -57,8 +57,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // rather than reroll-looping, so "it knew nothing I don't" is a legitimate no-drop,
     // and that is also what keeps a re-run self-limiting without a decay curve: an enemy
     // you have learned out stops paying on its own.
-    lcgAdvance(rng_);
-    if (static_cast<int>((rng_ >> 16) % 100) >= dropPct) return false;
+    if (rollD100() >= dropPct) return false;
     std::vector<const char*> candidates;
     auto consider = [&](const MoveDef* m) {
         if (!moveIsTeachable(m)) return;
@@ -210,8 +209,7 @@ void Game::clearSubArea(int sector, int sub) {
     op_.world.subCleared[sector][sub] = true;
     log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
     if (firstClear) {
-        lcgAdvance(rng_);
-        if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
+        if (rollD100() < kModSubBossDropPct)
             if (const char* id = rollAreaModId(sector))
                 grantMod(id);
     }

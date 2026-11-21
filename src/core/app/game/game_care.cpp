@@ -176,8 +176,7 @@ int Game::maintFailPct() const {
 }
 
 bool Game::rollMaintSuccess() {
-    lcgAdvance(rng_);
-    int roll = static_cast<int>((rng_ >> 16) % 100);
+    int roll = rollD100();
     return roll >= maintFailPct();
 }
 

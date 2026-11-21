@@ -73,10 +73,9 @@ void Game::startWifiEvent() {
         return;
     }
 
-    lcgAdvance(rng_);
     // broadcasting() is the only path into AuditPhase::Hot (registerHandshake →
     // noteHandshake), so a pcap is the sole thing that can wake a guardian.
-    ev.rollOutcome(static_cast<int>((rng_ >> 16) % 100), auditCapture_.broadcasting());
+    ev.rollOutcome(rollD100(), auditCapture_.broadcasting());
     wifi_ = ev;
     walk_.eventBeat = 0;   // start the hands-off hold clock
     fx_.restart();             // and the dissolve's, which no press restarts
@@ -228,8 +227,7 @@ void Game::resolveNetworkDiscovery(WifiEvent& ev) {
         checkHackerRankUp();
         pet_.model.setHappiness(pet_.model.happiness() + kNetDiscoveryFoundHappyBonus);
 
-        lcgAdvance(rng_);
-        const char* id = rollNetworkDiscoveryCacheId(static_cast<int>((rng_ >> 16) % 100));
+        const char* id = rollNetworkDiscoveryCacheId(rollD100());
         inventory_.add(id, 1);
         const ItemDef* got = registry_.item(id);
         char buf[32];
@@ -286,9 +284,8 @@ bool Game::registerHandshake(const uint8_t* bssid) {
     ++op_.cant.handshakesSeen;
     // A new captured handshake is rarer and harder to earn, so it pays a richer
     // Sealed Cache than the plain-discovery reward above (no Common tier).
-    lcgAdvance(rng_);
     {
-        const char* id = rollHandshakeCaptureCacheId(static_cast<int>((rng_ >> 16) % 100));
+        const char* id = rollHandshakeCaptureCacheId(rollD100());
         inventory_.add(id, 1);
         const ItemDef* got = registry_.item(id);
         char buf[32];

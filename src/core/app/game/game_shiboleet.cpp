@@ -9,7 +9,6 @@
 #include "core/model/shiboleet_meeting.h"
 #include "core/ui/combat_screen.h"       // kSwarmSeatW/H: the flock's cell in a fight
 #include "core/ui/shiboleet_screen.h"   // ...and the one it takes on the meeting screens
-#include "core/model/lcg.h"
 
 // game_shiboleet.cpp: THE SHIBOLEET, the guardian encounter. Named for what is asking:
 // every guardian is a node of the Shiboleet, the swarm the Silk Lode's chapters reveal.
@@ -223,8 +222,7 @@ void Game::grantBoon() {
     //
     // Pays here without handing back, because finishShiboleet is the only exit, so
     // the pet reads what it was given on the verdict before the walk resumes.
-    lcgAdvance(rng_);
-    const bool escort = static_cast<int>((rng_ >> 16) % 100) < kShiboleetBoonEscortPct;
+    const bool escort = rollD100() < kShiboleetBoonEscortPct;
     if (escort) {
         walk_.escortBattles = kShiboleetEscortBattles;
         std::snprintf(shib_.flavor, sizeof(shib_.flavor), "ESCORTED X%d",
