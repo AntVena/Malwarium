@@ -37,7 +37,7 @@ contrast framing ("X, not Y", "rather than", "not just") into a plain statement 
 contrast carries no decision, and delete sentences that add emphasis without a fact. Docs
 first: they are read more often than any one comment.
 
-### Self-architecture review. Last run: 2026-11-11
+### Self-architecture review. Last run: 2026-11-21
 Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cross-file duplication,
 dead code, and orphaned helpers that should have moved to `game_internal.h` or been deleted. Verify
 actual file sizes, don't trust what a doc says they are. Sources are globbed (`CMakeLists.txt`,
@@ -55,7 +55,9 @@ written; this run finds where the code falls short. Look for:
 - a dispatcher that does its cases' work;
 - copies that have drifted apart;
 - an include that points up the layers (`app`, `ui`, `model`, `content`, then `render`,
-  `net`, `audio`, `device`): `git grep '#include "core/<higher layer>/' -- src/core/<lower layer>`;
+  `net`, `audio`, `device`): `git grep '#include "core/<higher layer>/' -- src/core/<lower layer>`.
+  The last four are peers; `core/device/platform.h` takes the two leaf vocabulary headers
+  `core/render/color.h` and `core/audio/sound.h` from them, which is expected;
 - a draw function with more than four inputs, or a `bool` parameter;
 - a type with more than one reason to change. `Game` is the standing case, tracked on the
   board; a new feature added straight into `Game` is a finding.
