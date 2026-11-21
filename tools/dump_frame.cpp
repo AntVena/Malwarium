@@ -1526,8 +1526,9 @@ int main(int argc, char** argv) {
             tapC(game); // C -> back to the habitat
         } else if (hasFlag(argc, argv, "warp")) {
             // Warp picker: hold both keys, open the control overlay, walk to WARP.
+            // "tokenonly" holds just the Access Token, so the rest row draws dimmed.
             game.inventory().add("access_token", 1);
-            game.inventory().add("safe_mode_key", 1);
+            if (!hasFlag(argc, argv, "tokenonly")) game.inventory().add("safe_mode_key", 1);
             game.onButton({Button::A, true, true});  // A+C -> overlay, on PING
             tapA(game); // A -> WARP
             game.onButton({Button::B, true, false}); // B -> warp-key picker

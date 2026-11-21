@@ -98,6 +98,13 @@ inline void tapC(mal::Game& g) {
     g.onButton(lift(mal::Button::C));
 }
 
+// A COMPLETE A press. On a list A's hold repeats the step, so a press never released
+// keeps stepping on the next tick; a gate that ticks after stepping wants this.
+inline void tapA(mal::Game& g) {
+    g.onButton(press(mal::Button::A));
+    g.onButton(lift(mal::Button::A));
+}
+
 // A COMPLETE B press. Five screens read B as a tap/hold pair. The ITEMS list once
 // Type-Tabs is owned, the MOVES picker, the Hacker VAULT once Bulk-Open is owned, the
 // CFG Factory Reset, and ROCK THE DOCK's bracket (tap starts the bout, hold opens the

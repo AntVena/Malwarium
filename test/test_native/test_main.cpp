@@ -463,6 +463,7 @@ int g_failures = 0;
     RUN(test_zone_titles_picker_skips_locked)     \
     RUN(test_combat_force_enemy_first)            \
     RUN(test_encounter_sinkhole_bypass)           \
+    RUN(test_sinkhole_switch_keeps_traps)         \
     RUN(test_sinkhole_xp_persists_immediately)    \
     /* The Wi-Fi network explore event */   \
     RUN(test_wifi_event_reached)                  \
@@ -565,6 +566,7 @@ int g_failures = 0;
     RUN(test_warp_item_shape)                     \
     RUN(test_warp_key_inert_from_items)           \
     RUN(test_access_token_warps_to_shop)          \
+    RUN(test_access_token_picks_the_mod_shop)     \
     RUN(test_safe_mode_key_warps_to_rest)         \
     RUN(test_explore_warp_no_keys_is_noop)        \
     RUN(test_warp_key_walk_find)                  \

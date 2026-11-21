@@ -21,6 +21,7 @@ void ExploreControlScreen::onButton(ExploreControlHost& host, const ButtonEvent&
             if (host.inDeepWebDive()) host.toggleAutoRedive();
             else host.toggleAutoProgress();
             break;
+        case ExploreControlRow::Sinkhole: host.toggleEncounterBypass(); break;
         case ExploreControlRow::Sound: host.setExploreSound(!host.exploreSound()); break;
         case ExploreControlRow::Stop: host.stopWalk(); break;
     }
@@ -37,6 +38,8 @@ void ExploreControlScreen::draw(Framebuffer& fb, const ExploreControlHost& host)
     v.hasWarpKey = host.hasWarpKey();
     v.autoRow = host.inDeepWebDive() ? ExploreAutoRow::Redive : ExploreAutoRow::Progress;
     v.autoOn = host.inDeepWebDive() ? host.autoRedive() : host.autoProgress();
+    v.sinkholeOn = host.encounterBypassOn();
+    v.sinkholesHeld = host.encounterBypassHeld();
     v.sound = !soundModeAllows(host.soundMode(), SoundTier::Event) ? ExploreSound::OffInCfg
               : host.exploreSound()                                ? ExploreSound::On
                                                                    : ExploreSound::Muted;

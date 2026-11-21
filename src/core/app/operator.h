@@ -303,6 +303,10 @@ struct Operator {
     // moves on by itself (Game::autoProgressStep); off, it farms where it was armed. How
     // this player likes to walk, whichever pet is doing it, so it outlives every walk.
     bool autoProgress = true;
+    // SINKHOLES on the explore walk: on, a held encounter bypass is spent on each wild
+    // the walk meets (Game::startEncounter); off, the walk fights and keeps the traps. How
+    // this player likes to walk, so it outlives every walk like AUTO above.
+    bool useEncounterBypass = true;
     DiveLoadout dive;
 
     // This record as the save keeps it, at game-ms `nowMs`. A spare mod the running

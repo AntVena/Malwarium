@@ -302,7 +302,7 @@ void Game::pingWalk() {
 }
 
 void Game::openWarpPicker() {
-    warpPicker_.open();
+    warpPicker_.open(*this);
     nav_ = Nav::WarpPicker;
 }
 
@@ -327,19 +327,40 @@ std::vector<const ItemDef*> Game::heldWarpKeys() const {
     return out;
 }
 
-void Game::useWarpKey(const ItemDef& d) {
-    // Spend the key and jump straight to its target event: Access Token → the
-    // nearest storefront, Safe-Mode Key → a safe rest. startShopEvent() sets
-    // Nav::Shop; resolveSafeRestEvent() resolves in place and returns to the habitat.
+std::vector<WarpDestination> Game::warpDestinations() const {
+    // Every shipped warp key, held or not, in registry order, so the rows hold still as
+    // keys come and go. A shop key reaches both of the area's storefronts.
+    std::vector<WarpDestination> out;
+    const AreaDef& here = area(walk_.sector);
+    for (const ItemDef* d : registry_.allItems()) {
+        if (!d) continue;
+        const bool held = inventory_.count(d->id) > 0;
+        switch (d->walkWarp) {
+            case ItemDef::WalkWarp::Shop:
+                out.push_back({d, WarpTarget::ItemShop, here.shop.name, held});
+                out.push_back({d, WarpTarget::ModShop, here.modShop.name, held});
+                break;
+            case ItemDef::WalkWarp::SafeRest:
+                out.push_back({d, WarpTarget::SafeRest, "SAFE MODE", held});
+                break;
+            case ItemDef::WalkWarp::None: break;
+        }
+    }
+    return out;
+}
+
+void Game::warpTo(const WarpDestination& dest) {
+    if (!dest.key || inventory_.count(dest.key->id) <= 0) return;
+    const ItemDef& d = *dest.key;
     inventory_.remove(d.id, 1);
     char buf[28];
     std::snprintf(buf, sizeof(buf), "USED %s", d.displayName);
     log_.push(LogEventType::ItemUsed, buf);
     markSaveDirty();
-    switch (d.walkWarp) {
-        case ItemDef::WalkWarp::Shop:     startShopEvent(); break;
-        case ItemDef::WalkWarp::SafeRest: resolveSafeRestEvent(d); break;
-        case ItemDef::WalkWarp::None:     returnToExplore(); break;  // unreachable
+    switch (dest.target) {
+        case WarpTarget::ItemShop: startShopEvent(); break;
+        case WarpTarget::ModShop:  startModShopEvent(); break;
+        case WarpTarget::SafeRest: resolveSafeRestEvent(d); break;
     }
 }
 

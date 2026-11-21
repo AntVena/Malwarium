@@ -137,7 +137,10 @@ SCENES=(
   # ...and the other screen its body is on: the guardian's own fight, where the swarm holds
   # the rival seat that used to be a borrowed pet sheet.
   "guardian_fight|shiboleet refused fight beats:60"
-  "shop|shop"                       "encounter|encounter"
+  # No "encounter" scene: a walk resolves every wild itself (Game::startEncounter), so the
+  # Fight/Flee intro is never reached in play and a walk cannot stop on it.
+  "shop|shop"                       "warp|warp"
+  "warp_tokenonly|warp tokenonly"
   "modshop|modshop"                 "modshop_full|modshop full"
   "combat|combat"                   "postencounter|postencounter"
   "combat_stats|combat stats"       "combat_kit|combat kit"

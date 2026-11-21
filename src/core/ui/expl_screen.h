@@ -256,8 +256,8 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // navigation key inside a screen it opened: that is not what the Exploit chord is for,
 // and A+C is awkward to hit besides, since A registers on its own first. STOP stays
 // last, where a thumb parked on the bottom row expects the way out.
-enum class ExploreControlRow { Ping, Warp, AutoProgress, Sound, Stop };
-constexpr int kExploreControlRows = 5;
+enum class ExploreControlRow { Ping, Warp, AutoProgress, Sinkhole, Sound, Stop };
+constexpr int kExploreControlRows = 6;
 
 // What the SOUND row reads. OffInCfg is CFG's SOUND letting no Event cue through: the
 // row says so, since a switch reading ON under a silent device lies.
@@ -271,6 +271,10 @@ struct ExploreControlView {
     bool hasWarpKey = false;          // false dims the WARP row: B on it is inert
     ExploreAutoRow autoRow = ExploreAutoRow::Progress;
     bool autoOn = false;              // the AUTO row's ON/OFF, dual-coded by the word
+    // The SINKHOLES row: whether a held trap is spent on each wild, and how many are
+    // held. ON reads with its count, so a switch with nothing to spend says so.
+    bool sinkholeOn = true;
+    int sinkholesHeld = 0;
     ExploreSound sound = ExploreSound::On;
     // A FOOTER stat under the rows, not a row: what a wild win on the armed rung
     // actually pays as a percentage of the flat base (Game::exploreXpEfficiencyPct). It
@@ -408,11 +412,18 @@ struct StorefrontView {
 };
 void drawShop(Framebuffer& fb, const StorefrontView& v);
 
-// Warp-key picker: the walk's B overlay listing the held warp keys
-// (Access Token / Safe-Mode Key), one row each, cursor-highlighted, with an
-// A-next / B-use / C-back hint band. Using one jumps to its target event. Dual-coded
-// (the row list + spelled-out hint): grayscale-safe. No new art; reuses list chrome.
-void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
+// Warp picker: where a warp key can jump to in the armed area, one two-line row each.
+// The destination's name with its kind opposite (ITEMS / MODS / REST), and under it
+// the key it spends, or NO <key> when the bag lacks it. A row with no key is dimmed and
+// says so in words, so it reads in grayscale. No new art; reuses list chrome.
+struct WarpPickerRow {
+    const char* name = "";
+    const char* kind = "";
+    const char* keyName = "";
+    bool held = false;
+};
+constexpr int kWarpPickerMaxRows = 4;
+void drawWarpPicker(Framebuffer& fb, const WarpPickerRow* rows, int rowCount,
                     int cursor);
 
 // Post-encounter status readout: after a WILD (non-boss,

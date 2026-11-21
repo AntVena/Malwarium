@@ -681,6 +681,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     writeId(w, op.diveBellItem);
     w.u8(op.diveDeviceKind);
     writeId(w, op.diveDeviceItem);
+
+    // v79: the walk's SINKHOLES switch.
+    w.u8(op.useEncounterBypass);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -1430,6 +1433,9 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
         r.bytes(op.diveDeviceItem.id, kSaveIdCap);
         op.diveDeviceItem.id[kSaveIdCap - 1] = '\0';
     }
+
+    // v79 tail: the walk's SINKHOLES switch. Absent in an older blob -> on.
+    if (version >= 79) op.useEncounterBypass = r.u8();
 
     if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);

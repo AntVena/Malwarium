@@ -692,11 +692,12 @@ void Game::startEncounter() {
     // Auto-explore is a hands-off background mode: a wild encounter resolves
     // itself. There's no human at the intro to press Fight, and Flee is pointless
     // since a loss already cancels the mode + zeroes the streak (finishCombat). A
-    // held Sinkhole Trap still auto-bypasses for XP (its whole purpose);
-    // otherwise the fight auto-starts. The Fight/Flee/Sinkhole intro stands only for a
+    // held Sinkhole Trap auto-bypasses for XP while the overlay's SINKHOLES switch
+    // is on (Operator::useEncounterBypass); otherwise the fight auto-starts. The Fight/Flee/Sinkhole intro stands only for a
     // (currently unused) manual encounter path.
     if (walk_.active) {
-        if (const ItemDef* bypass = heldEncounterBypass()) resolveSinkhole(*bypass);
+        const ItemDef* bypass = op_.useEncounterBypass ? heldEncounterBypass() : nullptr;
+        if (bypass) resolveSinkhole(*bypass);
         else fightWild(wild);
         return;
     }
@@ -725,6 +726,13 @@ const ItemDef* Game::heldEncounterBypass() const {
     for (const ItemDef* d : registry_.allItems())
         if (d->preEncounterXp > 0 && inventory_.count(d->id) > 0) return d;
     return nullptr;
+}
+
+int Game::encounterBypassHeld() const {
+    int n = 0;
+    for (const ItemDef* d : registry_.allItems())
+        if (d->preEncounterXp > 0) n += inventory_.count(d->id);
+    return n;
 }
 
 void Game::resolveSinkhole(const ItemDef& d) {

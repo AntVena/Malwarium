@@ -1942,6 +1942,12 @@ public:
         op_.autoProgress = !op_.autoProgress;
         markSaveDirty();
     }
+    bool encounterBypassOn() const override { return op_.useEncounterBypass; }
+    int encounterBypassHeld() const override;
+    void toggleEncounterBypass() override {
+        op_.useEncounterBypass = !op_.useEncounterBypass;
+        markSaveDirty();
+    }
 
 private:
     // What only the test-seam block above sets: the away summary (off on the Hatched
@@ -2384,16 +2390,18 @@ private:
 
     // Key warp items. A "Key-item find" walk event drops a
     // random warp key into the inventory (non-interrupting, like the Sealed Cache);
-    // then, on the walk, B opens a picker of held warp keys and using one jumps
-    // straight to its target event: Access Token → the nearest shop
-    // (startShopEvent), Safe-Mode Key → a safe rest (resolveSafeRestEvent). The keys
+    // then, on the walk, the overlay's WARP opens a picker of destinations and picking
+    // one spends its key and jumps straight there: Access Token → the area's item or mod
+    // shop (startShopEvent / startModShopEvent), Safe-Mode Key → a safe rest
+    // (resolveSafeRestEvent). The keys
     // are inert from the ITEMS use path ("USE ON THE WALK") so they can only be spent
-    // on a walk. heldWarpKeys() enumerates the currently-held keys (for the picker +
-    // draw); resolveSafeRestEvent() applies the key's own effects (a negative Frag
+    // on a walk. warpDestinations() lists where the keys reach from the armed area (the
+    // picker's rows) and heldWarpKeys() the keys in the bag; resolveSafeRestEvent() applies the key's own effects (a negative Frag
     // magnitude on its row) and returns to the walk.
     void resolveKeyItemEvent();
-    std::vector<const ItemDef*> heldWarpKeys() const override;
-    void useWarpKey(const ItemDef& d) override;
+    std::vector<const ItemDef*> heldWarpKeys() const;
+    std::vector<WarpDestination> warpDestinations() const override;
+    void warpTo(const WarpDestination& d) override;
     void resolveSafeRestEvent(const ItemDef& d);
 
     // The ITEM OFFER (game_offer.cpp, game/item_offer_screen.h): items that only matter
@@ -3013,7 +3021,7 @@ private:
     StatReader stat_;         // the STAT slot's pages, scroll and INDEX (game/stat_reader.h)
     MergeScreen merge_;       // the MERGE HUB's cursor (game/merge_screen.h)
     CrewScreen crew_;         // the CREW slot's views and cursors (game/crew_screen.h)
-    WarpPickerScreen warpPicker_;   // the held warp keys (game/warp_picker_screen.h)
+    WarpPickerScreen warpPicker_;   // where a warp key can jump (game/warp_picker_screen.h)
 
     // The ITEM OFFER. pet_.eggOfferMade is the once-per-egg latch: declining is an answer, so the egg is not
     // asked again (cleared by layEgg; session-volatile, so a reboot asks once more).

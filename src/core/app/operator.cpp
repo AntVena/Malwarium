@@ -215,6 +215,7 @@ SaveOperator Operator::saved(const ContentRegistry& reg, uint32_t nowMs) const {
     // reading.
     if (const BackgroundDef* b = backgroundFor(backgroundPick)) s.backgroundPick = b->wire;
     s.autoProgress = autoProgress ? 1 : 0;
+    s.useEncounterBypass = useEncounterBypass ? 1 : 0;
     saveDiveLoadout(dive, s);
 
     saveWorld(world, s);
@@ -461,6 +462,7 @@ Operator Operator::loaded(const SaveOperator& s, const SaveId (&activeMods)[kMod
     const BackgroundDef* b = backgroundByWire(s.backgroundPick);
     o.backgroundPick = b ? b->scene : SceneId::None;
     o.autoProgress = s.autoProgress != 0;
+    o.useEncounterBypass = s.useEncounterBypass != 0;
     o.dive = loadedDiveLoadout(s, reg);
     return o;
 }

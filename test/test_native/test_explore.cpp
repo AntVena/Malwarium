@@ -799,7 +799,7 @@ void test_explore_xp_efficiency_reads_the_rung() {
       CHECK(crawl.exploreXpEfficiencyPct() > shallow); }   // ...and its depth still pays
 
     // The overlay draws it, and draws it as a FOOTER: two walks whose rungs pay
-    // differently differ under the rule, and their four action rows are pixel-identical:
+    // differently differ under the rule, and their action rows are pixel-identical:
     // the rate is a reading, not a row the cursor can land on.
     { Framebuffer shallow(kActiveW, kActiveH), deep(kActiveW, kActiveH);
       auto openOverlay = [](Game& g, int sub, Framebuffer& fb) {
@@ -812,8 +812,8 @@ void test_explore_xp_efficiency_reads_the_rung() {
       openOverlay(a2, 0, shallow);
       openOverlay(b2, kExplSubAreas - 1, deep);
       CHECK(a2.exploreXpEfficiencyPct() != b2.exploreXpEfficiencyPct());
-      CHECK(regionDiffers(shallow, deep, 0, 143, kActiveW, 162));   // the footer moved
-      CHECK(!regionDiffers(shallow, deep, 0, 60, kActiveW, 140)); } // ...and only it
+      CHECK(regionDiffers(shallow, deep, 0, 162, kActiveW, 180));   // the footer moved
+      CHECK(!regionDiffers(shallow, deep, 0, 46, kActiveW, 158)); } // ...and only it
 }
 
 // End-to-end: clear all 5 sub-areas of an area (each = a 10-win streak →
@@ -1880,6 +1880,52 @@ void test_encounter_sinkhole_bypass() {
           xp0 + ContentRegistry::embedded().item("sinkhole_trap")->preEncounterXp);
     CHECK(g.inventory().count("sinkhole_trap") == 0);     // trap consumed
     CHECK(std::strstr(g.exploreFlavor(), "Sinkhole Trap +"));  // named by the item spent
+}
+
+// SINKHOLES on the explore overlay decides whether a held trap is spent. Switched off,
+// the walk fights its wilds and the trap stays in the bag for a wild worth skipping;
+// the switch is the player's, so it outlives the session like AUTO.
+void test_sinkhole_switch_keeps_traps() {
+    MemSaveStore store;
+    {
+        Game g{StartMode::Hatched, "bruinforce", &store};
+        g.inventory().add("sinkhole_trap", 1);
+        CHECK(g.encounterBypassOn());                     // defaults ON: earlier builds spent it
+        g.startExplore(0, 0);
+        g.onButton(chordAC());                            // habitat -> the overlay, on PING
+        for (int i = 0; i < static_cast<int>(ExploreControlRow::Sinkhole); ++i) {
+            g.onButton(press(Button::A));
+            g.onButton(lift(Button::A));
+        }
+        g.onButton(press(Button::B));                     // switch it off
+        CHECK(!g.encounterBypassOn());
+        CHECK(g.nav() == Game::Nav::ExploreControl);      // a mode leaves the list open
+        tapC(g);
+        uint32_t t = 0;
+        bool fought = false;
+        for (int i = 0; i < 400 && !fought; ++i) {
+            switch (g.nav()) {
+                case Game::Nav::Idle:
+                    if (g.exploreActive()) pingExplore(g); else g.startExplore(0, 0);
+                    break;
+                case Game::Nav::Combat:
+                    fought = true;
+                    for (int j = 0; j < 400 &&
+                            g.combat().outcome() == Combat::Outcome::Ongoing; ++j)
+                        g.tick(t += kHeartbeatMs);
+                    g.onButton(press(Button::B));
+                    break;
+                case Game::Nav::Shop:
+                case Game::Nav::ModShop: tapC(g); break;
+                default: g.onButton(press(Button::B)); break;
+            }
+        }
+        CHECK(fought);                                    // the wild was fought...
+        CHECK(g.inventory().count("sinkhole_trap") == 1); // ...and the trap kept
+        g.saveNow();
+    }
+    Game r{StartMode::FreshHatch, "bruinforce", &store};
+    CHECK(!r.encounterBypassOn());                        // the switch survives a reboot
 }
 
 // Regression: resolveSinkhole() persists immediately, like every other XP grant

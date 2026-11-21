@@ -6,38 +6,55 @@
 
 namespace mal {
 
+namespace {
+
+// The cursor's next destination `dir` way that a held key reaches. Rebuilt from the
+// bag each call, so a key spent elsewhere can't leave the cursor on a row it no
+// longer opens.
+int stepHeld(const std::vector<WarpDestination>& d, int cur, int dir) {
+    return stepRow(cur, static_cast<int>(d.size()), dir,
+                   [&](int i) { return d[static_cast<size_t>(i)].held; });
+}
+
+}  // namespace
+
+void WarpPickerScreen::open(const WarpPickerHost& host) {
+    row_ = stepHeld(host.warpDestinations(), -1, +1);
+    if (row_ < 0) row_ = 0;
+}
+
 void WarpPickerScreen::onButton(WarpPickerHost& host, const ButtonEvent& ev) {
-    // The list is rebuilt each press so a key that ran out (spent) can't leave a stale
-    // cursor.
-    auto keys = host.heldWarpKeys();
-    if (keys.empty()) { host.returnToExplore(); return; }
-    if (row_ >= static_cast<int>(keys.size())) row_ = 0;
+    const auto dests = host.warpDestinations();
+    const int n = static_cast<int>(dests.size());
+    if (row_ >= n) row_ = 0;
     if (ev.button == Button::A) {
         stepList(host, +1);
     } else if (ev.button == Button::B) {
-        host.useWarpKey(*keys[row_]);
+        if (n > 0 && dests[static_cast<size_t>(row_)].held) host.warpTo(dests[static_cast<size_t>(row_)]);
     } else if (ev.button == Button::C) {
         host.returnToExplore();
     }
 }
 
 void WarpPickerScreen::stepList(const WarpPickerHost& host, int dir) {
-    row_ = stepRow(row_, static_cast<int>(host.heldWarpKeys().size()), dir);
+    row_ = stepHeld(host.warpDestinations(), row_, dir);
 }
 
 void WarpPickerScreen::draw(Framebuffer& fb, const WarpPickerHost& host) const {
-    // Snapshot the held keys' display names into a small array the UI helper reads
-    // (the picker is at most a couple of rows: one per warp-key type).
-    auto keys = host.heldWarpKeys();
-    const char* names[8];
+    const auto dests = host.warpDestinations();
+    WarpPickerRow rows[kWarpPickerMaxRows];
     int n = 0;
-    for (const ItemDef* d : keys) {
-        if (n >= 8) break;
-        names[n++] = d->displayName;
+    for (const WarpDestination& d : dests) {
+        if (n >= kWarpPickerMaxRows) break;
+        WarpPickerRow& r = rows[n++];
+        r.name = d.name;
+        r.kind = d.target == WarpTarget::ItemShop  ? "ITEMS"
+                 : d.target == WarpTarget::ModShop ? "MODS"
+                                                   : "REST";
+        r.keyName = d.key ? d.key->displayName : "";
+        r.held = d.held;
     }
-    int cursor = row_;
-    if (n > 0 && cursor >= n) cursor = 0;
-    drawWarpPicker(fb, names, n, cursor);
+    drawWarpPicker(fb, rows, n, row_ < n ? row_ : 0);
 }
 
 }  // namespace mal

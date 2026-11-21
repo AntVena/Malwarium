@@ -817,7 +817,7 @@ void drawExploreBadge(Framebuffer& fb, const char* label, int count, int countMa
 // SOUND switches · Stop. Standard A/B/C returns, spelled out (grayscale-safe). A bordered
 // PAPER panel (TRACK outline via a 2px inset) centered over the living area.
 void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
-    const int boxW = 184, boxH = 160;
+    const int boxW = 184, boxH = 178;
     const int bx = (kActiveW - boxW) / 2, by = (kActiveH - boxH) / 2;
     fb.fillRect(bx - 2, by - 2, boxW + 4, boxH + 4, palColor(Pal::TRACK));
     fb.fillRect(bx, by, boxW, boxH, palColor(Pal::PAPER));
@@ -829,7 +829,7 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
     // rather than being skipped: the row is what says the action exists at all, and its
     // reason is spelled out beside it.
     static const char* kLabels[kExploreControlRows] = {
-        "NETWORK PING", "WARP", "AUTO-PROGRESS", "SOUND", "STOP EXPLORE"};
+        "NETWORK PING", "WARP", "AUTO-PROGRESS", "SINKHOLES", "SOUND", "STOP EXPLORE"};
     const int rowTop = by + 28, rowH = 18;
     for (int i = 0; i < kExploreControlRows; ++i) {
         const int y = rowTop + i * rowH;
@@ -848,7 +848,18 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
         // WORDS: nothing here is carried by colour alone.
         const char* right = nullptr;
         Rgb565 rc = palColor(Pal::INK_DIM);
-        if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
+        char sinkhole[16];
+        if (i == static_cast<int>(ExploreControlRow::Sinkhole)) {
+            if (!v.sinkholeOn) {
+                right = "OFF";
+            } else if (v.sinkholesHeld == 0) {
+                right = "ON - NONE";
+            } else {
+                std::snprintf(sinkhole, sizeof(sinkhole), "ON X%d", v.sinkholesHeld);
+                right = sinkhole;
+                rc = palColor(Pal::ACCENT);
+            }
+        } else if (i == static_cast<int>(ExploreControlRow::AutoProgress)) {
             right = v.autoOn ? "ON" : "OFF";
             if (v.autoOn) rc = palColor(Pal::ACCENT);
         } else if (i == static_cast<int>(ExploreControlRow::Sound)) {
@@ -1095,23 +1106,25 @@ void drawShop(Framebuffer& fb, const StorefrontView& v) {
     drawHintBand(fb, hint);
 }
 
-void drawWarpPicker(Framebuffer& fb, const char* const* keyNames, int keyCount,
-                    int cursor) {
-    // Header: what this is, spelled out so it reads without colour.
-    drawHeaderBand(fb, "WARP KEY");
-    drawText(fb, kMargin, 28, "JUMP TO...", palColor(Pal::INK_DIM));
-
-    // One row per held key, cursor-highlighted (a filled track + the row cursor:
-    // the same idiom as the sector list / shop row, so it reads in grayscale).
-    for (int i = 0; i < keyCount; ++i) {
-        const int y = kTrackRowTop + i * kRowH;
+void drawWarpPicker(Framebuffer& fb, const WarpPickerRow* rows, int rowCount, int cursor) {
+    drawHeaderBand(fb, "WARP");
+    // Two lines a row, both inside the selection fill: the destination over the key it
+    // spends, the shape EXPL's rows use.
+    constexpr int kNameDy = 5;
+    constexpr int kKeyDy = kNameDy + kFontH + 4;
+    for (int i = 0; i < rowCount; ++i) {
+        const WarpPickerRow& r = rows[i];
+        const int y = kRowTop + i * kRowH;
         if (i == cursor) drawRowSelection(fb, y, kRowH);
-        drawText(fb, 24, y + (kRowH - kFontH) / 2, keyNames[i],
-                 palColor(Pal::INK));
+        drawLabelValue(fb, 24, y + kNameDy, r.name,
+                       palColor(r.held ? Pal::INK : Pal::INK_DIM), r.kind,
+                       palColor(r.held ? Pal::ACCENT : Pal::INK_DIM), 0, Overflow::Clip);
+        char key[40];
+        std::snprintf(key, sizeof(key), "%s %s", r.held ? "SPENDS" : "NO", r.keyName);
+        drawTextMarquee(fb, 24, y + kKeyDy, kActiveW - kMargin - 24, key,
+                        palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
-
-    const char* hint = "A NEXT  B USE  C BACK";
-    drawHintBand(fb, hint);
+    drawHintBand(fb, "A NEXT  B WARP  C BACK");
 }
 
 // Post-encounter status readout: a brief, informational-only

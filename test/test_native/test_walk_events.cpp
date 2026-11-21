@@ -846,6 +846,25 @@ void test_access_token_warps_to_shop() {
     CHECK(g.inventory().count("access_token") == 0); // key consumed
 }
 
+// The same key reaches the area's MOD shop: it is the picker's second row, and the
+// third (the safe rest) is dimmed and skipped while no Safe-Mode Key is held, so A
+// from the mod shop wraps back to the item shop.
+void test_access_token_picks_the_mod_shop() {
+    Game g{StartMode::Hatched};
+    enterWalk(g);
+    g.inventory().add("access_token", 1);
+    g.onButton(chordAC());
+    tapA(g);                                         // -> the WARP row
+    g.onButton(press(Button::B));                    // -> the picker, on the item shop
+    CHECK(g.nav() == Game::Nav::WarpPicker);
+    tapA(g);                                         // -> the mod shop
+    tapA(g);                                         // skips the dimmed rest, wraps
+    tapA(g);                                         // -> the mod shop again
+    g.onButton(press(Button::B));
+    CHECK(g.nav() == Game::Nav::ModShop);
+    CHECK(g.inventory().count("access_token") == 0);
+}
+
 // Using the Safe-Mode Key while exploring warps to a safe rest: it de-frags the pet
 // by the key ROW's own Frag magnitude, consumes the key, and returns to the idle
 // habitat (no combat). Read off the row rather than a constant, so retuning the key
