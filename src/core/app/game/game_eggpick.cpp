@@ -45,8 +45,8 @@ void Game::startEggPick(int rounds) {
     dirty_ = true;
 }
 
-void Game::eggPickAim(bool secondHalf) {
-    if (eggPick_ && eggPick_->aim(secondHalf)) dirty_ = true;
+void Game::eggPickAim(EggHalf half) {
+    if (eggPick_ && eggPick_->aim(half)) dirty_ = true;
 }
 
 void Game::eggPickCommit() {

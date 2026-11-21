@@ -9,6 +9,7 @@
 #pragma once
 
 #include "core/app/game/board_host.h"
+#include "core/model/egg_pick.h"
 
 namespace mal {
 
@@ -19,7 +20,7 @@ struct EggPick;
 class EggPickHost : public BoardHost {
 public:
     virtual const EggPick* eggPick() const = 0;   // null with no pick open
-    virtual void eggPickAim(bool secondHalf) = 0;
+    virtual void eggPickAim(EggHalf half) = 0;
     virtual void eggPickCommit() = 0;   // halve, or dismiss the reveal
 
 protected:

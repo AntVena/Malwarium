@@ -2750,7 +2750,7 @@ private:
     // how many halvings this run asks for: the hatch always passes kEggPickRounds, and
     // the arcade passes its difficulty.
     void startEggPick(int rounds);       // hide the live egg in the clutch, open the modal
-    void eggPickAim(bool secondHalf) override;   // A/C: highlight the first/second half
+    void eggPickAim(EggHalf half) override;
     void eggPickCommit() override;               // B: halve, or dismiss the reveal
     const EggPick* eggPick() const override { return eggPick_ ? &*eggPick_ : nullptr; }
 

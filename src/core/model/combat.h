@@ -775,7 +775,9 @@ private:
     const Combatant& seat(Side s) const { return s == Side::Player ? player_ : enemy_; }
     uint32_t rng();
     int chooseMove(Combatant& self);                 // autonomous roll (lean + no-repeat)
-    int pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat);  // -1 = none
+    // The two pools chooseMove draws from. -1 = nothing qualifies: keep what you had.
+    enum class SlotPool { AnyButLast, AnyAttack };
+    int pickSlot(const Combatant& self, SlotPool pool);
     void resolveTurn(Combatant& actor, Combatant& target, Side side);
     // resolveTurn's phases. A `bool` return means the phase used up the turn.
     struct TurnCast {

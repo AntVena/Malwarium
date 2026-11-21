@@ -381,10 +381,10 @@ void test_eggpick_rules_live_on_the_run() {
     EggPick p = EggPick::started(/*target=*/5, /*rounds=*/0);
     CHECK(p.rounds == 1 && p.colSpan == kEggPickCols && p.rowSpan == kEggPickRows);
     CHECK(p.targetInSpan() && p.splitsColumns());
-    CHECK(!p.aim(false) && p.aim(true));          // the A half is where it starts
+    CHECK(!p.aim(EggHalf::First) && p.aim(EggHalf::Second));          // the A half is where it starts
     p.commit();                                   // keep columns 4..7: slot 5 is column 5
     CHECK(p.col == 4 && p.colSpan == kEggPickCols / 2 && p.rowSpan == kEggPickRows);
-    CHECK(p.resolved && p.won && !p.aim(false));  // the one round, survived
+    CHECK(p.resolved && p.won && !p.aim(EggHalf::First));  // the one round, survived
 
     EggPick q = EggPick::started(5, kEggPickRounds);
     q.commit();                                   // keeps columns 0..3: the egg is gone

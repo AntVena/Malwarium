@@ -77,8 +77,8 @@ void EggPickScreen::onButton(EggPickHost& host, const ButtonEvent& ev) {
     // the modal cannot be cancelled. The RULES overlay is the one exception: while it's
     // up, B/C read as its scroll/close instead, same as every other engine.
     if (host.onGameBriefInput(ev)) return;
-    if (ev.button == Button::A) host.eggPickAim(false);
-    else if (ev.button == Button::C) host.eggPickAim(true);
+    if (ev.button == Button::A) host.eggPickAim(EggHalf::First);
+    else if (ev.button == Button::C) host.eggPickAim(EggHalf::Second);
     else if (ev.button == Button::B) host.eggPickCommit();
 }
 

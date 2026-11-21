@@ -17,6 +17,9 @@ constexpr int kEggPickRounds = 3;   // the hatch's halvings; a cabinet's dial pi
 constexpr int kEggPickCols = 8;     // the clutch grid BG_EGG_CLUTCH bakes
 constexpr int kEggPickRows = 4;
 
+// Which half of the span the pick is aimed at: A aims the first, C the second.
+enum class EggHalf : uint8_t { First, Second };
+
 struct EggPick {
     uint8_t target = 0;       // slot 0..kEggPickCols*kEggPickRows-1 holding the live egg
     uint8_t rounds = kEggPickRounds;   // halvings this pick asks for
@@ -52,7 +55,8 @@ struct EggPick {
 
     // A/C. False when nothing changed: the same half again, or a reveal, which is a
     // read-only screen that only B leaves.
-    bool aim(bool second) {
+    bool aim(EggHalf half) {
+        const bool second = half == EggHalf::Second;
         if (resolved || secondHalf == second) return false;
         secondHalf = second;
         return true;

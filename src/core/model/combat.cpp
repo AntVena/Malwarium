@@ -109,13 +109,14 @@ void Combat::setLast(const char* name, int dmg, Side side, bool charge,
     if (strike) strikeCount_++;
 }
 
-// Uniform pick over `self`'s slots, skipping lastMoveIdx (no-consecutive-repeat) unless
-// `allowRepeat`, and every Defend slot when `attacksOnly`. Draws exactly one rng() when
-// it has a choice. Returns -1 when nothing qualifies: keep what you had.
-int Combat::pickSlot(const Combatant& self, bool attacksOnly, bool allowRepeat) {
+// Uniform pick over `self`'s slots. AnyButLast skips lastMoveIdx (no consecutive
+// repeat); AnyAttack allows the repeat and skips every Defend slot. Draws exactly one
+// rng() when it has a choice.
+int Combat::pickSlot(const Combatant& self, SlotPool pool) {
     const int n = static_cast<int>(self.moves.size());
+    const bool attacksOnly = pool == SlotPool::AnyAttack;
     const bool excludeLast =
-        !allowRepeat && self.lastMoveIdx >= 0 && self.lastMoveIdx < n;
+        pool == SlotPool::AnyButLast && self.lastMoveIdx >= 0 && self.lastMoveIdx < n;
     auto eligible = [&](int i) {
         if (excludeLast && i == self.lastMoveIdx) return false;
         return !attacksOnly || self.moves[i]->kind == MoveDef::Kind::Attack;
@@ -314,7 +315,7 @@ int Combat::chooseMove(Combatant& self) {
     if (n <= 1) return 0;
     // Uniform over the moves != lastMoveIdx. The attack/defend lean then emerges from the
     // slot mix itself (more attack slots, more attack rolls) with no separate dial.
-    int idx = pickSlot(self, /*attacksOnly=*/false, /*allowRepeat=*/false);
+    int idx = pickSlot(self, SlotPool::AnyButLast);
     if (idx < 0) return 0;
     // Two exceptions re-roll a Defend into an Attack. Both allow a repeat, so a kit with
     // one attack can still act on them; both leave the original standing if no attack
@@ -323,13 +324,13 @@ int Combat::chooseMove(Combatant& self) {
     const int leanPct = phishFrenzyLeanPct(self);
     if (leanPct > 0 && self.moves[idx]->kind != MoveDef::Kind::Attack &&
         static_cast<int>(rng() % 100) < leanPct) {
-        const int atk = pickSlot(self, /*attacksOnly=*/true, /*allowRepeat=*/true);
+        const int atk = pickSlot(self, SlotPool::AnyAttack);
         if (atk >= 0) idx = atk;
     }
     // Second: a pure brace re-cast while this fighter's brace is still up buys nothing but
     // overkill. Unconditional: re-bracing is never the better turn.
     if (self.guard > 0 && braceOnlyDefend(*self.moves[idx])) {
-        const int atk = pickSlot(self, /*attacksOnly=*/true, /*allowRepeat=*/true);
+        const int atk = pickSlot(self, SlotPool::AnyAttack);
         if (atk >= 0) idx = atk;
     }
     return idx;
