@@ -810,9 +810,8 @@ CombatEnemy guardianEnemy(int areaIdx, int sub) {
     const int tier = areaTier(areaIdx);
     const BossSpine spine = bossSpine(tier, sub);
 
-    // NO FRAME, and that is the row's whole point: a guardian is drawn as the flock it is
-    // (FX_SWARM, core/render/swarm.h) rather than as a borrowed pet sheet, so it still
-    // costs no art and no longer costs the fiction. isSwarm is what tells the stage that
+    // NO FRAME: a guardian is drawn as the flock it is (FX_SWARM, core/render/swarm.h),
+    // which costs no art. isSwarm is what tells the stage that
     // this empty seat is a creature and not a fighter whose art is missing.
     CombatEnemy e{a.guardian.name,
                   nullptr,

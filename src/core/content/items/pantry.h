@@ -151,8 +151,8 @@ inline constexpr ItemDef kPantryItems[] = {
      /*walkWarp=*/ItemDef::WalkWarp::None, /*use=*/ItemDef::Use::Consume,
      /*category=*/ItemDef::Category::Derive, /*dropWeight=*/12, /*cache=*/{},
      // The one perishable. Low enough that a stack usually survives a feeding session,
-     // high enough that hoarding it is a losing plan, which is the whole point of the
-     // trade against Spoiled Macrol, the Pier-to-Peer currency it decays into.
+     // high enough that hoarding it is a losing plan: that is the trade against Spoiled
+     // Macrol, the Pier-to-Peer currency it decays into.
      /*spoil=*/{"spoiled_macrol", 5}},
 
     // Desalinated C-Salt is mostly a TRADE good: Pier-to-Peer takes a Spoiled Macrol

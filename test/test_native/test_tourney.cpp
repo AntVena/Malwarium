@@ -136,7 +136,7 @@ void test_tourney_entrants_are_legal_petware() {
             CHECK(known);
             CHECK(f.exploitAtHealthPct == exploitTrigger(f.exploit.kind).atHealthPct);
             CHECK(f.exploitOnEitherHealth == exploitTrigger(f.exploit.kind).eitherSide);
-            // The whole point of building it: it has to be a fightable combatant.
+            // It has to be a fightable combatant.
             const Combatant c = makeTourneyCombatant(reg(), f);
             CHECK(c.maxHealth > 0 && !c.moves.empty());
             CHECK(c.autoExploit.kind == f.exploit.kind);

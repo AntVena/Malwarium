@@ -104,8 +104,7 @@ void drawCitrusCircuitScene(Framebuffer& fb, int beat, const SceneGround& g) {
         if (y >= 0) fb.fillRect(x, y, 1, 1, wire);
     }
 
-    // The packet, riding the wire it travels rather than a straight line across it,
-    // which is the whole point of having authored a sag.
+    // The packet rides the wire's authored sag.
     const int run = kPoles[3].x - kPoles[0].x;
     const int blipX = kPoles[0].x + (beat * kBlipStep) % run;
     const int blipY = wireY(blipX, g);

@@ -790,8 +790,7 @@ constexpr int kWildWinXpReward = 15;   // BASE wild-win XP (scaled by level diff
 // OVER the pet is the reward for taking a fight it is not comfortable in, a level UNDER
 // is only the tax for grinding a rung it has outgrown. So punching up pays more per level
 // than farming shallow costs, and the tax bottoms out early: a cleared sub-area stays a
-// usable training ground for the next pet instead of decaying into a rounding error, which
-// is the whole point of re-farm (game_combat.cpp).
+// usable training ground for the next pet, which is what re-farm is for (game_combat.cpp).
 // At parity (diff 0) → 100% → the flat base. Enemy +4 → 180%; enemy −4 → 60%; enemy −6 and
 // deeper → the floor. Both ends clamp to [kWildXpDiffMinPct, kWildXpDiffMaxPct].
 constexpr int kWildXpOverLevelPct  = 20;  // X% XP GAINED per level of (enemy − pet) above 0

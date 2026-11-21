@@ -116,7 +116,7 @@ same hue tells you they share a line, and nothing else. A Good/Bad branch pair i
 because it is one line, not because a branch is supposed to match.
 
 **A line may spend a mother STYLE instead of a mother colour**, and the Worm is the one that does:
-see below. What the rule actually asks for is a signature the eye can carry from one creature to
+see below. What the rule asks for is a signature the eye can carry from one creature to
 the next; a hue is the cheapest way to buy one, not the only way.
 
 **The range inside that colour widens as the stage advances.** An early creature can be carried by
@@ -226,7 +226,7 @@ row of the family, from the Vermicell shell down, and the shared replica glyphs 
 copies are one drawing style at two sizes, not creature art with UI standing next to it, which is
 what makes a crowd of them read as one family rather than as clutter.
 
-At worm scale the outline also simply holds more shape than a filled silhouette does: a Nodeatode
+At worm scale the outline also holds more shape than a filled silhouette does: a Nodeatode
 is roughly 30x24 px of its 56x48 cell, and at that size the segment chords across the body are what
 say *worm* rather than *tube*. §5's grayscale test is free for this line: there was never a colour
 channel carrying meaning to lose.

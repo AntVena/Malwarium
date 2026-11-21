@@ -117,7 +117,7 @@ nobody sat them down to teach.
 **`outcomes` is the same pair for how the meeting ENDED**, one per `GuardianOutcome` and in that
 order: **pleased** (the riddle was answered), **displeased** (answered wrong, or not at all),
 **affront** (it would not ask an illiterate pet in the first place), **boon** (fluent enough that
-the two simply talked). It is drawn on the VERDICT screen that closes every meeting, and it is
+the two talked). It is drawn on the VERDICT screen that closes every meeting, and it is
 what makes a lost riddle legible: the fight that follows is something the guardian *did* about the
 answer, and without a row here it arrives as a boss with no stated cause. Write all four in the
 guardian's own register: a guardian that grades everything as a ratio should be grading a ratio
@@ -168,7 +168,7 @@ a zone:
 
 The last two are two chapters rather than one because they are two subjects: what was just
 beaten, and what the operator takes away from this water. They are read back to back as one
-sitting, so an area that only wants one simply leaves the other unauthored.
+sitting, so an area that only wants one leaves the other unauthored.
 
 **A chapter is a run of PANELS, and a panel is a heading and its prose**: the same
 `ProseRow` shape every flowed page on the device is built from (`core/ui/prose_page.h`), so
@@ -211,13 +211,13 @@ paged through while nobody was watching is still there to read.
 4. Add art (`ICON_SECTOR_<AREA_ID>`, `assets/ASSET_MANIFEST.md` §J), name the glyph in the
    row's `icon` field, and check the naming rules before claiming a brand: `AREA_NAMING.md`.
 5. Author its four `story` chapters (see *The story* above), or leave the row zeroed and
-   come back to it: an unauthored zone simply fires nothing. A written one needs its own
+   come back to it: an unauthored zone fires nothing. A written one needs its own
    block of `wire` numbers, which the native gate checks are unique.
 6. Author the backdrop as a `SceneId` and a file under `src/core/render/scenes/`, not a
    sheet. A place is ~60 lines of palette-anchored tables against a `SceneGround`, so it
    costs no flash, reskins with a theme, and cannot out-shout the text drawn over it
    (`src/core/render/RENDER_PIPELINE.md`). Name it in the row's `scene` field. Leaving it
-   `SceneId::None` is a legitimate half-step: the area simply keeps the plain `paper` field.
+   `SceneId::None` is a legitimate half-step: the area keeps the plain `paper` field.
 
 ### If it lands anywhere but the END of the list
 

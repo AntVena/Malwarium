@@ -805,7 +805,7 @@ void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
 void drawAuditMode(Framebuffer& fb, int pick, int current) {
     drawHeaderBand(fb, "AUDIT");
 
-    // The escalating ladder is the whole point of the screen: each step spells out
+    // Each step of the escalating ladder spells out
     // what it does + its battery cost, so raising it is an informed, affirmative
     // choice. PASSIVE only (no deauth/injection); the top step writes to SD.
     drawText(fb, kMargin, 30, "MORE = MORE BATTERY.", palColor(Pal::INK_DIM));

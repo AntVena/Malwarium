@@ -71,11 +71,9 @@ constexpr int kSideTop = kCardTop + kCardH + 12;   // 108
 constexpr int kSideH = 38;
 
 // --- The Team roster --------------------------------------------------------
-// Three lines a row (name at title weight, the motto, then the Exploit's mechanic word),
-// and a row pitch with real air in it. That is the whole point of the side having a
-// screen of its own: five crews stacked two-to-a-row was the cramped thing this pass
-// exists to undo, and a column of NEGATE / ESCALATE / RALLY is what makes a side a
-// choice rather than five paragraphs read in turn.
+// A side gets a screen of its own so each crew can have a roomy row: name at title
+// weight, the motto, then the Exploit's mechanic word. A column of NEGATE / ESCALATE /
+// RALLY is what lets a player compare a side's crews at a glance.
 // Four line-heights per row (name, up to two wrapped tagline lines, then the
 // Exploit tag), plus real gap to the next row. Fixed, not measured per-row: the
 // tagline's slot is reserved at its worst case (2 lines) whether a given crew's

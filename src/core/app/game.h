@@ -2348,7 +2348,7 @@ private:
     void startGuardianCombat();
     // Pay one unspent SHAKE for the next sigil of the Cant. Returns whether it bought
     // one: false when the purse is empty (the riddle's other rewards are paid anyway,
-    // which is the whole point of the gate sitting HERE and not on the win) or when the
+    // which is why the gate sits HERE and not on the win) or when the
     // Cant is already complete.
     bool buySigil();
 

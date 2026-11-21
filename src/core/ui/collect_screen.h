@@ -2,7 +2,7 @@
 // has learned.
 //
 // Both answer the same question about a different roster ("how much of this have I got,
-// and what is left"), and both are per-PET. That is the whole point of them: the device's
+// and what is left"), and both are per-PET: the device's
 // own lifetime tallies (every item ever held, every species raised) live on the Hacker
 // PROFILE and in the web 'Pedia, and they say nothing about the creature in front of you.
 // A pet is raised one plate and one drop at a time, and until now the only place that

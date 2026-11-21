@@ -1614,8 +1614,8 @@ int main(int argc, char** argv) {
             for (int i = 1; i <= beats && game.nav() == Game::Nav::Wifi; ++i)
                 game.tick(t += kFxAnimMs);
         } else if (hasFlag(argc, argv, "shiboleet")) {
-            // The guardian's riddle, drawn in the CANT. `sigils:<n>` is the whole point
-            // of the scene: at 0 the panel is a wall of nonsense, and every sigil turns
+            // The guardian's riddle, drawn in the CANT. `sigils:<n>` sets how much of it
+            // reads: at 0 the panel is a wall of nonsense, and every sigil turns
             // one more letter of it into itself. The same riddle, legible in stages.
             // The reply the cursor is on is never the interesting part, so nothing here
             // steers it.

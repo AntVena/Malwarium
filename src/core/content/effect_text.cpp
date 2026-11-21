@@ -248,8 +248,7 @@ EffectText effectText(const CrewExploitDef& d) {
 EffectText effectText(const AchievementDef& d, int effectiveGoal) {
     // `{n}` is the goal the row is actually held to, which for a kGoalAll row is the
     // size of the set it counts over, resolved by the caller (app/game_achievements.h).
-    // That is the whole point of templating this prose: "all {n} sub-areas" restates
-    // itself when an area is added, instead of going quietly stale.
+    // Templated so "all {n} sub-areas" stays true when an area is added.
     const Token toks[] = {
         {"n", effectiveGoal},
         {"p", d.param},

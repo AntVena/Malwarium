@@ -226,9 +226,8 @@ inline bool anyLitGray(const Framebuffer& fb, int x0, int y0, int x1, int y1) {
 
 // True if any pixel in [x0,x1)×[y0,y1) differs between two framebuffers.
 //
-// This is what "the slot is clear" has to mean now that a screen stands in a PLACE
-// (Game::habitatScene). A gate asserting a region was `paper` was really asserting that
-// no ICON was drawn there, and the panel behind it is no longer blank, so the claim is
+// This is what "the slot is clear" means when a screen stands in a PLACE
+// (Game::habitatScene). The panel behind an icon is not blank `paper`, so the claim is
 // made against a frame that differs only in the thing under test, which says it about
 // the icon rather than about the whole screen.
 inline bool regionDiffers(const Framebuffer& a, const Framebuffer& b,

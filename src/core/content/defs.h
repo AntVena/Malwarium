@@ -1022,8 +1022,8 @@ struct MoveDef {
     // (Combat::resolveTurn, via Combatant::chainFollow). So one slot alternates between
     // two rows: the pattern a wind-up wanted and could not express, because a wind-up
     // spends its first turn doing nothing at all while both halves of a chain are real
-    // casts. Which is the whole point: the action-economy tax a channel pays is the
-    // turn it wastes, and a chain wastes none.
+    // casts. The action-economy tax a channel pays is the turn it wastes, and a chain
+    // wastes none.
     //
     // The step is resolved against the registry when the Combatant is BUILT (never
     // mid-fight, so Combat stays registry-free) and is looked up in the chain-step table
@@ -1161,7 +1161,7 @@ constexpr MoveDef poolRow(const char* id, const char* displayName, int power,
     return m;
 }
 
-// A SEVERANCE row: an ordinary attack whose whole point is the scramble rider, which
+// A SEVERANCE row: an ordinary attack carried by its scramble rider, which
 // sits at the very end of the positional tail with thirty-odd fields between it and
 // `power`. Same reason braceRow exists: spelled out positionally the one number that
 // matters would be the hardest one to see, and a miscount would arm a different mechanic

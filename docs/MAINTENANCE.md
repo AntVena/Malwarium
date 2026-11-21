@@ -15,13 +15,13 @@ Maintenance runs keep the docs that way through small, regular passes.
 
 ## The pile
 
-### Docs cleanup / decision-history sweep. Last run: 2026-11-11
+### Docs cleanup / decision-history sweep. Last run: 2026-11-21
 Two surfaces, two rules, and one prose style across both.
 
 **Docs (`docs/`, and the standards beside the code):** cull dated historical narration (session logs, "shipped on <date>",
 "supersedes the section above"), session-provenance framing ("this session found…"), and migration
 narration ("X now lives on…", "the old Y", "previously applied inside…", "[retired]"). Keep
-genuinely still-open items and the rare bare "Last updated: <date>" freshness marker.
+still-open items and the rare bare "Last updated: <date>" freshness marker.
 
 **Code comments (`src/`, `test/`, `tools/`, `include/`):** enforce `docs/COMMENT_STANDARD.md`. A
 comment says what the thing is FOR / how to use it / what consumes it, and never points back at the
@@ -42,7 +42,7 @@ Check the `game_*.cpp` module split for size creep past ~600 lines. Look for cro
 dead code, and orphaned helpers that should have moved to `game_internal.h` or been deleted. Verify
 actual file sizes, don't trust what a doc says they are. Sources are globbed (`CMakeLists.txt`,
 `build_src_filter`), so a new unit needs no build-file edit, and a split costs only the time to
-review it. When a unit is big but genuinely one concern (a dispatcher, a flat save mapping, a
+review it. When a unit is big but one concern (a dispatcher, a flat save mapping, a
 screen-per-function render file), leave it and say so: length that follows from the number of cases
 is not creep.
 
@@ -99,7 +99,7 @@ Use these four levers, in this order. The cheapest one that works wins:
 - **`FontFace::Bold` last**, and only where the other three don't reach. A screen gets one
   emphasised element (VISUAL_LANGUAGE §2.3), so a new use takes that slot.
 
-Where a screen genuinely reads fine, say so and move on; the output that matters is the handful
+Where a screen reads fine, say so and move on; the output that matters is the handful
 that don't. Anything needing a real layout change becomes a row on `docs/MASTER_TODO.md` rather
 than being done inside the run.
 
@@ -158,7 +158,7 @@ checked both ways rather than skipped.
 
 **For behaviour no longer in real play, look for production code that only tests call**: a
 non-debug `Game` method with no caller under `src/`. Most are read-only accessors over state play
-really produces, and those are fine. The ones that matter carry LOGIC nothing in play runs,
+produces, and those are fine. The ones that matter carry LOGIC nothing in play runs,
 which the tests then hold in place.
 
 ### Content/tunables standard drift. Last run: 2026-11-11
@@ -169,37 +169,23 @@ scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 comment names ONE item/mod/move/creature. Inline it onto that row. Verify claims against code.
 
 ### Unused-include sweep. Last run: 2026-11-11
-The clangd "included header X is not used directly" warnings are noise we burn tokens reading
-past, and the `game_*.cpp` units are the worst offenders: they all carry the same broad render
-header block copied from `game_render.cpp`, most of which a given unit doesn't use.
+The clangd "included header X is not used directly" warnings are noise to read past. The
+`game_*.cpp` units collect the most, because a new unit copies its sibling's include block.
 
-**The `core/ui` half is swept.** `game.h` no longer includes a screen header (it takes
-`core/ui/ui_state.h` for the ids `Game` holds), which is what made stripping one a genuine test of
-whether the unit draws through it. `game_render.cpp` keeps all eleven because it is the render
-dispatcher; every other unit keeps only the screens it enters. `game_config.cpp` its
-`cfg_screen.h`, `game_explore.cpp`/`game_net.cpp`/`game_lifecycle.cpp` their `expl_screen.h`, the
-four `layout.h`/`theme.h`/`widgets.h` units their drawing primitives. Re-run it when a unit is
-split or a screen header moves.
+**What a scan can test.** `game.h` takes `core/ui/ui_state.h` for the screen ids `Game` holds and
+no screen header, so stripping a screen header is a real test of whether a unit draws through it.
+`game_render.cpp` is the render dispatcher and keeps every screen header; every other unit keeps
+only the screens it enters. Nothing `game.h` includes pulls `canvas.h`, `font.h`, `palette.h`,
+`sprite.h` or `generated/assets.h`, so those are testable in every unit.
+Re-run the sweep when a unit is split or a header moves.
 
-**Sweep the `core/render` drawing headers too.** `game.h` hands out exactly one `core/render`
-header. `framebuffer.h`, and nothing it includes pulls `canvas.h`, `font.h`, `palette.h`,
-`sprite.h` or `generated/assets.h`. Those five were therefore always testable, and the broad
-block copied from `game_render.cpp` is gone from every unit that did not draw: 43 includes
-across 11 units, both tiers green.
-
-Each remaining include is used: `game_render.cpp` (the dispatcher, all five), `game_crew`,
-`game_eggpick`, `game_peers`, `game_pvp`, `game_hacker`, `game_isolation`, `game_merge` (the
-subsets they draw with), and `game_core`/`game_lifecycle` (`sprite.h`, plus `canvas.h` in
-`game_core` for the tick cadences).
-
-**What IS still blocked** is the `core/model` half: `game.h` hands every TU `combat.h`, `save.h`,
-`registry.h`, `framebuffer.h` and `platform.h`, so "it still compiles without it" proves nothing
-about those. Leave that half for whoever lands the next `game.h` slice.
+**What a scan cannot test** is the `core/model` half: `game.h` hands every TU `combat.h`,
+`save.h`, `registry.h`, `framebuffer.h` and `platform.h`, so "it still compiles without it" proves
+nothing about those until `game.h` stops including them.
 
 **Grep a header's constants as well as its functions and types.** A symbol scan built from
-function names alone cleared `canvas.h` out of `game_core.cpp`, which uses it only for
-`kHeartbeatMs`/`kCombatAnimMs`. The native build caught it, which is exactly why the build is the
-gate and the scan is only the finder.
+function names alone would clear `canvas.h` out of `game_core.cpp`, which uses it only for
+`kHeartbeatMs`/`kCombatAnimMs`. The build is the gate; the scan is only the finder.
 
 The finder doesn't need clangd. `clang-tidy -p build -checks='-*,misc-include-cleaner'` over
 the `src/` entries of `build/compile_commands.json` runs the same analysis, which is what a
@@ -212,7 +198,7 @@ reason on the include line when the build says keep, or the next run strips it a
 Method: trust the clangd `unused-includes` diagnostics as the finder, **verify a real host build
 still compiles after each removal**, and note that the native gate is authoritative. Don't
 remove a device-only header while building host-only, or vice-versa. The device tier has its own
-compile database now (`tools/compiledb.sh`, `src/platform/esp32/.clangd`), so its diagnostics are
+compile database (`tools/compiledb.sh`, `src/platform/esp32/.clangd`), so its diagnostics are
 worth the same trust as the host's; a file lighting up whole means the database is stale. Removable is not the same as
 wrong: an include a unit uses DIRECTLY stays even when some other header happens to supply it, and
 the trap in a mechanical scan is a symbol that only appears in a comment.

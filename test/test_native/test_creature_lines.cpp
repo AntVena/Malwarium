@@ -573,7 +573,7 @@ void test_mirror_gates_metamorphic_line() {
             CHECK(std::strcmp(l->eggCreatureId, "polystaria") == 0);
 }
 
-// The hatch line-select: the Phishing line is now gated behind the first
+// The hatch line-select: the Phishing line is gated behind the first
 // DeepWeb-depth milestone (DEEPWEB_DEPTH_8), so a fresh save offers only Ransomware
 // and line-select auto-skips. Once depth 8 is earned, a fresh hatch presents
 // the choice; A cycles, B lays the chosen line's egg. Choosing Phishing lays
@@ -675,8 +675,7 @@ void test_creature_clips_fit_their_sheets() {
             CHECK(clip.frames > 0 && clip.frames <= s->frames);
             CHECK(clip.holdBeats > 0);
             // frameAt must stay inside the declared columns for any beat, including the
-            // wrap: the whole point of holdBeats is that it slows a clip without
-            // walking off the end of it.
+            // wrap: holdBeats slows a clip without walking off the end of it.
             for (int beat = 0; beat < clip.frames * clip.holdBeats * 3; ++beat)
                 CHECK(clip.frameAt(beat) >= 0 && clip.frameAt(beat) < clip.frames);
         }

@@ -75,10 +75,9 @@ const AchievementDef kAchievements[] = {
     // dish as ordinary food is the common case and unlocks nothing. A ghost is raised by
     // a defrag that FAILS on an already-Critical disk (Game::resolveMaint), Worm line only.
     //
-    // The `wire` and the KEY stay AIR_GAPPED though the dish that earns it is now named
-    // for unlink(): the key is exchanged verbatim in the peer/PvP JSON, so it is a wire
-    // value rather than a label, and renaming it would desync against every device still
-    // on an older build. The display name below is the part players read.
+    // The `wire` and the KEY stay AIR_GAPPED though the dish that earns it is named for
+    // unlink(): the key is exchanged verbatim in the peer/PvP JSON, so renaming it would
+    // desync against every device on an older build. The display name below is the part players read.
     {/*wire=*/7, "AIR_GAPPED", "Unlinked",
      "Cure a Replication Ghost with Unlinkguine.", "ICON_ACH_AIR_GAPPED",
      AchSeries::Event, /*goal=*/0, nullptr, 0, {bits(60), item("sealed_cache_common")}},

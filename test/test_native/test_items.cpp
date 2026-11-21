@@ -1175,8 +1175,7 @@ void test_stacking_food_run_climbs_then_resets_on_decay() {
 
 // Every id named in a loot/reward pool has to resolve to a real item with a positive
 // draw weight. A typo'd id would otherwise cost that entry silently (the pool would
-// still draw, just never that row), which is exactly the kind of failure a weighted
-// table makes invisible.
+// still draw, just never that row).
 void test_loot_pools_resolve_and_carry_weight() {
     ContentRegistry r = ContentRegistry::embedded();
     auto checkPool = [&r](const LootEntry* pool, int n) {
@@ -1410,7 +1409,7 @@ void test_food_signpost_when_the_bag_has_no_meal() {
     }
 }
 
-// A sealed cache opens only in the Hacker VAULT, but the bag no longer hides it: ALL
+// A sealed cache opens only in the Hacker VAULT, but the bag still shows it: ALL
 // lists it in a CACHES group that names where it goes, every narrower filter leaves it
 // out, and the first one held earns a card on the next summon that teaches the chord to
 // the Hacker face (the one screen that can use it), and the walk's catch on that chord.

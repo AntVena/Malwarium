@@ -430,8 +430,7 @@ uint32_t Game::achBannerDwellMs() const {
     // ONE FULL MARQUEE CYCLE of the longest line, floored at kAchBannerMs. A line that
     // fits is two holds (read the head, read the tail, at the marquee's own rate), so
     // the ordinary banner sits 3.0s, above the 2.6s floor, and one that travels is
-    // those two holds plus the travel between them. That is the whole point: the time
-    // comes from the COPY, so a long name cannot leave mid-word, and nobody has to
+    // those two holds plus the travel between them. The time comes from the COPY, so a long name cannot leave mid-word, and nobody has to
     // guess a constant that suits every name in the table.
     const uint32_t travelled = static_cast<uint32_t>(beats) * kHeartbeatMs;
     return travelled > kAchBannerMs ? travelled : kAchBannerMs;

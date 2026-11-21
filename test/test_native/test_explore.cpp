@@ -928,7 +928,7 @@ void test_expl_nested_row_helpers() {
     CHECK(explRowSelectable(ExplRowState::AreaBossReady));
     // Clear the area → header CLEARED (inert); area 1 opens (its subs become OPEN).
     // The area-0 sub rows stay CLEARED but SELECTABLE: a fully-cleared area is still a
-    // farmable training ground (the whole point of re-farming).
+    // farmable training ground.
     area[0] = true;
     CHECK(explRowState(kFirstArea, area, cleared, boss, -1, -1) == ExplRowState::AreaCleared);
     CHECK(explRowState(kFirstArea + 1, area, cleared, boss, -1, -1) == ExplRowState::SubCleared);
@@ -1422,8 +1422,8 @@ void test_expl_nested_list_nav() {
       Game r{StartMode::FreshHatch, "bruinforce", &store};
       CHECK(!r.autoProgress()); }
 
-    // STOP EXPLORE is now a row rather than the C key, so backing out of the overlay
-    // can no longer cancel the walk by accident.
+    // STOP EXPLORE is a row and C only backs out, so leaving the overlay never cancels
+    // the walk by accident.
     { Game g{StartMode::Hatched, "bruinforce"};
       g.startExplore(0, 0);
       stopExplore(g);
@@ -1495,9 +1495,8 @@ void test_darkweb_crawl() {
         CHECK(kDeepWebSector >= kAreaCount && kDarkWebSector > kDeepWebSector);
         const AreaLootTable dw = areaWildLootTable(kDarkWebSector);
         CHECK(dw.rows && dw.count > 0);
-        // The five unbuyable USBs moved here with the terminal slot and are no longer in
-        // the dive's table: the whole point being that only the end of the map sells the
-        // ability to overrule how a pet was raised.
+        // The five unbuyable USBs sit here, off the dive's table: only the end of the map
+        // sells the ability to overrule how a pet was raised.
         auto holds = [](AreaLootTable t, const char* id) {
             for (int i = 0; i < t.count; ++i)
                 if (std::strcmp(t.rows[i].id, id) == 0) return true;

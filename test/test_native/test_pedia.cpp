@@ -255,8 +255,7 @@ void test_battery_level_bands() {
     CHECK(batteryLevelStable(100, -1) == kBatteryLevels - 1);
     CHECK(batteryLevelStable(0, -1) == 0);
 
-    // Sitting ON a band edge holds whichever fill is already drawn: that is the
-    // whole point, and it holds from either side.
+    // Sitting ON a band edge holds whichever fill is already drawn, from either side.
     const int edge = kBatteryLevelFloorPct[2];
     CHECK(batteryLevel(edge) == 2);
     CHECK(batteryLevelStable(edge, 1) == 1);           // drawn low: stays low
@@ -550,7 +549,7 @@ void test_pedia_state_publishes_the_pets_learnable_kit() {
         else sawOtherLine |= listed;
     }
     CHECK(sawOwnLine);
-    // ...and another line's never is, which is the whole point of publishing a scope.
+    // ...and another line's never is.
     CHECK(!sawOtherLine);
 }
 

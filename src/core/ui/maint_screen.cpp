@@ -138,8 +138,8 @@ void drawMaintList(Framebuffer& fb, const PetModel& m, int cursor, int beat) {
         const int statusX = kActiveW - kMargin - textWidth(status[i]);
         drawText(fb, statusX, textY, status[i], palColor(Pal::INK_DIM));
         // The status owns the right end, so the process name yields to it and scrolls
-        // when focused (widgets.h): DEFRAGMENTATION spelled out is the whole point of
-        // the row, so it is not the half that gets cut.
+        // when focused (widgets.h): DEFRAGMENTATION spelled out is what the row is for,
+        // so it is not the half that gets cut.
         drawTextMarquee(fb, 40, textY, statusX - kMargin - 40, labels[i],
                         palColor(Pal::INK), beat, scrollWhen(i == cursor));
     }

@@ -53,7 +53,7 @@ channel. The ITEMS row tints its icon by rarity *and* prints the rarity word bes
 Cache tiers are countable chevrons before they are colours. Both survive desaturation, which is the
 test. `drawSpriteTinted` is exact on these masters because they're a single flat fill.
 
-## What a sheet costs, and where the cost actually lands
+## What a sheet costs, and where the cost lands
 
 `tools/gen_assets.py` derives each sheet's palette from its own pixels. An entry being one
 distinct (RGB565, coverage) pair, with every transparent pixel collapsing to one, and then cuts
@@ -85,7 +85,7 @@ surviving pixel keeps its own 8-bit value, so the PNG stays the art. Look at the
 reports before committing: a sheet where the fold moves a visible fraction is one whose shading
 the fold is eating, not one with drift.
 
-**Per sheet, not per line.** One table shared by a family is genuinely the smaller table (the
+**Per sheet, not per line.** One table shared by a family is the smaller table (the
 union of five palettes is smaller than five palettes), but the table is not where the bytes are.
 Across the whole tree the palettes come to 1.6 KB against 112 KB of tile data, and what a wider
 union buys is a wider index, paid per pixel. Sharing wins only where the union widens nobody, which

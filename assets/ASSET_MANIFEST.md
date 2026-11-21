@@ -155,7 +155,7 @@ which is why gameplay ships first and the drawing follows.
   the Vermicell shell to `SPR_PET_NODEATODE` is an outline with one solid eye, drawn in the same
   vocabulary as the replica glyphs beside it (§C.4): the parent and its copies are one style at
   two sizes rather than creature art with UI standing next to it. At worm scale the outline is also
-  simply the better drawing: a filled silhouette at ~30×24 px says *tube*, and the segment chords
+  the better drawing: a filled silhouette at ~30×24 px says *tube*, and the segment chords
   across an outlined body are what say *worm*.
 - **…and that style is held by a tool, not by a hand.** `tools/gen_worm_art.py` carries the line's
   drawing vocabulary (one ink, outline-never-silhouette, segment chords, exactly one solid mass,
@@ -221,7 +221,7 @@ which is why gameplay ships first and the drawing follows.
 - **A sheet spends either ROWS or COLUMN RANGES on its clips, and the two cost very differently.**
   Malbear puts `idle` and `attack` both on row 0 (3 columns for the rest, all 8 for the swing), so
   its whole clip set costs one 448×48 row. `SPR_PET_KALICO` spends a row per clip instead, four of
-  them, because its clips are genuinely different drawings rather than ranges of one motion. That is
+  them, because its clips are different drawings rather than ranges of one motion. That is
   a real choice, though tiled storage (`src/core/render/sprite.h`) has made it a cheap one, and
   cheapest exactly where a row is worth adding: identical tiles are stored once, so a row that
   re-poses a mostly-static body costs a fraction of its pixels. Measured in the linked image,
@@ -230,7 +230,7 @@ which is why gameplay ships first and the drawing follows.
   the tree) would put the whole firmware at 33% of the `0x790000` app slot, so the budget is no
   longer what decides the animation standard. All four of Kalico's rows play:
   `idle`/`walk` split the habitat on whether the wander is moving the anchor, and `attack`/`hurt`
-  pose the fight. Prefer Malbear's shape where the art does not genuinely differ, on the grounds
+  pose the fight. Prefer Malbear's shape where the art does not differ, on the grounds
   that a row nothing looks up is a row nobody has to draw.
 - **`SPR_PET_KALICO` is `▨`. The drawing is final, the resampling is not.** The source frames were
   60×60 and the cell is 56×48, so the sheet was decimated 4:5 onto the cell: one row and column in
@@ -987,7 +987,7 @@ The same glyphs also stand under each fighter's feet on the combat stage as its 
 which is why the two say one thing in one vocabulary. **Two of them animate**: DOT and STUN
 ship a second frame, and the strip walks whatever frames a sheet has (`glyphFrame`,
 `ui/combat_screen.cpp`). Giving another condition an animation is therefore an art change and
-not a code change: a one-cell sheet simply holds still. Those two are drawn by
+not a code change: a one-cell sheet holds still. Those two are drawn by
 `tools/gen_fight_art.py`, which also owns the strike marks (§B.1); the rest of the family is
 hand-drawn and single-frame.
 

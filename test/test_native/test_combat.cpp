@@ -251,8 +251,8 @@ void test_every_combatant_sprite_resolves() {
     ContentRegistry r = ContentRegistry::embedded();
     std::vector<const char*> wildSprites;
 
-    // The whole roster, row by row, not the tier pairs, which no longer reach every wild
-    // now that areas name pairs of their own.
+    // The whole roster, row by row: the tier pairs miss the wilds that areas name in
+    // pairs of their own.
     for (int i = 0; i < kWildMalbeastCount; ++i) {
         const CombatEnemy e = wildMalbeastAt(i);
         CHECK(e.spriteName != nullptr);
@@ -1831,10 +1831,8 @@ void test_mod_content_rarity_tier() {
     for (const ModDef* m : r.allMods()) {
         if (!m->requiresLine) continue;
         CHECK(creatureLine(m->requiresLine) != nullptr);
-        // Every one of them now amplifies its line's own PASSIVE. The list once admitted a
-        // plain PowerPct row (Extortion Ledger) as the exception; a flat stat bonus turned
-        // out to be the shape that could not be made worth a slot at this tier however
-        // large the number went, so there is no longer an exception to admit.
+        // Every one of them amplifies its line's own PASSIVE. A flat stat bonus is never
+        // worth a slot at this tier however large the number, so none is admitted.
         CHECK(m->effectKind == ModEffect::StealAmplifyPct ||
               m->effectKind == ModEffect::ExecOverridePct ||
               m->effectKind == ModEffect::ReplicaWorthPct ||
@@ -1978,8 +1976,8 @@ void test_mod_equip_ladder_is_ordered_and_dense() {
                         t - 1, hi[t - 1], t, lo[t]);
         CHECK(hi[t - 1] < lo[t]);
     }
-    // DENSITY: walking the sorted gates, no step larger than kModLadderMaxGap. This is the
-    // whole point of authoring the level per row: a raising pet should never cross more
+    // DENSITY: walking the sorted gates, no step larger than kModLadderMaxGap, which is
+    // why the level is authored per row: a raising pet should never cross more
     // than a couple of levels with nothing new to slot. Checked as a max STEP rather than
     // a per-bucket count so it stays true however the roster is grouped.
     constexpr int kModLadderMaxGap = 2;
@@ -3056,11 +3054,10 @@ void test_worm_replication_in_combat() {
     CHECK(sawCopyKilled && sawParentHit);
 }
 
-// THE PANEL USED TO LIE BY OMISSION. Its absorbs-and-afflictions readout was packed
-// into one string and drawn into a 24-character box, so a fighter carrying a shield, a
-// brace, a drive, a ransom bill, traps, a rot and a stun at once had most of that cut,
-// and a fight with all of them live is exactly the fight worth reading. The set is now
-// a token list the draw WRAPS, so this asserts every live state is reported.
+// The panel's absorbs-and-afflictions readout is a token list the draw WRAPS: packed
+// into one string in its 24-character box, a fighter carrying a shield, a brace, a
+// drive, a ransom bill, traps, a rot and a stun at once would lose most of them. This
+// asserts every live state is reported.
 void test_combat_panel_reports_every_live_state() {
     ContentRegistry r = ContentRegistry::embedded();
     Combatant c = makeEnemyCombatant(r, simDummy(0));
@@ -3098,7 +3095,7 @@ void test_combat_panel_reports_every_live_state() {
 
     // ...and everything else reaches the operator as a ROW of the VS grid: a tag with
     // each fighter's value under its own column. This is the assertion that matters:
-    // "the operator cannot see it mid-fight" is the defect, and the grid is now the only
+    // "the operator cannot see it mid-fight" is the defect, and the grid is the only
     // surface that can carry it.
     const Combatant clean = makeEnemyCombatant(r, simDummy(0));
     const CombatVsGrid g = combatVsGrid(c, clean, /*localGuard=*/true);

@@ -37,8 +37,7 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
     if (!pet) return Combatant{};   // caller gates on canBuildPvpCombatant
 
     // Rehydrate the two loadouts, then hand them to the SAME makePlayerCombatant every
-    // PVE fight uses. Going through the real builder rather than re-deriving stats here
-    // is the whole point: a duel's two devices must apply the branch multipliers, the
+    // PVE fight uses, without re-deriving stats here: a duel's two devices must apply the branch multipliers, the
     // stage scaling, the move fallbacks and every mod effect identically, and the only
     // way to guarantee that is for there to be one implementation.
     MoveLoadout moves;

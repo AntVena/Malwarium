@@ -20,9 +20,8 @@
 namespace {
 
 // An asymmetric 4x2 cell: every pixel a different colour, and the left half opaque
-// against a transparent right. Asymmetry is the whole point: a symmetric fixture
-// cannot tell a mirror from a no-op, which is exactly the bug these gates exist to
-// catch.
+// against a transparent right. A symmetric fixture cannot tell a mirror from a no-op,
+// which is the bug these gates exist to catch.
 struct Lopsided {
     uint16_t rgb[8];
     uint8_t a[8] = {255, 255, 0, 0, 255, 255, 0, 0};

@@ -769,7 +769,7 @@ void test_stat_index_jumps_to_a_page_and_a_section() {
     CHECK(subs == kLevelStatCount + 2);
 
     // Open the LAST stat's section off the index: the page it names, anchored at that
-    // stat's own heading. The whole point, since walking there costs several windows.
+    // stat's own heading, since walking there costs several windows.
     const StatPage* tiers = StatReader::findPage("TIERS");
     int target = -1;
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)

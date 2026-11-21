@@ -65,10 +65,9 @@ constexpr int kDetailProseLines = 5;
 // read as a tail of the block above rather than the head of this one. Same footer pitch
 // drawItemDetail stacks its HAVE/action pair on, so the two detail pages agree.
 //
-// And the same flow (VISUAL_LANGUAGE §4.1): the group follows what the panel actually
-// drew by kDetailFooterGap, clamped at kDetailSlotY, so a full panel lands where it
-// always did and a short description no longer leaves a dead band between the block
-// and its own verdict. The clamp also keeps a line-gated mod's fourth footer row clear
+// And the same flow (VISUAL_LANGUAGE §4.1): the group follows what the panel drew by
+// kDetailFooterGap, clamped at kDetailSlotY, so a short description leaves no dead band
+// between the block and its own verdict. The clamp also keeps a line-gated mod's fourth footer row clear
 // of the C BACK band.
 constexpr int kDetailFooterPitch = kFontH + 4;
 constexpr int kDetailFooterGap = 14;

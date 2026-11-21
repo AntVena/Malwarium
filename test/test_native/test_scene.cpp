@@ -3,8 +3,8 @@
 // Neither tier can see composition. Whether a place READS is a question for
 // tools/dump_frame.cpp's `scene:<name>` and a pair of eyes, and a scene that passes
 // everything here and looks like a grey slab has still failed. What is checkable is the
-// three properties the whole design rests on, and each of them is exactly the kind of
-// thing a person reviewing a picture does not notice:
+// three properties the design rests on, none of which a person reviewing a picture
+// notices:
 //
 //   * PORTABILITY. A backdrop serves screens whose floors are 44 rows apart, so every
 //     scene is rendered at BOTH and has to compose at both: nothing off the canvas,
@@ -299,7 +299,7 @@ void test_background_pick_survives_a_reboot() {
         Game g{StartMode::FreshHatch, "paypup", &store};
         CHECK(g.backgroundPick() == SceneId::None);
         // ...and once the brackets that pay it have actually been taken, the same blob
-        // loads as what it says. Ownership catching up is the whole point of deriving it.
+        // loads as what it says, because ownership is derived.
         d.op.tourneyWins = 1;
         store.save(serializeSave(d));
         Game g2{StartMode::FreshHatch, "paypup", &store};

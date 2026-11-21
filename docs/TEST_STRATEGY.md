@@ -30,11 +30,11 @@ units: combat, save, explore, audit, and so on. Three files carry the machinery:
   drivers more than one unit needs (`enterSlot`, `walkToEncounter`, `pickFirstEggLine`…).
   A helper that drives one subject stays private to its unit; it moves here when a second
   unit reaches for it.
-- **`test_main.cpp`**: `MAL_RUN_ALL_GATES`, the single roster, in milestone order. It is
+- **`test_main.cpp`**: `MAL_RUN_ALL_GATES`, the single roster. It is
   expanded three times: once to declare every gate, and once by each harness to call them.
 - **`tools/check_test_roster.py`**: a ctest entry (`test_roster`). The roster generating
   the declarations means an entry naming nothing fails to link, but a gate written and
-  never listed would simply not run; that direction has no compiler behind it.
+  never listed would not run; that direction has no compiler behind it.
 
 **Adding a gate:** write it in the unit whose subject it belongs to, add one `RUN(...)` to
 the roster. A new subject is a new file and no build edit: the sources are globbed. A
@@ -45,7 +45,7 @@ migrations pile of its own, which is why save gates appear in several units.
 
 ## Two release gates (apply to *every* screen)
 
-These are not optional polish: a screen is not "done" until both pass.
+A screen is not done until both pass.
 
 1. **Grayscale readability.** A grayscale screenshot of the screen must stay fully readable:
    every status meaning is dual-coded (gauge fill level, pip count + gate divider, the Critical
@@ -53,8 +53,8 @@ These are not optional polish: a screen is not "done" until both pass.
    assert the key elements are still distinguishable (`assets/VISUAL_LANGUAGE.md`,
    `PAL_CORE.json` rules).
 2. **Legible before upscale.** The screen must read at **128-logical** size *before* the ×1.75
-   upscale, if it isn't legible pre-scale, no scaling saves it. Render the logical framebuffer
-   and eyeball/diff it, not just the 224×224 output.
+   upscale. If it isn't legible pre-scale, no scaling saves it. Render the logical framebuffer
+   and eyeball/diff it as well as the 224×224 output.
 
 For creature sprites, add the sprite gates from `assets/CREATURE_VISUAL_RULES.md §5`:
 **grayscale** (distinct value steps, not one flat blob), **cover-the-eyes** (body still reads as
@@ -62,16 +62,15 @@ a solid object), **silhouette** (one clear idea at a glance).
 
 ### Text has to fit, and that half IS automated
 
-The third thing a screen can fail is the cheapest to check and the easiest to miss in review: a
-line of copy wider than the room it was given. The font is monospaced at a fixed 8px advance
+The third way a screen fails is a line of copy wider than the room it was given. The font is monospaced at a fixed 8px advance
 (`core/render/font.h`), so every width is arithmetic and no renderer is needed to measure one.
 
 Two shapes, two homes:
 
 - **A pair on one line** (a label with a right-aligned value) goes through
   `drawLabelValue`/`drawTextMarquee` (`core/ui/widgets.h`), which reserves the gap and clips
-  rather than letting the two print through each other. Drawn as two independent `drawText`
-  calls it fails the same way every time, and the frame still renders. Native gates hold the
+  so the two never print through each other. Two independent `drawText` calls overlap
+  silently: the frame still renders. Native gates hold the
   content itself to the room: `test_operator_profile_rows_pack`,
   `test_creature_name_headers_pack`, `test_effect_text_fits_its_screen_budget`,
   `test_achievement_banner_lines_fit`.

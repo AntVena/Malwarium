@@ -23,8 +23,8 @@ namespace {
 // 2. THE ANSWER MUST BE A WORD ANYONE KNOWS. A door, an echo, a name, nothing. NOT a
 //    nonce, an off-by-one, a passive scan. A player who solves the riddle and still
 //    cannot answer it has been beaten by vocabulary rather than by the puzzle, and that
-//    is the worst outcome this screen has: the whole point of learning the CANT is that
-//    reading the question is what wins it. The strangeness belongs in the guardian's
+//    is the worst outcome this screen has: learning the CANT is meant to be what wins
+//    it. The strangeness belongs in the guardian's
 //    VOICE, never in the word it wants back.
 //
 // So the machine shows up as flavour and not as jargon. A stale record is a ghost that

@@ -669,7 +669,7 @@ void test_ordinary_banner_still_retires_on_its_own() {
 // rendering fault rather than as long copy, so the banner centres only while a line
 // fits and scrolls it in the margins otherwise (game_render.cpp).
 //
-// Scrolling is the safety net, not the plan. The timer no longer forces that. A
+// Scrolling is the safety net, and the timer does not force it. A
 // banner's dwell is one full marquee cycle of its own longest line
 // (Game::achBannerDwellMs), so a traveling line does get to finish, but a line the
 // player must READ IN ONE PIECE is better than one they must watch, and a table that

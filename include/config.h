@@ -274,7 +274,7 @@
 //  WiFi.scanNetworks(async), dedup by BSSID in Game::registerNetwork). PASSIVE
 // ONLY: listen/scan, never deauth or inject (the.pcap handshake slice is
 //  separate and NOT built here).
-//  NET_SNIFF_ENABLED is now only a BOARD-CAPABILITY gate: "is a Wi-Fi radio
+//  NET_SNIFF_ENABLED is only a BOARD-CAPABILITY gate: "is a Wi-Fi radio
 //  present / compile the audit scan path in." The actual on/off is a RUNTIME
 //  toggle the player flips in CFG ("AUDIT SCAN"), persisted in the save blob
 //  (Game::netScanEnabled(), save v5, default OFF). With the toggle OFF the radio
@@ -365,10 +365,10 @@
 //  when it ends, and nothing installs without a second explicit yes.
 #define UPDATE_ENABLED              1      // 1 = compile the device-tier update path
 //  Where the published artifact list lives: this project's GitHub Pages host, which
-//  CI deploys to on a `v*` tag (.github/workflows/publish.yml, docs/ORIENTATION.md
+//  CI deploys to on every release (.github/workflows/publish.yml, docs/ORIENTATION.md
 //  "Releasing"). Compiled in so a freshly flashed device can check for updates
-//  without anyone typing a URL into it, which is the whole point for an operator
-//  who was handed a device rather than building one.
+//  without anyone typing a URL into it: an operator who was handed a device has no
+//  build step to set one.
 //
 //  A stored NVS override WINS over this (platform/esp32/update_source.h reads the override
 //  first). That ordering is what keeps the default from being a trap: firmware can only be

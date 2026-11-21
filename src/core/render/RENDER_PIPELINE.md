@@ -86,7 +86,7 @@ SCREEN, since the screen is what knows where its text stops and where its sprite
 The floors in play are 44 rows apart (`kCombatSpriteShelf` and `kLivingBottom`), so
 **nothing in a scene is an absolute row**. Below the horizon a figure is an offset in rows;
 above it, a fraction of whatever sky the ground leaves (`sceneSkyY`), because that is the
-band whose size actually changes between screens.
+band whose size changes between screens.
 
 A PLACE is one file under `render/scenes/` (art-direction tables and a handful of
 primitive calls) named by a `SceneId` (`render/scene_id.h`) and reached through the
@@ -115,7 +115,7 @@ One consequence for GATES: a screen is never blank now, so a check that asserted
 was `paper` in order to say "no icon here" has to be made against a frame differing only
 in the thing under test (`regionDiffers`, `test/test_native/test_gates.h`). `tools/dump_frame.cpp`'s `scene:<name>
 floor:<row>` renders one on its own at either floor, which is the only way to see whether
-a place actually reads: the native gate can hold portability, contrast and the anchor
+a place reads: the native gate can hold portability, contrast and the anchor
 rail, and nothing can hold composition.
 
 SPRITE_MODS straddles SPRITE_BASE because a pet-effect's side of the creature is part of
@@ -166,29 +166,25 @@ is it a MOMENT or a STATE? A moment decays off a beat: that is what the combat s
 `hitBeat` is, and it is right for a punch. A state is a standing value that holds until
 the thing it describes changes, and it must not be built out of a beat at all.
 
-Getting that backwards is not a tuning problem, it is a lie: `FX_CAMO` says which line the
-pet is currently channelling, so a version of it that ran out on a timer described a swing
-that had already finished, and one derived from `hitBeat`, which names the most recent
-strike by *either* fighter and is reassigned to the other seat the moment the rival hits
-back. Was stripped off the pet by the commonest thing that can happen next. It is now a
-level (`CombatCamo`, `camoAdvance`) eased toward a live reading of the pet's own last cast,
-with no clock in it anywhere. `FX_ABSORB`/`FX_SHRED` are genuinely moments and keep their
-own beat (`CombatOutro::beat`): their own, because the strike clock is not theirs either.
+Getting that backwards makes the effect state something false. `FX_CAMO` says which line
+the pet is channelling. On a timer it would describe a swing that has already finished, and
+off `hitBeat` (the most recent strike by *either* fighter) the rival's next hit would strip
+it off the pet. So it is a level (`CombatCamo`, `camoAdvance`) eased toward a live reading of
+the pet's own last cast, with no clock in it. `FX_ABSORB`/`FX_SHRED` are moments and keep
+their own beat (`CombatOutro::beat`), because the strike clock is not theirs either.
 
-`FX_SWARM` is the one effect that is a SUBJECT rather than something applied to one, and it
-answers the moment-or-state question the same way `FX_CAMO` does: it is a **state**. What it
-is a function of is a guardian's DISPOSITION. `FlockMood` (`core/model/flock.h`), set from
-where the SHIBOLEET has got to and how it came out, and it holds until the meeting moves
-on. There is no beat in it anywhere.
+`FX_SWARM` is the one effect that is a SUBJECT (every other is applied to one), and it is a
+**state**, as `FX_CAMO` is. It is a function of a guardian's disposition, `FlockMood`
+(`core/model/flock.h`), set from where the SHIBOLEET has got to and how it came out. It holds
+until the meeting moves on, with no beat in it.
 
-Its motion is not derived, which makes it the exception to the rule the other passes keep,
-and the exception is deliberate: a flock's frame is the last frame steered, and that
-integration is the whole of why it reads as alive rather than as a field of sine waves. So
-the flock is a MODEL (`core/model/flock.h`, beside `IdleWander`) advanced one step at a
+Its motion is the one exception to the derived-frame rule the other passes keep: a flock's
+frame is the last frame steered, and that integration is what makes it read as alive. A
+closed-form function of time reads as a field of sine waves. So the flock is a MODEL (`core/model/flock.h`, beside `IdleWander`) advanced one step at a
 time by the tick, and only the DRAW is a pure function: of the `SwarmView` handed to it,
 which is what still lets a frame gate dump any step by stepping the model to it first. It
 runs on the fast FX clock (`kFxAnimMs`) for the reason a dissolve does: at 4fps a mark
-moving a pixel a step reads as a blink rather than as flight.
+moving a pixel a step reads as a blink.
 
 `FX_CAMO` has **two colour sources and two drivers**, which is the shape an effect takes
 when a second screen wants it. The palette is either sampled off a creature (`camoRampFrom`,
@@ -198,7 +194,7 @@ screen that means a specific colour and has no creature to sample). The level is
 resting drift reads a long cadence, `core/model/idle_camo.h`) or a caller's own settled
 fraction: the CHROMATOPHORE hands it `Chromatophore::wearPct`, so the scatter on the
 creature is the same number the board is about to score. Both remain STATES; neither source
-or driver is allowed to be a beat, and the habitat's cadence is not an exception: it decides
+or driver may be a beat. The habitat's cadence decides
 WHEN the pet is wearing something, never how far along the scatter is.
 
 WHICH creature the fight samples is `CamoTarget` (`core/ui/combat_screen.h`), ranked so the
@@ -211,22 +207,21 @@ to be holding the move would leave the pet bare through the whole single-player 
 target is resolved in the tick (`Game::camoSpriteForTarget`) and turned into tones at the draw
 (`camoRampFrom`), because ranking a sprite's colours is work the repaint already does once.
 
-The sampled source is really the derived one **with the real colours laid over it**: the
+The sampled source is the derived one **with the real colours laid over it**: the
 ladder is built whole from the sprite's main colour first, then its actual tones are
 placed on the rungs their own luminance names, commonest first. A ramp is therefore
 always complete (the property the remap cannot do without), while still wearing as much
-of the other creature as that creature actually has. The two failure modes this replaced
-are worth naming, because both looked like damage rather than disguise: a palette
+of the other creature as that creature has. Both simpler ramps read as damage: a palette
 stretched over the whole value range flattens the pet into a silhouette, and one that
 fills only part of the ladder flecks a borrowed tone over its shadows and leaves the
 rest. A 1-bit opponent is the case that shows it: one white ink, so the pet keeps every
-bit of its own shading and simply loses its colour.
+bit of its own shading and loses its colour.
 
 Changing FROM one borrowed palette to another is the same pass with the old ramp passed as
 `from`: un-flipped pixels wear the palette being left rather than the creature's own. A
 fight uses it for the swap between two borrowed palettes and leaves it null at either end,
-where the pet really is coming out of, or returning to, itself.
+where the pet is coming out of, or returning to, itself.
 
 Two effects that recolour the same creature **compose or rank, and say which.** `FX_CAMO`
 is what colour the pet *is*, so the impact flash blends over it; drawn as alternatives,
-every hit taken read as cancelling the disguise.
+every hit taken would read as cancelling the disguise.

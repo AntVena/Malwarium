@@ -292,8 +292,8 @@ private:
     // THE REASON THIS IS A UI AT ALL: the compiled-in default lives in a firmware
     // image that only changes via the mechanism it points at, so a device whose
     // publish host moved could never be told where the new one is. Someone who
-    // cannot reflash a board can still join its AP and paste a URL, which is the
-    // whole point: this is the recovery path, not a convenience.
+    // cannot reflash a board can still join its AP and paste a URL: this is the
+    // recovery path.
     //
     // Form-encoded for the same reason /api/wifi is: this is arbitrary operator-
     // typed text, and the WebServer's own arg() parsing handles percent-escapes
@@ -588,7 +588,7 @@ private:
 
     // Build + serve the landing page from LIVE engine state, so a reload always
     // reflects the current pet/tag. Deliberately tiny: a terminal-styled identity
-    // card (HackerTag + current pet species). This is now purely the SD-absent /
+    // card (HackerTag + current pet species). This is only the SD-absent /
     // missing-bundle FALLBACK: the real 'Pedia is the static /web bundle above.
     void handleRoot() {
         const CreatureDef* pet = game_->pet();

@@ -34,7 +34,7 @@ Open `index.html` from disk and it runs on the sample fixture.
    STATE of its one-shots (`"spent"` / `"unspent"`). Learned-vs-locked is NOT repeated
    there: the page joins `learnable` against the top-level `moves` map, so there is one
    answer to "does the pet know this" and one place it can be wrong. Both fields are
-   additive: a site running against an older device simply draws no grids.
+   additive: a site running against an older device draws no grids.
 3. Handle the two POSTs (both fail gracefully offline):
    - `POST /api/tag` `{"tag":"A-Z0-9_ ≤12"}`: HackerTag rename (the site's one write).
    - `POST /api/achievement/DEVTOOLS_INTRUDER`: the honeytoken callback. Why the DevTools

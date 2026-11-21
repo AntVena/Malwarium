@@ -89,8 +89,8 @@ void test_register_network_queue_dedup() {
 
 // Crossing a rank via a real credited network (XP model): a flat Bits lump PER
 // rank gained, no Hacker-Log entry for the celebration itself (rank-up excluded
-// from the closed log vocabulary). Reward-ONLY: rank gates nothing anymore (all
-// EXPL sectors open regardless of rank. Sector gating is sectorCleared[]).
+// from the closed log vocabulary). Reward-ONLY: rank gates nothing (EXPL sectors
+// open regardless of rank; sector gating is sectorCleared[]).
 void test_hacker_rank_up_grants_reward() {
     const int perRank = kHackerRankXpPerRank / kHackerRankXpPerNetwork;
     Game g{StartMode::Hatched};
@@ -452,7 +452,7 @@ void test_network_discovery_empty_queue_costs_nothing_and_summons_a_guardian() {
     g.inventory().add("sinkhole_trap", 20);   // bypass any Wild roll along the way, free
     enterWalk(g);   // ONCE: walkToWifiEvent re-enters via enterWalk on every call, which
                      // re-arms the sub-area and resets the empty-queue streak
-                     // (game_explore.cpp's startExplore), defeating the whole point of
+                     // (game_explore.cpp's startExplore), defeating the purpose of
                      // this test (observing the streak persist ACROSS misses).
                      // Step with pingExplore instead, staying in the same session.
     bool sawGuardian = false;
@@ -945,9 +945,8 @@ void test_register_handshake_rotates_at_cap() {
 
 // The core "leave the house and come home" requirement, for SHAKES: the
 // handshake dedup ledger PERSISTS (save v7), so a reboot never re-credits a
-// handshake already captured. (NETS/registerNetwork no longer has an equivalent
-// save-blob guarantee: real-network dedup/history moved to the SD-backed
-// NetworkLedger, which is file-backed, not save-blob-backed; registerNetwork's
+// handshake already captured. (NETS/registerNetwork has no equivalent save-blob
+// guarantee: real-network dedup/history is the SD-backed NetworkLedger; registerNetwork's
 // pending queue is deliberately ephemeral, see game.h's comment on it. Native
 // tests don't exercise real SD file I/O: see forgeLegacyNetworkBytes's sibling
 // note and net_capture.h's own documented host/device testing boundary.)
@@ -1007,8 +1006,7 @@ void test_pcap_naming_sanitizes_and_falls_back_to_bssid() {
     buildPcapFilename(path, sizeof(path), "/sdcard/audit_", bssid, nullptr);
     CHECK(std::strcmp(path, "/sdcard/audit_aabbcc001122.pcap") == 0);
 
-    // A different BSSID -> a different filename (the whole point: named by
-    // network, not a counter, so distinct networks never collide/overwrite).
+    // A different BSSID -> a different filename (named by network, not a counter, so distinct networks never collide/overwrite).
     uint8_t bssid2[6] = {0xAA, 0xBB, 0xCC, 0x00, 0x11, 0x23};
     char path2[48];
     buildPcapFilename(path2, sizeof(path2), "/sdcard/audit_", bssid2, nullptr);

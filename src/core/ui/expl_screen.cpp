@@ -413,8 +413,8 @@ void catDetail(char* out, size_t n, ExplCat c, const ExplListView& v) {
 
 // The ACTIVITY PICKER: EXPL's own top level. Four fixed rows at the two-line pitch the
 // zone list uses, so a category reads like the zones behind it rather than like a
-// different screen. Nothing scrolls: the list is four rows by construction and the
-// whole point of it is that every activity is one press from here.
+// different screen. Nothing scrolls: the list is four rows by construction, so every
+// activity is one press from here.
 void drawExplCategories(Framebuffer& fb, const ContentRegistry& reg,
                         const ExplListView& v) {
     drawHeaderBand(fb, "EXPL");

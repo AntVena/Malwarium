@@ -260,7 +260,7 @@ void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
     const CreatureDef* active = v.pet;
     drawHeaderBand(fb, "NEW EGG", v.rackFull ? "RACK FULL" : "READY");
 
-    // The whole point of this screen is that laying an egg has a COST, and the cost is
+    // Laying an egg has a COST, and the cost is
     // the pet you are raising: it goes to the rack first, which is why a full rack is
     // what stops you. Said plainly here rather than discovered by pressing Store on a
     // pet record and reading the prompt.

@@ -2,8 +2,7 @@
 
 The parts of the system that belong to no single folder: what the game is, how the repo is laid
 out, the stack, the shape of the carousel, the care/evolution model, and the radio design. Anything
-that *does* have an owning folder lives there instead: this file points at it rather than
-restating it.
+that *does* have an owning folder lives there instead, and this file points at it.
 
 ---
 
@@ -28,16 +27,11 @@ Use these consistently across UI, assets and the 'Pedia.
 
 ---
 
-## Phasing
+## Status
 
-| Phase | Theme | Status |
-|---|---|---|
-| **1** | Render pipeline · idle canvas · carousel · STAT/ITEMS/MAINT · gauges & care · Decryption Hatch · Paypup | ✅ shipped |
-| **2** | Remaining submenus (GAMES/EXPL/MODS/ARCH/CFG) · more Process pets · persistence | ✅ shipped |
-| **3** | Script & Daemon stages · evolution branching · combat / loadout | ✅ shipped |
-| **4** | Radio / sensing / exploration | passive Wi-Fi sensing, audit/pcap capture, CREW enlistment + home network, ESP-NOW discovery (PEERS) and 1v1 duels (LINK) ✅ shipped; the Red/Blue archetype system is the one open piece |
-
-Open work: `docs/MASTER_TODO.md`.
+The render pipeline, every carousel slot, all three evolution stages, combat, persistence and
+the radio (Wi-Fi sensing, audit capture, crews, ESP-NOW discovery and duels) are built. The
+Red/Blue archetype layer (*Radio, sensing and pet-to-pet*) is the open piece of the design. Open work: `docs/MASTER_TODO.md`.
 
 ---
 
@@ -69,7 +63,7 @@ malwarium/
 ├── src/platform/esp32/  ← drivers, radio arbiter, AP server + HARDWARE.md
 ├── tools/               ← gen_assets.py, gen_font.py (by hand, not a gate), gen_pedia_data.py,
 │                          make_web_tar.py, screens.sh, host helpers
-├── .github/workflows/   ← gates (every push) · publish (a v* tag → GitHub Pages)
+├── .github/workflows/   ← gates (every push) · release-merge (a session's release → main) · publish (→ GitHub Pages)
 ├── pages/               ← the publish host's own pages: a landing page + the USB flasher
 └── web/                 ← the SD-served 'Pedia bundle
 ```
@@ -179,7 +173,7 @@ elimination bracket held in The Pirate Bayou and opened by reaching that water. 
 Nav with three reads: the BRACKET (the field, who is left, who is next), a **SCOUT** sheet on
 hold-B showing any entrant's whole kit, and a paged **BRIEFING** on the A+C chord, which is the
 only thing that tells an operator what an arena bout even is. Both readers flow through the shared
-name-plus-prose page (`core/ui/prose_page.h`), and the scout sheet is literally STAT's LOADOUT page
+name-plus-prose page (`core/ui/prose_page.h`), and the scout sheet is STAT's LOADOUT page
 pointed at somebody else's pet, so a rival's moves are described in the move's own words: with
 that pet's own drawing beside the caption, since an opponent you can only read is one you have to
 imagine.
@@ -197,7 +191,7 @@ moves stay inside their line), rolled mods it is high enough to equip, the per-l
 raise would have bought it, and a **crew Exploit it fires on its own** at a rolled Health trigger.
 Both sides get Exploits, which is what a linked duel cannot offer: there the picker would pause
 one device and not the other, so a duel grants none, and the arena is where a full pet-vs-pet
-fight with the meta layer live can actually be played. The matches the operator is not in are
+fight with the meta layer live can be played. The matches the operator is not in are
 resolved by stepping the same engine headlessly, so the bracket is climbed rather than sorted, and
 the whole run persists as **one seed plus a survivor bitmask**: every entrant is derived from it.
 Stakes are Safe and nothing pays until the bracket is taken, at which point the title pays once;
@@ -267,9 +261,9 @@ while a need's "!" is up opens a **care card** saying why and what fixes it (one
 and the first walk armed from EXPL opens a card on how the walk and its fights work, before
 it runs hands-off. All are one-time **tips**, a player-level persisted set (`Game::Tip`,
 save v66, `src/core/app/game/game_onboard.cpp`), so a new egg does not re-teach them. The
-`Hatched` start seam counts them as seen, as a pre-v66 save does. Errors get cards too.
-The first one, and the fourth (one short of failing, when STAT also takes an urgent "!"),
-and the first cache held gets one that teaches the A+C way to the VAULT. Every card a
+`Hatched` start seam counts them as seen, as a pre-v66 save does. Errors get cards too:
+the first one, and the fourth (one short of failing, when STAT also takes an urgent "!").
+The first cache held gets one that teaches the A+C way to the VAULT. Every card a
 device has shown can be read again from **CFG → DEVICE → TIPS**. And because most of
 what goes wrong happens while nobody is holding it, the first press after `kAwayDigestMs`
 of quiet opens **WHILE YOU WERE AWAY** (Lockouts fired and missed, errors charged, fights,
@@ -299,7 +293,7 @@ survive a pet's death and a new egg, like the HackerTag and earned Titles.
 
 There is no achievement browser on the device (three buttons and 224px don't make one worth having),
 so an unlock reaches the player two ways: a **banner on the idle home screen**, flashed the next
-time the player is actually looking at it (one earned mid-fight waits rather than being spent on an
+time the player is looking at it (one earned mid-fight waits rather than being spent on an
 empty room), and the **web 'Pedia**, which is where they're read. Deeper rungs pay a **Commendation
 Cache**, a container that is only ever earned and never found.
 
@@ -366,33 +360,33 @@ seals it and starts a re-arm cooldown.
 queued, not credited, and an EXPL Wi-Fi event drains one: that resolution is what ROUTES the whole
 event, so the headline, the sweep and the flavor lines all state the same fact. An empty queue is
 not a penalty: every third dry event summons the area's **GUARDIAN** instead, and a guardian puts a
-**SHIBOLEET** to the pet. A riddle drawn in the **CANT**, the guardians' language, with three
+**SHIBOLEET** to the pet: a riddle drawn in the **CANT**, the guardians' language, with three
 replies drawn the same way (`src/core/app/game/game_shiboleet.cpp`).
 
 **A guardian has no sprite: it is a SWARM.** Its body is a boids flock (`core/model/flock.h`)
-drawn as `FX_SWARM` (`core/render/swarm.h`). A couple of dozen marks threaded to their near
+drawn as `FX_SWARM` (`core/render/swarm.h`): a couple of dozen marks threaded to their near
 neighbours, dense in the middle and granular at the fringe, so the thing across from the pet is
 visibly not the same kind of thing the pet is. It holds the rival seat in the guardian's own
 fight as well as the meeting screens, so one creature has one appearance throughout. What the
-flock is doing is a `FlockMood`. A standing disposition and never a beat: where the meeting has
+flock is doing is a `FlockMood`, a standing disposition with no beat in it: where the meeting has
 got to, how it came out, and in a fight how much of the guardian is left. The mood reads as a
 SHAPE before it is a colour, so a refusal is a knot, a wrong answer a wide scatter, and a beaten
 guardian comes apart rather than dying.
 
-**A meeting is three screens, and the riddle is the middle one.** It opens on the **HAIL**. The
-thing arrives, does something the pet can see, speaks, and the foot states how much of that the pet
-reads and what a sigil costs, and it closes on the **VERDICT**: what the guardian made of the
+**A meeting is three screens, and the riddle is the middle one.** It opens on the **HAIL**: the
+thing arrives, does something the pet can see and speaks, and the foot states how much of that the
+pet reads and what a sigil costs. It closes on the **VERDICT**: what the guardian made of the
 answer, what that paid or cost, and which button leads where. Every fluency band passes through
-both, so a refusal is a refusal the player watched rather than a boss that appeared, and a lost
-riddle is something the guardian *did* rather than a fight with no stated cause. Each area authors
+both, so the player watches a refusal happen and sees the guardian *do* something when a riddle
+is lost. Each area authors
 its guardian's reaction per outcome (`GuardianDef::outcomes`,
 `src/core/content/areas/area_defs.h`) in the same said-twice pair its greetings use.
 
-**The Cant is legibility as a progression.** A letter the pet has learned. A **SIGIL**. Is drawn
+**The Cant is legibility as a progression.** A letter the pet has learned (a **SIGIL**) is drawn
 as itself; every other is drawn as some other, under a substitution rerolled per encounter. So the
 same riddle clarifies in place as sigils come in, and because a substitution preserves width, a
 riddle that fits the panel at zero sigils fits at twenty-six. Everything the guardian SAYS rides
-that cipher. Its greeting, its question and its verdict alike; what the pet can SEE it doing is
+that cipher (its greeting, its question and its verdict); what the pet can SEE it doing is
 always plain, and the two are authored as one moment
 said twice, so a pet that reads nothing still comes away with the gesture, and the words arrive
 later underneath something it already understood. Answering correctly always pays
@@ -449,7 +443,7 @@ overwriting one file:
 https://antvena.github.io/Malwarium/manifest.json
 ```
 
-The same deploy carries **`pages/`**. A landing page and a **Web Serial flasher** at
+The same deploy carries **`pages/`**: a landing page and a **Web Serial flasher** at
 `/flash/`, plus the three boot images an OTA can never write (`bootloader.bin`,
 `partitions.bin`, `boot_app0.bin`). They ride along rather than deploying separately because
 the flasher offers whatever the manifest beside it names, and a site one release ahead of its
@@ -457,7 +451,9 @@ host would offer a version nobody is holding. `pages/README.md` is that director
 standard; `make pages` is the whole publish, and what CI runs.
 
 Cutting a release is: land the release commit on `main`, then dispatch `publish.yml` on `main`
-(**Run workflow**, or the Actions API) straight away. **Bump both versions first**:
+(**Run workflow**, or the Actions API) straight away. A Claude session pushes its `release v...`
+commit to its own `claude/**` or `ccr-*` branch instead, and `release-merge.yml` does both steps
+once the gates pass there: it fast-forwards `main` and dispatches publish. **Bump both versions first**:
 `include/version.h` and `web/VERSION`. A device installs only what beats what it already runs, so
 an unbumped publish is one nobody receives, and bumping both means never having to work out which
 one moved. SYSTEM INFO and UPDATES draw the firmware version, so the bump also records the golden
@@ -483,7 +479,7 @@ higher code, and asks its operator), so a release interrupts nobody and needs no
 save bump is not an exception: the stream is append-only (`deserializeSave`), so a previous
 firmware rolled back underneath a newer save reads the prefix it knows and loses only what the
 newer build appended, and that ships without asking. Two changes are the exception, because no
-later tag undoes them: a save change that **breaks the append-only stream** (one that has to
+later release undoes them: a save change that **breaks the append-only stream** (one that has to
 raise `kOldestAcceptedVersion`, so a rollback would find a save it refuses, which reads as a
 fresh hatch) and a **partition-table or bootloader change** (an OTA writes neither, so every
 device needs USB).
@@ -491,7 +487,7 @@ device needs USB).
 The second of those is what `/flash/` is for. It writes all four boot images, so a table or
 bootloader change costs a remote operator a cable and a browser rather than a toolchain: the
 difference between an awkward release and a recall. It is still a change to confirm before
-tagging, because it reaches nobody who doesn't plug in. Everything else ships.
+releasing, because it reaches nobody who doesn't plug in. Everything else ships.
 
 ---
 

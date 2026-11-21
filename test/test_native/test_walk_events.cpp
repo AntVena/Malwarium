@@ -398,7 +398,7 @@ void test_mod_shop_buy_grants_mod() {
     CHECK(id != nullptr && id[0] != '\0');
     const int price = g.storefrontVisit()->bitsPrice(row);
     const int costCount = g.storefrontVisit()->costCount(row);
-    CHECK(costCount >= 1);   // the mod shop's whole point: an item cost beyond Bits
+    CHECK(costCount >= 1);   // a mod shop row costs an item beyond Bits
     for (int k = 0; k < costCount; ++k)
         g.inventory().add(g.storefrontVisit()->costId(row, k), g.storefrontVisit()->costQty(row, k));
     g.liveOperator().bits = price;
@@ -594,7 +594,7 @@ void test_sealed_cache_walk_find() {
 // (b) VAULT B decrypts: consumes one container, draws the reward pool (>= flat Bits),
 // logs it, reveals the yield (Nav::CacheYield).
 void test_sealed_cache_open_grants_reward() {
-    // (a) pet-side ITEMS no longer opens caches: Use is inert.
+    // (a) pet-side ITEMS does not open caches: Use is inert.
     {
         Game g{StartMode::Hatched};
         g.inventory().add("sealed_cache", 2);

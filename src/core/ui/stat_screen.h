@@ -67,7 +67,7 @@ std::vector<ProseRow> buildLoadoutRows(const ContentRegistry& reg,
 // point total, then one row per rung: its name, what it does (straight off the shared
 // table, core/model/stat_tiers.h) and a tag saying where the player stands on it.
 //
-// The TAG is the whole point of the page and is deliberately the only channel that
+// The TAG is the only channel that
 // reports state: "HELD" on a rung already earned, "N TO GO" on the one being climbed,
 // and the bare threshold on the rest. Text rather than colour, because the status pages
 // have to stay readable in grayscale, and because "how far to the next one" is a NUMBER,

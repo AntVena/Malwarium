@@ -31,7 +31,7 @@ Whereas creatures must **retain the animal identity** when blended with tech ter
 | **Portmanteau + Object** | Tor-Tilla Chip, Yubi-Cookie | Tech term is blended/hyphenated into the object word, then an object word anchors it. |
 | **Modifier + Object** | Force-Pulled Pork | Tech concept as adjective + object noun. |
 
-All three patterns are legal, but they are **not equally good**: see §2a, which is the rule that actually predicts whether a name lands.
+All three patterns are legal, but they are **not equally good**: see §2a, which is the rule that predicts whether a name lands.
 
 **Bad example:** `Snack`. The tech term is gone. Fails.
 **Bad example:** `The Good Thing`. No tech reference at all. Fails.

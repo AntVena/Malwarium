@@ -74,7 +74,7 @@ bound of this kind belongs.
 
 **Repeats cannot be the brake, and it is worth knowing why before reaching for them.** Against
 a Daemon Attack pool near fifty rows, better than seven casts in eight are new; the effective
-pool has to fall under about six before the curve bends at all. The dial that actually moves
+pool has to fall under about six before the curve bends at all. The dial that moves
 this is `kWildSource*Pct`: weighting the source shrinks the band a roll lands in, where
 filtering the pool only shortens a list that was never the constraint.
 

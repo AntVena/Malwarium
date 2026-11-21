@@ -56,8 +56,7 @@ void test_chroma_settled_match_survives_the_sweep() {
     CHECK(c.plate() != c.worn());      // and the next round asks for another change
 }
 
-// The whole point of the settle: pressing the right button is not the same as wearing
-// it. A change started too late is caught halfway and scores as caught.
+// The settle: pressing the right button is not the same as wearing it. A change started too late is caught halfway and scores as caught.
 void test_chroma_caught_midchange_is_spotted() {
     Chromatophore c;
     c.reset(3u, 6, 4000, 400, /*switching=*/false);

@@ -399,8 +399,8 @@ void test_crew_exploit_descriptions_resolve_and_fit() {
         CHECK(std::strchr(prose.c_str(), '}') == nullptr);
         CHECK(textWrapLines(prose.c_str(), kActiveW - 2 * kMargin) <= 6);
         // ...and the motto, which the page WRAPS beside the team glyph rather than
-        // marqueeing. Three lines is what it reserves; a fourth would be cut, and a
-        // motto is exactly the kind of copy nobody notices losing the end of.
+        // marqueeing. Three lines is what it reserves; a fourth would be cut, and nobody
+        // notices a motto losing its end.
         CHECK(textWrapLines(kCrews[i].tagline,
                             kActiveW - kMargin - (kMargin + 16 + 8)) <= 3);
     }

@@ -93,8 +93,8 @@ inline constexpr ItemDef kRareKitItems[] = {
 
     // The Commendation Cache: the standing reward for an ACHIEVEMENT
     // (content_achievements.cpp rows list it in `rewards`). findWeight 0: it is never
-    // found on a walk, only earned, which is the whole point of it being a different
-    // container from the four the 'net drops. Its purse and mod chance sit above Epic's
+    // found on a walk, only earned, which is why it is a container apart from the four
+    // the 'net drops. Its purse and mod chance sit above Epic's
     // because a ladder takes far longer to finish than a cache takes to find.
     {"commend_cache", "Commendation Cache", ItemDef::Type::Quest,
      ItemDef::Rarity::Epic,

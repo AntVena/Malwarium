@@ -19,7 +19,7 @@ const QuoteDef kQuotes[] = {
     {5, "IF A MACHINE IS EXPECTED TO BE INFALLIBLE, IT CANNOT ALSO BE INTELLIGENT.",
      "ALAN TURING"},
 
-    // Gated, and the two gates are the whole point of the field: a quote about seeing
+    // Gated: a quote about seeing
     // further than you have gone waits on the dive that proves you have, and a quote
     // about forgiveness over permission waits on the run that took it.
     {6, "WE CAN ONLY SEE A SHORT DISTANCE AHEAD, BUT WE CAN SEE PLENTY THERE THAT NEEDS TO BE DONE.",
@@ -408,8 +408,8 @@ const char* const kQuotePrizeLadder[] = {
     "peking_duck_typing",
     "recursive_turducken",
     // The fourth service, ordered the same way: the cheap methods a new kitchen can
-    // actually use first, the plates that want another dish already cooked last. The
-    // ladder is now far longer than the quote pool, so its tail is what the pool grows
+    // use first, the plates that want another dish already cooked last. The
+    // ladder is far longer than the quote pool, so its tail is what the pool grows
     // INTO: a solve never pays nothing, because the Bandwidth fallback is uncapped.
     "scrambled_regeggs",
     "bashed_potatoes",

@@ -175,7 +175,7 @@ void test_save_defers_when_the_heap_is_too_low() {
     // SaveData allocates BEFORE the buffer is sized: a floor that only covered the
     // reservation leaves nothing for the SaveData standing next to it.
     CHECK(kSaveGrowHeapFloorBytes > kSaveReserveBytes);
-    // The everyday bar sits below it, which is the whole point of there being two: a
+    // The everyday bar sits below it: a
     // save writing into a buffer the engine already owns has no large allocation left
     // to clear, so it must not be turned away on a heap that could not spare a fresh one.
     CHECK(kSaveHeapFloorBytes < kSaveGrowHeapFloorBytes);

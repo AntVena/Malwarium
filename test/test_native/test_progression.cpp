@@ -711,8 +711,7 @@ void test_explore_subarea_ramp() {
 // Line-identity combat -------------------------
 
 // Line-gating: a move is learnable/equippable iff generic (no line) or same line.
-// This is what makes a Ransomware move exclusive to Ransomware pets: the whole point
-// of adding Phishing moves no current pet can touch.
+// This is what makes a Ransomware move exclusive to Ransomware pets.
 void test_line_move_gating() {
     ContentRegistry r = ContentRegistry::embedded();
     // Generic moves stay open to everyone (incl. a lineless creature).

@@ -15,8 +15,8 @@ Why a tool at all
 The 'Pedia draws achievements as a GRID, and a grid only reads if the rows share a
 grammar. assets/ASSET_MANIFEST.md (§S, the Achievement icons row) states it: one bespoke glyph per row, no
 reuse, and most rows are LADDERS: one motif plus a countable tally, so a reader sees
-which rung a row is before they read anything. That is a rule about the SET, which is
-exactly the kind of rule hand-drawing drifts away from one file at a time.
+which rung a row is before they read anything. That is a rule about the SET, and
+hand-drawing drifts away from it one file at a time.
 
 So the grammar lives here as code rather than as a convention people remember:
 

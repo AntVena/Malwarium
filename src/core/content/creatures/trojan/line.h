@@ -18,7 +18,7 @@
 // same one ink as the Daemons these two were substituted for.
 //
 // Keyloggerhead is the first Trojan Script: a Phishlet that "went wrong". It keeps a
-// Phishing-blue read but is now line = "trojan", so on divert it drops the Phishing
+// Phishing-blue read but is on line = "trojan", so on divert it drops the Phishing
 // kit for the Trojan moves (pierce attacks + trap defends), hence the Defend-leaning
 // slotKinds, which make the trap strategy available.
 #pragma once
