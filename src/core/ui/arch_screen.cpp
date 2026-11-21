@@ -282,7 +282,7 @@ void drawArchNewEgg(Framebuffer& fb, const ArchConfirmView& v) {
         drawText(fb, kMargin, kConfirmBoxY + 8, "HATCH A NEW EGG?", palColor(Pal::INK));
         drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
-    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL" : "B HATCH  C BACK");
+    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B CONFIRM  C BACK" : "B HATCH  C BACK");
 }
 
 void drawArchRecordDetail(Framebuffer& fb, const ContentRegistry& reg,
@@ -352,8 +352,8 @@ void drawArchRecord(Framebuffer& fb, ArchAction action, const ArchConfirmView& v
         drawText(fb, kMargin, kConfirmBoxY + 8, prompt, palColor(Pal::INK));
         drawConfirmChoices(fb, kConfirmBoxY + 32, v.confirmChoice);
     }
-    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
-                                 : "A NEXT  B SELECT  C BACK");
+    drawHintBand(fb, v.confirmOpen ? "A TOGGLE  B CONFIRM  C BACK"
+                                 : "A NEXT  B OPEN  C BACK");
 }
 
 void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
@@ -413,7 +413,7 @@ void drawArchSale(Framebuffer& fb, const ArchSaleSheet& sheet) {
         drawText(fb, kMargin, kSaleConfirmY + 18, kFor[f], palColor(Pal::INK));
         drawConfirmChoices(fb, kSaleConfirmY + 38, sheet.confirmChoice);
     }
-    drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B COMMIT  C CANCEL"
+    drawHintBand(fb, sheet.confirmOpen ? "A TOGGLE  B CONFIRM  C BACK"
                                        : "A NEXT  B TRADE  C BACK");
 }
 

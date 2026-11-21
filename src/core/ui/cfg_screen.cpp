@@ -347,7 +347,7 @@ void drawThemePicker(Framebuffer& fb, int pick, int equipped, uint32_t unlockedM
     }
 
     drawScrollbar(fb, kThemeTop, kThemeVisible * kThemeRowH, kThemeCount, scrollTop, kThemeVisible);
-    drawHintBand(fb, "A NEXT  B APPLY  C BACK");
+    drawHintBand(fb, "A NEXT  B SET  C BACK");
 }
 
 void drawBackgrounds(Framebuffer& fb, int pick, uint32_t ownedMask, int equipped,
@@ -414,7 +414,7 @@ void drawTravelConfirm(Framebuffer& fb, int pick) {
         drawText(fb, 24, y + 3, kOpts[i],
                  palColor(i == 1 ? Pal::WARN : Pal::INK));
     }
-    drawHintBand(fb, "A CHOOSE  B CONFIRM  C BACK");
+    drawHintBand(fb, "A TOGGLE  B CONFIRM  C BACK");
 }
 
 void drawTravelSleeping(Framebuffer& fb) {
@@ -456,7 +456,7 @@ void drawSdFormatConfirm(Framebuffer& fb, int pick, const SdStatus& sd, SdCardUs
                  palColor(off ? Pal::INK_DIM : i == 1 ? Pal::WARN : Pal::INK));
         if (off) fb.fillRect(24, y + 6, textWidth(kOpts[i]), 1, palColor(Pal::INK_DIM));
     }
-    drawHintBand(fb, "A CHOOSE  B CONFIRM  C BACK");
+    drawHintBand(fb, "A TOGGLE  B CONFIRM  C BACK");
 }
 
 void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd) {
@@ -701,7 +701,7 @@ void drawUiModeToggle(Framebuffer& fb, int pick, UiMode current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
+    drawHintBand(fb, "A CYCLE  B SET  C BACK");
 }
 
 namespace {
@@ -732,7 +732,7 @@ void drawLevelPicker(Framebuffer& fb, const char* title, int pick, int current,
     char pct[12];
     std::snprintf(pct, sizeof(pct), "%d%%", percent);
     drawText(fb, (kActiveW - textWidth(pct)) / 2, 30, pct, palColor(Pal::INK));
-    drawHintBand(fb, "A LEVEL  B APPLY  C BACK");
+    drawHintBand(fb, "A LEVEL  B SET  C BACK");
 }
 
 } // namespace
@@ -769,7 +769,7 @@ void drawSoundMode(Framebuffer& fb, int pick, SoundMode current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y + 4,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
+    drawHintBand(fb, "A CYCLE  B SET  C BACK");
 }
 
 void drawTitles(Framebuffer& fb, int focusSector, uint32_t unlockedMask,
@@ -830,7 +830,7 @@ void drawAuditMode(Framebuffer& fb, int pick, int current) {
             drawText(fb, kActiveW - kMargin - textWidth("ACTIVE"), y,
                      "ACTIVE", palColor(Pal::ACCENT));
     }
-    drawHintBand(fb, "A CYCLE  B APPLY  C BACK");
+    drawHintBand(fb, "A CYCLE  B SET  C BACK");
 }
 
 namespace {
@@ -866,7 +866,7 @@ void drawApToggle(Framebuffer& fb, int pick, OnOff current) {
     drawText(fb, kMargin, 54, "ON SHOWS A QR TO CONNECT.", palColor(Pal::ACCENT));
 
     drawOnOffRows(fb, pick, current);
-    drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
+    drawHintBand(fb, "A TOGGLE  B SET  C BACK");
 }
 
 void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
@@ -892,7 +892,7 @@ void drawLinkToggle(Framebuffer& fb, int pick, OnOff current, LinkReach reach) {
         drawText(fb, kMargin, 146, "AUDIT SCAN IS OFF:", palColor(Pal::WARN));
         drawText(fb, kMargin, 158, "ONLY MEETS ON PEERS SCREEN", palColor(Pal::WARN));
     }
-    drawHintBand(fb, "A TOGGLE  B APPLY  C BACK");
+    drawHintBand(fb, "A TOGGLE  B SET  C BACK");
 }
 
 // What each scope loses, then what else it does, in that order: the loss is the decision

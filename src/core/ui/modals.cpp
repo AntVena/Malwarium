@@ -243,7 +243,7 @@ void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
 
     // UI_HINT_BAND: C is disabled, so the deviation must be surfaced; and A is the
     // only way to the second row, so it is named too.
-    drawCenteredText(fb, 200, "A SWITCH  B SELECT", palColor(Pal::INK_DIM));
+    drawCenteredText(fb, 200, "A SWITCH  B DO", palColor(Pal::INK_DIM));
 }
 
 }  // namespace mal

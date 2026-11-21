@@ -167,7 +167,7 @@ void drawLoadout(Framebuffer& fb, const ContentRegistry& reg, const MoveLoadout&
                      palColor(Pal::ACCENT));
         }
     }
-    drawHintBand(fb, "A NEXT  B PICK  HOLD B READ");
+    drawHintBand(fb, "A NEXT  B OPEN  HOLD B READ");
 }
 
 namespace {
@@ -376,8 +376,8 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
         drawRemovePanel(fb, reg, load, v, panelY);
 
     if (v.confirmActive) drawMoveReplaceConfirm(fb, reg, v);
-    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                     : "A NEXT  B VIEW  C BACK");
+    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B CONFIRM  C BACK"
+                                     : "A NEXT  B OPEN  C BACK");
 }
 
 namespace {

@@ -327,8 +327,8 @@ void drawModPicker(Framebuffer& fb, const ContentRegistry& reg, const ModHolding
         drawModPickerPanel(fb, reg, *owned[v.pick], load, v, listEnd + 10);
 
     if (v.confirmActive) drawModReplaceConfirm(fb, reg, load, v);
-    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B COMMIT  C CANCEL"
-                                     : "A NEXT  B VIEW  C BACK");
+    drawHintBand(fb, v.confirmActive ? "A TOGGLE  B CONFIRM  C BACK"
+                                     : "A NEXT  B OPEN  C BACK");
 }
 
 int modDetailProseLines() {

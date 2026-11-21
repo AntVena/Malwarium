@@ -1624,8 +1624,8 @@ void drawCombatHints(Framebuffer& fb, const CombatFrame& f) {
     const Combat& combat = f.combat;
     const char* pickerHint = combat.overrideAtBands()  ? "A NEXT B OPEN C CANCEL"
                              : combat.overrideBandCount() > 1
-                                 ? "A NEXT B COMMIT C BACK"
-                                 : "A NEXT B COMMIT C CANCEL";
+                                 ? "A NEXT B CONFIRM C BACK"
+                                 : "A NEXT B CONFIRM C CANCEL";
     const char* hint = !f.ongoing             ? "B CONTINUE"
                        : combat.overrideOpen() ? pickerHint
                        : f.v.sides.canRun      ? "A+C CMD B STAT C RUN A SKIP"

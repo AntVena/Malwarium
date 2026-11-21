@@ -54,7 +54,7 @@ void LineSelectScreen::draw(Framebuffer& fb, const LineSelectHost& host) const {
         drawText(fb, x, y, name, on ? palColor(Pal::INK) : palColor(Pal::INK_DIM));
     }
 
-    const char* hint = "A NEXT   B SELECT";
+    const char* hint = "A NEXT   B HATCH";
     drawText(fb, (kActiveW - textWidth(hint)) / 2, kActiveH - 26, hint,
              palColor(Pal::INK_DIM));
 }

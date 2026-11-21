@@ -300,6 +300,18 @@ The line naming what the buttons do is drawn one of two ways, one per face:
 every one of them steps through the same walk (`game_listnav.cpp`). `A CYCLE` is reserved
 for A changing a VALUE in place: a setting's level, a HackerTag letter.
 
+**B's verb names the action when B does one thing** (`B BUY`, `B EQUIP`, `B FIGHT`,
+`B HATCH`). When B does one of the four jobs every screen shares, it has one word each:
+
+| B's job | Word | Not |
+|---|---|---|
+| go into the focused row (a list, a detail page, a picker) | `OPEN` | VIEW, PICK, SELECT, ENTER |
+| say yes to an `InlineConfirm` or a YES/NO page | `CONFIRM` | COMMIT, OK |
+| store a value a CFG page is showing | `SET` | APPLY |
+| leave a result or a reader that is finished | `CONTINUE` | OK, DONE, GOT IT |
+
+A yes/no choice moves with `A TOGGLE` (two options), never `A CHOOSE`.
+
 **The exception rule.** A gesture that an upgrade grants is advertised only once the upgrade
 is owned, so an unowned player's screen is pixel-identical to one where the upgrade never
 existed. The ITEMS list (filter/type hints) and VAULT (bulk open) apply it; a screen whose

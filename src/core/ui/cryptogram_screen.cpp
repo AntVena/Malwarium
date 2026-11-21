@@ -217,7 +217,7 @@ void drawCryptogramBoard(Framebuffer& fb, const Cryptogram& c, const CryptogramV
     // A/C are the cursor's two directions in both stages, so the chord is what a cancel
     // would normally be, and a board with no way off it has to say so where the
     // controls are, not in a manual.
-    if (!running) drawHintBand(fb, "B DONE");
+    if (!running) drawHintBand(fb, "B CONTINUE");
     else if (c.stage() == Cryptogram::Stage::PickCell)
         drawHintBand(fb, "A/C MOVE  B PLACE  A+C DROP");
     else

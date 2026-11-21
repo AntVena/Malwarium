@@ -318,7 +318,7 @@ void CrewScreen::drawHub(Framebuffer& fb, const CrewHost& host) const {
             drawText(fb, kActiveW - kMargin - textWidth("YOURS"), y + 2, "YOURS", side);
     }
 
-    drawHackerHint(fb, "A NEXT", homeSel ? "B PICK NET" : "B OPEN");
+    drawHackerHint(fb, "A NEXT", "B OPEN");
 }
 
 // --- Home-network picker (the modal over the Hub) ------------------------------
@@ -450,7 +450,7 @@ void CrewScreen::drawTeam(Framebuffer& fb, const CrewHost& host) const {
     if (n > kTeamVisibleRows)
         drawScrollbar(fb, kRowTop, kTeamVisibleRows * kTeamRowH, n, scrollTop,
                       kTeamVisibleRows);
-    drawHintBand(fb, "A NEXT   B VIEW   C BACK");
+    drawHintBand(fb, "A NEXT   B OPEN   C BACK");
 }
 
 // --- Crew detail ---------------------------------------------------------------

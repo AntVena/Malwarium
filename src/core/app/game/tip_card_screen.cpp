@@ -159,7 +159,7 @@ void TipCardScreen::draw(Framebuffer& fb, const TipCardHost& host) const {
     const std::vector<ProseRow> rows = this->rows(host);
     const bool last = scroll_ + proseRowsFitting(rows, scroll_, kTipCardTop) >=
                       static_cast<int>(rows.size());
-    const char* hint = last ? "B GOT IT" : "B NEXT   C SKIP";
+    const char* hint = last ? "B CONTINUE" : "B NEXT   C SKIP";
     drawProseRows(fb, {rows, scroll_, kTipCardTop, host.screenBeat(), hint});
     // The reader draws its band only for a page that overflows; a card that fits in one
     // window still has to say how it is closed.

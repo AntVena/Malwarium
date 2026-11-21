@@ -731,7 +731,7 @@ const char* explListHint(const ExplListView& v) {
             return "A ZONE  B DIVE  C BACK";
         if (focus == ExplRowState::DarkWebOpen || focus == ExplRowState::DarkWebCrawling)
             return "A ZONE  B CRAWL  C BACK";
-        return "A ZONE  B ENTER  C BACK";
+        return "A ZONE  B OPEN  C BACK";
     }
     switch (focus) {
         case ExplRowState::SubBossReady:  return "A NEXT  B FIGHT BOSS  C BACK";

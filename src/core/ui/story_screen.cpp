@@ -55,7 +55,7 @@ void drawStoryPage(Framebuffer& fb, const std::vector<ProseRow>& rows,
     // changes with it: a reader on the final screen is told they are on the final
     // screen by the key that leaves it. C is the same either way: skip the rest.
     const bool last = v.window + 1 >= v.windows;
-    drawHintBand(fb, last ? "B DONE   C SKIP" : "B NEXT   C SKIP");
+    drawHintBand(fb, last ? "B CONTINUE   C SKIP" : "B NEXT   C SKIP");
 }
 
 void drawStoryArchive(Framebuffer& fb, const StoryArchiveRow* rows, int rowCount,

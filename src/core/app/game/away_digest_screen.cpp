@@ -52,7 +52,7 @@ void AwayDigestScreen::draw(Framebuffer& fb, const AwayDigestHost& host) const {
                        0, Overflow::Clip);
         y += 18;
     }
-    drawHintBand(fb, "B OK");
+    drawHintBand(fb, "B CONTINUE");
 }
 
 }  // namespace mal
