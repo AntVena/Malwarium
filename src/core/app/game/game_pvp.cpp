@@ -232,9 +232,9 @@ void Game::pvpCancel() {
 bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
     if (!mac) return false;
     PvpFrame f;
-    // A frame that fails to decode is simply not a duel frame: wrong magic, a protocol
-    // version this build can't lay out, or a wrong-length payload. Dropped silently,
-    // because anything in range can transmit and a bad frame is noise.
+    // A frame that fails to decode is not a duel frame (wrong magic, a protocol version
+    // this build can't lay out, a wrong-length payload). Anything in range can transmit,
+    // so it is dropped silently.
     if (!decodePvpFrame(payload, len, &f)) return false;
 
     const uint64_t key = packPeerKey(mac);
@@ -247,109 +247,113 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
         return false;
 
     switch (f.type) {
-        case PvpFrameType::Invite: {
-            // A RETRY of the session we are already in, from the same operator. The
-            // challenger repeats its INVITE until something answers, which means until
-            // someone presses a button, so these arrive the whole time the prompt is
-            // up. Ignoring them is the only correct answer: replying BUSY here would
-            // decline the very challenge this device is displaying, and the challenger
-            // would give up before its opponent could possibly accept.
-            if (pvp_ && pvp_->id == f.session && pvp_->peerKey == key) return false;
-
-            if (pvp_) {
-                // A DIFFERENT session: someone else (or the same operator starting
-                // over) challenging a device that is already in a duel. That one really
-                // is busy, and saying so beats letting them wait for a timeout.
-                uint8_t buf[kPvpFrameCap];
-                const size_t n = encodePvpDecline(f.session, PvpDeclineReason::Busy, buf,
-                                                  sizeof(buf));
-                if (n) queuePvpFrame(mac, buf, n);
-                return false;
-            }
-            // Consent is a human on the LINK screen. Anywhere else the answer is BUSY:
-            // a challenge must not interrupt someone who is not looking for one, and
-            // outside that screen the radio may be off.
-            uint8_t buf[kPvpFrameCap];
-            PvpDeclineReason refuse = PvpDeclineReason::Busy;
-            bool ok = true;
-            if (!linkScreenOpen() || localRadioKey() == 0) ok = false;
-            else if (!pet_.creature) { ok = false; refuse = PvpDeclineReason::NoPet; }
-            else if (f.rules != kPvpRulesVersion ||
-                     !canBuildPvpCombatant(registry_, f.fighter)) {
-                // Different builds or different content would resolve the same spec
-                // differently. Refuse: two screens disagreeing about who won is worse
-                // than no duel.
-                ok = false;
-                refuse = PvpDeclineReason::Mismatch;
-            }
-            if (!ok) {
-                const size_t n = encodePvpDecline(f.session, refuse, buf, sizeof(buf));
-                if (n) queuePvpFrame(mac, buf, n);
-                return false;
-            }
-            pvp_ = PvpSession::opened(PvpPhase::Invited, f.session, key, mac, f.fighter.tag,
-                                      pvpHostIsLocal(localRadioKey(), key), nowMs_);
-            pvp_->remote = f.fighter;
-            pvpStatus_[0] = '\0';
-            dirty_ = true;
-            return true;
-        }
-
-        case PvpFrameType::Accept: {
-            // Only the challenger is waiting on one, and only once: a repeat
-            // after the fight has started is just the retry.
-            if (pvp_->phase != PvpPhase::Inviting) return false;
-            if (f.rules != kPvpRulesVersion ||
-                !canBuildPvpCombatant(registry_, f.fighter)) {
-                endPvpSession("BUILD MISMATCH", /*notify=*/true);
-                return true;
-            }
-            pvp_->remote = f.fighter;
-            if (f.fighter.tag[0]) pvp_->setTag(f.fighter.tag);
-            pvp_->enter(PvpPhase::Arming, nowMs_);
-            if (pvp_->host) {
-                lcgAdvance(rng_);
-                startPvpBattle(rng_ ? rng_ : 1u);
-            }
-            dirty_ = true;
-            return true;
-        }
-
-        case PvpFrameType::Start: {
-            if (pvp_->host) return false;                    // we pick the seed, not them
-            if (pvp_->phase != PvpPhase::Arming) return false;  // already fighting, or too early
-            // The divergence guard. Recomputed over OUR copies of the two specs, in the
-            // host-then-guest order both devices seat them in; a mismatch means we would
-            // have played a different fight, so refuse instead.
-            if (pvpCommitHash(f.seed, pvp_->remote, pvp_->local) != f.commit) {
-                endPvpSession("FIGHT DESYNC", /*notify=*/true);
-                return true;
-            }
-            startPvpBattle(f.seed);
-            return true;
-        }
-
-        case PvpFrameType::Decline: {
-            if (pvp_->phase != PvpPhase::Inviting) return false;
-            const char* why = "DECLINED";
-            switch (f.reason) {
-                case PvpDeclineReason::Busy:     why = "OPERATOR BUSY"; break;
-                case PvpDeclineReason::NoPet:    why = "THEY HAVE NO PET"; break;
-                case PvpDeclineReason::Mismatch: why = "BUILD MISMATCH"; break;
-                case PvpDeclineReason::Refused:  break;
-            }
-            endPvpSession(why, /*notify=*/false);
-            return true;
-        }
-
-        case PvpFrameType::Bye:
-            // They walked away. Nothing to send. A fight already resolved locally
-            // keeps its result, because the verdict is computed on each device.
-            if (pvp_->phase == PvpPhase::Result) return false;
-            endPvpSession("OPPONENT LEFT", /*notify=*/false);
-            return true;
+        case PvpFrameType::Invite:  return onPvpInvite(f, key, mac);
+        case PvpFrameType::Accept:  return onPvpAccept(f);
+        case PvpFrameType::Start:   return onPvpStart(f);
+        case PvpFrameType::Decline: return onPvpDecline(f);
+        case PvpFrameType::Bye:     return onPvpBye();
     }
     return false;
+}
+
+void Game::sendPvpDecline(const uint8_t* mac, uint32_t session, PvpDeclineReason why) {
+    uint8_t buf[kPvpFrameCap];
+    const size_t n = encodePvpDecline(session, why, buf, sizeof(buf));
+    if (n) queuePvpFrame(mac, buf, n);
+}
+
+// Different builds or different content would resolve the same spec differently, and two
+// screens disagreeing about who won is worse than no duel.
+bool Game::pvpSpecPlayable(const PvpFrame& f) const {
+    return f.rules == kPvpRulesVersion && canBuildPvpCombatant(registry_, f.fighter);
+}
+
+bool Game::onPvpInvite(const PvpFrame& f, uint64_t key, const uint8_t* mac) {
+    // A RETRY of the session we are already in. The challenger repeats its INVITE until
+    // someone presses a button, so these arrive the whole time the prompt is up, and
+    // replying BUSY would decline the very challenge this device is displaying.
+    if (pvp_ && pvp_->id == f.session && pvp_->peerKey == key) return false;
+    // A DIFFERENT session reaching a device already in a duel: that one is busy, and
+    // saying so beats letting them wait for a timeout.
+    if (pvp_) {
+        sendPvpDecline(mac, f.session, PvpDeclineReason::Busy);
+        return false;
+    }
+    // Consent is a human on the LINK screen. Anywhere else the answer is BUSY: a
+    // challenge must not interrupt someone who is not looking for one, and outside that
+    // screen the radio may be off.
+    if (!linkScreenOpen() || localRadioKey() == 0) {
+        sendPvpDecline(mac, f.session, PvpDeclineReason::Busy);
+        return false;
+    }
+    if (!pet_.creature) {
+        sendPvpDecline(mac, f.session, PvpDeclineReason::NoPet);
+        return false;
+    }
+    if (!pvpSpecPlayable(f)) {
+        sendPvpDecline(mac, f.session, PvpDeclineReason::Mismatch);
+        return false;
+    }
+    pvp_ = PvpSession::opened(PvpPhase::Invited, f.session, key, mac, f.fighter.tag,
+                              pvpHostIsLocal(localRadioKey(), key), nowMs_);
+    pvp_->remote = f.fighter;
+    pvpStatus_[0] = '\0';
+    dirty_ = true;
+    return true;
+}
+
+bool Game::onPvpAccept(const PvpFrame& f) {
+    // Only the challenger is waiting on one, and only once: a repeat after the fight
+    // has started is the retry.
+    if (pvp_->phase != PvpPhase::Inviting) return false;
+    if (!pvpSpecPlayable(f)) {
+        endPvpSession("BUILD MISMATCH", /*notify=*/true);
+        return true;
+    }
+    pvp_->remote = f.fighter;
+    if (f.fighter.tag[0]) pvp_->setTag(f.fighter.tag);
+    pvp_->enter(PvpPhase::Arming, nowMs_);
+    if (pvp_->host) {
+        lcgAdvance(rng_);
+        startPvpBattle(rng_ ? rng_ : 1u);
+    }
+    dirty_ = true;
+    return true;
+}
+
+bool Game::onPvpStart(const PvpFrame& f) {
+    if (pvp_->host) return false;                       // we pick the seed, not them
+    if (pvp_->phase != PvpPhase::Arming) return false;  // already fighting, or too early
+    // The divergence guard. Recomputed over OUR copies of the two specs, in the
+    // host-then-guest order both devices seat them in; a mismatch means we would have
+    // played a different fight, so refuse instead.
+    if (pvpCommitHash(f.seed, pvp_->remote, pvp_->local) != f.commit) {
+        endPvpSession("FIGHT DESYNC", /*notify=*/true);
+        return true;
+    }
+    startPvpBattle(f.seed);
+    return true;
+}
+
+bool Game::onPvpDecline(const PvpFrame& f) {
+    if (pvp_->phase != PvpPhase::Inviting) return false;
+    const char* why = "DECLINED";
+    switch (f.reason) {
+        case PvpDeclineReason::Busy:     why = "OPERATOR BUSY"; break;
+        case PvpDeclineReason::NoPet:    why = "THEY HAVE NO PET"; break;
+        case PvpDeclineReason::Mismatch: why = "BUILD MISMATCH"; break;
+        case PvpDeclineReason::Refused:  break;
+    }
+    endPvpSession(why, /*notify=*/false);
+    return true;
+}
+
+// They walked away. Nothing to send: a fight already resolved locally keeps its result,
+// because the verdict is computed on each device.
+bool Game::onPvpBye() {
+    if (pvp_->phase == PvpPhase::Result) return false;
+    endPvpSession("OPPONENT LEFT", /*notify=*/false);
+    return true;
 }
 
 // --- The fight ---------------------------------------------------------------

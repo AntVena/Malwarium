@@ -2981,6 +2981,14 @@ private:
     // growing) if the outbox is full: every frame here is repeated on a timer, so a
     // drop costs one retry interval, not the session.
     void queuePvpFrame(const uint8_t* mac, const uint8_t* buf, size_t len);
+    // onPvpFrame's cases, one per frame type.
+    bool onPvpInvite(const PvpFrame& f, uint64_t key, const uint8_t* mac);
+    bool onPvpAccept(const PvpFrame& f);
+    bool onPvpStart(const PvpFrame& f);
+    bool onPvpDecline(const PvpFrame& f);
+    bool onPvpBye();
+    bool pvpSpecPlayable(const PvpFrame& f) const;
+    void sendPvpDecline(const uint8_t* mac, uint32_t session, PvpDeclineReason why);
     // Re-send whatever frame is holding the current phase open, on kPvpRetryMs, and
     // fail the session out on timeout. Driven from tick().
     void pvpTick();

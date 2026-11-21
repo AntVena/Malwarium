@@ -654,14 +654,6 @@ void loop() {
     applyCpuFreq(targetMhz);
 #endif
 
-    // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The
-    // card is mounted once in setup(), so one inserted later is invisible until
-    // this remounts it. DECISION: seal any live capture FIRST rather than defer.
-    // sealActive() keeps the toggle intent (it re-arms after the normal cooldown),
-    // and a forced arbiter poll powers the capture owner down so its .pcap sink is
-    // flushed + closed before we unmount (unmounting under an open file corrupts
-    // it). Then remount, push a fresh SD reading (which also flashes the idle SD
-    // icon via setSdStatus), and log one [sd] line. Inert on card-less/SPI-SD boards.
     // Brightness: re-drive the backlight whenever the CFG level changes.
     // Only the user changes it (in CFG), so a cheap value-compare suffices: no
     // one-shot flag needed. Applied even while the screen is "asleep" so waking
@@ -672,6 +664,14 @@ void loop() {
         applyBrightness();
     }
 
+    // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The
+    // card is mounted once in setup(), so one inserted later is invisible until
+    // this remounts it. Any live capture is sealed FIRST:
+    // sealActive() keeps the toggle intent (it re-arms after the normal cooldown),
+    // and a forced arbiter poll powers the capture owner down so its .pcap sink is
+    // flushed + closed before we unmount (unmounting under an open file corrupts
+    // it). Then remount, push a fresh SD reading (which also flashes the idle SD
+    // icon via setSdStatus), and log one [sd] line. Inert on card-less/SPI-SD boards.
     if (game->deviceStatus().sdRecheckRequested()) {
         game->auditCapture().sealActive(millis());  // no-op unless armed/hot
         radio.poll(millis());                       // release capture -> close sink
