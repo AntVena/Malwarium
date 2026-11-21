@@ -17,8 +17,12 @@ namespace mal {
 void MergeScreen::onButton(MergeHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::C) { host.leaveToCarousel(); return; }
     if (!host.mergeHubUnlocked()) return;   // defensive; the carousel already gates entry
-    if (ev.button == Button::A) row_ = stepRow(row_, kMergeRecipeCount, +1);
+    if (ev.button == Button::A) stepList(host, +1);
     else if (ev.button == Button::B) host.craftRecipe(row_);
+}
+
+void MergeScreen::stepList(const MergeHost&, int dir) {
+    row_ = stepRow(row_, kMergeRecipeCount, dir);
 }
 
 void MergeScreen::draw(Framebuffer& fb, const MergeHost& host) const {

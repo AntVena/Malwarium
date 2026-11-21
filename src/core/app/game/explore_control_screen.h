@@ -44,6 +44,7 @@ public:
     // Every opening starts on the first action, never on whatever was last pressed.
     void open() { row_ = 0; }
     void onButton(ExploreControlHost& host, const ButtonEvent& ev);
+    void stepList(const ExploreControlHost&, int dir);
     void draw(Framebuffer& fb, const ExploreControlHost& host) const;
 
 private:

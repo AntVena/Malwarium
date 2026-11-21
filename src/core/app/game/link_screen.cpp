@@ -70,6 +70,17 @@ void LinkScreen::onList(LinkHost& host, const ButtonEvent& ev) {
     else if (ev.button == Button::B) host.pvpChallenge(rows[row_].key);
 }
 
+bool LinkScreen::listUp(const LinkHost& host) const {
+    const PvpSession* s = host.pvpSession();
+    return !s || s->phase == PvpPhase::Idle;
+}
+
+void LinkScreen::stepList(const LinkHost& host, int dir) {
+    PeerRow rows[kMaxRows];
+    const int n = challengeable(host, rows);
+    row_ = stepRow(n > 0 ? row_ % n : row_, n, dir);
+}
+
 void LinkScreen::draw(Framebuffer& fb, const LinkHost& host) const {
     drawHeaderBand(fb, "LINK");
     drawText(fb, kMargin, kContextY, "LINK", palColor(Pal::INK));

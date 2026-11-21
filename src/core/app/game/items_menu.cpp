@@ -117,6 +117,7 @@ void ItemsMenu::draw(Framebuffer& fb, const ItemsHost& host, int beat) const {
         return;
     }
     const PetLifetimeGates gates = host.petLifetimeGates();
+    const PetPalate palate{&host.petFoodsTasted(), host.petFavouriteFound()};
     ItemsListView v;
     v.cursor = row_;
     v.lockout = from_ == ItemUseFrom::Lockout;
@@ -124,6 +125,7 @@ void ItemsMenu::draw(Framebuffer& fb, const ItemsHost& host, int beat) const {
     v.tabsOwned = host.itemTabsUnlocked();
     v.pickerOwned = host.itemPickerUnlocked();
     v.gates = &gates;
+    v.palate = &palate;
     v.beat = beat;
     drawItemsList(fb, rows(host), v);
 }
@@ -143,6 +145,7 @@ void ItemsMenu::drawDetail(Framebuffer& fb, const ItemsHost& host, int beat) con
     v.icon = itemIcon(host.content(), detail_->id);
     v.qty = host.inventory().count(detail_->id);
     v.lifetime = lifetimeMark(*detail_, host.petLifetimeGates());
+    v.taste = tasteMark(*detail_, {&host.petFoodsTasted(), host.petFavouriteFound()});
     v.beat = beat;
     drawItemDetail(fb, *detail_, v);
 }

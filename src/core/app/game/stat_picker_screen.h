@@ -38,16 +38,20 @@ public:
 
     void onRollback(StatPickerHost& host, const ButtonEvent& ev);
     void onRepartition(StatPickerHost& host, const ButtonEvent& ev);
+    // The cursor's step by `dir`: over the stats with a point to give, or on
+    // REPARTITION's TO step over every stat but the source.
+    void stepRollback(const StatPickerHost& host, int dir);
+    void stepRepartition(const StatPickerHost& host, int dir);
     void drawRollback(Framebuffer& fb, const StatPickerHost& host) const;
     void drawRepartition(Framebuffer& fb, const StatPickerHost& host) const;
 
 private:
-    // The next stat (wrapping) with a point to give up; `cur` if it is the only one,
-    // -1 if none is.
-    int nextGiver(const StatPickerHost& host, int cur) const;
+    // The next stat `dir` way (wrapping) with a point to give up; `cur` if it is the only
+    // one, -1 if none is.
+    int nextGiver(const StatPickerHost& host, int cur, int dir) const;
     // The TO step's next row: any stat but the source, since a move onto the stat the
     // point is already on is a no-op the picker should never offer.
-    int nextTarget(int cur) const;
+    int nextTarget(int cur, int dir) const;
 
     const ItemDef* item_ = nullptr;   // what the commit spends
     int row_ = 0;

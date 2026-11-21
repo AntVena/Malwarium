@@ -77,7 +77,8 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::ModalLockout, pressScreen<&G::lockoutScreen_>, drawScreen<&G::lockoutScreen_>,
          nullptr, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
         {Nav::ModalLineSelect, pressScreen<&G::lineSelect_>, drawScreen<&G::lineSelect_>,
-         nullptr, nullptr},
+         nullptr, nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::lineSelect_>(); }},
         {Nav::ModalEggPick, pressScreen<&G::eggPickScreen_>, drawScreen<&G::eggPickScreen_>,
          nullptr, rulesChord},
         // Non-interactive: the shell's one-shot walks a frame per heartbeat, holds on the
@@ -100,9 +101,12 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         {Nav::Combat, pressScreen<&G::fightScreen_>, drawScreen<&G::fightScreen_>,
          [](G& g) { g.stepCombatBeat(); }, pressScreen<&G::fightScreen_>, FxSweep::FightOutro},
         {Nav::ExploreControl, pressScreen<&G::exploreControl_>,
-         drawScreen<&G::exploreControl_>, nullptr, nullptr},
+         drawScreen<&G::exploreControl_>, nullptr, nullptr, FxSweep::None, Incubation::Runs,
+         MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::exploreControl_>(); }},
         {Nav::Encounter, pressScreen<&G::encounter_>, drawScreen<&G::encounter_>, nullptr,
-         nullptr},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::encounter_>(); }},
         // Hands-off REVEAL: the Wi-Fi outcome is a rolled reveal, not a choice. Held ~3s
         // so it reads, then played out (a guardian awakened enters a fight; the rest
         // resolve to the habitat).
@@ -112,21 +116,39 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // Hands-off DECISION: a shop (item or mod) is a real buy/leave choice, so it holds
         // ~10s for a watching player to act, then leaves and keeps exploring.
         {Nav::Shop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
-         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, nullptr},
+         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::shop_>(); }},
         {Nav::ModShop, pressScreen<&G::shop_>, drawScreen<&G::shop_>,
-         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, nullptr},
+         [](G& g) { g.stepEventHold(kExploreDecisionHoldBeats, &G::leaveShop); }, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::shop_>(); }},
         {Nav::WarpPicker, pressScreen<&G::warpPicker_>, drawScreen<&G::warpPicker_>, nullptr,
-         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
+         nullptr, FxSweep::None, Incubation::Runs, MenuIdle::Collapses, LockoutCrisis::Fires,
+         [](const G&) { return screenList<&G::warpPicker_>(); }},
         {Nav::RollbackPicker, [](G& g, const Ev& e) { g.statPicker_.onRollback(g, e); },
          [](const G& g, Fb& fb) { g.statPicker_.drawRollback(fb, g); }, nullptr, nullptr,
-         FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
+         FxSweep::None, Incubation::Runs, MenuIdle::Collapses, LockoutCrisis::Fires,
+         [](const G&) -> ListTarget {
+             return {[](G& g, int dir) { g.statPicker_.stepRollback(g, dir); },
+                     [](G& g) { g.statPicker_.onRollback(g, kTapC); }};
+         }},
         {Nav::RepartitionPicker, [](G& g, const Ev& e) { g.statPicker_.onRepartition(g, e); },
          [](const G& g, Fb& fb) { g.statPicker_.drawRepartition(fb, g); }, nullptr, nullptr,
-         FxSweep::None, Incubation::Runs, MenuIdle::Collapses},
+         FxSweep::None, Incubation::Runs, MenuIdle::Collapses, LockoutCrisis::Fires,
+         [](const G&) -> ListTarget {
+             return {[](G& g, int dir) { g.statPicker_.stepRepartition(g, dir); },
+                     [](G& g) { g.statPicker_.onRepartition(g, kTapC); }};
+         }},
         {Nav::CacheYield, [](G& g, const Ev& e) { g.vault_.onReveal(g, e); },
          [](const G& g, Fb& fb) { g.vault_.drawReveal(fb, g); }, nullptr, nullptr},
         {Nav::BulkYield, [](G& g, const Ev& e) { g.vault_.onBulkReveal(g, e); },
-         [](const G& g, Fb& fb) { g.vault_.drawBulkReveal(fb, g); }, nullptr, nullptr},
+         [](const G& g, Fb& fb) { g.vault_.drawBulkReveal(fb, g); }, nullptr, nullptr,
+         FxSweep::None, Incubation::Runs, MenuIdle::Holds, LockoutCrisis::Fires,
+         [](const G&) -> ListTarget {
+             return {[](G& g, int dir) { g.vault_.stepBulkReveal(dir); },
+                     [](G& g) { g.vault_.onBulkReveal(g, kTapC); }};
+         }},
         {Nav::PostEncounter, pressScreen<&G::postEncounter_>, drawScreen<&G::postEncounter_>,
          nullptr, nullptr},
         // The played boards step on their own faster cadences (tickAnimClocks).
@@ -169,7 +191,11 @@ const Game::ScreenRow& Game::screenRow(Nav n) {
         // drive it" shape the explore control overlay uses.
         {Nav::Tourney, pressScreen<&G::arena_>, drawScreen<&G::arena_>, nullptr,
          pressScreen<&G::arena_>, FxSweep::None, Incubation::Runs, MenuIdle::Holds,
-         LockoutCrisis::Fires, nullptr, [](const G&) { return screenHold<&G::arena_>(); }},
+         LockoutCrisis::Fires,
+         [](const G& g) {
+             return g.arena_.bracketIsList(g) ? screenList<&G::arena_>() : ListTarget{};
+         },
+         [](const G&) { return screenHold<&G::arena_>(); }},
         // Hands-off REVEAL: the guardian arriving and speaking is to watch, so it holds
         // ~5s, then the meeting goes on to whatever the fluency roll decided.
         {Nav::ShiboleetHail, [](G& g, const Ev& e) { g.shiboleet_.onHail(g, e); },

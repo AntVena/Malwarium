@@ -355,6 +355,14 @@ void ArenaScreen::releaseB(ArenaHost& host) {
     host.startTourneyMatch();
 }
 
+bool ArenaScreen::bracketIsList(const ArenaHost& host) const {
+    return view_ == TourneyView::Bracket && runOf(host).phase == TourneyPhase::Ready;
+}
+
+void ArenaScreen::stepList(const ArenaHost&, int dir) {
+    cursor_ = stepRow(cursor_, kTourneySlots, dir);
+}
+
 void ArenaScreen::onButton(ArenaHost& host, const ButtonEvent& ev) {
     // The two READERS first: both are plain scroll-and-back pages, and neither can
     // start a bout, so nothing below them has to know they exist.
@@ -392,7 +400,7 @@ void ArenaScreen::onButton(ArenaHost& host, const ButtonEvent& ev) {
         // A READS the field: it steps the cursor over the eight slots so the operator
         // can see who is left and at what level, and it chooses whose SCOUT sheet a
         // held B opens. It never picks who you fight: the bracket does that.
-        cursor_ = stepRow(cursor_, kTourneySlots, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         // Tap/hold, resolved on the RELEASE edge: a tap starts the bout
         // (releaseB), a hold opens the focused entrant's sheet (holdB).

@@ -138,11 +138,15 @@ void VaultScreen::onReveal(VaultHost& host, const ButtonEvent& ev) {
 void VaultScreen::onBulkReveal(VaultHost& host, const ButtonEvent& ev) {
     if (!bulk_) return;
     if (ev.button == Button::A) {
-        bulk_->row = stepRow(bulk_->row, static_cast<int>(bulk_->tally.size()), +1);
+        stepBulkReveal(+1);
     } else if (ev.button == Button::B || ev.button == Button::C) {
         bulk_.reset();
         host.closeDetail();
     }
+}
+
+void VaultScreen::stepBulkReveal(int dir) {
+    if (bulk_) bulk_->row = stepRow(bulk_->row, static_cast<int>(bulk_->tally.size()), dir);
 }
 
 void VaultScreen::drawReveal(Framebuffer& fb, const VaultHost& host) const {

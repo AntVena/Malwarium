@@ -45,6 +45,10 @@ Game::ListTarget Game::submenuListTarget() const {
                 return screenList<&Game::rigShop_>();
             case HackerSlotId::Vault: return screenList<&Game::vault_>();
             case HackerSlotId::Peers: return screenList<&Game::peers_>();
+            case HackerSlotId::Merge: return screenList<&Game::merge_>();
+            case HackerSlotId::Link:
+                if (!link_.listUp(*this)) return {};
+                return screenList<&Game::link_>();
             // CREW's Detail is a prose reader: its A pages the description, which is
             // not a row step.
             case HackerSlotId::Crew:
@@ -71,10 +75,7 @@ Game::ListTarget Game::submenuListTarget() const {
         case SubmenuId::Games:
             return {[](Game& g, int dir) { g.arcadeScreen_.stepList(g, dir); },
                     [](Game& g) { g.arcadeScreen_.onList(g, kTapC); }};
-        // The move slot list rests at L2 without the list gestures: its B is a tap/hold.
-        case SubmenuId::Mods:
-            if (loadout_.tab() == LoadoutTab::Moves) return {};
-            return screenList<&Game::loadout_>();
+        case SubmenuId::Mods: return screenList<&Game::loadout_>();
         default: return {};
     }
 }

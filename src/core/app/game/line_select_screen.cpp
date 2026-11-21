@@ -18,9 +18,14 @@ void LineSelectScreen::onButton(LineSelectHost& host, const ButtonEvent& ev) {
     const auto lines = host.availableEggLines();   // only UNLOCKED lines (matches the draw)
     if (lines.empty()) return;
     const int n = static_cast<int>(lines.size());
-    if (ev.button == Button::A) row_ = (row_ + 1) % n;
+    if (ev.button == Button::A) stepList(host, +1);
     else if (ev.button == Button::B) host.layEgg(lines[row_ % n]);
     else if (ev.button == Button::C && !host.archRackEmpty()) host.archReturnFromLineSelect();
+}
+
+void LineSelectScreen::stepList(const LineSelectHost& host, int dir) {
+    const int n = static_cast<int>(host.availableEggLines().size());
+    row_ = stepRow(n > 0 ? row_ % n : row_, n, dir);
 }
 
 void LineSelectScreen::draw(Framebuffer& fb, const LineSelectHost& host) const {

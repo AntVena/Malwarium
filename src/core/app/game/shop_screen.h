@@ -46,6 +46,8 @@ class ShopScreen {
 public:
     void enter() { row_ = 0; }
     void onButton(ShopHost& host, const ButtonEvent& ev);
+    // A step is activity, so it holds the storefront open like any press.
+    void stepList(ShopHost& host, int dir);
     void draw(Framebuffer& fb, const ShopHost& host) const;
     // The till's answer for the focused row, spelled out so it survives grayscale:
     // "SOLD OUT" / "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY".

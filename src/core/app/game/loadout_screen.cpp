@@ -81,14 +81,20 @@ void LoadoutScreen::onButton(LoadoutHost& host, const ButtonEvent& ev) {
     }
 }
 
-void LoadoutScreen::stepList(const LoadoutHost&, int dir) {
-    if (tab_ == LoadoutTab::Mods) modRow_ = stepRow(modRow_, kModSlots, dir);
-    else if (tab_ == LoadoutTab::Hub) hubRow_ = stepRow(hubRow_, kLoadoutHubRows, dir);
+void LoadoutScreen::stepList(const LoadoutHost& host, int dir) {
+    switch (tab_) {
+        case LoadoutTab::Hub: hubRow_ = stepRow(hubRow_, kLoadoutHubRows, dir); break;
+        case LoadoutTab::Mods: modRow_ = stepRow(modRow_, kModSlots, dir); break;
+        case LoadoutTab::Moves:
+            moveRow_ = stepRow(moveRow_, loadoutSelectableCount(petStage(host.petRecord())), dir);
+            break;
+        case LoadoutTab::Practise: simTier_ = stepRow(simTier_, kSimDummyTiers, dir); break;
+    }
 }
 
 void LoadoutScreen::onHub(LoadoutHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::A) {
-        hubRow_ = stepRow(hubRow_, kLoadoutHubRows, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         // Row order is the hub's draw order, which is LoadoutTab's own order past Hub.
         openTab(host, static_cast<LoadoutTab>(hubRow_ + 1));
@@ -99,7 +105,7 @@ void LoadoutScreen::onHub(LoadoutHost& host, const ButtonEvent& ev) {
 
 void LoadoutScreen::onModSlots(LoadoutHost& host, const ButtonEvent& ev) {
     if (ev.button == Button::A) {
-        modRow_ = stepRow(modRow_, kModSlots, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {                 // open the slot's picker
         modSlot_ = modRow_;
         modPick_ = 0;
@@ -117,7 +123,7 @@ void LoadoutScreen::onMoveSlots(LoadoutHost& host, const ButtonEvent& ev) {
     // be 0; MOVES cannot be reached then, but the wrap still handles it.
     const int sel = loadoutSelectableCount(petStage(host.petRecord()));
     if (ev.button == Button::A) {
-        moveRow_ = stepRow(moveRow_, sel, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         if (sel > 0) host.armHoldB();
     } else if (ev.button == Button::C) {
@@ -323,7 +329,7 @@ void LoadoutScreen::onMoveDetail(LoadoutHost& host, const ButtonEvent& ev) {
 
 void LoadoutScreen::onSimTier(LoadoutHost& host, const ButtonEvent& ev) {
     // PRACTISE's only page, so C returns to the hub row that opened it.
-    if (ev.button == Button::A) simTier_ = stepRow(simTier_, kSimDummyTiers, +1);
+    if (ev.button == Button::A) stepList(host, +1);
     else if (ev.button == Button::B) host.startSimBattle(simTier_);
     else if (ev.button == Button::C) leaveTab(host);
 }

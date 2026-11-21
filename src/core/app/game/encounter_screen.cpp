@@ -2,13 +2,14 @@
 
 #include "core/content/registry.h"
 #include "core/ui/expl_screen.h"
+#include "core/ui/layout.h"
 
 namespace mal {
 
 void EncounterScreen::onButton(EncounterHost& host, const ButtonEvent& ev) {
     const ItemDef* bypass = host.heldEncounterBypass();
     if (ev.button == Button::A) {
-        choice_ = (choice_ + 1) % (bypass ? 3 : 2);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         if (choice_ == 0) host.fightWild(wild_);
         else if (choice_ == 1) host.resolveFlee(wild_);
@@ -16,6 +17,10 @@ void EncounterScreen::onButton(EncounterHost& host, const ButtonEvent& ev) {
     } else if (ev.button == Button::C) {
         host.resolveFlee(wild_);                    // flee shortcut
     }
+}
+
+void EncounterScreen::stepList(const EncounterHost& host, int dir) {
+    choice_ = stepRow(choice_, host.heldEncounterBypass() ? 3 : 2, dir);
 }
 
 void EncounterScreen::draw(Framebuffer& fb, const EncounterHost& host) const {

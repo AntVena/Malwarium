@@ -5,6 +5,7 @@
 // feature whose field it migrates, not in a migrations pile of its own.
 #include "test_gates.h"
 
+#include "core/content/content_recipes.h"   // itemIsRecipeIngredient: FOOD lists meals only
 #include "core/ui/layout.h"   // kLineH: the MERGE HUB window mirrors the list metrics
 
 // An armed Backup Drive save rides into a REAL fight (Game::buildPlayerCombatant, not
@@ -835,8 +836,7 @@ void test_hacker_shop_bulk_open_buy() {
 // each return only that type's rows (+ its one header); All matches today's full
 // grouped list. Inventory::starting() carries 2 Food + 3 Buffs + 2 Quest (7 items,
 // 4 headers, per test_inventory_rows_grouped): Tor-Tilla Chip is Food AND a Nachos
-// ingredient (content_recipes.cpp), so the Food filter still splits into its own
-// FOOD/INGREDIENTS pair even though the filter itself doesn't narrow by that axis.
+// ingredient (content_recipes.cpp), so it lists under ALL and INGREDIENTS but not FOOD.
 // Backup Drive is a Buff (its combat shield), not a Quest item.
 void test_item_filter_narrows_rows() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -853,10 +853,12 @@ void test_item_filter_narrows_rows() {
         int n = 0; for (const auto& row : rows) if (!isHeading(row.kind)) ++n; return n;
     };
     CHECK(headerCount(all) == 4 && itemCount(all) == 6);
-    CHECK(headerCount(food) == 2 && itemCount(food) == 2);
+    CHECK(headerCount(food) == 1 && itemCount(food) == 1);
     CHECK(headerCount(buffs) == 1 && itemCount(buffs) == 2);
     CHECK(headerCount(quest) == 1 && itemCount(quest) == 2);
-    for (const auto& row : food)  if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Food);
+    for (const auto& row : food)
+        if (!isHeading(row.kind))
+            CHECK(row.def->type == ItemDef::Type::Food && !itemIsRecipeIngredient(row.def->id));
     for (const auto& row : buffs) if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Buff);
     for (const auto& row : quest) if (!isHeading(row.kind)) CHECK(row.def->type == ItemDef::Type::Quest);
 }

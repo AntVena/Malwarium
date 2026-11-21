@@ -49,10 +49,11 @@ const char* groupLabel(int key) {
     }
 }
 
-// Does an item pass the active filter? All = everything. Food/Buffs/Quest read the
-// TYPE axis; Keys/Tools/Ingredients read the finer CATEGORY axis (Ingredients splits
-// Food: itemIsRecipeIngredient, not itemCategory, since that split is derived from
-// the recipe table rather than the row's own category field).
+// Does an item pass the active filter? All = everything. Buffs/Quest read the TYPE
+// axis; Keys/Tools read the finer CATEGORY axis. Food and Ingredients split Type::Food
+// by itemIsRecipeIngredient (derived from the recipe table, not the row's category
+// field), so the FOOD tab lists meals only and the ingredients live under their own
+// tab and under ALL.
 //
 // TOOLS is the one filter that is not a band: it reads the category axis, so it
 // answers "what can I reach for" across both Type::Tool and the Quest rows that are
@@ -61,7 +62,8 @@ const char* groupLabel(int key) {
 bool filterMatches(ItemFilter f, const ItemDef& d) {
     switch (f) {
         case ItemFilter::All: return true;
-        case ItemFilter::Food: return d.type == ItemDef::Type::Food;
+        case ItemFilter::Food:
+            return d.type == ItemDef::Type::Food && !itemIsRecipeIngredient(d.id);
         case ItemFilter::Buffs: return d.type == ItemDef::Type::Buff;
         case ItemFilter::Quest: return d.type == ItemDef::Type::Quest;
         case ItemFilter::Keys: return itemCategory(d) == ItemDef::Category::Keys;
@@ -167,6 +169,15 @@ const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
 LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates) {
     if (!itemIsOncePerPetLifetime(d)) return LifetimeMark::None;
     return lifetimeGrantSpent(d, gates) ? LifetimeMark::Spent : LifetimeMark::Unspent;
+}
+
+TasteMark tasteMark(const ItemDef& d, const PetPalate& palate) {
+    if (itemCategory(d) != ItemDef::Category::Food || !palate.eaten) return TasteMark::None;
+    if (palate.favourite && std::strcmp(palate.favourite->id, d.id) == 0)
+        return TasteMark::Favourite;
+    for (const ItemDef* e : *palate.eaten)
+        if (std::strcmp(e->id, d.id) == 0) return TasteMark::Tasted;
+    return TasteMark::Untasted;
 }
 
 // Lockout-resolving items float to the top in Lockout context: any food (the demand
@@ -371,6 +382,25 @@ void drawItemsChrome(Framebuffer& fb, const std::vector<InvRow>& rows, const Ite
     if (hint[0]) drawHintBand(fb, hint);
 }
 
+const char* rowTasteTag(TasteMark m) {
+    switch (m) {
+        case TasteMark::Untasted: return "?";
+        case TasteMark::Favourite: return "FAV";
+        default: return nullptr;
+    }
+}
+
+// The detail page's HAVE-line word: every food state spelled, since that page is where a
+// player asks before feeding.
+const char* detailTasteText(TasteMark m) {
+    switch (m) {
+        case TasteMark::Untasted: return "NEVER FED";
+        case TasteMark::Tasted: return "TASTED";
+        case TasteMark::Favourite: return "FAVOURITE";
+        default: return nullptr;
+    }
+}
+
 void drawItemRow(Framebuffer& fb, const InvRow& r, int y, bool focused,
                  const ItemsListView& v) {
     const int textY = y + (kRowH - kFontH) / 2;
@@ -394,6 +424,13 @@ void drawItemRow(Framebuffer& fb, const InvRow& r, int y, bool focused,
     if (mark != LifetimeMark::None) {
         nameEnd -= kLifeMarkW + 6;
         drawLifetimeMark(fb, nameEnd + 6, textY, mark);
+    }
+    // The palate tag takes its column out of the name the same way. A tasted dish has
+    // none: the tag marks the two rows worth acting on (an untried dish, which is
+    // where an unfound favourite hides, and the favourite itself).
+    if (const char* tag = v.palate ? rowTasteTag(tasteMark(*r.def, *v.palate)) : nullptr) {
+        nameEnd -= textWidth(tag) + 6;
+        drawText(fb, nameEnd + 6, textY, tag, palColor(Pal::ACCENT));
     }
     // The ladder and the count own the right end of the row, so the name yields:
     // it scrolls within what is left rather than drawing through them (widgets.h).
@@ -481,6 +518,9 @@ void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v
     char have[16];
     std::snprintf(have, sizeof(have), "HAVE x%d", v.qty);
     drawText(fb, kMargin, haveY, have, palColor(Pal::INK_DIM));
+    if (const char* taste = detailTasteText(v.taste))
+        drawText(fb, kActiveW - kMargin - textWidth(taste), haveY, taste,
+                 palColor(v.taste == TasteMark::Tasted ? Pal::INK_DIM : Pal::ACCENT));
 
     // Whether the pet currently in the rig has already taken this row's grant. Both
     // states are spelled out. A blank line where "already spent" belongs would read as

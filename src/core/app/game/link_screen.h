@@ -46,6 +46,10 @@ class LinkScreen {
 public:
     void enter() { row_ = 0; }
     void onButton(LinkHost& host, const ButtonEvent& ev);
+    // The operator list is up only while no duel is in play; every session phase is a
+    // prompt or a wait with no rows.
+    bool listUp(const LinkHost& host) const;
+    void stepList(const LinkHost& host, int dir);
     void draw(Framebuffer& fb, const LinkHost& host) const;
 
 private:

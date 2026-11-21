@@ -34,6 +34,7 @@ class MergeScreen {
 public:
     void enter() { row_ = 0; }
     void onButton(MergeHost& host, const ButtonEvent& ev);
+    void stepList(const MergeHost&, int dir);
     void draw(Framebuffer& fb, const MergeHost& host) const;
 
 private:

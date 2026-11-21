@@ -44,6 +44,7 @@ public:
         choice_ = 0;
     }
     void onButton(EncounterHost& host, const ButtonEvent& ev);
+    void stepList(const EncounterHost& host, int dir);
     void draw(Framebuffer& fb, const EncounterHost& host) const;
 
     const CombatEnemy& wild() const { return wild_; }

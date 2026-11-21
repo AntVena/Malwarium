@@ -520,6 +520,7 @@ void test_shop_auto_leaves_after_hold() {
     CHECK(g.nav() == Game::Nav::Shop);
     // A press restarts the hold: the engaged shopper keeps the shop open.
     g.onButton(press(Button::A));                        // one-item shop: A is a no-op cycle
+    g.onButton(lift(Button::A));                         // a held A would keep stepping
     for (int i = 0; i < kExploreDecisionHoldBeats - 2; ++i) g.tick(t += kHeartbeatMs);
     CHECK(g.nav() == Game::Nav::Shop);                   // the press extended the window
     // Left alone past the full hold, it auto-leaves (stop the instant it does).

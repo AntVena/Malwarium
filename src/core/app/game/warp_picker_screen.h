@@ -30,6 +30,7 @@ class WarpPickerScreen {
 public:
     void open() { row_ = 0; }
     void onButton(WarpPickerHost& host, const ButtonEvent& ev);
+    void stepList(const WarpPickerHost& host, int dir);
     void draw(Framebuffer& fb, const WarpPickerHost& host) const;
 
 private:

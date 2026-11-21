@@ -59,6 +59,10 @@ public:
     // both engage the fighter under the cursor.
     bool holdB(ArenaHost& host, uint32_t heldMs);
     void releaseB(ArenaHost& host);
+    // The bracket is a list while the run waits on the next bout. The readers scroll
+    // on B, and a finished run's banner answers any key.
+    bool bracketIsList(const ArenaHost& host) const;
+    void stepList(const ArenaHost&, int dir);
     void draw(Framebuffer& fb, const ArenaHost& host) const;
 
     // The two readers' row models. The scout sheet is STAT's LOADOUT page pointed at

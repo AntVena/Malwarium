@@ -316,6 +316,10 @@ public:
     PetLifetimeGates petLifetimeGates() const override {
         return {pet_.upgrades, pet_.grants.yubiSpent, pet_.grants.shieldSpent};
     }
+    const std::vector<const ItemDef*>& petFoodsTasted() const override {
+        return pet_.foodsEaten;
+    }
+    const ItemDef* petFavouriteFound() const override { return pet_.foundFavouriteFood(); }
     int xpRateBonusPct() const { return pet_.upgrades.xpRatePct; }
     // Has THIS pet already spent `d`'s once-per-lifetime effect (defs.h's
     // itemIsOncePerPetLifetime)? The three gates are separate fields because they guard

@@ -12,13 +12,18 @@ void ShopScreen::onButton(ShopHost& host, const ButtonEvent& ev) {
     // storefront it does nothing, so a stray Next press never exits the shop.
     host.holdShopOpen();
     if (ev.button == Button::A) {
-        const StorefrontVisit* visit = host.storefrontVisit();
-        row_ = stepRow(row_, visit ? visit->listingCount() : 0, +1);
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         host.buyShopItem(row_);
     } else if (ev.button == Button::C) {
         host.leaveShop();
     }
+}
+
+void ShopScreen::stepList(ShopHost& host, int dir) {
+    host.holdShopOpen();
+    const StorefrontVisit* visit = host.storefrontVisit();
+    row_ = stepRow(row_, visit ? visit->listingCount() : 0, dir);
 }
 
 const char* ShopScreen::statusLine(const ShopHost& host) const {

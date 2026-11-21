@@ -8,7 +8,7 @@ namespace mal {
 void ExploreControlScreen::onButton(ExploreControlHost& host, const ButtonEvent& ev) {
     // The chord only opens this: driving the overlay with it would be awkward, since A
     // registers on its own first. A cycles, B does the focused thing, C backs out.
-    if (ev.button == Button::A) { row_ = stepRow(row_, kExploreControlRows, +1); return; }
+    if (ev.button == Button::A) { stepList(host, +1); return; }
     if (ev.button == Button::C) { host.leaveToIdle(); return; }
     if (ev.button != Button::B) return;
     switch (static_cast<ExploreControlRow>(row_)) {
@@ -24,6 +24,10 @@ void ExploreControlScreen::onButton(ExploreControlHost& host, const ButtonEvent&
         case ExploreControlRow::Sound: host.setExploreSound(!host.exploreSound()); break;
         case ExploreControlRow::Stop: host.stopWalk(); break;
     }
+}
+
+void ExploreControlScreen::stepList(const ExploreControlHost&, int dir) {
+    row_ = stepRow(row_, kExploreControlRows, dir);
 }
 
 void ExploreControlScreen::draw(Framebuffer& fb, const ExploreControlHost& host) const {

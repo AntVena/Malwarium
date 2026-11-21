@@ -41,6 +41,10 @@ public:
     virtual bool itemTabsUnlocked() const = 0;
     virtual bool itemPickerUnlocked() const = 0;
     virtual PetLifetimeGates petLifetimeGates() const = 0;
+    // The active pet's palate (Pet::foodsEaten) and its favourite dish once found
+    // (Pet::foundFavouriteFood): what the "?" / FAV tags read.
+    virtual const std::vector<const ItemDef*>& petFoodsTasted() const = 0;
+    virtual const ItemDef* petFavouriteFound() const = 0;
     // Can `d` be used right now, from `from`? When not, `gateMsg` says why, in the words
     // the page shows.
     virtual bool itemUsable(const ItemDef& d, ItemUseFrom from, const char*& gateMsg) const = 0;

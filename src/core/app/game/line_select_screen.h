@@ -33,6 +33,7 @@ public:
     void open() { row_ = 0; }
     int row() const { return row_; }
     void onButton(LineSelectHost& host, const ButtonEvent& ev);
+    void stepList(const LineSelectHost& host, int dir);
     void draw(Framebuffer& fb, const LineSelectHost& host) const;
 
 private:

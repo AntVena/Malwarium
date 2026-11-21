@@ -539,7 +539,12 @@ void test_tourney_scout_shows_the_rivals_whole_kit() {
     CHECK(g.nav() == Game::Nav::Tourney);
 
     // Park on a rival, then HOLD B: the tap starts a bout, the hold opens the sheet.
-    while (g.arenaScreen().cursor() == g.tourneySlot()) g.onButton(press(Button::A));
+    // Each step is a full tap: the bracket is a list, so an A never released would
+    // repeat under the B hold below and move off the rival.
+    while (g.arenaScreen().cursor() == g.tourneySlot()) {
+        g.onButton(press(Button::A));
+        g.onButton(lift(Button::A));
+    }
     const int scouted = g.arenaScreen().cursor();
     uint32_t t = 0;
     g.onButton(press(Button::B));

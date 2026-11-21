@@ -2039,7 +2039,8 @@ void test_reveals_hold_their_result_only_while_up() {
     bulkOpenCaches(g, "sealed_cache_common");
     CHECK(g.nav() == Game::Nav::BulkYield && g.vaultScreen().bulkReveal()->cachesOpened == 3);
     g.onButton(press(Button::A));                 // scrolling keeps it up
+    g.onButton(lift(Button::A));
     CHECK(g.vaultScreen().bulkReveal()->cachesOpened == 3);
-    g.onButton(press(Button::C));
+    tapC(g);
     CHECK(g.nav() == Game::Nav::Submenu && !g.vaultScreen().bulkReveal());
 }

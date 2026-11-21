@@ -36,6 +36,7 @@ struct InvRow {
 //     (itemIsRecipeIngredient, content_recipes.h). Owning it upgrades hold-B to
 //     that axis too, so the picker and the gesture never disagree about what a
 //     tab means.
+// FOOD lists meals only on either axis: ingredients show under ALL and INGREDIENTS.
 // All = the full grouped list, and what every player without an upgrade sees:
 // FOOD there still groups into a FOOD block and an INGREDIENTS block underneath
 // it (buildInventoryRows), just without a filter to narrow to only one.
@@ -111,6 +112,18 @@ void drawItemTypePicker(Framebuffer& fb, int cursor);
 enum class LifetimeMark : uint8_t { None, Unspent, Spent };
 LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates);
 
+// What the active pet's palate says about a food row: never fed it, fed it, or it is the
+// pet's found favourite. None on anything that is not eaten (markFoodEaten's rule), so a
+// key or a buff never reads as untasted. `eaten` is Pet::foodsEaten and `favourite` is
+// Pet::foundFavouriteFood, the same pair STAT's FOODS grid reads (buildFoodRows), so a
+// favourite still secret marks nothing.
+enum class TasteMark : uint8_t { None, Untasted, Tasted, Favourite };
+struct PetPalate {
+    const std::vector<const ItemDef*>* eaten = nullptr;
+    const ItemDef* favourite = nullptr;
+};
+TasteMark tasteMark(const ItemDef& d, const PetPalate& palate);
+
 // L2 inventory list. Each item row carries its rarity twice: the icon takes the rarity
 // tint, and a four-cell ladder beside the count lights one cell per tier, so the
 // ordering's "best first" claim is checkable on the row, in grayscale.
@@ -132,6 +145,9 @@ struct ItemsListView {
     // "which of these still upgrades my pet" is answerable while scrolling. Null leaves
     // every row unmarked, which is what a caller with no pet wants.
     const PetLifetimeGates* gates = nullptr;
+    // The pet's palate: tags a food row "?" until this pet has eaten it, and FAV on its
+    // found favourite. Null leaves every row untagged.
+    const PetPalate* palate = nullptr;
     int beat = 0;
 };
 void drawItemsList(Framebuffer& fb, const std::vector<InvRow>& rows, const ItemsListView& v);
@@ -153,6 +169,8 @@ struct ItemDetailView {
     // before spending one, and nothing else on it says so (the row is still perfectly
     // usable once spent: an Epic dish that has paid out is still a very good meal).
     LifetimeMark lifetime = LifetimeMark::None;
+    // Spelled out at the right end of the HAVE line, on a food only.
+    TasteMark taste = TasteMark::None;
     int beat = 0;
 };
 void drawItemDetail(Framebuffer& fb, const ItemDef& def, const ItemDetailView& v);

@@ -2,6 +2,7 @@
 
 #include "core/content/defs.h"   // ItemDef::displayName
 #include "core/ui/expl_screen.h"
+#include "core/ui/layout.h"
 
 namespace mal {
 
@@ -12,12 +13,16 @@ void WarpPickerScreen::onButton(WarpPickerHost& host, const ButtonEvent& ev) {
     if (keys.empty()) { host.returnToExplore(); return; }
     if (row_ >= static_cast<int>(keys.size())) row_ = 0;
     if (ev.button == Button::A) {
-        row_ = (row_ + 1) % static_cast<int>(keys.size());
+        stepList(host, +1);
     } else if (ev.button == Button::B) {
         host.useWarpKey(*keys[row_]);
     } else if (ev.button == Button::C) {
         host.returnToExplore();
     }
+}
+
+void WarpPickerScreen::stepList(const WarpPickerHost& host, int dir) {
+    row_ = stepRow(row_, static_cast<int>(host.heldWarpKeys().size()), dir);
 }
 
 void WarpPickerScreen::draw(Framebuffer& fb, const WarpPickerHost& host) const {

@@ -73,6 +73,7 @@ public:
     void enter() { row_ = 0; }
     void onButton(VaultHost& host, const ButtonEvent& ev);
     void stepList(const VaultHost& host, int dir);
+    void stepBulkReveal(int dir);
     // With Bulk Open owned, B on a cache row is a tap/hold pair: the release cashes the
     // one row, a hold past kBulkOpenHoldMs opens every cache of its rarity.
     bool holdB(VaultHost& host, uint32_t heldMs);
