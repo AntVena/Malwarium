@@ -2195,6 +2195,11 @@ private:
     bool exploreFightLive() const;
     int combatBeatsForTurn() const;                 // heartbeats to wait before the next step()
     void applyCombatResult();                       // rewards (win) / +Frag (live loss)
+    void paySimWin();
+    void payWildWin(bool shielded);
+    int wildDropScalePct(bool shielded);   // advances the re-farm count it reads
+    void rollWildWinDrops(bool shielded);
+    void chargeWildLoss();
     // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and
     // award whichever of the three drive achievements the ending earned
     // (backupDriveAchievement, below). Called from applyCombatResult (wild/Sim) and

@@ -308,150 +308,121 @@ void Game::applyBattleFatigue() {
 void Game::applyCombatResult() {
     settleBackupDrive();
     const bool safe = fight_.combat.stakes() == Combat::Stakes::Safe;
-    const bool won = fight_.combat.outcome() == Combat::Outcome::Win;
-    const bool lost = fight_.combat.lostOrDrawn();   // a draw (the turn limit) is a loss
-    const bool fought = won || lost;
-    // Post-encounter status readout snapshot: the STARTING
-    // bandwidth/fragmentation, before anything below moves them. finishCombat()
-    // reads the before/after pair (+ the shield flag below) to drive
-    // Nav::PostEncounter for a WILD fight; harmless bookkeeping for Sim/boss (they
-    // never route to that overlay, so nothing reads it there).
+    const bool fought = fight_.combat.outcome() == Combat::Outcome::Win ||
+                        fight_.combat.lostOrDrawn();   // a draw (the turn limit) is a loss
+    // The STARTING values, before anything below moves them: finishCombat reads the
+    // before/after pair to drive Nav::PostEncounter for a wild fight, and the stat
+    // diff names what this fight's XP levelled up.
     fight_.result.bwBefore = bandwidth_.level();
     fight_.result.fragBefore = pet_.model.fragmentation();
-    // Snapshot the pre-reward stat points so the readout can name what this fight's
-    // XP levelled up. The reward path below calls addCombatXp, which may cross
-    // one or more level boundaries; diffing after (part 2) yields the per-stat gain.
     int statBefore[kLevelStatCount];
     for (int i = 0; i < kLevelStatCount; ++i) statBefore[i] = pet_.statPoints[i];
-    // Are we farming an already-CLEARED sub-area? (re-farm context: drives the
-    // diminishing-returns loot decay below, once the Bandwidth shield runs dry.)
-    const bool refarm =
-        walk_.sector >= 0 && walk_.sector < kExplSectors &&
-        walk_.sub >= 0 && walk_.sub < kExplSubAreas &&
-        op_.world.subCleared[walk_.sector][walk_.sub];
-    // a resolved WILD (live, non-boss) fight fatigues the pet: a per-fight frag
-    // (corruption) tax, win or lose (boss rounds never reach here; safe Sim is exempt). A
-    // flee (Fled) isn't a fought battle, so it's excluded. Bandwidth is a per-fight
-    // FRAGMENTATION SHIELD for exploration. Any resolved wild fight (win or loss) spends
-    // 1 charge to skip the battle-fatigue frag tax entirely, so a stocked pool lets the
-    // pet farm longer with less risk, and Bits sunk into the Hacker SHOP's Bandwidth
-    // upgrade buy real safety. Once the pool hits 0 the tax bites again (the "defrag or
-    // come home" signal). This covers first-clear grinding and DeepWeb dives too, not
-    // just cleared-sub re-farming. Bosses resolve in finishBossRound() and never reach
-    // here.
-    const bool bandwidthShielded = !safe && fought && bandwidth_.spendOne();
-    fight_.result.shielded = bandwidthShielded;
-    if (!safe && fought && !bandwidthShielded)
-        applyBattleFatigue();                          // no charge left → the pet corrupts
+
+    // Bandwidth is a per-fight FRAGMENTATION SHIELD: any resolved live fight (a flee is
+    // not one, and Sim is exempt) spends a charge to skip the battle-fatigue tax, so
+    // Bits sunk into the SHOP's Bandwidth upgrade buy a longer farm. A dry pool is the
+    // "defrag or come home" signal. Bosses resolve in finishBossRound and never get here.
+    const bool shielded = !safe && fought && bandwidth_.spendOne();
+    fight_.result.shielded = shielded;
+    if (!safe && fought && !shielded) applyBattleFatigue();
+
     switch (fight_.combat.outcome()) {
-        case Combat::Outcome::Win: {
-            if (safe) {
-                // Sim-Battle: a fixed small flat payout. A few Bits
-                // (Packet Sniffer boosts loot), a little combat XP, a small
-                // Happiness bump. NOT logged: it's a drill.
-                int bits = kSimBitsReward;
-                bits += sumEquippedModMagnitude(registry_, pet_.mods,
-                            ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
-                op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
-                pet_.model.feed(0, kSimHappyReward);
-                addFightXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
-            } else {
-                // Wild win: Bits + XP + a chance of an item drop
-                // from the shared reward pool. Full drop tables are a later
-                // content/balance pass; this seeds the mechanic.
-                // payout: randInt(R, R²) keyed to the opponent's stage-rank R.
-                // The wild malbeast's difficulty pips (1/2/3) stand in for its
-                // stage tier, so R = diffPips+1 → Process 2..4, Script 3..9,
-                // Daemon 4..16.
-                int bits = normalBitsReward(fight_.combat.enemy().diffPips + 1, rng_);
-                // depth ramp, Bits half: mirrors the XP bonus below onto Bits,
-                // because diffPips (and so the base roll) does not move with depth,
-                // and a deep dive would otherwise pay the same Bits as a fresh one.
-                if (inDeepWebDive())
-                    bits = bits * deepWebDepthBitsPct(walk_.streak) / 100
-                                * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
-                else if (inDarkWebCrawl())
-                    bits = bits * darkWebDepthBitsPct(walk_.streak) / 100;
-                bits += sumEquippedModMagnitude(registry_, pet_.mods,
-                            ModEffect::PostBattleBits, pet_.creature ? pet_.creature->line : nullptr);
-                op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
-                // scale the ZONE's base XP by how the enemy's depth level compares to
-                // the pet's: punching up pays more, farming shallow pays a trickle. The
-                // base is the flat one everywhere but the CRAWL, which pays a multiple of
-                // it because its runs end long before a depth curve is worth anything
-                // (wildWinXpBase → kDarkWebXpPct, darkweb_crawl/area.h).
-                // An armed bell or Deep-Learning device adds its DIVE PAY on top (zero
-                // outside a dive): the run it buys is shorter and harder, so each win in
-                // it has to be worth more than the shallow ones it skipped.
-                const int winXp = wildWinXp(wildWinXpBase(walk_.sector),
-                                            fight_.combat.enemy().level, pet_.level) *
-                                  (100 + diveRewardBonusPct()) / 100;
-                addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
-                // re-farm loot decay: farming an already-CLEARED sub-area pays FULL non-Bits
-                // loot while the Bandwidth shield covered this fight (the decay count stays
-                // frozen). Once the pool is dry (this fight was NOT shielded), the
-                // diminishing-returns curve kicks in: drop chances decay per re-farm win
-                // toward a floor and the per-sub count advances (saturating; persists at
-                // save v15) until Bandwidth regenerates over real time (tick()). Bits + XP
-                // (above) stay full throughout, so a done area is always a viable training
-                // ground. First-clear grinding / bosses / Sim / the DeepWeb Dive never take
-                // this branch (only cleared-sub farming does). The Bandwidth charge was
-                // already spent at the shield site above, on every fight.
-                int dropScalePct = 100;
-                if (refarm && !bandwidthShielded) {
-                    uint16_t& c = pet_.armed.subRefarmCount[walk_.sector][walk_.sub];
-                    dropScalePct = refarmDropScalePct(c);
-                    if (c < kRefarmCountCap) ++c;
-                }
-                const int itemDropPct = kWildItemDropPct * dropScalePct / 100;
-                const int moveDropPct = kWildMoveDropPct * dropScalePct / 100;
-                lcgAdvance(rng_);
-                if (static_cast<int>((rng_ >> 16) % 100) < itemDropPct) {
-                    // What a wild win pays is the AREA's business: each row under
-                    // content/areas/ carries its own wild drop table, including whichever
-                    // Merge Hub ingredient it makes farmable here. Drawn by the same
-                    // weighted walk every other pool uses.
-                    const AreaLootTable t = areaWildLootTable(walk_.sector);
-                    drawCacheItem(t.rows, t.count);
-                }
-                // A separate, independent move-drop roll, mirroring the item roll above.
-                rollEnemyMoveDrop(fight_.combat.enemy(), moveDropPct);
-                // the endless DeepWeb Dive is the tier-4 mod source: a rare
-                // roll on a win drops one of its permanent endgame mods (Deadman Switch /
-                // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop
-                // is held until the pet is deep enough to field it.
-                if (walk_.sector == kDeepWebSector || walk_.sector == kDarkWebSector) {
-                    lcgAdvance(rng_);
-                    if (static_cast<int>((rng_ >> 16) % 100) < kModDeepWebDropPct)
-                        if (const char* id = rollAreaModId(walk_.sector))
-                            grantMod(id);
-                }
-                log_.push(LogEventType::CombatWon, "WON BATTLE");
-            }
+        case Combat::Outcome::Win:
+            if (safe) paySimWin();
+            else payWildWin(shielded);
             break;
-        }
         case Combat::Outcome::Lose:
-        case Combat::Outcome::Draw:                // a draw (the turn limit) is a loss
-            // Live stakes: +Fragmentation (×Bad-branch multiplier) + COMBAT_LOST
-            // NOT a care mistake. Safe (Sim-Battle): no Frag, no mistake.
-            if (!safe) {
-                const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
-                pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
-                log_.push(LogEventType::CombatLost, "LOST BATTLE");
-            }
+        case Combat::Outcome::Draw:
+            if (!safe) chargeWildLoss();
             break;
         case Combat::Outcome::Fled:
         case Combat::Outcome::Ongoing:
             break;                                 // flee: no reward, no penalty
     }
-    // Post-encounter status readout snapshot, part 2: the ENDING values, now that
-    // the switch above has applied whatever this outcome caused.
+
     fight_.result.bwAfter = bandwidth_.level();
     fight_.result.fragAfter = pet_.model.fragmentation();
     for (int i = 0; i < kLevelStatCount; ++i)
         fight_.result.statGain[i] = pet_.statPoints[i] - statBefore[i];
     fight_.result.levelAfter = pet_.level;
     markSaveDirty();
+}
+
+// Sim-Battle is a drill: a small flat payout, and nothing logged.
+void Game::paySimWin() {
+    int bits = kSimBitsReward;
+    bits += sumEquippedModMagnitude(registry_, pet_.mods, ModEffect::PostBattleBits,
+                                    pet_.creature ? pet_.creature->line : nullptr);
+    op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
+    pet_.model.feed(0, kSimHappyReward);
+    addFightXp(applyCombatXpBonus(kSimXpReward));  // Well-Fed XP Boost
+}
+
+void Game::payWildWin(bool shielded) {
+    // randInt(R, R²) keyed to the opponent's stage-rank R. The malbeast's difficulty
+    // pips (1/2/3) stand in for its stage, so R = diffPips+1. diffPips does not move
+    // with depth, so the dive and the crawl scale the roll by their own depth curves.
+    int bits = normalBitsReward(fight_.combat.enemy().diffPips + 1, rng_);
+    if (inDeepWebDive())
+        bits = bits * deepWebDepthBitsPct(walk_.streak) / 100
+                    * (100 + diveRewardBonusPct()) / 100;   // DIVE PAY
+    else if (inDarkWebCrawl())
+        bits = bits * darkWebDepthBitsPct(walk_.streak) / 100;
+    bits += sumEquippedModMagnitude(registry_, pet_.mods, ModEffect::PostBattleBits,
+                                    pet_.creature ? pet_.creature->line : nullptr);
+    op_.bits += applyCombatBitsBonus(bits);   // Scraping Cluster Expansion
+
+    // The zone's base XP scaled by the enemy's level against the pet's: punching up pays
+    // more, farming shallow a trickle. The CRAWL's base is a multiple of the flat one
+    // (wildWinXpBase), and DIVE PAY adds on top inside a dive, where each win has to be
+    // worth the shallow ones the shorter, harder run skipped.
+    const int winXp = wildWinXp(wildWinXpBase(walk_.sector),
+                                fight_.combat.enemy().level, pet_.level) *
+                      (100 + diveRewardBonusPct()) / 100;
+    addFightXp(applyCombatXpBonus(winXp));  // Well-Fed XP Boost
+
+    rollWildWinDrops(shielded);
+    log_.push(LogEventType::CombatWon, "WON BATTLE");
+}
+
+// Re-farming a CLEARED sub-area pays full non-Bits loot while Bandwidth shielded the
+// fight. Unshielded, drop chances decay per re-farm win toward a floor and the per-sub
+// count advances (saved since v15) until Bandwidth regenerates. Bits and XP stay full,
+// so a done area is always a viable training ground.
+int Game::wildDropScalePct(bool shielded) {
+    const bool refarm = walk_.sector >= 0 && walk_.sector < kExplSectors &&
+                        walk_.sub >= 0 && walk_.sub < kExplSubAreas &&
+                        op_.world.subCleared[walk_.sector][walk_.sub];
+    if (!refarm || shielded) return 100;
+    uint16_t& c = pet_.armed.subRefarmCount[walk_.sector][walk_.sub];
+    const int pct = refarmDropScalePct(c);
+    if (c < kRefarmCountCap) ++c;
+    return pct;
+}
+
+void Game::rollWildWinDrops(bool shielded) {
+    const int dropScalePct = wildDropScalePct(shielded);
+    // What a wild win drops is the AREA's business: each area row carries its own wild
+    // drop table, including whichever Merge Hub ingredient it makes farmable there.
+    if (static_cast<int>((lcgAdvance(rng_) >> 16) % 100) < kWildItemDropPct * dropScalePct / 100) {
+        const AreaLootTable t = areaWildLootTable(walk_.sector);
+        drawCacheItem(t.rows, t.count);
+    }
+    rollEnemyMoveDrop(fight_.combat.enemy(), kWildMoveDropPct * dropScalePct / 100);
+    // The endless zones are the tier-4 mod source. The equip-LEVEL gate still applies,
+    // so a lucky drop is held until the pet is deep enough to field it.
+    if (walk_.sector == kDeepWebSector || walk_.sector == kDarkWebSector) {
+        if (static_cast<int>((lcgAdvance(rng_) >> 16) % 100) < kModDeepWebDropPct)
+            if (const char* id = rollAreaModId(walk_.sector))
+                grantMod(id);
+    }
+}
+
+// A live loss corrupts (scaled by the Bad-branch multiplier). It is not a care mistake.
+void Game::chargeWildLoss() {
+    const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
+    pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
+    log_.push(LogEventType::CombatLost, "LOST BATTLE");
 }
 
 void Game::finishCombat() {
