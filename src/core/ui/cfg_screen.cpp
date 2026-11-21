@@ -119,7 +119,7 @@ int cfgRows(const CfgRow*& out) {
         {"SYSTEM INFO", &ASSET_ICON_CFG_SYSINFO, CfgScreen::SysInfo},
         {"HACKERTAG", &ASSET_ICON_CFG_TAG, CfgScreen::HackerTag},
         {"TITLE", &ASSET_ICON_CFG_TITLE, CfgScreen::Titles},
-        {"DEVICE", &ASSET_ICON_CFG_UIMODE, CfgScreen::Device},
+        {"DEVICE", &ASSET_ICON_CFG_DEVICE, CfgScreen::Device},
         {"RADIO", &ASSET_ICON_CFG_RADIO, CfgScreen::Radio},
         {"UPDATES", &ASSET_ICON_CFG_UPDATE, CfgScreen::Update},
         // SD RECHECK is not a row: it acts on the SD line it reports through, so it
@@ -143,14 +143,14 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         {"UI MODE", &ASSET_ICON_CFG_UIMODE, CfgScreen::UiMode},
         // CARE ALERTS beside it: the "!" marks are drawn on the same shelf UI MODE
         // styles. It is a switch rather than a screen: B flips it in place (onCfgGroup).
-        {"CARE ALERTS", &ASSET_ICON_CFG_UIMODE, CfgScreen::CareAlerts},
-        {"BRIGHTNESS", &ASSET_ICON_CFG_UIMODE, CfgScreen::Brightness},
-        {"SOUND", &ASSET_ICON_CFG_UIMODE, CfgScreen::Sound},
-        {"VOLUME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Volume},
+        {"CARE ALERTS", &ASSET_ICON_CFG_ALERTS, CfgScreen::CareAlerts},
+        {"BRIGHTNESS", &ASSET_ICON_CFG_BRIGHTNESS, CfgScreen::Brightness},
+        {"SOUND", &ASSET_ICON_CFG_SOUND, CfgScreen::Sound},
+        {"VOLUME", &ASSET_ICON_CFG_VOLUME, CfgScreen::Volume},
         // THEME sits with them for the same reason BACKGROUND does (it is what the
         // device LOOKS like), and above it, because it is the wider of the two: the
         // background repaints one band of one screen, a theme repaints all of them.
-        {"THEME", &ASSET_ICON_CFG_UIMODE, CfgScreen::Theme},
+        {"THEME", &ASSET_ICON_CFG_THEME, CfgScreen::Theme},
         // BACKGROUND belongs beside them and not on the top-level list: the release list
         // is exactly six rows so it never scrolls, and this is a presentation setting
         // like the two above it. What the device shows, not what it does. Its glyph
@@ -159,7 +159,7 @@ int cfgGroupRows(CfgScreen group, const CfgRow*& out) {
         // TIPS: every one-time card the device has shown, to read again. Not a device
         // setting, but the top-level list is held at six rows, and this is the group
         // about how the device presents itself, which includes how it explains itself.
-        {"TIPS", &ASSET_ICON_CFG_SYSINFO, CfgScreen::Tips},
+        {"TIPS", &ASSET_ICON_CFG_TIPS, CfgScreen::Tips},
         {"TRAVEL MODE", &ASSET_ICON_CFG_TRAVEL, CfgScreen::Travel},
         // FORMAT SD is the group's other action, and last because it is the one row
         // here that destroys something. It lives with the device rather than beside

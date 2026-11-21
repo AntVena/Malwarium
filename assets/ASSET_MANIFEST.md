@@ -874,7 +874,14 @@ own rows from the same `CfgRow` shape and reuses the glyphs below, so grouping n
 |---|---|---|---|---|---|
 | `ICON_CFG_SYSINFO` | System Info row glyph | 20×20 | the RADIO group's AUDIT row names it in `cfgGroupRows`, but nothing draws it: see the note under this table | ☑ | `/assets/icons/ICON_CFG_SYSINFO.png` |
 | `ICON_CFG_TAG` | HackerTag row glyph | 20×20 | | ☑ | `/assets/icons/ICON_CFG_TAG.png` |
-| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | also the DEVICE group row, BRIGHTNESS, SOUND, VOLUME, CARE ALERTS + THEME | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_UIMODE` | UI Mode row glyph | 20×20 | a panel with a window in it: how the screen presents | ☑ | `/assets/icons/ICON_CFG_UIMODE.png` |
+| `ICON_CFG_DEVICE` | DEVICE group row glyph | 20×20 | the handheld itself: a body, its screen, three buttons. The group is about the device rather than its look, which UI MODE's glyph already covers | ☑ | `/assets/icons/ICON_CFG_DEVICE.png` |
+| `ICON_CFG_ALERTS` | CARE ALERTS row glyph (DEVICE group) | 20×20 | a bell: the row switches the "!" care marks | ☑ | `/assets/icons/ICON_CFG_ALERTS.png` |
+| `ICON_CFG_BRIGHTNESS` | BRIGHTNESS row glyph (DEVICE group) | 20×20 | a sun, solid disc and eight rays | ☑ | `/assets/icons/ICON_CFG_BRIGHTNESS.png` |
+| `ICON_CFG_SOUND` | SOUND row glyph (DEVICE group) | 20×20 | a speaker and two waves: sound on or off | ☑ | `/assets/icons/ICON_CFG_SOUND.png` |
+| `ICON_CFG_VOLUME` | VOLUME row glyph (DEVICE group) | 20×20 | five bars rising: a level, set apart from SOUND's on/off speaker | ☑ | `/assets/icons/ICON_CFG_VOLUME.png` |
+| `ICON_CFG_THEME` | THEME row glyph (DEVICE group) | 20×20 | four swatches, two solid and two outlined: a set of colours | ☑ | `/assets/icons/ICON_CFG_THEME.png` |
+| `ICON_CFG_TIPS` | TIPS row glyph (DEVICE group) | 20×20 | a light bulb: the one-time cards, read again | ☑ | `/assets/icons/ICON_CFG_TIPS.png` |
 | `ICON_CFG_FORMATSD` | FORMAT SD row glyph (DEVICE group) | 20×20 | `ICON_SYS_SD`'s notched card, drawn SOLID with an X knocked out of it: the card, cleared. Solid rather than outlined so it never reads as the status icon, and the X marks it as the one row in the group that destroys something | ☑ | `/assets/icons/ICON_CFG_FORMATSD.png` |
 | `ICON_CFG_BACKGROUND` | BACKGROUND row glyph (DEVICE group) | 20×20 | a framed scene: a hill and a sun inside a 2px frame. The place the pet stands, not the panel: `ICON_CFG_UIMODE` beside it already means the device's look | ☑ | `/assets/icons/ICON_CFG_BACKGROUND.png` |
 | `ICON_CFG_TITLE` | TITLE row glyph (zone-Title picker) | 20×20 | v1 stopgap home for zone Titles; moves to Hacker HUD later | ☑ | `/assets/icons/ICON_CFG_TITLE.png` |
