@@ -419,9 +419,14 @@ void Game::rollWildWinDrops(bool shielded) {
 }
 
 // A live loss corrupts (scaled by the Bad-branch multiplier). It is not a care mistake.
-void Game::chargeWildLoss() {
+// A lost gauntlet (finishBossRound) pays the same.
+void Game::applyLossFrag() {
     const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
     pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
+}
+
+void Game::chargeWildLoss() {
+    applyLossFrag();
     log_.push(LogEventType::CombatLost, "LOST BATTLE");
 }
 

@@ -2200,6 +2200,9 @@ private:
     int wildDropScalePct(bool shielded);   // advances the re-farm count it reads
     void rollWildWinDrops(bool shielded);
     void chargeWildLoss();
+    void applyLossFrag();
+    void clearSubArea(int sector, int sub);
+    void clearArea(int sector);
     // Post-fight bookkeeping for a spent Backup Drive: burn its remaining window and
     // award whichever of the three drive achievements the ending earned
     // (backupDriveAchievement, below). Called from applyCombatResult (wild/Sim) and

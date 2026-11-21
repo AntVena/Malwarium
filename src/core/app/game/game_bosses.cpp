@@ -167,48 +167,14 @@ void Game::finishBossRound() {
             startBossRound(surviving);              // next round, no heal: stays in Combat
             return;
         }
-        // Boss beaten: pay the lump, record the clear. A SUB-AREA boss marks just that
-        // sub-area cleared; the AREA boss clears the whole area → the next area unlocks +
-        // the Title is granted.
+        // Gauntlet beaten: pay the lump, then record the clear.
         op_.bits += applyCombatBitsBonus(run.bitsAccrued);   // Scraping Cluster Expansion
         addFightXp(applyCombatXpBonus(kWildWinXpReward));  // Well-Fed XP Boost
         if (!run.clearsArea() && run.sub < kExplSubAreas) {
-            const bool firstClear = !op_.world.subCleared[sector][run.sub];
-            op_.world.subCleared[sector][run.sub] = true;
-            log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
-            // a sub-area boss's FIRST clear has a chance to drop one of the
-            // area's mods (rarity-weighted). Re-clears never re-roll: permanent items
-            // aren't farmable. The rolled equip-level gate decides when it's fieldable.
-            if (firstClear) {
-                lcgAdvance(rng_);
-                if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
-                    if (const char* id = rollAreaModId(sector))
-                        grantMod(id);
-            }
+            clearSubArea(sector, run.sub);
         } else {
             clearedArea = true;
-            const bool firstClear = !op_.world.sectorCleared[sector];
-            const SceneId placeWon = area(sector).scene;
-            const bool hadPlace = backgroundOwned(placeWon);
-            op_.world.sectorCleared[sector] = true;
-            unlockTitle(sector);            // clearing the area grants its Title
-            // ...and the AREA ITSELF, as a background the operator may stand their pet
-            // in. The Title says where they have been; this is a piece of it to keep.
-            if (!hadPlace) announceBackground(placeWon);
-            log_.push(LogEventType::CombatWon, "AREA CLEARED");
-            // the area boss's first clear guarantees a mod from the area table, the
-            // reward for beating the 5-stage gauntlet. A re-run is not a first clear,
-            // so it pays its Bits lump and XP (above) and no mod: the same rule a
-            // re-farmed sub-area follows.
-            if (firstClear)
-                if (const char* id = rollAreaModId(sector))
-                    grantMod(id);
-            // Auto-progress moves off the gauntlet here. autoProgressStep cannot tell
-            // whether the gauntlet is next or just finished, because the armed sub-area
-            // is the area's last either way. Re-aiming at the next area resets the
-            // streak, so the shared hook finds nothing to do and the rotation carries
-            // on.
-            if (op_.autoProgress) startExplore(nextOpenArea(sector), 0);
+            clearArea(sector);
         }
     } else {
         // Any non-win loses the whole gauntlet. A loss takes the standard live-stakes Frag hit once
@@ -216,8 +182,7 @@ void Game::finishBossRound() {
         // a loss. No sector clear either way. A boss loss ALSO cancels explore-mode + resets the
         // streak, but the boss-unlock PERSISTS, so the player can retry it without grinding again.
         if (fight_.combat.lostOrDrawn()) {
-            const int frag = kWildLossFrag * fight_.combat.player().fragMultPct / 100;
-            pet_.model.setFragmentation(pet_.model.fragmentation() + frag);
+            applyLossFrag();
             log_.push(LogEventType::CombatLost, "GAUNTLET FAILED");
         }
         walk_.end();
@@ -235,6 +200,41 @@ void Game::finishBossRound() {
     dirty_ = true;
     markSaveDirty();
     persistSave();
+}
+
+// A SUB-AREA boss marks just that sub-area cleared. Its FIRST clear has a chance at one
+// of the area's mods (rarity-weighted); re-clears never re-roll, so permanent items are
+// not farmable.
+void Game::clearSubArea(int sector, int sub) {
+    const bool firstClear = !op_.world.subCleared[sector][sub];
+    op_.world.subCleared[sector][sub] = true;
+    log_.push(LogEventType::CombatWon, "SUB-AREA CLEARED");
+    if (firstClear) {
+        lcgAdvance(rng_);
+        if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
+            if (const char* id = rollAreaModId(sector))
+                grantMod(id);
+    }
+}
+
+// The AREA boss clears the whole area: the next area unlocks, and the operator earns its
+// Title and the place itself as a background. The first clear guarantees a mod from the
+// area table; a re-run pays its Bits lump and XP and no mod, as a re-farmed sub-area does.
+void Game::clearArea(int sector) {
+    const bool firstClear = !op_.world.sectorCleared[sector];
+    const SceneId placeWon = area(sector).scene;
+    const bool hadPlace = backgroundOwned(placeWon);
+    op_.world.sectorCleared[sector] = true;
+    unlockTitle(sector);
+    if (!hadPlace) announceBackground(placeWon);
+    log_.push(LogEventType::CombatWon, "AREA CLEARED");
+    if (firstClear)
+        if (const char* id = rollAreaModId(sector))
+            grantMod(id);
+    // autoProgressStep cannot tell whether the gauntlet is next or just finished (the
+    // armed sub-area is the area's last either way), so auto-progress re-aims here.
+    // Re-aiming resets the streak, so the shared hook finds nothing to do.
+    if (op_.autoProgress) startExplore(nextOpenArea(sector), 0);
 }
 
 }  // namespace mal
