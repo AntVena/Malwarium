@@ -770,7 +770,7 @@ constexpr int kExploreKeyPct   = 6;    // guaranteed-event roll: Key-item find (
 // active sector's streak; this many wins IN A ROW unlocks its boss (a durable flag,
 // manually triggered from EXPL). A loss cancels the mode and resets the streak.
 constexpr int kExploreStreakToBoss = 10;
-constexpr int kLootBitsReward = 10;    // flat Bits on a loot-cache event (TBD)
+constexpr int kLootBitsReward = 10;    // flat Bits on a loot-cache event
 // How deep a Safe-Mode Key's rest de-frags is NOT here: it belongs to that one key,
 // so it is a negative Frag effect on its own row (items/rare_kit.h), applied by
 // Game::resolveSafeRestEvent.

@@ -1987,8 +1987,8 @@ private:
     void drawHabitatCarousel(Framebuffer& fb, int cursor) const;
     // What this beat's pet is and does, which the habitat both steps and draws by.
     HabitatBeat habitatBeat() const;
-    // A raised pet whose line carries LinePassive::Replication: the one question both
-    // the ambient copies and the fork ask.
+    // A raised pet whose line carries LinePassive::Replication: what the ambient copies,
+    // the fork and the Replication Ghost ask.
     bool petReplicates() const;
     // Say that a background has just been come into. The three moments that can grant
     // one call it after the state that grants it has moved.

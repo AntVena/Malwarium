@@ -163,7 +163,7 @@ non-debug `Game` method with no caller under `src/`. Most are read-only accessor
 produces, and those are fine. The ones that matter carry LOGIC nothing in play runs,
 which the tests then hold in place.
 
-### Content/tunables standard drift. Last run: 2026-11-11
+### Content/tunables standard drift. Last run: 2026-11-21
 Check new content against `src/core/content/CONTENT_STANDARD.md`: structured effect vocabulary (no new
 scalar-field sprawl or `if (id == "...")` branches), one-file-per-type under
 `src/core/content/content_*.cpp`, and (the easy grep) no single-entity magnitude in

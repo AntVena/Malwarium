@@ -276,6 +276,13 @@ behind its own comment, and `setup()` is 191 lines of the same shape. Each block
 step (`tickScreenPower`, `serviceSdRequests`, ...) with its statics beside it. | `main.cpp`. |
 M | Only the S3 tier compiles it, so it needs CI or a local PlatformIO toolchain to check. |
 
+**The combat strike mark picks its sheet by line name.** `strikeMark` (`combat_screen.cpp`)
+is an if-chain over `"ransomware"`, `"phishing"`, `"trojan"` and `"worm"`, a second copy of
+the line roster that a new family has to find. The sheet belongs on the family
+(`CreatureLine`, named the way a creature's `spriteName` is), resolved where the combat draw
+can reach a sprite by name. | `strikeMark`, `CreatureLine`. | S | The combat draw has no
+registry in reach today; that plumbing is the work. |
+
 **Flag arguments still in use.** `Combat::begin`/`startWildCombat` (`forceEnemyFirst`),
 `endPvpSession` (`notify`), `startDecryption` (two bools), `startFeeding` (`fromLockout`),
 `ContentRegistry::daemonPool` (`badBranch`, where `CreatureBranch` exists) and

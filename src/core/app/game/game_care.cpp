@@ -123,12 +123,10 @@ void Game::resolveMaint() {
             // decides it: to avoid a ghost, defragment before Fragmentation reaches
             // Critical (or to stop rolling for it: the Tool and Played variants never
             // reach this path. One is bought and the other is played, and neither has a
-            // roll to lose). Worm-line only: a self-replicating phantom copy is that
-            // line's failure mode, as Lockout is Ransomware's. A Phishing or Trojan
-            // pet's disk just stays fragmented.
-            const bool wormLine = pet_.creature && pet_.creature->line &&
-                                  std::strcmp(pet_.creature->line, "worm") == 0;
-            if (wormLine && pet_.model.fragmentation() >= kFragCriticalMin &&
+            // roll to lose). Only a line that replicates raises one: a phantom copy is
+            // that line's failure mode, as Lockout is Ransomware's. Any other pet's disk
+            // just stays fragmented.
+            if (petReplicates() && pet_.model.fragmentation() >= kFragCriticalMin &&
                 !pet_.model.hasGhost()) {
                 pet_.model.setGhost(true);
                 log_.push(LogEventType::CareMistake, "REPLICATION GHOST");
