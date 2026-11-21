@@ -9,6 +9,7 @@
 #include "core/content/content_tables.h"
 #include "core/content/items/pools.h"
 #include "core/ui/expl_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -154,7 +155,7 @@ void Game::doExploreStep() {
     // than pushing the write out ahead of itself.
     ++op_.lifetimeSteps;
     markSaveDirty();
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     const int roll = static_cast<int>((rng_ >> 16) % 100);
     int t = kExploreLootPct;
     if (roll < t)                    { resolveLootEvent();    return; }
@@ -396,7 +397,7 @@ void Game::resolveCacheEvent() {
     for (const ItemDef* it : registry_.allItems())
         if (it->use == ItemDef::Use::OpenContainer) total += it->cache.findWeight;
     if (total <= 0) return;                       // nothing findable: no cache event
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int roll = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(total));
     const ItemDef* d = nullptr;
     for (const ItemDef* it : registry_.allItems()) {
@@ -428,7 +429,7 @@ void Game::resolveKeyItemEvent() {
     for (const ItemDef* k : registry_.allItems())
         if (k->walkWarp != ItemDef::WalkWarp::None) pool.push_back(k);
     if (pool.empty()) return;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     const ItemDef& d = *pool[(rng_ >> 16) % pool.size()];
     inventory_.add(d.id, 1);
     char buf[32];
@@ -451,7 +452,7 @@ void Game::grantLootReward(char* outFlavor, size_t outFlavorSize) {
     // Reused by the loot-cache event and the Wi-Fi sleeping-guardian/open-cache
     // sub-outcomes ("no new ones," same pool, same log path).
     op_.bits += applyCacheBitsBonus(kLootBitsReward);   // Enhanced DataMining
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     const bool dropItem =
         static_cast<int>((rng_ >> 16) % 100) < kLootItemChancePct;
     if (dropItem) {
@@ -478,7 +479,7 @@ const char* Game::rollAreaModId(int area) {
     int total = 0;
     for (int i = 0; i < t.count; ++i) total += modRarityWeight(registry_, t.ids[i]);
     if (total <= 0) return nullptr;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int roll = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(total));
     for (int i = 0; i < t.count; ++i) {
         const int w = modRarityWeight(registry_, t.ids[i]);
@@ -498,7 +499,7 @@ const char* Game::rollAnyModId() {
         if (r >= 0 && r < 4) total += kModRarityWeight[r];
     }
     if (total <= 0) return nullptr;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int roll = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(total));
     for (const ModDef* m : all) {
         const int r = static_cast<int>(m->rarity);

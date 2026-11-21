@@ -10,6 +10,7 @@
 #include "core/content/registry.h"
 #include "core/model/loadout.h"
 #include "core/model/move_loadout.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -441,7 +442,7 @@ void rollWildBody(CombatEnemy& e, int sub, uint32_t roll) {
     int shares = 0;
     for (int i = 0; i < kLevelStatCount; ++i) {
         if (*body.stat[i] <= 0) continue;
-        roll = roll * 1664525u + 1013904223u;
+        lcgAdvance(roll);
         weight[i] = 100 - spread +
                     static_cast<int64_t>((roll >> 16) % static_cast<uint32_t>(2 * spread + 1));
         total += weight[i];
@@ -538,7 +539,7 @@ std::vector<const char*> deepWebMoveIds(int depth, uint32_t roll) {
     std::vector<const char*> out;
     for (int i = 0; i < 2 && static_cast<int>(out.size()) < poolN; ++i) {
         for (int tries = 0; tries < poolN; ++tries) {
-            roll = roll * 1664525u + 1013904223u;
+            lcgAdvance(roll);
             const char* pick = pool[(roll >> 16) % static_cast<uint32_t>(poolN)];
             bool dup = false;
             for (const char* got : out)
@@ -562,7 +563,7 @@ void applyDarkWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
     const int budget = surplus * kDarkWebBudgetPct / 100 + depth / kDarkWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < budget; ++i) {
-        roll = roll * 1664525u + 1013904223u;
+        lcgAdvance(roll);
         ++points[(roll >> 16) % kLevelStatCount];
     }
     spendStatBudget(e, points);
@@ -614,7 +615,7 @@ void applyDeepWebScale(CombatEnemy& e, int petLevel, int depth, uint32_t roll) {
                        rampDepth / kDeepWebDepthPointsPerN;
     int points[kLevelStatCount] = {0, 0, 0, 0};
     for (int i = 0; i < budget; ++i) {
-        roll = roll * 1664525u + 1013904223u;
+        lcgAdvance(roll);
         ++points[(roll >> 16) % kLevelStatCount];
     }
     // ...and what it fights WITH, drawn from the rung this depth has reached. Done here
@@ -960,7 +961,7 @@ int normalBitsReward(int stageRank, uint32_t& rng) {
     const int R = stageRank < 1 ? 1 : stageRank;
     const int lo = R, hi = R * R;                 // Process 2..4, Script 3..9, ...
     const int span = hi - lo + 1;                 // ≥1 (hi≥lo since R≥1)
-    rng = rng * 1664525u + 1013904223u;
+    lcgAdvance(rng);
     return lo + static_cast<int>((rng >> 16) % static_cast<uint32_t>(span));
 }
 

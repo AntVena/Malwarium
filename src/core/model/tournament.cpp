@@ -8,6 +8,7 @@
 #include "core/model/move_loadout.h"
 #include "core/model/pvp_battle.h"
 #include "tunables.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -17,7 +18,7 @@ namespace {
 // (Game::rng_, combat_factory's variant rolls). Kept local and passed by reference so
 // every derivation here is a pure function of its own seed rather than of call order.
 inline uint32_t lcg(uint32_t& s) {
-    s = s * 1664525u + 1013904223u;
+    lcgAdvance(s);
     return s >> 16;               // the high half, like every other consumer
 }
 
@@ -27,7 +28,7 @@ inline uint32_t lcg(uint32_t& s) {
 // LCG whose low bits move slowly.
 inline uint32_t slotSeed(uint32_t seed, int slot) {
     uint32_t s = seed ^ (static_cast<uint32_t>(slot + 1) * 0x9E3779B9u);
-    s = s * 1664525u + 1013904223u;
+    lcgAdvance(s);
     s ^= s >> 15;
     return s ? s : 1u;
 }
@@ -220,7 +221,7 @@ int tourneyOpponentSlot(uint8_t alive, int slot, int round) {
 uint32_t tourneyMatchSeed(uint32_t seed, int round, int blockStart) {
     uint32_t s = seed ^ (static_cast<uint32_t>(round + 1) * 0x85EBCA6Bu) ^
                  (static_cast<uint32_t>(blockStart + 1) * 0xC2B2AE35u);
-    s = s * 1664525u + 1013904223u;
+    lcgAdvance(s);
     s ^= s >> 13;
     return s ? s : 1u;
 }

@@ -1,6 +1,7 @@
 #include "core/model/shiboleet_meeting.h"
 
 #include "tunables.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -34,7 +35,7 @@ const GuardianLine& guardianOutcomeLine(const AreaDef& a, GuardianOutcome o) {
     return (l.cant && l.seen) ? l : kNone;
 }
 
-uint32_t step(uint32_t& rng) { return rng = rng * 1664525u + 1013904223u; }
+uint32_t step(uint32_t& rng) { return lcgAdvance(rng); }
 }  // namespace
 
 void ShiboleetMeeting::begin(uint32_t& rng, SigilSet sigils, int sector, int steps) {

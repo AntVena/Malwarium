@@ -6,6 +6,7 @@
 #include "tunables.h"
 #include "core/content/areas/area_defs.h"
 #include "core/ui/expl_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -56,7 +57,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
     // rather than reroll-looping, so "it knew nothing I don't" is a legitimate no-drop,
     // and that is also what keeps a re-run self-limiting without a decay curve: an enemy
     // you have learned out stops paying on its own.
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     if (static_cast<int>((rng_ >> 16) % 100) >= dropPct) return false;
     std::vector<const char*> candidates;
     auto consider = [&](const MoveDef* m) {
@@ -74,7 +75,7 @@ bool Game::rollEnemyMoveDrop(const Combatant& from, int dropPct) {
         for (const MoveDef* m : registry_.allMoves())
             if (m->line && std::strcmp(m->line, pet_.creature->line) == 0) consider(m);
     if (candidates.empty()) return false;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     const char* id = candidates[(rng_ >> 16) % candidates.size()];
     pet_.moves.grant(id);
     const MoveDef* m = registry_.move(id);
@@ -117,7 +118,7 @@ void Game::startBossRound(int carryHealth) {
     }
     Combatant p = buildPlayerCombatant();
     Combatant e = makeEnemyCombatant(registry_, *foe);
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     // Live stakes; carryHealth < 0 on round 0 (full), else the wounded Health the
     // pet limped out of the previous round with (no heal between).
     fight_ = Fight::started(FightCaller::Boss);
@@ -179,7 +180,7 @@ void Game::finishBossRound() {
             // area's mods (rarity-weighted). Re-clears never re-roll: permanent items
             // aren't farmable. The rolled equip-level gate decides when it's fieldable.
             if (firstClear) {
-                rng_ = rng_ * 1664525u + 1013904223u;
+                lcgAdvance(rng_);
                 if (static_cast<int>((rng_ >> 16) % 100) < kModSubBossDropPct)
                     if (const char* id = rollAreaModId(sector))
                         grantMod(id);

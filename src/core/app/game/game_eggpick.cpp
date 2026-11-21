@@ -9,6 +9,7 @@
 #include "core/render/palette.h"
 #include "core/render/sprite.h"
 #include "generated/assets.h"
+#include "core/model/lcg.h"
 
 // game_eggpick.cpp: the Clutch Pick, the Phishing line's hatch minigame.
 //
@@ -33,7 +34,7 @@ namespace mal {
 void Game::startEggPick(int rounds) {
     // Hide the live egg: an equal-weight draw over the non-wrapping slots, off the same
     // shared LCG every other content draw uses (rollHatchProcess, the Trojan divert).
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int pool[kEggPickCols * kEggPickRows];
     int n = 0;
     for (int s = 0; s < kEggPickCols * kEggPickRows; ++s)

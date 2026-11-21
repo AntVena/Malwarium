@@ -26,6 +26,7 @@
 #include <cstdint>
 
 #include "core/model/run_clock.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -181,7 +182,7 @@ class Isolation {
         int free = 0;
         for (int i = 0; i < kIsolationCells; ++i) if (!body_[i]) ++free;
         if (free == 0) return false;
-        rng_ = rng_ * 1664525u + 1013904223u;      // the shared LCG's constants
+        lcgAdvance(rng_);
         int pick = static_cast<int>((rng_ >> 16) % static_cast<uint32_t>(free));
         for (int i = 0; i < kIsolationCells; ++i) {
             if (body_[i]) continue;

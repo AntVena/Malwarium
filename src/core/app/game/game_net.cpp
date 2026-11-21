@@ -5,6 +5,7 @@
 
 #include "tunables.h"
 #include "core/ui/expl_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -72,7 +73,7 @@ void Game::startWifiEvent() {
         return;
     }
 
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     // broadcasting() is the only path into AuditPhase::Hot (registerHandshake →
     // noteHandshake), so a pcap is the sole thing that can wake a guardian.
     ev.rollOutcome(static_cast<int>((rng_ >> 16) % 100), auditCapture_.broadcasting());
@@ -227,7 +228,7 @@ void Game::resolveNetworkDiscovery(WifiEvent& ev) {
         checkHackerRankUp();
         pet_.model.setHappiness(pet_.model.happiness() + kNetDiscoveryFoundHappyBonus);
 
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         const char* id = rollNetworkDiscoveryCacheId(static_cast<int>((rng_ >> 16) % 100));
         inventory_.add(id, 1);
         const ItemDef* got = registry_.item(id);
@@ -235,7 +236,7 @@ void Game::resolveNetworkDiscovery(WifiEvent& ev) {
         std::snprintf(buf, sizeof(buf), "FOUND %s", got ? got->displayName : id);
         log_.push(LogEventType::ItemGained, buf);
 
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         if ((rng_ >> 16) % 2 == 0)
             std::snprintf(ev.discoveryLine, sizeof(ev.discoveryLine),
                          "ADMIRING %s", picked.name);
@@ -285,7 +286,7 @@ bool Game::registerHandshake(const uint8_t* bssid) {
     ++op_.cant.handshakesSeen;
     // A new captured handshake is rarer and harder to earn, so it pays a richer
     // Sealed Cache than the plain-discovery reward above (no Common tier).
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     {
         const char* id = rollHandshakeCaptureCacheId(static_cast<int>((rng_ >> 16) % 100));
         inventory_.add(id, 1);

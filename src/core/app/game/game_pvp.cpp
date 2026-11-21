@@ -14,6 +14,7 @@
 #include "core/ui/theme.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
+#include "core/model/lcg.h"
 
 // game_pvp.cpp (the Hacker-face LINK slot): 1v1 duels with an operator standing in
 // front of you.
@@ -180,7 +181,7 @@ bool Game::pvpChallenge(uint64_t key) {
 
     uint8_t mac[6];
     unpackPeerKey(key, mac);
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     pvp_ = PvpSession::opened(PvpPhase::Inviting, rng_ ? rng_ : 1u, key, mac, live->tag,
                               pvpHostIsLocal(localRadioKey(), key), nowMs_);
     pvp_->local = local;
@@ -205,7 +206,7 @@ void Game::pvpAcceptChallenge() {
         // We host: pick the seed and start immediately. sendPvpPending then carries our
         // fighter and the START together, repeated until the retry budget runs out: the
         // guest only needs one of them to land.
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         startPvpBattle(rng_ ? rng_ : 1u);
     } else {
         sendPvpPending();            // our fighter; then we wait for their START
@@ -307,7 +308,7 @@ bool Game::onPvpFrame(const uint8_t* mac, const uint8_t* payload, size_t len) {
             if (f.fighter.tag[0]) pvp_->setTag(f.fighter.tag);
             pvp_->enter(PvpPhase::Arming, nowMs_);
             if (pvp_->host) {
-                rng_ = rng_ * 1664525u + 1013904223u;
+                lcgAdvance(rng_);
                 startPvpBattle(rng_ ? rng_ : 1u);
             }
             dirty_ = true;

@@ -4,6 +4,7 @@
 
 #include "tunables.h"
 #include "core/content/creatures/creature_lines.h"
+#include "core/model/lcg.h"
 
 // game_chroma.cpp: the CHROMATOPHORE, the Metamorphic line's hatch minigame.
 //
@@ -65,7 +66,7 @@ const CreatureDef* Game::chromaSubject() const {
 // --- Lifecycle -------------------------------------------------------------
 
 void Game::startChroma(int rounds, int windowMs, bool switching) {
-    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the skin sequence
+    lcgAdvance(rng_);   // the shared LCG seeds the skin sequence
     chroma_.reset(rng_, rounds, static_cast<uint32_t>(windowMs),
                   static_cast<uint32_t>(kChromaWindowStepMs), switching);
     chroma_.clock().restart(nowMs_);

@@ -12,6 +12,8 @@
 
 #include <cstdint>
 
+#include "core/model/lcg.h"
+
 namespace mal {
 
 // In heartbeats (~4 per second). The pet holds still for the whole of it: an angler
@@ -71,7 +73,7 @@ private:
     static constexpr int kFirstBeat = kIdleLureRestBeats / 2;
 
     uint32_t roll(uint32_t span) {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         return (rng_ >> 16) % span;
     }
 

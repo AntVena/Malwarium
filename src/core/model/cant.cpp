@@ -1,4 +1,5 @@
 #include "core/model/cant.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -6,10 +7,7 @@ namespace {
 
 // The same LCG constants every other roll in the engine advances on, so a cipher seed
 // behaves like any other seed a caller already holds.
-uint32_t step(uint32_t& s) {
-    s = s * 1664525u + 1013904223u;
-    return s >> 16;
-}
+uint32_t step(uint32_t& s) { return lcgAdvance(s) >> 16; }
 
 bool isLetter(char c) { return c >= 'A' && c <= 'Z'; }
 

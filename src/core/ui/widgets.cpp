@@ -10,6 +10,7 @@
 #include "core/render/framebuffer.h"
 #include "core/render/palette.h"
 #include "core/ui/layout.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -107,13 +108,6 @@ Rgb565 dim(Rgb565 c, int pct) {
                   static_cast<uint8_t>(b8(c) * pct / 100));
 }
 
-// Small inline LCG for the frontier-cell dither: the same one-liner-per-site
-// convention Combat::rng uses (core/model/combat.cpp).
-uint32_t lcgNext(uint32_t& s) {
-    s = s * 1664525u + 1013904223u;
-    return s;
-}
-
 } // namespace
 
 int fragDitherPattern(bool lit[9], int draws, uint32_t seed) {
@@ -121,7 +115,7 @@ int fragDitherPattern(bool lit[9], int draws, uint32_t seed) {
     uint32_t s = seed;
     int distinct = 0;
     for (int k = 0; k < draws; ++k) {
-        const int idx = static_cast<int>(lcgNext(s) % 9u);
+        const int idx = static_cast<int>(lcgAdvance(s) % 9u);
         if (!lit[idx]) ++distinct;
         lit[idx] = true;
     }
@@ -172,7 +166,7 @@ void drawGauge(Framebuffer& fb, int x, int y, int w, int h, int value, Zone zone
                 uint32_t s2 = static_cast<uint32_t>(beat) * 131u + 202u +
                               static_cast<uint32_t>(value) * 13u + 1u;
                 for (int k = 0; k < debt; ++k)
-                    bleedHoles[lcgNext(s2) % 9u] = true;
+                    bleedHoles[lcgAdvance(s2) % 9u] = true;
             }
         }
     }
@@ -261,7 +255,7 @@ void drawProgressBar(Framebuffer& fb, int x, int y, int w, int h, float t,
                      static_cast<uint32_t>(x) * 17u + 1u;
         for (int cy = 0; cy < innerH; ++cy) {
             for (int cx = 0; cx < churnW; ++cx) {
-                if ((lcgNext(s) & 1u) != 0u)
+                if ((lcgAdvance(s) & 1u) != 0u)
                     fb.set(edgeX + cx, y + 1 + cy, fleck);
             }
         }

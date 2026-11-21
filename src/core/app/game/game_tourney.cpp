@@ -11,6 +11,7 @@
 #include "core/ui/prose_page.h"
 #include "core/model/pvp_battle.h"
 #include "core/app/game_internal.h"
+#include "core/model/lcg.h"
 
 // game_tourney.cpp (ROCK THE DOCK): eight operators, one bracket, in The Pirate Bayou.
 //
@@ -58,7 +59,7 @@ void Game::openTourney() {
     // A run in play RESUMES exactly as it stood; otherwise draw a fresh bracket.
     // Only the seed is rolled; the eight entrants follow from it.
     if (!tourney_) {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         tourney_ = TourneyRun::drawn(rng_);
         // Resolve the first round's other pairings now, so the field the operator reads
         // before their own opening match is already the true one.

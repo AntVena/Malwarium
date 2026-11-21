@@ -1,4 +1,5 @@
 #include "core/app/game.h"
+#include "core/model/lcg.h"
 
 
 // game_fragger.cpp: FRAGGER, a played MAINT run and a GAMES cabinet.
@@ -14,7 +15,7 @@ void Game::beginFraggerRun() {
     // The run, independent of who pays for it: MAINT has already charged its Bits,
     // the arcade charges nothing. The dial is the LANE count, one more per step up
     // from EASY's minimum.
-    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the fall
+    lcgAdvance(rng_);   // the shared LCG seeds the fall
     fragger_.reset(rng_, kFraggerMinLanes + static_cast<int>(runDifficulty()));
     fragger_.clock().restart(nowMs_);
     fraggerScreen_.clearShot();

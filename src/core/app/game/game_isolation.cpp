@@ -1,6 +1,7 @@
 #include "core/app/game.h"
 
 #include "tunables.h"
+#include "core/model/lcg.h"
 
 // game_isolation.cpp: the Isolation Protocol, the Worm line's hatch minigame.
 //
@@ -25,7 +26,7 @@ namespace mal {
 // --- Lifecycle -------------------------------------------------------------
 
 void Game::startIsolation(int goalDots) {
-    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG seeds the byte sequence
+    lcgAdvance(rng_);   // the shared LCG seeds the byte sequence
     isolation_.reset(rng_, goalDots);
     isolation_.clock().restart(nowMs_);
     closeGameBrief();   // a stale flag from a previous run must not open paused

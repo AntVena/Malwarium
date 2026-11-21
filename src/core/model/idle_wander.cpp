@@ -1,4 +1,5 @@
 #include "core/model/idle_wander.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 namespace {
@@ -61,7 +62,7 @@ int approach(int delta, int speed) {
 }  // namespace
 
 uint32_t IdleWander::roll(uint32_t span) {
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     return span ? (rng_ >> 16) % span : 0;
 }
 

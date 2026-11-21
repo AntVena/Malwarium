@@ -8,6 +8,7 @@
 #include "core/app/game_internal.h"   // backupDriveAchievement: declared, defined here
 #include "core/ui/combat_screen.h"
 #include "core/ui/expl_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -109,7 +110,7 @@ void Game::startSimBattle(int tier) {
     CombatEnemy dummy = simDummy(tier);
     applySimDummyLevelScale(dummy, pet_.level);
     Combatant e = makeEnemyCombatant(registry_, dummy);
-    rng_ = rng_ * 1664525u + 1013904223u;     // advance for a fresh deterministic seed
+    lcgAdvance(rng_);     // advance for a fresh deterministic seed
     fight_ = Fight::started(FightCaller::Sim);
     fight_.combat.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
@@ -229,7 +230,7 @@ void Game::addCombatXp(int xp) {
     while (pet_.xp >= xpToNextLevel()) {
         pet_.xp -= xpToNextLevel();
         ++pet_.level;
-        rng_ = rng_ * 1664525u + 1013904223u;      // deterministic stat roll
+        lcgAdvance(rng_);      // deterministic stat roll
         const int stat = static_cast<int>((rng_ >> 16) % kLevelStatCount);
         ++pet_.statPoints[stat];
         pet_.lastLevelUpStat = stat;
@@ -278,7 +279,7 @@ void Game::applyBattleFatigue() {
     // separate meter: fighting fragments the pet, and MAINT's defrag repairs it.
     // Deterministic off the shared LCG. (A future purchasable upgrade could scale
     // the chance/magnitude down before this rolls.)
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     // c: the Reduce-Frag-TRIGGER rig upgrade lowers the trigger CHANCE by the
     // purchased tier (tier 0 = the unchanged baseline; tiers 1..6 use the reduced table).
     const int trigTier = fragTriggerTier();
@@ -286,7 +287,7 @@ void Game::applyBattleFatigue() {
                            ? kBattleFatigueChancePct
                            : kFragTriggerReducedPct[trigTier - 1];
     if (static_cast<int>((rng_ >> 16) % 100) >= chance) return;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     // b: the Reduce-Explore-Frag rig upgrade shaves the frag AMOUNT cap by the
     // purchased tier (floored at the min so a hit still costs ≥1 Frag).
     int effMax = kBattleFatigueFragMax - static_cast<int>(fragAmountTier());
@@ -404,7 +405,7 @@ void Game::applyCombatResult() {
                 }
                 const int itemDropPct = kWildItemDropPct * dropScalePct / 100;
                 const int moveDropPct = kWildMoveDropPct * dropScalePct / 100;
-                rng_ = rng_ * 1664525u + 1013904223u;
+                lcgAdvance(rng_);
                 if (static_cast<int>((rng_ >> 16) % 100) < itemDropPct) {
                     // What a wild win pays is the AREA's business: each row under
                     // content/areas/ carries its own wild drop table, including whichever
@@ -420,7 +421,7 @@ void Game::applyCombatResult() {
                 // RAID Mirror). The rolled equip-LEVEL gate still applies, so a lucky drop
                 // is held until the pet is deep enough to field it.
                 if (walk_.sector == kDeepWebSector || walk_.sector == kDarkWebSector) {
-                    rng_ = rng_ * 1664525u + 1013904223u;
+                    lcgAdvance(rng_);
                     if (static_cast<int>((rng_ >> 16) % 100) < kModDeepWebDropPct)
                         if (const char* id = rollAreaModId(walk_.sector))
                             grantMod(id);
@@ -608,7 +609,7 @@ void Game::startFightVs(const CombatEnemy& spec, Combat::Stakes stakes) {
 
 void Game::beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat::Stakes stakes) {
     Combatant e = makeEnemyCombatant(registry_, spec);
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     fight_ = Fight::started(FightCaller::Sim);   // a staged fight always returns to the hub
     fight_.combat.begin(p, e, stakes, rng_,
                         /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
@@ -648,7 +649,7 @@ void Game::fillLoadout() {
 // same creature a walk in the same place would meet.
 CombatEnemy Game::rollWild() {
     CombatEnemy wild;
-    rng_ = rng_ * 1664525u + 1013904223u;                    // roster variant roll
+    lcgAdvance(rng_);                    // roster variant roll
     if (inEndlessZone()) {
         // Both endless zones field a tier-3 pair (the crawl its own, kDarkWebWilds) and
         // scale it to the PET's level, ramped by the run's current win-streak
@@ -657,7 +658,7 @@ CombatEnemy Game::rollWild() {
         // fraction of a level's stat points; the crawl's has neither.
         wild = inDarkWebCrawl() ? wildMalbeastOf(kDarkWebWilds, 3, rng_ >> 16)
                                 : wildMalbeast(3, rng_ >> 16);
-        rng_ = rng_ * 1664525u + 1013904223u;                // the zone's stat/kit roll
+        lcgAdvance(rng_);                // the zone's stat/kit roll
         if (inDarkWebCrawl())
             applyDarkWebScale(wild, pet_.level, walk_.streak, rng_);
         else
@@ -665,7 +666,7 @@ CombatEnemy Game::rollWild() {
     } else {
         wild = wildMalbeastIn(walk_.sector, rng_ >> 16);     // the area's pair
         applyWildSubAreaRamp(wild, walk_.sector, walk_.sub);  // depth ramp
-        rng_ = rng_ * 1664525u + 1013904223u;                // this meeting's body
+        lcgAdvance(rng_);                // this meeting's body
         rollWildBody(wild, walk_.sub, rng_);
     }
     // 'Pedia malbeast "seen": the wild roll itself is the
@@ -710,7 +711,7 @@ void Game::fightWild(const CombatEnemy& wild) {
 }
 
 void Game::resolveFlee(const CombatEnemy& wild) {
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     const bool escaped = static_cast<int>((rng_ >> 16) % 100) < kFleeChancePct;
     if (escaped) {
         std::snprintf(walk_.flavor, sizeof(walk_.flavor), "GOT AWAY");
@@ -761,7 +762,7 @@ void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
         --walk_.escortBattles;
     }
     Combatant e = makeEnemyCombatant(registry_, wild);
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     fight_ = Fight::started(FightCaller::Wild);
     fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, forceEnemyFirst,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());

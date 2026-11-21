@@ -1,4 +1,5 @@
 #include "core/app/game.h"
+#include "core/model/lcg.h"
 
 // game_decryption.cpp: DISK DECRYPTION, the Ransomware line's hatch minigame.
 //
@@ -18,7 +19,7 @@
 namespace mal {
 
 void Game::startDecryption(bool allowDuplicates, bool easyHints) {
-    rng_ = rng_ * 1664525u + 1013904223u;   // the shared LCG draws the key
+    lcgAdvance(rng_);   // the shared LCG draws the key
     decryption_.reset(rng_, allowDuplicates);
     decryptionScreen_.open(easyHints ? DecryptHints::Exact : DecryptHints::Anonymous);
     closeGameBrief();   // a stale flag from a previous board must not open paused

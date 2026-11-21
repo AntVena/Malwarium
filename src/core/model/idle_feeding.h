@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "core/model/idle_wander.h"   // kWanderHalfSpanX, kWanderRiseMax
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -152,7 +153,7 @@ private:
     }
 
     uint32_t roll(uint32_t span) {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         return (rng_ >> 16) % span;
     }
 

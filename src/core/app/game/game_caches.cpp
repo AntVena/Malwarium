@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "core/content/content_themes.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -27,7 +28,7 @@ const ItemDef* Game::rollLootEntry(const LootEntry* pool, int poolSize) {
     int total = 0;
     for (int i = 0; i < poolSize; ++i) total += weightOf(pool[i]);
     if (total <= 0) return nullptr;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int roll = static_cast<int>((rng_ >> 16) % static_cast<unsigned>(total));
     const LootEntry* hit = &pool[poolSize - 1];
     for (int i = 0; i < poolSize; ++i) {
@@ -59,7 +60,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     itemCountOut = 0;
     for (int i = 0; i < c.draws; ++i) {
         if (c.drawChancePct < 100) {
-            rng_ = rng_ * 1664525u + 1013904223u;
+            lcgAdvance(rng_);
             if (static_cast<int>((rng_ >> 16) % 100) >= c.drawChancePct) continue;
         }
         const ItemDef* got = drawCacheItem(c.pool, c.poolSize);
@@ -70,7 +71,7 @@ void Game::grantCacheReward(const ItemDef& d, int& bitsOut, const ItemDef** item
     // is deep enough). Granted + logged here: the yield reveal shows the items/Bits, the
     // mod lands in MODS.
     if (c.modChancePct > 0) {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         if (static_cast<int>((rng_ >> 16) % 100) < c.modChancePct)
             if (const char* id = rollAnyModId())
                 grantMod(id);

@@ -22,6 +22,7 @@
 #include <cstdint>
 
 #include "core/model/run_clock.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -154,7 +155,7 @@ class Fragger {
 
   private:
     uint32_t next() {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         return rng_ >> 8;
     }
 

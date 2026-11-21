@@ -1,4 +1,5 @@
 #include "core/model/flock.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 namespace {
@@ -101,7 +102,7 @@ void capTo(int& x, int& y, int limit) {
 
 uint32_t Flock::roll(uint32_t span) {
     // The same LCG every other roll in the engine advances on, off this flock's own seed.
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     return span ? ((rng_ >> 16) % span) : 0u;
 }
 

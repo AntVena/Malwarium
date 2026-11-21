@@ -23,6 +23,8 @@
 
 #include <cstdint>
 
+#include "core/model/lcg.h"
+
 namespace mal {
 
 // How a played row's fragmentation damage lands. Exact is the EASY setting: it spends
@@ -173,7 +175,7 @@ class DiskDecryption {
     static bool inSlot(int s) { return s >= 0 && s < kDecryptionSlots; }
 
     uint32_t next() {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         return rng_ >> 16;
     }
 

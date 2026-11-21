@@ -8,6 +8,7 @@
 #include "core/content/content_tables.h"
 #include "core/ui/maint_screen.h"   // defragGated, avGated
 #include "core/ui/mods_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -63,7 +64,7 @@ void Game::beginStackerBoard() {
     // The board itself, independent of who pays for it: MAINT takes the units, the
     // arcade charges nothing and takes the score. The shared LCG seeds the intruders'
     // columns; the dial sets what the ground costs.
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     stacker_.reset(rng_ >> 8, kStackerGroundCalls[static_cast<int>(runDifficulty())]);
     stacker_.clock().restart(nowMs_);
     closeGameBrief();   // a stale flag from a previous board must not open paused
@@ -175,7 +176,7 @@ int Game::maintFailPct() const {
 }
 
 bool Game::rollMaintSuccess() {
-    rng_ = rng_ * 1664525u + 1013904223u;               // LCG (deterministic seed)
+    lcgAdvance(rng_);
     int roll = static_cast<int>((rng_ >> 16) % 100);
     return roll >= maintFailPct();
 }

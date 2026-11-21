@@ -5,12 +5,12 @@
 #include <utility>
 
 #include "tunables.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
 uint32_t Combat::rng() {
-    rng_ = rng_ * 1664525u + 1013904223u;   // LCG (deterministic, matches MAINT roll)
-    return rng_ >> 16;
+    return lcgAdvance(rng_) >> 16;
 }
 
 void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stakes,

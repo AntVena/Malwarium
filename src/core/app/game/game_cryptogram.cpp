@@ -2,6 +2,7 @@
 
 #include "core/content/content_quotes.h"
 #include "core/content/content_recipes.h"   // kMergeRecipes: the prize ladder names a recipe
+#include "core/model/lcg.h"
 
 // game_cryptogram.cpp: THE DECRYPTOGRAM, the quote board.
 //
@@ -87,7 +88,7 @@ int Game::pickQuote(QuotePick pick) {
     for (int i = 0; i < quoteCount(); ++i)
         if (quoteEligible(i, pick)) ++n;
     if (n == 0) return -1;
-    rng_ = rng_ * 1664525u + 1013904223u;
+    lcgAdvance(rng_);
     int nth = static_cast<int>((rng_ >> 16) % static_cast<uint32_t>(n));
     for (int i = 0; i < quoteCount(); ++i) {
         if (!quoteEligible(i, pick)) continue;

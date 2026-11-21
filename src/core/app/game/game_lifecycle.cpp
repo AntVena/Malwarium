@@ -6,6 +6,7 @@
 #include "tunables.h"
 #include "core/render/sprite.h"
 #include "core/ui/expl_screen.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -210,7 +211,7 @@ const CreatureDef* Game::rollHatchProcess(const EggLineDef* line) {
             registry_.creature(line ? line->eggCreatureId : "cryptoshell");
         return egg && egg->evolvesToId ? registry_.creature(egg->evolvesToId) : nullptr;
     }
-    rng_ = rng_ * 1664525u + 1013904223u;   // advance the shared LCG (deterministic draw)
+    lcgAdvance(rng_);
     return pool[(rng_ >> 16) % pool.size()];
 }
 
@@ -378,7 +379,7 @@ void Game::fireEvolution() {
         const bool forced = pet_.armed.trojanDivert;
         pet_.armed.trojanDivert = false;
         if (pet_.creature->evolvesToTrojanId) {
-            rng_ = rng_ * 1664525u + 1013904223u;
+            lcgAdvance(rng_);
             const bool rolled = (rng_ >> 16) % 100 < static_cast<uint32_t>(kTrojanDivertPct);
             if (forced || rolled) {
                 // A divert that lands on a Daemon is a BRANCH, read off the same care

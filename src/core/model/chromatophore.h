@@ -33,6 +33,7 @@
 #include <cstdint>
 
 #include "core/model/run_clock.h"
+#include "core/model/lcg.h"
 
 namespace mal {
 
@@ -187,7 +188,7 @@ class Chromatophore {
     // A skin that is not `avoid`. Drawn rather than cycled, so a run has no rhythm to
     // learn, and never the one to avoid, so a round always demands a repaint.
     uint8_t pickSkin(int avoid) {
-        rng_ = rng_ * 1664525u + 1013904223u;
+        lcgAdvance(rng_);
         int pick = static_cast<int>((rng_ >> 16) % (kChromaSkins - 1));
         if (pick >= avoid) ++pick;
         return static_cast<uint8_t>(pick);
