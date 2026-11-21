@@ -16,10 +16,10 @@
 //
 //   MAJOR: a release of the device itself. Moved by a deliberate call, never as the
 //           next step of a run of features.
-//   MINOR. The player can do something they could not before: a new screen, mode,
+//   MINOR: the player can do something they could not before: a new screen, mode,
 //           activity or system. Or the SAVE FORMAT changed (save.h kSaveVersion),
 //           because that is the one change a rollback cannot simply undo.
-//   PATCH. Everything else, which is nearly everything: new content inside a system
+//   PATCH: everything else, which is nearly everything: new content inside a system
 //           that already exists (wilds, bosses, art, items, moves, chapters),
 //           balance and tuning, wording and UI polish, and bug fixes.
 //
@@ -27,7 +27,7 @@
 // a player has something new to DO.
 //
 // A release build overrides the numbers from the build system instead of
-// editing this file, so a published binary is stamped from the tag that
+// editing this file, so a published binary is stamped by the build that
 // produced it. `pio run` takes no -D of its own; the env var is what appends
 // to the environment's build_flags:
 //
@@ -53,7 +53,7 @@
 #  define FW_VERSION_MINOR 113
 #endif
 #ifndef FW_VERSION_PATCH
-#  define FW_VERSION_PATCH 0
+#  define FW_VERSION_PATCH 1
 #endif
 
 // Two-step expansion: the outer macro forces its argument to expand to a
