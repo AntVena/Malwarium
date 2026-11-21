@@ -2861,7 +2861,7 @@ window.PEDIA_DATA = {
       "type": "QUEST",
       "rarity": "UNCOMMON",
       "effect": "Proves you're allowed in. No questions asked.",
-      "stats": "WALK: WARP TO SHOP",
+      "stats": "WALK: SHOP SHORTCUT",
       "icon": "assets/icons/ICON_ITEM_ACCESS_TOKEN.png"
     },
     {
@@ -2870,7 +2870,7 @@ window.PEDIA_DATA = {
       "type": "QUEST",
       "rarity": "UNCOMMON",
       "effect": "Boots you somewhere quiet with only the essentials running.",
-      "stats": "FRAG -20 / WALK: SAFE REST",
+      "stats": "FRAG -20 / WALK: REST & RESTORE",
       "icon": "assets/icons/ICON_ITEM_SAFE_MODE_KEY.png"
     },
     {

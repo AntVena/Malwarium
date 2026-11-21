@@ -829,7 +829,7 @@ void drawExploreControl(Framebuffer& fb, const ExploreControlView& v) {
     // rather than being skipped: the row is what says the action exists at all, and its
     // reason is spelled out beside it.
     static const char* kLabels[kExploreControlRows] = {
-        "NETWORK PING", "WARP", "AUTO-PROGRESS", "SINKHOLES", "SOUND", "STOP EXPLORE"};
+        "NETWORK PING", "SHORTCUT", "AUTO-PROGRESS", "SINKHOLES", "SOUND", "STOP EXPLORE"};
     const int rowTop = by + 28, rowH = 18;
     for (int i = 0; i < kExploreControlRows; ++i) {
         const int y = rowTop + i * rowH;
@@ -1107,7 +1107,7 @@ void drawShop(Framebuffer& fb, const StorefrontView& v) {
 }
 
 void drawWarpPicker(Framebuffer& fb, const WarpPickerRow* rows, int rowCount, int cursor) {
-    drawHeaderBand(fb, "WARP");
+    drawHeaderBand(fb, "SHORTCUT TO...");
     // Two lines a row, both inside the selection fill: the destination over the key it
     // spends, the shape EXPL's rows use.
     constexpr int kNameDy = 5;
@@ -1124,7 +1124,7 @@ void drawWarpPicker(Framebuffer& fb, const WarpPickerRow* rows, int rowCount, in
         drawTextMarquee(fb, 24, y + kKeyDy, kActiveW - kMargin - 24, key,
                         palColor(Pal::INK_DIM), 0, Overflow::Clip);
     }
-    drawHintBand(fb, "A NEXT  B WARP  C BACK");
+    drawHintBand(fb, "A NEXT  B GO  C BACK");
 }
 
 // Post-encounter status readout: a brief, informational-only

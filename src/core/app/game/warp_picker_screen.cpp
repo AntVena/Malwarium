@@ -1,6 +1,8 @@
 #include "core/app/game/warp_picker_screen.h"
 
-#include "core/content/defs.h"   // ItemDef::displayName
+#include <cstdio>
+
+#include "core/content/defs.h"   // ItemDef::displayName, effects
 #include "core/ui/expl_screen.h"
 #include "core/ui/layout.h"
 
@@ -43,14 +45,22 @@ void WarpPickerScreen::stepList(const WarpPickerHost& host, int dir) {
 void WarpPickerScreen::draw(Framebuffer& fb, const WarpPickerHost& host) const {
     const auto dests = host.warpDestinations();
     WarpPickerRow rows[kWarpPickerMaxRows];
+    char restTag[kWarpPickerMaxRows][16];
     int n = 0;
     for (const WarpDestination& d : dests) {
         if (n >= kWarpPickerMaxRows) break;
         WarpPickerRow& r = rows[n++];
         r.name = d.name;
+        // The rest is tagged with what it gives, the key row's own Frag magnitude
+        // (resolveSafeRestEvent applies the same effects).
+        int frag = 0;
+        if (d.key)
+            for (const ItemEffect& e : d.key->effects)
+                if (e.kind == ItemEffect::Kind::Frag) frag += e.magnitude;
+        std::snprintf(restTag[n - 1], sizeof(restTag[n - 1]), "%d FRAG", frag);
         r.kind = d.target == WarpTarget::ItemShop  ? "ITEMS"
                  : d.target == WarpTarget::ModShop ? "MODS"
-                                                   : "REST";
+                                                   : restTag[n - 1];
         r.keyName = d.key ? d.key->displayName : "";
         r.held = d.held;
     }

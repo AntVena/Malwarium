@@ -366,8 +366,8 @@ SpecRows specRows(const ItemDef& d) {
     if (d.context == ItemDef::Context::LockoutOnly) s.flag("PAYS A LOCKOUT");
     switch (d.walkWarp) {
         case ItemDef::WalkWarp::None: break;
-        case ItemDef::WalkWarp::Shop: s.flag("WALK: WARP TO SHOP"); break;
-        case ItemDef::WalkWarp::SafeRest: s.flag("WALK: SAFE REST"); break;
+        case ItemDef::WalkWarp::Shop: s.flag("WALK: SHOP SHORTCUT"); break;
+        case ItemDef::WalkWarp::SafeRest: s.flag("WALK: REST & RESTORE"); break;
     }
     switch (d.use) {
         case ItemDef::Use::Consume:

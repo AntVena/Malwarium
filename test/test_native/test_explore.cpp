@@ -2013,7 +2013,7 @@ void test_explore_flavor_lines_fit() {
             CHECK(fits());
         }
         if (d->walkWarp != ItemDef::WalkWarp::None) {
-            std::snprintf(line, sizeof(line), "%s - WARP KEY (A+C)", d->displayName);
+            std::snprintf(line, sizeof(line), "%s - SHORTCUT (A+C)", d->displayName);
             CHECK(fits());
         }
         if (d->preEncounterXp > 0) {
@@ -2025,7 +2025,7 @@ void test_explore_flavor_lines_fit() {
     // The rest are format strings over numbers. Each is given the widest number it can
     // carry rather than a typical one: a three-digit Frag shed or Bits payout is the
     // case that overruns, and the one nobody reproduces by hand.
-    std::snprintf(line, sizeof(line), "SAFE MODE - RESTED (-%d FRAG)", 100);
+    std::snprintf(line, sizeof(line), "RESTED & RESTORED (-%d FRAG)", 100);
     CHECK(fits());
     std::snprintf(line, sizeof(line), "+%d BITS + ITEM", 99999);
     CHECK(fits());

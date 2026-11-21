@@ -412,8 +412,9 @@ struct StorefrontView {
 };
 void drawShop(Framebuffer& fb, const StorefrontView& v);
 
-// Warp picker: where a warp key can jump to in the armed area, one two-line row each.
-// The destination's name with its kind opposite (ITEMS / MODS / REST), and under it
+// The SHORTCUT picker: where a warp key can jump to in the armed area, one two-line row
+// each. The header carries the verb ("SHORTCUT TO..."), so every row is a place. The
+// destination's name with what it offers opposite (ITEMS / MODS / the rest's -n FRAG), and under it
 // the key it spends, or NO <key> when the bag lacks it. A row with no key is dimmed and
 // says so in words, so it reads in grayscale. No new art; reuses list chrome.
 struct WarpPickerRow {

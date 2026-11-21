@@ -341,7 +341,7 @@ std::vector<WarpDestination> Game::warpDestinations() const {
                 out.push_back({d, WarpTarget::ModShop, here.modShop.name, held});
                 break;
             case ItemDef::WalkWarp::SafeRest:
-                out.push_back({d, WarpTarget::SafeRest, "SAFE MODE", held});
+                out.push_back({d, WarpTarget::SafeRest, "REST & RESTORE", held});
                 break;
             case ItemDef::WalkWarp::None: break;
         }
@@ -374,7 +374,7 @@ void Game::resolveSafeRestEvent(const ItemDef& d) {
     const int before = pet_.model.fragmentation();
     applyItemEffects(d);
     std::snprintf(walk_.flavor, sizeof(walk_.flavor),
-                 "SAFE MODE - RESTED (-%d FRAG)", before - pet_.model.fragmentation());
+                 "RESTED & RESTORED (-%d FRAG)", before - pet_.model.fragmentation());
     markSaveDirty();
     returnToExplore();
 }
@@ -434,7 +434,7 @@ void Game::resolveKeyItemEvent() {
     char buf[32];
     std::snprintf(buf, sizeof(buf), "FOUND %s", d.displayName);
     log_.push(LogEventType::ItemGained, buf);
-    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s - WARP KEY (A+C)",
+    std::snprintf(walk_.flavor, sizeof(walk_.flavor), "%s - SHORTCUT (A+C)",
                   d.displayName);
     markSaveDirty();
 }

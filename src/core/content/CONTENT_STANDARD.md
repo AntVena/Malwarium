@@ -139,7 +139,7 @@ a remark about the object itself, with the tech meaning of the name sitting unde
    number gets in if one is ever truly needed (rule 3), but the grid has it already.
    That includes the rows with no pet lever: a cache, a warp key, a picker, a palette
    chip states its job as a readout flag read off its own fields (`specRows`, e.g.
-   OPEN IN VAULT, WALK: WARP TO SHOP, THEME SYNTHWAVE). If a mechanic can't be said
+   OPEN IN VAULT, WALK: SHOP SHORTCUT, THEME SYNTHWAVE). If a mechanic can't be said
    concisely and clearly in a flag, that row is the exception that gets a functional
    clause: decided case by case, never by default.
 2. **It must make sense as food (or as the object) on its own.** A tech catchphrase
