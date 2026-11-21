@@ -285,6 +285,22 @@ the line roster that a new family has to find. The sheet belongs on the family
 can reach a sprite by name. | `strikeMark`, `CreatureLine`. | S | The combat draw has no
 registry in reach today; that plumbing is the work. |
 
+**Hint words VISUAL_LANGUAGE §4.2 does not cover, each a decision to record or undo.**
+- `A SWITCH` on five screens (MAINT's DEFRAG and AV detail, the encounter, the Lockout modal,
+  the SHIBOLEET): A moves between two or three ACTIONS that B then takes. §4.2 says A is
+  `NEXT` wherever it moves a cursor; these are consistent with each other, so the likely fix
+  is a row in the standard.
+- `C DELETE` on the HackerTag editor: C erases the cell behind the caret and leaves at the
+  first cell. CONTRIBUTING says C's tap is Cancel on every screen with no exceptions.
+- `B CONFIRM` on the combat Exploit picker and the encounter, where B takes the chosen row
+  with no yes/no step. §4.2 reserves CONFIRM for an `InlineConfirm`.
+- The move picker's hold-B (show every move) is in no band, though it is no upgrade's.
+- CREW mixes the two faces' hint styles: the hub and the network picker use
+  `drawHackerHint`, the side roster and a crew's page use the pet face's `drawHintBand`.
+- The network picker's `HOME` tag sits on the line under its network's name with no gap.
+| `game_*` screens, `core/ui/*_screen.cpp`, `assets/VISUAL_LANGUAGE.md` §4.2. | S | A call
+on each word. |
+
 **Flag arguments still in use.** `Combat::begin`/`startWildCombat` (`forceEnemyFirst`),
 `endPvpSession` (`notify`), `startDecryption` (two bools), `startFeeding` (`fromLockout`),
 `ContentRegistry::daemonPool` (`badBranch`, where `CreatureBranch` exists) and

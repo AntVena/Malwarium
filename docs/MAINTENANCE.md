@@ -74,13 +74,13 @@ exception is the one to apply honestly: **count the `case` labels before grantin
 `switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
 length, and the two are indistinguishable by line count alone.
 
-### Design consistency pass. Last run: 2026-11-11
+### Design consistency pass. Last run: 2026-11-21
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
 `assets/CREATURE_VISUAL_RULES.md`) and against each other. Look for a screen that solves a
 problem differently from its siblings. Fix the standard to match reality, or if the drift looks
 like an undocumented real decision, surface it explicitly.
 
-### Screen separation pass. Last run: 2026-11-11
+### Screen separation pass. Last run: 2026-11-21
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
 stacks **multiple distinct row groups**, asking one question: can a reader tell where one group
 ends and the next begins, without reading the words?

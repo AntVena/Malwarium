@@ -595,8 +595,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits, const Yield
         }
     }
 
-    const char* hint = "B  OK";
-    drawHintBand(fb, hint);
+    drawHintBand(fb, "B CONTINUE");
 }
 
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v) {
