@@ -177,8 +177,10 @@ high→low value:
   tongue strike is a redraw, not a hand edit: neither frog has a mouth drawn at the front of its
   face to open or to throw a tongue from. Their idle, hop and hurt rows ship, so a swing holds
   the idle until then.
-- **Process alternates:** `SPR_PET_PHISHLET`, `SPR_PET_CIPHADPOLE`, `SPR_PET_PINGCUB`; **Boot L2:**
-  `SPR_PET_RINGWYRM`.
+- **`SPR_PET_PINGCUB`'s second idle frame**: it ships `▨` on one (ASSET_MANIFEST.md).
+- **`SPR_PET_CIPHADPOLE` (a Process alternate) and `SPR_PET_RINGWYRM` (a Boot-Sector L2)** have no
+  content row, so the row in their line's `line.h` comes first; art with no consumer parks in
+  `_attic/`.
 - **Optional polish:** `UI_RANK_BADGE`, `ICON_EVENT_WIFI`, drawn diamonds for `UI_DIFFICULTY_PIPS` (engine squares
   today), a boss-tell marker
   on the charge bar, a `UI_TITLE_TAG` badge, a `SPR_PET_*` attack-pose frame.
