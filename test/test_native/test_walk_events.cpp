@@ -467,7 +467,7 @@ void test_mod_shop_buy_gated_when_storage_full() {
     CHECK(g.modStorageCap() > cap);
     CHECK(g.shopListingHeldCap(row) == g.modStorageCap());
     CHECK(g.shopRowBuyable(row));
-    CHECK(std::strcmp(g.shopStatusLine(), "B TO BUY") == 0);
+    CHECK(std::strcmp(g.shopStatusLine(), "CAN BUY") == 0);
     g.onButton(press(Button::B));
     CHECK(g.modPool().countOf(id) == cap + 1);
     CHECK(g.storefrontVisit()->stock(row) == stock0 - 1);

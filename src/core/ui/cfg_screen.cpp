@@ -482,7 +482,7 @@ void drawSdFormatStatus(Framebuffer& fb, SdFormatState state, const SdStatus& sd
             drawText(fb, kMargin, 118, "RESEAT IT AND TRY AGAIN.", palColor(Pal::INK_DIM));
             break;
     }
-    drawHintBand(fb, "ANY BUTTON  BACK");
+    drawHintBand(fb, "ANY BUTTON");
 }
 
 // Switched on (`on`), and whether the arbiter granted it (`live`).

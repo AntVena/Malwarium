@@ -123,7 +123,7 @@ void LinkScreen::drawSession(Framebuffer& fb, const PvpSession& s) const {
             break;
         case PvpPhase::Result:
             // The verdict is a WORD, never a colour: it has to survive grayscale.
-            head = s.won ? "YOU WON" : "YOU LOST"; hint = "ANY KEY";
+            head = s.won ? "YOU WON" : "YOU LOST"; hint = "ANY BUTTON";
             break;
         case PvpPhase::Idle:
             break;

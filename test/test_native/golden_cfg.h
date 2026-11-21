@@ -48,7 +48,7 @@ static const GoldenStep kGolden_cfg[] = {
     {"format-sd", 3, 0, 0x57d1e14312df6645ull},
     {"press", 3, 0, 0x43c3cf4d0f2cb4d6ull},
     {"press", 3, 0, 0xa311459c3a99bd07ull},
-    {"formatted", 3, 0, 0xb9ef193a290863c3ull},
+    {"formatted", 3, 0, 0x6d3522ddbb26ba48ull},
     {"press", 3, 0, 0x2dbe7c4eb4880dc9ull},
     {"radio", 3, 0, 0x5c61d01242457946ull},
     {"press", 3, 0, 0x5020f66f683a3eb6ull},

@@ -990,11 +990,15 @@ constexpr int kShopRowPitch = 40;
 constexpr int kShopMaxRows = 3;
 
 // The row's full price as one line. Bits plus every extra item cost it carries
-// (an arbitrary-length list, not just Bits alone; docs/CONTENT_STANDARD.md).
+// (an arbitrary-length list, not just Bits alone; docs/CONTENT_STANDARD.md). It opens on
+// PAY and counts items as "20x", because a "+20" read as something the shop gives.
 void formatShopPrice(char* buf, size_t n, const ShopRowView& row) {
-    int off = std::snprintf(buf, n, "%dB", row.bitsPrice);
+    // A Bits price of 0 on a row that costs items is left out: "PAY 0B" is not a cost.
+    const bool bits = row.bitsPrice > 0 || row.costCount == 0;
+    int off = bits ? std::snprintf(buf, n, "PAY %dB", row.bitsPrice) : std::snprintf(buf, n, "PAY");
     for (int i = 0; i < row.costCount && off > 0 && static_cast<size_t>(off) < n; ++i)
-        off += std::snprintf(buf + off, n - off, " +%d %s", row.costQty[i], row.costName[i]);
+        off += std::snprintf(buf + off, n - off, "%s %dx %s", bits || i > 0 ? "," : "",
+                             row.costQty[i], row.costName[i]);
 }
 
 // The buy reason's own line, pinned just above the hint band. It is the VERDICT on the
@@ -1074,7 +1078,7 @@ void drawShop(Framebuffer& fb, const StorefrontView& v) {
 
     // Selected row's description + the buy-availability reason, spelled out so
     // both survive grayscale: "SOLD OUT" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" /
-    // "B TO BUY".
+    // "CAN BUY".
     // The description is a content row's own prose (core/content/content_*.cpp), far
     // wider than the 208px here, so it wraps into the band above kShopStatusY; the buy
     // reason takes that line whatever the prose ran to.

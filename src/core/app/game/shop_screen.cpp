@@ -30,7 +30,7 @@ const char* ShopScreen::statusLine(const ShopHost& host) const {
     const StorefrontVisit* visit = host.storefrontVisit();
     if (!visit || row_ < 0 || row_ >= visit->listingCount()) return "";
     const char* why = host.shopRowRefusal(row_);
-    return why ? why : "B TO BUY";
+    return why ? why : "CAN BUY";
 }
 
 void ShopScreen::draw(Framebuffer& fb, const ShopHost& host) const {

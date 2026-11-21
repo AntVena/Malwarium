@@ -204,7 +204,7 @@ void EggPickScreen::draw(Framebuffer& fb, const EggPickHost& host) const {
                  palColor(Pal::INK));
         drawText(fb, (kActiveW - textWidth(effect)) / 2, 186, effect,
                  p.won ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
-        const char* hint = "B CONTINUE   C DISABLED";
+        const char* hint = "B CONTINUE";
         drawText(fb, (kActiveW - textWidth(hint)) / 2, 204, hint, palColor(Pal::INK_DIM));
         return;
     }

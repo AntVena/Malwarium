@@ -152,7 +152,7 @@ void ArenaScreen::drawBracket(Framebuffer& fb, const ArenaHost& host) const {
                  palColor(Pal::INK_DIM));
         drawHintBand(fb, "A NEXT   B BOUT   C BACK");
     } else {
-        drawHintBand(fb, "ANY KEY");
+        drawHintBand(fb, "ANY BUTTON");
     }
 }
 

@@ -211,7 +211,7 @@ void drawDiskDecryption(Framebuffer& fb, const DiskDecryption& d, DecryptHints h
     drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,
              cracked ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
 
-    const char* hint = "B CONTINUE   C DISABLED";
+    const char* hint = "B CONTINUE";
     drawText(fb, (kActiveW - textWidth(hint)) / 2, kEffectY + 14, hint,
              palColor(Pal::INK_DIM));
 }

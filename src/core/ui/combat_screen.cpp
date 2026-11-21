@@ -1454,10 +1454,15 @@ void drawVsRow(PanelCursor& p, const SpriteData* glyph, Rgb565 glyphCol, const c
     if (p.full()) { ++p.dropped; return; }
     const int col2R = p.textR;                    // the rival's column, hard right
     const int col1R = p.textR - 9 * kFontAdvance; // ...and the local pet's
-    // The glyph names the row; the WORD is what draws when there is no art for it, so a
-    // missing master leaves a readable panel rather than a column of gaps.
-    if (glyph) drawSpriteTinted(p.fb, *glyph, 0, p.textX, p.y, glyphCol);
-    else drawText(p.fb, p.textX, p.y, label, palColor(Pal::INK_DIM));
+    // The glyph is the quick read and the WORD beside it is what makes the row readable
+    // to someone who has not learned the glyphs. Without art the word takes the glyph's
+    // place, so a missing master still leaves a labelled row.
+    int labelX = p.textX;
+    if (glyph) {
+        drawSpriteTinted(p.fb, *glyph, 0, p.textX, p.y, glyphCol);
+        labelX += glyph->frameW + 3;
+    }
+    drawText(p.fb, labelX, p.y, label, palColor(Pal::INK_DIM));
     // A dash, never a blank: a fighter that is not stunned and a stun the panel failed
     // to report must not look the same.
     const char* av = a[0] ? a : "-";

@@ -82,18 +82,20 @@ void MergeScreen::draw(Framebuffer& fb, const MergeHost& host) const {
         rowY += kLineH;
 
         if (sel) {
-            // One line per ingredient: name + have/need. Craftability reads without
-            // colour too: the fraction itself shows the shortfall (e.g. "0/1").
+            // One line per ingredient: name, then what the recipe needs and what the bag
+            // holds, each named. A bare "4/1" read as a fraction with the halves the wrong
+            // way round. Craftability reads without colour too: NEED above HAVE is the
+            // shortfall.
             for (const RecipeInput& in : r.inputs) {
                 if (!in.id) continue;
                 const ItemDef* def = host.content().item(in.id);
                 const int have = host.inventory().count(in.id);
-                char qty[12];
-                std::snprintf(qty, sizeof(qty), "%d/%d", have, in.qty);
+                char qty[24];
+                std::snprintf(qty, sizeof(qty), "NEED %d HAVE %d", in.qty, have);
                 drawLabelValue(fb, kIndent, rowY, def ? def->displayName : in.id,
                                palColor(Pal::INK_DIM), qty,
                                have >= in.qty ? palColor(Pal::INK) : palColor(Pal::WARN),
-                               host.screenBeat(), Overflow::Clip);
+                               host.screenBeat(), Overflow::Scroll);
                 rowY += kLineH;
             }
         } else if (owned) {
@@ -106,8 +108,8 @@ void MergeScreen::draw(Framebuffer& fb, const MergeHost& host) const {
                 ++total;
                 if (host.inventory().count(in.id) >= in.qty) ++satisfied;
             }
-            char stock[24];
-            std::snprintf(stock, sizeof(stock), "%d/%d STOCKED", satisfied, total);
+            char stock[32];
+            std::snprintf(stock, sizeof(stock), "HAVE %d OF %d INGREDIENTS", satisfied, total);
             drawText(fb, kIndent, rowY, stock,
                      satisfied == total ? palColor(Pal::INK_DIM) : palColor(Pal::WARN));
             rowY += kFontH + 3;   // tighter pitch than kLineH: a summary line, not a title

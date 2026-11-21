@@ -703,7 +703,7 @@ public:
     // purchase it drew as available, or take Bits for one it drew as refused.
     bool shopRowBuyable(int i) const;
     // ...and the same answer in WORDS for the SELECTED row: "SOLD OUT" /
-    // "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY". Spelled
+    // "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "CAN BUY". Spelled
     // out rather than coloured so the buy reason survives grayscale (the dual-coding
     // rule); the shop screen prints it verbatim.
     const char* shopStatusLine() const { return shop_.statusLine(*this); }

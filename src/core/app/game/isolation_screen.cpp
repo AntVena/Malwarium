@@ -113,7 +113,7 @@ void IsolationScreen::draw(Framebuffer& fb, const IsolationHost& host) const {
         drawText(fb, (kActiveW - textWidth(effect)) / 2, kEffectY, effect,
                  run.dots() > 0 ? palColor(Pal::ACCENT) : palColor(Pal::INK_DIM));
 
-        const char* hint = "B CONTINUE   C DISABLED";
+        const char* hint = "B CONTINUE";
         drawText(fb, (kActiveW - textWidth(hint)) / 2, kHintY, hint, palColor(Pal::INK_DIM));
         return;
     }

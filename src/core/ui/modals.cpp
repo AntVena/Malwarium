@@ -103,7 +103,7 @@ void drawEvolveModal(Framebuffer& fb, const EvolveView& v) {
     if (v.slotLine) drawCenteredText(fb, 180, v.slotLine, palColor(Pal::ACCENT));
 
     // UI_HINT_BAND: C is disabled here, so the deviation is surfaced.
-    drawCenteredText(fb, 200, "B CONTINUE   C DISABLED", palColor(Pal::INK_DIM));
+    drawCenteredText(fb, 200, "B CONTINUE", palColor(Pal::INK_DIM));
 }
 
 void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int beat) {
@@ -128,7 +128,7 @@ void drawCSFModal(Framebuffer& fb, const SpriteData* pet, CsfPhase phase, int be
     drawCenteredText(fb, 164, "ARCHIVED AS CORRUPTED.", palColor(Pal::INK_DIM));
 
     // UI_HINT_BAND: B acknowledges (once the crash has held); C is disabled.
-    drawCenteredText(fb, 200, phase == CsfPhase::Held ? "B ACKNOWLEDGE   C DISABLED" : "SYSTEM HALTING",
+    drawCenteredText(fb, 200, phase == CsfPhase::Held ? "B ACKNOWLEDGE" : "SYSTEM HALTING",
                      palColor(Pal::INK_DIM));
 }
 
@@ -243,7 +243,7 @@ void drawLockoutModal(Framebuffer& fb, const LockoutView& v) {
 
     // UI_HINT_BAND: C is disabled, so the deviation must be surfaced; and A is the
     // only way to the second row, so it is named too.
-    drawCenteredText(fb, 200, "A SWITCH B SELECT C DISABLED", palColor(Pal::INK_DIM));
+    drawCenteredText(fb, 200, "A SWITCH  B SELECT", palColor(Pal::INK_DIM));
 }
 
 }  // namespace mal

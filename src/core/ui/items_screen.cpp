@@ -640,7 +640,7 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v
         drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, v.count, scrollTop, kBulkVisibleRows);
     }
 
-    const char* hint = v.count > kBulkVisibleRows ? "A SCROLL  B/C OK" : "B/C  OK";
+    const char* hint = v.count > kBulkVisibleRows ? "A NEXT  B OK  C BACK" : "B OK  C BACK";
     drawHintBand(fb, hint);
 }
 

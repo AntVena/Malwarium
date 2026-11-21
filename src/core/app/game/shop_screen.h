@@ -50,7 +50,8 @@ public:
     void stepList(ShopHost& host, int dir);
     void draw(Framebuffer& fb, const ShopHost& host) const;
     // The till's answer for the focused row, spelled out so it survives grayscale:
-    // "SOLD OUT" / "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "B TO BUY".
+    // "SOLD OUT" / "STORAGE FULL" / "NOT ENOUGH BITS" / "NOT ENOUGH ITEMS" / "CAN BUY".
+    // A verdict rather than a prompt: the hint band already says B BUY.
     const char* statusLine(const ShopHost& host) const;
 
     int row() const { return row_; }
