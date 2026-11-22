@@ -12,84 +12,137 @@ namespace {
 // 4-byte magic ('M','A','L','1'): identifies a Malwarium save blob.
 constexpr uint8_t kMagic[4] = {'M', 'A', 'L', '1'};
 
-// --- Little-endian stream writer -------------------------------------------
+// --- The two directions of one stream ---------------------------------------
+// codec() below names every field once, in wire order, and runs over either of these.
+// Both offer the same verbs; a Writer emits the field it is handed, a Reader fills it.
+// `since(v)` asks whether the stream carries the tail a version added: always, when
+// writing the current version.
+
 struct Writer {
+    static constexpr bool kReading = false;
     std::vector<uint8_t>& out;
-    void u8(uint8_t v) { out.push_back(v); }
-    void u16(uint16_t v) {
-        out.push_back(static_cast<uint8_t>(v));
-        out.push_back(static_cast<uint8_t>(v >> 8));
+    bool ok = true;
+
+    bool since(uint16_t) const { return true; }
+
+    template <class T> void u8(const T& v) { out.push_back(static_cast<uint8_t>(v)); }
+    template <class T> void u16(const T& v) {
+        const uint16_t x = static_cast<uint16_t>(v);
+        out.push_back(static_cast<uint8_t>(x));
+        out.push_back(static_cast<uint8_t>(x >> 8));
     }
-    void u32(uint32_t v) {
-        for (int i = 0; i < 4; ++i) out.push_back(static_cast<uint8_t>(v >> (8 * i)));
+    template <class T> void u32(const T& v) {
+        const uint32_t x = static_cast<uint32_t>(v);
+        for (int i = 0; i < 4; ++i) out.push_back(static_cast<uint8_t>(x >> (8 * i)));
     }
-    void u64(uint64_t v) {
-        for (int i = 0; i < 8; ++i) out.push_back(static_cast<uint8_t>(v >> (8 * i)));
+    template <class T> void u64(const T& v) {
+        const uint64_t x = static_cast<uint64_t>(v);
+        for (int i = 0; i < 8; ++i) out.push_back(static_cast<uint8_t>(x >> (8 * i)));
     }
-    void i32(int32_t v) { u32(static_cast<uint32_t>(v)); }
-    void bytes(const char* p, int n) {
+    template <class T> void i32(const T& v) { u32(static_cast<int32_t>(v)); }
+    // A 48-bit key (a BSSID): the low u32, then the next u16.
+    void u48(const uint64_t& k) { u32(static_cast<uint32_t>(k)); u16(static_cast<uint16_t>(k >> 32)); }
+    // A fixed character cell, written whole.
+    void raw(const char* p, int n) {
         out.insert(out.end(), reinterpret_cast<const uint8_t*>(p),
                    reinterpret_cast<const uint8_t*>(p) + n);
     }
+    // A fixed character cell the reader terminates (every id and text field).
+    template <size_t N> void id(const char (&s)[N]) { raw(s, static_cast<int>(N)); }
+    // A byte kept only to hold its place in the stream.
+    void reserved8() { u8(0); }
+
+    // A u16 element count: the size of what is about to be written.
+    uint16_t count(size_t n) { u16(n); return static_cast<uint16_t>(n); }
+    // The elements of a run whose count went first (count above).
+    template <class V, class F> void fill(const V& v, uint16_t, F each) {
+        for (const auto& e : v) each(e);
+    }
+    // A length-prefixed run.
+    template <class V, class F> void list(const V& v, F each) { fill(v, count(v.size()), each); }
+    // A length-prefixed run over a fixed array.
+    template <class T, size_t N, class F> void row(const T (&a)[N], F each) {
+        count(N);
+        for (const T& e : a) each(e);
+    }
+    // A run parallel to the stored rack, one entry per rack pet in rack order.
+    template <class F> void rack(const std::vector<SaveStoredPet>& r, F each) { list(r, each); }
 };
 
-// --- Bounds-checked stream reader ------------------------------------------
+// Bounds-checked: a read past the end zeroes what it fills and clears `ok`, and every
+// run stops at the first failed read, so a corrupt count cannot grow a vector past
+// what the blob holds. deserializeSave rejects any stream that ends !ok.
 struct Reader {
+    static constexpr bool kReading = true;
     const uint8_t* p;
     size_t left;
+    uint16_t version;
     bool ok = true;
-    uint8_t u8() {
+
+    bool since(uint16_t v) const { return version >= v; }
+
+    uint8_t byte() {
         if (left < 1) { ok = false; return 0; }
         --left; return *p++;
     }
-    uint16_t u16() {
-        uint16_t lo = u8(), hi = u8();
-        return static_cast<uint16_t>(lo | (hi << 8));
-    }
-    uint32_t u32() {
+    uint16_t take16() { uint16_t lo = byte(), hi = byte(); return static_cast<uint16_t>(lo | (hi << 8)); }
+    uint32_t take32() {
         uint32_t v = 0;
-        for (int i = 0; i < 4; ++i) v |= static_cast<uint32_t>(u8()) << (8 * i);
+        for (int i = 0; i < 4; ++i) v |= static_cast<uint32_t>(byte()) << (8 * i);
         return v;
     }
-    uint64_t u64() {
+    uint64_t take64() {
         uint64_t v = 0;
-        for (int i = 0; i < 8; ++i) v |= static_cast<uint64_t>(u8()) << (8 * i);
+        for (int i = 0; i < 8; ++i) v |= static_cast<uint64_t>(byte()) << (8 * i);
         return v;
     }
-    int32_t i32() { return static_cast<int32_t>(u32()); }
-    void bytes(char* dst, int n) {
+
+    template <class T> void u8(T& v) { v = static_cast<T>(byte()); }
+    template <class T> void u16(T& v) { v = static_cast<T>(take16()); }
+    template <class T> void u32(T& v) { v = static_cast<T>(take32()); }
+    template <class T> void u64(T& v) { v = static_cast<T>(take64()); }
+    template <class T> void i32(T& v) { v = static_cast<T>(static_cast<int32_t>(take32())); }
+    void u48(uint64_t& k) {
+        k = take32();
+        k |= static_cast<uint64_t>(take16()) << 32;
+    }
+    void raw(char* dst, int n) {
         if (left < static_cast<size_t>(n)) { ok = false; std::memset(dst, 0, n); return; }
         std::memcpy(dst, p, n);
         p += n; left -= n;
     }
-};
+    template <size_t N> void id(char (&s)[N]) { raw(s, static_cast<int>(N)); s[N - 1] = '\0'; }
+    void reserved8() { byte(); }
 
-void writeStack(Writer& w, const SaveStack& s) {
-    w.bytes(s.id, kSaveIdCap);
-    w.i32(s.qty);
-}
-void writeId(Writer& w, const SaveId& s) { w.bytes(s.id, kSaveIdCap); }
-void writeLog(Writer& w, const SaveLogEntry& e) {
-    w.u8(e.type);
-    w.bytes(e.text, kSaveTextCap);
-}
-// A length-prefixed id run read into a fixed row of cells. Ids past the row's end are
-// consumed and dropped, and cells past the run's end stay empty.
-template <size_t N>
-void readIdRow(Reader& r, SaveId (&row)[N]) {
-    const uint16_t n = r.u16();
-    for (uint16_t i = 0; i < n && r.ok; ++i) {
-        SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-        if (i < N) row[i] = s;
+    uint16_t count(size_t) { return take16(); }
+    template <class V, class F> void fill(V& v, uint16_t n, F each) {
+        v.clear();
+        for (uint16_t i = 0; i < n && ok; ++i) {
+            typename V::value_type e{};
+            each(e);
+            v.push_back(e);
+        }
     }
-}
-void writeStored(Writer& w, const SaveStoredPet& p) {
-    w.bytes(p.id, kSaveIdCap);
-    w.i32(p.hunger); w.i32(p.frag); w.i32(p.happy);
-    w.i32(p.mistakes); w.i32(p.debuffs);
-    w.u8(p.ghost);
-    w.i32(p.generation);
-}
+    template <class V, class F> void list(V& v, F each) { fill(v, count(0), each); }
+    // Entries past the array are read and dropped; cells past the run stay as they were.
+    template <class T, size_t N, class F> void row(T (&a)[N], F each) {
+        const uint16_t n = count(0);
+        for (uint16_t i = 0; i < n && ok; ++i) {
+            if (i < N) { each(a[i]); continue; }
+            T spare{};
+            each(spare);
+        }
+    }
+    // Mapped onto the rack by index: an entry past the rack is read and dropped.
+    template <class F> void rack(std::vector<SaveStoredPet>& r, F each) {
+        const uint16_t n = count(0);
+        for (uint16_t i = 0; i < n && ok; ++i) {
+            if (i < r.size()) { each(r[i]); continue; }
+            SaveStoredPet spare;
+            each(spare);
+        }
+    }
+};
 
 // The retired-id table. Adding, flattening and retiring a row: save.h's `renamedIds`.
 // std::array rather than a plain C array so a zero-row table is still well-formed.
@@ -208,6 +261,336 @@ const LadderInsert* ladderInserts(int& count) {
     return kLadderInserts.data();
 }
 
+namespace {
+
+// v72's rack palates: a dictionary of every food any rack pet has eaten, then one bitset
+// per pet over it. The one tail whose two directions are different code: the writer
+// builds the dictionary, the reader expands it.
+void palates(Writer& w, const std::vector<SaveStoredPet>& rack) {
+    std::vector<const SaveId*> dict;
+    auto dictIndex = [&](const SaveId& s) -> int {
+        for (size_t i = 0; i < dict.size(); ++i)
+            if (std::strncmp(dict[i]->id, s.id, kSaveIdCap) == 0) return static_cast<int>(i);
+        return -1;
+    };
+    for (const SaveStoredPet& p : rack)
+        for (const SaveId& s : p.foodsEaten)
+            if (dictIndex(s) < 0) dict.push_back(&s);
+    w.count(dict.size());
+    for (const SaveId* s : dict) w.id(s->id);
+    w.count(rack.size());
+    for (const SaveStoredPet& p : rack) {
+        std::vector<uint8_t> bits((dict.size() + 7) / 8, 0);
+        for (const SaveId& s : p.foodsEaten) {
+            const int i = dictIndex(s);
+            bits[static_cast<size_t>(i) / 8] |= static_cast<uint8_t>(1u << (i % 8));
+        }
+        w.list(bits, [&](uint8_t b) { w.u8(b); });
+    }
+}
+
+void palates(Reader& r, std::vector<SaveStoredPet>& rack) {
+    std::vector<SaveId> dict;
+    r.list(dict, [&](SaveId& s) { r.id(s.id); });
+    const uint16_t nPal = r.count(0);
+    for (uint16_t i = 0; i < nPal && r.ok; ++i) {
+        const uint16_t nBytes = r.count(0);
+        for (uint16_t b = 0; b < nBytes && r.ok; ++b) {
+            const uint8_t byte = r.byte();
+            for (int bit = 0; bit < 8; ++bit) {
+                const size_t k = static_cast<size_t>(b) * 8 + bit;
+                if (((byte >> bit) & 1) && k < dict.size() && i < rack.size())
+                    rack[i].foodsEaten.push_back(dict[k]);
+            }
+        }
+    }
+}
+
+// --- The format ---------------------------------------------------------------
+// One function, so each tail's fields are written and read by the same lines and the two
+// directions cannot drift. `D` is `const SaveData` when writing and `SaveData` when
+// reading; the few places the directions genuinely differ say so with `IO::kReading`.
+//
+// THE STREAM IS APPEND-ONLY. Every field a later version adds goes on the end behind
+// its own `since(N)`, and nothing mid-stream is ever removed: a retired field keeps its
+// bytes (a reserved byte, an empty run) so every older reader still finds what follows.
+// kOldestAcceptedVersion is 53, so every tail up to v53 is in every accepted blob and
+// carries no gate.
+//
+// The active pet's and the Operator's fields go where each version first put them,
+// not in records of their own: see SaveData::active and SaveOperator.
+template <class IO, class D>
+void codec(IO& io, D& d) {
+    auto& a = d.active;
+    auto& armed = d.activeArmed;
+    auto& op = d.op;
+    auto idCell = [&](auto& s) { io.id(s.id); };
+    auto u8 = [&](auto& v) { io.u8(v); };
+    auto u16 = [&](auto& v) { io.u16(v); };
+    auto i32 = [&](auto& v) { io.i32(v); };
+
+    // v1: the active pet, the operator, the bag, the mod spares, the slots, the log and
+    // the rack's records.
+    io.id(a.id);
+    io.i32(a.hunger); io.i32(a.frag); io.i32(a.happy);
+    io.i32(a.mistakes); io.i32(a.debuffs);
+    io.u8(a.ghost);
+    io.u32(a.timeInStageMs);
+    io.i32(a.generation);
+    io.i32(op.bits);
+    io.id(op.hackerTag);
+    io.u32(op.lifetimeUptimeMs);
+    io.u32(op.lifetimeSteps);
+    io.i32(op.petsRaised);
+    io.list(d.items, [&](auto& s) { io.id(s.id); io.i32(s.qty); });
+    // The pre-v45 spare pool, one id cell per COPY. Game::captureSave leaves it empty
+    // (the pool ships as ownedModCounts in the v45 tail), but the run keeps its place.
+    io.list(op.ownedMods, idCell);
+    io.row(a.equippedMods, idCell);
+    io.list(d.log, [&](auto& e) { io.u8(e.type); io.id(e.text); });
+    io.list(op.rack, [&](auto& p) {
+        io.id(p.id);
+        io.i32(p.hunger); io.i32(p.frag); io.i32(p.happy);
+        io.i32(p.mistakes); io.i32(p.debuffs);
+        io.u8(p.ghost);
+        io.i32(p.generation);
+    });
+
+    // v2: the move loadout and combat XP/level.
+    io.list(a.ownedMoves, idCell);
+    io.row(a.equippedMoves, idCell);
+    io.i32(a.combatXp);
+    io.i32(a.combatLevel);
+
+    // v3: the ARCH records (RETIRED/CORRUPTED).
+    io.list(op.records, [&](auto& rec) { io.id(rec.id); io.u8(rec.status); io.i32(rec.generation); });
+
+    // v4: Hacker Rank.
+    io.i32(op.networksSeen);
+    io.i32(op.hackerRank);
+    // v5, v6: the audit scan and capture toggles.
+    io.u8(d.settings.netScanEnabled);
+    io.u8(d.auditCaptureEnabled);
+    // v7: the SHAKES ledger's save-blob fallback and the lifetime handshake count. Each
+    // BSSID is a 48-bit key.
+    io.i32(op.handshakesSeen);
+    io.list(d.seenHandshakeBssids, [&](auto& k) { io.u48(k); });
+    // v8: the EXPL sector-clear flags.
+    io.list(op.sectorCleared, u8);
+    // v9: the Boot-Sector incubation clock.
+    io.u32(a.bootHatchRemainMs);
+    // v10: the zone Titles: unlocked mask and equipped index.
+    io.u32(op.titlesUnlocked);
+    io.i32(op.equippedTitle);
+    // v11: the creature-level stat points.
+    io.row(a.statPoints, i32);
+    // v12, v13: the per-area boss unlocks, and the per-sub-area clear and boss bitmasks.
+    io.list(op.bossUnlocked, u8);
+    io.list(op.subCleared, u8);
+    io.list(op.subBossUnlocked, u8);
+    // v14: screen brightness.
+    io.i32(d.settings.brightness);
+    // v15: the per-sub-area re-farm win counts, flat row-major.
+    io.list(armed.subRefarm, u16);
+    // v16: the defrag tally, the active pet's then the rack's.
+    io.i32(a.defragCount);
+    io.rack(op.rack, [&](auto& p) { io.i32(p.defragCount); });
+    // v17 carries no bytes: the version alone says `ownedMods` excludes the equipped mods.
+    if constexpr (IO::kReading) op.hasPermanentModData = true;
+    // v18: the per-spare equip-level gates, parallel to ownedMods. Empty from v45 on.
+    io.list(op.ownedModReqLevels, i32);
+    if constexpr (IO::kReading) op.hasModEquipLevelData = io.ok;
+    // v19 to v23: the SHOP's account upgrades, the AP toggle, the per-pet shield and
+    // once-per-life gates, and the SHOP's one-time unlocks.
+    io.i32(op.bwUpgradeCount);
+    io.u8(d.settings.apEnabled);
+    io.u8(a.shieldActive);
+    io.u8(a.shieldSpent);
+    io.u8(a.yubiSpent);
+    io.u8(op.fragAmountTier);
+    io.u8(op.fragTriggerTier);
+    io.u8(op.itemTabsUnlocked);
+    io.u8(op.bulkOpenUnlocked);
+    // v24: the per-slot Attack/Defend typing. Unset slots are re-derived on load
+    // (Game::stampSlotKinds).
+    io.row(a.slotKinds, u8);
+    // v25: the 'Pedia reveal state. The u32 achievements mask is superseded by the v40
+    // bitset; Game::applySave reads it only when that is absent.
+    io.list(op.seenCreatures, idCell);
+    io.u16(op.malbeastSeen);
+    io.u16(op.malbeastDefeated);
+    io.u32(op.achievementsMask);
+    // v26: the rack's level, XP, stat points and slot typing.
+    io.rack(op.rack, [&](auto& p) {
+        io.i32(p.combatLevel);
+        io.i32(p.combatXp);
+        for (auto& v : p.statPoints) io.i32(v);
+        for (auto& k : p.slotKinds) io.u8(k);
+    });
+    // v27: the rig-upgrade levels.
+    io.i32(op.rackSlotUpgradeCount);
+    io.i32(op.scrapingClusterLevel);
+    io.i32(op.dataMiningLevel);
+    // v28: the Ambig-USB divert.
+    io.u8(armed.trojanDivert);
+    // v29: the rack's move and mod loadouts.
+    io.rack(op.rack, [&](auto& p) {
+        io.list(p.ownedMoves, idCell);
+        for (auto& m : p.equippedMoves) io.id(m.id);
+        for (auto& m : p.equippedMods) io.id(m.id);
+    });
+    // v30: the Backup Drive's deadline.
+    io.u32(armed.backupShieldUntilMs);
+    // v31: the Merge Hub. The recipe u32 is the first four bytes of the v51 bitset.
+    io.u8(op.mergeHubUnlocked);
+    io.u32(op.recipesUnlocked);
+    // v32: Rig Shop rows beyond the first 11.
+    io.list(op.rigLevelsExt, u16);
+    // v34: the rack's in-stage clocks.
+    io.rack(op.rack, [&](auto& p) { io.u32(p.timeInStageMs); });
+    // v35: the deepest DeepWeb Dive, the active pet's then the rack's.
+    io.i32(a.bestDeepWebDepth);
+    io.rack(op.rack, [&](auto& p) { io.i32(p.bestDeepWebDepth); });
+    // v36: the crew and its home network. Raw cells: the reader keeps all their bytes.
+    io.raw(op.crewId, kSaveIdCap);
+    io.u64(op.homeNetworkKey);
+    io.raw(op.homeNetworkName, kSaveNetNameCap);
+    // v37: the LINK opt-in.
+    io.u8(d.settings.linkEnabled);
+    // v38: reserved. Read and never acted on: a save that still carries the old internet
+    // opt-in must not put this device back on the 'net.
+    io.reserved8();
+    // v39: the raised-species tally. Game::applySave unions in every species the rest of
+    // the save points at.
+    io.list(op.raisedCreatures, idCell);
+    // v40: the achievement bitsets and counters, and the per-species dive depths as
+    // parallel id and depth runs. Game::applySave migrates a blob without them.
+    io.list(op.achievementEarned, u8);
+    io.list(op.achievementNotified, u8);
+    io.i32(op.bossWins);
+    io.list(op.collectedItems, idCell);
+    {
+        const uint16_t n = io.count(op.speciesDiveIds.size());
+        io.fill(op.speciesDiveIds, n, idCell);
+        io.fill(op.speciesDiveDepths, n, i32);
+    }
+    // v42: the 5/5 window already burned, the active pet's then the rack's.
+    io.u32(a.dyingElapsedMs);
+    io.rack(op.rack, [&](auto& p) { io.u32(p.dyingElapsedMs); });
+    // v44: Stacker boards cleared by hand.
+    io.i32(op.stackerWins);
+    // v45: the counted mod pool, a nibble per ModDef::wire. Without it the loader tallies
+    // the flat v1 `ownedMods` list instead.
+    io.list(op.ownedModCounts, u8);
+    if constexpr (IO::kReading) op.hasModCountData = io.ok;
+    // v47: the arcade's per-cabinet tallies, as parallel id, plays and wins runs.
+    {
+        const uint16_t n = io.count(op.arcadeIds.size());
+        io.fill(op.arcadeIds, n, idCell);
+        io.fill(op.arcadePlays, n, i32);
+        io.fill(op.arcadeWins, n, i32);
+    }
+    // v48: the DECRYPTOGRAM's per-quote state, two bits per QuoteDef::wire.
+    io.list(op.quoteStates, u8);
+    // v50: the Bandwidth-regen grant, the active pet's then the rack's.
+    io.i32(a.bandwidthRegenBonusMin);
+    io.rack(op.rack, [&](auto& p) { io.i32(p.bandwidthRegenBonusMin); });
+    // v51: the whole owned-recipe bitset.
+    io.list(op.recipeOwned, u8);
+    // v53: ROCK THE DOCK's run: the seed the bracket derives from, and what it cannot.
+    io.u32(d.tourney.seed);
+    io.u8(d.tourney.alive);
+    io.u8(d.tourney.round);
+    io.u8(d.tourney.phase);
+
+    // Every tail from here is absent from a blob older than the version that added it,
+    // and reads back as the SaveData default.
+    if (io.since(55)) io.list(op.arcadeBest, i32);   // positional with v47's arcadeIds
+    if (io.since(56)) {
+        io.i32(op.tourneyWins);
+        io.i32(op.pvpWins);
+        io.i32(op.mergesCooked);
+    }
+    if (io.since(57)) {   // the off-level stat points and XP rate an Epic dish grants
+        for (auto& v : a.statBonus) io.i32(v);
+        io.i32(a.xpRateBonusPct);
+        io.rack(op.rack, [&](auto& p) {
+            for (auto& v : p.statBonus) io.i32(v);
+            io.i32(p.xpRateBonusPct);
+        });
+    }
+    if (io.since(58)) io.u8(op.backgroundPick);
+    if (io.since(59)) {   // the CANT
+        io.u32(op.cantSigils);
+        io.i32(op.shakesSpent);
+    }
+    if (io.since(60)) {   // the USB port
+        io.u8(a.usbBranch);
+        io.u8(a.usbSoak);
+        io.u8(a.usbHold);
+        // A MULTIPLIER on both the evolution dwell and every XP award, so a 0 from a
+        // damaged blob would stop the pet learning anything at all.
+        if constexpr (IO::kReading)
+            if (a.usbSoak < 1) a.usbSoak = 1;
+    }
+    if (io.since(61)) io.u32(op.rigServicesOff);
+    if (io.since(62)) io.list(a.foodsEaten, idCell);
+    if (io.since(63)) io.i32(a.bestDarkWebDepth);
+    if (io.since(64)) io.id(d.settings.theme);   // by NAME; Game::load resolves it
+    if (io.since(65)) io.list(op.storyRead, u8);
+    if (io.since(66)) io.list(op.tipsSeen, u8);
+    if (io.since(67)) {
+        io.u8(d.settings.uiMode);
+        io.u8(d.settings.careAlerts);
+    }
+    if (io.since(68)) {
+        io.u8(d.settings.soundMode);
+        io.u8(d.settings.volume);
+    }
+    if (io.since(69)) io.u32(op.rigServicesAsk);
+    if (io.since(71)) io.u8(d.settings.exploreSound);
+    if (io.since(72)) {   // favourite dishes, and the rack's palates
+        io.id(a.favouriteFood);
+        io.u8(a.favouriteFound);
+        io.rack(op.rack, [&](auto& p) {
+            io.id(p.favouriteFood);
+            io.u8(p.favouriteFound);
+        });
+        palates(io, op.rack);
+    }
+    if (io.since(74)) {   // Bond, the active pet's then the rack's
+        for (auto& bp : a.bondBp) io.u16(bp);
+        io.rack(op.rack, [&](auto& p) { for (auto& bp : p.bondBp) io.u16(bp); });
+    }
+    if (io.since(75)) {   // the rack's remaining kept fields
+        io.rack(op.rack, [&](auto& p) {
+            io.i32(p.bestDarkWebDepth);
+            io.u8(p.shieldActive);
+            io.u8(p.shieldSpent);
+            io.u8(p.yubiSpent);
+            io.u8(p.usbBranch);
+            io.u8(p.usbSoak);
+            io.u8(p.usbHold);
+            io.u32(p.bootHatchRemainMs);
+        });
+    }
+    if (io.since(76)) {   // the build that wrote this, and the FRESH PATCH deadline
+        io.u32(d.firmwareCode);
+        io.u32(armed.patchBuffUntilMs);
+    }
+    if (io.since(77)) io.u8(op.autoProgress);
+    if (io.since(78)) {   // the DIVE PREP loadout
+        io.u8(op.diveAutoRedive);
+        io.u8(op.diveBellKind);
+        io.id(op.diveBellItem.id);
+        io.u8(op.diveDeviceKind);
+        io.id(op.diveDeviceItem.id);
+    }
+    if (io.since(79)) io.u8(op.useEncounterBypass);
+}
+
+}  // namespace
+
 void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     // Empty the buffer without giving its memory back: a caller that hands the same
     // buffer to every save (Game::persistSave) then writes each one into an allocation
@@ -223,467 +606,9 @@ void serializeSaveInto(const SaveData& d, std::vector<uint8_t>& out) {
     out.clear();
     if (out.capacity() < kSaveReserveBytes) out.reserve(kSaveReserveBytes);
     Writer w{out};
-    w.bytes(reinterpret_cast<const char*>(kMagic), 4);
+    w.raw(reinterpret_cast<const char*>(kMagic), 4);
     w.u16(kSaveVersion);
-
-    // The active pet's and the Operator's fields go where each version first put them,
-    // not in records of their own: see SaveData::active and SaveOperator.
-    const SaveStoredPet& a = d.active;
-    const SaveArmedPet& armed = d.activeArmed;
-    const SaveOperator& op = d.op;
-    w.bytes(a.id, kSaveIdCap);
-    w.i32(a.hunger); w.i32(a.frag); w.i32(a.happy);
-    w.i32(a.mistakes); w.i32(a.debuffs);
-    w.u8(a.ghost);
-    w.u32(a.timeInStageMs);
-    w.i32(a.generation);
-
-    w.i32(op.bits);
-    w.bytes(op.hackerTag, kHackerTagMax + 1);
-    w.u32(op.lifetimeUptimeMs);
-    w.u32(op.lifetimeSteps);
-    w.i32(op.petsRaised);
-
-    w.u16(static_cast<uint16_t>(d.items.size()));
-    for (const auto& s : d.items) writeStack(w, s);
-    // The pre-v45 spare pool: one id cell per COPY. captureSave stopped filling it at
-    // v45 (the pool ships as ownedModCounts in the v45 tail), so from here it always
-    // writes a count of zero, but it still WRITES, because this format is append-only
-    // and every position in it is load-bearing. Deleting a field mid-stream would
-    // desync a v45 blob from the layout every older version's reader expects, which is
-    // exactly what the migration tests forge by stamping the version word down.
-    w.u16(static_cast<uint16_t>(op.ownedMods.size()));
-    for (const auto& m : op.ownedMods) writeId(w, m);
-    w.u16(static_cast<uint16_t>(kModSlots));
-    for (const SaveId& e : a.equippedMods) writeId(w, e);
-    w.u16(static_cast<uint16_t>(d.log.size()));
-    for (const auto& e : d.log) writeLog(w, e);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) writeStored(w, p);
-
-    // v2: the move loadout + combat XP/level (appended after the v1 stream).
-    w.u16(static_cast<uint16_t>(a.ownedMoves.size()));
-    for (const auto& m : a.ownedMoves) writeId(w, m);
-    w.u16(static_cast<uint16_t>(kMaxMoveSlots));
-    for (const SaveId& e : a.equippedMoves) writeId(w, e);
-    w.i32(a.combatXp);
-    w.i32(a.combatLevel);
-
-    // v3: the ARCH records (RETIRED/CORRUPTED), appended after the v2 tail.
-    w.u16(static_cast<uint16_t>(op.records.size()));
-    for (const auto& rec : op.records) {
-        w.bytes(rec.id, kSaveIdCap);
-        w.u8(rec.status);
-        w.i32(rec.generation);
-    }
-
-    // v4: Hacker Rank; networks-seen + the rank. The dedup pool byte this slot used
-    // to carry was removed as of v33 (see save.h): a v33+ writer never emits it.
-    w.i32(op.networksSeen);
-    w.i32(op.hackerRank);
-
-    // v5: Audit-mode passive-scan runtime toggle.
-    w.u8(d.settings.netScanEnabled);
-
-    // v6: Audit-mode handshake-capture runtime toggle.
-    w.u8(d.auditCaptureEnabled);
-
-    // v7: the real-radio Audit SHAKES ledger + the lifetime handshake count. Each
-    // BSSID is a 48-bit key (low u32 + mid u16). (The sibling NETS/seenBssids vector
-    // this tail used to carry was removed as of v33: see save.h.)
-    w.i32(op.handshakesSeen);
-    w.u16(static_cast<uint16_t>(d.seenHandshakeBssids.size()));
-    for (uint64_t k : d.seenHandshakeBssids) {
-        w.u32(static_cast<uint32_t>(k));
-        w.u16(static_cast<uint16_t>(k >> 32));
-    }
-
-    // v8: the EXPL sector-clear flags (one byte per sector), length-prefixed.
-    w.u16(static_cast<uint16_t>(op.sectorCleared.size()));
-    for (uint8_t c : op.sectorCleared) w.u8(c);
-
-    // v9: the Boot-Sector incubation timer (remaining decrypt clock).
-    w.u32(a.bootHatchRemainMs);
-
-    // v10: the zone-completion Titles. Unlocked bitmask + equipped index.
-    w.u32(op.titlesUnlocked);
-    w.i32(op.equippedTitle);
-
-    // v11: the creature-level stat points, length-prefixed so the count is
-    // self-describing (kLevelStatCount today). Sum equals combatLevel (the invariant).
-    w.u16(static_cast<uint16_t>(kLevelStatCount));
-    for (int32_t p : a.statPoints) w.i32(p);
-
-    // v12: the EXPL per-sector boss-unlock flags, length-prefixed.
-    w.u16(static_cast<uint16_t>(op.bossUnlocked.size()));
-    for (uint8_t b : op.bossUnlocked) w.u8(b);
-
-    // v13: the EXPL per-sub-area clear + boss-unlock bitmasks. One byte per
-    // area (bit s = sub-area s), each length-prefixed.
-    w.u16(static_cast<uint16_t>(op.subCleared.size()));
-    for (uint8_t b : op.subCleared) w.u8(b);
-    w.u16(static_cast<uint16_t>(op.subBossUnlocked.size()));
-    for (uint8_t b : op.subBossUnlocked) w.u8(b);
-
-    // v14: the CFG screen-brightness level.
-    w.i32(d.settings.brightness);
-
-    // v15: the EXPL per-sub-area re-farm win counts, length-prefixed
-    // (flat row-major), each a u16 count.
-    w.u16(static_cast<uint16_t>(armed.subRefarm.size()));
-    for (uint16_t c : armed.subRefarm) w.u16(c);
-
-    // v16: the per-pet defrag count. The active pet's tally, then a parallel
-    // length-prefixed list of the rack pets' tallies (same order as op.rack), so the
-    // count survives ARCH freeze/thaw without touching the mid-stream rack records.
-    w.i32(a.defragCount);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) w.i32(p.defragCount);
-
-    // v18: the per-spare rolled equip-level gates, parallel to ownedMods. Empty from
-    // v45 on (the roll is gone), and written for the same append-only reason as the
-    // list it parallels.
-    w.u16(static_cast<uint16_t>(op.ownedModReqLevels.size()));
-    for (int32_t lvl : op.ownedModReqLevels) w.i32(lvl);
-
-    // v19: the Hacker SHOP account upgrades. One i32 for now: the
-    // "Increase Bandwidth" purchase count. Appended, so a v18 reader ignores it.
-    w.i32(op.bwUpgradeCount);
-
-    // v20: the 'Pedia local-AP runtime toggle. Appended, so a
-    // v19 reader ignores it; a pre-v20 blob reads back as OFF.
-    w.u8(d.settings.apEnabled);
-
-    // v21: the per-pet care-mistake shield + once-per-lifetime item gates, and the
-    // shop-pre-alloc fragAmountTier. Appended, so a v20 reader ignores it. (The full
-    // 64-bit dedup mask this tail used to carry was removed as of v33: see save.h.)
-    w.u8(a.shieldActive);
-    w.u8(a.shieldSpent);
-    w.u8(a.yubiSpent);
-    w.u8(op.fragAmountTier);
-
-    // v22: the c "Reduce Explore Frag TRIGGER %" tier. Appended, so a v21
-    // reader ignores it; a pre-v22 blob reads back as 0.
-    w.u8(op.fragTriggerTier);
-
-    // v23: the d/e one-time Hacker-SHOP unlocks. Appended, so a v22 reader
-    // ignores them; a pre-v23 blob reads back as both false.
-    w.u8(op.itemTabsUnlocked);
-    w.u8(op.bulkOpenUnlocked);
-
-    // v24: the move-slot rework's per-pet Attack/Defend slot typing,
-    // length-prefixed like statPoints. Appended, so a v23 reader ignores it.
-    w.u16(static_cast<uint16_t>(kMaxMoveSlots));
-    for (uint8_t k : a.slotKinds) w.u8(k);
-
-    // v25: the web-'Pedia reveal-state bookkeeping; seenCreatures (length-prefixed,
-    // like ownedMods) and the malbeast seen/defeated bitmasks. Appended, so a v24 reader
-    // ignores it.
-    w.u16(static_cast<uint16_t>(op.seenCreatures.size()));
-    for (const auto& s : op.seenCreatures) writeId(w, s);
-    w.u16(op.malbeastSeen);
-    w.u16(op.malbeastDefeated);
-    // The v25 achievements u32, SUPERSEDED as of v40 by the wire-indexed bitset in the
-    // v40 tail. The four bytes stay on the wire because the field is mid-stream:
-    // dropping it would shift every later field and break reading as an earlier
-    // version. Nothing mid-stream is ever removed. The codec still round-trips
-    // whatever it is handed (a faithful codec is the easier thing to reason about); it
-    // is Game::captureSave that stopped filling it in, and Game::applySave that only
-    // consults it when the v40 bitset is absent.
-    w.u32(op.achievementsMask);
-
-    // v26: per-stored-pet creature-level state, parallel to op.rack (mirrors
-    // defragCount's v16 pattern) so a rack pet's level/stat points/slot typing
-    // survive an ARCH Store/Deploy cycle instead of being silently dropped.
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) {
-        w.i32(p.combatLevel);
-        w.i32(p.combatXp);
-        for (int i = 0; i < kLevelStatCount; ++i) w.i32(p.statPoints[i]);
-        for (int i = 0; i < kMaxMoveSlots; ++i) w.u8(p.slotKinds[i]);
-    }
-
-    // v27: the Hacker-SHOP rig-upgrade levels. Appended, so a v26 reader
-    // ignores them; a pre-v27 blob reads back as all 0 (none bought).
-    w.i32(op.rackSlotUpgradeCount);
-    w.i32(op.scrapingClusterLevel);
-    w.i32(op.dataMiningLevel);
-
-    // v28: the Ambig-USB armed Trojan-divert flag. Appended, so a v27 reader
-    // ignores it; a pre-v28 blob reads back as false (no divert armed).
-    w.u8(armed.trojanDivert);
-
-    // v29: per-stored-pet move + mod loadout, parallel to op.rack (mirrors v26's
-    // pattern) so a rack pet's MOVES/MODS state survives an ARCH Store/Deploy cycle.
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) {
-        w.u16(static_cast<uint16_t>(p.ownedMoves.size()));
-        for (const auto& m : p.ownedMoves) writeId(w, m);
-        for (int i = 0; i < kMaxMoveSlots; ++i) writeId(w, p.equippedMoves[i]);
-        for (int i = 0; i < kModSlots; ++i) writeId(w, p.equippedMods[i]);
-    }
-
-    // v30: the Backup Drive combat-shield buff's armed-until deadline.
-    w.u32(armed.backupShieldUntilMs);
-
-    // v31: the f Hacker-SHOP Merge Hub unlocks. Appended, so a v30 reader
-    // ignores them; a pre-v31 blob reads back as both 0 (bought neither).
-    w.u8(op.mergeHubUnlocked);
-    w.u32(op.recipesUnlocked);
-
-    // v32: Rig Shop rows beyond the legacy 11 (rigLevelsExt). Appended, so a v31
-    // reader ignores them; a pre-v32 blob reads back empty (those rows unbought).
-    w.u16(static_cast<uint16_t>(op.rigLevelsExt.size()));
-    for (uint16_t lvl : op.rigLevelsExt) w.u16(lvl);
-
-    // v34: per-stored-pet evolution-timer elapsed-in-stage, parallel to op.rack
-    // (mirrors defragCount's v16 pattern) so it survives an ARCH Store/Deploy cycle.
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) w.u32(p.timeInStageMs);
-
-    // v35: this pet's own best-ever DeepWeb Dive depth. The active pet's tally,
-    // then a parallel list mapped onto op.rack by index (mirrors defragCount's v16
-    // pattern) so it survives an ARCH Store/Deploy cycle.
-    w.i32(a.bestDeepWebDepth);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) w.i32(p.bestDeepWebDepth);
-
-    // v36: the Hacker CREW allegiance + the home network it hangs off. Player-level;
-    // the crew rides as its content ID so the table can be reordered.
-    w.bytes(op.crewId, kSaveIdCap);
-    w.u64(op.homeNetworkKey);
-    w.bytes(op.homeNetworkName, kSaveNetNameCap);
-
-    // v37: the pet-to-pet LINK opt-in. The met operators live in the SD-backed
-    // PeerLedger; only the consent bit is here.
-    w.u8(d.settings.linkEnabled ? 1 : 0);
-
-    // v38: reserved. Always 0: the standing internet opt-in it held is gone, and
-    // the byte only survives to keep the v39+ tail aligned (see save.h).
-    w.u8(0);
-
-    // v39: the raised-species tally, length-prefixed like seenCreatures.
-    w.u16(static_cast<uint16_t>(op.raisedCreatures.size()));
-    for (const auto& s : op.raisedCreatures) writeId(w, s);
-
-    // v40: the achievement bitsets (indexed by wire number, length-prefixed so the
-    // catalogue can grow without another version) + the counters the countable rows are
-    // measured against.
-    w.u16(static_cast<uint16_t>(op.achievementEarned.size()));
-    for (uint8_t b : op.achievementEarned) w.u8(b);
-    w.u16(static_cast<uint16_t>(op.achievementNotified.size()));
-    for (uint8_t b : op.achievementNotified) w.u8(b);
-    w.i32(op.bossWins);
-    w.u16(static_cast<uint16_t>(op.collectedItems.size()));
-    for (const auto& s : op.collectedItems) writeId(w, s);
-    // Parallel id/depth lists: same shape the rack's parallel tails use, so the ids stay
-    // a plain SaveId run and the depths a plain i32 run.
-    w.u16(static_cast<uint16_t>(op.speciesDiveIds.size()));
-    for (const auto& s : op.speciesDiveIds) writeId(w, s);
-    for (int32_t v : op.speciesDiveDepths) w.i32(v);
-
-    // v42: time already burned in the 5/5 recovery window, so neither a power cycle
-    // nor an ARCH freeze can refund it. Awake-ms only; save.h's version note explains
-    // why for a board with no RTC. The active pet's value, then a parallel list
-    // mapped onto op.rack by index.
-    w.u32(a.dyingElapsedMs);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) w.u32(p.dyingElapsedMs);
-
-    // v44: Stacker boards cleared by hand, lifetime.
-    w.i32(op.stackerWins);
-
-    // v45: the owned-mod spare pool, a nibble of COUNT per ModDef::wire. Length-prefixed
-    // like the achievement masks, and for the same reason: the array is only as long as
-    // the highest wire actually held, so a roster that grows doesn't lengthen the saves
-    // of players who own none of the new rows, and a longer array from a later build
-    // reads back into a shorter view as "not held" rather than as a corrupt stream.
-    w.u16(static_cast<uint16_t>(op.ownedModCounts.size()));
-    for (uint8_t b : op.ownedModCounts) w.u8(b);
-
-    // v47: the arcade's per-cabinet tallies, as parallel id/plays/wins runs (the
-    // speciesDive shape) so the GAMES roster stays free to reorder.
-    w.u16(static_cast<uint16_t>(op.arcadeIds.size()));
-    for (const auto& s : op.arcadeIds) writeId(w, s);
-    for (int32_t v : op.arcadePlays) w.i32(v);
-    for (int32_t v : op.arcadeWins) w.i32(v);
-
-    // v48: the DECRYPTOGRAM per-quote state, two bits per QuoteDef::wire. Length-
-    // prefixed at its full in-memory width, like the v40 achievement bitsets: a pool
-    // that grows into spare capacity needs no save change at all.
-    w.u16(static_cast<uint16_t>(op.quoteStates.size()));
-    for (uint8_t b : op.quoteStates) w.u8(b);
-
-    // v50: the per-pet Bandwidth-regen upgrade. The active pet's minutes, then a
-    // parallel list mapped onto the rack by index (the v42 dying-window shape).
-    w.i32(a.bandwidthRegenBonusMin);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) w.i32(p.bandwidthRegenBonusMin);
-
-    // v51: the whole owned-recipe bitset, length-prefixed like the v40 achievement
-    // masks. Its first four bytes are also written above as the v31 u32, so a reader
-    // that stops at v50 still gets the recipes it can name.
-    w.u16(static_cast<uint16_t>(op.recipeOwned.size()));
-    for (uint8_t b : op.recipeOwned) w.u8(b);
-
-    // v53: ROCK THE DOCK's run in play. The seed the whole bracket is derived from, plus
-    // the three bytes of state that seed cannot express (who is still standing, which
-    // round, and the verdict of a finished run the operator has yet to dismiss).
-    w.u32(d.tourney.seed);
-    w.u8(d.tourney.alive);
-    w.u8(d.tourney.round);
-    w.u8(d.tourney.phase);
-
-    // v55: the arcade's per-cabinet high score, in the same order as the v47 arcadeIds
-    // run above. Its own tail rather than a fourth column up there, so a pre-v55 build
-    // reading this blob still finds the trio where it expects them and simply stops
-    // before this.
-    w.u16(static_cast<uint16_t>(op.arcadeBest.size()));
-    for (int32_t v : op.arcadeBest) w.i32(v);
-
-    // v56: the three lifetime tallies the achievement board's newest ladders read.
-    // Brackets taken, duels won, dishes cooked. Its own tail after v55's, so the two
-    // stay independently skippable by a build that predates either.
-    w.i32(op.tourneyWins);
-    w.i32(op.pvpWins);
-    w.i32(op.mergesCooked);
-
-    // v57: the rest of the per-pet Epic-dish grants. The active pet's off-level stat
-    // points and XP rate, then the same pair per rack pet, mapped by index. The v50 tail
-    // above carries the first of these grants and is left exactly as it was, so a build
-    // that stops at v56 still reads every field it knows.
-    for (int32_t v : a.statBonus) w.i32(v);
-    w.i32(a.xpRateBonusPct);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const auto& p : op.rack) {
-        for (int32_t v : p.statBonus) w.i32(v);
-        w.i32(p.xpRateBonusPct);
-    }
-
-    // v58: the chosen background, as its own wire number. One byte, and its own tail,
-    // which backgrounds are OWNED is derived from the rest of this blob rather than
-    // written beside it.
-    w.u8(op.backgroundPick);
-
-    // v59: the CANT. The learned-sigil mask and the shakes paid for it. Its own tail
-    // after v58's, so a build that stops at either still reads every field it knows.
-    w.u32(op.cantSigils);
-    w.i32(op.shakesSpent);
-
-    // v60: the USB port's three per-pet slots. The forced evolution branch, the armed
-    // soak factor and the evolution hold. Its own tail after v59's, so a build that stops
-    // at either still reads every field it knows.
-    w.u8(a.usbBranch);
-    w.u8(a.usbSoak);
-    w.u8(a.usbHold);
-
-    // v61: which owned SERVICE rows are stopped, as one bit per rig row. Its own tail
-    // after v60's, so a build that stops at either still reads every field it knows.
-    w.u32(op.rigServicesOff);
-
-    // v62: the active pet's tasted set, a length-prefixed SaveId run like every other id
-    // list here. Its own tail after v61's.
-    w.u16(static_cast<uint16_t>(a.foodsEaten.size()));
-    for (const auto& s : a.foodsEaten) writeId(w, s);
-
-    // v63: this pet's deepest DARKWEB CRAWL. Its own tail after v62's, so a build that
-    // stops at either still reads every field it knows.
-    w.i32(a.bestDarkWebDepth);
-
-    // v64: the chosen PAL_CORE theme, by NAME, in a fixed kSaveIdCap cell like every
-    // other id here. Its own tail after v63's.
-    w.bytes(d.settings.theme, kSaveIdCap);
-
-    // v65: the STORY chapters already shown, as a length-prefixed bitset over
-    // StoryChapterDef::wire. Its own tail after v64's.
-    w.u16(static_cast<uint16_t>(op.storyRead.size()));
-    for (uint8_t b : op.storyRead) w.u8(b);
-
-    // v66: the onboarding tips already shown, as a length-prefixed bitset over
-    // Game::Tip. Its own tail after v65's.
-    w.u16(static_cast<uint16_t>(op.tipsSeen.size()));
-    for (uint8_t b : op.tipsSeen) w.u8(b);
-
-    // v67: UI MODE and CARE ALERTS, a byte each. Their own tail after v66's.
-    w.u8(d.settings.uiMode);
-    w.u8(d.settings.careAlerts);
-
-    // v68
-    w.u8(d.settings.soundMode);
-    w.u8(d.settings.volume);
-
-    // v69: the askable services set to ASK. Its own tail after v68's.
-    w.u32(op.rigServicesAsk);
-
-    // v71
-    w.u8(d.settings.exploreSound);
-
-    // v72: the favourite dish (the active pet's, then the rack's in rack order), and
-    // the rack's palates as a food-id dictionary plus a bitset per pet over it.
-    w.bytes(a.favouriteFood, kSaveIdCap);
-    w.u8(a.favouriteFound);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const SaveStoredPet& p : op.rack) {
-        w.bytes(p.favouriteFood, kSaveIdCap);
-        w.u8(p.favouriteFound);
-    }
-    std::vector<const SaveId*> dict;
-    auto dictIndex = [&](const SaveId& s) -> int {
-        for (size_t i = 0; i < dict.size(); ++i)
-            if (std::strncmp(dict[i]->id, s.id, kSaveIdCap) == 0) return static_cast<int>(i);
-        return -1;
-    };
-    for (const SaveStoredPet& p : op.rack)
-        for (const SaveId& s : p.foodsEaten)
-            if (dictIndex(s) < 0) dict.push_back(&s);
-    w.u16(static_cast<uint16_t>(dict.size()));
-    for (const SaveId* s : dict) writeId(w, *s);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const SaveStoredPet& p : op.rack) {
-        std::vector<uint8_t> bits((dict.size() + 7) / 8, 0);
-        for (const SaveId& s : p.foodsEaten) {
-            const int i = dictIndex(s);
-            bits[static_cast<size_t>(i) / 8] |= static_cast<uint8_t>(1u << (i % 8));
-        }
-        w.u16(static_cast<uint16_t>(bits.size()));
-        for (uint8_t b : bits) w.u8(b);
-    }
-
-    // v74: Bond, the active pet's then the rack's in rack order.
-    for (uint16_t bp : a.bondBp) w.u16(bp);
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const SaveStoredPet& p : op.rack)
-        for (uint16_t bp : p.bondBp) w.u16(bp);
-
-    // v75: the rack's remaining kept fields, in rack order.
-    w.u16(static_cast<uint16_t>(op.rack.size()));
-    for (const SaveStoredPet& p : op.rack) {
-        w.i32(p.bestDarkWebDepth);
-        w.u8(p.shieldActive);
-        w.u8(p.shieldSpent);
-        w.u8(p.yubiSpent);
-        w.u8(p.usbBranch);
-        w.u8(p.usbSoak);
-        w.u8(p.usbHold);
-        w.u32(p.bootHatchRemainMs);
-    }
-
-    // v76: the build that wrote this, and the active pet's FRESH PATCH deadline.
-    w.u32(d.firmwareCode);
-    w.u32(armed.patchBuffUntilMs);
-
-    // v77: the walk's AUTO switch.
-    w.u8(op.autoProgress);
-
-    // v78: the DIVE PREP loadout.
-    w.u8(op.diveAutoRedive);
-    w.u8(op.diveBellKind);
-    writeId(w, op.diveBellItem);
-    w.u8(op.diveDeviceKind);
-    writeId(w, op.diveDeviceItem);
-
-    // v79: the walk's SINKHOLES switch.
-    w.u8(op.useEncounterBypass);
+    codec(w, d);
 }
 
 std::vector<uint8_t> serializeSave(const SaveData& d) {
@@ -695,11 +620,8 @@ std::vector<uint8_t> serializeSave(const SaveData& d) {
 bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     out = SaveData{};  // default = empty on any failure
     if (blob.size() < 6) return false;
-    Reader r{blob.data(), blob.size()};
-    char magic[4];
-    r.bytes(magic, 4);
-    if (!r.ok || std::memcmp(magic, kMagic, 4) != 0) { out = SaveData{}; return false; }
-    const uint16_t version = r.u16();
+    if (std::memcmp(blob.data(), kMagic, 4) != 0) return false;
+    const uint16_t version = static_cast<uint16_t>(blob[4] | (blob[5] << 8));
     // Accept every version still in support, in BOTH directions.
     //
     // Older is the easy half (forward-compat): a v(N-1) blob simply lacks the newer
@@ -713,731 +635,15 @@ bool deserializeSave(const std::vector<uint8_t>& blob, SaveData& out) {
     // understand and ignoring a tail we don't loses only what the newer build added,
     // which is the worst a rollback should ever cost.
     //
-    // What that rests on: THE STREAM IS APPEND-ONLY. Every field a later version adds
-    // goes on the end behind its own `version >= N` gate, and a field that retires keeps
-    // being consumed behind a `version < N` gate (see the v33 and v45 tails). A version
-    // that inserts or drops a field mid-stream breaks this and must raise
-    // kOldestAcceptedVersion instead. `r.ok` is the backstop either way: a stream that
-    // desyncs runs short and is rejected below.
-    if (version < kOldestAcceptedVersion) {
-        out = SaveData{};
-        return false;
-    }
+    // What that rests on is codec()'s append-only rule. A version that inserts or drops
+    // a field mid-stream breaks it and must raise kOldestAcceptedVersion instead. `ok` is
+    // the backstop either way: a stream that desyncs runs short and is rejected below.
+    if (version < kOldestAcceptedVersion) return false;
 
     SaveData d;
-    SaveStoredPet& a = d.active;
-    SaveArmedPet& armed = d.activeArmed;
-    SaveOperator& op = d.op;
-    r.bytes(a.id, kSaveIdCap);
-    a.id[kSaveIdCap - 1] = '\0';
-    a.hunger = r.i32(); a.frag = r.i32(); a.happy = r.i32();
-    a.mistakes = r.i32(); a.debuffs = r.i32();
-    a.ghost = r.u8();
-    a.timeInStageMs = r.u32();
-    a.generation = r.i32();
-
-    op.bits = r.i32();
-    r.bytes(op.hackerTag, kHackerTagMax + 1);
-    op.hackerTag[kHackerTagMax] = '\0';
-    op.lifetimeUptimeMs = r.u32();
-    op.lifetimeSteps = r.u32();
-    op.petsRaised = r.i32();
-
-    const uint16_t nItems = r.u16();
-    for (uint16_t i = 0; i < nItems && r.ok; ++i) {
-        SaveStack s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-        s.qty = r.i32(); d.items.push_back(s);
-    }
-    // The pre-v45 spare pool: one id cell per COPY. A v45 blob carries a count of zero
-    // here and its pool in the v45 tail instead; anything older carries the real list,
-    // which is what the migration tallies.
-    const uint16_t nOwned = r.u16();
-    for (uint16_t i = 0; i < nOwned && r.ok; ++i) {
-        SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
-        op.ownedMods.push_back(m);
-    }
-    readIdRow(r, a.equippedMods);
-    const uint16_t nLog = r.u16();
-    for (uint16_t i = 0; i < nLog && r.ok; ++i) {
-        SaveLogEntry e; e.type = r.u8();
-        r.bytes(e.text, kSaveTextCap); e.text[kSaveTextCap - 1] = '\0';
-        d.log.push_back(e);
-    }
-    const uint16_t nRack = r.u16();
-    for (uint16_t i = 0; i < nRack && r.ok; ++i) {
-        SaveStoredPet p; r.bytes(p.id, kSaveIdCap); p.id[kSaveIdCap - 1] = '\0';
-        p.hunger = r.i32(); p.frag = r.i32(); p.happy = r.i32();
-        p.mistakes = r.i32(); p.debuffs = r.i32();
-        p.ghost = r.u8();
-        p.generation = r.i32();
-        op.rack.push_back(p);
-    }
-
-    // v2 tail: the move loadout + combat XP/level. Absent in a v1 blob: the owned list
-    // stays empty, which Pet::thawed reads as a pet with no move state.
-    if (version >= 2) {
-        const uint16_t nOwnedMv = r.u16();
-        for (uint16_t i = 0; i < nOwnedMv && r.ok; ++i) {
-            SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
-            a.ownedMoves.push_back(m);
-        }
-        readIdRow(r, a.equippedMoves);
-        a.combatXp = r.i32();
-        a.combatLevel = r.i32();
-    }
-
-    // v3 tail: the ARCH records. Absent in a v1/v2 blob (records stay empty).
-    if (version >= 3) {
-        const uint16_t nRec = r.u16();
-        for (uint16_t i = 0; i < nRec && r.ok; ++i) {
-            SaveRecord rec; r.bytes(rec.id, kSaveIdCap); rec.id[kSaveIdCap - 1] = '\0';
-            rec.status = r.u8();
-            rec.generation = r.i32();
-            op.records.push_back(rec);
-        }
-    }
-
-    // v4 tail: Hacker Rank. Absent in a v1/v2/v3 blob (starts at rank 0 with no
-    // networks seen).
-    if (version >= 4) {
-        op.networksSeen = r.i32();
-        op.hackerRank = r.i32();
-    }
-
-    // v5 tail: the Audit-mode passive-scan toggle. Absent in a v1..v4 blob. It
-    // stays OFF (the authorized-use default: a migrated save never silently
-    // enables the radio).
-    if (version >= 5) {
-        d.settings.netScanEnabled = r.u8();
-    }
-
-    // v6 tail: the Audit-CAPTURE toggle. Absent in a v1..v5 blob. It stays OFF
-    // (authorized-use default: a migrated save never silently arms capture).
-    if (version >= 6) {
-        d.auditCaptureEnabled = r.u8();
-    }
-
-    // v7 tail: the real-radio Audit SHAKES ledger + lifetime handshake count.
-    // Absent in a v1..v6 blob. The ledger stays empty (the pre-v7 behaviour: a
-    // reboot re-builds the dedup set from scratch, which could re-count).
-    if (version >= 7) {
-        op.handshakesSeen = r.i32();
-        const uint16_t nHs = r.u16();
-        for (uint16_t i = 0; i < nHs && r.ok; ++i) {
-            uint64_t k = r.u32();
-            k |= static_cast<uint64_t>(r.u16()) << 32;
-            d.seenHandshakeBssids.push_back(k);
-        }
-    }
-
-    // v8 tail: the EXPL sector-clear flags. Absent in a v1..v7 blob: the vector
-    // stays empty, which the loader reads as "nothing cleared" (only sector 0 is
-    // open, the correct default for a save that predates linear gating).
-    if (version >= 8) {
-        const uint16_t nSec = r.u16();
-        for (uint16_t i = 0; i < nSec && r.ok; ++i)
-            op.sectorCleared.push_back(r.u8());
-    }
-
-    // v9 tail: the Boot-Sector incubation timer. Absent in a v1..v8 blob. It stays
-    // 0 (the migrated pet is treated as already hatched: no in-flight egg to resume).
-    if (version >= 9) {
-        a.bootHatchRemainMs = r.u32();
-    }
-
-    // v10 tail: the zone-completion Titles. Absent in a v1..v9 blob: nothing
-    // unlocked, none equipped (a save that predates Titles has earned none).
-    if (version >= 10) {
-        op.titlesUnlocked = r.u32();
-        op.equippedTitle = r.i32();
-    }
-
-    // v11 tail: the creature-level stat points. Every accepted blob has it.
-    if (version >= 11) {
-        const uint16_t nStat = r.u16();
-        for (uint16_t i = 0; i < nStat && r.ok; ++i) {
-            const int32_t v = r.i32();
-            if (i < kLevelStatCount) a.statPoints[i] = v;
-        }
-    }
-
-    // v12 tail: the EXPL per-sector boss-unlock flags. Absent in a v1..v11 blob:
-    // bossUnlocked stays empty, so the loader migrates each flag from
-    // sectorCleared[] (a cleared sector's boss was already beaten).
-    if (version >= 12) {
-        const uint16_t nBoss = r.u16();
-        for (uint16_t i = 0; i < nBoss && r.ok; ++i)
-            op.bossUnlocked.push_back(r.u8());
-    }
-
-    // v13 tail: the EXPL per-sub-area clear + boss-unlock bitmasks. Absent in
-    // a v1..v12 blob: both vectors stay empty, so the loader migrates a cleared area
-    // to all 5 sub-areas cleared + unlocked (a beaten area had every sub-area beaten).
-    if (version >= 13) {
-        const uint16_t nSubC = r.u16();
-        for (uint16_t i = 0; i < nSubC && r.ok; ++i)
-            op.subCleared.push_back(r.u8());
-        const uint16_t nSubB = r.u16();
-        for (uint16_t i = 0; i < nSubB && r.ok; ++i)
-            op.subBossUnlocked.push_back(r.u8());
-    }
-
-    // v14 tail: the CFG screen-brightness level. Absent in a v1..v13 blob:
-    // d.settings.brightness keeps its kBrightnessDefault default from SaveSettings.
-    if (version >= 14) {
-        const int32_t b = r.i32();
-        if (r.ok) d.settings.brightness = b;
-    }
-
-    // v15 tail: the EXPL per-sub-area re-farm win counts. Absent in a
-    // v1..v14 blob: subRefarm stays empty, which the loader reads as "nothing
-    // depleted yet" (every count 0 → full drops until re-farmed).
-    if (version >= 15) {
-        const uint16_t nRf = r.u16();
-        for (uint16_t i = 0; i < nRf && r.ok; ++i)
-            armed.subRefarm.push_back(r.u16());
-    }
-
-    // v16 tail: the per-pet defrag counts. The active pet's tally + a
-    // parallel list mapped back onto the rack pets by index. Absent in a v1..v15 blob:
-    // every tally stays 0 (a migrated save's pets read as never-defragged).
-    if (version >= 16) {
-        a.defragCount = r.i32();
-        const uint16_t nDc = r.u16();
-        for (uint16_t i = 0; i < nDc && r.ok; ++i) {
-            const int32_t c = r.i32();
-            if (i < op.rack.size()) op.rack[i].defragCount = c;
-        }
-    }
-
-    // v17: no wire tail. The version alone flags the permanent-mod semantics, so
-    // the loader knows `ownedMods` already excludes the equipped mods (no migration).
-    if (version >= 17) op.hasPermanentModData = true;
-
-    // v18 tail: the per-spare mod equip-level gates, parallel to ownedMods. v45 dropped
-    // the rolled gate, so from that version on this reads back empty and the levels a
-    // migrating blob does carry are discarded once the copies are tallied.
-    if (version >= 18) {
-        const uint16_t nReq = r.u16();
-        for (uint16_t i = 0; i < nReq && r.ok; ++i)
-            op.ownedModReqLevels.push_back(r.i32());
-        op.hasModEquipLevelData = r.ok;
-    }
-
-    // v19 tail: the Hacker SHOP account upgrades. Absent in a v1..v18 blob:
-    // bwUpgradeCount stays 0 (a migrated save has bought no upgrades).
-    if (version >= 19) op.bwUpgradeCount = r.i32();
-
-    // v20 tail: the 'Pedia local-AP toggle. Absent in a v1..v19 blob → stays OFF.
-    if (version >= 20) d.settings.apEnabled = r.u8();
-
-    // v21 tail: the per-pet care-mistake shield + once-per-lifetime item gates, and
-    // the shop-pre-alloc fragAmountTier. Absent in a v1..v20 blob → the per-pet flags
-    // stay 0 (no shield, neither item consumed) and fragAmountTier 0.
-    if (version >= 21) {
-        a.shieldActive = r.u8();
-        a.shieldSpent = r.u8();
-        a.yubiSpent = r.u8();
-        op.fragAmountTier = r.u8();
-    }
-
-    // v22 tail: the c "Reduce Explore Frag TRIGGER %" tier. Absent in a
-    // v1..v21 blob → stays 0 (baseline trigger chance).
-    if (version >= 22) op.fragTriggerTier = r.u8();
-
-    // v23 tail: the d/e one-time Hacker-SHOP unlocks. Absent in a v1..v22
-    // blob → both stay 0 (a migrated save has bought neither).
-    if (version >= 23) {
-        op.itemTabsUnlocked = r.u8();
-        op.bulkOpenUnlocked = r.u8();
-    }
-
-    // v24 tail: the move-slot rework's per-pet Attack/Defend slot typing. Absent in a
-    // v1..v23 blob: every slot stays Unset, and Game::stampSlotKinds() re-derives it
-    // from the loaded pet's CreatureDef::slotKinds (a deterministic migration).
-    if (version >= 24) {
-        const uint16_t nSk = r.u16();
-        for (uint16_t i = 0; i < nSk && r.ok; ++i) {
-            const uint8_t k = r.u8();
-            if (i < kMaxMoveSlots) a.slotKinds[i] = k;
-        }
-    }
-
-    // v25 tail: the web-'Pedia reveal-state bookkeeping. Absent in a v1..v24 blob:
-    // seenCreatures stays empty and both masks stay 0 (nothing glimpsed or achieved
-    // yet).
-    if (version >= 25) {
-        const uint16_t nSeen = r.u16();
-        for (uint16_t i = 0; i < nSeen && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            op.seenCreatures.push_back(s);
-        }
-        op.malbeastSeen = r.u16();
-        op.malbeastDefeated = r.u16();
-        // The superseded v25 achievements u32 (see the writer). A v25..v39 blob carries
-        // real bits here, which Game::applySave migrates into the v40 bitset; a v40+ blob
-        // carries 0 and the bitset in its own tail takes over.
-        op.achievementsMask = r.u32();
-    }
-
-    // v26 tail: per-stored-pet creature-level state, parallel to op.rack. Absent in a
-    // v1..v25 blob. Every rack pet keeps its SaveStoredPet default (level 0, all-Unset
-    // slots): no level history was ever recorded for a stored pet before this version.
-    if (version >= 26) {
-        const uint16_t nLv = r.u16();
-        for (uint16_t i = 0; i < nLv && r.ok; ++i) {
-            const int32_t lvl = r.i32();
-            const int32_t xp = r.i32();
-            int32_t stats[kLevelStatCount];
-            for (int j = 0; j < kLevelStatCount; ++j) stats[j] = r.i32();
-            uint8_t slots[kMaxMoveSlots];
-            for (int j = 0; j < kMaxMoveSlots; ++j) slots[j] = r.u8();
-            if (i < op.rack.size()) {
-                op.rack[i].combatLevel = lvl;
-                op.rack[i].combatXp = xp;
-                for (int j = 0; j < kLevelStatCount; ++j) op.rack[i].statPoints[j] = stats[j];
-                for (int j = 0; j < kMaxMoveSlots; ++j) op.rack[i].slotKinds[j] = slots[j];
-            }
-        }
-    }
-
-    // v27 tail: the Hacker-SHOP rig-upgrade levels. Absent in a v1..v26 blob
-    // → all three stay 0 (a migrated save has bought none).
-    if (version >= 27) {
-        op.rackSlotUpgradeCount = r.i32();
-        op.scrapingClusterLevel = r.i32();
-        op.dataMiningLevel = r.i32();
-    }
-
-    // v28 tail: the Ambig-USB armed Trojan-divert flag. Absent in a v1..v27 blob →
-    // stays false (no divert armed).
-    if (version >= 28) armed.trojanDivert = r.u8();
-
-    // v29 tail: per-stored-pet move + mod loadout, parallel to op.rack. Absent in a
-    // v1..v28 blob: every rack pet keeps its SaveStoredPet default (empty
-    // ownedMoves/equippedMoves/equippedMods), which Game::archDeployStored reads as
-    // "no data" and re-seeds from the pet's line, same as a pre-v2 active pet did.
-    if (version >= 29) {
-        const uint16_t nRackLoadouts = r.u16();
-        for (uint16_t i = 0; i < nRackLoadouts && r.ok; ++i) {
-            std::vector<SaveId> owned;
-            const uint16_t nOwnedMv = r.u16();
-            for (uint16_t j = 0; j < nOwnedMv && r.ok; ++j) {
-                SaveId m; r.bytes(m.id, kSaveIdCap); m.id[kSaveIdCap - 1] = '\0';
-                owned.push_back(m);
-            }
-            SaveId equippedMoves[kMaxMoveSlots];
-            for (int j = 0; j < kMaxMoveSlots; ++j) {
-                r.bytes(equippedMoves[j].id, kSaveIdCap);
-                equippedMoves[j].id[kSaveIdCap - 1] = '\0';
-            }
-            SaveId equippedMods[kModSlots];
-            for (int j = 0; j < kModSlots; ++j) {
-                r.bytes(equippedMods[j].id, kSaveIdCap);
-                equippedMods[j].id[kSaveIdCap - 1] = '\0';
-            }
-            if (i < op.rack.size()) {
-                op.rack[i].ownedMoves = std::move(owned);
-                for (int j = 0; j < kMaxMoveSlots; ++j)
-                    op.rack[i].equippedMoves[j] = equippedMoves[j];
-                for (int j = 0; j < kModSlots; ++j) op.rack[i].equippedMods[j] = equippedMods[j];
-            }
-        }
-    }
-
-    // v30 tail: the Backup Drive combat-shield buff's armed-until deadline. Absent in
-    // a v1..v29 blob → stays 0 (no shield armed).
-    if (version >= 30) armed.backupShieldUntilMs = r.u32();
-
-    // v31 tail: the f Hacker-SHOP Merge Hub unlocks. Absent in a v1..v30 blob →
-    // both stay 0 (a migrated save has bought neither the Hub nor any recipe).
-    if (version >= 31) {
-        op.mergeHubUnlocked = r.u8();
-        op.recipesUnlocked = r.u32();
-    }
-
-    // v32 tail: Rig Shop rows beyond the legacy 11 (rigLevelsExt). Absent in a
-    // v1..v31 blob → stays empty (those rows read back as never bought).
-    if (version >= 32) {
-        const uint16_t nRig = r.u16();
-        for (uint16_t i = 0; i < nRig && r.ok; ++i)
-            op.rigLevelsExt.push_back(r.u16());
-    }
-
-    // v34 tail: per-stored-pet evolution-timer elapsed-in-stage, parallel to op.rack.
-    // Absent in a v1..v33 blob → every rack pet keeps its SaveStoredPet default (0),
-    // so a migrated save's stored pets thaw with a fresh in-stage clock (the old
-    // Deploy behavior), not lost progress.
-    if (version >= 34) {
-        const uint16_t nTs = r.u16();
-        for (uint16_t i = 0; i < nTs && r.ok; ++i) {
-            const uint32_t t = r.u32();
-            if (i < op.rack.size()) op.rack[i].timeInStageMs = t;
-        }
-    }
-
-    // v35 tail: this pet's own best-ever DeepWeb Dive depth. The active pet's
-    // tally + a parallel list mapped back onto the rack pets by index. Absent in a
-    // v1..v34 blob → every pet reads back as 0 (never dived).
-    if (version >= 35) {
-        a.bestDeepWebDepth = r.i32();
-        const uint16_t nBd = r.u16();
-        for (uint16_t i = 0; i < nBd && r.ok; ++i) {
-            const int32_t v = r.i32();
-            if (i < op.rack.size()) op.rack[i].bestDeepWebDepth = v;
-        }
-    }
-
-    // v36 tail: crew allegiance + home network. Absent in a v1..v35 blob → the operator
-    // reads back unaffiliated with no home network designated.
-    if (version >= 36) {
-        r.bytes(op.crewId, kSaveIdCap);
-        op.homeNetworkKey = r.u64();
-        r.bytes(op.homeNetworkName, kSaveNetNameCap);
-    }
-
-    // v37 tail: the LINK opt-in. Absent in a v1..v36 blob → off, so an upgraded
-    // device never starts announcing itself.
-    if (version >= 37) d.settings.linkEnabled = r.u8() != 0;
-
-    // v38 tail: reserved. Read to advance the cursor, never acted on: a save that
-    // still carries the old opt-in must not put this device back on the 'net.
-    if (version >= 38) r.u8();
-
-    // v39 tail: the raised-species tally. Absent in a v1..v38 blob: it reads back
-    // empty here, and Game::applySave rebuilds what it can by unioning in every
-    // species the save still points at. That recovery lives there rather than in this
-    // codec because it is the same union a NATIVE v39 save needs (anything in the
-    // rack or the archive was necessarily raised, however the blob came to say so).
-    if (version >= 39) {
-        const uint16_t nRaised = r.u16();
-        for (uint16_t i = 0; i < nRaised && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            op.raisedCreatures.push_back(s);
-        }
-    }
-
-    // v40 tail: the achievement bitsets + their counters. Absent in a v1..v39 blob. All
-    // four read back empty here, and Game::applySave does the migration: the legacy u32
-    // mask becomes the first bytes of `achievementEarned` (the original 14 rows hold wire
-    // numbers 0-13), nothing is marked notified, and the counters are seeded from what
-    // the rest of the save can honestly account for.
-    if (version >= 40) {
-        const uint16_t nEarned = r.u16();
-        for (uint16_t i = 0; i < nEarned && r.ok; ++i)
-            op.achievementEarned.push_back(r.u8());
-        const uint16_t nNotified = r.u16();
-        for (uint16_t i = 0; i < nNotified && r.ok; ++i)
-            op.achievementNotified.push_back(r.u8());
-        op.bossWins = r.i32();
-        const uint16_t nColl = r.u16();
-        for (uint16_t i = 0; i < nColl && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            op.collectedItems.push_back(s);
-        }
-        const uint16_t nDive = r.u16();
-        for (uint16_t i = 0; i < nDive && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            op.speciesDiveIds.push_back(s);
-        }
-        for (uint16_t i = 0; i < nDive && r.ok; ++i)
-            op.speciesDiveDepths.push_back(r.i32());
-    }
-
-    // v42 tail: the 5/5 recovery window already burned. The active pet's, then a
-    // parallel list mapped back onto the rack pets by index. Absent in a v1..v41 blob
-    // → 0 for every pet, so a migrating save enters its next dying window with the
-    // full grace period. That is the forgiving reading, and the only one a save that
-    // never recorded the figure can support.
-    if (version >= 42) {
-        a.dyingElapsedMs = r.u32();
-        const uint16_t nDy = r.u16();
-        for (uint16_t i = 0; i < nDy && r.ok; ++i) {
-            const uint32_t v = r.u32();
-            if (i < op.rack.size()) op.rack[i].dyingElapsedMs = v;
-        }
-    }
-
-    // v44 tail: the played-defrag tally. Absent in a v1..v43 blob → 0, which starts the
-    // ladder fresh. Deliberately NOT seeded from `defragCount`: that counts defrags of
-    // every variant, so seeding from it would credit bought and rolled cleans as boards
-    // played by hand; over-crediting, the direction a migration must never take.
-    if (version >= 44) op.stackerWins = r.i32();
-
-    // v45 tail: the counted mod pool. Absent in a v1..v44 blob → the array stays empty
-    // and hasModCountData false, which is what routes the loader onto the migration that
-    // tallies the old flat `ownedMods` list instead.
-    if (version >= 45) {
-        const uint16_t nCounts = r.u16();
-        for (uint16_t i = 0; i < nCounts && r.ok; ++i) op.ownedModCounts.push_back(r.u8());
-        op.hasModCountData = r.ok;
-    }
-
-    // v47 tail: the arcade tallies. Absent in a v1..v46 blob → empty, and every
-    // cabinet reads as never played. There is nothing older to seed them from, and
-    // inventing one would credit runs that never happened.
-    if (version >= 47) {
-        const uint16_t nCab = r.u16();
-        for (uint16_t i = 0; i < nCab && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            op.arcadeIds.push_back(s);
-        }
-        for (uint16_t i = 0; i < nCab && r.ok; ++i) op.arcadePlays.push_back(r.i32());
-        for (uint16_t i = 0; i < nCab && r.ok; ++i) op.arcadeWins.push_back(r.i32());
-    }
-
-    // v48 tail: the per-quote board state. Absent in a v1..v47 blob → empty, and every
-    // quote reads as never played. There is nothing older to seed it from, so no quote
-    // starts solved.
-    if (version >= 48) {
-        const uint16_t nQuote = r.u16();
-        for (uint16_t i = 0; i < nQuote && r.ok; ++i) op.quoteStates.push_back(r.u8());
-    }
-
-    // v50 tail: the Bandwidth-regen upgrade. The active pet's, then a parallel list
-    // mapped back onto the rack pets by index. Absent in a v1..v49 blob → 0 for every
-    // pet, which is the truth rather than a compromise: no dish granted it before v50.
-    if (version >= 50) {
-        a.bandwidthRegenBonusMin = r.i32();
-        const uint16_t nBw = r.u16();
-        for (uint16_t i = 0; i < nBw && r.ok; ++i) {
-            const int32_t v = r.i32();
-            if (i < op.rack.size()) op.rack[i].bandwidthRegenBonusMin = v;
-        }
-    }
-
-    // v51 tail: the whole owned-recipe bitset.
-    if (version >= 51) {
-        const uint16_t nRecipe = r.u16();
-        for (uint16_t i = 0; i < nRecipe && r.ok; ++i) op.recipeOwned.push_back(r.u8());
-    }
-
-    // v53 tail: ROCK THE DOCK's run. Absent in a v1..v52 blob → a zero seed, meaning
-    // no bracket in play. No migration is needed.
-    if (version >= 53) {
-        d.tourney.seed = r.u32();
-        d.tourney.alive = r.u8();
-        d.tourney.round = r.u8();
-        d.tourney.phase = r.u8();
-    }
-
-    // v55 tail: the per-cabinet high score, positionally matched to the v47 arcadeIds
-    // run. Absent in a v1..v54 blob → empty, and every cabinet reads as never scored.
-    // There is nothing older to seed it from: a win tally says a run was good enough,
-    // never how good, so inventing a best out of one would be a number nobody played.
-    if (version >= 55) {
-        const uint16_t nBest = r.u16();
-        for (uint16_t i = 0; i < nBest && r.ok; ++i) op.arcadeBest.push_back(r.i32());
-    }
-
-    // v56 tail: the three lifetime tallies. Absent in a v1..v55 blob → 0 apiece, and
-    // there is deliberately no migration: a dismissed bracket, a finished duel and an
-    // eaten dish all leave nothing behind for an older save to be read back from, so a
-    // seeded number here would be invented rather than recovered.
-    if (version >= 56) {
-        op.tourneyWins = r.i32();
-        op.pvpWins = r.i32();
-        op.mergesCooked = r.i32();
-    }
-
-    // v57 tail: the off-level stat points and the XP rate. The active pet's, then a
-    // parallel list mapped back onto the rack pets by index (the v50 shape). Absent in a
-    // v1..v56 blob → 0 for every pet, which is the truth rather than a compromise: no
-    // dish granted one before this version.
-    if (version >= 57) {
-        for (int32_t& v : a.statBonus) v = r.i32();
-        a.xpRateBonusPct = r.i32();
-        const uint16_t nUp = r.u16();
-        for (uint16_t i = 0; i < nUp && r.ok; ++i) {
-            int32_t bonus[kLevelStatCount];
-            for (int32_t& v : bonus) v = r.i32();
-            const int32_t rate = r.i32();
-            if (i < op.rack.size()) {
-                for (int j = 0; j < kLevelStatCount; ++j) op.rack[i].statBonus[j] = bonus[j];
-                op.rack[i].xpRateBonusPct = rate;
-            }
-        }
-    }
-
-    // v58 tail: the chosen background. Absent in a v1..v57 blob → 0, which is AUTO: the
-    // pet decides.
-    if (version >= 58) op.backgroundPick = r.u8();
-
-    // v59 tail: the CANT. Absent in a v1..v58 blob → no sigils learned and nothing
-    // spent, so every SHAKE such a save captured is still unspent.
-    if (version >= 59) {
-        op.cantSigils = r.u32();
-        op.shakesSpent = r.i32();
-    }
-
-    // v60 tail: the USB port. Absent in a v1..v59 blob → the struct's own defaults, an
-    // empty port. The factor is floored at 1 on the way in: it is a MULTIPLIER on both
-    // the evolution dwell and every XP award, so a 0 on the wire (from a truncated or
-    // hand-edited blob) would otherwise stop the pet learning anything at all.
-    if (version >= 60) {
-        a.usbBranch = r.u8();
-        a.usbSoak = r.u8();
-        if (a.usbSoak < 1) a.usbSoak = 1;
-        a.usbHold = r.u8();
-    }
-
-    // v61 tail: the stopped SERVICES mask. Absent in a v1..v60 blob → 0, so every
-    // service the save has bought is running.
-    if (version >= 61) op.rigServicesOff = r.u32();
-
-    // v62 tail: what this pet has tasted. Absent in an older blob -> empty, a pet with
-    // nothing recorded yet; the next few meals fill the grid.
-    if (version >= 62) {
-        const uint16_t n = r.u16();
-        for (uint16_t i = 0; i < n && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            a.foodsEaten.push_back(s);
-        }
-    }
-
-    // v63 tail: the crawl's depth record. Absent in an older blob -> 0, a pet that has
-    // never been down there, which is every pet written before the zone existed.
-    if (version >= 63) a.bestDarkWebDepth = r.i32();
-
-    // v64 tail: the chosen theme's name. Absent in an older blob -> empty, which reads
-    // as the base set: what every device drew before there was a second one to choose.
-    // A name this build has no set for lands the same way (Game::load resolves it).
-    if (version >= 64) {
-        r.bytes(d.settings.theme, kSaveIdCap);
-        d.settings.theme[kSaveIdCap - 1] = '\0';
-    }
-
-    // v65 tail: which STORY chapters this device has been shown. Absent in an older blob
-    // -> empty, a device that has seen none, corrected by the first walk.
-    if (version >= 65) {
-        const uint16_t n = r.u16();
-        for (uint16_t i = 0; i < n && r.ok; ++i) op.storyRead.push_back(r.u8());
-    }
-
-    // v66 tail: which onboarding tips this device has shown. Absent in an older blob
-    // -> empty, so each tip is offered once more after an upgrade.
-    if (version >= 66) {
-        const uint16_t n = r.u16();
-        for (uint16_t i = 0; i < n && r.ok; ++i) op.tipsSeen.push_back(r.u8());
-    }
-
-    // v67 tail: UI MODE and CARE ALERTS. Absent in an older blob -> the SaveData
-    // defaults. ICONS+LABEL and ON.
-    if (version >= 67) {
-        d.settings.uiMode = r.u8();
-        d.settings.careAlerts = r.u8();
-    }
-
-    // v68
-    if (version >= 68) {
-        d.settings.soundMode = r.u8();
-        d.settings.volume = r.u8();
-    }
-
-    // v69 tail: askable services at ASK. Absent in an older blob -> 0, every one at YES.
-    if (version >= 69) op.rigServicesAsk = r.u32();
-
-    // v71
-    if (version >= 71) d.settings.exploreSound = r.u8();
-
-    // v72 tail: the favourite dishes and the rack's palates. Absent in an older blob ->
-    // no favourite anywhere (each pet rolls one at its next meal) and empty rack plates.
-    if (version >= 72) {
-        r.bytes(a.favouriteFood, kSaveIdCap);
-        a.favouriteFood[kSaveIdCap - 1] = '\0';
-        a.favouriteFound = r.u8();
-        const uint16_t nFav = r.u16();
-        for (uint16_t i = 0; i < nFav && r.ok; ++i) {
-            char id[kSaveIdCap];
-            r.bytes(id, kSaveIdCap);
-            id[kSaveIdCap - 1] = '\0';
-            const uint8_t found = r.u8();
-            if (i < op.rack.size()) {
-                std::memcpy(op.rack[i].favouriteFood, id, kSaveIdCap);
-                op.rack[i].favouriteFound = found;
-            }
-        }
-        std::vector<SaveId> dict;
-        const uint16_t nDict = r.u16();
-        for (uint16_t i = 0; i < nDict && r.ok; ++i) {
-            SaveId s; r.bytes(s.id, kSaveIdCap); s.id[kSaveIdCap - 1] = '\0';
-            dict.push_back(s);
-        }
-        const uint16_t nPal = r.u16();
-        for (uint16_t i = 0; i < nPal && r.ok; ++i) {
-            const uint16_t nBytes = r.u16();
-            for (uint16_t b = 0; b < nBytes && r.ok; ++b) {
-                const uint8_t byte = r.u8();
-                for (int bit = 0; bit < 8; ++bit) {
-                    const size_t k = static_cast<size_t>(b) * 8 + bit;
-                    if (((byte >> bit) & 1) && k < dict.size() && i < op.rack.size())
-                        op.rack[i].foodsEaten.push_back(dict[k]);
-                }
-            }
-        }
-    }
-
-    // v74 tail: Bond. Absent in an older blob -> 0, nothing recorded.
-    if (version >= 74) {
-        for (uint16_t& bp : a.bondBp) bp = r.u16();
-        const uint16_t nBond = r.u16();
-        for (uint16_t i = 0; i < nBond && r.ok; ++i)
-            for (int k = 0; k < kBondSources; ++k) {
-                const uint16_t bp = r.u16();
-                if (i < op.rack.size()) op.rack[i].bondBp[k] = bp;
-            }
-    }
-
-    // v75 tail: the rack's remaining kept fields. Absent in an older blob -> defaults.
-    if (version >= 75) {
-        const uint16_t nKept = r.u16();
-        for (uint16_t i = 0; i < nKept && r.ok; ++i) {
-            SaveStoredPet k;
-            k.bestDarkWebDepth = r.i32();
-            k.shieldActive = r.u8();
-            k.shieldSpent = r.u8();
-            k.yubiSpent = r.u8();
-            k.usbBranch = r.u8();
-            k.usbSoak = r.u8();
-            k.usbHold = r.u8();
-            k.bootHatchRemainMs = r.u32();
-            if (i >= op.rack.size()) continue;
-            SaveStoredPet& p = op.rack[i];
-            p.bestDarkWebDepth = k.bestDarkWebDepth;
-            p.shieldActive = k.shieldActive;
-            p.shieldSpent = k.shieldSpent;
-            p.yubiSpent = k.yubiSpent;
-            p.usbBranch = k.usbBranch;
-            p.usbSoak = k.usbSoak;
-            p.usbHold = k.usbHold;
-            p.bootHatchRemainMs = k.bootHatchRemainMs;
-        }
-    }
-
-    // v76 tail: the writing build and FRESH PATCH. Absent in an older blob -> 0, no buff.
-    if (version >= 76) {
-        d.firmwareCode = r.u32();
-        armed.patchBuffUntilMs = r.u32();
-    }
-
-    // v77 tail: the walk's AUTO switch. Absent in an older blob -> on.
-    if (version >= 77) op.autoProgress = r.u8();
-
-    // v78 tail: the DIVE PREP loadout. Absent in an older blob -> nothing armed.
-    if (version >= 78) {
-        op.diveAutoRedive = r.u8();
-        op.diveBellKind = r.u8();
-        r.bytes(op.diveBellItem.id, kSaveIdCap);
-        op.diveBellItem.id[kSaveIdCap - 1] = '\0';
-        op.diveDeviceKind = r.u8();
-        r.bytes(op.diveDeviceItem.id, kSaveIdCap);
-        op.diveDeviceItem.id[kSaveIdCap - 1] = '\0';
-    }
-
-    // v79 tail: the walk's SINKHOLES switch. Absent in an older blob -> on.
-    if (version >= 79) op.useEncounterBypass = r.u8();
-
-    if (!r.ok) { out = SaveData{}; return false; }  // truncated -> empty
+    Reader r{blob.data() + 6, blob.size() - 6, version};
+    codec(r, d);
+    if (!r.ok) return false;  // truncated -> empty
     if (version < newestRenameVersion()) renameRetiredIds(d, version);
     // After every tail is read, never between them: the shift moves whole ladder-indexed
     // vectors, so it has to see them at their final lengths.

@@ -254,29 +254,13 @@ you look at one.
 ## 3. Size / reviewability watch
 
 Same rule as the `game_*.cpp` units: split *at* ~600 lines, not before, and split by concern
-rather than by line count. `combat.cpp` (2014), `save.cpp` (1449), `combat_factory.cpp` (1213),
+rather than by line count. `combat.cpp` (2014), `combat_factory.cpp` (1213),
 `expl_screen.cpp` (1174) and `cfg_screen.cpp` (931) are each past the number and each still ONE
-concern at unit level: `combat.cpp` is the turn engine alone, and `save.cpp` is the wire format.
+concern at unit level: `combat.cpp` is the turn engine alone.
 
 The `game_*.cpp` units past 600 are `game_render` (one function per screen) and `game_items`
 (the ITEMS feature; `applyItemEffects` is a 30-case switch over `ItemEffect::Kind`), both at
 the line and both one concern.
-
-**The save codec's two halves are kept equal by hand.** `serializeSaveInto` (477 lines) and
-`deserializeSave` (753) each walk the 79 versioned tails in the same order, so a tail is
-written in one function and read back in another 500 lines away, and nothing but the round-trip
-gates holds them together. One function per tail, templated on a reader or a writer that both
-take the field by reference (`io.i32(op.bits)`), would state each tail once; the reader-only
-work (clamping a parallel list to the rack, consuming a retired field) stays behind a
-`if constexpr (IO::reading)`. The byte stream must not move: the migration gates and a
-captured blob from each accepted version are the check. | `save.cpp`. | L | Nothing blocks
-it; it is a long, mechanical change that wants one sitting. |
-
-**The device loop is one 309-line function.** `loop()` in `src/platform/esp32/main.cpp` runs
-screen power, brightness, the SD recheck and format, the radio and the frame in sequence, each
-behind its own comment, and `setup()` is 191 lines of the same shape. Each block is a named
-step (`tickScreenPower`, `serviceSdRequests`, ...) with its statics beside it. | `main.cpp`. |
-M | Only the S3 tier compiles it, so it needs CI or a local PlatformIO toolchain to check. |
 
 **The function rule.** A long function that is an if-chain rather than a switch over a
 vocabulary gets split into its named steps.
