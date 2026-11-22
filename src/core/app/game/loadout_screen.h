@@ -99,6 +99,9 @@ public:
     int modPick() const { return modPick_; }
     const char* modDetailId() const { return modDetailId_; }
     bool moveShowAll() const { return moveShowAll_; }
+    MoveListScope moveScope() const {
+        return moveShowAll_ ? MoveListScope::AllOwned : MoveListScope::Fitting;
+    }
     int simTier() const { return simTier_; }
     // Test seam (Game's debug hook): flip the move picker's full-roster view.
     void setMoveShowAll(bool v) { moveShowAll_ = v; }

@@ -58,7 +58,7 @@ Combatant makePvpCombatant(const ContentRegistry& reg, const PvpFighter& f) {
 void beginPvpBattle(Combat& combat, const ContentRegistry& reg, const PvpFighter& host,
                     const PvpFighter& guest, uint32_t seed) {
     combat.begin(makePvpCombatant(reg, host), makePvpCombatant(reg, guest),
-                 Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/false,
+                 Combat::Stakes::Safe, seed, Combat::Opener::BySpeed,
                  /*carryPlayerHealth=*/-1, /*exploitUses=*/0);
 }
 

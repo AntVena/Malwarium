@@ -58,7 +58,8 @@ const MoveDef* ContentRegistry::chainStep(const char* id) const {
 }
 
 const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
-                                                 bool badBranch) const {
+                                                 CreatureBranch branch) const {
+    const bool badBranch = branch == CreatureBranch::Bad;
     for (const ContentSource* src : sources_) {
         int n = 0;
         const DaemonPoolDef* arr = src->daemonPools(n);

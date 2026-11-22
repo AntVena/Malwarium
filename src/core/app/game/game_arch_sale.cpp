@@ -35,8 +35,8 @@ bool scriptReaches(const ContentRegistry& reg, const CreatureDef& script,
         sameId(script.evolvesToTrojanId, daemonId) ||
         sameId(script.evolvesToTrojanBadId, daemonId))
         return true;
-    for (const bool bad : {false, true})
-        if (const DaemonPoolDef* pool = reg.daemonPool(script.id, bad))
+    for (const CreatureBranch b : {CreatureBranch::Good, CreatureBranch::Bad})
+        if (const DaemonPoolDef* pool = reg.daemonPool(script.id, b))
             for (int i = 0; i < pool->count; ++i)
                 if (sameId(pool->entries[i].daemonId, daemonId)) return true;
     return false;

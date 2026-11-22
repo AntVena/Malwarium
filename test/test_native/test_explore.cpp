@@ -468,13 +468,13 @@ void test_combat_carry_health() {
     Combatant p = mkCombatant(r, "P", 60, 10, {"quick_jab"});
     Combatant e = mkCombatant(r, "E", 40, 8, {"quick_jab"});
     Combat c;
-    c.begin(p, e, Combat::Stakes::Live, 111, false, /*carry=*/-1);
+    c.begin(p, e, Combat::Stakes::Live, 111, Combat::Opener::BySpeed, /*carry=*/-1);
     CHECK(c.player().health == 60);               // fresh round: full
-    c.begin(p, e, Combat::Stakes::Live, 111, false, /*carry=*/25);
+    c.begin(p, e, Combat::Stakes::Live, 111, Combat::Opener::BySpeed, /*carry=*/25);
     CHECK(c.player().health == 25);               // carried wounded Health
-    c.begin(p, e, Combat::Stakes::Live, 111, false, /*carry=*/999);
+    c.begin(p, e, Combat::Stakes::Live, 111, Combat::Opener::BySpeed, /*carry=*/999);
     CHECK(c.player().health == 60);               // clamped to max
-    c.begin(p, e, Combat::Stakes::Live, 111, false, /*carry=*/0);
+    c.begin(p, e, Combat::Stakes::Live, 111, Combat::Opener::BySpeed, /*carry=*/0);
     CHECK(c.player().health == 1);                // never a dead start
 }
 
@@ -1825,7 +1825,7 @@ void test_deepweb_dive() {
     }
 }
 
-// Combat::begin's forceEnemyFirst override (retained combat-engine mechanic):
+// Combat::begin's Opener::Enemy override:
 // even a much faster player is forced to act second, independent of speed.
 void test_combat_force_enemy_first() {
     ContentRegistry r = ContentRegistry::embedded();
@@ -1837,7 +1837,7 @@ void test_combat_force_enemy_first() {
     p.speed = 999;                                        // would normally act first
     Combatant e = makeEnemyCombatant(r, wildMalbeast(1));
     Combat c;
-    c.begin(p, e, Combat::Stakes::Live, 4242, /*forceEnemyFirst=*/true);
+    c.begin(p, e, Combat::Stakes::Live, 4242, Combat::Opener::Enemy);
     CHECK(!c.playerActsFirst());
     CHECK(!c.playerTurnNext());
 }

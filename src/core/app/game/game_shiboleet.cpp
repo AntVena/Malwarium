@@ -257,7 +257,7 @@ void Game::startGuardianCombat() {
     // any other, and the post-encounter readout, streak and loot rolls work as usual.
     // What makes it a guardian is the enemy (guardianEnemy, combat_factory.cpp), not a
     // second set of combat rules.
-    startWildCombat(guardianEnemy(walk_.sector, walk_.sub), /*forceEnemyFirst=*/false);
+    startWildCombat(guardianEnemy(walk_.sector, walk_.sub), Combat::Opener::BySpeed);
 }
 
 }  // namespace mal

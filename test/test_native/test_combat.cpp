@@ -512,7 +512,7 @@ void test_defence_tier_retains_an_unspent_brace() {
         const int pts[4] = {0, defPoints, 0, 0};
         applyLevelStatPoints(p, pts);
         Combatant e = mkCombatant(r, "E", 200, 50, {"quick_jab"});
-        out.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/false);
+        out.begin(p, e, Combat::Stakes::Safe, 3, Combat::Opener::BySpeed);
     };
     // Uncommitted: the brace is spent whole on one hit whatever it had left over.
     Combat plain; run(0, plain);
@@ -696,7 +696,7 @@ void test_combat_override_item_use() {
     Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
     Combatant e = mkCombatant(r, "E", 300, 5, {"quick_jab"});
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed,
              /*carryPlayerHealth=*/50, /*exploitUses=*/1);
     CHECK(cb.player().health == 50);
     cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
@@ -712,7 +712,7 @@ void test_combat_override_item_use() {
     CHECK(cb.takeCommittedItem() == nullptr);    // reported exactly once
 
     // The patch clamps to max Health (no overheal).
-    cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/90, 1);
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, /*carryPlayerHealth=*/90, 1);
     cb.openOverride({{"dyno_nuggets", "Dyno Nuggets", 30}});
     while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Item)
         cb.cycleOverride();
@@ -728,7 +728,7 @@ void test_exploit_uses_per_battle() {
     Combatant p = mkCombatant(r, "P", 100, 10, {"quick_jab", "packet_storm"});
     Combatant e = mkCombatant(r, "E", 300, 5, {"quick_jab"});
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 42, false, -1, /*exploitUses=*/2);
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, -1, /*exploitUses=*/2);
     CHECK(cb.overrideUsesTotal() == 2 && cb.overrideUsesLeft() == 2);
     cb.openOverride(); cb.commitOverride();       // force a move
     CHECK(cb.overrideUsesLeft() == 1 && cb.overrideReady());
@@ -736,7 +736,7 @@ void test_exploit_uses_per_battle() {
     CHECK(cb.overrideUsesLeft() == 0 && !cb.overrideReady());
     cb.openOverride();
     CHECK(!cb.overrideOpen());                    // exhausted → won't reopen
-    cb.begin(p, e, Combat::Stakes::Safe, 7, false, -1, 2);
+    cb.begin(p, e, Combat::Stakes::Safe, 7, Combat::Opener::BySpeed, -1, 2);
     CHECK(cb.overrideUsesLeft() == 2);            // a fresh fight restores it
 }
 
@@ -800,7 +800,7 @@ void test_fight_screen_owns_its_panel_clock_and_input() {
     host.run = Fight::started(FightCaller::Sim);
     host.run.combat.begin(mkCombatant(host.reg, "A", 40, 10, {"packet_storm"}),
                           mkCombatant(host.reg, "B", 40, 10, {"packet_storm"}),
-                          Combat::Stakes::Safe, 7, false, -1, 1);
+                          Combat::Stakes::Safe, 7, Combat::Opener::BySpeed, -1, 1);
     FightScreen screen;
     for (int i = 1; i <= kCombatStatPages; ++i) {
         screen.onButton(host, press(Button::B));
@@ -1140,7 +1140,7 @@ void test_backup_drive_death_save_restores_half_max_health() {
     Combatant e = mkCombatant(r, "E", 100, 12, {"quick_jab"});
     // begin() always resets Health to maxHealth unless told to carry a wounded value in
     // (the gauntlet no-heal-between-rounds path): use that to start on death's door.
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed,
                        /*carryPlayerHealth=*/1);
     const int jab = r.move("quick_jab")->power;
     c.step();
@@ -1161,7 +1161,7 @@ void test_backup_drive_death_save_covers_a_fatal_dot() {
     pc.dotPerTurn = 8;
     pc.dotTurnsLeft = 3;
     Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed,
                        /*carryPlayerHealth=*/5);
     c.step();                                    // the pet's turn opens with the rot tick
     CHECK(c.player().health == 5 - 8 + 50);      // rotted under, then restored
@@ -1179,7 +1179,7 @@ void test_backup_drive_death_save_loses_to_overkill() {
     pc.dotPerTurn = 90;                          // 5 - 90 = -85, past the drive's 50
     pc.dotTurnsLeft = 3;
     Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed,
                        /*carryPlayerHealth=*/5);
     c.step();
     CHECK(c.player().health == 0);               // clamped at the floor, and gone
@@ -1237,7 +1237,7 @@ void test_pipeline_first_strike_lands_before_the_ceilings() {
     pc.mods.arm(ModEffect::MaxHitCapPct, 25);            // ECC, in capAndSplit
     Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});   // 20 power
     e.firstStrikeMult = 2;                               // Speed T1, in swingDamage
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c.step();
     // Doubled to 40, then the cap refuses all but 25. Were the cap first it would be inert
     // against a 20 hit and the double would land 40: twice as much through a mod bought
@@ -1254,7 +1254,7 @@ void test_pipeline_ecc_caps_before_the_balancer_splits() {
     pc.mods.arm(ModEffect::MaxHitCapPct, 10);
     pc.mods.arm(ModEffect::LoadBalance, 5, 50);          // threshold 5, half deferred
     Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});   // 20 power
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c.step();
     CHECK(c.player().health == 95);        // 20 -> cap 10 -> split 5 now
     c.step();                              // the deferred half comes due at turn-start
@@ -1269,7 +1269,7 @@ void test_pipeline_floor_does_not_resurrect_a_negated_hit() {
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc.mods.arm(ModEffect::RaidMirror);
     Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c.step();
     CHECK(c.player().health == 100);                     // zero, not one
     CHECK(c.player().mirrorFired);
@@ -1283,7 +1283,7 @@ void test_pipeline_a_mirrored_hit_plants_no_riders() {
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc.mods.arm(ModEffect::RaidMirror);
     Combatant e = mkCombatant(r, "E", 100, 5, {"system_hang"});       // lockTurns 2
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c.step();
     CHECK(c.player().lockedTurnsLeft == 0);
 }
@@ -1296,7 +1296,7 @@ void test_pipeline_a_soaked_hit_lands_no_rider() {
         Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
         pc.shieldHp = pool;
         Combatant e = mkCombatant(r, "E", 100, 5, {moveId});
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
         c.step();
         return c.player();
     };
@@ -1328,7 +1328,7 @@ void test_pure_rider_reaches_the_pet_through_every_defence() {
         Combatant e = mkCombatant(r, "E", 200, 5, {"quick_jab"});
         e.moves.clear();
         e.moves.push_back(&kPureStun);
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
         c.step();
         return c.player();
     };
@@ -1361,7 +1361,7 @@ void test_pure_rider_goes_past_the_swarm_to_the_worm() {
         Combatant e = mkCombatant(r, "E", 400, 5, {"quick_jab"});
         e.moves.clear();
         e.moves.push_back(&kPureStun);
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, Combat::Opener::Enemy);
         c.step();
         CHECK(c.player().lockedTurnsLeft == 2);        // the pet, every time
         CHECK(c.player().wormReplicaCount == 3);       // and no body spent stopping it
@@ -1378,7 +1378,7 @@ void test_the_swarm_still_eats_a_damaging_hit() {
         pc.wormReplicaCount = 3;
         for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 30, 30};
         Combatant e = mkCombatant(r, "E", 400, 5, {"system_hang"});   // 10 power + stun
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, Combat::Opener::Enemy);
         c.step();
         if (c.player().lockedTurnsLeft == 0) ++intercepted;           // a body took it
     }
@@ -1393,7 +1393,7 @@ void test_siphon_pays_through_a_bubble_and_nets_positive() {
     Combatant pc = mkCombatant(r, "P", 200, 5, {"quick_jab"});
     pc.shieldHp = 500;
     Combatant e = mkCombatant(r, "E", 200, 5, {"dropped_packet"});   // 8 power, siphon 12%
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     const int before = c.player().powerMultPct;
     c.step();
     const int stolen = before * 12 / 100;
@@ -1434,7 +1434,7 @@ void test_lockout_stack_pays_when_a_replica_eats_the_hit() {
         pc.wormReplicaCount = 3;
         for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 300, 300};
         Combatant e = mkCombatant(r, "E", 400, 5, {"payload_drop"});
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, Combat::Opener::Enemy);
         c.step();
         if (c.player().health == 400) ++eaten;
         CHECK(c.enemy().stackPowerBonus == r.move("payload_drop")->stackPowerPct);
@@ -1451,7 +1451,7 @@ void test_dot_rider_stacks_and_keeps_the_longer_clock() {
         pc.dotPerTurn = per;
         pc.dotTurnsLeft = turns;
         Combatant e = mkCombatant(r, "E", 400, 5, {"data_rot"});
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
         c.step();
         return c.player();
     };
@@ -1474,7 +1474,7 @@ void test_worm_defender_bites_back() {
         pc.wormReplicaCount = 3;
         for (int i = 0; i < 3; ++i) pc.wormReplicas[i] = WormReplica{true, 300, 300};
         Combatant e = mkCombatant(r, "E", 400, 5, {"packet_storm"});   // 12 power
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, seed, Combat::Opener::Enemy);
         c.step();
         if (c.player().health < 400) CHECK(c.enemy().health == 400);   // the pet took it
         else { CHECK(c.enemy().health == 400 - bite); ++bitten; }
@@ -1503,7 +1503,7 @@ void test_pipeline_every_rider_fires() {
     auto hitBy = [&](const char* moveId) {
         Combatant pc = mkCombatant(r, "P", 400, 5, {"quick_jab"});
         Combatant e = mkCombatant(r, "E", 400, 5, {moveId});
-        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+        Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
         c.step();
         return c.player();
     };
@@ -1550,8 +1550,8 @@ void test_mod_load_balancer_split() {
     Combatant pc = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc.mods.arm(ModEffect::LoadBalance, 10, 50);
     Combatant e = mkCombatant(r, "E", 100, 5, {"buffer_overflow"});        // 20 dmg
-    // Equal speed + forceEnemyFirst → strict E,P,E,P (enemy leads, no double-actions).
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    // Equal speed + Opener::Enemy → strict E,P,E,P (enemy leads, no double-actions).
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c.step();                                                              // enemy hits player
     CHECK(c.player().health == 90);                                        // only the immediate half
     c.step();                                                              // player's turn-start tick
@@ -1560,13 +1560,13 @@ void test_mod_load_balancer_split() {
     // Below the threshold: the hit is NOT split. It lands full immediately, no debt.
     Combatant pc2 = mkCombatant(r, "P", 100, 5, {"quick_jab"});
     pc2.mods.arm(ModEffect::LoadBalance, 25, 50);                          // 20 < 25 → untouched
-    Combat c2; c2.begin(pc2, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat c2; c2.begin(pc2, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     c2.step();  CHECK(c2.player().health == 80);                           // full 20 now
     c2.step();  CHECK(c2.player().health == 80);                           // no deferred tick
     // The deferred debt can KO ON ITS OWN at turn-start, and the actor then doesn't act.
     Combatant weak = mkCombatant(r, "P", 12, 5, {"quick_jab"});
     weak.mods.arm(ModEffect::LoadBalance, 10, 50);
-    Combat d; d.begin(weak, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    Combat d; d.begin(weak, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
     d.step();                                                              // 20 → 10 now (12→2), 10 deferred
     CHECK(d.player().health == 2 && d.outcome() == Combat::Outcome::Ongoing);
     d.step();                                                              // turn-start debt: 2 - 10 → KO
@@ -2265,7 +2265,7 @@ void test_mod_prowlware_combat_effect() {
                                {"buffer_overflow", "quick_jab", "packet_storm"});
     pc.mods.arm(ModEffect::FirstStrikeRankMult);
     Combatant e = mkCombatant(r, "E", 100, 5, {"quick_jab"});
-    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+    Combat c; c.begin(pc, e, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed,
                       /*carryPlayerHealth=*/-1, /*exploitUses=*/2);
     c.openOverride(); c.commitOverride(); c.step();                // forced buffer_overflow
     CHECK(c.enemy().health == 100 - 20 * 3);                       // rank-3 multiplied
@@ -2310,7 +2310,7 @@ void test_mod_meltdown_core() {
     Combatant e1 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
     // begin() otherwise starts the player at full Health: carryPlayerHealth is what
     // actually seats the pre-set low.health (25) for the fight.
-    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 25);
+    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed, 25);
     c1.step();
     CHECK(c1.enemy().health == 100 - 6 * 140 / 100);              // 6 * 1.4 -> 8
 
@@ -2318,7 +2318,7 @@ void test_mod_meltdown_core() {
     healthy.health = 50;                                          // above the threshold
     healthy.mods.arm(ModEffect::LowHealthPowerPct, 30, 40);
     Combatant e2 = mkCombatant(r, "E", 100, 5, {"quick_jab"});
-    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, false, 50);
+    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed, 50);
     c2.step();
     CHECK(c2.enemy().health == 100 - 6);                          // no bonus
 }
@@ -2350,7 +2350,7 @@ void test_mod_tripwire() {
     Combatant e1 = mkCombatant(r, "E", 100, 12, {"quick_jab"});    // fast, hits first
     // carryPlayerHealth seats the pre-set low.health (30): begin() otherwise resets
     // the player to full.
-    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, false, 30);
+    Combat c1; c1.begin(low, e1, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed, 30);
     c1.step();
     CHECK(c1.enemy().health == 100 - 10);                         // reflected
 
@@ -2358,7 +2358,7 @@ void test_mod_tripwire() {
     healthy.health = 100;                                         // above the threshold
     healthy.mods.arm(ModEffect::ConditionalThorns, 10, 40);
     Combatant e2 = mkCombatant(r, "E", 100, 12, {"quick_jab"});
-    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, false, 100);
+    Combat c2; c2.begin(healthy, e2, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed, 100);
     c2.step();
     CHECK(c2.enemy().health == 100);                              // dormant
 
@@ -2367,7 +2367,7 @@ void test_mod_tripwire() {
     both.mods.arm(ModEffect::Thorns, 4);                           // Honeytoken: always-on
     both.mods.arm(ModEffect::ConditionalThorns, 10, 40);           // Tripwire: dormant here
     Combatant e3 = mkCombatant(r, "E", 100, 12, {"quick_jab"});
-    Combat c3; c3.begin(both, e3, Combat::Stakes::Safe, 5, false, 100);
+    Combat c3; c3.begin(both, e3, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed, 100);
     c3.step();
     CHECK(c3.enemy().health == 100 - 4);                          // only Honeytoken fires
 }
@@ -2464,7 +2464,7 @@ void test_phishing_perfect_bite() {
         pc.shieldHp = 50;
         pc.mods.arm(ModEffect::StealAmplifyPct, amplify);
         Combatant e = mkCombatant(r, "E", 100, 50, {"quick_jab"});
-        out.begin(pc, e, Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/false,
+        out.begin(pc, e, Combat::Stakes::Safe, seed, Combat::Opener::BySpeed,
                   /*carryPlayerHealth=*/50);
         out.step(); out.step(); out.step();
     };
@@ -2923,14 +2923,14 @@ void test_worm_replica_arithmetic() {
 
     // One attacker, no defenders: the floor pays it its base and no more.
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/false, 1, 1, /*attack=*/5};
-    CHECK(wormReplicaCount(w, /*defenders=*/false) == 1);
+    CHECK(wormReplicaCount(w, ReplicaRole::Attacker) == 1);
     CHECK(wormReplicaDamage(w) == 5);
     // Cover arriving AFTERWARDS does not reach it. A copy banks what it is worth when it
     // spawns and keeps it: it has its own Health, its own damage and its own chance of
     // being hit, and a later arrival is a different thing, not a buff to this one.
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
     w.wormReplicas[w.wormReplicaCount++] = {/*defender=*/true, 20, 20, 0};
-    CHECK(wormReplicaCount(w, /*defenders=*/true) == 2);
+    CHECK(wormReplicaCount(w, ReplicaRole::Defender) == 2);
     CHECK(wormReplicaDamage(w) == 5);
 
     // What the cover DOES buy is worth more teeth from here on, which is the same dial
@@ -3038,7 +3038,7 @@ void test_worm_replication_in_combat() {
         w.wormReplicas[w.wormReplicaCount++] = {false, 1, 1, 4};
         Combatant hitter = mkCombatant(r, "H", 100, 10, {"buffer_overflow"});  // 20 power
         Combat f; f.begin(w, hitter, Combat::Stakes::Safe, seed,
-                          /*forceEnemyFirst=*/true);
+                          Combat::Opener::Enemy);
         f.step();                                    // the enemy's opening swing
         if (f.player().wormReplicaCount == 0) {      // the copy ate it and popped
             CHECK(f.player().health == 100);         // ...and the worm is untouched
@@ -3522,7 +3522,7 @@ void test_wildcard_lock_freezes_a_slot() {
     foe.moves = {&q1};
 
     Combat c;
-    c.begin(pet, foe, Combat::Stakes::Safe, /*seed=*/999u, /*forceEnemyFirst=*/false,
+    c.begin(pet, foe, Combat::Stakes::Safe, /*seed=*/999u, Combat::Opener::BySpeed,
             /*carryPlayerHealth=*/-1, /*exploitUses=*/1);
     CHECK(c.overrideLockCount() == 0);          // nothing has rolled yet: no row to offer
     while (c.outcome() == Combat::Outcome::Ongoing && c.overrideLockCount() == 0) c.step();
@@ -3743,7 +3743,7 @@ void test_health_tiers_scrub_and_mass() {
             p.scrubPct = kLevelHealthScrubPct;
             Combatant e = mkCombatant(r, "E", 4000, 1, {"checksum_guard"});
             Combat cb;
-            cb.begin(p, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/false,
+            cb.begin(p, e, Combat::Stakes::Safe, 5, Combat::Opener::BySpeed,
                      /*carryPlayerHealth=*/10);
             cb.step();                                   // the player's turn: heal, then act
             return cb.player().health - 10;
@@ -3784,7 +3784,7 @@ void test_combat_turn_limit_calls_the_fight() {
         e.dotPerTurn = enemyDot;
         e.dotTurnsLeft = enemyDot > 0 ? 1 : 0;
         Combat cb;
-        cb.begin(p, e, Combat::Stakes::Safe, 3, false, playerHealth);
+        cb.begin(p, e, Combat::Stakes::Safe, 3, Combat::Opener::BySpeed, playerHealth);
         int steps = 0;
         while (cb.outcome() == Combat::Outcome::Ongoing && steps < kCombatTurnCap * 2)
             if (cb.step()) ++steps;

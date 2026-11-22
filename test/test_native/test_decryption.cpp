@@ -25,7 +25,7 @@ void guessRow(DiskDecryption& d, const int* want) {
 // Until then the working row is editable, and C is what re-opens a settled slot.
 void test_decryption_three_locks_play_a_row() {
     DiskDecryption d;
-    d.reset(12345, /*allowDuplicates=*/false);
+    d.reset(12345, DecryptKey::Distinct);
     CHECK(d.played() == 0);
     CHECK(d.cursor() == 0);
 
@@ -59,7 +59,7 @@ void test_decryption_counts_exact_and_elsewhere() {
     int key[kDecryptionSlots] = {0};
     bool found = false;
     for (uint32_t seed = 1; seed < 4000 && !found; ++seed) {
-        d.reset(seed, /*allowDuplicates=*/false);
+        d.reset(seed, DecryptKey::Distinct);
         bool ok = true;
         for (int s = 0; s < kDecryptionSlots; ++s) {
             key[s] = d.codeAt(s);
@@ -76,7 +76,7 @@ void test_decryption_counts_exact_and_elsewhere() {
     CHECK(d.cracked() && !d.running());
 
     // A rotation of the key: every colour is present and none is in place.
-    d.reset(9001, /*allowDuplicates=*/false);
+    d.reset(9001, DecryptKey::Distinct);
     int rot[kDecryptionSlots];
     for (int s = 0; s < kDecryptionSlots; ++s)
         rot[s] = d.codeAt((s + 1) % kDecryptionSlots);
@@ -86,7 +86,7 @@ void test_decryption_counts_exact_and_elsewhere() {
 
     // Three copies of one key colour: credited ONCE, in place, and never a second
     // time as "elsewhere". The multiplicity rule.
-    d.reset(9001, /*allowDuplicates=*/false);
+    d.reset(9001, DecryptKey::Distinct);
     const int first = d.codeAt(0);
     int trip[kDecryptionSlots];
     for (int s = 0; s < kDecryptionSlots; ++s) trip[s] = first;
@@ -101,7 +101,7 @@ void test_decryption_counts_exact_and_elsewhere() {
 // locked-out board is worth nothing.
 void test_decryption_scores_the_attempts_it_saved() {
     DiskDecryption d;
-    d.reset(4242, /*allowDuplicates=*/false);
+    d.reset(4242, DecryptKey::Distinct);
     CHECK(d.score() == 0);
     int key[kDecryptionSlots];
     for (int s = 0; s < kDecryptionSlots; ++s) key[s] = d.codeAt(s);
@@ -114,7 +114,7 @@ void test_decryption_scores_the_attempts_it_saved() {
     // n attempts on all-Green (never the key without duplicates) before taking it.
     const int green[kDecryptionSlots] = {0, 0, 0};
     for (int wasted = 0; wasted < kDecryptionAttempts; ++wasted) {
-        d.reset(4242, /*allowDuplicates=*/false);
+        d.reset(4242, DecryptKey::Distinct);
         for (int s = 0; s < kDecryptionSlots; ++s) key[s] = d.codeAt(s);
         for (int i = 0; i < wasted; ++i) guessRow(d, green);
         guessRow(d, key);
@@ -128,7 +128,7 @@ void test_decryption_scores_the_attempts_it_saved() {
 
     // The other end: five rows of the same wrong guess. All-Green can never be the key
     // when duplicates are barred, so this is a guaranteed lock-out.
-    d.reset(4242, /*allowDuplicates=*/false);
+    d.reset(4242, DecryptKey::Distinct);
     for (int i = 0; i < kDecryptionAttempts; ++i) guessRow(d, green);
     CHECK(!d.running() && !d.cracked());
     CHECK(d.played() == kDecryptionAttempts);
@@ -140,14 +140,14 @@ void test_decryption_scores_the_attempts_it_saved() {
 void test_decryption_duplicate_rule_is_the_key() {
     DiskDecryption d;
     for (uint32_t seed = 1; seed < 200; ++seed) {
-        d.reset(seed, /*allowDuplicates=*/false);
+        d.reset(seed, DecryptKey::Distinct);
         CHECK(d.codeAt(0) != d.codeAt(1));
         CHECK(d.codeAt(1) != d.codeAt(2));
         CHECK(d.codeAt(0) != d.codeAt(2));
     }
     bool sawADuplicate = false;
     for (uint32_t seed = 1; seed < 400 && !sawADuplicate; ++seed) {
-        d.reset(seed, /*allowDuplicates=*/true);
+        d.reset(seed, DecryptKey::MayRepeat);
         sawADuplicate = d.codeAt(0) == d.codeAt(1) || d.codeAt(1) == d.codeAt(2) ||
                         d.codeAt(0) == d.codeAt(2);
     }

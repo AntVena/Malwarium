@@ -101,7 +101,7 @@ void Game::resolveWifiOutcome() {
             // startWildCombat/Nav::Combat"): no separate Fight/Flee/Sinkhole
             // intro; the guardian is already awake. Any rank-up celebration
             // waits for finishCombat to return here.
-            startWildCombat(rollWild(), /*forceEnemyFirst=*/false);
+            startWildCombat(rollWild(), Combat::Opener::BySpeed);
             break;
         case WifiOutcome::FriendlyVisit:
             // v1 substitute for the doc-07 Met-Pets Roster (out of scope):

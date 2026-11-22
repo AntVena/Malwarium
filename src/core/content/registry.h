@@ -43,7 +43,7 @@ public:
     // Evolution routing. daemonPool: the Script->Daemon weighted pool for
     // `fromId` on the given branch (null if none. The caller then reads the
     // creature's own evolvesTo* fields). Every other hop is on the creature row.
-    const DaemonPoolDef* daemonPool(const char* fromId, bool badBranch) const;
+    const DaemonPoolDef* daemonPool(const char* fromId, CreatureBranch branch) const;
 
     // The all*() lists return a copy in merge order (source order, first id wins). A
     // copy keeps `for (x : ContentRegistry::embedded().allItems())` safe, where a

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "core/content/defs.h"
+#include "core/ui/ui_state.h"   // MoveListScope
 
 namespace mal {
 
@@ -22,17 +23,16 @@ const SpriteData* moveIcon(const ContentRegistry& reg, const char* id);
 
 // Owned moves of `requiredKind` in registry order (excludes the innate default:
 // it isn't slottable). Every slot is type-locked to one
-// MoveDef::Kind, so the picker/pool never even lists a wrong-kind move. Unless
-// `showAll`, this also drops every move the pet can't actually equip into `slot`
-// right now: not yet unlocked at `petStage`, wrong-line (defensive; owned() is
-// already line-scoped), or already occupying a DIFFERENT slot on this pet. `showAll`
-// (the picker's hold-B toggle) restores the full list so a move can still be moved
-// between slots or previewed ahead of its unlock.
+// MoveDef::Kind, so the picker/pool never even lists a wrong-kind move. `Fitting` also
+// drops every move the pet can't equip into `slot` right now: not yet unlocked at
+// `petStage`, wrong-line (defensive; owned() is already line-scoped), or already
+// occupying a DIFFERENT slot on this pet. `AllOwned` (the picker's hold-B toggle) keeps
+// them, so a move can still be moved between slots or previewed ahead of its unlock.
 std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           const MoveLoadout& load,
                                           MoveDef::Kind requiredKind,
                                           Stage petStage, const char* petLine,
-                                          int slot, bool showAll);
+                                          int slot, MoveListScope scope);
 
 // Selectable move rows in cursor order: one per UNLOCKED slot. (The EQUIPPED
 // divider and locked slots are shown but skipped.) Returns how many selectable rows

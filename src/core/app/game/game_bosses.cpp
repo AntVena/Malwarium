@@ -121,7 +121,7 @@ void Game::startBossRound(int carryHealth) {
     // Live stakes; carryHealth < 0 on round 0 (full), else the wounded Health the
     // pet limped out of the previous round with (no heal between).
     fight_ = Fight::started(FightCaller::Boss);
-    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, /*forceEnemyFirst=*/false,
+    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, Combat::Opener::BySpeed,
                         carryHealth, exploitUsesPerBattle());
     fx_.restart();
     nav_ = Nav::Combat;

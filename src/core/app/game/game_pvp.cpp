@@ -119,8 +119,8 @@ void Game::sendPvpPending() {
     ++p.retries;
 }
 
-void Game::endPvpSession(const char* why, bool notify) {
-    if (notify && pvp_ && pvp_->id != 0) {
+void Game::endPvpSession(const char* why, PvpNotice notice) {
+    if (notice == PvpNotice::TellPeer && pvp_ && pvp_->id != 0) {
         uint8_t buf[kPvpFrameCap];
         const size_t n = encodePvpBye(pvp_->id, buf, sizeof(buf));
         if (n) queuePvpFrame(pvp_->peerMac, buf, n);
@@ -138,7 +138,7 @@ void Game::pvpTick() {
     // Failure) preempting Nav::Combat means this device stopped playing the fight the
     // other one is still stepping. End it honestly rather than leaving a zombie session.
     if (phase == PvpPhase::Fighting && nav_ != Nav::Combat) {
-        endPvpSession("DUEL INTERRUPTED", /*notify=*/true);
+        endPvpSession("DUEL INTERRUPTED", PvpNotice::TellPeer);
         return;
     }
 
@@ -146,7 +146,7 @@ void Game::pvpTick() {
     // here and always terminates.
     if (phase != PvpPhase::Fighting && nowMs_ - pvp_->phaseStartMs >= kPvpInviteTimeoutMs) {
         endPvpSession(phase == PvpPhase::Invited ? "CHALLENGE EXPIRED" : "NO ANSWER",
-                      /*notify=*/true);
+                      PvpNotice::TellPeer);
         return;
     }
 
@@ -163,7 +163,7 @@ bool Game::pvpChallenge(uint64_t key) {
     if (localRadioKey() == 0 || key == 0 || key == localRadioKey()) return false;
     PvpFighter local;
     if (!buildPvpFighter(&local)) {
-        endPvpSession("NO PET TO FIGHT", /*notify=*/false);
+        endPvpSession("NO PET TO FIGHT", PvpNotice::Silent);
         return false;
     }
     // Only someone actually in range: a duel needs both devices powered and present,
@@ -190,7 +190,7 @@ void Game::pvpAcceptChallenge() {
         uint8_t buf[kPvpFrameCap];
         const size_t n = encodePvpDecline(p.id, PvpDeclineReason::NoPet, buf, sizeof(buf));
         if (n) queuePvpFrame(p.peerMac, buf, n);
-        endPvpSession("NO PET TO FIGHT", /*notify=*/false);
+        endPvpSession("NO PET TO FIGHT", PvpNotice::Silent);
         return;
     }
     p.enter(PvpPhase::Arming, nowMs_);
@@ -211,12 +211,12 @@ void Game::pvpDeclineChallenge() {
     uint8_t buf[kPvpFrameCap];
     const size_t n = encodePvpDecline(pvp_->id, PvpDeclineReason::Refused, buf, sizeof(buf));
     if (n) queuePvpFrame(pvp_->peerMac, buf, n);
-    endPvpSession("", /*notify=*/false);   // the DECLINE above IS the notification
+    endPvpSession("", PvpNotice::Silent);   // the DECLINE above IS the notification
 }
 
 void Game::pvpCancel() {
     if (!pvp_) return;
-    endPvpSession("", /*notify=*/true);
+    endPvpSession("", PvpNotice::TellPeer);
 }
 
 // --- Inbound -----------------------------------------------------------------
@@ -299,7 +299,7 @@ bool Game::onPvpAccept(const PvpFrame& f) {
     // has started is the retry.
     if (pvp_->phase != PvpPhase::Inviting) return false;
     if (!pvpSpecPlayable(f)) {
-        endPvpSession("BUILD MISMATCH", /*notify=*/true);
+        endPvpSession("BUILD MISMATCH", PvpNotice::TellPeer);
         return true;
     }
     pvp_->remote = f.fighter;
@@ -320,7 +320,7 @@ bool Game::onPvpStart(const PvpFrame& f) {
     // host-then-guest order both devices seat them in; a mismatch means we would have
     // played a different fight, so refuse instead.
     if (pvpCommitHash(f.seed, pvp_->remote, pvp_->local) != f.commit) {
-        endPvpSession("FIGHT DESYNC", /*notify=*/true);
+        endPvpSession("FIGHT DESYNC", PvpNotice::TellPeer);
         return true;
     }
     startPvpBattle(f.seed);
@@ -336,7 +336,7 @@ bool Game::onPvpDecline(const PvpFrame& f) {
         case PvpDeclineReason::Mismatch: why = "BUILD MISMATCH"; break;
         case PvpDeclineReason::Refused:  break;
     }
-    endPvpSession(why, /*notify=*/false);
+    endPvpSession(why, PvpNotice::Silent);
     return true;
 }
 
@@ -344,7 +344,7 @@ bool Game::onPvpDecline(const PvpFrame& f) {
 // because the verdict is computed on each device.
 bool Game::onPvpBye() {
     if (pvp_->phase == PvpPhase::Result) return false;
-    endPvpSession("OPPONENT LEFT", /*notify=*/false);
+    endPvpSession("OPPONENT LEFT", PvpNotice::Silent);
     return true;
 }
 

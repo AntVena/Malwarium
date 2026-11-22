@@ -88,14 +88,14 @@ std::vector<const MoveDef*> ownedMoveList(const ContentRegistry& reg,
                                           const MoveLoadout& load,
                                           MoveDef::Kind requiredKind,
                                           Stage petStage, const char* petLine,
-                                          int slot, bool showAll) {
+                                          int slot, MoveListScope scope) {
     std::vector<const MoveDef*> out;
     for (const MoveDef* m : reg.allMoves()) {
         // The innate is owned but not slottable (MoveLoadout::isInnate): offering it
         // would be offering to spend a slot on what an empty slot already falls back to.
         // Wrong-kind moves never list here.
         if (!load.owns(m->id) || load.isInnate(m->id) || m->kind != requiredKind) continue;
-        if (!showAll) {
+        if (scope == MoveListScope::Fitting) {
             if (!moveUnlockedAtStage(*m, petStage)) continue;
             if (!moveAllowedForLine(*m, petLine)) continue;
             const int elsewhere = load.slotOf(m->id);
@@ -327,7 +327,8 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
     drawHeaderBand(fb, title);
 
     const std::vector<const MoveDef*> owned = ownedMoveList(
-        reg, load, v.requiredKind, v.petStage, v.petLine, v.slot, v.showAll);
+        reg, load, v.requiredKind, v.petStage, v.petLine, v.slot,
+        v.showAll ? MoveListScope::AllOwned : MoveListScope::Fitting);
     const int rows = 1 + static_cast<int>(owned.size());   // [0] = unequip
 
     // Position indicator (mirrors items_screen's header) once the list scrolls: lets

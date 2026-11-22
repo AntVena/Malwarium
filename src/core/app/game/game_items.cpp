@@ -280,7 +280,7 @@ void Game::useItem(const ItemDef& d, ItemUseFrom from) {
     if (d.use == ItemDef::Use::DecryptEgg) { useBootAccelerator(d); return; }
 
     if (d.type == ItemDef::Type::Food) {
-        startFeeding(d, fromLockout);
+        startFeeding(d, from);
         return;
     }
     // Active quest item used inside a Lockout: resolves it immediately.
@@ -556,7 +556,8 @@ void Game::rollPantrySpoilage() {
     if (n > 0) markSaveDirty();
 }
 
-void Game::startFeeding(const ItemDef& d, bool fromLockout) {
+void Game::startFeeding(const ItemDef& d, ItemUseFrom from) {
+    const bool fromLockout = from == ItemUseFrom::Lockout;
     inventory_.remove(d.id, 1);
     // Snapshot first: the modal's gauges report the DELTA this bite achieved, and
     // a stat that was already capped has none to show.

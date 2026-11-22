@@ -175,11 +175,7 @@ void Game::startArcadeRun(int cabinet, ArcadeDifficulty dial) {
             startIsolation(/*goalDots=*/0);
             break;
         case ArcadeGameKind::Decryption:
-            // One of the two cabinets whose dial moves the RULES: easy outlines the
-            // cells a row got exactly right, hard lets the key repeat a colour.
-            startDecryption(
-                /*allowDuplicates=*/dial == ArcadeDifficulty::Hard,
-                /*easyHints=*/dial == ArcadeDifficulty::Easy);
+            startDecryption(dial);   // one of the two cabinets whose dial moves the RULES
             break;
         case ArcadeGameKind::Chroma:
             // ENDLESS, like the buffer above: the board runs until the sweep finds it.

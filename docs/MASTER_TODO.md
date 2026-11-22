@@ -285,12 +285,6 @@ the line roster that a new family has to find. The sheet belongs on the family
 can reach a sprite by name. | `strikeMark`, `CreatureLine`. | S | The combat draw has no
 registry in reach today; that plumbing is the work. |
 
-**Flag arguments still in use.** `Combat::begin`/`startWildCombat` (`forceEnemyFirst`),
-`endPvpSession` (`notify`), `startDecryption` (two bools), `startFeeding` (`fromLockout`),
-`ContentRegistry::daemonPool` (`badBranch`, where `CreatureBranch` exists) and
-`wormReplicaCount` (`defenders`). Each reads as a bare `true` at some call site. | the named
-functions. | S each | None. |
-
 **The function rule.** A long function that is an if-chain rather than a switch over a
 vocabulary gets split into its named steps.
 

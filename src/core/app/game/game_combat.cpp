@@ -90,7 +90,7 @@ void Game::startSimBattle(int tier) {
     Combatant e = makeEnemyCombatant(registry_, dummy);
     lcgAdvance(rng_);     // advance for a fresh deterministic seed
     fight_ = Fight::started(FightCaller::Sim);
-    fight_.combat.begin(p, e, Combat::Stakes::Safe, rng_, /*forceEnemyFirst=*/false,
+    fight_.combat.begin(p, e, Combat::Stakes::Safe, rng_, Combat::Opener::BySpeed,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     fx_.restart();
     nav_ = Nav::Combat;
@@ -347,7 +347,7 @@ void Game::beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat:
     lcgAdvance(rng_);
     fight_ = Fight::started(FightCaller::Sim);   // a staged fight always returns to the hub
     fight_.combat.begin(p, e, stakes, rng_,
-                        /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
+                        Combat::Opener::BySpeed, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
     fx_.restart();
     nav_ = Nav::Combat;
@@ -442,7 +442,7 @@ void Game::startEncounter() {
 }
 
 void Game::fightWild(const CombatEnemy& wild) {
-    startWildCombat(wild, /*forceEnemyFirst=*/false);
+    startWildCombat(wild, Combat::Opener::BySpeed);
 }
 
 void Game::resolveFlee(const CombatEnemy& wild) {
@@ -453,7 +453,7 @@ void Game::resolveFlee(const CombatEnemy& wild) {
         returnToExplore();
     } else {
         // A failed flee forces the fight, enemy first (retreat isn't free).
-        startWildCombat(wild, /*forceEnemyFirst=*/true);
+        startWildCombat(wild, Combat::Opener::Enemy);
     }
 }
 
@@ -485,7 +485,7 @@ void Game::resolveSinkhole(const ItemDef& d) {
     returnToExplore();
 }
 
-void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
+void Game::startWildCombat(const CombatEnemy& wild, Combat::Opener opener) {
     if (!pet_.creature) return;
     Combatant p = buildPlayerCombatant();
     // A friend's visit or a guardian's escort walks with the pet, so it fights the walk's
@@ -498,7 +498,7 @@ void Game::startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst) {
     Combatant e = makeEnemyCombatant(registry_, wild);
     lcgAdvance(rng_);
     fight_ = Fight::started(FightCaller::Wild);
-    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, forceEnemyFirst,
+    fight_.combat.begin(p, e, Combat::Stakes::Live, rng_, opener,
                         /*carryPlayerHealth=*/-1, exploitUsesPerBattle());
     fx_.restart();
     nav_ = Nav::Combat;

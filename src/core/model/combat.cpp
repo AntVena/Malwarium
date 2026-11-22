@@ -14,7 +14,7 @@ uint32_t Combat::rng() {
 }
 
 void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stakes,
-                   uint32_t seed, bool forceEnemyFirst, int carryPlayerHealth,
+                   uint32_t seed, Opener opener, int carryPlayerHealth,
                    int exploitUses) {
     player_ = player;
     enemy_ = enemy;
@@ -66,7 +66,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     enemy_.baseSpeed = enemy_.speed;
     player_.baseDefense = player_.defense;
     enemy_.baseDefense = enemy_.defense;
-    // Empty gauges, then pick the opening actor by speed. forceEnemyFirst (a failed
+    // Empty gauges, then pick the opening actor by speed. Opener::Enemy (a failed
     // pre-fight flee) overrides that once; speed scheduling resumes after.
     plGauge_ = 0;
     enGauge_ = 0;
@@ -74,7 +74,7 @@ void Combat::begin(const Combatant& player, const Combatant& enemy, Stakes stake
     turnsTaken_ = 0;
     streakCount_ = 0;
     streakIsPlayer_ = true;
-    playerTurn_ = forceEnemyFirst ? false : pickNextActor();
+    playerTurn_ = opener == Opener::Enemy ? false : pickNextActor();
     playerFirst_ = playerTurn_;
     overrideUsesLeft_ = exploitUses < 0 ? 0 : exploitUses;
     overrideUsesTotal_ = overrideUsesLeft_;
@@ -1953,7 +1953,8 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx) {
 
 // --- Worm replication, the pure half (see combat.h for what each one is for) --------
 
-int wormReplicaCount(const Combatant& c, bool defenders) {
+int wormReplicaCount(const Combatant& c, ReplicaRole role) {
+    const bool defenders = role == ReplicaRole::Defender;
     int n = 0;
     for (int i = 0; i < c.wormReplicaCount; ++i)
         if (c.wormReplicas[i].defender == defenders) ++n;
@@ -1969,7 +1970,7 @@ static int replicaWorthMult(const Combatant& parent) {
 int wormAttackerDamage(const Combatant& parent, int movePower, int pct) {
     // A share of the move that made it, scaled by the parent's own attack lean and by the
     // defenders standing at this moment. Banked, exactly as a defender's Health is.
-    const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/true));
+    const int mult = wormCrossMult(wormReplicaCount(parent, ReplicaRole::Defender));
     int dmg = movePower * pct / 100 * parent.powerMultPct / 100 * mult;
     dmg = dmg * replicaWorthMult(parent) / 100;
     return dmg < 1 ? 1 : dmg;
@@ -1983,7 +1984,7 @@ int wormReplicaDamage(const Combatant& c) {
 }
 
 int wormDefenderHealth(const Combatant& parent, int pct) {
-    const int mult = wormCrossMult(wormReplicaCount(parent, /*defenders=*/false));
+    const int mult = wormCrossMult(wormReplicaCount(parent, ReplicaRole::Attacker));
     const int hp = parent.maxHealth * pct / 100 * mult * replicaWorthMult(parent) / 100;
     return hp < 1 ? 1 : hp;   // a defender that spawns with no Health is not a body
 }

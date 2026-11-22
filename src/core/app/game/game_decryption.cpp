@@ -18,10 +18,14 @@
 
 namespace mal {
 
-void Game::startDecryption(bool allowDuplicates, bool easyHints) {
+// The dial moves the RULES: Easy outlines the cells a row got exactly right, Hard lets
+// the key repeat a colour. The hatch plays Medium.
+void Game::startDecryption(ArcadeDifficulty dial) {
     lcgAdvance(rng_);   // the shared LCG draws the key
-    decryption_.reset(rng_, allowDuplicates);
-    decryptionScreen_.open(easyHints ? DecryptHints::Exact : DecryptHints::Anonymous);
+    decryption_.reset(rng_, dial == ArcadeDifficulty::Hard ? DecryptKey::MayRepeat
+                                                            : DecryptKey::Distinct);
+    decryptionScreen_.open(dial == ArcadeDifficulty::Easy ? DecryptHints::Exact
+                                                          : DecryptHints::Anonymous);
     closeGameBrief();   // a stale flag from a previous board must not open paused
     nav_ = Nav::Decryption;
     dirty_ = true;

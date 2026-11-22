@@ -2293,7 +2293,7 @@ private:
     void resolveFlee(const CombatEnemy& wild) override;
     void resolveSinkhole(const ItemDef& bypass) override;   // spend it for its XP
     // Live-stakes combat against `wild`: an encounter's roll, or an area guardian.
-    void startWildCombat(const CombatEnemy& wild, bool forceEnemyFirst);
+    void startWildCombat(const CombatEnemy& wild, Combat::Opener opener);
     // The tail the staged-fight seams share once the player is built: roll the fight
     // open against `spec` and hand the screen to it (startDummyFight and its siblings).
     void beginStagedFight(const Combatant& p, const CombatEnemy& spec, Combat::Stakes stakes);
@@ -2589,7 +2589,7 @@ private:
     // vocabulary (ItemEffect::Kind), never a per-id branch, so a new arming
     // mechanic joins by adding its case beside its applier in applyItemEffects.
     bool itemUseIsInert(const ItemDef& d, const char*& why) const;
-    void startFeeding(const ItemDef& d, bool fromLockout);
+    void startFeeding(const ItemDef& d, ItemUseFrom from);
     // Roll every held perishable (ItemDef::spoil) once. Called on the beats that already
     // disturb the bag rather than from a clock of its own; advances rng_.
     void rollPantrySpoilage();
@@ -2721,10 +2721,7 @@ private:
     void layEgg(const EggLineDef* line) override;  // commit a chosen line: lay its Boot-Sector egg
     const CreatureDef* rollHatchProcess(const EggLineDef* line);  // random Process draw (advances rng_)
     // DISK DECRYPTION lifecycle (game_decryption.cpp): see inDecryption() above.
-    // `allowDuplicates` lets the key repeat a colour and `easyHints` outlines the cells
-    // a played row got exactly right; the hatch passes false to both, and only the
-    // arcade's dial moves either.
-    void startDecryption(bool allowDuplicates, bool easyHints);
+    void startDecryption(ArcadeDifficulty dial);
     void finishDecryption() override;   // bank the crack against the clock (or the till) and leave
     DiskDecryption& liveDecryption() override { return decryption_; }
 
@@ -3000,10 +2997,11 @@ private:
     void pvpTick();
     // Encode + queue the frame this phase is waiting on an answer to.
     void sendPvpPending();
-    // Drop back to Idle, telling the opponent unless `notify` is false (it already
-    // knows: it is the one that ended the session). `why` is what the LINK screen
+    // Drop back to Idle, telling the opponent unless it already knows (Silent: it is the
+    // one that ended the session). `why` is what the LINK screen
     // shows; empty means a clean, unremarkable end.
-    void endPvpSession(const char* why, bool notify);
+    enum class PvpNotice : uint8_t { TellPeer, Silent };
+    void endPvpSession(const char* why, PvpNotice notice);
     // Both fighters are known and agreed: build the shared fight and enter Nav::Combat.
     void startPvpBattle(uint32_t seed);
 

@@ -157,7 +157,7 @@ void test_a_fighter_can_fire_its_own_exploit() {
     b.autoExploit = {"DENIAL OF SERVICE", CrewExploitKind::NegateNextHits, 3};
     b.autoExploitAtHealthPct = 100;
     Combat c;
-    c.begin(a, b, Combat::Stakes::Safe, 12345u, /*forceEnemyFirst=*/true,
+    c.begin(a, b, Combat::Stakes::Safe, 12345u, Combat::Opener::Enemy,
             /*carryPlayerHealth=*/-1, /*exploitUses=*/0);
     CHECK(c.enemy().crewExploit.kind == CrewExploitKind::None);   // not yet armed
     c.step();                                                     // the enemy's opener
@@ -174,7 +174,7 @@ void test_a_fighter_can_fire_its_own_exploit() {
     d.autoExploit = {"DENIAL OF SERVICE", CrewExploitKind::NegateNextHits, 3};
     d.autoExploitAtHealthPct = 20;
     Combat c2;
-    c2.begin(a, d, Combat::Stakes::Safe, 999u, /*forceEnemyFirst=*/true,
+    c2.begin(a, d, Combat::Stakes::Safe, 999u, Combat::Opener::Enemy,
              /*carryPlayerHealth=*/-1, /*exploitUses=*/0);
     c2.step();
     CHECK(c2.enemy().crewExploit.kind == CrewExploitKind::None);

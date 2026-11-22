@@ -152,7 +152,7 @@ void Game::startHatchGame(const EggLineDef* line) {
             // The hatch board plays by the standard rules: no duplicate colours in the
             // key, and the feedback stays anonymous. Both are the arcade's dials, and
             // neither moves here.
-            startDecryption(/*allowDuplicates=*/false, /*easyHints=*/false);
+            startDecryption(ArcadeDifficulty::Medium);
             break;
         case HatchGame::Clutch:
             startEggPick(kEggPickRounds);
@@ -278,14 +278,16 @@ const char* Game::evolutionTargetId() const {
     // branch is read through effectiveCareBranch(), so a Bad-USB/Signed-USB in the
     // port decides it instead, including on this pool, the branch the player spent the
     // stage earning.
-    const bool bad = effectiveCareBranch() == CareBranch::Bad;
-    if (const DaemonPoolDef* pool = registry_.daemonPool(pet_.creature->id, bad)) {
+    const CreatureBranch branch = effectiveCareBranch() == CareBranch::Bad
+                                      ? CreatureBranch::Bad
+                                      : CreatureBranch::Good;
+    if (const DaemonPoolDef* pool = registry_.daemonPool(pet_.creature->id, branch)) {
         if (pool->count > 0) return pool->entries[0].daemonId;
     }
     // Everything else is on the creature's own row: a care branch when it defines
     // both successors, otherwise the linear hop (null at a terminus).
     if (pet_.creature->evolvesToGoodId && pet_.creature->evolvesToBadId)
-        return bad ? pet_.creature->evolvesToBadId : pet_.creature->evolvesToGoodId;
+        return branch == CreatureBranch::Bad ? pet_.creature->evolvesToBadId : pet_.creature->evolvesToGoodId;
     return pet_.creature->evolvesToId;
 }
 

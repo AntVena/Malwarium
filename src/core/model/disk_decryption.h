@@ -47,6 +47,11 @@ constexpr int kDecryptionAttempts = 5;
 // see score() below.
 constexpr int kDecryptionFreeAttempts = 2;
 
+// Whether a drawn key may repeat a colour: the hard setting. A distinct key is one of 60,
+// and every colour ruled out narrows the rest; a repeating one is one of 125, with no
+// such inference.
+enum class DecryptKey : uint8_t { Distinct, MayRepeat };
+
 class DiskDecryption {
   public:
     enum class State : uint8_t {
@@ -62,15 +67,12 @@ class DiskDecryption {
         uint8_t colour = 0;   // right colour, wrong slot
     };
 
-    DiskDecryption() { reset(1, /*allowDuplicates=*/false); }
+    DiskDecryption() { reset(1, DecryptKey::Distinct); }
 
-    // Draw a fresh code and clear the board. `allowDuplicates` lets the code repeat a
-    // colour, which is the hard setting: without it the answer is one of 60 codes and
-    // every colour ruled out narrows the rest, and with it there are 125 and no such
-    // inference.
-    void reset(uint32_t seed, bool allowDuplicates) {
+    // Draw a fresh code and clear the board.
+    void reset(uint32_t seed, DecryptKey key) {
         rng_ = seed ? seed : 1u;
-        duplicates_ = allowDuplicates;
+        duplicates_ = key == DecryptKey::MayRepeat;
         played_ = 0;
         cursor_ = 0;
         state_ = State::Running;

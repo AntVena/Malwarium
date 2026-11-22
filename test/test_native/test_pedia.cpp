@@ -145,8 +145,8 @@ void test_wild_and_roster_names_disjoint() {
 void test_evolution_routing_tables() {
     ContentRegistry r = ContentRegistry::embedded();
     // Script->Daemon: the care-branch selects the pool; single entry today.
-    const DaemonPoolDef* good = r.daemonPool("malbear", /*bad=*/false);
-    const DaemonPoolDef* bad = r.daemonPool("malbear", /*bad=*/true);
+    const DaemonPoolDef* good = r.daemonPool("malbear", CreatureBranch::Good);
+    const DaemonPoolDef* bad = r.daemonPool("malbear", CreatureBranch::Bad);
     CHECK(good && good->count == 1 &&
           std::strcmp(good->entries[0].daemonId, "bruinforce") == 0);
     CHECK(bad && bad->count == 1 &&
@@ -157,8 +157,8 @@ void test_evolution_routing_tables() {
     CHECK(malbear && std::strcmp(malbear->evolvesToGoodId, "bruinforce") == 0);
     CHECK(malbear && std::strcmp(malbear->evolvesToBadId, "berserkernel") == 0);
     // No pool for anything else: the row is the whole answer.
-    CHECK(r.daemonPool("paypup", false) == nullptr);
-    CHECK(r.daemonPool("barkmail", false) == nullptr);
+    CHECK(r.daemonPool("paypup", CreatureBranch::Good) == nullptr);
+    CHECK(r.daemonPool("barkmail", CreatureBranch::Good) == nullptr);
 }
 
 // BOND from meals: a meal the pet had room for adds kBondFoodBp, and one it did not

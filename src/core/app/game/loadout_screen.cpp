@@ -17,10 +17,10 @@ Stage petStage(const Pet& p) { return p.creature ? p.creature->stage : Stage::Bo
 const char* petLine(const Pet& p) { return p.creature ? p.creature->line : nullptr; }
 
 // The rows the move picker draws: what fits the slot now, or the full roster.
-std::vector<const MoveDef*> moveRows(const LoadoutHost& host, int slot, bool showAll) {
+std::vector<const MoveDef*> moveRows(const LoadoutHost& host, int slot, MoveListScope scope) {
     const Pet& pet = host.petRecord();
     return ownedMoveList(host.content(), pet.moves, host.slotRequiredKind(slot), petStage(pet),
-                         petLine(pet), slot, showAll);
+                         petLine(pet), slot, scope);
 }
 
 // The rows the mod picker draws, fittable mods first and locked ones after, so its
@@ -36,7 +36,7 @@ int LoadoutScreen::modPickerRows(const LoadoutHost& host) const {
 }
 
 int LoadoutScreen::movePickerRows(const LoadoutHost& host) const {
-    return 1 + static_cast<int>(moveRows(host, moveSlot_, moveShowAll_).size());
+    return 1 + static_cast<int>(moveRows(host, moveSlot_, moveScope()).size());
 }
 
 // --- L2: the hub and the slot lists -------------------------------------------
@@ -284,7 +284,7 @@ const MoveDef* LoadoutScreen::focusedMove(const LoadoutHost& host) const {
         const char* id = host.petRecord().moves.equipped(moveSlot_);
         return id ? host.content().move(id) : nullptr;
     }
-    const auto owned = moveRows(host, moveSlot_, moveShowAll_);
+    const auto owned = moveRows(host, moveSlot_, moveScope());
     if (movePick_ <= 0 || movePick_ - 1 >= static_cast<int>(owned.size())) return nullptr;
     return owned[movePick_ - 1];
 }

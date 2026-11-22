@@ -1066,7 +1066,7 @@ void test_move_evolution_gating() {
     Game g{StartMode::Hatched, "cryptoshell"};
     CHECK(std::strcmp(g.moveLoadout().equipped(0), "payload_drop") == 0);
     CHECK(ownedMoveList(r, g.moveLoadout(), g.slotRequiredKind(0), g.pet()->stage,
-                        g.pet()->line, 0, /*showAll=*/false)
+                        g.pet()->line, 0, MoveListScope::Fitting)
               .empty());
     enterLoadoutTab(g, 1);
     tapB(g);                                      // open slot 0 picker
@@ -1211,14 +1211,14 @@ void test_move_slot_type_lock() {
     // 3 Defend rows (aes_lockbox/rsa_vault/full_disk_encryption). The Attack slot's
     // candidate list excludes every owned Defend move and vice-versa.
     auto atkList = ownedMoveList(r, g.moveLoadout(), g.slotRequiredKind(0),
-                                 g.pet()->stage, g.pet()->line, 0, /*showAll=*/true);
+                                 g.pet()->stage, g.pet()->line, 0, MoveListScope::AllOwned);
     for (const MoveDef* m : atkList) CHECK(m->kind == MoveDef::Kind::Attack);
     bool atkListHasDefend = false;
     for (const MoveDef* m : atkList)
         if (std::strcmp(m->id, "aes_lockbox") == 0) atkListHasDefend = true;
     CHECK(!atkListHasDefend);                        // rejected, never even listed
     auto defList = ownedMoveList(r, g.moveLoadout(), g.slotRequiredKind(2),
-                                 g.pet()->stage, g.pet()->line, 2, /*showAll=*/true);
+                                 g.pet()->stage, g.pet()->line, 2, MoveListScope::AllOwned);
     CHECK(defList.size() == 3);
     for (const MoveDef* m : defList) CHECK(m->kind == MoveDef::Kind::Defend);
 

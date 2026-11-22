@@ -101,7 +101,7 @@ void Game::startTourneyMatch() {
     fight_.combat.begin(p, e, Combat::Stakes::Safe,
                         tourneyMatchSeed(run.seed, run.round,
                                          tourneyBlockStart(run.playerSlot(), run.round)),
-                        /*forceEnemyFirst=*/false, /*carryPlayerHealth=*/-1,
+                        Combat::Opener::BySpeed, /*carryPlayerHealth=*/-1,
                         exploitUsesPerBattle());
     fx_.restart();
     fightScreen_.shutPanel();

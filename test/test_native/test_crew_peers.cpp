@@ -19,7 +19,7 @@ void test_crew_exploit_negates_next_hits() {
     p.mods.arm(ModEffect::RaidMirror);          // a passive one-shot armed alongside
     Combatant e = mkCombatant(r, "E", 5000, 10, {"quick_jab"});   // enemy acts first/often
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/true,
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::Enemy,
              /*carryPlayerHealth=*/-1, /*exploitUses=*/1);
 
     cb.openOverride({}, CrewExploit{"DENIAL OF SERVICE",
@@ -108,7 +108,7 @@ void test_crew_net_neutrality_resets_then_floors_the_leans() {
     Combatant e = mkCombatant(r, "E", 5000, 50, {"spear_strike"});
     e.shieldHp = 500;   // the bubble the volatile half of the steal track is gated on
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 11, /*forceEnemyFirst=*/true);
+    cb.begin(p, e, Combat::Stakes::Safe, 11, Combat::Opener::Enemy);
     const int pow0 = cb.player().powerMultPct;
     const float spd0 = cb.player().speed;
 
@@ -142,7 +142,7 @@ void test_crew_mitm_copies_enemy_buffs() {
     // RSA Vault: a 28-power brace plus +18 Cipher-track DEF on cast.
     Combatant e = mkCombatant(r, "E", 5000, 20, {"rsa_vault"});
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 5, /*forceEnemyFirst=*/true);
+    cb.begin(p, e, Combat::Stakes::Safe, 5, Combat::Opener::Enemy);
 
     cb.step();                                   // an enemy cast before the Exploit
     CHECK(cb.enemy().guard == 28 && cb.enemy().stackDefenseBonus == 18);
@@ -170,7 +170,7 @@ void test_crew_backup_plan_b_saves_and_rallies() {
     Combatant e = mkCombatant(r, "E", 5000, 50, {"rootkit_strike"});   // 24 a swing
     Combat cb;
     // Carried in at 10 Health, so the first swing buries the pet 14 past 0.
-    cb.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/true,
+    cb.begin(p, e, Combat::Stakes::Safe, 3, Combat::Opener::Enemy,
              /*carryPlayerHealth=*/10);
     cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
                                     CrewExploitKind::DeathSaveRally, 3});
@@ -195,7 +195,7 @@ void test_crew_backup_plan_b_clock_runs_out() {
     Combatant p = mkCombatant(r, "P", 200, 1, {"quick_jab"});
     Combatant e = mkCombatant(r, "E", 5000, 50, {"rootkit_strike"});   // 9 swings to KO
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 3, /*forceEnemyFirst=*/true);
+    cb.begin(p, e, Combat::Stakes::Safe, 3, Combat::Opener::Enemy);
     cb.openOverride({}, CrewExploit{"BACKUP PLAN B",
                                     CrewExploitKind::DeathSaveRally, 3});
     while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
@@ -766,7 +766,7 @@ void test_crew_rake_returns_a_cut_of_every_hit() {
     Combatant p = mkCombatant(r, "P", 100, 100, {"quick_jab"});
     Combatant e = mkCombatant(r, "E", 5000, 1, {"quick_jab"});
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 42, /*forceEnemyFirst=*/false,
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed,
              /*carryPlayerHealth=*/40, /*exploitUses=*/1);
     CHECK(cb.player().health == 40);
 
@@ -797,7 +797,7 @@ void test_crew_rake_returns_a_cut_of_every_hit() {
     CHECK(cb.player().health <= hpEnd);              // spent: no hit pays again
 
     // The cut never overheals.
-    cb.begin(p, e, Combat::Stakes::Safe, 42, false, /*carryPlayerHealth=*/-1, 1);
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, /*carryPlayerHealth=*/-1, 1);
     cb.openOverride({}, CrewExploit{"PROTECTION RACKET", CrewExploitKind::LeechOnHit, 3});
     while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
         cb.cycleOverride();
@@ -819,14 +819,14 @@ void test_crew_failover_repeats_the_cast_not_the_turn() {
     // The same fight and seed, run twice: once plain, once holding a spare. The second
     // run's first turn must take exactly two casts' worth out of the enemy.
     Combat plain;
-    plain.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    plain.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, -1, 1);
     int guard = 0;
     while (plain.lastDamage() <= 0 && guard++ < 200) plain.step();
     const int oneCast = plain.enemy().maxHealth - plain.enemy().health;
     CHECK(oneCast > 0);
 
     Combat spared;
-    spared.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    spared.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, -1, 1);
     spared.openOverride({}, CrewExploit{"FAILOVER", CrewExploitKind::SpareFailover, 2});
     while (spared.overrideBandAt(spared.overrideBandPick()) != OverrideBand::Crew)
         spared.cycleOverride();
@@ -859,7 +859,7 @@ void test_crew_failover_survives_a_turn_with_no_cast() {
     p.lockedTurnsLeft = 1;                       // stunned before it can swing
     Combatant e = mkCombatant(r, "E", 5000, 1, {"quick_jab"});
     Combat cb;
-    cb.begin(p, e, Combat::Stakes::Safe, 42, false, -1, 1);
+    cb.begin(p, e, Combat::Stakes::Safe, 42, Combat::Opener::BySpeed, -1, 1);
     cb.openOverride({}, CrewExploit{"FAILOVER", CrewExploitKind::SpareFailover, 2});
     while (cb.overrideBandAt(cb.overrideBandPick()) != OverrideBand::Crew)
         cb.cycleOverride();

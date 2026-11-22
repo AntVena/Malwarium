@@ -196,7 +196,7 @@ bool tourneyResolveMatch(const ContentRegistry& reg, const TourneyFighter& a,
                          const TourneyFighter& b, uint32_t seed) {
     Combat c;
     c.begin(makeTourneyCombatant(reg, a), makeTourneyCombatant(reg, b),
-            Combat::Stakes::Safe, seed, /*forceEnemyFirst=*/false,
+            Combat::Stakes::Safe, seed, Combat::Opener::BySpeed,
             /*carryPlayerHealth=*/-1, /*exploitUses=*/0);
     for (int i = 0; i < kTourneyMatchTurnCap && c.outcome() == Combat::Outcome::Ongoing;
          ++i)

@@ -59,6 +59,10 @@ inline bool explCatHasRows(ExplCat c) {
 // so `Hub` is where C from any of the three returns to.
 enum class LoadoutTab { Hub, Mods, Moves, Practise };
 
+// Which owned moves a slot's picker lists (ownedMoveList, train_screen.h): only those
+// that fit the slot now, or every one of its kind (the picker's hold-B toggle).
+enum class MoveListScope : uint8_t { Fitting, AllOwned };
+
 // Hacker-face slot ids. CREW/PROFILE/SHOP/VAULT/MERGE/PEERS are the designed slots;
 // SCAN/LINK render the inaccessible marker until designed. PROFILE, CREW, SHOP,
 // VAULT, and PEERS are live from the static table; MERGE starts statically

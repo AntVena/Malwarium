@@ -399,8 +399,9 @@ int attackPowerRank(const std::vector<const MoveDef*>& moves, int moveIdx);
 // Total functions of a Combatant's own replica array, so the balance they encode is
 // assertable without resolving a fight.
 
-// How many of `c`'s live replicas are of the given kind.
-int wormReplicaCount(const Combatant& c, bool defenders);
+// How many of `c`'s live replicas play the given role.
+enum class ReplicaRole : uint8_t { Attacker, Defender };
+int wormReplicaCount(const Combatant& c, ReplicaRole role);
 
 // Whether `m`'s only contribution is the one-shot `guard` brace: a Defend row that pools a
 // shield, arms a trap, spawns a defender or stacks the Cipher cut is worth a turn whatever
@@ -617,10 +618,11 @@ public:
 
     // Build a battle. The enemy always resets to full Health, and so does the player
     // unless `carryPlayerHealth >= 0`: the boss-gauntlet carry, where consecutive rounds
-    // run with no heal between. `seed` makes resolution deterministic. `forceEnemyFirst`
-    // overrides the speed-based initiative roll: the failed-flee penalty.
+    // run with no heal between. `seed` makes resolution deterministic. `opener` decides
+    // who acts first: by speed, or the enemy outright (the failed-flee penalty).
+    enum class Opener : uint8_t { BySpeed, Enemy };
     void begin(const Combatant& player, const Combatant& enemy, Stakes stakes,
-               uint32_t seed, bool forceEnemyFirst = false,
+               uint32_t seed, Opener opener = Opener::BySpeed,
                int carryPlayerHealth = -1, int exploitUses = 1);
 
     // Advance one action beat (one actor's turn). No-op once resolved or while the

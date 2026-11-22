@@ -135,7 +135,7 @@ void test_combat_outro_kind() {
     CHECK(kit.isInnate(kit.defaultMove()));   // ...and never a slot's occupant
     const std::vector<const MoveDef*> pickable =
         ownedMoveList(ContentRegistry::embedded(), kit, MoveDef::Kind::Attack,
-                      Stage::Daemon, nullptr, /*slot=*/0, /*showAll=*/true);
+                      Stage::Daemon, nullptr, /*slot=*/0, MoveListScope::AllOwned);
     for (const MoveDef* m : pickable) CHECK(!kit.isInnate(m->id));
 
     // The dummy standing in front of it swings that default and nothing else, so it is
