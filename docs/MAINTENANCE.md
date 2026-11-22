@@ -68,17 +68,47 @@ byte-for-byte proof.
 
 **Measure functions as well as files.** Mass collects inside individual functions, where a
 file-size check cannot see it: a unit can sit near 600 while one function in it runs past 400.
-Get the shape from the gap between definitions
-(`grep -nE '^[A-Za-z_].*::.*\(' <unit>`), then apply the same one-concern test. The dispatcher
-exception is the one to apply honestly: **count the `case` labels before granting it.** A long
-`switch` over a vocabulary is fine; a long if-chain is accumulated special cases wearing the same
-length, and the two are indistinguishable by line count alone.
+`python3 tools/smells.py long` lists every function over 80 lines with its `case` count, then
+apply the same one-concern test. The dispatcher exception is the one to apply honestly:
+**count the `case` labels before granting it.** A long `switch` over a vocabulary is fine; a
+long if-chain is accumulated special cases wearing the same length, and the two are
+indistinguishable by line count alone.
+
+**The smells, by name.** These are the shapes that have turned up here, each with the case
+that showed it. Run `python3 tools/smells.py` for the finders; the judgement is yours.
+
+- **A formula written out where it is used.** The LCG step was typed in 66 places and the
+  derived-sprite name (prefix plus upper-cased id) in six, each copy a place a change can miss.
+  `smells.py repeated` lists any statement in four or more files. A copy that sits next to a
+  comment saying it must match another is the same smell, admitted.
+- **A pair kept equal by hand.** Two functions that must mirror each other (the save codec's
+  writer and reader) drift with nothing to catch it but a round trip. State the pair once.
+- **A function that is its own steps.** A function past a screen whose body is a sequence of
+  commented blocks wants each block named (`applyCombatResult` became five calls).
+- **A dispatcher doing its cases' work.** A `switch` whose cases run fifty lines each
+  (`onPvpFrame`) is a dispatcher only once each case is one call.
+- **A flag argument.** A `bool` that picks a behaviour reads as a bare `true` at the call
+  site; an enum the call site names says what it picks (`Opener::Enemy`). `smells.py flags`
+  lists every `bool` parameter; one that carries a value (`won`, `ok`, a setter's `on`) is fine.
+- **Feature envy.** `Game` reaching into several of one record's fields to run a rule (the
+  dying window) means the rule belongs on the record.
+- **Bookkeeping by hand.** Code that counts its own separators, indices or commas (the 'Pedia
+  JSON's first-flags) wants a small type that keeps the count.
+- **A second copy of a roster.** An if-chain over content ids (`"worm"`, the four strike
+  sheets) is a table the content already holds. Ask the row, or derive the name.
+
+Fix what is small in the run, and put the rest on the board with its size.
 
 ### Design consistency pass. Last run: 2026-11-21
 Spot-check shipped screens against the system they're authored to (`assets/VISUAL_LANGUAGE.md`,
 `assets/CREATURE_VISUAL_RULES.md`) and against each other. Look for a screen that solves a
 problem differently from its siblings. Fix the standard to match reality, or if the drift looks
 like an undocumented real decision, surface it explicitly.
+
+**A rule serves the player, so it bends before a screen does.** When several screens break a
+written rule the same way and read clearer for it (A SWITCH on the action pickers, C DELETE in
+the text editor), the rule was too narrow: write the case into the standard. Change the screens
+only where the departure is the less clear of the two.
 
 ### Screen separation pass. Last run: 2026-11-21
 Take the contact sheet (`./tools/screens.sh`) and go screen by screen through every one that
