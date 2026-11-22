@@ -369,7 +369,7 @@ void test_expl_sector_linear_gating() {
 // every band's copy is measured here rather than discovered on the panel.
 void test_hint_bands_fit_the_canvas() {
     static const char* const kBands[] = {
-        "B CONTINUE", "A NEXT B CONFIRM C CANCEL", "A+C CMD B STAT C RUN A SKIP",
+        "B CONTINUE", "A NEXT B USE C CANCEL", "A+C CMD B STAT C RUN A SKIP",
         "A ZONE  B OPEN  C BACK", "A NEXT  B OPEN  C BACK",
         "HOLD B FILTER  C TYPES", "A SWITCH  B DO",
         "A NEXT", "B SET  C BACK", "B BUY   C LEAVE", "B APPLIES",

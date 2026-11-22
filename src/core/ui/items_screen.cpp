@@ -595,7 +595,7 @@ void drawCacheYield(Framebuffer& fb, const ItemDef& cache, int bits, const Yield
         }
     }
 
-    drawHintBand(fb, "B CONTINUE");
+    drawHackerHint(fb, nullptr, "B CONTINUE");   // a VAULT reveal: the Hacker face's line
 }
 
 void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v) {
@@ -639,8 +639,8 @@ void drawBulkYield(Framebuffer& fb, const ItemDef& cache, const BulkYieldView& v
         drawScrollbar(fb, rowTop, kBulkVisibleRows * rowH, v.count, scrollTop, kBulkVisibleRows);
     }
 
-    const char* hint = v.count > kBulkVisibleRows ? "A NEXT  B CONTINUE  C BACK" : "B CONTINUE  C BACK";
-    drawHintBand(fb, hint);
+    // Opened from the Hacker VAULT, so it speaks that face's hint line.
+    drawHackerHint(fb, v.count > kBulkVisibleRows ? "A NEXT  C BACK" : "C BACK", "B CONTINUE");
 }
 
 void drawRollbackPicker(Framebuffer& fb, const int points[4], int cursor) {

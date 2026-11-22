@@ -376,8 +376,10 @@ void drawMovePicker(Framebuffer& fb, const ContentRegistry& reg, const MoveLoado
         drawRemovePanel(fb, reg, load, v, panelY);
 
     if (v.confirmActive) drawMoveReplaceConfirm(fb, reg, v);
+    // The hold (every owned move of the kind, or only the ones that fit) takes C's place,
+    // as on the MOVES slots: C is BACK everywhere, and the hold is found nowhere else.
     drawHintBand(fb, v.confirmActive ? "A TOGGLE  B CONFIRM  C BACK"
-                                     : "A NEXT  B OPEN  C BACK");
+                                     : "A NEXT  B OPEN  HOLD B ALL");
 }
 
 namespace {

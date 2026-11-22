@@ -9,6 +9,7 @@
 #include "core/content/defs.h"
 #include "core/content/effect_text.h"   // SpecRow: drawSpecGrid's input
 #include "core/model/pet_model.h"
+#include "core/render/canvas.h"   // kActiveH: where the hint lines sit
 #include "core/render/color.h"
 #include "core/render/font_glyphs.h"   // FontFace: drawTextMarquee's cut
 #include "core/render/palette.h"   // palColor: drawHeaderBand's default right colour
@@ -219,7 +220,9 @@ void drawHintBand(Framebuffer& fb, const char* hint);
 // The Hacker face's hint line (VISUAL_LANGUAGE §4.2): a rule with the secondary verbs
 // left in ink-dim and the one verb the screen exists for right-aligned in the accent.
 // `secondary` may be null or empty. Unavailable dims the primary verb when it cannot
-// fire right now.
+// fire right now. Its rule sits at kHackerHintRuleY, which is where a Hacker-face list
+// has to stop.
+constexpr int kHackerHintRuleY = kActiveH - 26;
 enum class VerbState : uint8_t { Ready, Unavailable };
 void drawHackerHint(Framebuffer& fb, const char* secondary, const char* primary,
                     VerbState state = VerbState::Ready);

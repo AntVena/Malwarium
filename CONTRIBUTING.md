@@ -15,8 +15,10 @@ chord (Hacker face, combat override, egg crack).
 **Each button's HOLD is the bigger version of its tap**, and there are only three: hold **A**
 to repeat the step, hold **B** for the screen's second action (the ITEMS type filter, the
 MOVES show-all, the VAULT bulk-open, the CFG factory reset), hold **C** to walk a list
-backward. A hold never means something unrelated to the tap under it, and C's tap is Cancel
-on every screen, with no exceptions. The row-stepping half is implemented once, in
+backward. A hold never means something unrelated to the tap under it. C's tap steps back one
+level on every screen: out of an overlay, a page, a list or a picker. A text editor's level is
+one character, so there C erases the cell behind the caret and leaves from the first cell
+(VISUAL_LANGUAGE §4.2 has the words each screen shows for it). The row-stepping half is implemented once, in
 [`game_listnav.cpp`](src/core/app/game/game_listnav.cpp); a screen joins it through its
 `ScreenRow`'s list column (how it steps, what C does there; the menu tree's levels answer
 by the entered slot) and steps with `stepRow` rather than its own cursor arithmetic. B's

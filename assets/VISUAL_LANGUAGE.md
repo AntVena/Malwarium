@@ -296,9 +296,16 @@ The line naming what the buttons do is drawn one of two ways, one per face:
   screen exists for right-aligned in `accent` (dimmed when it can't fire right now). A hold
   hint (`HOLD - OPEN ALL`) is a secondary verb.
 
-**A's verb is NEXT wherever A moves a cursor**, on a list, a picker or a menu, because
-every one of them steps through the same walk (`game_listnav.cpp`). `A CYCLE` is reserved
-for A changing a VALUE in place: a setting's level, a HackerTag letter.
+**A's verb is NEXT wherever A walks a list**, a picker or a menu, because every one of
+them steps through the same walk (`game_listnav.cpp`). Two other words cover what NEXT
+would misdescribe:
+
+- `A SWITCH` moves between the two or three answers to the one question a screen is
+  asking, all on screen at once: fight or flee, feed or pay, which way to defrag, which reply
+  to a riddle. There is no list to walk, only a choice to change.
+- `A CYCLE` changes a VALUE in place: a setting's level, a HackerTag letter.
+
+A yes/no choice is the two-answer case and moves with `A TOGGLE`, never `A CHOOSE`.
 
 **B's verb names the action when B does one thing** (`B BUY`, `B EQUIP`, `B FIGHT`,
 `B HATCH`). When B does one of the four jobs every screen shares, it has one word each:
@@ -309,8 +316,22 @@ for A changing a VALUE in place: a setting's level, a HackerTag letter.
 | say yes to an `InlineConfirm` or a YES/NO page | `CONFIRM` | COMMIT, OK |
 | store a value a CFG page is showing | `SET` | APPLY |
 | leave a result or a reader that is finished | `CONTINUE` | OK, DONE, GOT IT |
+| take the focused row, when the rows are different actions | `DO` | CONFIRM, GO |
+| spend the focused thing (an item, a move, an Exploit) | `USE` | CONFIRM, CAST |
 
-A yes/no choice moves with `A TOGGLE` (two options), never `A CHOOSE`.
+CONFIRM is only ever the second press of a two-step action, so a band that says it promises
+the player one more chance to back out. `B GO` is an action name (a warp goes somewhere).
+
+**C's word is BACK** when C leaves the screen for the one it came from. When stepping back
+means something more, the band says what (CONTRIBUTING, *Hard constraints*):
+
+| C does | Word |
+|---|---|
+| closes an overlay over a screen that stays (the combat picker) | `CANCEL` |
+| walks out of a shop or a visit | `LEAVE` |
+| steps back to a level with a name (the ITEMS type tiles) | that name (`TYPES`) |
+| answers the screen's question (an encounter, a riddle) | the answer (`FLEE`, `REFUSE`) |
+| erases the cell behind a text caret | `DELETE` |
 
 **The exception rule.** A gesture that an upgrade grants is advertised only once the upgrade
 is owned, so an unowned player's screen is pixel-identical to one where the upgrade never

@@ -931,9 +931,8 @@ void drawEncounterIntro(Framebuffer& fb, const EncounterIntroView& v) {
                  i == choice ? palColor(Pal::ACCENT) : palColor(Pal::INK));
     }
 
-    // Mandatory-in-spirit hint band (the wireframe shows it): C's
-    // "flee" meaning here isn't the standard back-contract, so it's spelled out.
-    const char* hint = "A SWITCH  B CONFIRM  C FLEE";
+    // C answers the encounter rather than leaving it, so the band names the answer.
+    const char* hint = "A SWITCH  B DO  C FLEE";
     drawHintBand(fb, hint);
 }
 

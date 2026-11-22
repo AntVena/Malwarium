@@ -379,14 +379,14 @@ void CrewScreen::drawNetPicker(Framebuffer& fb, const CrewHost& host) const {
             // the tag would mark nothing. HOME still needs saying: it's the one
             // row whose meaning differs. Word, never colour alone.
             if (row.key == host.operatorRecord().homeNetworkKey)
-                drawText(fb, kMargin + 10, rowY + kFontH + 1, "HOME",
+                drawText(fb, kMargin + 10, rowY + kFontH + 2, "HOME",
                          palColor(Pal::ACCENT));
         }
         drawScrollbar(fb, 52, kNetVisibleRows * kNetRowPitch, n, scrollTop,
                       kNetVisibleRows);
     }
 
-    drawHackerHint(fb, "A NEXT", "B SET  C BACK",
+    drawHackerHint(fb, "A NEXT  C BACK", "B SET",
                    n > 0 ? VerbState::Ready : VerbState::Unavailable);
 }
 
@@ -399,7 +399,7 @@ void CrewScreen::drawTeam(Framebuffer& fb, const CrewHost& host) const {
     if (n == 0) {
         drawText(fb, kMargin, 56, "NO CREWS ON THIS SIDE", palColor(Pal::INK_DIM));
         drawText(fb, kMargin, 56 + kLineH, "YET.", palColor(Pal::INK_DIM));
-        drawHintBand(fb, "C BACK");
+        drawHackerHint(fb, "C BACK", "B OPEN", VerbState::Unavailable);
         return;
     }
     int sel = teamRow_;
@@ -445,10 +445,11 @@ void CrewScreen::drawTeam(Framebuffer& fb, const CrewHost& host) const {
             drawText(fb, kActiveW - kMargin - textWidth("JOINED"), tagY, "JOINED",
                      palColor(Pal::ACCENT));
     }
-    if (n > kTeamVisibleRows)
-        drawScrollbar(fb, kRowTop, kTeamVisibleRows * kTeamRowH, n, scrollTop,
-                      kTeamVisibleRows);
-    drawHintBand(fb, "A NEXT   B OPEN   C BACK");
+    if (n > kTeamVisibleRows) {
+        const int trackH = std::min(kTeamVisibleRows * kTeamRowH, kHackerHintRuleY - 2 - kRowTop);
+        drawScrollbar(fb, kRowTop, trackH, n, scrollTop, kTeamVisibleRows);
+    }
+    drawHackerHint(fb, "A NEXT  C BACK", "B OPEN");
 }
 
 // --- Crew detail ---------------------------------------------------------------
@@ -504,11 +505,9 @@ void CrewScreen::drawDetail(Framebuffer& fb, const CrewHost& host) const {
     }
 
     const bool pages = lines > kDetailProseLines;
-    const char* hint = joined ? (pages ? "A MORE  B LEAVE  C BACK" : "B LEAVE   C BACK")
-                      : (host.operatorRecord().homeNetworkKey != 0)
-                          ? (pages ? "A MORE  B ENLIST  C BACK" : "B ENLIST   C BACK")
-                          : (pages ? "A MORE   C BACK" : "C BACK");
-    drawHintBand(fb, hint);
+    const bool canEnlist = host.operatorRecord().homeNetworkKey != 0;
+    drawHackerHint(fb, pages ? "A MORE  C BACK" : "C BACK", joined ? "B LEAVE" : "B ENLIST",
+                   joined || canEnlist ? VerbState::Ready : VerbState::Unavailable);
 }
 
 }  // namespace mal

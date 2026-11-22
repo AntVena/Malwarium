@@ -310,10 +310,11 @@ void drawHintBand(Framebuffer& fb, const char* hint) {
 
 void drawHackerHint(Framebuffer& fb, const char* secondary, const char* primary,
                     VerbState state) {
-    fb.fillRect(0, kActiveH - 26, kActiveW, 1, palColor(Pal::TRACK));
+    const int textY = kHackerHintRuleY + 6;
+    fb.fillRect(0, kHackerHintRuleY, kActiveW, 1, palColor(Pal::TRACK));
     if (secondary && secondary[0])
-        drawText(fb, kMargin, kActiveH - 20, secondary, palColor(Pal::INK_DIM));
-    drawText(fb, kActiveW - kMargin - textWidth(primary), kActiveH - 20, primary,
+        drawText(fb, kMargin, textY, secondary, palColor(Pal::INK_DIM));
+    drawText(fb, kActiveW - kMargin - textWidth(primary), textY, primary,
              palColor(state == VerbState::Ready ? Pal::ACCENT : Pal::INK_DIM));
 }
 

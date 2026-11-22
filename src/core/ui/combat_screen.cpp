@@ -1617,15 +1617,13 @@ void drawStatPanel(Framebuffer& fb, const CombatFrame& f) {
 }
 
 // Mandatory hint band: A+C live, C reassigned. The picker's three states are three
-// different keyboards, and the band level's B OPENS rather than commits: a hint that said
-// COMMIT there would be offering a key that does nothing, which is the one thing this
-// band must never do.
+// different keyboards: at the band level B OPENS a section, inside one B spends the row.
 void drawCombatHints(Framebuffer& fb, const CombatFrame& f) {
     const Combat& combat = f.combat;
     const char* pickerHint = combat.overrideAtBands()  ? "A NEXT B OPEN C CANCEL"
                              : combat.overrideBandCount() > 1
-                                 ? "A NEXT B CONFIRM C BACK"
-                                 : "A NEXT B CONFIRM C CANCEL";
+                                 ? "A NEXT B USE C BACK"
+                                 : "A NEXT B USE C CANCEL";
     const char* hint = !f.ongoing             ? "B CONTINUE"
                        : combat.overrideOpen() ? pickerHint
                        : f.v.sides.canRun      ? "A+C CMD B STAT C RUN A SKIP"
