@@ -401,7 +401,11 @@ extern "C" bool verifyRollbackLater() { return true; }
 #  define BOOT_TRACE(...) do {} while (0)
 #endif
 
-void setup() {
+namespace {
+
+// --- setup()'s steps, in the order it runs them ----------------------------------
+
+void latchPower() {
     // POWER LATCH FIRST: before anything that can delay boot (Serial, the
     // bringup 15s serial-wait, display init). On battery this board's rail is
     // held only by the physical PWR button until firmware asserts BAT_EN; miss
@@ -417,11 +421,9 @@ void setup() {
     gpio_deep_sleep_hold_dis();
     gpio_hold_dis(static_cast<gpio_num_t>(PIN_POWER_HOLD));
 #endif
+}
 
-    // Before Serial, the display, the card or the radio: a wake that isn't the
-    // travel gesture must cost nothing but the milliseconds spent proving it.
-    travelWakeGate();
-
+void beginSerial() {
     Serial.begin(115200);
 #ifdef BRINGUP_PINSCAN
     // Wait for the serial host so no boot trace is lost (HWCDC drops pre-attach).
@@ -434,18 +436,9 @@ void setup() {
     Serial.println();
     Serial.printf("=== Malwarium boot: %s ===\n", BOARD_NAME);
     Serial.flush();
+}
 
-    BOOT_TRACE("[boot] phase=1 display.begin()\n");
-    display.begin();
-    BOOT_TRACE("[boot] phase=2 display ok; free heap=%lu\n",
-               (unsigned long)ESP.getFreeHeap());
-
-    initButtons();
-#ifdef BRINGUP_PINSCAN
-    initPinScan();
-#endif
-    BOOT_TRACE("[boot] phase=3 buttons/scan ok\n");
-
+void bootGame() {
     // NVS-backed save: loaded at boot, so a power-cycle resumes the raised pet.
     static NvsSaveStore store;
     const bool hadSave = !store.load().empty();   // probe NVS before the ctor consumes it
@@ -482,22 +475,9 @@ void setup() {
     Serial.flush();
     BOOT_TRACE("[boot] phase=4 Game ok; free heap=%lu\n",
                (unsigned long)ESP.getFreeHeap());
+}
 
-    static Framebuffer f(kActiveW, kActiveH);
-    fb = &f;
-    BOOT_TRACE("[boot] phase=5 Framebuffer(%dx%d) ok; free heap=%lu\n",
-               kActiveW, kActiveH, (unsigned long)ESP.getFreeHeap());
-
-    // Released after begin() drives it: the pad is held LOW through a travel sleep.
-    sound.begin();
-    gpio_hold_dis(static_cast<gpio_num_t>(PIN_AUDIO_PA_CTRL));
-    game->setSoundOut(&sound);
-
-    lastActivityMs = millis();
-    applyBrightness();   // drive the backlight to the loaded CFG level before first paint
-    repaint();  // first paint
-    BOOT_TRACE("[boot] phase=6 first frame presented\n");
-
+void mountSdCard() {
     // microSD bring-up (SD_MMC 4-bit SDIO). Optional: a failed mount (no card /
     // wrong pins) logs and continues: boot stays clean. A successful mount runs
     // a write/read round-trip so the boot line proves the filesystem is usable,
@@ -529,7 +509,9 @@ void setup() {
         game->setSdStatus({false, 0});   // CFG "SD" -> ABSENT
     }
     Serial.flush();
+}
 
+void beginRadio() {
     // Wire every radio consumer + the arbiter that owns the radio between them.
     // All stay off until their persisted CFG opt-in is on (authorized use); the
     // arbiter guarantees they never both power the radio (arbitration).
@@ -550,7 +532,10 @@ void setup() {
         Serial.printf("[sta] home network %s\n",
                       provisioned ? "provisioned" : "not set up");
     }
+}
+
 #if UPDATE_ENABLED
+void reportUpdateSource() {
     // Where an update check would look, and whether that is a stored override or
     // the compiled default (update_source.h). Reported at boot because "no source"
     // is a legitimate state, and one that otherwise only shows up as a check that
@@ -585,27 +570,66 @@ void setup() {
                       web.version[0] ? web.version : "unknown",
                       static_cast<unsigned>(web.code));
     }
+}
+#endif
+
+} // namespace
+
+void setup() {
+    latchPower();
+
+    // Before Serial, the display, the card or the radio: a wake that isn't the
+    // travel gesture must cost nothing but the milliseconds spent proving it.
+    travelWakeGate();
+
+    beginSerial();
+
+    BOOT_TRACE("[boot] phase=1 display.begin()\n");
+    display.begin();
+    BOOT_TRACE("[boot] phase=2 display ok; free heap=%lu\n",
+               (unsigned long)ESP.getFreeHeap());
+
+    initButtons();
+#ifdef BRINGUP_PINSCAN
+    initPinScan();
+#endif
+    BOOT_TRACE("[boot] phase=3 buttons/scan ok\n");
+
+    bootGame();
+
+    static Framebuffer f(kActiveW, kActiveH);
+    fb = &f;
+    BOOT_TRACE("[boot] phase=5 Framebuffer(%dx%d) ok; free heap=%lu\n",
+               kActiveW, kActiveH, (unsigned long)ESP.getFreeHeap());
+
+    // Released after begin() drives it: the pad is held LOW through a travel sleep.
+    sound.begin();
+    gpio_hold_dis(static_cast<gpio_num_t>(PIN_AUDIO_PA_CTRL));
+    game->setSoundOut(&sound);
+
+    lastActivityMs = millis();
+    applyBrightness();   // drive the backlight to the loaded CFG level before first paint
+    repaint();  // first paint
+    BOOT_TRACE("[boot] phase=6 first frame presented\n");
+
+    mountSdCard();
+
+    beginRadio();
+#if UPDATE_ENABLED
+    reportUpdateSource();
 #endif
     beginBattery();    // prime the charge-status pin (no-op if no battery monitor)
     game->setPowerStatus(readPowerStatus());  // first reading before any repaint
     // Last, so the trial window starts from a device that finished coming up:
     // everything above is what an OTA image has to survive to be worth keeping.
-    armOtaCommitIfPending();
-}
+    armOtaCommitIfPending();}
 
-void loop() {
-    const bool wasAsleep = screenAsleep;
-    bool dirty = pollButtons();
-#ifdef BRINGUP_PINSCAN
-    pollPinScan();
-#endif
-    if (wasAsleep && !screenAsleep) dirty = true;  // just woke -> repaint fresh state
+namespace {
 
-    // There is no dev A+B "reset to Decryption Hatch" chord here: it is too easy to
-    // mis-press. The dev reset is CFG's "RESET TO HATCH" row (DEV_CFG_RESET_ROW,
-    // dev_config.h), present only in a -DMALWARIUM_DEV build.
+// --- loop()'s steps, in the order it runs them -----------------------------------
 
 #ifndef BRINGUP_PINSCAN
+void tickScreenPower() {
     // Idle screen sleep: blank the panel after SCREEN_SLEEP_MS of no input. The engine
     // keeps ticking; we just stop presenting. Disabled during bring-up.
     //
@@ -652,8 +676,10 @@ void loop() {
                           : game->highFrameRate() ? CPU_ACTIVE_FREQ_MHZ
                                                   : CPU_SCREEN_IDLE_FREQ_MHZ;
     applyCpuFreq(targetMhz);
+}
 #endif
 
+void syncBrightness() {
     // Brightness: re-drive the backlight whenever the CFG level changes.
     // Only the user changes it (in CFG), so a cheap value-compare suffices: no
     // one-shot flag needed. Applied even while the screen is "asleep" so waking
@@ -663,7 +689,10 @@ void loop() {
         lastBrightness = game->brightness();
         applyBrightness();
     }
+}
 
+// True when the card was remounted and the frame should repaint.
+bool serviceSdRecheck() {
     // Runtime microSD re-check (CFG "SD RECHECK" -> Game::requestSdRecheck). The
     // card is mounted once in setup(), so one inserted later is invisible until
     // this remounts it. Any live capture is sealed FIRST:
@@ -683,9 +712,13 @@ void loop() {
                       ok ? "mounted" : "absent",
                       (unsigned long)sdCard.sizeMB(), rt ? "OK" : "FAILED");
         Serial.flush();
-        dirty = true;
+        return true;
     }
+    return false;
+}
 
+// True when a format ran and the frame should repaint.
+bool serviceSdFormat() {
     // FORMAT SD: from CFG -> DEVICE -> FORMAT SD (Game::requestSdFormat) or the
     // browser flasher over serial (pollSerialFormatAsk). Everything that can hold a
     // file open on the card stands down first, as for a recheck but wider: the AP
@@ -695,39 +728,40 @@ void loop() {
     // 'Pedia onto this card), so a format waits for it (CFG) or is refused (serial).
     // The 'Pedia's version marker went with the card, so the engine is told the
     // bundle is gone, which is what lets UPDATES offer it straight back.
-    {
-        static bool serialFormatSpent = false;
-        bool serialAsk = pollSerialFormatAsk();
-        if (serialAsk && (serialFormatSpent || millis() > kSerialFormatWindowMs)) {
-            Serial.println("MALSD REFUSED window - replug the device and try again");
-            serialAsk = false;
-        }
-        if (serialAsk && game->updateJob().live()) {
-            Serial.println("MALSD REFUSED update - an update is writing to the card");
-            serialAsk = false;
-        }
-        if ((serialAsk || game->deviceStatus().sdFormatRequested()) && !game->updateJob().live()) {
-            if (serialAsk) serialFormatSpent = true;
-            Serial.println("MALSD BUSY");
-            Serial.flush();
-            if (!screenAsleep) repaint();       // the FORMATTING face, before the block
-            radio.standDown(millis());           // seals a capture; closes the .pcap
-            const bool ok = sdCard.format();
-            const bool rt = ok && sdCard.selfTest();
-            game->setSdStatus({rt, sdCard.sizeMB()});
-            game->setWebBundleVersion(nullptr);
-            if (game->deviceStatus().sdFormatRequested()) game->finishSdFormat(rt);
-            if (rt) Serial.printf("MALSD OK %luMB\n", (unsigned long)sdCard.sizeMB());
-            else Serial.printf("MALSD FAIL %s\n", ok ? "round-trip" : sdCard.lastError());
-            Serial.flush();
-            // The flasher repeats its command until it hears BUSY, so copies sent
-            // before this one was answered are still queued: drop them unanswered.
-            while (Serial.available() > 0) Serial.read();
-            lastActivityMs = millis();
-            dirty = true;
-        }
+    static bool serialFormatSpent = false;
+    bool serialAsk = pollSerialFormatAsk();
+    if (serialAsk && (serialFormatSpent || millis() > kSerialFormatWindowMs)) {
+        Serial.println("MALSD REFUSED window - replug the device and try again");
+        serialAsk = false;
     }
+    if (serialAsk && game->updateJob().live()) {
+        Serial.println("MALSD REFUSED update - an update is writing to the card");
+        serialAsk = false;
+    }
+    if ((serialAsk || game->deviceStatus().sdFormatRequested()) && !game->updateJob().live()) {
+        if (serialAsk) serialFormatSpent = true;
+        Serial.println("MALSD BUSY");
+        Serial.flush();
+        if (!screenAsleep) repaint();       // the FORMATTING face, before the block
+        radio.standDown(millis());           // seals a capture; closes the .pcap
+        const bool ok = sdCard.format();
+        const bool rt = ok && sdCard.selfTest();
+        game->setSdStatus({rt, sdCard.sizeMB()});
+        game->setWebBundleVersion(nullptr);
+        if (game->deviceStatus().sdFormatRequested()) game->finishSdFormat(rt);
+        if (rt) Serial.printf("MALSD OK %luMB\n", (unsigned long)sdCard.sizeMB());
+        else Serial.printf("MALSD FAIL %s\n", ok ? "round-trip" : sdCard.lastError());
+        Serial.flush();
+        // The flasher repeats its command until it hears BUSY, so copies sent
+        // before this one was answered are still queued: drop them unanswered.
+        while (Serial.available() > 0) Serial.read();
+        lastActivityMs = millis();
+        return true;
+    }
+    return false;
+}
 
+void serviceRadioAndUpdates() {
     // The radio: the arbiter picks the single owner (AP > LINK > CAPTURE > SCAN >
     // off) from the persisted CFG opt-ins + the low-battery guard, stands the
     // others down, and services the owner. The audit consumers are
@@ -761,7 +795,9 @@ void loop() {
     }
     if (restartAtMs != 0 && millis() >= restartAtMs) ESP.restart();
 #endif
+}
 
+void samplePowerStatus(bool wasAsleep) {
     // Battery/charge status. Two consumers draw it (the CFG "BATT" line and
     // the Hacker face's glyph), and the face is a screen a player SITS on, so a
     // reading taken only on arrival would freeze there for as long as they stayed.
@@ -793,36 +829,31 @@ void loop() {
     }
     wasOnSysInfo = onSysInfo;
     wasOnHackerFace = onHackerFace;
+}
 
 #if HEAP_TRACE_ENABLED
+void traceHeap() {
     // A baseline to read the transition figures against: a LEAK shows as a monotonic
     // decline across repeated cycles, transient pressure as a dip that recovers. The
     // save field is the guard's own verdict, so a deferred write is visible rather
     // than being inferred from a save that silently didn't happen (config.h).
-    {
-        static uint32_t lastHeap = 0;
-        if (millis() - lastHeap >= HEAP_TRACE_MS) {
-            lastHeap = millis();
-            Serial.printf("[heap] t=%lus free=%u largest=%u save=%s floor=%u held=%d low=%u "
-                          "wfail=%d\n",
-                          millis() / 1000,
-                          (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap(),
-                          game->saveHasHeadroom() ? "ok" : "DEFERRED",
-                          (unsigned)game->saveHeapFloor(),
-                          game->saveSchedule().deferred(),
-                          (unsigned)game->saveSchedule().deferredLowMark(),
-                          game->saveSchedule().writesFailed());
-        }
+    static uint32_t lastHeap = 0;
+    if (millis() - lastHeap >= HEAP_TRACE_MS) {
+        lastHeap = millis();
+        Serial.printf("[heap] t=%lus free=%u largest=%u save=%s floor=%u held=%d low=%u "
+                      "wfail=%d\n",
+                      millis() / 1000,
+                      (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap(),
+                      game->saveHasHeadroom() ? "ok" : "DEFERRED",
+                      (unsigned)game->saveHeapFloor(),
+                      game->saveSchedule().deferred(),
+                      (unsigned)game->saveSchedule().deferredLowMark(),
+                      game->saveSchedule().writesFailed());
     }
+}
 #endif
-    const bool beat = game->tick(millis());  // always tick (model runs while asleep)
-    if (beat) dirty = true;
-    if (sound.takeAlertWake()) {
-        if (noteActivity()) Serial.println("[screen] wake: care alert");
-        dirty = true;
-    }
-    if (dirty && !screenAsleep) repaint();
 
+void serviceTravelSleep() {
     // Travel mode. The request is latched rather than pulsed, so each of the three
     // preconditions below can simply decline this pass and be asked again next loop.
     //
@@ -848,8 +879,10 @@ void loop() {
             }
         }
     }
+}
 
 #ifdef BRINGUP_PINSCAN
+void traceAlive() {
     // Heartbeat so a serial reader attaching at any time sees the firmware is
     // alive (the S3 hardware-CDC drops prints emitted before a host connects).
     static uint32_t lastAlive = 0;
@@ -858,13 +891,16 @@ void loop() {
         Serial.printf("[alive] t=%lus hunger=%d nav=%d\n", millis() / 1000,
                       game->model().hunger(), static_cast<int>(game->nav()));
     }
+}
 #endif
+
+void idleUntilNextPass() {
     // Poll cadence. With the screen asleep AND the radio unowned, nothing external can
     // touch game state and a button press is the only thing worth watching for, so the SoC
     // light-sleeps rather than spinning the loop. Any other state keeps the responsive
     // cadence, and bring-up pin scanning wants continuous polling instead.
     //
-    // "Unowned" now includes the gaps between audit-scan sweeps: the scan powers its radio
+    // "Unowned" includes the gaps between audit-scan sweeps: the scan powers its radio
     // down between sweeps (net_sniff.h), so that quiet stretch is a genuine no-owner window
     // the SoC can sleep through, the main win over holding the radio hot for the whole
     // ~30s interval. The timer wake is clamped to the scan's next-sweep time
@@ -879,9 +915,6 @@ void loop() {
     // hook that maintains it having been stopped while the link re-enumerates). Staying up
     // briefly after every wake gives that a chance to land, at ~0.3% duty against a
     // 2-minute fallback.
-    // A frame has been on the panel by now, so this is the full health test.
-    commitOtaWhenProven(millis());
-
     const bool usbSettling = USB_KEEPS_AWAKE && lastSleepWakeMs != 0 &&
                              millis() - lastSleepWakeMs < USB_SETTLE_MS;
     const bool idleAndQuiet = screenAsleep && radio.owner() == RadioArbiter::Owner::None &&
@@ -901,4 +934,46 @@ void loop() {
         delay(5);
     }
 #endif
+}
+
+} // namespace
+
+void loop() {
+    const bool wasAsleep = screenAsleep;
+    bool dirty = pollButtons();
+#ifdef BRINGUP_PINSCAN
+    pollPinScan();
+#endif
+    if (wasAsleep && !screenAsleep) dirty = true;  // just woke -> repaint fresh state
+
+    // There is no dev A+B "reset to Decryption Hatch" chord here: it is too easy to
+    // mis-press. The dev reset is CFG's "RESET TO HATCH" row (DEV_CFG_RESET_ROW,
+    // dev_config.h), present only in a -DMALWARIUM_DEV build.
+
+#ifndef BRINGUP_PINSCAN
+    tickScreenPower();
+#endif
+    syncBrightness();
+    if (serviceSdRecheck()) dirty = true;
+    if (serviceSdFormat()) dirty = true;
+    serviceRadioAndUpdates();
+    samplePowerStatus(wasAsleep);
+#if HEAP_TRACE_ENABLED
+    traceHeap();
+#endif
+    const bool beat = game->tick(millis());  // always tick (model runs while asleep)
+    if (beat) dirty = true;
+    if (sound.takeAlertWake()) {
+        if (noteActivity()) Serial.println("[screen] wake: care alert");
+        dirty = true;
+    }
+    if (dirty && !screenAsleep) repaint();
+
+    serviceTravelSleep();
+#ifdef BRINGUP_PINSCAN
+    traceAlive();
+#endif
+    // A frame has been on the panel by now, so this is the full health test.
+    commitOtaWhenProven(millis());
+    idleUntilNextPass();
 }
