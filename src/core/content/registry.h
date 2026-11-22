@@ -82,6 +82,10 @@ public:
     const SpriteData* sprite(const char* name) const {
         return (assets_ && name) ? assets_->sprite(name) : nullptr;
     }
+    // A sheet whose name is DERIVED from a content id: `prefix` + the id upper-cased
+    // (ICON_MOVE_<ID>, ICON_LINE_<LINE>, UI_STRIKE_<LINE>). The roster names the row, the
+    // atlas holds the drawing, and nothing lists the pairs (ASSET_MANIFEST.md's lede).
+    const SpriteData* derivedSprite(const char* prefix, const char* id) const;
 
     // Build the registry (embedded content + assets).
     static ContentRegistry embedded();

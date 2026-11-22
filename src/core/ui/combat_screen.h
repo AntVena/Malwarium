@@ -25,6 +25,7 @@
 
 namespace mal {
 
+class ContentRegistry;
 class Framebuffer;
 class Combat;
 struct SpriteData;
@@ -67,7 +68,8 @@ bool hurtPoseEarned(const Combatant& target, int damage);
 // that source's pair.
 //
 // Keyed on the MOVE's line, not the creature's, because what is being shown is what was
-// SWUNG. So a wild with no line still shows a line's mark when it casts a line's move; a
+// SWUNG. The sheet is the line's UI_STRIKE_<LINE> where one is drawn, else the common one,
+// so a new family gets its mark by drawing it. So a wild with no line still shows a line's mark when it casts a line's move; a
 // Metamorphic pet shows the mark of whatever its wildcard rolled; and a cast with no line
 // (the common pool) shows the common mark.
 //
@@ -78,7 +80,7 @@ struct StrikeMark {
     const SpriteData* sheet;
     int variant;
 };
-StrikeMark strikeMark(const Combatant& actor, int strikeSeq);
+StrikeMark strikeMark(const ContentRegistry& reg, const Combatant& actor, int strikeSeq);
 
 // Where the two fighters stand, in active px, and the CLASH LANE between them.
 //
@@ -381,6 +383,7 @@ struct RivalPrizes {
 // Everything drawCombat reads besides the fight itself. Fields left at their defaults are
 // the plain case: page 0, the local pet in Combat's player slot, no outro, no camo.
 struct CombatView {
+    const ContentRegistry* content = nullptr;   // resolves the derived sheets (strikeMark)
     const SpriteData* playerSprite = nullptr;
     const SpriteData* enemySprite = nullptr;
     int beat = 0;

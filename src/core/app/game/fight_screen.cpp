@@ -192,6 +192,7 @@ void FightScreen::draw(Framebuffer& fb, const FightScreenHost& host) const {
     const bool swarmRival = combat.enemy().isSwarm && !sides.localIsEnemySide;
     if (swarmRival) rivalSwarm = swarmViewOf(host.shiboleetMeeting().flock);
     CombatView v;
+    v.content = &host.content();
     v.playerSprite = ps;
     v.enemySprite = es;
     v.beat = host.screenBeat();

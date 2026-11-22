@@ -1,5 +1,6 @@
 #include "core/content/registry.h"
 
+#include <cstdio>
 #include <cstring>
 
 namespace mal {
@@ -69,6 +70,15 @@ const DaemonPoolDef* ContentRegistry::daemonPool(const char* fromId,
                 return &arr[i];
     }
     return nullptr;
+}
+
+const SpriteData* ContentRegistry::derivedSprite(const char* prefix, const char* id) const {
+    if (!prefix || !id) return nullptr;
+    char name[48];
+    std::snprintf(name, sizeof(name), "%s%s", prefix, id);
+    for (char* c = name; *c; ++c)
+        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
+    return sprite(name);
 }
 
 const SpriteData* ContentRegistry::creatureSprite(const CreatureDef& c) const {

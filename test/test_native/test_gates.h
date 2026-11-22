@@ -82,6 +82,8 @@ inline mal::ButtonEvent press(mal::Button b) { return {b, true, false}; }
 inline mal::CombatView fightView(const mal::SpriteData* player, const mal::SpriteData* enemy,
                                  const mal::CombatSides& sides = {}) {
     mal::CombatView v;
+    static const mal::ContentRegistry kContent = mal::ContentRegistry::embedded();
+    v.content = &kContent;
     v.playerSprite = player;
     v.enemySprite = enemy;
     v.sides = sides;

@@ -39,26 +39,17 @@ const SpriteData& familyIcon(MoveFamily f) {
     return ASSET_ICON_MOVE_FAMILY_STRIKE;
 }
 
-// `prefix` + `id` upper-cased: the sprite naming convention (ICON_MOVE_<ID>, ICON_LINE_<ID>).
-const SpriteData* spriteNamed(const ContentRegistry& reg, const char* prefix, const char* id) {
-    char name[48];
-    std::snprintf(name, sizeof(name), "%s%s", prefix, id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
-    return reg.sprite(name);
-}
-
 } // namespace
 
 // The move's own ICON_MOVE_<ID> where one is drawn (like ICON_MOD_*); else a line move's
 // ICON_LINE_<LINE>, so a loadout can pick its line's moves out at a glance; else the
 // generic move's family glyph. Every row carries an icon.
 const SpriteData* moveIcon(const ContentRegistry& reg, const char* id) {
-    if (const SpriteData* own = spriteNamed(reg, "ICON_MOVE_", id)) return own;
+    if (const SpriteData* own = reg.derivedSprite("ICON_MOVE_", id)) return own;
     const MoveDef* m = reg.move(id);
     if (!m) return nullptr;
     if (m->line)
-        if (const SpriteData* line = spriteNamed(reg, "ICON_LINE_", m->line)) return line;
+        if (const SpriteData* line = reg.derivedSprite("ICON_LINE_", m->line)) return line;
     return &familyIcon(moveFamily(*m));
 }
 

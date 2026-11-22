@@ -240,19 +240,19 @@ void test_strike_mark_follows_the_move_not_the_creature() {
     Combatant c{};
     c.moves = {&ransom};
     c.lastMoveIdx = 0;
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_RANSOMWARE);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_RANSOMWARE);
 
     // The creature behind the fighter says nothing about it: a wild carries no
     // CreatureDef at all and still shows the line's mark for the line's move.
     CHECK(c.creature == nullptr);
     c.moves = {&worm};
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_WORM);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_WORM);
 
     // No line on the row is the common pool, and so is a fighter that cast nothing.
     c.moves = {&plain};
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
     c.lastMoveIdx = -1;
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
 }
 
 // --- Gate: a Metamorphic wildcard shows what it ROLLED ---
@@ -269,13 +269,13 @@ void test_strike_mark_follows_a_wildcard_to_its_roll() {
     c.wildPools.resize(1);
     c.wildPools[0].lastRolled = &rolled;
     c.lastMoveIdx = 0;
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_TROJAN);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_TROJAN);
 
     // A wildcard slot that has not rolled yet falls through to the slot's own row, which
     // names the metamorphic line and therefore lands on the common mark rather than on
     // nothing at all.
     c.wildPools[0].lastRolled = nullptr;
-    CHECK(strikeMark(c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, 0).sheet == &ASSET_UI_STRIKE_COMMON);
 }
 
 // --- Gate: no two blows in a row draw the same frame ---
@@ -295,7 +295,7 @@ void test_strike_mark_never_repeats_between_blows() {
     for (int swing = 1; swing <= 8; ++swing) {
         // Alternating fighters on the SAME line: the matchup that has any chance of
         // aliasing at all, and the one the per-fighter count got wrong.
-        const int v = strikeMark(swing % 2 ? a : b, swing).variant;
+        const int v = strikeMark(ContentRegistry::embedded(), swing % 2 ? a : b, swing).variant;
         CHECK(v != prev);
         prev = v;
         seen[v]++;
@@ -318,8 +318,8 @@ void test_strike_mark_walks_whatever_the_sheet_ships() {
     c.moves = {&m}; c.lastMoveIdx = 0;
     // A negative sequence can never arrive from Combat, but the modulo must not hand back
     // a negative index if one ever did.
-    CHECK(strikeMark(c, -1).variant >= 0);
-    CHECK(strikeMark(c, -3).variant < ASSET_UI_STRIKE_COMMON.frames);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, -1).variant >= 0);
+    CHECK(strikeMark(ContentRegistry::embedded(), c, -3).variant < ASSET_UI_STRIKE_COMMON.frames);
 }
 
 // --- Gate: every source ships a full pair, drawn as a rightward blow ---
@@ -355,7 +355,7 @@ void test_strike_count_advances_over_a_real_fight() {
         cb.step();
         if (!cb.lastWasStrike()) continue;
         const Combatant& actor = cb.lastByPlayer() ? cb.player() : cb.enemy();
-        const int v = strikeMark(actor, cb.strikeCount()).variant;
+        const int v = strikeMark(ContentRegistry::embedded(), actor, cb.strikeCount()).variant;
         CHECK(v != prev);            // the no-repeat property, on a real sequence
         prev = v;
         ++blows;

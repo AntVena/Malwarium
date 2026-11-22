@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "core/content/registry.h"
 #include "core/model/combat.h"
 #include "core/render/absorb.h"
 #include "core/render/camo.h"
@@ -278,15 +279,10 @@ CamoTarget camoTarget(const Combatant& c, const Combatant& rival) {
 
 // What this answers and why it is answered off the MOVE are on the declaration
 // (combat_screen.h).
-StrikeMark strikeMark(const Combatant& actor, int strikeSeq) {
+StrikeMark strikeMark(const ContentRegistry& reg, const Combatant& actor, int strikeSeq) {
     const MoveDef* m = castRow(actor);
-    const SpriteData* sheet = &ASSET_UI_STRIKE_COMMON;
-    if (m && m->line) {
-        if (std::strcmp(m->line, "ransomware") == 0) sheet = &ASSET_UI_STRIKE_RANSOMWARE;
-        else if (std::strcmp(m->line, "phishing") == 0) sheet = &ASSET_UI_STRIKE_PHISHING;
-        else if (std::strcmp(m->line, "trojan") == 0) sheet = &ASSET_UI_STRIKE_TROJAN;
-        else if (std::strcmp(m->line, "worm") == 0) sheet = &ASSET_UI_STRIKE_WORM;
-    }
+    const SpriteData* sheet = m && m->line ? reg.derivedSprite("UI_STRIKE_", m->line) : nullptr;
+    if (!sheet) sheet = &ASSET_UI_STRIKE_COMMON;
     const int n = sheet->frames > 0 ? sheet->frames : 1;
     // Modulo the fight's swing count, so the pair walks however many frames the sheet
     // actually ships: a source drawn with one is simply never alternated.
@@ -1177,8 +1173,8 @@ void drawStageMarks(Framebuffer& fb, const CombatFrame& f, const StageCues& c) {
     if (c.swinging) {
         // The ACTOR decides WHICH mark (what was swung); the fight's swing count decides
         // which half of its pair, so this blow never repeats the one before it.
-        const StrikeMark mark =
-            strikeMark(f.lastByLocal ? f.pl : f.en, f.combat.strikeCount());
+        const StrikeMark mark = strikeMark(*f.v.content, f.lastByLocal ? f.pl : f.en,
+                                           f.combat.strikeCount());
         drawStrikeMark(fb, stage.laneX, stage.laneW, c.hopDir, f.v.hitBeat,
                        kAttackHopPeriod, *mark.sheet, mark.variant, stage.num, stage.den);
     }
