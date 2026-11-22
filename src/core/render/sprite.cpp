@@ -13,7 +13,7 @@ namespace mal {
 
 void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
                 int row) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     const int fx0 = frame * s.frameW;
     const int fy0 = row * s.h;
     for (int r = 0; r < s.h; ++r) {
@@ -27,7 +27,7 @@ void drawSprite(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
 
 void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, int y,
                       Rgb565 tint, int row, bool mirror, uint8_t alpha) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     const int fy0 = row * s.h;
     for (int r = 0; r < s.h; ++r) {
         for (int col = 0; col < s.frameW; ++col) {
@@ -42,7 +42,7 @@ void drawSpriteTinted(Framebuffer& fb, const SpriteData& s, int frame, int x, in
 void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
                         int destX, int destY, int num, int den, int row,
                         bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     const int fy0 = row * s.h;
     const int dw = s.frameW * num / den;
     const int dh = s.h * num / den;
@@ -59,7 +59,7 @@ void drawSpriteUpscaled(Framebuffer& fb, const SpriteData& s, int frame,
 void drawSpriteFlash(Framebuffer& fb, const SpriteData& s, int frame,
                      int destX, int destY, int num, int den,
                      Rgb565 flashColor, uint8_t flashAmt, int row, bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     if (flashAmt == 0) {
         drawSpriteUpscaled(fb, s, frame, destX, destY, num, den, row, mirror);
         return;

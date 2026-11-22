@@ -15,6 +15,7 @@
 #include "core/ui/layout.h"
 #include "core/ui/stat_screen.h"   // drawStatHintBand: STAT's pages end alike
 #include "core/ui/widgets.h"
+#include "core/ui/items_screen.h"   // itemIcon
 
 namespace mal {
 
@@ -32,15 +33,9 @@ constexpr int kGridX = (kActiveW - kGridW) / 2;      // centred, so both gutters
 constexpr int kSectionH = kProseHeaderH + 4;
 constexpr int kSectionLead = kProseGroupLead;
 
-// ICON_ITEM_<UPPER ID>: the per-item glyph, the same convention the ITEMS bag draws its
-// rows from (items_screen.cpp), so a dish looks the same wherever it is met.
-const SpriteData* foodIcon(const ContentRegistry& reg, const char* id) {
-    char name[40];
-    std::snprintf(name, sizeof(name), "ICON_ITEM_%s", id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
-    return reg.sprite(name);
-}
+// The per-item glyph the ITEMS bag draws its rows with, so a dish looks the same wherever
+// it is met.
+const SpriteData* foodIcon(const ContentRegistry& reg, const char* id) { return itemIcon(reg, id); }
 
 int foodRowHeight(const FoodRow& r, bool firstInWindow) {
     if (r.section) return (firstInWindow ? 0 : kSectionLead) + kSectionH;

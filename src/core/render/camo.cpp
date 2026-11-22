@@ -166,7 +166,7 @@ void drawSpriteCamo(Framebuffer& fb, const SpriteData& s, int frame,
                     const CamoRamp& ramp, uint8_t level,
                     Rgb565 flashColor, uint8_t flashAmt, int row,
                     const CamoRamp* from, bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     if (den <= 0 || num <= 0) return;
     if (from && from->empty()) from = nullptr;
     // Not camouflaged at all is the ordinary draw: still carrying the caller's flash,

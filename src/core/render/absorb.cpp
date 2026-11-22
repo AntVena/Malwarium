@@ -53,7 +53,7 @@ void drawAbsorb(Framebuffer& fb, const SpriteData& s, int frame,
                 int srcX, int srcY, int num, int den,
                 int dstX, int dstY, Rgb565 tint, uint8_t progress, uint8_t bite,
                 int row, bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     if (den <= 0 || num <= 0) return;
 
     const int block = (num + den - 1) / den;          // one logical px, on screen

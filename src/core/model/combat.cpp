@@ -6,6 +6,7 @@
 
 #include "tunables.h"
 #include "core/model/lcg.h"
+#include "core/render/ascii.h"
 
 namespace mal {
 
@@ -1725,7 +1726,7 @@ bool Combat::overrideRowLegible(int displayRow) const {
     if (!overrideScrambled()) return true;
     const char* raw = overrideRawLabel(overrideRealRow(displayRow));
     for (const char* p = raw; *p; ++p) {
-        const char c = *p >= 'a' && *p <= 'z' ? static_cast<char>(*p - 'a' + 'A') : *p;
+        const char c = asciiUpper(*p);
         if (c < 'A' || c > 'Z') continue;              // shared with the 'net, never hidden
         if (!(overrideSigils_ & (1u << (c - 'A')))) return false;
     }

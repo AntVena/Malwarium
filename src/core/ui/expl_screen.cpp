@@ -292,11 +292,7 @@ int rowMovesToLearn(int row, ExplRowState st, const ExplListView& v) {
 // AreaDef row, so nothing here maps an area to a picture.
 const SpriteData* sectorIcon(const ContentRegistry& reg, int areaIdx) {
     if (areaIdx < 0 || areaIdx >= kExplSectors) return nullptr;
-    char name[48];
-    std::snprintf(name, sizeof(name), "ICON_SECTOR_%s", area(areaIdx).id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
-    return reg.sprite(name);
+    return reg.derivedSprite("ICON_SECTOR_", area(areaIdx).id);
 }
 } // namespace
 

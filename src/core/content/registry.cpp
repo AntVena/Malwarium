@@ -1,4 +1,5 @@
 #include "core/content/registry.h"
+#include "core/render/ascii.h"
 
 #include <cstdio>
 #include <cstring>
@@ -76,8 +77,7 @@ const SpriteData* ContentRegistry::derivedSprite(const char* prefix, const char*
     if (!prefix || !id) return nullptr;
     char name[48];
     std::snprintf(name, sizeof(name), "%s%s", prefix, id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
+    asciiUpperCopy(name, sizeof(name), name);
     return sprite(name);
 }
 

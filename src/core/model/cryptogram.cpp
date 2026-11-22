@@ -6,16 +6,11 @@
 // includes a model pays for its inline body.
 
 #include "core/model/cryptogram.h"
+#include "core/render/ascii.h"
 
 #include <cstring>
 
 namespace mal {
-
-namespace {
-
-char upper(char c) { return (c >= 'a' && c <= 'z') ? static_cast<char>(c - 32) : c; }
-
-}  // namespace
 
 bool Cryptogram::reset(const char* text, int extraReveals) {
     len_ = 0;
@@ -38,7 +33,7 @@ bool Cryptogram::reset(const char* text, int extraReveals) {
     int n = 0;
     for (const char* p = text; *p; ++p) {
         if (n >= kCryptogramMaxChars) { state_ = State::Failed; return false; }
-        text_[n++] = upper(*p);
+        text_[n++] = asciiUpper(*p);
     }
     text_[n] = '\0';
     len_ = n;

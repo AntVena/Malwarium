@@ -18,6 +18,7 @@
 #include "core/ui/spec_sheet.h"
 #include "core/ui/widgets.h"
 #include "generated/assets.h"
+#include "core/render/ascii.h"
 
 namespace mal {
 
@@ -30,20 +31,7 @@ constexpr int kModPickerMaxRows = 6;
 
 // ICON_MOD_<UPPER ID>: the per-mod glyph naming convention.
 const SpriteData* modIcon(const ContentRegistry& reg, const char* id) {
-    char name[40];
-    std::snprintf(name, sizeof(name), "ICON_MOD_%s", id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
-    return reg.sprite(name);
-}
-
-// Uppercased copy of a line id ("phishing" -> "PHISHING") for the LOCKED reason text:
-// mirrors modIcon's uppercasing idiom above.
-void upperLine(char* out, size_t outSize, const char* s) {
-    size_t i = 0;
-    for (const char* p = s; *p && i + 1 < outSize; ++p, ++i)
-        out[i] = (*p >= 'a' && *p <= 'z') ? static_cast<char>(*p - 'a' + 'A') : *p;
-    out[i] = '\0';
+    return reg.derivedSprite("ICON_MOD_", id);
 }
 
 // The hard line gate (niche-flavour pass, ModDef::requiresLine): true iff `m` requires
@@ -245,7 +233,7 @@ void drawModPickerPanel(Framebuffer& fb, const ContentRegistry& reg, const ModDe
         std::snprintf(rl, sizeof(rl), "LOCKED - IN SLOT %d", elsewhere + 1);
     } else if (wrongLine) {
         char up[16];
-        upperLine(up, sizeof(up), fm.requiresLine);
+        asciiUpperCopy(up, sizeof(up), fm.requiresLine);
         std::snprintf(rl, sizeof(rl), "LOCKED - REQUIRES %s LINE", up);
     } else if (req > v.petLevel) {
         std::snprintf(rl, sizeof(rl), "LOCKED - NEEDS LVL %d", req);
@@ -415,7 +403,7 @@ void drawModDetail(Framebuffer& fb, const ContentRegistry& reg, const ModHolding
     y += kDetailFooterPitch;
     if (mod.requiresLine) {
         char up[16];
-        upperLine(up, sizeof(up), mod.requiresLine);
+        asciiUpperCopy(up, sizeof(up), mod.requiresLine);
         char lineReq[32];
         std::snprintf(lineReq, sizeof(lineReq), "REQUIRES %s LINE", up);
         drawText(fb, kMargin, y, lineReq, wrongLine ? palColor(Pal::HOT) : palColor(Pal::INK_DIM));

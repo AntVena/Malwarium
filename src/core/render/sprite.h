@@ -109,6 +109,10 @@ struct SpriteData {
 // Which bitmap form `bits` holds. A mask is the one that carries no colour of its own, so
 // a pass that substitutes a tint for the stored colour (camo, shred, absorb) keys off
 // this rather than off `bits`: an indexed sheet has a palette and must keep it.
+// Does the sheet hold this cell? Every blitter and pass asks before it reads one.
+inline bool spriteHasCell(const SpriteData& s, int frame, int row) {
+    return frame >= 0 && frame < s.frames && row >= 0 && row < s.rows;
+}
 inline bool spriteIsMask(const SpriteData& s) { return s.bits && !s.pal; }
 
 // Bytes per sheet row, in the 1-bit and the indexed form.

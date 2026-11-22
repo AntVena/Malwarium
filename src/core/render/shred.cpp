@@ -34,7 +34,7 @@ constexpr uint8_t kFrayFrom = 140;
 void drawShred(Framebuffer& fb, const SpriteData& s, int frame,
                int srcX, int srcY, int num, int den, Rgb565 tint, uint8_t progress,
                int row, bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     if (den <= 0 || num <= 0) return;
     if (progress >= 255) return;                      // nothing left of it
 

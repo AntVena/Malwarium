@@ -48,7 +48,7 @@ void drawSpriteGlitch(Framebuffer& fb, const SpriteData& s, int frame,
                       int destX, int destY, int num, int den,
                       Rgb565 base, Rgb565 hot, uint8_t phase,
                       int row, bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     if (den <= 0 || num <= 0) return;
 
     const int block = (num + den - 1) / den;          // dest pixels per source pixel

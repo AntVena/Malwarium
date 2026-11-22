@@ -1,5 +1,6 @@
 #include "core/model/cant.h"
 #include "core/model/lcg.h"
+#include "core/render/ascii.h"
 
 namespace mal {
 
@@ -10,8 +11,6 @@ namespace {
 uint32_t step(uint32_t& s) { return lcgAdvance(s) >> 16; }
 
 bool isLetter(char c) { return c >= 'A' && c <= 'Z'; }
-
-char upper(char c) { return (c >= 'a' && c <= 'z') ? static_cast<char>(c - 'a' + 'A') : c; }
 
 }  // namespace
 
@@ -83,7 +82,7 @@ void CantCipher::build(SigilSet learned, uint32_t seed) {
 }
 
 char CantCipher::apply(char c) const {
-    const char u = upper(c);
+    const char u = asciiUpper(c);
     return isLetter(u) ? map[u - 'A'] : c;
 }
 

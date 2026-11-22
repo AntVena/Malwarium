@@ -33,7 +33,7 @@ struct Seat {
 void drawSpriteCloak(Framebuffer& fb, const SpriteData& s, int frame, int destX, int destY,
                      int num, int den, uint8_t amount, Rgb565 glint, int phase, int row,
                      bool mirror) {
-    if (frame < 0 || frame >= s.frames || row < 0 || row >= s.rows) return;
+    if (!spriteHasCell(s, frame, row)) return;
     const Seat seat{s, frame, row * s.h, num, den, mirror, s.frameW * num / den,
                     s.h * num / den};
     for (int oy = 0; oy < seat.dh; ++oy) {

@@ -154,16 +154,11 @@ void listHeader(Framebuffer& fb, const char* title, int sel, int total) {
 }  // namespace
 
 // ICON_ITEM_<UPPER ID>: the per-item inventory glyph naming convention.
+// Every shipped item has its own ICON_ITEM_<ID>, so the name IS the lookup and there is
+// no borrowed-glyph table to keep in step. A null here means a row was added without
+// art, which the row shows as a blank: add the PNG rather than an exception.
 const SpriteData* itemIcon(const ContentRegistry& reg, const char* id) {
-    char name[40];
-    std::snprintf(name, sizeof(name), "ICON_ITEM_%s", id);
-    for (char* c = name; *c; ++c)
-        if (*c >= 'a' && *c <= 'z') *c = static_cast<char>(*c - 'a' + 'A');
-    // Every shipped item has its own ICON_ITEM_<ID>, so the name IS the lookup and
-    // there is no borrowed-glyph table to keep in step. A null here means a row was
-    // added without art, which the row will show as a blank: add the PNG rather
-    // than patching an exception back in.
-    return reg.sprite(name);
+    return reg.derivedSprite("ICON_ITEM_", id);
 }
 
 LifetimeMark lifetimeMark(const ItemDef& d, const PetLifetimeGates& gates) {
